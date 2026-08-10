@@ -109,10 +109,35 @@ test("dispatches only the observed MembersListModule read shape", async () => {
   assert.deepEqual(failedBody.jsInclude, [])
 })
 
+test("accepts the wikidot.py MembersList default and applies Wikidot joined order", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "membership/MembersListModule",
+      group: "",
+      page: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderMembersList: async (input) => {
+        received = input
+        return { status: "ok", body: '<div id="ml-12345">members</div>' }
+      }
+    }
+  )
+
+  assert.equal((await response.json()).status, "ok")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    parameters: { group: "", order: "joined", page: "1" }
+  })
+})
+
 test("fails closed before Deepwell for unobserved MembersListModule shapes", async () => {
   let calls = 0
   const invalidForms = [
-    { group: "", order: "joined" },
+    { group: "" },
     { group: "members", order: "joined", page: "1" },
     { group: "", order: "name", page: "1" },
     { group: "", order: "joined", page: "" },
@@ -518,6 +543,73 @@ test("fails closed for unsupported modules and duplicate fields", async () => {
   )
   assert.equal(duplicate.status, 400)
   assert.equal((await duplicate.json()).status, "not_ok")
+})
+
+test("dispatches wikidot.py page reads without rewriting their request fields", async () => {
+  const calls = []
+  for (const moduleName of ["viewsource/ViewSourceModule", "files/PageFilesModule"]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ moduleName, page_id: "1469071756", callbackIndex: "client-0" }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderPageReadModule: async (input) => {
+          calls.push(input)
+          return { status: "ok", body: `<div>${moduleName}</div>` }
+        }
+      }
+    )
+
+    assert.equal(response.status, 200)
+    const body = await response.json()
+    assert.equal(body.status, "ok")
+    assert.equal(body.body, `<div>${moduleName}</div>`)
+    assert.equal(body.callbackIndex, "client-0")
+    assert.deepEqual(body.cssInclude, [])
+    assert.deepEqual(body.jsInclude, [])
+    assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleName: "viewsource/ViewSourceModule",
+      parameters: { page_id: "1469071756" }
+    },
+    {
+      siteId: 6000006,
+      moduleName: "files/PageFilesModule",
+      parameters: { page_id: "1469071756" }
+    }
+  ])
+})
+
+test("fails closed for unevidenced wikidot.py page read shapes", async () => {
+  let calls = 0
+  for (const form of [
+    { moduleName: "viewsource/ViewSourceModule" },
+    { moduleName: "files/PageFilesModule", page_id: "0" },
+    {
+      moduleName: "viewsource/ViewSourceModule",
+      page_id: "1469071756",
+      pageId: "1469071756"
+    }
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async () => {
+        calls += 1
+        assert.fail("unsupported shape must fail before the renderer")
+      }
+    })
+
+    assert.deepEqual(await response.json(), {
+      status: "not_ok",
+      message: `Unsupported AJAX module shape: ${form.moduleName}`
+    })
+  }
+  assert.equal(calls, 0)
 })
 
 test("rejects oversized bodies while streaming missing-length requests", async () => {

@@ -1,10 +1,17 @@
 import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connector.js"
+import {
+  renderWikidotPageFiles,
+  renderWikidotViewSource
+} from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
 import { wikidotForumModule } from "$lib/server/deepwell/forum"
 import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
+import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
   pageEdit,
+  pageGet,
+  pageRevision,
   pageViewPermission,
   pageParentUpdate,
   wikidotPageDiscussionCreate,
@@ -161,6 +168,43 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
     }: {
       siteId: number
       parameters: Record<string, string>
-    }) => wikidotMembersListModule(siteId, parameters, requestContext)
+    }) => wikidotMembersListModule(siteId, parameters, requestContext),
+    renderPageReadModule: async ({
+      siteId,
+      moduleName,
+      parameters
+    }: {
+      siteId: number
+      moduleName: string
+      parameters: Record<string, string>
+    }) => {
+      const pageId = Number.parseInt(parameters.page_id, 10)
+      const pageRequestContext = { ...requestContext, page: pageId }
+      if (moduleName === "viewsource/ViewSourceModule") {
+        const revision = await pageRevision(
+          siteId,
+          pageId,
+          undefined,
+          false,
+          true,
+          pageRequestContext
+        )
+        if (!revision) throw new Error("ViewSource target page is missing")
+        return {
+          status: "ok",
+          body: renderWikidotViewSource(revision.wikitext ?? "")
+        }
+      }
+
+      const [page, files] = await Promise.all([
+        pageGet(siteId, pageId, pageRequestContext) as Promise<{ slug: string } | null>,
+        pageFileList(siteId, pageId, false, pageRequestContext)
+      ])
+      if (!page) throw new Error("PageFiles target page is missing")
+      return {
+        status: "ok",
+        body: renderWikidotPageFiles(page.slug, files)
+      }
+    }
   })
 }

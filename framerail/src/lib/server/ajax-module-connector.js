@@ -35,6 +35,11 @@ const SITE_CHANGES_OPTIONS = new Set([
 ])
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
+const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group", "page"])
+const PAGE_READ_MODULE_PARAMETERS = new Map([
+  ["viewsource/ViewSourceModule", new Set(["page_id"])],
+  ["files/PageFilesModule", new Set(["page_id"])]
+])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
@@ -107,6 +112,11 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *   renderMembersList?: (
  *     input: MembersListRenderInput
  *   ) => Promise<{ status: string; body: string }>
+ *   renderPageReadModule?: (input: ForumModuleRenderInput) => Promise<{
+ *     status: string
+ *     body: string
+ *     js_include?: string[]
+ *   }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
  *   pageExists?: (slug: string) => boolean | Promise<boolean>
@@ -474,6 +484,7 @@ export const handleAjaxModuleConnectorRequest = async (
     renderForumModule,
     renderSiteChangesModule,
     renderMembersList,
+    renderPageReadModule,
     createNewPage,
     canCreateNewPage = true,
     pageExists,
@@ -674,10 +685,19 @@ export const handleAjaxModuleConnectorRequest = async (
         })
       }
     }
+    const parameterNames = Object.keys(parameters)
+    const isWikidotPyDefaultShape =
+      parameterNames.length === MEMBERS_LIST_DEFAULT_PARAMETERS.size &&
+      [...MEMBERS_LIST_DEFAULT_PARAMETERS].every((name) =>
+        Object.hasOwn(parameters, name)
+      )
+    const isBrowserPagerShape =
+      parameterNames.length === MEMBERS_LIST_PARAMETERS.size &&
+      [...MEMBERS_LIST_PARAMETERS].every((name) => Object.hasOwn(parameters, name))
     if (
-      Object.keys(parameters).length !== MEMBERS_LIST_PARAMETERS.size ||
+      (!isWikidotPyDefaultShape && !isBrowserPagerShape) ||
       parameters.group !== "" ||
-      parameters.order !== "joined" ||
+      (parameters.order !== undefined && parameters.order !== "joined") ||
       !/^(?:0|[1-9]\d*)$/u.test(parameters.page)
     ) {
       return jsonResponse({
@@ -685,6 +705,7 @@ export const handleAjaxModuleConnectorRequest = async (
         message: `Unsupported AJAX module shape: ${moduleName}`
       })
     }
+    parameters.order ??= "joined"
 
     const responseMetadata = () => ({
       callbackIndex: fields.has("callbackIndex")
@@ -703,6 +724,68 @@ export const handleAjaxModuleConnectorRequest = async (
       })
     } catch (error) {
       console.error("AJAX MembersListModule rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        ...responseMetadata()
+      })
+    }
+  }
+
+  const pageReadParameters = moduleName
+    ? PAGE_READ_MODULE_PARAMETERS.get(moduleName)
+    : undefined
+  if (pageReadParameters && moduleName) {
+    if (!renderPageReadModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    /** @type {Record<string, string>} */
+    const parameters = {}
+    for (const [key, value] of fields) {
+      if (pageReadParameters.has(key)) {
+        parameters[key] = value
+        continue
+      }
+      if (key !== "moduleName" && key !== "wikidot_token7" && key !== "callbackIndex") {
+        return jsonResponse({
+          status: "not_ok",
+          message: `Unsupported AJAX module shape: ${moduleName}`
+        })
+      }
+    }
+    if (
+      Object.keys(parameters).length !== pageReadParameters.size ||
+      ![...pageReadParameters].every((name) => Object.hasOwn(parameters, name)) ||
+      !isPositiveSafeDecimal(parameters.page_id)
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    const responseMetadata = () => ({
+      callbackIndex: fields.has("callbackIndex")
+        ? fieldValue(fields, "callbackIndex")
+        : null,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+    try {
+      const output = await renderPageReadModule({ siteId, moduleName, parameters })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        ...responseMetadata(),
+        jsInclude: output.js_include ?? []
+      })
+    } catch (error) {
+      console.error("AJAX page read module rendering failed", error)
       return jsonResponse({
         status: "not_ok",
         body: "",
