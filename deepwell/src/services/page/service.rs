@@ -105,20 +105,23 @@ impl PageService {
             .or_raise(make_error)?;
         }
 
-        // Resolve and lock category settings before choosing the final slug. This row
-        // lock serializes category-scoped autonumber allocation inside the same
-        // transaction as page and revision creation. A later failure rolls back both.
+        // Resolve category settings before choosing the final slug. Autonumbered
+        // categories are locked so allocation stays serialized inside the same
+        // transaction as page and revision creation. Normal page creates do not need
+        // to serialize on their shared category row.
         let category_slug = str!(get_category_name(&slug));
-        let category = CategoryService::get_or_create(ctx, site_id, &category_slug)
+        let mut category = CategoryService::get_or_create(ctx, site_id, &category_slug)
             .await
             .or_raise(make_error)?;
-        let category = CategoryService::get_for_update(
-            ctx,
-            site_id,
-            Reference::Id(category.category_id),
-        )
-        .await
-        .or_raise(make_error)?;
+        if category.autonumber_enabled {
+            category = CategoryService::get_for_update(
+                ctx,
+                site_id,
+                Reference::Id(category.category_id),
+            )
+            .await
+            .or_raise(make_error)?;
+        }
         let category_id = category.category_id;
         if category.autonumber_enabled {
             slug = if category.slug == "_default" {

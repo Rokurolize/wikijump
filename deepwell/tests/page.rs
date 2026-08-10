@@ -833,6 +833,81 @@ async fn normal_page_create_allocates_category_numbers_without_consuming_conflic
 }
 
 #[tokio::test]
+async fn normal_page_creates_do_not_serialize_on_category_settings() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let state = runner.state().clone();
+    runner.teardown().await;
+
+    let first_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("first page-create transaction should start");
+    let first_context = ServiceContext::new(&state, &first_transaction);
+    PageService::create(
+        &first_context,
+        CreatePage {
+            site_id: site.site_id,
+            wikitext: String::from("First concurrent normal page"),
+            title: String::from("First concurrent normal page"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: format!("normal-concurrency-first-{}", cuid()),
+            layout: Some(Layout::Wikidot),
+            revision_comments: String::from("exercise normal page concurrency"),
+            user_id: ADMIN_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("first normal page should be created");
+
+    let second_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("second page-create transaction should start");
+    let second_context = ServiceContext::new(&state, &second_transaction);
+    tokio::time::timeout(
+        StdDuration::from_secs(2),
+        PageService::create(
+            &second_context,
+            CreatePage {
+                site_id: site.site_id,
+                wikitext: String::from("Second concurrent normal page"),
+                title: String::from("Second concurrent normal page"),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: format!("normal-concurrency-second-{}", cuid()),
+                layout: Some(Layout::Wikidot),
+                revision_comments: String::from("exercise normal page concurrency"),
+                user_id: ADMIN_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        ),
+    )
+    .await
+    .expect("a normal page create must not wait for another page in the category")
+    .expect("second normal page should be created");
+
+    drop(second_context);
+    second_transaction
+        .rollback()
+        .await
+        .expect("second page-create transaction should roll back");
+    drop(first_context);
+    first_transaction
+        .rollback()
+        .await
+        .expect("first page-create transaction should roll back");
+}
+
+#[tokio::test]
 async fn autonumber_allocator_holds_the_category_lock_until_request_completion() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
@@ -31260,7 +31335,8 @@ async fn first_revision_rerenders_tagcloud() {
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
-    let page_slug = "fixture-first-revision-tagcloud";
+    let category = "fixture-first-revision-tagcloud";
+    let page_slug = "fixture-first-revision-tagcloud:holder";
     let tag = "verification-first-revision-tagcloud";
 
     set_mutation_request_context(
@@ -31274,7 +31350,7 @@ async fn first_revision_rerenders_tagcloud() {
         page_create,
         json!({
             "site_id": site_id,
-            "wikitext": "[[module TagCloud]]",
+            "wikitext": format!("[[module TagCloud category=\"{category}\"]]"),
             "title": "Fixture First Revision TagCloud",
             "alt_title": null,
             "tags": [tag],
@@ -31304,7 +31380,7 @@ async fn first_revision_rerenders_tagcloud() {
 
     assert!(
         html.contains(&format!(
-            r#"<a class="tag" href="/system:page-tags/tag/{tag}""#
+            r#"<a class="tag" href="/system:page-tags/tag/{tag}/category/{category}""#
         )) && html.contains(&format!(">{tag}<")),
         "TagCloud should be rerendered after the first revision is attached:\n{html}"
     );
@@ -31610,7 +31686,7 @@ async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
             concat!(
                 "TAGCLOUD_EDGE_START\n\n",
                 "SITEWIDE_START\n",
-                "[[module TagCloud limit=\"4\"]]\n",
+                "[[module TagCloud limit=\"1000\"]]\n",
                 "SITEWIDE_END\n\n",
                 "SKIP_START\n",
                 "[[module TagCloud category=\"{category}\" target=\"{category}:target\" skipCategoryFromUrl=\"true\"]]\n",

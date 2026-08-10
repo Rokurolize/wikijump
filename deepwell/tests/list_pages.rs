@@ -5790,16 +5790,40 @@ async fn listpages_rating_vote_scalars_resolve_authored_expr_envelopes() {
 
 #[tokio::test]
 async fn listpages_created_by_id_comment_gates_resolve_after_row_substitution() {
-    let runner = TestRunner::setup().await;
+    const TARGET_SLUG: &str = "listpages-created-by-id-comment-gate-target";
+
+    let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site.site_id,
+            "wikitext": "Comment gate target",
+            "title": "ListPages created-by-id comment gate target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deterministic comment gate target",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
 
     let preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site.site.site_id,
         "ListPages created-by-id comment gates",
         concat!(
-            "[[module ListPages category=\"*\" order=\"name\" limit=\"1\"]]\n",
+            "[[module ListPages name=\"listpages-created-by-id-comment-gate-target\"]]\n",
             "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
             "LOW\n",
             "[!-- --]\n",
