@@ -289,6 +289,7 @@ export enum PagePane {
   SiteTools = "site-tools",
   Vote = "vote",
   Delete = "delete",
+  EditMeta = "edit-meta",
   Lock = "lock"
 }
 export enum UserType {

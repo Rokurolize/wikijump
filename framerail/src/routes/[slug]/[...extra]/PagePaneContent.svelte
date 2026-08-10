@@ -25,6 +25,7 @@
   let AppendPane = $state<typeof import("./AppendPane.svelte").default>()
   let BacklinksPane = $state<typeof import("./BacklinksPane.svelte").default>()
   let DeletePane = $state<typeof import("./DeletePane.svelte").default>()
+  let EditMetaPane = $state<typeof import("./EditMetaPane.svelte").default>()
   let FilePane = $state<typeof import("./FilePane.svelte").default>()
   let HistoryPane = $state<typeof import("./HistoryPane.svelte").default>()
   let LayoutPane = $state<typeof import("./LayoutPane.svelte").default>()
@@ -49,6 +50,9 @@
         break
       case PagePane.File:
         FilePane ??= (await import("./FilePane.svelte")).default
+        break
+      case PagePane.EditMeta:
+        EditMetaPane ??= (await import("./EditMetaPane.svelte")).default
         break
       case PagePane.History:
         HistoryPane ??= (await import("./HistoryPane.svelte")).default
@@ -95,6 +99,12 @@
   {:else if pagePaneState === PagePane.Backlinks}
     {#if BacklinksPane}
       <BacklinksPane {...props} />
+    {:else}
+      <p class="pane-loading" aria-live="polite">Loading…</p>
+    {/if}
+  {:else if pagePaneState === PagePane.EditMeta}
+    {#if EditMetaPane}
+      <EditMetaPane {...props} />
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}

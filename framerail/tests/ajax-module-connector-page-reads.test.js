@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { createHash } from "node:crypto"
 import test from "node:test"
 
 import {
@@ -6,9 +7,52 @@ import {
   renderWikidotPageRevisionList,
   renderWikidotPageRevisionSource,
   renderWikidotPageRevisionVersion,
+  renderWikidotEditMeta,
   renderWikidotWhoRated,
   renderWikidotViewSource
 } from "../src/lib/server/ajax-module-connector-page-reads.js"
+
+const ROBOTS_META = {
+  name: "robots",
+  content:
+    "noindex,nofollow,nosnippet,noimageindex,noarchive,notranslate,max-snippet:0,max-image-preview:none,max-video-preview:0",
+  all_pages: true
+}
+
+const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+
+test("renders the captured EditMeta empty-page body byte for byte", () => {
+  assert.equal(
+    sha256(renderWikidotEditMeta([ROBOTS_META])),
+    "ba74cf64542995d0f634b0ec5a4b28b2a3bc445ef0d1c6c6a12284c8f24e55d1"
+  )
+})
+
+test("renders site and page EditMeta rows in the captured DOM order", () => {
+  const body = renderWikidotEditMeta([
+    ROBOTS_META,
+    { name: "codex-probe-b", content: "Second", all_pages: false },
+    { name: "codex-probe-a", content: "Alpha & <Beta>", all_pages: false }
+  ])
+  assert.equal(
+    sha256(body),
+    "6027f151ed85262ec164df909916e1c0b0c038ea74017c84bbe37c1068e62d24"
+  )
+  assert.match(body, /content="Alpha &amp; &lt;Beta&gt;"/u)
+  assert.match(body, /\(all pages\)/u)
+})
+
+test("renders the captured EditMeta update and delete result byte for byte", () => {
+  assert.equal(
+    sha256(
+      renderWikidotEditMeta([
+        ROBOTS_META,
+        { name: "codex-probe-a", content: "Updated", all_pages: false }
+      ])
+    ),
+    "2f40950e801e9a09a53677078e9bbc4e52b080c5c01b4feec540188b5308cb86"
+  )
+})
 
 test("renders page source in the Wikidot client parsing boundary", () => {
   assert.equal(

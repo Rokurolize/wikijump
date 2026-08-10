@@ -1,5 +1,6 @@
 import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connector.js"
 import {
+  renderWikidotEditMeta,
   renderWikidotPageFiles,
   renderWikidotPageRevisionList,
   renderWikidotPageRevisionSource,
@@ -16,10 +17,13 @@ import {
   pageEdit,
   pageGet,
   pageHistory,
-  pageWhoRated,
+  pageMetaTagDelete,
+  pageMetaTagSet,
+  pageMetaTags,
   pageRevision,
   pageRevisionById,
   pageViewPermission,
+  pageWhoRated,
   pageParentUpdate,
   siteToolsOrphanedPages,
   siteToolsWantedPages,
@@ -124,6 +128,57 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
     },
     createPageDiscussion: ({ pageId }: { siteId: number; pageId: number }) =>
       wikidotPageDiscussionCreate(siteId, pageId, {
+        ...requestContext,
+        page: pageId
+      }),
+    renderEditMetaModule: async ({
+      siteId: requestSiteId,
+      pageId
+    }: {
+      siteId: number
+      pageId: number
+    }) => {
+      const tags = await pageMetaTags(requestSiteId, pageId, {
+        ...requestContext,
+        page: pageId
+      })
+      return {
+        status: "ok",
+        body: renderWikidotEditMeta(tags),
+        js_include: [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/edit/EditMetaModule.js"
+        ]
+      }
+    },
+    saveMetaTag: ({
+      siteId: requestSiteId,
+      pageId,
+      name,
+      content,
+      allPages
+    }: {
+      siteId: number
+      pageId: number
+      name: string
+      content: string
+      allPages: boolean
+    }) =>
+      pageMetaTagSet(requestSiteId, pageId, name, content, allPages, {
+        ...requestContext,
+        page: pageId
+      }),
+    deleteMetaTag: ({
+      siteId: requestSiteId,
+      pageId,
+      name,
+      allPages
+    }: {
+      siteId: number
+      pageId: number
+      name: string
+      allPages: boolean
+    }) =>
+      pageMetaTagDelete(requestSiteId, pageId, name, allPages, {
         ...requestContext,
         page: pageId
       }),

@@ -54,6 +54,20 @@ const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
 const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
+const EDIT_META_MODULE = "edit/EditMetaModule"
+const EDIT_META_ACTION = "WikiPageAction"
+const EDIT_META_EVENTS = new Set(["saveMetaTag", "deleteMetaTag"])
+const EDIT_META_READ_FIELDS = new Set(["moduleName", "pageId", "wikidot_token7"])
+const EDIT_META_ACTION_FIELDS = new Set([
+  "action",
+  "event",
+  "pageId",
+  "metaName",
+  "metaContent",
+  "allPages",
+  "moduleName",
+  "wikidot_token7"
+])
 const NEWPAGE_AUTOSAVE_MODES = new Set(["save-and-refresh", "save-and-go"])
 const NEWPAGE_NO_NAME_MESSAGE = "You should provide a page name"
 const NEWPAGE_INCORRECT_NAME_MESSAGE =
@@ -138,6 +152,23 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     siteId: number
  *     pageId: number
  *   }) => Promise<{ thread_id: number; thread_unix_title: string } | null>
+ *   renderEditMetaModule?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *   }) => Promise<{ status: string; body: string; js_include?: string[] }>
+ *   saveMetaTag?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *     name: string
+ *     content: string
+ *     allPages: boolean
+ *   }) => Promise<void>
+ *   deleteMetaTag?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *     name: string
+ *     allPages: boolean
+ *   }) => Promise<void>
  * }} AjaxModuleConnectorOptions
  */
 
@@ -527,7 +558,10 @@ export const handleAjaxModuleConnectorRequest = async (
     createNewPage,
     canCreateNewPage = true,
     pageExists,
-    createPageDiscussion
+    createPageDiscussion,
+    renderEditMetaModule,
+    saveMetaTag,
+    deleteMetaTag
   }
 ) => {
   if (request.method !== "POST") {
@@ -554,6 +588,107 @@ export const handleAjaxModuleConnectorRequest = async (
       },
       status
     )
+  }
+
+  const moduleName = fields.get("moduleName")
+  const editMetaEvent = fields.get("event")
+  if (
+    moduleName === EDIT_META_MODULE &&
+    fields.get("action") === EDIT_META_ACTION &&
+    editMetaEvent !== undefined
+  ) {
+    const allowedFields =
+      editMetaEvent === "saveMetaTag"
+        ? EDIT_META_ACTION_FIELDS
+        : new Set([...EDIT_META_ACTION_FIELDS].filter((field) => field !== "metaContent"))
+    const pageIdValue = fieldValue(fields, "pageId")
+    const name = fieldValue(fields, "metaName")
+    const allPagesValue = fields.get("allPages")
+    const shapeIsSupported =
+      EDIT_META_EVENTS.has(editMetaEvent) &&
+      [...fields.keys()].every((field) => allowedFields.has(field)) &&
+      isPositiveSafeDecimal(pageIdValue) &&
+      name.length > 0 &&
+      !name.includes("\0") &&
+      (allPagesValue === undefined || allPagesValue === "true") &&
+      (editMetaEvent !== "saveMetaTag" || fields.has("metaContent"))
+    if (!shapeIsSupported) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    const pageId = Number.parseInt(pageIdValue, 10)
+    try {
+      if (editMetaEvent === "saveMetaTag") {
+        if (!saveMetaTag) {
+          return jsonResponse({ status: "not_ok" })
+        }
+        await saveMetaTag({
+          siteId,
+          pageId,
+          name,
+          content: fieldValue(fields, "metaContent"),
+          allPages: allPagesValue === "true"
+        })
+      } else {
+        if (!deleteMetaTag) {
+          return jsonResponse({ status: "not_ok" })
+        }
+        await deleteMetaTag({
+          siteId,
+          pageId,
+          name,
+          allPages: allPagesValue === "true"
+        })
+      }
+      return jsonResponse({ status: "ok" })
+    } catch (error) {
+      console.error("AJAX EditMeta action failed", error)
+      return jsonResponse({ status: "not_ok" })
+    }
+  }
+
+  if (moduleName === EDIT_META_MODULE) {
+    const pageIdValue = fieldValue(fields, "pageId")
+    if (
+      !renderEditMetaModule ||
+      [...fields.keys()].some((field) => !EDIT_META_READ_FIELDS.has(field)) ||
+      fields.has("action") ||
+      fields.has("event") ||
+      !isPositiveSafeDecimal(pageIdValue)
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    try {
+      const output = await renderEditMetaModule({
+        siteId,
+        pageId: Number.parseInt(pageIdValue, 10)
+      })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: output.js_include ?? []
+      })
+    } catch (error) {
+      console.error("AJAX EditMeta rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: []
+      })
+    }
   }
 
   if (fields.get("action") === NEWPAGE_ACTION && fields.get("event") === NEWPAGE_EVENT) {
@@ -625,7 +760,6 @@ export const handleAjaxModuleConnectorRequest = async (
     }
   }
 
-  const moduleName = fields.get("moduleName")
   if (moduleName === SITE_CHANGES_MODULE) {
     if (!renderSiteChangesModule) {
       return jsonResponse({

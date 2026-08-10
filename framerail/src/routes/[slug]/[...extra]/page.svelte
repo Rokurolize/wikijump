@@ -352,6 +352,7 @@
 <PageHead
   {compiledBodyStylesHead}
   fontPreloadHrefs={pageFontPreloadHrefs}
+  metaTags={showRevision ? [] : (data.meta_tags ?? [])}
   siteName={data.site.name}
   title={data.page_revision?.title}
 />
@@ -573,6 +574,16 @@
           type="button"
         >
           Edit Sections
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="edit-meta-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.EditMeta)}
+          type="button"
+        >
+          Edit Meta
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a

@@ -182,9 +182,14 @@
     {
       "module_name": "edit/EditMetaModule",
       "parameters": ["pageId"],
-      "status": "unsupported_unevidenced",
-      "gap": "The authenticated metadata read-before-write form is not implemented.",
-      "source_reference": "src/wikidot/module/page.py#Page._acquire_metadata"
+      "status": "supported",
+      "request_example": {
+        "moduleName": "edit/EditMetaModule",
+        "pageId": "1469127852"
+      },
+      "action_events": ["deleteMetaTag", "saveMetaTag"],
+      "source_reference": "src/wikidot/module/page.py#Page.metas",
+      "test_reference": "framerail/tests/wikidot_edit_meta_client_contract_test.py"
     },
     {
       "module_name": "managesite/ManageSiteMembersApplicationsModule",

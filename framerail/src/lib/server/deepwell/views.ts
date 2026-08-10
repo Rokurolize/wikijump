@@ -88,6 +88,12 @@ interface PageViewDataBase {
   theme: ThemeSetting
 }
 
+export interface PageMetaTagView {
+  name: string
+  content: string
+  all_pages: boolean
+}
+
 export type LegacyBrowserAction =
   | { type: "edit" }
   | { type: "history" }
@@ -129,6 +135,7 @@ interface PageViewFound {
     legacy_actions: LegacyBrowserAction[]
     rate_actions: Nullable<RateBrowserActionRegistry>
     membership_actions: MembershipBrowserAction[]
+    meta_tags: PageMetaTagView[]
   }
 }
 

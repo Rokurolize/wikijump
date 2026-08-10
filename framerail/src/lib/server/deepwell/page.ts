@@ -224,6 +224,67 @@ export async function pageWhoRated(
   )
 }
 
+export interface PageMetaTag {
+  name: string
+  content: string
+  all_pages: boolean
+}
+
+export async function pageMetaTags(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<PageMetaTag[]> {
+  return client.request(
+    "page_meta_tags",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
+export async function pageMetaTagSet(
+  siteId: number,
+  pageId: number,
+  name: string,
+  content: string,
+  allPages: boolean,
+  requestContext: RequestContext = {}
+): Promise<void> {
+  return client.request(
+    "page_meta_tag_set",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      name,
+      content,
+      all_pages: allPages
+    },
+    requestContext
+  )
+}
+
+export async function pageMetaTagDelete(
+  siteId: number,
+  pageId: number,
+  name: string,
+  allPages: boolean,
+  requestContext: RequestContext = {}
+): Promise<void> {
+  return client.request(
+    "page_meta_tag_delete",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      name,
+      all_pages: allPages
+    },
+    requestContext
+  )
+}
+
 export interface WikidotSiteChangesModuleInput {
   pageId: string
   page: string
