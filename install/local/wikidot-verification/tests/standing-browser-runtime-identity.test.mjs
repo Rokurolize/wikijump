@@ -210,7 +210,7 @@ test("effective runtime identity ignores Compose's derived hash and lifecycle la
   assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
 });
 
-test("effective runtime identity preserves order-sensitive Docker arrays", () => {
+test("effective runtime identity normalizes Docker-reordered environment and inspect mounts", () => {
   const cases = [
     [
       "environment",
@@ -219,6 +219,33 @@ test("effective runtime identity preserves order-sensitive Docker arrays", () =>
         return () => inspect.Config.Env.reverse();
       },
     ],
+    [
+      "inspect mounts",
+      (inspect) => {
+        inspect.Mounts = [
+          { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
+          { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
+        ];
+        return () => inspect.Mounts.reverse();
+      },
+    ],
+  ];
+
+  for (const [name, prepare] of cases) {
+    const { inspect } = preparedFixture();
+    const reverse = prepare(inspect);
+    const before = effectiveRuntimeServicesSha256([inspect]);
+    reverse();
+    assert.equal(
+      effectiveRuntimeServicesSha256([inspect]),
+      before,
+      `${name} order is not a runtime configuration change`,
+    );
+  }
+});
+
+test("effective runtime identity preserves order-sensitive Docker arrays", () => {
+  const cases = [
     [
       "binds",
       (inspect) => {
@@ -234,16 +261,6 @@ test("effective runtime identity preserves order-sensitive Docker arrays", () =>
           { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
         ];
         return () => inspect.HostConfig.Mounts.reverse();
-      },
-    ],
-    [
-      "inspect mounts",
-      (inspect) => {
-        inspect.Mounts = [
-          { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
-          { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
-        ];
-        return () => inspect.Mounts.reverse();
       },
     ],
     [

@@ -307,7 +307,7 @@ function effectiveServiceConfiguration(inspect, role) {
       ),
       entrypoint: safeRuntimeValue(config.Entrypoint ?? null),
       cmd: safeRuntimeValue(config.Cmd ?? null),
-      env: orderedRuntimeArray(config.Env),
+      env: sortedRuntimeArray(config.Env),
       working_dir: safeRuntimeValue(config.WorkingDir ?? null),
       user: safeRuntimeValue(config.User ?? null),
       hostname: safeRuntimeValue(config.Hostname ?? null),
@@ -377,18 +377,16 @@ function effectiveServiceConfiguration(inspect, role) {
       masked_paths: safeRuntimeValue(hostConfig.MaskedPaths ?? []),
       readonly_paths: safeRuntimeValue(hostConfig.ReadonlyPaths ?? []),
     }),
-    mounts: safeRuntimeValue(
-      orderedRuntimeArray(
-        (Array.isArray(inspect?.Mounts) ? inspect.Mounts : []).map((mount) => ({
-          type: mount?.Type ?? null,
-          name: mount?.Name ?? null,
-          source: mount?.Source ?? null,
-          destination: mount?.Destination ?? null,
-          mode: mount?.Mode ?? null,
-          rw: mount?.RW ?? null,
-          propagation: mount?.Propagation ?? null,
-        })),
-      ),
+    mounts: sortedRuntimeArray(
+      (Array.isArray(inspect?.Mounts) ? inspect.Mounts : []).map((mount) => ({
+        type: mount?.Type ?? null,
+        name: mount?.Name ?? null,
+        source: mount?.Source ?? null,
+        destination: mount?.Destination ?? null,
+        mode: mount?.Mode ?? null,
+        rw: mount?.RW ?? null,
+        propagation: mount?.Propagation ?? null,
+      })),
     ),
     networks: safeRuntimeValue(
       Object.fromEntries(
