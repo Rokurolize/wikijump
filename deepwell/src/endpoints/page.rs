@@ -708,7 +708,9 @@ pub async fn page_who_rated(
     let PageWhoRatedInput { site_id, page_id } = parse!(params, Page);
     let make_error = || {
         Error::new(
-            format!("failed to list current ratings for page ID {page_id} in site ID {site_id}"),
+            format!(
+                "failed to list current ratings for page ID {page_id} in site ID {site_id}"
+            ),
             ErrorType::PageVote,
         )
     };
@@ -736,7 +738,10 @@ pub async fn page_who_rated(
     )
     .await
     .or_raise(make_error)?;
-    let user_ids = votes.iter().map(|vote| vote.user_id).collect::<BTreeSet<_>>();
+    let user_ids = votes
+        .iter()
+        .map(|vote| vote.user_id)
+        .collect::<BTreeSet<_>>();
     let mut identities = UserService::get_public_identities(ctx, &user_ids)
         .await
         .or_raise(make_error)?;
@@ -784,7 +789,12 @@ async fn get_page_who_rated_target(
         },
     )
     .await
-    .or_raise(|| Error::new("failed to check page rating visibility", ErrorType::Permission))?;
+    .or_raise(|| {
+        Error::new(
+            "failed to check page rating visibility",
+            ErrorType::Permission,
+        )
+    })?;
     if !can_view {
         return Err(deny().into());
     }

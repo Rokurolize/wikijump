@@ -70,7 +70,8 @@ impl UserService {
         }
 
         let txn = ctx.transaction();
-        let make_error = || Error::new("failed to get public user identities", ErrorType::User);
+        let make_error =
+            || Error::new("failed to get public user identities", ErrorType::User);
         let wikijump_users = WikijumpUser::find()
             .filter(user::Column::UserId.is_in(user_ids.iter().copied()))
             .all(txn)

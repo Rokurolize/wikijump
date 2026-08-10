@@ -60,7 +60,9 @@ impl VoteService {
 
         if votes.len() > MAX_CURRENT_PAGE_VOTES {
             return Err(Error::new(
-                format!("current vote list for page ID {page_id} exceeded its safe bound"),
+                format!(
+                    "current vote list for page ID {page_id} exceeded its safe bound"
+                ),
                 ErrorType::PageVote,
             )
             .into());

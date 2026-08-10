@@ -99,6 +99,9 @@ async fn production_rpc_stack_registers_page_who_rated() {
     let response =
         rpc_request("page_who_rated", json!({"site_id": 42, "page_id": 42})).await;
 
-    assert_eq!(response["error"]["code"], ErrorType::PermissionDenied.code());
+    assert_eq!(
+        response["error"]["code"],
+        ErrorType::PermissionDenied.code()
+    );
     assert_ne!(response["error"]["code"], -32601);
 }
