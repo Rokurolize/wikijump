@@ -6848,15 +6848,33 @@ async fn members_list_ajax_paginates_only_filtered_site_identities() {
     )
     .await
     .expect("guest role should exist");
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    let everyone_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("everyone")),
+    )
+    .await
+    .expect("everyone role should exist");
     RolePermissionTable::delete_many()
-        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::RoleId.is_in([
+            guest_role.role_id,
+            anonymous_role.role_id,
+            everyone_role.role_id,
+        ]))
         .filter(role_permission::Column::SiteId.eq(site_id))
         .filter(role_permission::Column::ResourceType.eq(Resource::Page))
         .filter(role_permission::Column::ResourceCategoryId.is_null())
         .filter(role_permission::Column::Action.eq(Action::View))
         .exec(runner.context().transaction())
         .await
-        .expect("guest page view permission should be revoked");
+        .expect("anonymous public page view permissions should be revoked");
     PermissionCache::invalidate_site(runner.context(), site_id)
         .await
         .expect("member directory permission cache should be invalidated");
@@ -9602,7 +9620,7 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     )
     .await;
     let mut parent_post_id = create_comment(&runner, deep_thread_id, None, 300).await;
-    for number in 301..=429 {
+    for number in 301..=430 {
         parent_post_id =
             create_comment(&runner, deep_thread_id, Some(parent_post_id), number).await;
     }
@@ -10218,6 +10236,8 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         }
     }
 
+    // Keep this large integration fixture's async state off the test thread stack.
+    Box::pin(async {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -11461,6 +11481,8 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         }),
     );
     assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
+    })
+    .await;
 }
 
 #[tokio::test]
