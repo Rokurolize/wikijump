@@ -122,7 +122,7 @@ async function createFakeCandidate({
       revision_user_id: -1,
       name: file.name,
       data: null,
-      mime: "image/png",
+      mime: "image/png; charset=binary",
       size: file.bytes.length,
       s3_hash: sha512(file.bytes),
       revision_comments: "fixture",

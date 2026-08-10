@@ -66,7 +66,7 @@ function fileRow(value, fileName, input, plan, name) {
   };
   expect(SHA512.test(result.s3_hash), `${name}.s3_hash must be a lowercase SHA-512`);
   expect(result.revision_user_id === plan.editor_user_id, `${name} does not bind the fixed editor actor`);
-  expect(result.name === fileName && result.mime === input.mime && result.size === input.bytes.length, `${name} does not match the fixed public file identity`);
+  expect(result.name === fileName && result.mime === input.inventoryMime && result.size === input.bytes.length, `${name} does not match the fixed public file identity`);
   return result;
 }
 

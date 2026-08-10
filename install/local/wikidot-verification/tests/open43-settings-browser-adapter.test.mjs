@@ -46,11 +46,12 @@ function fakePage(initialUrl, events, { replaceDocumentOnNavigation = false, doc
     async waitForLoadState() {},
     async waitForURL() {},
     url: () => url,
-    locator(selector) { return { async click() { if (selector === "#open43-client-navigation") { url = clientHref; if (replaceDocumentOnNavigation) documentIdentity = "document-2"; } } }; },
+    locator(selector) { return { async click() { assert.notEqual(selector, "#open43-client-navigation", "the injected hidden link must use DOM activation"); } }; },
     async evaluate(callback, argument) {
       const source = callback.toString();
       if (typeof argument === "number") return { status: "complete" };
       if (typeof argument === "string") { clientHref = argument; return undefined; }
+      if (source.includes("#open43-client-navigation")) { url = clientHref; if (replaceDocumentOnNavigation) documentIdentity = "document-2"; return undefined; }
       if (argument !== undefined || source.includes("requestAnimationFrame")) return undefined;
       if (source.includes("document_identity")) return { document_identity: documentIdentity, snapshot: structuredClone(semantic) };
       if (source.includes("__open43DocumentIdentity")) return documentIdentity;

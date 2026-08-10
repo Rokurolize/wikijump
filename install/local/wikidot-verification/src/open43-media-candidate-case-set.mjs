@@ -33,8 +33,8 @@ function sha256(bytes) {
 }
 
 const INPUTS = Object.freeze({
-  initial: { mime: "image/png", width: 4, height: 2, sha256: sha256(INITIAL_BYTES), bytes: INITIAL_BYTES },
-  revision: { mime: "image/png", width: 2, height: 4, sha256: sha256(REVISION_BYTES), bytes: REVISION_BYTES },
+  initial: { mime: "image/png", inventoryMime: "image/png; charset=binary", width: 4, height: 2, sha256: sha256(INITIAL_BYTES), bytes: INITIAL_BYTES },
+  revision: { mime: "image/png", inventoryMime: "image/png; charset=binary", width: 2, height: 4, sha256: sha256(REVISION_BYTES), bytes: REVISION_BYTES },
 });
 
 function runPageSlug(runId) {
@@ -51,7 +51,7 @@ function requireCandidateSite(candidateIdentity) {
 }
 
 function publicInput(input) {
-  return { mime: input.mime, width: input.width, height: input.height, size: input.bytes.length, sha256: input.sha256 };
+  return { mime: input.mime, inventory_mime: input.inventoryMime, width: input.width, height: input.height, size: input.bytes.length, sha256: input.sha256 };
 }
 
 function publicFileRow(row) {
