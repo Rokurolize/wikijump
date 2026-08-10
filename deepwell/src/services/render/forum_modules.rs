@@ -46,6 +46,14 @@ const RECENT_POSTS_CANDIDATE_LIMIT: usize = 1_001;
 const FORUM_START_CANDIDATE_LIMIT: usize = 1_001;
 const MAX_RECENT_POSTS_PAGE: u32 = 50;
 const MAX_FORUM_MODULES_PER_RENDER: usize = 32;
+const FRONT_FORUM_MISSING_CATEGORY_HTML: &str = concat!(
+    "<div class=\"error-block\">",
+    "Requested forum category does not exist.</div>",
+);
+const FRONT_FORUM_CATEGORY_ERROR_HTML: &str = concat!(
+    "<div class=\"error-block\">",
+    "Problem parsing attribute \"category\".</div>",
+);
 
 pub(super) static FORUM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
@@ -265,6 +273,52 @@ fn next_module_boundary_is_closer(wikitext: &str, opener_end: usize) -> bool {
     MODULE_BOUNDARY_REGEX
         .captures(&wikitext[opener_end..])
         .is_some_and(|captures| captures.name("close").is_some())
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(super) struct OwnedFrontForumBody<'a> {
+    pub(super) source: &'a str,
+    pub(super) replacement_end: usize,
+}
+
+pub(super) fn owned_front_forum_body(
+    wikitext: &str,
+    opener_end: usize,
+) -> Option<OwnedFrontForumBody<'_>> {
+    let captures = MODULE_BOUNDARY_REGEX.captures(&wikitext[opener_end..])?;
+    if captures.name("close").is_none() {
+        return None;
+    }
+    let boundary = captures.get(0)?;
+    let boundary_start = opener_end + boundary.start();
+    let tail = &wikitext[boundary_start..];
+    let line_end = tail.find('\n').unwrap_or(tail.len());
+    let closer = tail[..line_end]
+        .strip_suffix('\r')
+        .unwrap_or(&tail[..line_end]);
+    if closer.trim() != "[[/module]]" {
+        return None;
+    }
+    Some(OwnedFrontForumBody {
+        source: &wikitext[opener_end..boundary_start],
+        replacement_end: boundary_start + line_end,
+    })
+}
+
+pub(super) fn render_front_forum_items(
+    wikitext: &str,
+    opener_end: usize,
+    items: &[forum_front::FrontForumItem],
+    compat_html: &mut CompatHtmlFragments,
+) -> (String, usize, bool) {
+    match owned_front_forum_body(wikitext, opener_end) {
+        Some(body) => (
+            forum_front::render_custom_body(items, body.source, compat_html),
+            body.replacement_end,
+            true,
+        ),
+        None => (forum_front::render(items), opener_end, false),
+    }
 }
 
 pub(super) fn resolve_typed_root_recent_threads_runtime_modules(
@@ -882,11 +936,6 @@ impl RenderService {
                 .as_str();
             let kind = module_kind(name);
             let head = captures.name("head").map_or("", |head| head.as_str());
-            let typed_body_owned =
-                next_module_boundary_is_closer(&wikitext, matched.end());
-            if typed_body_owned {
-                continue;
-            }
             let comments =
                 (kind == ForumModuleKind::Comments).then(|| comments_arguments(head));
             let front_forum =
@@ -898,6 +947,14 @@ impl RenderService {
                 } else {
                     None
                 };
+            let front_forum_body = front_forum
+                .as_ref()
+                .and_then(|_| owned_front_forum_body(&wikitext, matched.end()));
+            if next_module_boundary_is_closer(&wikitext, matched.end())
+                && front_forum_body.is_none()
+            {
+                continue;
+            }
             if kind != ForumModuleKind::Comments
                 && kind != ForumModuleKind::RecentThreads
                 && kind != ForumModuleKind::FrontForum
@@ -905,7 +962,9 @@ impl RenderService {
             {
                 continue;
             }
-            let replacement_end = matched.end();
+            let mut replacement_end =
+                front_forum_body.map_or(matched.end(), |body| body.replacement_end);
+            let mut rendered_is_wikitext = false;
             let rendered = if let Some(arguments) = comments {
                 let body = if arguments.query_safe && !arguments.hide {
                     match (current_site_id, current_page_id) {
@@ -946,25 +1005,26 @@ impl RenderService {
                             .await?
                         {
                             FrontForumLoad::Items(items) => {
-                                Some(forum_front::render(&items))
+                                let (rendered, end, is_wikitext) =
+                                    render_front_forum_items(
+                                        &wikitext,
+                                        matched.end(),
+                                        &items,
+                                        compat_html,
+                                    );
+                                replacement_end = end;
+                                rendered_is_wikitext = is_wikitext;
+                                Some(rendered)
                             }
-                            FrontForumLoad::MissingCategory => Some(
-                                concat!(
-                                    "<div class=\"error-block\">",
-                                    "Requested forum category does not exist.</div>",
-                                )
-                                .to_owned(),
-                            ),
+                            FrontForumLoad::MissingCategory => {
+                                Some(FRONT_FORUM_MISSING_CATEGORY_HTML.to_owned())
+                            }
                             FrontForumLoad::ScanLimit => None,
                         }
                     }
-                    FrontForumArgumentsParse::CategoryError => Some(
-                        concat!(
-                            "<div class=\"error-block\">",
-                            "Problem parsing attribute \"category\".</div>",
-                        )
-                        .to_owned(),
-                    ),
+                    FrontForumArgumentsParse::CategoryError => {
+                        Some(FRONT_FORUM_CATEGORY_ERROR_HTML.to_owned())
+                    }
                 }
             } else if kind == ForumModuleKind::RecentThreads {
                 Some(RECENT_THREADS_PLACEHOLDER.to_owned())
@@ -1041,7 +1101,11 @@ impl RenderService {
                 continue;
             };
             output.push_str(&wikitext[cursor..matched.start()]);
-            output.push_str(&compat_html.push_block_html(rendered));
+            if rendered_is_wikitext {
+                output.push_str(&rendered);
+            } else {
+                output.push_str(&compat_html.push_block_html(rendered));
+            }
             cursor = replacement_end;
             expanded_count += 1;
         }
@@ -1050,5 +1114,74 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         Ok(output)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn frontforum_custom_body_malformed_category_suppresses_body() {
+        let source = concat!(
+            "[[module FrontForum category=\"8503559;bad\" limit=\"1\"]]\n",
+            "OWNER CONTROL %%title%%\n",
+            "[[/module]]\ntrailing",
+        );
+        let opener = FORUM_MODULE_REGEX
+            .find(source)
+            .expect("FrontForum opener is recognized");
+        let body = owned_front_forum_body(source, opener.end())
+            .expect("recognized FrontForum owns its exact closer");
+
+        assert_eq!(body.source.trim(), "OWNER CONTROL %%title%%");
+        assert_eq!(&source[body.replacement_end..], "\ntrailing");
+        assert!(matches!(
+            forum_front::parse_arguments(r#" category="8503559;bad" limit="1""#,),
+            Some(FrontForumArgumentsParse::CategoryError),
+        ));
+        let rendered = format!(
+            "{}{}",
+            FRONT_FORUM_CATEGORY_ERROR_HTML,
+            &source[body.replacement_end..],
+        );
+        assert_eq!(
+            rendered,
+            "<div class=\"error-block\">Problem parsing attribute \"category\".</div>\ntrailing",
+        );
+        assert!(!rendered.contains("OWNER CONTROL"));
+        assert!(!rendered.contains("%%title%%"));
+        assert!(!rendered.contains("[[/module]]"));
+    }
+
+    #[test]
+    fn frontforum_body_owner_does_not_claim_other_module_closers() {
+        let nested_boundary = concat!(
+            "[[module FrontForum category=\"8503559\"]]\n",
+            "body\n",
+            "[[module RecentPosts]]\n",
+            "[[/module]]",
+        );
+        let opener = FORUM_MODULE_REGEX
+            .find(nested_boundary)
+            .expect("FrontForum opener is recognized");
+        assert!(owned_front_forum_body(nested_boundary, opener.end()).is_none());
+
+        let comments = "[[module Comments]]\nbody\n[[/module]]";
+        let opener = FORUM_MODULE_REGEX
+            .captures(comments)
+            .and_then(|captures| captures.get(0))
+            .expect("Comments opener is recognized");
+        assert_ne!(
+            module_kind(
+                FORUM_MODULE_REGEX
+                    .captures(comments)
+                    .and_then(|captures| captures.name("name"))
+                    .expect("module name is captured")
+                    .as_str(),
+            ),
+            ForumModuleKind::FrontForum,
+        );
+        assert!(next_module_boundary_is_closer(comments, opener.end()));
     }
 }

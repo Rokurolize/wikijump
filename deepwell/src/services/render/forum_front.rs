@@ -1,7 +1,9 @@
 //! Observed default-format slice of Wikidot's FrontForum module.
 
 use std::fmt::Write as _;
+use std::sync::LazyLock;
 
+use regex::Regex;
 use sea_orm::sea_query::ArrayType;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 
@@ -44,6 +46,7 @@ struct FrontForumCandidate {
     forum_thread_id: i64,
     forum_category_id: i64,
     title: String,
+    description: String,
     user_id: i64,
     created_at: time::OffsetDateTime,
     post_count: i64,
@@ -61,6 +64,7 @@ pub(super) struct FrontForumItem {
     forum_thread_id: i64,
     forum_category_id: i64,
     title: String,
+    description: String,
     user: super::forum_modules::ForumUserDisplay,
     created_at: time::OffsetDateTime,
     post_count: i64,
@@ -184,7 +188,7 @@ pub(super) async fn load(
             ctx.transaction().get_database_backend(),
             format!(
                 concat!(
-                    "SELECT t.forum_thread_id, t.forum_category_id, t.title, ",
+                    "SELECT t.forum_thread_id, t.forum_category_id, t.title, t.description, ",
                     "root_post.user_id, root_post.created_at, counts.post_count, ",
                     "root_revision.compiled_html_hash, g.name AS group_name, ",
                     "c.name AS category_name, wu.name AS wikidot_user_name, ",
@@ -247,6 +251,7 @@ pub(super) async fn load(
             forum_thread_id: candidate.forum_thread_id,
             forum_category_id: candidate.forum_category_id,
             title: candidate.title,
+            description: candidate.description,
             user: forum_user(
                 candidate.user_id,
                 candidate.wikidot_user_name,
@@ -295,4 +300,259 @@ pub(super) fn render(items: &[FrontForumItem]) -> String {
     }
     output.push_str("</div>");
     output
+}
+
+static FRONT_FORUM_VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(concat!(
+        r"%%(?P<name>title|linked_title|title_linked|link|author|date|comments|category|",
+        r"description|short|summary|content|text|long|body)",
+        r"(?:\|(?P<format>%Y-%m-%d))?%%",
+    ))
+    .expect("FrontForum variable expression is valid")
+});
+
+fn thread_path(item: &FrontForumItem) -> String {
+    format!(
+        "/forum/t-{}/{}",
+        item.forum_thread_id,
+        normalize_slug_without_category_separator(&item.title),
+    )
+}
+
+fn render_custom_variable(
+    captures: &regex::Captures<'_>,
+    item: &FrontForumItem,
+    avatar_timestamp: i64,
+    compat_html: &mut super::compat::CompatHtmlFragments,
+) -> String {
+    let name = captures
+        .name("name")
+        .expect("FrontForum variable has a name")
+        .as_str();
+    let format = captures.name("format").map(|matched| matched.as_str());
+    if format.is_some() && name != "date" {
+        return captures
+            .get(0)
+            .expect("FrontForum variable match is complete")
+            .as_str()
+            .to_owned();
+    }
+    let path = thread_path(item);
+    match name {
+        "title" => compat_html.push_plain(&item.title),
+        "linked_title" | "title_linked" => compat_html.push_html(format!(
+            r#"<a href="{}">{}</a>"#,
+            escape_list_pages_html_attr(&path),
+            escape_list_pages_html_text(&item.title),
+        )),
+        "link" => compat_html.push_plain(&path),
+        "author" => {
+            compat_html.push_html(render_forum_user(&item.user, avatar_timestamp))
+        }
+        "date" => {
+            let format_class = if format == Some("%Y-%m-%d") {
+                "format_%25Y-%25m-%25d"
+            } else {
+                "format_%25O%20ago%20%28%25e%20%25b%20%25Y%2C%20%25H%3A%25M%29"
+            };
+            compat_html.push_html(render_forum_date(
+                item.created_at,
+                format_class,
+                "%e %b %Y %H:%M",
+            ))
+        }
+        "comments" => compat_html.push_html(format!(
+            r#"<a href="{}">Comments: {}</a>"#,
+            escape_list_pages_html_attr(&path),
+            item.post_count.saturating_sub(1),
+        )),
+        "category" => {
+            let category_slug = normalize_page_slug(item.category_name.clone());
+            compat_html.push_html(format!(
+                r#"<a href="/forum/c-{}/{}">{} / {}</a>"#,
+                item.forum_category_id,
+                escape_list_pages_html_attr(&category_slug),
+                escape_list_pages_html_text(&item.group_name),
+                escape_list_pages_html_text(&item.category_name),
+            ))
+        }
+        "description" | "short" | "summary" => compat_html.push_block_html(format!(
+            "<div>{}</div>",
+            escape_list_pages_html_text(&item.description)
+        )),
+        "content" | "text" | "long" | "body" => {
+            compat_html.push_block_html(format!("<div>{}</div>", item.compiled_html))
+        }
+        _ => unreachable!("FrontForum variable regex limits variable names"),
+    }
+}
+
+pub(super) fn render_custom_body(
+    items: &[FrontForumItem],
+    body: &str,
+    compat_html: &mut super::compat::CompatHtmlFragments,
+) -> String {
+    let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
+    let mut output = String::from("[[div class=\"front-forum-box\"]]\n");
+    for item in items {
+        output.push_str("[[div]]\n");
+        output.push_str(&FRONT_FORUM_VARIABLE_REGEX.replace_all(
+            body,
+            |captures: &regex::Captures<'_>| {
+                render_custom_variable(captures, item, avatar_timestamp, compat_html)
+            },
+        ));
+        output.push_str("\n[[/div]]\n");
+    }
+    output.push_str("[[/div]]");
+    output
+}
+
+#[cfg(test)]
+mod tests {
+    use std::borrow::Cow;
+
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+
+    use super::*;
+    use crate::services::render::compat::CompatHtmlFragments;
+    use crate::services::render::forum_modules::{
+        FORUM_MODULE_REGEX, render_front_forum_items,
+    };
+
+    fn item(title: &str, description: &str, compiled_html: &str) -> FrontForumItem {
+        FrontForumItem {
+            forum_thread_id: 18029831,
+            forum_category_id: 8503559,
+            title: title.to_owned(),
+            user: forum_user(
+                8955132,
+                Some("Sandbox Author".to_owned()),
+                Some("sandbox-author".to_owned()),
+                None,
+                None,
+            ),
+            created_at: time::OffsetDateTime::from_unix_timestamp(1_781_693_034)
+                .expect("test timestamp is valid"),
+            post_count: 2,
+            compiled_html: compiled_html.to_owned(),
+            group_name: "Community & Friends".to_owned(),
+            category_name: "Open <Topic>".to_owned(),
+            description: description.to_owned(),
+        }
+    }
+
+    fn render_owned_source(source: &str, items: &[FrontForumItem]) -> String {
+        let captures = FORUM_MODULE_REGEX
+            .captures(source)
+            .expect("test source contains FrontForum");
+        let matched = captures.get(0).expect("module match is complete");
+        let mut fragments = CompatHtmlFragments::new(source);
+        let (mut expanded, replacement_end, is_wikitext) =
+            render_front_forum_items(source, matched.end(), items, &mut fragments);
+        assert!(is_wikitext, "test source has an owned FrontForum body");
+        expanded.push_str(&source[replacement_end..]);
+
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("frontforum-test"),
+            category: None,
+            site: Cow::Borrowed("sandbox"),
+            title: Cow::Borrowed("FrontForum test"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        ftml::preprocess_for_layout(&mut expanded, settings.layout);
+        let tokens = ftml::tokenize(&expanded);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        fragments.restore(&HtmlRender.render(&tree, &page_info, &settings).body)
+    }
+
+    #[test]
+    fn frontforum_custom_body_canonical_public_render() {
+        let source = concat!(
+            "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n",
+            "[[div class=\"title\"]]%%title%%[[/div]]\n",
+            "[[div class=\"linked\"]]%%linked_title%%[[/div]]\n",
+            "[[div class=\"author\"]]%%author%%[[/div]]\n",
+            "[[div class=\"date\"]]%%date|%Y-%m-%d%%[[/div]]\n",
+            "[[div class=\"comments\"]]%%comments%%[[/div]]\n",
+            "[[div class=\"category\"]]%%category%%[[/div]]\n",
+            "[[div class=\"description\"]]%%description%%[[/div]]\n",
+            "[[div class=\"content\"]]%%content%%[[/div]]\n",
+            "[[/module]]",
+        );
+        let rendered = render_owned_source(
+            source,
+            &[item(
+                "Title <unsafe>",
+                "Description <unsafe>",
+                "<p>Trusted post</p>",
+            )],
+        );
+
+        assert!(rendered.contains(r#"<div class="front-forum-box">"#));
+        assert!(rendered.contains("Title &lt;unsafe&gt;"));
+        assert!(rendered.contains(
+            r#"<a href="/forum/t-18029831/title-unsafe">Title &lt;unsafe&gt;</a>"#,
+        ));
+        assert!(rendered.contains("format_%25Y-%25m-%25d"));
+        assert!(rendered.contains("Comments: 1"));
+        assert!(rendered.contains("Community &amp; Friends / Open &lt;Topic&gt;"));
+        assert!(rendered.contains("<div>Description &lt;unsafe&gt;</div>"));
+        assert!(rendered.contains("<div><p>Trusted post</p></div>"));
+        assert!(!rendered.contains("[[/module]]"));
+    }
+
+    #[test]
+    fn frontforum_custom_body_alias_offset_multi_public_render() {
+        let source = concat!(
+            "[[module FrontForum category=\"8503561;8503559\" limit=\"1\" offset=\"1\"]]\n",
+            "[[div class=\"linked\"]]%%title_linked%%[[/div]]\n",
+            "[[div class=\"link\"]]%%link%%[[/div]]\n",
+            "[[div class=\"short\"]]%%short%%[[/div]]\n",
+            "[[div class=\"summary\"]]%%summary%%[[/div]]\n",
+            "[[div class=\"text\"]]%%text%%[[/div]]\n",
+            "[[div class=\"long\"]]%%long%%[[/div]]\n",
+            "[[div class=\"body\"]]%%body%%[[/div]]\n",
+            "[[/module]]",
+        );
+        let rendered = render_owned_source(
+            source,
+            &[item("Alias title", "Alias summary", "<p>Alias body</p>")],
+        );
+
+        assert_eq!(rendered.matches("Alias title").count(), 1);
+        assert!(rendered.contains("/forum/t-18029831/alias-title"));
+        assert_eq!(rendered.matches("Alias summary").count(), 2);
+        assert_eq!(rendered.matches("Alias body").count(), 3);
+    }
+
+    #[test]
+    fn frontforum_custom_body_unknown_stays_literal() {
+        let source = concat!(
+            "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n",
+            "%%unknown%%\n[[/module]]",
+        );
+        let rendered =
+            render_owned_source(source, &[item("Title", "Summary", "<p>Body</p>")]);
+
+        assert!(rendered.contains("%%unknown%%"));
+    }
+
+    #[test]
+    fn frontforum_default_format_remains_unchanged() {
+        let rendered = render(&[item("Title", "unused", "<p>Body</p>")]);
+
+        assert!(rendered.starts_with("<div class=\"front-forum-box\">"));
+        assert!(rendered.contains("<h1><span><a"));
+        assert!(rendered.contains("Comments: 1"));
+        assert!(!rendered.contains("unused"));
+    }
 }
