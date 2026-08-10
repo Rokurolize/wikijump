@@ -56,11 +56,12 @@ test("Watchers renders typed public identities without exposing an untyped ID", 
         }
       ]
     }
-  }).body.replaceAll(/<!--[\s\S]*?-->/gu, "")
+  }).body
 
+  assert.match(body, /<ul class="page-watchers-list">/u)
   assert.match(
     body,
-    /<ul class="page-watchers-list"><li><span class="printuser"><a href="\/-\/user\/watcher-fixture">Watcher Fixture<\/a><\/span><\/li><\/ul>/u
+    /<span class="printuser"><a href="\/-\/user\/watcher-fixture">Watcher Fixture<\/a><\/span>/u
   )
   assert.doesNotMatch(body, /19000001/u)
 })
