@@ -11500,15 +11500,33 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
     )
     .await
     .expect("guest role should exist");
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    let everyone_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("everyone")),
+    )
+    .await
+    .expect("everyone role should exist");
     RolePermissionTable::delete_many()
-        .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
+        .filter(role_permission::Column::RoleId.is_in([
+            guest_role.role_id,
+            anonymous_role.role_id,
+            everyone_role.role_id,
+        ]))
         .filter(role_permission::Column::SiteId.eq(site_id))
         .filter(role_permission::Column::ResourceType.eq(Resource::Page))
         .filter(role_permission::Column::ResourceCategoryId.is_null())
         .filter(role_permission::Column::Action.eq(Action::View))
         .exec(runner.context().transaction())
         .await
-        .expect("guest page view permission should be revoked");
+        .expect("anonymous page view permissions should be revoked");
     PermissionCache::invalidate_site(runner.context(), site_id)
         .await
         .expect("permission cache invalidation should run");
