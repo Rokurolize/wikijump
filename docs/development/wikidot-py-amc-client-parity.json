@@ -112,22 +112,33 @@
     {
       "module_name": "history/PageRevisionListModule",
       "parameters": ["options", "page_id", "perpage"],
-      "status": "unsupported_unevidenced",
-      "gap": "The exact history row DOM, actor identity, and unbounded perpage behavior are not sealed for Wikijump.",
+      "status": "supported",
+      "request_example": {
+        "moduleName": "history/PageRevisionListModule",
+        "page_id": "1469071756",
+        "options": "{'all': True}",
+        "perpage": "100000000"
+      },
       "source_reference": "src/wikidot/module/page.py#PageCollection._acquire_page_revisions"
     },
     {
       "module_name": "history/PageSourceModule",
       "parameters": ["revision_id"],
-      "status": "unsupported_unevidenced",
-      "gap": "The historical source response envelope is not sealed for Wikijump.",
+      "status": "supported",
+      "request_example": {
+        "moduleName": "history/PageSourceModule",
+        "revision_id": "1000003"
+      },
       "source_reference": "src/wikidot/module/page_revision.py#PageRevisionCollection._acquire_sources"
     },
     {
       "module_name": "history/PageVersionModule",
       "parameters": ["revision_id"],
-      "status": "unsupported_unevidenced",
-      "gap": "The historical rendered version response envelope is not sealed for Wikijump.",
+      "status": "supported",
+      "request_example": {
+        "moduleName": "history/PageVersionModule",
+        "revision_id": "1000003"
+      },
       "source_reference": "src/wikidot/module/page_revision.py#PageRevisionCollection._acquire_htmls"
     },
     {

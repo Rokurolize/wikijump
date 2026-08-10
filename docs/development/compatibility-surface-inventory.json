@@ -31049,7 +31049,9 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -31058,7 +31060,7 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {
@@ -31084,7 +31086,9 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -31093,7 +31097,7 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {
@@ -31119,7 +31123,9 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -31128,7 +31134,7 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {
