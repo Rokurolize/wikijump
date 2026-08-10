@@ -525,6 +525,26 @@
       <div id="page-options-bottom-2" class="page-options-bottom form-actions">
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
+          id="edit-append-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.Append)}
+          type="button"
+        >
+          {wikidotPageActions?.append ?? "Append"}
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="backlinks-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.Backlinks)}
+          type="button"
+        >
+          {wikidotPageActions?.backlinks ?? "Backlinks"}
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
           id="view-source-button"
           class="btn btn-default"
           href="javascript:;"

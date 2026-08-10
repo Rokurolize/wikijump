@@ -68,8 +68,14 @@
     },
     {
       "action_id": "edit-append",
-      "source_status": "pending",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "source_status": "implemented",
+      "public_references": [
+        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte"
+      ],
+      "test_references": [
+        "framerail/tests/page-append-backlinks-public-boundary.test.js"
+      ]
     },
     {
       "action_id": "edit-meta",
@@ -83,8 +89,16 @@
     },
     {
       "action_id": "backlinks",
-      "source_status": "pending",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "source_status": "implemented",
+      "public_references": [
+        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
+        "deepwell/src/services/view/backlinks.rs"
+      ],
+      "test_references": [
+        "deepwell/tests/page.rs::page_backlinks_view_filters_before_exposing_titles_and_slugs",
+        "framerail/tests/page-append-backlinks-public-boundary.test.js"
+      ]
     },
     {
       "action_id": "view-source",

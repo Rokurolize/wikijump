@@ -19,6 +19,7 @@
  */
 
 mod article_cache;
+mod backlinks;
 mod module_arguments;
 mod module_render;
 mod options;
@@ -26,6 +27,7 @@ mod redirect;
 mod service;
 mod structs;
 
+pub use self::backlinks::{GetPageBacklinksView, PageBacklinkView};
 pub use self::service::ViewService;
 pub use self::structs::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,

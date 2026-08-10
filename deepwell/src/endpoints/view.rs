@@ -21,9 +21,18 @@
 use super::prelude::*;
 use crate::services::view::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
-    GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,
-    GetPreloadViewOutput, GetUserView, GetUserViewOutput, ViewType,
+    GetArticleViewOutput, GetPageBacklinksView, GetPageView, GetPageViewOutput,
+    GetPreloadView, GetPreloadViewOutput, GetUserView, GetUserViewOutput,
+    PageBacklinkView, ViewType,
 };
+
+pub async fn page_backlinks_view(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<PageBacklinkView>> {
+    let input: GetPageBacklinksView<'_> = parse!(params, Page);
+    ViewService::backlinks(ctx, input).await
+}
 
 /// Returns relevant context for rendering a view from a processed web request.
 pub async fn preload_view(

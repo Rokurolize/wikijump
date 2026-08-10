@@ -16,6 +16,7 @@ import {
   pageFileUploadAction
 } from "$lib/server/load/page/page-file-actions"
 import {
+  pageBacklinksAction,
   pageParentGetAction,
   pageParentSetAction,
   pageScoreAction,
@@ -41,6 +42,7 @@ import {
 import { membershipJoinAction } from "$lib/server/load/page/page-membership-actions"
 
 export const pageActions = {
+  backlinks: pageBacklinksAction,
   delete: pageDeleteAction,
   edit: pageEditAction,
   editPermission: pageEditPermissionAction,

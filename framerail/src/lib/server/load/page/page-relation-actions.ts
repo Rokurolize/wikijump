@@ -1,4 +1,5 @@
 import {
+  pageBacklinksView,
   pageParentGet,
   pageParentUpdate,
   pageScore,
@@ -64,6 +65,21 @@ export async function pageParentGetAction(event: RequestEvent) {
     const { pageId, slug } = requestData
     const context = await resolvePageActionRequestContext(event)
     const res = await pageParentGet(context.siteId, pageId, slug, context.requestContext)
+    return { res }
+  } catch (error) {
+    return failForActionError(error)
+  }
+}
+
+export async function pageBacklinksAction(event: RequestEvent) {
+  const { params } = event
+  try {
+    const context = await resolvePageActionRequestContext(event)
+    const res = await pageBacklinksView(
+      context.siteId,
+      params.slug,
+      context.requestContext
+    )
     return { res }
   } catch (error) {
     return failForActionError(error)

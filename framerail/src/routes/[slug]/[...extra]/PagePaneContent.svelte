@@ -22,6 +22,8 @@
   } = $props()
 
   let { data } = $derived(props)
+  let AppendPane = $state<typeof import("./AppendPane.svelte").default>()
+  let BacklinksPane = $state<typeof import("./BacklinksPane.svelte").default>()
   let DeletePane = $state<typeof import("./DeletePane.svelte").default>()
   let FilePane = $state<typeof import("./FilePane.svelte").default>()
   let HistoryPane = $state<typeof import("./HistoryPane.svelte").default>()
@@ -34,6 +36,12 @@
 
   async function ensurePagePane(pane: PagePane) {
     switch (pane) {
+      case PagePane.Append:
+        AppendPane ??= (await import("./AppendPane.svelte")).default
+        break
+      case PagePane.Backlinks:
+        BacklinksPane ??= (await import("./BacklinksPane.svelte")).default
+        break
       case PagePane.Delete:
         DeletePane ??= (await import("./DeletePane.svelte")).default
         break
@@ -70,7 +78,19 @@
 </script>
 
 {#snippet paneContent()}
-  {#if pagePaneState === PagePane.Move}
+  {#if pagePaneState === PagePane.Append}
+    {#if AppendPane}
+      <AppendPane bind:pagePaneState {...props} />
+    {:else}
+      <p class="pane-loading" aria-live="polite">Loading…</p>
+    {/if}
+  {:else if pagePaneState === PagePane.Backlinks}
+    {#if BacklinksPane}
+      <BacklinksPane {...props} />
+    {:else}
+      <p class="pane-loading" aria-live="polite">Loading…</p>
+    {/if}
+  {:else if pagePaneState === PagePane.Move}
     {#if MovePane}
       <MovePane bind:pagePaneState {...props} />
     {:else}

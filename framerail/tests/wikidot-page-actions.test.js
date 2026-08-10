@@ -42,7 +42,9 @@ test("formats imported Wikidot action labels with source rating and comment coun
     files: "Files",
     print: "Print",
     siteTools: "Site tools",
-    options: "Options"
+    options: "Options",
+    append: "Append",
+    backlinks: "Backlinks"
   })
 })
 
@@ -65,7 +67,9 @@ test("falls back to count-less labels when imported snapshot counts are unavaila
     files: "Files",
     print: "Print",
     siteTools: "Site tools",
-    options: "Options"
+    options: "Options",
+    append: "Append",
+    backlinks: "Backlinks"
   })
 })
 
@@ -85,7 +89,9 @@ test("formats Japanese Wikidot action labels with source counts", () => {
       files: "ファイル",
       print: "印刷",
       siteTools: "サイトツール",
-      options: "オプション"
+      options: "オプション",
+      append: "追加",
+      backlinks: "バックリンク"
     }
   )
 })
@@ -111,7 +117,9 @@ test("can suppress source-disabled Wikidot page actions", () => {
       files: "Files",
       print: "Print",
       siteTools: "Site tools",
-      options: "Options"
+      options: "Options",
+      append: "Append",
+      backlinks: "Backlinks"
     }
   )
 })

@@ -15052,6 +15052,98 @@ async fn list_pages_url_category_selector_reads_the_url_category_argument() {
 }
 
 #[tokio::test]
+async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
+    const TARGET_SLUG: &str = "fixture-page-backlinks-view-target";
+    const PRIVATE_CATEGORY: &str = "fixture-page-backlinks-view-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Backlinks View Target",
+        "Backlinks view target body",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-page-backlinks-view-beta",
+        "Beta Linker",
+        &format!("[[[{TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-page-backlinks-view-alpha",
+        "Alpha Linker",
+        &format!("[[[{TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-page-backlinks-view-private",
+        "Private Linker",
+        &format!("[[[{TARGET_SLUG}]]]"),
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-page-backlinks-view-private",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("backlinks view permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(TARGET_SLUG))),
+        ..Default::default()
+    });
+
+    let backlinks = run_endpoint!(
+        runner,
+        page_backlinks_view,
+        json!({"site_id": site_id, "page": TARGET_SLUG}),
+    );
+    assert_eq!(
+        backlinks
+            .iter()
+            .map(|page| (page.slug.as_str(), page.title.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("fixture-page-backlinks-view-alpha", "Alpha Linker"),
+            ("fixture-page-backlinks-view-beta", "Beta Linker"),
+        ],
+    );
+    let serialized =
+        serde_json::to_value(&backlinks).expect("public backlinks view should serialize");
+    assert!(!serialized.to_string().contains("page_id"));
+    assert!(!serialized.to_string().contains("Private Linker"));
+
+    set_listpages_test_category_slug(&runner, site_id, TARGET_SLUG, PRIVATE_CATEGORY)
+        .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("target permission cache should be invalidated");
+    let error = run_endpoint_err!(
+        runner,
+        page_backlinks_view,
+        json!({"site_id": site_id, "page": TARGET_SLUG}),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
 async fn backlinks_module_renders_current_page_incoming_links() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

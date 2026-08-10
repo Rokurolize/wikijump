@@ -145,6 +145,26 @@ export async function pageViewPermission(
   )
 }
 
+export interface PageBacklinkView {
+  slug: string
+  title: string
+}
+
+export async function pageBacklinksView(
+  siteId: number,
+  page: number | string,
+  requestContext: RequestContext = {}
+): Promise<PageBacklinkView[]> {
+  return client.request(
+    "page_backlinks_view",
+    {
+      site_id: siteId,
+      page
+    },
+    requestContext
+  )
+}
+
 export interface WikidotSiteChangesModuleInput {
   pageId: string
   page: string

@@ -277,6 +277,8 @@ export enum PageLockType {
 }
 export enum PagePane {
   None = "none",
+  Append = "append",
+  Backlinks = "backlinks",
   File = "file",
   History = "history",
   Tags = "tags",
