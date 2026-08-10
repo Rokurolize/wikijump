@@ -9217,11 +9217,10 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
             "wikitext": "[[module FrontForum category=\"1\"]]\n%%linked_title%%\n[[/module]]",
         }),
     );
-    assert!(
-        custom_body.body.contains("No such module")
-            && !custom_body.body.contains("front-forum-box"),
-        "an unobserved FrontForum custom format must fail closed: {}",
+    assert_eq!(
         custom_body.body,
+        r#"<div class="error-block">Requested forum category does not exist.</div>"#,
+        "a missing FrontForum category must fail closed before evaluating its custom body",
     );
 }
 
