@@ -84,8 +84,15 @@
     },
     {
       "action_id": "watchers",
-      "source_status": "pending",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "source_status": "implemented",
+      "public_references": [
+        "deepwell/src/endpoints/page.rs",
+        "framerail/src/routes/[slug]/[...extra]/WatchersPane.svelte"
+      ],
+      "test_references": [
+        "deepwell/tests/page.rs",
+        "framerail/tests/page-watchers-public-boundary.test.js"
+      ]
     },
     {
       "action_id": "backlinks",

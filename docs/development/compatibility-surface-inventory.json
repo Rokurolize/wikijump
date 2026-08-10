@@ -21,14 +21,14 @@
     ]
   },
   "counts": {
-    "total": 879,
+    "total": 882,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 153,
+      "deepwell_jsonrpc_method": 154,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 14,
       "framerail_route": 27,
-      "framerail_server_action": 95,
+      "framerail_server_action": 97,
       "framerail_xmlrpc_method": 17,
       "open43_audit_case": 285,
       "page_action": 25,
@@ -11735,6 +11735,39 @@
       }
     },
     {
+      "surface_id": "deepwell-jsonrpc:page_watchers",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_watchers"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "deepwell-jsonrpc:parent_get",
       "kind": "deepwell_jsonrpc_method",
       "public_owner": "deepwell",
@@ -16778,6 +16811,40 @@
       }
     },
     {
+      "surface_id": "framerail-server-action:/?/watchers",
+      "kind": "framerail_server_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:watchers",
+        "framerail/src/routes/+page.server.ts#action:watchers"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/backlinks",
       "kind": "framerail_server_action",
       "public_owner": "framerail",
@@ -17838,6 +17905,40 @@
       "public_reference": [
         "framerail/src/lib/server/load/page/page-actions.ts#action:voteGet",
         "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:voteGet"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/watchers",
+      "kind": "framerail_server_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:watchers",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:watchers"
       ],
       "existing_refs": {
         "issues": [],
@@ -30266,13 +30367,17 @@
       "kind": "page_action",
       "public_owner": "framerail",
       "public_reference": [
+        "deepwell/src/endpoints/page.rs",
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/WatchersPane.svelte"
       ],
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs",
+          "framerail/tests/page-watchers-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -30281,9 +30386,10 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "deepwell/src/endpoints/page.rs",
+          "framerail/src/routes/[slug]/[...extra]/WatchersPane.svelte"
         ]
       },
       "candidate": {
