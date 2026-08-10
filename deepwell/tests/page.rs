@@ -9620,9 +9620,26 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     )
     .await;
     let mut parent_post_id = create_comment(&runner, deep_thread_id, None, 300).await;
+    let mut deep_post_ids = vec![parent_post_id];
     for number in 301..=430 {
         parent_post_id =
             create_comment(&runner, deep_thread_id, Some(parent_post_id), number).await;
+        deep_post_ids.push(parent_post_id);
+    }
+    // ForumPostService intentionally caps ordinary replies at the category's
+    // nesting setting. Rewire this defensive read fixture to model an imported
+    // relation graph that exceeds the renderer's independent safety boundary.
+    for pair in deep_post_ids.windows(2) {
+        runner
+            .context()
+            .transaction()
+            .execute_raw(Statement::from_sql_and_values(
+                runner.context().transaction().get_database_backend(),
+                "UPDATE forum_post SET parent_post_id = $1 WHERE forum_post_id = $2",
+                [Value::from(pair[0]), Value::from(pair[1])],
+            ))
+            .await
+            .expect("deep imported comment fixture should be rewired");
     }
 
     let deleted_category = ForumService::create_category(
@@ -10165,8 +10182,29 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     assert_eq!(public_posts_after, public_posts_before);
 }
 
-#[tokio::test]
-async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
+#[test]
+fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
+    // This comprehensive forum fixture exceeds the test harness's 2 MiB async
+    // poll stack. Keep it on the same bounded named-thread runtime pattern used
+    // by the large ListPages pagination regression below.
+    std::thread::Builder::new()
+        .name("forum-read-model-test".to_owned())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("forum read-model test runtime should build")
+                .block_on(
+                    forum_start_and_recent_posts_filter_before_counts_order_and_pagination_impl(),
+                );
+        })
+        .expect("forum read-model test thread should spawn")
+        .join()
+        .expect("forum read-model test thread should complete");
+}
+
+async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_impl() {
     async fn create_thread(
         runner: &TestRunner,
         category_id: i64,
@@ -10236,8 +10274,6 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         }
     }
 
-    // Keep this large integration fixture's async state off the test thread stack.
-    Box::pin(async {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -10709,7 +10745,7 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         public_position < visible_position
             && visible_position < pagination_position
             && front_forum_global.contains(&format!(
-                r#"href="/forum/c-{}/read-model-primary">Read Model Visible Group / Read Model: Primary</a>"#,
+                r#"href="/forum/c-{}/read-model:primary">Read Model Visible Group / Read Model: Primary</a>"#,
                 primary_category.forum_category_id,
             ))
             && front_forum_global.contains(&format!(
@@ -11481,8 +11517,6 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
         }),
     );
     assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
-    })
-    .await;
 }
 
 #[tokio::test]
