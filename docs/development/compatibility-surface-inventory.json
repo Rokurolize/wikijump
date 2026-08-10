@@ -6,6 +6,7 @@
     "deepwell_jsonrpc_registry": "deepwell/src/api.rs",
     "framerail_routes_root": "framerail/src/routes",
     "framerail_amc_registry": "framerail/src/lib/server/ajax-module-connector.js",
+    "wikidot_py_amc_contract": "docs/development/wikidot-py-amc-client-parity.json",
     "framerail_xmlrpc_registry": "framerail/src/lib/server/xmlrpc/methods.ts",
     "page_action_registry": "docs/development/wikidot-page-action-surfaces.json",
     "wws_route_registry": "wws/src/route.rs",
@@ -20,17 +21,18 @@
     ]
   },
   "counts": {
-    "total": 851,
+    "total": 876,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 152,
       "framerail_amc_action_shape": 2,
-      "framerail_amc_module_shape": 11,
+      "framerail_amc_module_shape": 14,
       "framerail_route": 27,
       "framerail_server_action": 93,
       "framerail_xmlrpc_method": 17,
       "open43_audit_case": 285,
       "page_action": 25,
+      "wikidot_py_amc_module_shape": 22,
       "wws_route": 29
     }
   },
@@ -13284,6 +13286,39 @@
       }
     },
     {
+      "surface_id": "framerail-amc-module:files/PageFilesModule:parameters=page_id",
+      "kind": "framerail_amc_module_shape",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/ajax-module-connector.js#module:files/PageFilesModule;parameters=page_id"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "framerail-amc-module:forum/ForumCommentsListModule:parameters=order,pageId",
       "kind": "framerail_amc_module_shape",
       "public_owner": "framerail",
@@ -13586,6 +13621,72 @@
       "public_owner": "framerail",
       "public_reference": [
         "framerail/src/lib/server/ajax-module-connector.js#module:membership/MembersListModule;parameters=group,order,page"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-amc-module:membership/MembersListModule:parameters=group,page",
+      "kind": "framerail_amc_module_shape",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/ajax-module-connector.js#module:membership/MembersListModule;parameters=group,page"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-amc-module:viewsource/ViewSourceModule:parameters=page_id",
+      "kind": "framerail_amc_module_shape",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/ajax-module-connector.js#module:viewsource/ViewSourceModule;parameters=page_id"
       ],
       "existing_refs": {
         "issues": [],
@@ -30070,6 +30171,794 @@
         "references": [
           "framerail/src/routes/[slug]/[...extra]/page.svelte"
         ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:changes/SiteChangesListModule;parameters=options,page,perpage"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:dashboard/messages/DMInboxModule:parameters=page?",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:dashboard/messages/DMInboxModule;parameters=page?"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:dashboard/messages/DMSentModule:parameters=page?",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:dashboard/messages/DMSentModule;parameters=page?"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:dashboard/messages/DMViewMessageModule:parameters=item",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:dashboard/messages/DMViewMessageModule;parameters=item"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:edit/EditMetaModule:parameters=pageId",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:edit/EditMetaModule;parameters=pageId"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:files/PageFilesModule:parameters=page_id",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:files/PageFilesModule;parameters=page_id"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/ForumCommentsListModule:parameters=pageId",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/ForumCommentsListModule;parameters=pageId"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/ForumStartModule:parameters=hidden",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/ForumStartModule;parameters=hidden"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/ForumViewCategoryModule:parameters=c,p",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/ForumViewCategoryModule;parameters=c,p"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/ForumViewThreadModule:parameters=t",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/ForumViewThreadModule;parameters=t"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/ForumViewThreadPostsModule:parameters=pageNo,t",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/ForumViewThreadPostsModule;parameters=pageNo,t"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/sub/ForumEditPostFormModule:parameters=postId,threadId",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/sub/ForumEditPostFormModule;parameters=postId,threadId"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/sub/ForumPostRevisionModule:parameters=revisionId",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/sub/ForumPostRevisionModule;parameters=revisionId"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:forum/sub/ForumPostRevisionsModule:parameters=postId",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:forum/sub/ForumPostRevisionsModule;parameters=postId"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:history/PageRevisionListModule:parameters=options,page_id,perpage",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:history/PageRevisionListModule;parameters=options,page_id,perpage"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:history/PageSourceModule:parameters=revision_id",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:history/PageSourceModule;parameters=revision_id"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:history/PageVersionModule:parameters=revision_id",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:history/PageVersionModule;parameters=revision_id"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:list/ListPagesModule:parameters=*,module_body",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:list/ListPagesModule;parameters=*,module_body"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:managesite/ManageSiteMembersApplicationsModule:parameters=(none)",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:managesite/ManageSiteMembersApplicationsModule;parameters=(none)"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:membership/MembersListModule:parameters=group,page",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:membership/MembersListModule;parameters=group,page"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:pagerate/WhoRatedPageModule:parameters=pageId",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:pagerate/WhoRatedPageModule;parameters=pageId"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wikidot-py-amc-module:viewsource/ViewSourceModule:parameters=page_id",
+      "kind": "wikidot_py_amc_module_shape",
+      "public_owner": "Rokurolize/wikidot.py",
+      "public_reference": [
+        "docs/development/wikidot-py-amc-client-parity.json#module:viewsource/ViewSourceModule;parameters=page_id"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "docs/development/wikidot-py-amc-client-parity.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
       },
       "candidate": {
         "status": "pending",

@@ -75,6 +75,11 @@ const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const SITE_CHANGES_READ_FIELDS = new Set(["page", "perpage"])
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "page"])
+const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group"])
+const PAGE_READ_MODULE_PARAMETERS = new Map([
+  ["viewsource/ViewSourceModule", new Set(["page_id"])],
+  ["files/PageFilesModule", new Set(["page_id"])]
+])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
@@ -90,6 +95,25 @@ if (moduleName !== "list/ListPagesModule") throw new Error()
 }
 `
   )
+  await writeJson(root, "docs/development/wikidot-py-amc-client-parity.json", {
+    schema: "wikijump.wikidot_py_amc_client_parity.v1",
+    source: { commit: "a".repeat(40) },
+    modules: [
+      {
+        module_name: "viewsource/ViewSourceModule",
+        parameters: ["page_id"],
+        status: "supported",
+        source_reference: "src/wikidot/module/page.py#source"
+      },
+      {
+        module_name: "history/PageRevisionListModule",
+        parameters: ["page_id"],
+        status: "unsupported_unevidenced",
+        gap: "fixture gap",
+        source_reference: "src/wikidot/module/page.py#history"
+      }
+    ]
+  })
   await writeText(
     root,
     "wws/src/route.rs",
@@ -143,21 +167,22 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 14 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 19 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.deepEqual(inventory.counts, {
-    total: 14,
+    total: 19,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
       framerail_amc_action_shape: 2,
-      framerail_amc_module_shape: 4,
+      framerail_amc_module_shape: 7,
       framerail_route: 1,
       framerail_server_action: 1,
       framerail_xmlrpc_method: 1,
       open43_audit_case: 1,
       page_action: 1,
+      wikidot_py_amc_module_shape: 2,
       wws_route: 1
     }
   })

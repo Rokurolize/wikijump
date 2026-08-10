@@ -1,0 +1,204 @@
+{
+  "schema": "wikijump.wikidot_py_amc_client_parity.v1",
+  "source": {
+    "repository": "Rokurolize/wikidot.py",
+    "commit": "551fe7f05cac0c3322f9c69f43fbd4866d3fdfd2",
+    "scope": "read-only and read-before-write moduleName request bodies under src/wikidot/module",
+    "contract": "The same moduleName and parameter fields are sent to Wikidot and Wikijump. Only local_base_url, cookies, and token values are configuration."
+  },
+  "target_invariant": {
+    "request_target_fields": [],
+    "configuration_only": [
+      "local_base_url",
+      "cookies",
+      "wikidot_token7"
+    ]
+  },
+  "modules": [
+    {
+      "module_name": "list/ListPagesModule",
+      "parameters": ["*", "module_body"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "list/ListPagesModule",
+        "module_body": "%%fullname%%",
+        "category": "_default"
+      },
+      "source_reference": "src/wikidot/module/page.py#PageCollection.search"
+    },
+    {
+      "module_name": "viewsource/ViewSourceModule",
+      "parameters": ["page_id"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "viewsource/ViewSourceModule",
+        "page_id": "1469071756"
+      },
+      "source_reference": "src/wikidot/module/page.py#PageCollection._acquire_page_sources"
+    },
+    {
+      "module_name": "files/PageFilesModule",
+      "parameters": ["page_id"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "files/PageFilesModule",
+        "page_id": "1469071756"
+      },
+      "source_reference": "src/wikidot/module/page_file.py#PageFileCollection.acquire"
+    },
+    {
+      "module_name": "forum/ForumStartModule",
+      "parameters": ["hidden"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "forum/ForumStartModule",
+        "hidden": "true"
+      },
+      "source_reference": "src/wikidot/module/forum_category.py#ForumCategoryCollection.acquire"
+    },
+    {
+      "module_name": "forum/ForumCommentsListModule",
+      "parameters": ["pageId"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "forum/ForumCommentsListModule",
+        "pageId": "1469071756"
+      },
+      "source_reference": "src/wikidot/module/page.py#PageCollection._acquire_page_discussions"
+    },
+    {
+      "module_name": "forum/ForumViewCategoryModule",
+      "parameters": ["c", "p"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "forum/ForumViewCategoryModule",
+        "c": "8503559",
+        "p": "1"
+      },
+      "source_reference": "src/wikidot/module/forum_thread.py#ForumThreadCollection.acquire"
+    },
+    {
+      "module_name": "forum/ForumViewThreadModule",
+      "parameters": ["t"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "forum/ForumViewThreadModule",
+        "t": "18029831"
+      },
+      "source_reference": "src/wikidot/module/forum_thread.py#ForumThread.acquire"
+    },
+    {
+      "module_name": "forum/ForumViewThreadPostsModule",
+      "parameters": ["pageNo", "t"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "forum/ForumViewThreadPostsModule",
+        "pageNo": "1",
+        "t": "18029831"
+      },
+      "source_reference": "src/wikidot/module/forum_post.py#ForumPostCollection.acquire"
+    },
+    {
+      "module_name": "membership/MembersListModule",
+      "parameters": ["group", "page"],
+      "status": "supported",
+      "request_example": {
+        "moduleName": "membership/MembersListModule",
+        "group": "",
+        "page": "1"
+      },
+      "source_reference": "src/wikidot/module/site_member.py#SiteMemberCollection.acquire"
+    },
+    {
+      "module_name": "history/PageRevisionListModule",
+      "parameters": ["options", "page_id", "perpage"],
+      "status": "unsupported_unevidenced",
+      "gap": "The exact history row DOM, actor identity, and unbounded perpage behavior are not sealed for Wikijump.",
+      "source_reference": "src/wikidot/module/page.py#PageCollection._acquire_page_revisions"
+    },
+    {
+      "module_name": "history/PageSourceModule",
+      "parameters": ["revision_id"],
+      "status": "unsupported_unevidenced",
+      "gap": "The historical source response envelope is not sealed for Wikijump.",
+      "source_reference": "src/wikidot/module/page_revision.py#PageRevisionCollection._acquire_sources"
+    },
+    {
+      "module_name": "history/PageVersionModule",
+      "parameters": ["revision_id"],
+      "status": "unsupported_unevidenced",
+      "gap": "The historical rendered version response envelope is not sealed for Wikijump.",
+      "source_reference": "src/wikidot/module/page_revision.py#PageRevisionCollection._acquire_htmls"
+    },
+    {
+      "module_name": "pagerate/WhoRatedPageModule",
+      "parameters": ["pageId"],
+      "status": "unsupported_unevidenced",
+      "gap": "The exact printuser identity and rating value DOM are not sealed for Wikijump.",
+      "source_reference": "src/wikidot/module/page.py#PageCollection._acquire_page_votes"
+    },
+    {
+      "module_name": "forum/sub/ForumEditPostFormModule",
+      "parameters": ["postId", "threadId"],
+      "status": "unsupported_unevidenced",
+      "gap": "This authenticated read-before-write form and its permission envelope are not implemented.",
+      "source_reference": "src/wikidot/module/forum_post.py#ForumPost.edit"
+    },
+    {
+      "module_name": "forum/sub/ForumPostRevisionsModule",
+      "parameters": ["postId"],
+      "status": "unsupported_unevidenced",
+      "gap": "Forum post revision list DOM is not implemented.",
+      "source_reference": "src/wikidot/module/forum_post_revision.py#ForumPostRevisionCollection.acquire"
+    },
+    {
+      "module_name": "forum/sub/ForumPostRevisionModule",
+      "parameters": ["revisionId"],
+      "status": "unsupported_unevidenced",
+      "gap": "Forum post revision body DOM is not implemented.",
+      "source_reference": "src/wikidot/module/forum_post_revision.py#ForumPostRevisionCollection.get_htmls"
+    },
+    {
+      "module_name": "changes/SiteChangesListModule",
+      "parameters": ["options", "page", "perpage"],
+      "status": "unsupported_unevidenced",
+      "gap": "Framerail currently supports only the separate browser shape that also supplies pageId and categoryId.",
+      "source_reference": "src/wikidot/module/site.py#Site.get_recent_changes"
+    },
+    {
+      "module_name": "edit/EditMetaModule",
+      "parameters": ["pageId"],
+      "status": "unsupported_unevidenced",
+      "gap": "The authenticated metadata read-before-write form is not implemented.",
+      "source_reference": "src/wikidot/module/page.py#Page._acquire_metadata"
+    },
+    {
+      "module_name": "managesite/ManageSiteMembersApplicationsModule",
+      "parameters": [],
+      "status": "unsupported_unevidenced",
+      "gap": "The administrator-only application list and permission envelope are not implemented.",
+      "source_reference": "src/wikidot/module/site_application.py#SiteApplicationCollection.acquire"
+    },
+    {
+      "module_name": "dashboard/messages/DMInboxModule",
+      "parameters": ["page?"],
+      "status": "unsupported_unevidenced",
+      "gap": "Authenticated private message inbox reads are not implemented.",
+      "source_reference": "src/wikidot/module/private_message.py#PrivateMessageInbox.acquire"
+    },
+    {
+      "module_name": "dashboard/messages/DMSentModule",
+      "parameters": ["page?"],
+      "status": "unsupported_unevidenced",
+      "gap": "Authenticated private message sent-box reads are not implemented.",
+      "source_reference": "src/wikidot/module/private_message.py#PrivateMessageSentBox.acquire"
+    },
+    {
+      "module_name": "dashboard/messages/DMViewMessageModule",
+      "parameters": ["item"],
+      "status": "unsupported_unevidenced",
+      "gap": "Authenticated private message detail reads are not implemented.",
+      "source_reference": "src/wikidot/module/private_message.py#PrivateMessageCollection.from_ids"
+    }
+  ]
+}

@@ -488,20 +488,23 @@ function stringSet(sourceText, name, reference) {
   return [...expression.matchAll(/["']([^"']+)["']/gu)].map((match) => match[1])
 }
 
-function forumModuleShapes(sourceText, reference) {
-  const marker = /const\s+FORUM_READ_MODULE_PARAMETERS\s*=\s*new\s+Map\s*\(/u.exec(sourceText)
-  if (!marker) throw new Error(`missing FORUM_READ_MODULE_PARAMETERS in ${reference}`)
+function moduleMapShapes(sourceText, constantName, reference) {
+  const marker = new RegExp(
+    `const\\s+${constantName}\\s*=\\s*new\\s+Map\\s*\\(`,
+    "u"
+  ).exec(sourceText)
+  if (!marker) throw new Error(`missing ${constantName} in ${reference}`)
   const mapStart = marker.index + marker[0].length - 1
   const mapExpression = extractBalanced(sourceText, mapStart, "(", ")")
   const arrayStart = mapExpression.indexOf("[")
-  if (arrayStart < 0) throw new Error(`forum module registry is not an array in ${reference}`)
+  if (arrayStart < 0) throw new Error(`module registry is not an array in ${reference}`)
   const entriesExpression = extractBalanced(mapExpression, arrayStart, "[", "]")
   const shapes = []
   for (const entry of splitTopLevel(entriesExpression.slice(1, -1))) {
     const moduleName = entry.match(/^\[\s*["']([^"']+)["']/u)?.[1]
-    if (!moduleName) throw new Error(`unsupported forum module entry in ${reference}: ${entry}`)
+    if (!moduleName) throw new Error(`unsupported module entry in ${constantName}: ${entry}`)
     const parameterSets = [...entry.matchAll(/new\s+Set\s*\(([^)]*)\)/gu)]
-    if (parameterSets.length === 0) throw new Error(`forum module has no parameter shape: ${moduleName}`)
+    if (parameterSets.length === 0) throw new Error(`module has no parameter shape: ${moduleName}`)
     for (const parameterSet of parameterSets) {
       const parameters = [...parameterSet[1].matchAll(/["']([^"']+)["']/gu)]
         .map((match) => match[1])
@@ -525,9 +528,18 @@ function amcModuleSurface(registryPath, moduleName, parameters, selector = "para
 async function discoverFramerailAmc(root) {
   const registryPath = "framerail/src/lib/server/ajax-module-connector.js"
   const sourceText = await readText(root, registryPath)
-  const records = forumModuleShapes(sourceText, registryPath).map(({ moduleName, parameters }) =>
-    amcModuleSurface(registryPath, moduleName, parameters)
-  )
+  const records = moduleMapShapes(
+    sourceText,
+    "FORUM_READ_MODULE_PARAMETERS",
+    registryPath
+  ).map(({ moduleName, parameters }) => amcModuleSurface(registryPath, moduleName, parameters))
+  for (const { moduleName, parameters } of moduleMapShapes(
+    sourceText,
+    "PAGE_READ_MODULE_PARAMETERS",
+    registryPath
+  )) {
+    records.push(amcModuleSurface(registryPath, moduleName, parameters))
+  }
   const siteChangesModule = stringConstant(sourceText, "SITE_CHANGES_MODULE", registryPath)
   records.push(
     amcModuleSurface(
@@ -542,6 +554,13 @@ async function discoverFramerailAmc(root) {
       registryPath,
       membersListModule,
       stringSet(sourceText, "MEMBERS_LIST_PARAMETERS", registryPath).sort()
+    )
+  )
+  records.push(
+    amcModuleSurface(
+      registryPath,
+      membersListModule,
+      stringSet(sourceText, "MEMBERS_LIST_DEFAULT_PARAMETERS", registryPath).sort()
     )
   )
   const listPagesModule = sourceText.match(/moduleName\s*!==\s*["']([^"']*ListPagesModule)["']/u)?.[1]
@@ -566,6 +585,57 @@ async function discoverFramerailAmc(root) {
     )
   }
   return records
+}
+
+async function discoverWikidotPyAmc(root) {
+  const contractPath = "docs/development/wikidot-py-amc-client-parity.json"
+  const contract = await readJson(root, contractPath)
+  if (contract.schema !== "wikijump.wikidot_py_amc_client_parity.v1") {
+    throw new Error(`unknown Wikidot.py AMC contract schema: ${contract.schema}`)
+  }
+  if (!/^[0-9a-f]{40}$/u.test(contract.source?.commit ?? "")) {
+    throw new Error(`${contractPath} source commit must be a full Git commit`)
+  }
+  if (!Array.isArray(contract.modules)) {
+    throw new Error(`${contractPath} modules must be an array`)
+  }
+
+  return contract.modules.map((module) => {
+    if (typeof module.module_name !== "string" || module.module_name === "") {
+      throw new Error(`${contractPath} contains a module without module_name`)
+    }
+    if (
+      !Array.isArray(module.parameters) ||
+      module.parameters.some((parameter) => typeof parameter !== "string")
+    ) {
+      throw new Error(`${contractPath} ${module.module_name} parameters must be strings`)
+    }
+    if (!["supported", "unsupported_unevidenced"].includes(module.status)) {
+      throw new Error(
+        `${contractPath} ${module.module_name} has unknown status: ${module.status}`
+      )
+    }
+    if (module.status === "unsupported_unevidenced" && !module.gap) {
+      throw new Error(`${contractPath} ${module.module_name} has no actionable gap`)
+    }
+    const shape = module.parameters.length === 0 ? "(none)" : module.parameters.join(",")
+    return surface({
+      surfaceId: `wikidot-py-amc-module:${module.module_name}:parameters=${shape}`,
+      kind: "wikidot_py_amc_module_shape",
+      publicOwner: "Rokurolize/wikidot.py",
+      publicReference: [
+        `${contractPath}#module:${module.module_name};parameters=${shape}`
+      ],
+      tests:
+        module.status === "supported"
+          ? [
+              "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+            ]
+          : [],
+      evidence: phase("partial", [contractPath]),
+      source: phase(module.status === "supported" ? "implemented" : "pending")
+    })
+  })
 }
 
 async function discoverFramerailXmlRpc(root) {
@@ -761,21 +831,34 @@ function validateInventory(surfaces) {
 }
 
 async function buildInventory(root) {
-  const [catalog, deepwell, framerailRoutes, amc, xmlRpc, pageActions, wws, open43] = await Promise.all([
-    discoverCatalogFeatures(root),
-    discoverDeepwellJsonRpc(root),
-    discoverFramerailRoutes(root),
-    discoverFramerailAmc(root),
-    discoverFramerailXmlRpc(root),
-    discoverPageActionSurfaces(root),
-    discoverWwsRoutes(root),
-    discoverOpen43AuditCases(root)
-  ])
+  const [
+    catalog,
+    deepwell,
+    framerailRoutes,
+    amc,
+    wikidotPyAmc,
+    xmlRpc,
+    pageActions,
+    wws,
+    open43
+  ] =
+    await Promise.all([
+      discoverCatalogFeatures(root),
+      discoverDeepwellJsonRpc(root),
+      discoverFramerailRoutes(root),
+      discoverFramerailAmc(root),
+      discoverWikidotPyAmc(root),
+      discoverFramerailXmlRpc(root),
+      discoverPageActionSurfaces(root),
+      discoverWwsRoutes(root),
+      discoverOpen43AuditCases(root)
+    ])
   const surfaces = [
     ...catalog,
     ...deepwell,
     ...framerailRoutes,
     ...amc,
+    ...wikidotPyAmc,
     ...xmlRpc,
     ...pageActions,
     ...wws,
@@ -794,6 +877,7 @@ async function buildInventory(root) {
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",
+      wikidot_py_amc_contract: "docs/development/wikidot-py-amc-client-parity.json",
       framerail_xmlrpc_registry: "framerail/src/lib/server/xmlrpc/methods.ts",
       page_action_registry: "docs/development/wikidot-page-action-surfaces.json",
       wws_route_registry: "wws/src/route.rs",
