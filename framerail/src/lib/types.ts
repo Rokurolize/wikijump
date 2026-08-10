@@ -256,6 +256,16 @@ export interface ParseError {
   kind: string
 }
 
+// ftml src/data/user_info.rs
+export interface UserInfo {
+  "user-id": number
+  "user-slug": string
+  "user-name": string
+  "user-karma": number
+  "user-avatar-data": string
+  "user-profile-url": string
+}
+
 export enum Layout {
   WIKIDOT = "wikidot",
   WIKIJUMP = "wikijump"

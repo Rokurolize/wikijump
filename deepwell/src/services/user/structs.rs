@@ -23,8 +23,10 @@ use crate::models::alias::Model as AliasModel;
 use crate::models::user::Model as WikijumpUserModel;
 use crate::models::wikidot_user::Model as WikidotUserModel;
 use crate::types::{Maybe, Reference, UserType};
+use ftml::data::{KarmaLevel, UserInfo};
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
+use std::borrow::Cow;
 use std::net::IpAddr;
 use time::Date;
 
@@ -46,6 +48,49 @@ impl User {
         match self {
             User::Wikijump(user) => Some(&user.slug),
             User::Wikidot(user) => user.slug.as_deref(),
+        }
+    }
+
+    pub fn into_public_identity(self) -> Option<UserInfo<'static>> {
+        match self {
+            User::Wikijump(user) => {
+                if user.deleted_at.is_some() {
+                    return None;
+                }
+                let profile_url = format!("/-/user/{}", user.slug);
+                Some(UserInfo {
+                    user_id: user.user_id,
+                    user_slug: Cow::Owned(user.slug),
+                    user_name: Cow::Owned(user.name),
+                    user_karma: KarmaLevel::Zero,
+                    user_avatar_data: Cow::Borrowed(""),
+                    user_profile_url: Cow::Owned(profile_url),
+                })
+            }
+            User::Wikidot(user) => {
+                if user.is_deleted {
+                    return None;
+                }
+                let slug = user.slug?;
+                let name = user.name?;
+                let user_id = i64::from(user.user_id);
+                let karma = u8::try_from(user.karma)
+                    .ok()
+                    .and_then(KarmaLevel::new)
+                    .unwrap_or(KarmaLevel::Zero);
+                Some(UserInfo {
+                    user_id,
+                    user_slug: Cow::Owned(slug.clone()),
+                    user_name: Cow::Owned(name),
+                    user_karma: karma,
+                    user_avatar_data: Cow::Owned(format!(
+                        "http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"
+                    )),
+                    user_profile_url: Cow::Owned(format!(
+                        "http://www.wikidot.com/user:info/{slug}"
+                    )),
+                })
+            }
         }
     }
 

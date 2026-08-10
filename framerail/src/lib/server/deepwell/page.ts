@@ -8,7 +8,8 @@ import type {
   Optional,
   PageRevisionType,
   PageVoteModel,
-  ParseError
+  ParseError,
+  UserInfo
 } from "$lib/types"
 import type { RequestContext } from "../request-context"
 
@@ -236,6 +237,7 @@ export interface PageRevisionModelFiltered {
   page_id: number
   site_id: number
   user_id: number
+  author: Nullable<UserInfo>
   changes: string[]
   wikitext: Nullable<string>
   compiled_body_html: Nullable<string>

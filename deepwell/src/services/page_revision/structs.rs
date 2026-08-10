@@ -20,6 +20,7 @@
 
 use crate::types::Maybe;
 use crate::types::{FetchDirection, PageDetails, PageId, PageRevisionType};
+use ftml::data::UserInfo;
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
 use std::num::NonZeroI32;
@@ -217,6 +218,7 @@ pub struct PageRevisionModelFiltered {
     pub page_id: i64,
     pub site_id: i64,
     pub user_id: i64,
+    pub author: Option<UserInfo<'static>>,
     pub changes: Vec<String>,
     pub wikitext: Option<String>,
     pub compiled_body_html: Option<String>,

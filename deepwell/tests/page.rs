@@ -34,6 +34,7 @@ use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
 use deepwell::models::file;
 use deepwell::models::forum_post::{self, Entity as ForumPostTable};
 use deepwell::models::forum_thread::Entity as ForumThreadTable;
+use deepwell::models::known_user;
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
 use deepwell::models::page_revision::Entity as PageRevisionTable;
@@ -22534,6 +22535,116 @@ async fn page_revision_reads_require_page_view_permission() {
         }),
     );
     assert_eq!(count.revision_count.get(), 1);
+}
+
+#[tokio::test]
+async fn page_revision_range_returns_resolved_authors_and_hides_missing_identities() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const PAGE_SLUG: &str = "history-author-identity";
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "first revision",
+            "title": "History author identity",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "created by the seeded administrator",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let edited = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site.site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "missing author fixture",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("page edit should create a second revision");
+
+    let missing_user_id = 19_000_001_i64;
+    known_user::ActiveModel {
+        user_id: Set(missing_user_id),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("orphan known-user fixture should insert");
+    let revision = PageRevisionTable::find_by_id(edited.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("revision author fixture lookup should succeed")
+        .expect("edited revision should exist");
+    let mut revision = revision.into_active_model();
+    revision.user_id = Set(missing_user_id);
+    revision
+        .update(runner.context().transaction())
+        .await
+        .expect("revision author fixture should update");
+
+    runner.set_request_context(RequestContext::default());
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 1,
+            "revision_direction": "before",
+            "limit": 2,
+        }),
+    );
+    let output = serde_json::to_value(revisions)
+        .expect("public page revision range output should serialize");
+
+    assert_eq!(output[1]["author"]["user-name"], "Administrator");
+    assert_eq!(output[1]["author"]["user-slug"], "administrator");
+    assert_eq!(output[0]["author"], serde_json::Value::Null);
+    assert_ne!(output[0]["author"], missing_user_id);
+
+    let administrator = UserTable::find_by_id(ADMIN_USER_ID)
+        .one(runner.context().transaction())
+        .await
+        .expect("administrator identity lookup should succeed")
+        .expect("seeded administrator identity should exist");
+    let mut administrator = administrator.into_active_model();
+    administrator.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    administrator
+        .update(runner.context().transaction())
+        .await
+        .expect("deleted author fixture should update");
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "revision_direction": "before",
+            "limit": 1,
+        }),
+    );
+    let output = serde_json::to_value(revisions)
+        .expect("deleted author page revision range should serialize");
+    assert_eq!(output[0]["author"], serde_json::Value::Null);
 }
 
 #[tokio::test]

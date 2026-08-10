@@ -14,6 +14,7 @@
     PageRevisionDiffOutput
   } from "$lib/server/deepwell/page"
   import type { Optional } from "$lib/types"
+  import RevisionAuthor from "./RevisionAuthor.svelte"
 
   interface Props extends PageProps {
     setShowRevision: (val: boolean) => void
@@ -289,7 +290,7 @@
               ]}
             </td>
             <td class="revision-attribute user">
-              {revisionItem.user_id}
+              <RevisionAuthor author={revisionItem.author} />
             </td>
             <td class="revision-attribute created-at">
               {new Date(revisionItem.created_at).toLocaleString()}
@@ -386,7 +387,7 @@
           {new Date(revisionItem.created_at).toLocaleString()}
         </div>
         <div class="revision-attribute user">
-          {revisionItem.user_id}
+          <RevisionAuthor author={revisionItem.author} />
         </div>
         <div class="revision-attribute comments">
           {revisionItem.comments}

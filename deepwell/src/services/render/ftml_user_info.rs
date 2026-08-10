@@ -24,10 +24,10 @@ use crate::models::wikidot_user::{
 };
 use crate::services::ServiceContext;
 use crate::services::page_query::normalize_wikidot_author_name;
-use ftml::data::{KarmaLevel, UserInfo};
+use crate::services::user::User;
+use ftml::data::UserInfo;
 use ftml::render::UserInfoResolver;
 use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
-use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Default)]
@@ -127,23 +127,7 @@ async fn load_visible_wikidot_users(
 }
 
 fn wikidot_user_info(user: WikidotUserModel) -> Option<UserInfo<'static>> {
-    let slug = user.slug?;
-    let name = user.name.unwrap_or_else(|| slug.clone());
-    let user_id = i64::from(user.user_id);
-    let karma = u8::try_from(user.karma)
-        .ok()
-        .and_then(KarmaLevel::new)
-        .unwrap_or(KarmaLevel::Zero);
-    Some(UserInfo {
-        user_id,
-        user_slug: Cow::Owned(slug.clone()),
-        user_name: Cow::Owned(name),
-        user_karma: karma,
-        user_avatar_data: Cow::Owned(format!(
-            "http://www.wikidot.com/avatar.php?userid={user_id}&amp;size=small"
-        )),
-        user_profile_url: Cow::Owned(format!("http://www.wikidot.com/user:info/{slug}")),
-    })
+    User::Wikidot(user).into_public_identity()
 }
 
 impl UserInfoResolver for UserInfoSnapshot {
@@ -157,6 +141,8 @@ impl UserInfoResolver for UserInfoSnapshot {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ftml::data::KarmaLevel;
+    use std::borrow::Cow;
 
     #[test]
     fn snapshot_resolves_case_and_spacing_to_canonical_user() {
