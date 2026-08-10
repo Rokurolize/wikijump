@@ -37,6 +37,10 @@ const targetResponse = async (origin, requestExample) => {
       renderPageReadModule: async ({ moduleName }) => ({
         status: "ok",
         body: `<div>${moduleName}</div>`
+      }),
+      renderEditMetaModule: async () => ({
+        status: "ok",
+        body: "<div>edit meta</div>"
       })
     }
   )

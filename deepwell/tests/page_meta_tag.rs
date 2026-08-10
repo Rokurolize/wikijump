@@ -272,7 +272,7 @@ async fn page_editor_cannot_mutate_site_wide_meta_tags() {
             name: format!("Edit Meta User {suffix}"),
             email: format!("edit-meta-{suffix}@example.com"),
             locales: vec![str!("en")],
-            password: "password-fixture".into(),
+            password: format!("fixture-{suffix}"),
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
