@@ -25,10 +25,14 @@ mod module_render;
 mod options;
 mod redirect;
 mod service;
+mod site_tools;
 mod structs;
 
 pub use self::backlinks::{GetPageBacklinksView, PageBacklinkView};
 pub use self::service::ViewService;
+pub use self::site_tools::{
+    GetSiteToolsPages, SiteToolsPageView, SiteToolsWantedPageView,
+};
 pub use self::structs::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
     GetArticleViewOutput, GetPageView, GetPageViewOutput, GetPreloadView,

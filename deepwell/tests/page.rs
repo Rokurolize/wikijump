@@ -15145,6 +15145,184 @@ async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
 }
 
 #[tokio::test]
+async fn site_tools_orphaned_pages_filters_before_exposing_ordered_rows() {
+    const PREFIX: &str = "fixture-site-tools-orphaned-";
+    const PRIVATE_CATEGORY: &str = "fixture-site-tools-orphaned-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    for (slug, title) in [
+        ("fixture-site-tools-orphaned-zulu", "Zulu Orphan"),
+        ("fixture-site-tools-orphaned-alpha", "alpha Orphan"),
+        ("fixture-site-tools-orphaned-linked", "Linked Page"),
+        ("fixture-site-tools-orphaned-private", "Private Orphan"),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, "orphan body")
+            .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-orphaned-linker",
+        "Orphaned Linker",
+        "[[[fixture-site-tools-orphaned-linked]]]",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-site-tools-orphaned-private",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site tools permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let rows = run_endpoint!(
+        runner,
+        site_tools_orphaned_pages,
+        json!({"site_id": site_id}),
+    );
+    let fixture_rows = rows
+        .iter()
+        .filter(|row| row.slug.starts_with(PREFIX))
+        .map(|row| (row.slug.as_str(), row.title.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        fixture_rows,
+        vec![
+            ("fixture-site-tools-orphaned-alpha", "alpha Orphan"),
+            ("fixture-site-tools-orphaned-zulu", "Zulu Orphan"),
+        ],
+    );
+    let serialized =
+        serde_json::to_value(&rows).expect("public orphaned rows should serialize");
+    assert!(!serialized.to_string().contains("page_id"));
+    assert!(!serialized.to_string().contains("Private Orphan"));
+}
+
+#[tokio::test]
+async fn site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets() {
+    const PREFIX: &str = "fixture-site-tools-wanted-missing-";
+    const PRIVATE_CATEGORY: &str = "fixture-site-tools-wanted-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-zulu-source",
+        "Zulu Source",
+        "[[[fixture-site-tools-wanted-missing-zulu]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-alpha-source",
+        "alpha Source",
+        "[[[fixture-site-tools-wanted-missing-alpha]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-beta-source",
+        "Beta Source",
+        "[[[fixture-site-tools-wanted-missing-alpha]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-missing-existing",
+        "Existing Target",
+        "existing target body",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-wanted-existing-source",
+        "Existing Target Source",
+        "[[[fixture-site-tools-wanted-missing-existing]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-private-source",
+        "Private Source",
+        "[[[fixture-site-tools-wanted-missing-private]]]",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-site-tools-wanted-private-source",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site tools permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let targets =
+        run_endpoint!(runner, site_tools_wanted_pages, json!({"site_id": site_id}),);
+    let fixture_targets = targets
+        .iter()
+        .filter(|target| target.slug.starts_with(PREFIX))
+        .map(|target| {
+            (
+                target.slug.as_str(),
+                target
+                    .sources
+                    .iter()
+                    .map(|source| (source.slug.as_str(), source.title.as_str()))
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        fixture_targets,
+        vec![
+            (
+                "fixture-site-tools-wanted-missing-alpha",
+                vec![
+                    ("fixture-site-tools-wanted-alpha-source", "alpha Source"),
+                    ("fixture-site-tools-wanted-beta-source", "Beta Source"),
+                ],
+            ),
+            (
+                "fixture-site-tools-wanted-missing-zulu",
+                vec![("fixture-site-tools-wanted-zulu-source", "Zulu Source")],
+            ),
+        ],
+    );
+    let serialized =
+        serde_json::to_value(&targets).expect("public wanted rows should serialize");
+    assert!(!serialized.to_string().contains("page_id"));
+    assert!(!serialized.to_string().contains("Private Source"));
+}
+
+#[tokio::test]
 async fn backlinks_module_renders_current_page_incoming_links() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

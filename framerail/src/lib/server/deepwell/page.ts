@@ -165,6 +165,30 @@ export async function pageBacklinksView(
   )
 }
 
+export interface SiteToolsPageView {
+  slug: string
+  title: string
+}
+
+export interface SiteToolsWantedPageView {
+  slug: string
+  sources: SiteToolsPageView[]
+}
+
+export async function siteToolsOrphanedPages(
+  siteId: number,
+  requestContext: RequestContext = {}
+): Promise<SiteToolsPageView[]> {
+  return client.request("site_tools_orphaned_pages", { site_id: siteId }, requestContext)
+}
+
+export async function siteToolsWantedPages(
+  siteId: number,
+  requestContext: RequestContext = {}
+): Promise<SiteToolsWantedPageView[]> {
+  return client.request("site_tools_wanted_pages", { site_id: siteId }, requestContext)
+}
+
 export async function pageWatchers(
   siteId: number,
   pageId: number,

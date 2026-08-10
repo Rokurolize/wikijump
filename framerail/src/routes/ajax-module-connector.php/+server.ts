@@ -19,9 +19,16 @@ import {
   pageRevisionById,
   pageViewPermission,
   pageParentUpdate,
+  siteToolsOrphanedPages,
+  siteToolsWantedPages,
   wikidotPageDiscussionCreate,
   wikidotSiteChangesModule
 } from "$lib/server/deepwell/page"
+import {
+  renderWikidotOrphanedPages,
+  renderWikidotSiteTools,
+  renderWikidotWantedPages
+} from "$lib/server/wikidot-site-tools.js"
 import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 
@@ -174,6 +181,27 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       siteId: number
       parameters: Record<string, string>
     }) => wikidotMembersListModule(siteId, parameters, requestContext),
+    renderSiteToolsModule: async ({
+      siteId,
+      moduleName
+    }: {
+      siteId: number
+      moduleName: string
+      parameters: Record<string, string>
+    }) => {
+      if (moduleName === "sitetools/SiteToolsModule") {
+        return { status: "ok", body: renderWikidotSiteTools() }
+      }
+      if (moduleName === "sitetools/WantedPagesModule") {
+        const targets = await siteToolsWantedPages(siteId, requestContext)
+        return { status: "ok", body: renderWikidotWantedPages(targets) }
+      }
+      if (moduleName === "sitetools/OrphanedPagesModule") {
+        const pages = await siteToolsOrphanedPages(siteId, requestContext)
+        return { status: "ok", body: renderWikidotOrphanedPages(pages) }
+      }
+      return { status: "not_ok", body: "" }
+    },
     renderPageReadModule: async ({
       siteId,
       moduleName,

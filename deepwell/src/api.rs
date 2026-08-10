@@ -353,6 +353,8 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("article_view_cache_metadata", article_view_cache_metadata);
     register!("page_view", page_view);
     register!("page_backlinks_view", page_backlinks_view);
+    register!("site_tools_orphaned_pages", site_tools_orphaned_pages);
+    register!("site_tools_wanted_pages", site_tools_wanted_pages);
     register!("user_view", user_view);
     register!("admin_view", admin_view);
 

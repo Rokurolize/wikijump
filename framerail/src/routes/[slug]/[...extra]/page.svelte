@@ -501,6 +501,7 @@
             id="site-tools-button"
             class="btn btn-default"
             href="javascript:;"
+            onclick={() => activatePagePane(PagePane.SiteTools)}
             type="button"
           >
             {wikidotPageActions.siteTools}

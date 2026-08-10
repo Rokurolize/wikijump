@@ -22,8 +22,9 @@ use super::prelude::*;
 use crate::services::view::{
     GetAdminView, GetAdminViewOutput, GetArticleViewCacheMetadataOutput,
     GetArticleViewOutput, GetPageBacklinksView, GetPageView, GetPageViewOutput,
-    GetPreloadView, GetPreloadViewOutput, GetUserView, GetUserViewOutput,
-    PageBacklinkView, ViewType,
+    GetPreloadView, GetPreloadViewOutput, GetSiteToolsPages, GetUserView,
+    GetUserViewOutput, PageBacklinkView, SiteToolsPageView, SiteToolsWantedPageView,
+    ViewType,
 };
 
 pub async fn page_backlinks_view(
@@ -32,6 +33,22 @@ pub async fn page_backlinks_view(
 ) -> Result<Vec<PageBacklinkView>> {
     let input: GetPageBacklinksView<'_> = parse!(params, Page);
     ViewService::backlinks(ctx, input).await
+}
+
+pub async fn site_tools_orphaned_pages(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<SiteToolsPageView>> {
+    let input: GetSiteToolsPages = parse!(params, Page);
+    ViewService::site_tools_orphaned_pages(ctx, input).await
+}
+
+pub async fn site_tools_wanted_pages(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<SiteToolsWantedPageView>> {
+    let input: GetSiteToolsPages = parse!(params, Page);
+    ViewService::site_tools_wanted_pages(ctx, input).await
 }
 
 /// Returns relevant context for rendering a view from a processed web request.

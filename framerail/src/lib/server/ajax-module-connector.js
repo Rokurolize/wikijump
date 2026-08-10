@@ -36,6 +36,12 @@ const SITE_CHANGES_OPTIONS = new Set([
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
 const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group", "page"])
+const SITE_TOOLS_READ_MODULES = new Map([
+  ["sitetools/SiteToolsModule", { callbackIndex: "1", parameters: new Set() }],
+  ["sitetools/WantedPagesModule", { callbackIndex: "2", parameters: new Set() }],
+  ["sitetools/OrphanedPagesModule", { callbackIndex: "3", parameters: new Set() }],
+  ["list/ListDraftsModule", { callbackIndex: "4", parameters: new Set(["location"]) }]
+])
 const PAGE_READ_MODULE_PARAMETERS = new Map([
   ["viewsource/ViewSourceModule", new Set(["page_id"])],
   ["files/PageFilesModule", new Set(["page_id"])],
@@ -119,6 +125,10 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     status: string
  *     body: string
  *     js_include?: string[]
+ *   }>
+ *   renderSiteToolsModule?: (input: ForumModuleRenderInput) => Promise<{
+ *     status: string
+ *     body: string
  *   }>
  *   createNewPage?: (input: NewPageCreateInput) => Promise<void>
  *   canCreateNewPage?: boolean | (() => boolean | Promise<boolean>)
@@ -509,6 +519,7 @@ export const handleAjaxModuleConnectorRequest = async (
     renderSiteChangesModule,
     renderMembersList,
     renderPageReadModule,
+    renderSiteToolsModule,
     createNewPage,
     canCreateNewPage = true,
     pageExists,
@@ -753,6 +764,60 @@ export const handleAjaxModuleConnectorRequest = async (
         body: "",
         ...responseMetadata()
       })
+    }
+  }
+
+  const siteToolsShape = moduleName ? SITE_TOOLS_READ_MODULES.get(moduleName) : undefined
+  if (siteToolsShape && moduleName) {
+    if (!renderSiteToolsModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    /** @type {Record<string, string>} */
+    const parameters = {}
+    for (const [key, value] of fields) {
+      if (siteToolsShape.parameters.has(key)) {
+        parameters[key] = value
+        continue
+      }
+      if (key !== "moduleName" && key !== "wikidot_token7" && key !== "callbackIndex") {
+        return jsonResponse({
+          status: "not_ok",
+          message: `Unsupported AJAX module shape: ${moduleName}`
+        })
+      }
+    }
+    if (
+      fieldValue(fields, "callbackIndex") !== siteToolsShape.callbackIndex ||
+      Object.keys(parameters).length !== siteToolsShape.parameters.size ||
+      ![...siteToolsShape.parameters].every((name) => Object.hasOwn(parameters, name)) ||
+      (moduleName === "list/ListDraftsModule" && parameters.location !== "sitetools")
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    const responseMetadata = () => ({
+      callbackIndex: siteToolsShape.callbackIndex,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+    try {
+      const output = await renderSiteToolsModule({ siteId, moduleName, parameters })
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        ...responseMetadata()
+      })
+    } catch (error) {
+      console.error("AJAX Site Tools rendering failed", error)
+      return jsonResponse({ status: "not_ok", body: "", ...responseMetadata() })
     }
   }
 
