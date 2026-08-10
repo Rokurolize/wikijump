@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import {fileURLToPath} from "node:url";
+
+process.chdir(fileURLToPath(new URL("../../../../", import.meta.url)));
 
 const base = "43471ea5a4759e3cf855bf3a3ec5456d0901ce01";
 const surfaces = [

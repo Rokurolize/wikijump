@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import {fileURLToPath} from "node:url";
+
+process.chdir(fileURLToPath(new URL("../../../../", import.meta.url)));
 
 const fixturePath = "install/local/wikidot-verification/fixtures/open43-a1038-themepreviewer-active.json";
 const artifactPath = "install/local/wikidot-verification/artifacts/open43-a1038-themepreviewer-active-live.json";

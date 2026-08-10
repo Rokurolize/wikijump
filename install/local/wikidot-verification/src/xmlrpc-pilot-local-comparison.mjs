@@ -325,6 +325,7 @@ async function compareBundle(bundle, client) {
 export async function runXmlrpcPilotLocalComparison({
   outputDir,
   pilotRoot,
+  rpcToken,
   rpcUrl,
   runtimeIdentityPath,
   sourceExpectation = XMLRPC_EN_128_DESIGNATED_SOURCE,
@@ -338,7 +339,7 @@ export async function runXmlrpcPilotLocalComparison({
   const runtimeIdentity = validateRuntimeIdentityForComparison(
     parseJson(runtimeIdentityBytes, "local runtime identity"),
   );
-  const client = new LocalPageReadClient({ rpcUrl, timeoutMs, fetchImpl });
+  const client = new LocalPageReadClient({ rpcUrl, rpcToken, timeoutMs, fetchImpl });
   const directory = await openPrivateComparisonOutputDirectory({
     outputDir,
     pilotRoot,

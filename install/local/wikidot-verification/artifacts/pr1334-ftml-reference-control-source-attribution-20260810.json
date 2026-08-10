@@ -68,7 +68,7 @@
     },
     "path": "docs/development/compatibility-surface-inventory.json",
     "schema": "wikijump.compatibility_surface_inventory.v1",
-    "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61"
+    "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
   },
   "mutations": 0,
   "network_requests": 0,

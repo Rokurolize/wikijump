@@ -17,6 +17,8 @@ import {
   startRpcServer,
 } from "./support/xmlrpc-pilot-local-comparison-fixture.mjs";
 
+const rpcToken = "0".repeat(64);
+
 test("a page_get response must identify the requested site and full slug", async (t) => {
   const fixture = await sealPilot(t);
   const responses = [...fixture.responses.values()];
@@ -31,6 +33,7 @@ test("a page_get response must identify the requested site and full slug", async
   const result = await runXmlrpcPilotLocalComparison({
     outputDir: comparisonOutputDir(fixture, "identity-mismatch-output"),
     pilotRoot: fixture.pilotRoot,
+    rpcToken,
     rpcUrl: rpc.rpcUrl,
     runtimeIdentityPath: fixture.runtimeIdentityPath,
     sourceExpectation: fixture.sourceExpectation,
@@ -56,6 +59,7 @@ test("a page_get response with an invalid RFC3339 calendar date is a local error
   const result = await runXmlrpcPilotLocalComparison({
     outputDir: comparisonOutputDir(fixture, "invalid-local-timestamp-output"),
     pilotRoot: fixture.pilotRoot,
+    rpcToken,
     rpcUrl: rpc.rpcUrl,
     runtimeIdentityPath: fixture.runtimeIdentityPath,
     sourceExpectation: fixture.sourceExpectation,
@@ -83,6 +87,7 @@ test(
       runXmlrpcPilotLocalComparison({
         outputDir: comparisonOutputDir(sourceFixture, "receipt-fifo-output"),
         pilotRoot: sourceFixture.pilotRoot,
+        rpcToken,
         rpcUrl: "http://127.0.0.1:29999/jsonrpc",
         runtimeIdentityPath: sourceFixture.runtimeIdentityPath,
         sourceExpectation: sourceFixture.sourceExpectation,
@@ -102,6 +107,7 @@ test(
     await runXmlrpcPilotLocalComparison({
       outputDir,
       pilotRoot: outputFixture.pilotRoot,
+      rpcToken,
       rpcUrl: rpc.rpcUrl,
       runtimeIdentityPath: outputFixture.runtimeIdentityPath,
       sourceExpectation: outputFixture.sourceExpectation,
@@ -113,6 +119,7 @@ test(
       runXmlrpcPilotLocalComparison({
         outputDir,
         pilotRoot: outputFixture.pilotRoot,
+        rpcToken,
         rpcUrl: rpc.rpcUrl,
         runtimeIdentityPath: outputFixture.runtimeIdentityPath,
         sourceExpectation: outputFixture.sourceExpectation,
@@ -138,6 +145,7 @@ test("an existing comparison output directory must be private to the current use
     runXmlrpcPilotLocalComparison({
       outputDir,
       pilotRoot: fixture.pilotRoot,
+      rpcToken,
       rpcUrl: rpc.rpcUrl,
       runtimeIdentityPath: fixture.runtimeIdentityPath,
       sourceExpectation: fixture.sourceExpectation,

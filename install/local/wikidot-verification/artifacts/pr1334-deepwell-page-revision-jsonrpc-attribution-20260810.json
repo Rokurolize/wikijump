@@ -26,7 +26,7 @@
     },
     "inventory": {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61"
+      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
     },
     "script": {
       "path": "install/local/wikidot-verification/scripts/capture_pr1334_deepwell_page_revision_jsonrpc_attribution.py",
@@ -68,7 +68,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -78,12 +78,12 @@
         {
           "function": "ordinary_user_joins_only_the_editable_site_then_creates_a_page",
           "line_range": {
-            "end": 321,
-            "start": 56
-          },
+          "end": 350,
+          "start": 57
+        },
           "path": "deepwell/tests/role.rs",
           "seam": "deepwell_endpoint_integration_test",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373"
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664"
         }
       ]
     },
@@ -116,7 +116,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -164,7 +164,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         },
         {
@@ -206,7 +206,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -280,7 +280,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -328,7 +328,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -376,7 +376,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -413,7 +413,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -450,7 +450,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -540,7 +540,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -625,7 +625,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         },
         {
@@ -678,7 +678,7 @@
       "service_owners": [
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -736,7 +736,7 @@
         },
         {
           "path": "deepwell/src/services/page/service.rs",
-          "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355",
+          "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837",
           "symbol": "PageService"
         }
       ],
@@ -997,7 +997,7 @@
     },
     {
       "path": "deepwell/src/services/page/service.rs",
-      "sha256": "2c33251c424593244e963234824007bd432df76ff75ea5ecd9f23bc8a84d3355"
+      "sha256": "96e0656dce2705b82cd5f852af3d2c4fa54195d37a8526a96a6267f5ca4b9837"
     },
     {
       "path": "deepwell/src/services/page_query/service.rs",
@@ -1033,7 +1033,7 @@
     },
     {
       "path": "deepwell/tests/role.rs",
-      "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373"
+      "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664"
     },
     {
       "path": "deepwell/tests/template.rs",
@@ -1041,7 +1041,7 @@
     },
     {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61"
+      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
     }
   ],
   "standing_status": "not_run",

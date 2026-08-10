@@ -3,8 +3,9 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
+import {fileURLToPath} from "node:url";
 
-const root = process.cwd();
+const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const fixturePath = "install/local/wikidot-verification/fixtures/open43-a1038-sitegrid-populated.json";
 const artifactPath = "install/local/wikidot-verification/artifacts/open43-a1038-sitegrid-populated-live.json";
 const scriptPath = "install/local/wikidot-verification/scripts/capture_wikidot_sitegrid_populated.py";

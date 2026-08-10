@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import {fileURLToPath} from "node:url";
+
+process.chdir(fileURLToPath(new URL("../../../../", import.meta.url)));
 
 const base = "bc97b7cbb84c5a7cb693ad5f1f73bf4ce7db1c03";
 const surfaces = ["open43-audit-case:Q810_ACTIVE_GLOBAL_ROTATION", "catalog-feature:module-featuredsite"];

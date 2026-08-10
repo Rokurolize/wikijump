@@ -23,7 +23,7 @@
   "inventory_identity": {
     "path": "docs/development/compatibility-surface-inventory.json",
     "schema": "wikijump.compatibility_surface_inventory.v1",
-    "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61"
+    "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
   },
   "inventory_preconditions": [
     {
@@ -270,7 +270,7 @@
         "diff_from_introduction_to_base": false,
         "matches_source_introduction_commit": true,
         "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
-        "sha256": "74c45563964f9b22c9343ad1c832e5d894af2ae4f49aa3a7ca4e553a8617aa9d"
+        "sha256": "7c192c6c8bc92c6438c830071120f1d4035d7a6d1f2c7e28d2ffc248eb11faf2"
       }
     ],
     "paths": [
@@ -322,7 +322,7 @@
             "start": 47
           },
           "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
-          "sha256": "74c45563964f9b22c9343ad1c832e5d894af2ae4f49aa3a7ca4e553a8617aa9d",
+          "sha256": "7c192c6c8bc92c6438c830071120f1d4035d7a6d1f2c7e28d2ffc248eb11faf2",
           "test_name": "hidden-configured-value-create ignores injected submissions"
         }
       ],
@@ -373,7 +373,7 @@
             "start": 78
           },
           "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
-          "sha256": "74c45563964f9b22c9343ad1c832e5d894af2ae4f49aa3a7ca4e553a8617aa9d",
+          "sha256": "7c192c6c8bc92c6438c830071120f1d4035d7a6d1f2c7e28d2ffc248eb11faf2",
           "test_name": "password-create-plaintext-source-masked-display exposes the password control contract"
         }
       ],
@@ -424,7 +424,7 @@
             "start": 108
           },
           "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
-          "sha256": "74c45563964f9b22c9343ad1c832e5d894af2ae4f49aa3a7ca4e553a8617aa9d",
+          "sha256": "7c192c6c8bc92c6438c830071120f1d4035d7a6d1f2c7e28d2ffc248eb11faf2",
           "test_name": "static-wiki-value-create-display has no override control and serializes null"
         }
       ],
@@ -475,7 +475,7 @@
             "start": 131
           },
           "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
-          "sha256": "74c45563964f9b22c9343ad1c832e5d894af2ae4f49aa3a7ca4e553a8617aa9d",
+          "sha256": "7c192c6c8bc92c6438c830071120f1d4035d7a6d1f2c7e28d2ffc248eb11faf2",
           "test_name": "url-default-schema-applies-to-display without rewriting storage"
         }
       ],

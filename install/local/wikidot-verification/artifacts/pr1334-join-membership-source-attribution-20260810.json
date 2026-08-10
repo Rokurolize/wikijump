@@ -25,7 +25,7 @@
     },
     "inventory": {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61"
+      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
     },
     "script": {
       "path": "install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py",
@@ -64,7 +64,7 @@
         "public_reference": [
           "docs/wikidot-specifications/specifications/module/module-join.md"
         ],
-        "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61",
+        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
         "surface_id": "catalog-feature:module-join"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -113,7 +113,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         },
         {
@@ -135,7 +135,7 @@
         "public_reference": [
           "docs/wikidot-specifications/specifications/platform/site-membership.md"
         ],
-        "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61",
+        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
         "surface_id": "catalog-feature:site-membership"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -174,7 +174,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         }
       ]
@@ -186,7 +186,7 @@
         "public_reference": [
           "deepwell/src/api.rs#register:membership_join"
         ],
-        "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61",
+        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
         "surface_id": "deepwell-jsonrpc:membership_join"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -235,7 +235,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         }
       ]
@@ -248,7 +248,7 @@
           "framerail/src/lib/server/load/page/page-actions.ts#action:membershipJoin",
           "framerail/src/routes/+page.server.ts#action:membershipJoin"
         ],
-        "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61",
+        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
         "surface_id": "framerail-server-action:/?/membershipJoin"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -310,7 +310,7 @@
           "framerail/src/lib/server/load/page/page-actions.ts#action:membershipJoin",
           "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:membershipJoin"
         ],
-        "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61",
+        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
         "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipJoin"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -465,7 +465,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         },
         {
@@ -543,7 +543,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         }
       ]
@@ -611,7 +611,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         }
       ]
@@ -649,7 +649,7 @@
             "start": 56
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373",
+          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
           "source_present": true
         }
       ]
@@ -683,11 +683,11 @@
     },
     {
       "path": "deepwell/tests/role.rs",
-      "sha256": "ee8ff1ae6f657e4e75658760d5b6c2875bd717b99ca07a0f0a72feefdb04e373"
+      "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664"
     },
     {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61"
+      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
     },
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",

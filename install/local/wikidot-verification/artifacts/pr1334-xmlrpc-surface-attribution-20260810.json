@@ -2,7 +2,7 @@
   "schema": "wikijump.pr1334.xmlrpc_surface_attribution.v1",
   "base_commit": "f2b5769e1ff6206c31cc2b66a03675c64fba6318",
   "inventory_path": "docs/development/compatibility-surface-inventory.json",
-  "inventory_sha256": "7d966e928efaa01f8d3add9b26c86cc1899cd2e792734d88e3b10d5bb03cea61",
+  "inventory_sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
   "fixture_sha256": "dfc1bf634c14887ee687cc31c441085c2c1bb4968066fc7022bfe1a9bac769f7",
   "capture_script_sha256": "0d18c8fbe1cc6d914f7a38ea7e236f8da43c216340d9f960fd2ac63fcccc4597",
   "claim_scope": "source_attribution_only",

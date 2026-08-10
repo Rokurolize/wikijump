@@ -2,6 +2,9 @@ import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {readFileSync} from "node:fs";
 import test from "node:test";
+import {fileURLToPath} from "node:url";
+
+process.chdir(fileURLToPath(new URL("../../../../", import.meta.url)));
 
 const artifactPath = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json";
 let artifact;
