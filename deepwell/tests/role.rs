@@ -44,6 +44,7 @@ use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::role::Model as RoleModel;
 use deepwell::services::SessionService;
+use deepwell::services::page::{CreatePage, PageService};
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{Action, Permission, Reference, RelationType, Resource, UserType};
@@ -61,6 +62,34 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     let mirror = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded mirror site should exist")
         .site;
+    if PageService::get_optional(
+        runner.context(),
+        editable.site_id,
+        Reference::Slug(Cow::Borrowed("system:join")),
+    )
+    .await
+    .expect("self-join fixture lookup should succeed")
+    .is_none()
+    {
+        PageService::create(
+            runner.context(),
+            CreatePage {
+                site_id: editable.site_id,
+                wikitext: "[[module Join]]".to_owned(),
+                title: "Join this site".to_owned(),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: "system:join".to_owned(),
+                layout: None,
+                revision_comments: "Create self-join test fixture".to_owned(),
+                user_id: SYSTEM_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("self-join fixture should be created");
+    }
     let n = next_n();
     let user_id = create_test_user(&runner, n, "self-join").await;
     let pending_user_id = create_test_user(&runner, n, "pending").await;
