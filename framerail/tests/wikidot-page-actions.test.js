@@ -6,9 +6,20 @@ import {
   buildWikidotPageActionLabels,
   formatSigned,
   isWikidotFragmentPage,
+  printWikidotPage,
   sourceShowsStandardWikidotPageActions,
   wikidotPageActionVisibility
 } from "../src/lib/wikidot/wikidot-page-actions.js"
+
+test("Print delegates to the browser print boundary", () => {
+  let calls = 0
+  printWikidotPage({
+    print() {
+      calls += 1
+    }
+  })
+  assert.equal(calls, 1)
+})
 
 test("discussion action uses the frozen Wikidot DOM marker and escapes its label", () => {
   assert.equal(

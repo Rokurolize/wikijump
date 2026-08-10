@@ -12,7 +12,8 @@
   } from "$lib/generated-page-styles"
   import {
     buildWikidotDiscussButtonHtml,
-    isWikidotFragmentPage
+    isWikidotFragmentPage,
+    printWikidotPage
   } from "$lib/wikidot/wikidot-page-actions"
   import {
     updateWikidotRateWidget,
@@ -229,7 +230,7 @@
       showSource = true
       pagePaneState = PagePane.None
     },
-    print: () => window.print(),
+    print: printWikidotPage,
     setTags: setLegacyTags,
     rate: rateFromLegacyWidget,
     cancelRate: cancelLegacyRating,
@@ -486,7 +487,13 @@
         </a>
         {#if wikidotPageActions}
           <!-- svelte-ignore a11y_invalid_attribute -->
-          <a id="print-button" class="btn btn-default" href="javascript:;" type="button">
+          <a
+            id="print-button"
+            class="btn btn-default"
+            href="javascript:;"
+            onclick={() => printWikidotPage()}
+            type="button"
+          >
             {wikidotPageActions.print}
           </a>
           <!-- svelte-ignore a11y_invalid_attribute -->

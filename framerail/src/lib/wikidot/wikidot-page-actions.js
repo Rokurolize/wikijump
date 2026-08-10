@@ -30,6 +30,9 @@ export const isWikidotFragmentPage = (tags) => tags?.includes("fragment") ?? fal
 export const buildWikidotDiscussButtonHtml = (label) =>
   `<a href="javascript:;" class="btn btn-default" id="discuss-button" onclick="WIKIDOT.page.listeners.createPageDiscussion(event)">${escapeHtml(label)}</a>`
 
+/** @param {{ print: () => unknown }} [browser] */
+export const printWikidotPage = (browser = window) => browser.print()
+
 /**
  * @param {string | null | undefined} sourceSite
  * @returns {boolean}
