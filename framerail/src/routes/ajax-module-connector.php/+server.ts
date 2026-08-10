@@ -12,6 +12,7 @@ import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
 import { wikidotForumModule } from "$lib/server/deepwell/forum"
 import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
+import { adminView, preloadView } from "$lib/server/deepwell/views"
 import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
   pageEdit,
@@ -36,7 +37,12 @@ import {
   renderWikidotWantedPages
 } from "$lib/server/wikidot-site-tools.js"
 import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
+import {
+  getPreloadBackendLocales,
+  getPreloadRequestLocales
+} from "$lib/server/load/preload"
 import { loadSiteInfo } from "$lib/server/load/site-info"
+import { renderWikidotManageSiteGeneral } from "$lib/server/wikidot-manage-site-general.js"
 
 import type { RequestHandler } from "./$types"
 
@@ -238,6 +244,20 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       siteId: number
       parameters: Record<string, string>
     }) => wikidotMembersListModule(siteId, parameters, requestContext),
+    renderManageSiteGeneralModule: async ({ siteId }: { siteId: number }) => {
+      const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
+      const authorization = await adminView(siteId, locales, sessionToken)
+      if (authorization.type !== "site_found") return null
+
+      const preload = await preloadView(siteId, locales, sessionToken)
+      return {
+        status: "ok",
+        body: renderWikidotManageSiteGeneral(preload.site),
+        js_include: [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteGeneralModule.js"
+        ]
+      }
+    },
     renderSiteToolsModule: async ({
       siteId,
       moduleName

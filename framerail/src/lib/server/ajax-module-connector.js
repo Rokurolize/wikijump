@@ -34,6 +34,7 @@ const SITE_CHANGES_OPTIONS = new Set([
   '{"files":true}'
 ])
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
+const MANAGE_SITE_GENERAL_MODULE = "managesite/ManageSiteGeneralModule"
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
 const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group", "page"])
 const SITE_TOOLS_READ_MODULES = new Map([
@@ -136,6 +137,13 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *   renderMembersList?: (
  *     input: MembersListRenderInput
  *   ) => Promise<{ status: string; body: string }>
+ *   renderManageSiteGeneralModule?: (input: {
+ *     siteId: number
+ *   }) => Promise<{
+ *     status: string
+ *     body: string
+ *     js_include?: string[]
+ *   } | null>
  *   renderPageReadModule?: (input: ForumModuleRenderInput) => Promise<{
  *     status: string
  *     body: string
@@ -553,6 +561,7 @@ export const handleAjaxModuleConnectorRequest = async (
     renderForumModule,
     renderSiteChangesModule,
     renderMembersList,
+    renderManageSiteGeneralModule,
     renderPageReadModule,
     renderSiteToolsModule,
     createNewPage,
@@ -591,6 +600,50 @@ export const handleAjaxModuleConnectorRequest = async (
   }
 
   const moduleName = fields.get("moduleName")
+  if (moduleName === MANAGE_SITE_GENERAL_MODULE) {
+    if (fields.size !== 1) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    if (!renderManageSiteGeneralModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    try {
+      const output = await renderManageSiteGeneralModule({ siteId })
+      if (!output) {
+        return jsonResponse({
+          status: "not_ok",
+          message: `Unsupported AJAX module: ${moduleName}`
+        })
+      }
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: output.js_include ?? []
+      })
+    } catch (error) {
+      console.error("AJAX ManageSiteGeneral rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: []
+      })
+    }
+  }
+
   const editMetaEvent = fields.get("event")
   if (
     moduleName === EDIT_META_MODULE &&
