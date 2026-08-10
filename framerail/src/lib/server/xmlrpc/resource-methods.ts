@@ -46,6 +46,7 @@ import {
 
 type DeepwellStringParams = Record<string, string | string[] | undefined>
 const MAX_XML_RPC_FILTER_VALUES = 100
+const MAX_XML_RPC_TAG_PAGE_FILTER_VALUES = 10
 const PAGE_SELECT_DECIMAL_RATING_PATTERN =
   /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/
 export async function selectCategories(call: XmlRpcCall): Promise<string[]> {
@@ -73,10 +74,10 @@ export async function selectTags(call: XmlRpcCall, requestIp: string): Promise<s
       `tags.select categories is limited to ${MAX_XML_RPC_FILTER_VALUES} entries`
     )
   }
-  if (pages && pages.length > MAX_XML_RPC_FILTER_VALUES) {
+  if (pages && pages.length > MAX_XML_RPC_TAG_PAGE_FILTER_VALUES) {
     throw new XmlRpcFault(
       -32602,
-      `tags.select pages is limited to ${MAX_XML_RPC_FILTER_VALUES} entries`
+      `tags.select pages is limited to ${MAX_XML_RPC_TAG_PAGE_FILTER_VALUES} entries`
     )
   }
 

@@ -146,6 +146,16 @@ def check_documented_methods(
         params = {"unexpected": True} if method_name == "users.get_me" else {}
         expect_fault(proxy, method_name, -32602, params)
 
+    expect_fault(
+        proxy,
+        "tags.select",
+        -32602,
+        {
+            "site": "url-swap-fixture",
+            "pages": [f"page-{index}" for index in range(11)],
+        },
+    )
+
 
 def check_absent_methods(
     proxy: xmlrpc.client.ServerProxy, registered_methods: list[str]

@@ -1612,7 +1612,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
 
 test("XML-RPC endpoint bounds tags.select page filters", async ({ request }) => {
   const response = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcTagsSelectWithFilterCount("pages", 101),
+    data: xmlRpcTagsSelectWithFilterCount("pages", 11),
     headers: xmlRpcHeaders
   })
 
@@ -1620,14 +1620,14 @@ test("XML-RPC endpoint bounds tags.select page filters", async ({ request }) => 
   const body = await response.text()
   expect(body).toContain("<methodResponse>")
   expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
-  expect(body).toContain("tags.select pages is limited to 100 entries")
+  expect(body).toContain("tags.select pages is limited to 10 entries")
 })
 
 test("XML-RPC endpoint accepts tags.select page filters at the cap", async ({
   request
 }) => {
   const response = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcTagsSelectWithFilterCount("pages", 100),
+    data: xmlRpcTagsSelectWithFilterCount("pages", 10),
     headers: xmlRpcHeaders
   })
 
