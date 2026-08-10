@@ -22734,7 +22734,7 @@ async fn page_watchers_fails_closed_instead_of_returning_a_saturated_prefix() {
     runner
         .context()
         .transaction()
-        .execute(Statement::from_sql_and_values(
+        .execute_raw(Statement::from_sql_and_values(
             sea_orm::DatabaseBackend::Postgres,
             concat!(
                 "INSERT INTO relation ",
