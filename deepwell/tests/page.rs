@@ -22970,30 +22970,32 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
         json!({"site_id": site.site_id, "page": OTHER_SLUG}),
     )
     .expect("other target should exist");
-    let transaction = runner.context().transaction();
-    transaction
-        .execute_raw(Statement::from_sql_and_values(
-            sea_orm::DatabaseBackend::Postgres,
-            concat!(
-                "INSERT INTO page_vote ",
-                "(from_wikidot, page_id, user_id, rating_system, value, deleted_at, disabled_at) VALUES ",
-                "(false, $1, $2, 'points', 1, NULL, NULL), ",
-                "(false, $1, $3, 'points', -1, NULL, NULL), ",
-                "(false, $1, $4, 'points', 1, NOW(), NULL), ",
-                "(false, $1, $5, 'points', -1, NULL, NOW()), ",
-                "(false, $6, $4, 'points', 1, NULL, NULL)",
-            ),
-            [
-                Value::from(target.page_id),
-                Value::from(ADMIN_USER_ID),
-                Value::from(SAMPLE_USER_ID),
-                Value::from(SYSTEM_USER_ID),
-                Value::from(UNKNOWN_USER_ID),
-                Value::from(other.page_id),
-            ],
-        ))
-        .await
-        .expect("WhoRated vote fixtures should insert");
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                sea_orm::DatabaseBackend::Postgres,
+                concat!(
+                    "INSERT INTO page_vote ",
+                    "(from_wikidot, page_id, user_id, rating_system, value, deleted_at, disabled_at) VALUES ",
+                    "(false, $1, $2, 'points', 1, NULL, NULL), ",
+                    "(false, $1, $3, 'points', -1, NULL, NULL), ",
+                    "(false, $1, $4, 'points', 1, NOW(), NULL), ",
+                    "(false, $1, $5, 'points', -1, NULL, NOW()), ",
+                    "(false, $6, $4, 'points', 1, NULL, NULL)",
+                ),
+                [
+                    Value::from(target.page_id),
+                    Value::from(ADMIN_USER_ID),
+                    Value::from(SAMPLE_USER_ID),
+                    Value::from(SYSTEM_USER_ID),
+                    Value::from(UNKNOWN_USER_ID),
+                    Value::from(other.page_id),
+                ],
+            ))
+            .await
+            .expect("WhoRated vote fixtures should insert");
+    }
 
     runner.set_request_context(RequestContext::default());
     let output = run_endpoint!(
@@ -23016,6 +23018,7 @@ async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
     );
     assert_contains_error!(malformed, ErrorType::BadRequest);
 
+    let transaction = runner.context().transaction();
     transaction
         .execute_raw(Statement::from_string(
             sea_orm::DatabaseBackend::Postgres,
