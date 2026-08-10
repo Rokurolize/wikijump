@@ -21,12 +21,12 @@
     ]
   },
   "counts": {
-    "total": 888,
+    "total": 890,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 157,
+      "deepwell_jsonrpc_method": 158,
       "framerail_amc_action_shape": 2,
-      "framerail_amc_module_shape": 17,
+      "framerail_amc_module_shape": 18,
       "framerail_route": 27,
       "framerail_server_action": 97,
       "framerail_xmlrpc_method": 17,
@@ -11801,6 +11801,39 @@
       }
     },
     {
+      "surface_id": "deepwell-jsonrpc:page_who_rated",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_who_rated"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "deepwell-jsonrpc:parent_get",
       "kind": "deepwell_jsonrpc_method",
       "public_owner": "deepwell",
@@ -13918,6 +13951,39 @@
       "public_owner": "framerail",
       "public_reference": [
         "framerail/src/lib/server/ajax-module-connector.js#module:membership/MembersListModule;parameters=group,page"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-amc-module:pagerate/WhoRatedPageModule:parameters=pageId",
+      "kind": "framerail_amc_module_shape",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/ajax-module-connector.js#module:pagerate/WhoRatedPageModule;parameters=pageId"
       ],
       "existing_refs": {
         "issues": [],
@@ -31346,7 +31412,9 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/wikidot-py-amc-client-parity.test.mjs#supported wikidot.py request bodies behave identically when only the target changes"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -31355,7 +31423,7 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {

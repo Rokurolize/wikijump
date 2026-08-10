@@ -144,8 +144,11 @@
     {
       "module_name": "pagerate/WhoRatedPageModule",
       "parameters": ["pageId"],
-      "status": "unsupported_unevidenced",
-      "gap": "The exact printuser identity and rating value DOM are not sealed for Wikijump.",
+      "status": "supported",
+      "request_example": {
+        "moduleName": "pagerate/WhoRatedPageModule",
+        "pageId": "1956155"
+      },
       "source_reference": "src/wikidot/module/page.py#PageCollection._acquire_page_votes"
     },
     {
