@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import fs from "node:fs/promises"
 import os from "node:os"
 import path from "node:path"
@@ -8,6 +9,16 @@ import { fileURLToPath } from "node:url"
 
 const toolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const cliPath = path.join(toolRoot, "scripts/build-compatibility-surface-inventory.mjs")
+
+const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+
+const listPagesParameters = [
+  "p", "pagetype", "page_type", "page-type", "category", "tags", "tag", "parent",
+  "created_at", "createdat", "updated_at", "updatedat", "created_by", "createdby",
+  "rating", "score", "name", "fullname", "full_slug", "fullslug", "range", "order",
+  "offset", "limit", "perpage", "per_page", "separate", "wrapper", "rss", "rsstitle",
+  "rssdescription", "rsshome", "rsslimit", "rssonly"
+]
 
 async function writeJson(root, relativePath, value) {
   const target = path.join(root, relativePath)
@@ -80,6 +91,7 @@ const PAGE_READ_MODULE_PARAMETERS = new Map([
   ["viewsource/ViewSourceModule", new Set(["page_id"])],
   ["files/PageFilesModule", new Set(["page_id"])]
 ])
+const LIST_PAGES_PARAMETERS = new Set(${JSON.stringify(listPagesParameters)})
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
@@ -87,6 +99,30 @@ const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
 if (moduleName !== "list/ListPagesModule") throw new Error()
 `
   )
+  await writeJson(root, "docs/development/framerail-amc-wire-contracts.json", {
+    schema: "wikijump.framerail_amc_wire_contracts.v1",
+    modules: [
+      {
+        module_name: "list/ListPagesModule",
+        allowed_parameters: listPagesParameters,
+        required_fields: ["module_body"],
+        parameter_order: "insignificant",
+        duplicate_fields: "rejected",
+        value_type: "urlencoded_utf8_string",
+        callback_index: "accepted_ignored",
+        authentication: "cookies_ignored;wikidot_token7_accepted_ignored",
+        success_envelope: "status=ok;body=string",
+        failure_envelopes: [
+          "missing_module_body:status=not_ok;message=ListPages module_body is required",
+          "render_failure:status=not_ok;message=Unable to render ListPages module"
+        ],
+        implementation_references: [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "deepwell/src/services/render/list_pages/ajax.rs"
+        ]
+      }
+    ]
+  })
   await writeText(
     root,
     "framerail/src/lib/server/wikidot-site-changes.js",
@@ -135,11 +171,9 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
     { length: 7 },
     (_, index) => `docs/development/open43-audit-${index + 1}.json`
   )
-  await writeJson(root, "docs/development/open43-blocked-evidence-routing.json", {
-    source_audits: audits
-  })
+  const closureAudits = []
   for (const [index, audit] of audits.entries()) {
-    await writeJson(root, audit, {
+    const value = {
       schema: `wikijump.open43.fixture_${index + 1}.v1`,
       issues:
         index === 0
@@ -157,8 +191,50 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
               }
             ]
           : []
+    }
+    const serialized = `${JSON.stringify(value, null, 2)}\n`
+    await writeText(root, audit, serialized)
+    closureAudits.push({
+      path: audit,
+      sha256: sha256(serialized),
+      issue_count: index === 0 ? 1 : 0,
+      case_count: index === 0 ? 1 : 0,
+      classification_counts: {
+        source_ready: 0,
+        needs_source: 0,
+        candidate_required: index === 0 ? 1 : 0,
+        blocked_evidence: 0
+      }
     })
   }
+  const routeClasses = Object.fromEntries([
+    "anonymous_read_only", "authenticated_read_only", "run_owned_mutation", "local_candidate",
+    "live_browser_only", "missing_public_producer", "missing_architecture_domain_authority",
+    "missing_security_policy"
+  ].map((name) => [name, `${name} fixture route`]))
+  await writeJson(root, "docs/development/open43-blocked-evidence-routing.json", {
+    schema: "wikijump.open43.blocked_evidence_routing.v1",
+    source_audits: audits,
+    route_classes: routeClasses,
+    counts: { ...Object.fromEntries(Object.keys(routeClasses).map((name) => [name, 0])), total: 0 },
+    rows: []
+  })
+  await writeJson(root, "docs/development/open43-closure-audit-ownership-reconciliation.json", {
+    schema: "wikijump.open43.closure_audit_ownership_reconciliation.v1",
+    closure_audits: closureAudits,
+    after: {
+      case_count: 1,
+      unique_case_count: 1,
+      duplicate_case_ids: [],
+      unknown_classifications: [],
+      classification_counts: {
+        source_ready: 0,
+        needs_source: 0,
+        candidate_required: 1,
+        blocked_evidence: 0
+      }
+    }
+  })
 }
 
 function runCli(root, outputPath) {
@@ -175,25 +251,38 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 20 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 28 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.deepEqual(inventory.counts, {
-    total: 20,
+    total: 28,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
       framerail_amc_action_shape: 2,
-      framerail_amc_module_shape: 8,
+      framerail_amc_module_shape: 15,
       framerail_route: 1,
       framerail_server_action: 1,
       framerail_xmlrpc_method: 1,
       open43_audit_case: 1,
       page_action: 1,
       wikidot_py_amc_module_shape: 2,
-      wws_route: 1
+      wws_route: 2
     }
   })
+  const listPagesSurfaces = inventory.surfaces
+    .filter(({ surface_id }) => surface_id.includes("list/ListPagesModule"))
+    .map(({ surface_id }) => surface_id)
+  assert.equal(listPagesSurfaces.length, 8)
+  assert.ok(listPagesSurfaces.some((id) => id.includes(`parameters=${[...listPagesParameters].sort().join(",")}`)))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:parameter-order=insignificant"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:duplicate-fields=rejected"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:value-type=urlencoded_utf8_string"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:success-envelope=status=ok;body=string"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:failure-envelopes=missing_module_body:status=not_ok;message=ListPages module_body is required|render_failure:status=not_ok;message=Unable to render ListPages module"))
+  assert.ok(listPagesSurfaces.every((id) => !id.includes("*")))
   assert.deepEqual(
     inventory.surfaces
       .filter(({ surface_id }) => surface_id.includes("SiteChangesListModule"))
@@ -201,6 +290,15 @@ test("CLI discovers declared public surfaces and writes deterministic completion
     [
       "framerail-amc-module:changes/SiteChangesListModule:parameters=categoryId,options,page,pageId,perpage",
       "framerail-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage"
+    ]
+  )
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ surface_id }) => surface_id.includes("/-/health-check"))
+      .map(({ surface_id }) => surface_id),
+    [
+      "wws-route:GET:/-/health-check",
+      "wws-route:HEAD:/-/health-check"
     ]
   )
   const caseSurface = inventory.surfaces.find(
@@ -271,7 +369,15 @@ test("CLI rejects an audit case without an issue owner", async () => {
   const auditPath = path.join(root, "docs/development/open43-audit-1.json")
   const audit = JSON.parse(await fs.readFile(auditPath, "utf8"))
   delete audit.issues[0].issue
-  await fs.writeFile(auditPath, `${JSON.stringify(audit, null, 2)}\n`)
+  const serializedAudit = `${JSON.stringify(audit, null, 2)}\n`
+  await fs.writeFile(auditPath, serializedAudit)
+  const reconciliationPath = path.join(
+    root,
+    "docs/development/open43-closure-audit-ownership-reconciliation.json"
+  )
+  const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
+  reconciliation.closure_audits[0].sha256 = sha256(serializedAudit)
+  await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
 
   const result = runCli(root, path.join(root, "inventory.json"))
 
@@ -294,4 +400,39 @@ test("CLI rejects a status outside the closed vocabulary", async () => {
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /unknown ledger status for feature-one: mostly-done/u)
+})
+
+test("CLI rejects a stale Open43 audit digest", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-audit-digest-"))
+  await writeRepositoryFixture(root)
+  await fs.appendFile(
+    path.join(root, "docs/development/open43-audit-1.json"),
+    "\n"
+  )
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /reconciliation digest does not match/u)
+})
+
+test("CLI rejects a blocked-evidence routing row outside the audit denominator", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-routing-extra-"))
+  await writeRepositoryFixture(root)
+  const routingPath = path.join(root, "docs/development/open43-blocked-evidence-routing.json")
+  const routing = JSON.parse(await fs.readFile(routingPath, "utf8"))
+  routing.rows.push({
+    case_id: "F999_NOT_IN_AUDITS",
+    route_class: "anonymous_read_only",
+    status: "not_attempted_not_safe",
+    reason: "fixture"
+  })
+  routing.counts.anonymous_read_only = 1
+  routing.counts.total = 1
+  await fs.writeFile(routingPath, `${JSON.stringify(routing, null, 2)}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /routing rows do not exactly match blocked_evidence cases/u)
 })

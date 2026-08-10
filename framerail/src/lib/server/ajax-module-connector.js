@@ -40,6 +40,42 @@ const PAGE_READ_MODULE_PARAMETERS = new Map([
   ["history/PageSourceModule", new Set(["revision_id"])],
   ["history/PageVersionModule", new Set(["revision_id"])]
 ])
+const LIST_PAGES_PARAMETERS = new Set([
+  "p",
+  "pagetype",
+  "page_type",
+  "page-type",
+  "category",
+  "tags",
+  "tag",
+  "parent",
+  "created_at",
+  "createdat",
+  "updated_at",
+  "updatedat",
+  "created_by",
+  "createdby",
+  "rating",
+  "score",
+  "name",
+  "fullname",
+  "full_slug",
+  "fullslug",
+  "range",
+  "order",
+  "offset",
+  "limit",
+  "perpage",
+  "per_page",
+  "separate",
+  "wrapper",
+  "rss",
+  "rsstitle",
+  "rssdescription",
+  "rsshome",
+  "rsslimit",
+  "rssonly"
+])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
 const PAGE_DISCUSSION_ACTION = "ForumAction"
@@ -1148,7 +1184,14 @@ export const handleAjaxModuleConnectorRequest = async (
   /** @type {Record<string, string>} */
   const parameters = {}
   for (const [key, value] of fields) {
-    if (!CONTROL_FIELDS.has(key)) parameters[key] = value
+    if (CONTROL_FIELDS.has(key)) continue
+    if (!LIST_PAGES_PARAMETERS.has(key.toLowerCase())) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+    parameters[key] = value
   }
 
   try {

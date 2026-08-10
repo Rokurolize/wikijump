@@ -109,6 +109,14 @@ async fn expand_files_modules(
     let Some(site_id) = current_site_id else {
         return Ok(wikitext);
     };
+    // Saved Wikidot output uses a module-instance suffix that is distinct from
+    // the page ID. Until that identity and its repeated-module lifecycle are
+    // evidenced, replacing the source would fabricate duplicate DOM and
+    // JavaScript identities. PagePreview has a separately evidenced empty
+    // contract and remains supported below.
+    if current_page_id.is_some() {
+        return Ok(wikitext);
+    }
 
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
     let mut page_state = None;

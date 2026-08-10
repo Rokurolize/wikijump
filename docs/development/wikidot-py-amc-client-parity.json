@@ -17,7 +17,13 @@
   "modules": [
     {
       "module_name": "list/ListPagesModule",
-      "parameters": ["*", "module_body"],
+      "parameters": [
+        "module_body", "p", "pagetype", "page_type", "page-type", "category", "tags", "tag",
+        "parent", "created_at", "createdat", "updated_at", "updatedat", "created_by",
+        "createdby", "rating", "score", "name", "fullname", "full_slug", "fullslug", "range",
+        "order", "offset", "limit", "perpage", "per_page", "separate", "wrapper", "rss",
+        "rsstitle", "rssdescription", "rsshome", "rsslimit", "rssonly"
+      ],
       "status": "supported",
       "request_example": {
         "moduleName": "list/ListPagesModule",

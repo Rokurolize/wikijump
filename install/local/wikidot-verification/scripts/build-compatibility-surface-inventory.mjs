@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises"
+import { createHash } from "node:crypto"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -31,6 +32,24 @@ const AUDIT_CLASSIFICATIONS = new Set([
   "needs_source",
   "candidate_required",
   "blocked_evidence"
+])
+const BLOCKED_ROUTE_CLASSES = new Set([
+  "anonymous_read_only",
+  "authenticated_read_only",
+  "run_owned_mutation",
+  "local_candidate",
+  "live_browser_only",
+  "missing_public_producer",
+  "missing_architecture_domain_authority",
+  "missing_security_policy"
+])
+const BLOCKED_ROUTE_STATUSES = new Set([
+  "not_attempted_not_safe",
+  "partial_evidence_acquired",
+  "blocked_no_positive_fixture",
+  "blocked_missing_domain_authority",
+  "blocked_no_provider_success",
+  "blocked_no_mapping"
 ])
 const HTTP_METHOD_NAMES = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
 
@@ -139,6 +158,27 @@ function surface({
 
 function uniqueSortedStrings(values) {
   return [...new Set(values.filter((value) => typeof value === "string" && value !== ""))].sort()
+}
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex")
+}
+
+function classificationCounts(rows) {
+  return Object.fromEntries(
+    [...AUDIT_CLASSIFICATIONS].map((classification) => [
+      classification,
+      rows.filter((row) => row.classification === classification).length
+    ])
+  )
+}
+
+function assertSameCounts(actual, expected, context) {
+  for (const key of AUDIT_CLASSIFICATIONS) {
+    if (expected?.[key] !== actual[key]) {
+      throw new Error(`${context} ${key} count does not match: expected ${actual[key]}`)
+    }
+  }
 }
 
 function testReferences(tests) {
@@ -527,7 +567,15 @@ function amcModuleSurface(registryPath, moduleName, parameters, selector = "para
 
 async function discoverFramerailAmc(root) {
   const registryPath = "framerail/src/lib/server/ajax-module-connector.js"
+  const wireContractPath = "docs/development/framerail-amc-wire-contracts.json"
   const sourceText = await readText(root, registryPath)
+  const wireContract = await readJson(root, wireContractPath)
+  if (wireContract.schema !== "wikijump.framerail_amc_wire_contracts.v1") {
+    throw new Error(`unknown Framerail AMC wire contract schema: ${wireContract.schema}`)
+  }
+  if (!Array.isArray(wireContract.modules)) {
+    throw new Error(`${wireContractPath} modules must be an array`)
+  }
   const siteChangesClassifierPath =
     "framerail/src/lib/server/wikidot-site-changes.js"
   const siteChangesClassifierText = await readText(root, siteChangesClassifierPath)
@@ -570,8 +618,66 @@ async function discoverFramerailAmc(root) {
   )
   const listPagesModule = sourceText.match(/moduleName\s*!==\s*["']([^"']*ListPagesModule)["']/u)?.[1]
   if (!listPagesModule) throw new Error(`missing ListPages module allowlist entry in ${registryPath}`)
+  const listPagesContract = wireContract.modules.find(
+    ({ module_name: moduleName }) => moduleName === listPagesModule
+  )
+  if (!listPagesContract) {
+    throw new Error(`${wireContractPath} has no contract for ${listPagesModule}`)
+  }
+  const sourceParameters = stringSet(sourceText, "LIST_PAGES_PARAMETERS", registryPath).sort()
+  const contractParameters = uniqueSortedStrings(listPagesContract.allowed_parameters ?? [])
+  if (
+    contractParameters.length !== listPagesContract.allowed_parameters?.length ||
+    JSON.stringify(contractParameters) !== JSON.stringify(sourceParameters)
+  ) {
+    throw new Error(`${wireContractPath} ${listPagesModule} allowed_parameters do not match source`)
+  }
+  if (JSON.stringify(listPagesContract.required_fields) !== JSON.stringify(["module_body"])) {
+    throw new Error(`${wireContractPath} ${listPagesModule} must require module_body`)
+  }
   records.push(
-    amcModuleSurface(registryPath, listPagesModule, ["*"], "parameters;module_body=required")
+    surface({
+      surfaceId: `framerail-amc-module:${listPagesModule}:parameters=${contractParameters.join(",")};module_body=required`,
+      kind: "framerail_amc_module_shape",
+      publicOwner: "framerail",
+      publicReference: [wireContractPath, registryPath, ...listPagesContract.implementation_references]
+    })
+  )
+  for (const [field, selector] of [
+    ["parameter_order", "parameter-order"],
+    ["duplicate_fields", "duplicate-fields"],
+    ["value_type", "value-type"],
+    ["callback_index", "callback-index"],
+    ["authentication", "authentication"],
+    ["success_envelope", "success-envelope"]
+  ]) {
+    const value = listPagesContract[field]
+    if (typeof value !== "string" || value === "") {
+      throw new Error(`${wireContractPath} ${listPagesModule} has invalid ${field}`)
+    }
+    records.push(
+      surface({
+        surfaceId: `framerail-amc-module:${listPagesModule}:${selector}=${value}`,
+        kind: "framerail_amc_module_shape",
+        publicOwner: "framerail",
+        publicReference: [wireContractPath, registryPath, ...listPagesContract.implementation_references]
+      })
+    )
+  }
+  if (
+    !Array.isArray(listPagesContract.failure_envelopes) ||
+    listPagesContract.failure_envelopes.length === 0 ||
+    listPagesContract.failure_envelopes.some((value) => typeof value !== "string" || value === "")
+  ) {
+    throw new Error(`${wireContractPath} ${listPagesModule} has invalid failure_envelopes`)
+  }
+  records.push(
+    surface({
+      surfaceId: `framerail-amc-module:${listPagesModule}:failure-envelopes=${listPagesContract.failure_envelopes.join("|")}`,
+      kind: "framerail_amc_module_shape",
+      publicOwner: "framerail",
+      publicReference: [wireContractPath, registryPath, ...listPagesContract.implementation_references]
+    })
   )
 
   for (const [actionName, eventName] of [
@@ -710,14 +816,19 @@ async function discoverWwsRoutes(root) {
     throw new Error(`${registryPath} contains an unsupported route declaration`)
   }
   if (declarations.length === 0) throw new Error(`${registryPath} declares no WWS routes`)
-  return declarations.map(([, routePath, matcher, handler]) =>
-    surface({
-      surfaceId: `wws-route:${matcher.toUpperCase()}:${routePath}`,
-      kind: "wws_route",
-      publicOwner: "wws",
-      publicReference: [`${registryPath}#${matcher}:${routePath}:${handler}`]
-    })
-  )
+  return declarations.flatMap(([, routePath, matcher, handler]) => {
+    const methods = matcher === "get" ? ["GET", "HEAD"] : [matcher.toUpperCase()]
+    return methods.map((method) =>
+      surface({
+        surfaceId: `wws-route:${method}:${routePath}`,
+        kind: "wws_route",
+        publicOwner: "wws",
+        publicReference: [
+          `${registryPath}#${matcher}:${routePath}:${handler}${method === "HEAD" ? ":implicit-head" : ""}`
+        ]
+      })
+    )
+  })
 }
 
 function auditTests(row) {
@@ -752,7 +863,16 @@ function auditCompletion(classification) {
 
 async function discoverOpen43AuditCases(root) {
   const routingPath = "docs/development/open43-blocked-evidence-routing.json"
+  const reconciliationPath =
+    "docs/development/open43-closure-audit-ownership-reconciliation.json"
   const routing = await readJson(root, routingPath)
+  const reconciliation = await readJson(root, reconciliationPath)
+  if (routing.schema !== "wikijump.open43.blocked_evidence_routing.v1") {
+    throw new Error(`${routingPath} has an unsupported schema`)
+  }
+  if (reconciliation.schema !== "wikijump.open43.closure_audit_ownership_reconciliation.v1") {
+    throw new Error(`${reconciliationPath} has an unsupported schema`)
+  }
   if (!Array.isArray(routing.source_audits) || routing.source_audits.length !== 7) {
     throw new Error(`${routingPath} must declare exactly seven source audits`)
   }
@@ -760,13 +880,50 @@ async function discoverOpen43AuditCases(root) {
     throw new Error(`${routingPath} contains a duplicate source audit`)
   }
 
+  if (
+    !routing.route_classes ||
+    Array.isArray(routing.route_classes) ||
+    new Set(Object.keys(routing.route_classes)).size !== BLOCKED_ROUTE_CLASSES.size ||
+    [...BLOCKED_ROUTE_CLASSES].some((routeClass) =>
+      typeof routing.route_classes[routeClass] !== "string" ||
+      routing.route_classes[routeClass] === ""
+    )
+  ) {
+    throw new Error(`${routingPath} route_classes do not match the closed vocabulary`)
+  }
+  if (!Array.isArray(routing.rows)) throw new Error(`${routingPath} rows must be an array`)
+  if (!Array.isArray(reconciliation.closure_audits)) {
+    throw new Error(`${reconciliationPath} closure_audits must be an array`)
+  }
+  const reconciliationAudits = new Map(
+    reconciliation.closure_audits.map((entry) => [entry.path, entry])
+  )
+  if (
+    reconciliationAudits.size !== routing.source_audits.length ||
+    routing.source_audits.some((auditPath) => !reconciliationAudits.has(auditPath))
+  ) {
+    throw new Error(`${reconciliationPath} does not own the same seven source audits`)
+  }
+
   const records = []
+  const auditRows = []
   for (const auditPath of routing.source_audits) {
     if (typeof auditPath !== "string" || !auditPath.startsWith("docs/development/")) {
       throw new Error(`${routingPath} contains an invalid source audit path`)
     }
-    const audit = await readJson(root, auditPath)
+    const auditText = await readText(root, auditPath)
+    let audit
+    try {
+      audit = JSON.parse(auditText)
+    } catch (error) {
+      throw new Error(`invalid JSON in ${auditPath}: ${error.message}`)
+    }
     if (!Array.isArray(audit.issues)) throw new Error(`${auditPath} issues must be an array`)
+    const reconciliationAudit = reconciliationAudits.get(auditPath)
+    if (reconciliationAudit.sha256 !== sha256(auditText)) {
+      throw new Error(`${auditPath} reconciliation digest does not match`)
+    }
+    const currentAuditRows = []
     const fallbackOwner = typeof audit.schema === "string" ? audit.schema : "open43-audit"
     for (const issue of audit.issues) {
       const issueNumber = issue.issue ?? issue.number
@@ -791,6 +948,9 @@ async function discoverOpen43AuditCases(root) {
         if (!row || typeof row.case_id !== "string" || row.case_id === "") {
           throw new Error(`${auditPath} issue ${issueNumber} contains a case without case_id`)
         }
+        const auditRow = { caseId: row.case_id, classification, issueNumber }
+        currentAuditRows.push(auditRow)
+        auditRows.push(auditRow)
         records.push(
           surface({
             surfaceId: `open43-audit-case:${row.case_id}`,
@@ -806,6 +966,100 @@ async function discoverOpen43AuditCases(root) {
         )
       }
     }
+    if (reconciliationAudit.issue_count !== audit.issues.length) {
+      throw new Error(`${auditPath} reconciliation issue_count does not match`)
+    }
+    if (reconciliationAudit.case_count !== currentAuditRows.length) {
+      throw new Error(`${auditPath} reconciliation case_count does not match`)
+    }
+    assertSameCounts(
+      classificationCounts(currentAuditRows),
+      reconciliationAudit.classification_counts,
+      `${auditPath} reconciliation`
+    )
+    if (Array.isArray(reconciliationAudit.issue_summaries)) {
+      if (reconciliationAudit.issue_summaries.length !== audit.issues.length) {
+        throw new Error(`${auditPath} reconciliation issue_summaries do not match`)
+      }
+      for (const summary of reconciliationAudit.issue_summaries) {
+        const issueRows = currentAuditRows.filter((row) => row.issueNumber === summary.issue)
+        if (summary.case_count !== issueRows.length) {
+          throw new Error(`${auditPath} issue ${summary.issue} reconciliation case_count does not match`)
+        }
+        assertSameCounts(
+          classificationCounts(issueRows),
+          summary.classification_counts,
+          `${auditPath} issue ${summary.issue} reconciliation`
+        )
+      }
+    }
+  }
+
+  const caseIds = auditRows.map(({ caseId }) => caseId)
+  const uniqueCaseIds = new Set(caseIds)
+  const duplicateCaseIds = uniqueSortedStrings(
+    caseIds.filter((caseId, index) => caseIds.indexOf(caseId) !== index)
+  )
+  if (
+    reconciliation.after?.case_count !== auditRows.length ||
+    reconciliation.after?.unique_case_count !== uniqueCaseIds.size ||
+    JSON.stringify(uniqueSortedStrings(reconciliation.after?.duplicate_case_ids ?? [])) !==
+      JSON.stringify(duplicateCaseIds)
+  ) {
+    throw new Error(`${reconciliationPath} aggregate case denominator does not match`)
+  }
+  assertSameCounts(
+    classificationCounts(auditRows),
+    reconciliation.after?.classification_counts,
+    `${reconciliationPath} aggregate`
+  )
+  if ((reconciliation.after?.unknown_classifications ?? []).length !== 0) {
+    throw new Error(`${reconciliationPath} records unknown classifications`)
+  }
+
+  const blockedCaseIds = uniqueSortedStrings(
+    auditRows
+      .filter(({ classification }) => classification === "blocked_evidence")
+      .map(({ caseId }) => caseId)
+  )
+  const routedCaseIds = []
+  const routedCounts = Object.fromEntries([...BLOCKED_ROUTE_CLASSES].map((name) => [name, 0]))
+  for (const row of routing.rows) {
+    if (!row || typeof row.case_id !== "string" || row.case_id === "") {
+      throw new Error(`${routingPath} contains a row without case_id`)
+    }
+    if (!BLOCKED_ROUTE_CLASSES.has(row.route_class)) {
+      throw new Error(`${routingPath} has unknown route_class for ${row.case_id}`)
+    }
+    if (!BLOCKED_ROUTE_STATUSES.has(row.status)) {
+      throw new Error(`${routingPath} has unknown status for ${row.case_id}`)
+    }
+    if (typeof row.reason !== "string" || row.reason === "") {
+      throw new Error(`${routingPath} has no reason for ${row.case_id}`)
+    }
+    routedCaseIds.push(row.case_id)
+    routedCounts[row.route_class] += 1
+  }
+  if (
+    new Set(routedCaseIds).size !== routedCaseIds.length ||
+    JSON.stringify(uniqueSortedStrings(routedCaseIds)) !== JSON.stringify(blockedCaseIds)
+  ) {
+    throw new Error(`${routingPath} routing rows do not exactly match blocked_evidence cases`)
+  }
+  for (const routeClass of BLOCKED_ROUTE_CLASSES) {
+    if (routing.counts?.[routeClass] !== routedCounts[routeClass]) {
+      throw new Error(`${routingPath} ${routeClass} count does not match`)
+    }
+  }
+  if (routing.counts?.total !== routedCaseIds.length) {
+    throw new Error(`${routingPath} total count does not match`)
+  }
+  if (
+    routing.integration_base !== undefined &&
+    reconciliation.source?.integration_base !== undefined &&
+    routing.integration_base !== reconciliation.source.integration_base
+  ) {
+    throw new Error(`${routingPath} and ${reconciliationPath} integration_base do not match`)
   }
   return { records, auditPaths: [...routing.source_audits] }
 }
@@ -882,6 +1136,7 @@ async function buildInventory(root) {
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",
+      framerail_amc_wire_contracts: "docs/development/framerail-amc-wire-contracts.json",
       wikidot_py_amc_contract: "docs/development/wikidot-py-amc-client-parity.json",
       framerail_xmlrpc_registry: "framerail/src/lib/server/xmlrpc/methods.ts",
       page_action_registry: "docs/development/wikidot-page-action-surfaces.json",

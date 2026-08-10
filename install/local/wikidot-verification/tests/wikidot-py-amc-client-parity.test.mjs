@@ -65,6 +65,7 @@ test("client parity contract has one terminal record for every extracted module 
   assert.equal(new Set(identifiers).size, identifiers.length)
   for (const module of contract.modules) {
     assert.match(module.source_reference, /^src\/wikidot\/module\//u)
+    assert.ok(!module.parameters.includes("*"), `${module.module_name} must enumerate parameters`)
     assert.ok(["supported", "unsupported_unevidenced"].includes(module.status))
     if (module.status === "supported") {
       assert.equal(module.request_example.moduleName, module.module_name)
@@ -85,4 +86,32 @@ test("supported wikidot.py request bodies behave identically when only the targe
     assert.equal(responses[0].status, 200, module.module_name)
     assert.equal(responses[0].body.status, "ok", module.module_name)
   }
+})
+
+test("ListPages rejects parameters outside the explicit compatibility allowlist", async () => {
+  let rendered = false
+  const response = await handleAjaxModuleConnectorRequest(
+    new Request("https://scp-wiki.wikijump.localhost/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        moduleName: "list/ListPagesModule",
+        module_body: "%%fullname%%",
+        arbitrary_future_selector: "widened"
+      })
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => {
+        rendered = true
+        return { body: "unexpected" }
+      }
+    }
+  )
+
+  assert.equal(rendered, false)
+  assert.deepEqual(await response.json(), {
+    status: "not_ok",
+    message: "Unsupported AJAX module shape: list/ListPagesModule"
+  })
 })
