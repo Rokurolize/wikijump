@@ -22,7 +22,7 @@
   "fixture_path": "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json",
   "fixture_sha256": "c5a21d7c1b5bc3af42d325b8bb68e67c78f0dd1cfdc8624e8df884a7110642c2",
   "inventory_path": "docs/development/compatibility-surface-inventory.json",
-  "inventory_sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
+  "inventory_sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
   "mutations": 0,
   "network_requests": 0,
   "privacy": {

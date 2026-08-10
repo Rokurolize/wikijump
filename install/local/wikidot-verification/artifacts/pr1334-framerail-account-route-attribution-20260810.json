@@ -38,7 +38,7 @@
   "identities": {
     "inventory": {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
+      "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da"
     },
     "fixture": {
       "path": "install/local/wikidot-verification/fixtures/pr1334-framerail-account-route-attribution.json",

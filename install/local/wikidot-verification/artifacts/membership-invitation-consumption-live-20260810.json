@@ -27,7 +27,7 @@
   "pinned_dependency_identity": {
     "requirements_sha256": "45717e5351f7eb1c46431dd44bf15db9777dbbc4fa40026931bd2e6458b2fcc9",
     "static_no_token_artifact_sha256": "bde2f0e6ef4daf8fe9f52134aec967a24f9187503f066338b5365439b3dac628",
-    "audit_sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8",
+    "audit_sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1",
     "manifest_sha256": "de5fd9103495c6fa40e58c4819df81fcac88858dea64225a0f7d108fc67603da",
     "ledger_sha256": "4d55a6f8506641ebb6c699f07871f0de2d4a71b91e6b0a749bb869c3acb20dee"
   },
@@ -44,7 +44,7 @@
     "sources": [
       {
         "class": "campaign_audit",
-        "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
       },
       {
         "class": "membership_case_manifest",

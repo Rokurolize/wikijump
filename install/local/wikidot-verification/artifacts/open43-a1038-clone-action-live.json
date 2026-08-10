@@ -165,7 +165,7 @@
     "title": "Open43 A1038 Clone action authority preflight"
   },
   "fixture_path": "install/local/wikidot-verification/fixtures/open43-a1038-clone-action.json",
-  "fixture_sha256": "266ccc8e1677d1b2308655d90f7c33194a5280d04a55e9ca645960c148cee611",
+  "fixture_sha256": "5951b6285917a4425eafb6d4ff4f9560101cbab8b7c7f148be9d3a4f39dffcfe",
   "integration_base": "43471ea5a4759e3cf855bf3a3ec5456d0901ce01",
   "local_observations": 0,
   "mutation_seam": null,

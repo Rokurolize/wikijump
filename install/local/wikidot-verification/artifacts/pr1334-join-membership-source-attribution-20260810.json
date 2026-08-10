@@ -17,7 +17,7 @@
   "identities": {
     "audit": {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+      "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
     },
     "fixture": {
       "path": "install/local/wikidot-verification/fixtures/pr1334-join-membership-source-attribution.json",
@@ -25,7 +25,7 @@
     },
     "inventory": {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
+      "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da"
     },
     "script": {
       "path": "install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py",
@@ -64,7 +64,7 @@
         "public_reference": [
           "docs/wikidot-specifications/specifications/module/module-join.md"
         ],
-        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
+        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
         "surface_id": "catalog-feature:module-join"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -135,7 +135,7 @@
         "public_reference": [
           "docs/wikidot-specifications/specifications/platform/site-membership.md"
         ],
-        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
+        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
         "surface_id": "catalog-feature:site-membership"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -186,7 +186,7 @@
         "public_reference": [
           "deepwell/src/api.rs#register:membership_join"
         ],
-        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
+        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
         "surface_id": "deepwell-jsonrpc:membership_join"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -248,7 +248,7 @@
           "framerail/src/lib/server/load/page/page-actions.ts#action:membershipJoin",
           "framerail/src/routes/+page.server.ts#action:membershipJoin"
         ],
-        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
+        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
         "surface_id": "framerail-server-action:/?/membershipJoin"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -310,7 +310,7 @@
           "framerail/src/lib/server/load/page/page-actions.ts#action:membershipJoin",
           "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:membershipJoin"
         ],
-        "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6",
+        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
         "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipJoin"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -369,7 +369,7 @@
         "case_id": "A1029_JOIN_RENDER_ARGUMENT_MATRIX",
         "owner": "deepwell",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "The allowed existing test covers saved case-varied Join recognition and binding, but not the audit row's complete render argument matrix; the audit's page.rs citation is outside this lane and is not cited here.",
@@ -407,7 +407,7 @@
         "case_id": "A1029_SAVED_RENDERER_BINDING",
         "owner": "deepwell-and-framerail",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -495,7 +495,7 @@
         "case_id": "A1029_ACTOR_BOUND_OPEN_SELF_JOIN",
         "owner": "deepwell",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -553,7 +553,7 @@
         "case_id": "A1060_EDITABLE_SITE_PUBLIC_JOIN_ROUTE",
         "owner": "deepwell-seeder-and-view",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -621,7 +621,7 @@
         "case_id": "A1060_ORDINARY_MEMBER_PAGE_CREATE",
         "owner": "deepwell",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -687,11 +687,11 @@
     },
     {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "87057498051496db78e4d10d09e909afc54e6e1d3263699b027ef228a2acffa6"
+      "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da"
     },
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8"
+      "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
     },
     {
       "path": "docs/local-authoring-boundary.md",
