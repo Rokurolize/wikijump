@@ -2,6 +2,16 @@
 
 The scripts in this directory import frozen Wikidot corpus data, inspect a local runtime, capture browser evidence, and reduce large runs into machine-readable verdicts. Expected behavior must come from the frozen corpus, reviewed compatibility policy, or sealed real-Wikidot evidence. Local Wikijump output is diagnostic evidence, not an oracle.
 
+## Compatibility surface inventory
+
+`scripts/build-compatibility-surface-inventory.mjs` generates `docs/development/compatibility-surface-inventory.json` from the feature catalog and implementation ledger, the declared Deepwell JSON-RPC registry, SvelteKit routes and named server actions, the Framerail AMC and XML-RPC registries, WWS routes, and the seven audits listed by `open43-blocked-evidence-routing.json`. Each surface has one stable identifier and independent evidence, source, candidate, standing, and closure fields. The command rejects duplicate identifiers, catalog and ledger orphans, missing ownership references, unsupported registry declarations, and status values outside the closed vocabulary.
+
+```sh
+pnpm --dir install/local/wikidot-verification compatibility-inventory
+```
+
+Pass `--root` and `--output` to run the same source-blind discovery against another repository fixture or to write a temporary comparison artifact.
+
 ## Driftless sandbox oracle
 
 `fixtures/sandbox-oracle-fixture-registry.json` is the checked-in registry for
