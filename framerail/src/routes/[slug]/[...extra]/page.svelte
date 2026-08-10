@@ -451,7 +451,13 @@
         {/if}
         {#if wikidotPageActions}
           <!-- svelte-ignore a11y_invalid_attribute -->
-          <a id="tags-button" class="btn btn-default" href="javascript:;" type="button">
+          <a
+            id="tags-button"
+            class="btn btn-default"
+            href="javascript:;"
+            onclick={() => activatePagePane(PagePane.Tags)}
+            type="button"
+          >
             {wikidotPageActions.tags}
           </a>
           {#if wikidotPageActions.showDiscuss}

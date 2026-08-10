@@ -269,6 +269,7 @@ export enum PagePane {
   None = "none",
   File = "file",
   History = "history",
+  Tags = "tags",
   Layout = "layout",
   Move = "move",
   Parent = "parent",
