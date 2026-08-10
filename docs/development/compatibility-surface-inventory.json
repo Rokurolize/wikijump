@@ -21,14 +21,14 @@
     ]
   },
   "counts": {
-    "total": 876,
+    "total": 879,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 152,
+      "deepwell_jsonrpc_method": 153,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 14,
       "framerail_route": 27,
-      "framerail_server_action": 93,
+      "framerail_server_action": 95,
       "framerail_xmlrpc_method": 17,
       "open43_audit_case": 285,
       "page_action": 25,
@@ -10679,6 +10679,39 @@
       }
     },
     {
+      "surface_id": "deepwell-jsonrpc:page_backlinks_view",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_backlinks_view"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "deepwell-jsonrpc:page_create",
       "kind": "deepwell_jsonrpc_method",
       "public_owner": "deepwell",
@@ -15657,6 +15690,40 @@
       }
     },
     {
+      "surface_id": "framerail-server-action:/?/backlinks",
+      "kind": "framerail_server_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:backlinks",
+        "framerail/src/routes/+page.server.ts#action:backlinks"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "framerail-server-action:/?/delete",
       "kind": "framerail_server_action",
       "public_owner": "framerail",
@@ -16683,6 +16750,40 @@
       "public_reference": [
         "framerail/src/lib/server/load/page/page-actions.ts#action:voteGet",
         "framerail/src/routes/+page.server.ts#action:voteGet"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "framerail-server-action:/{slug}/{*extra}?/backlinks",
+      "kind": "framerail_server_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:backlinks",
+        "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:backlinks"
       ],
       "existing_refs": {
         "issues": [],
@@ -29224,13 +29325,18 @@
       "kind": "page_action",
       "public_owner": "framerail",
       "public_reference": [
+        "deepwell/src/services/view/backlinks.rs",
         "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
         "framerail/src/routes/[slug]/[...extra]/page.svelte"
       ],
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::page_backlinks_view_filters_before_exposing_titles_and_slugs",
+          "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -29239,8 +29345,10 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": [
+          "deepwell/src/services/view/backlinks.rs",
+          "framerail/src/routes/[slug]/[...extra]/BacklinksPane.svelte",
           "framerail/src/routes/[slug]/[...extra]/page.svelte"
         ]
       },
@@ -29381,12 +29489,15 @@
       "public_owner": "framerail",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte",
         "framerail/src/routes/[slug]/[...extra]/page.svelte"
       ],
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -29395,8 +29506,9 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": [
+          "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte",
           "framerail/src/routes/[slug]/[...extra]/page.svelte"
         ]
       },
