@@ -225,7 +225,8 @@ pub async fn handle_resized_image(
 }
 
 fn source_format(file_info: &FileData) -> Option<ImageFormat> {
-    match file_info.mime.as_str() {
+    let media_type = file_info.mime.split(';').next()?.trim();
+    match media_type {
         "image/gif" => Some(ImageFormat::Gif),
         "image/jpeg" => Some(ImageFormat::Jpeg),
         "image/png" => Some(ImageFormat::Png),
@@ -688,6 +689,33 @@ mod tests {
             assert_eq!(request["params"]["data"], false);
             assert_eq!(request["params"]["session_token"], "actor-session");
         }
+    }
+
+    #[tokio::test]
+    async fn public_route_accepts_parameterized_image_mime_from_upload_inventory() {
+        let source = png(800, 400, 17);
+        let app = TestApp::spawn(source.clone()).await;
+        app.mock.set_file_reply(FileReply::Found {
+            revision_id: 11,
+            mime: "image/png; charset=binary",
+            size: source.len() as i64,
+            s3_hash: "blob-v1",
+        });
+
+        let response = app
+            .request(reqwest::Method::GET, "thumbnail")
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[CONTENT_TYPE], "image/jpeg");
+        let image = image::load_from_memory_with_format(
+            &response.bytes().await.unwrap(),
+            ImageFormat::Jpeg,
+        )
+        .unwrap();
+        assert_eq!(image.dimensions(), (100, 50));
     }
 
     #[tokio::test]
