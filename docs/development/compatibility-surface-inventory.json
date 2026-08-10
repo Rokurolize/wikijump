@@ -7,6 +7,7 @@
     "framerail_routes_root": "framerail/src/routes",
     "framerail_amc_registry": "framerail/src/lib/server/ajax-module-connector.js",
     "framerail_xmlrpc_registry": "framerail/src/lib/server/xmlrpc/methods.ts",
+    "page_action_registry": "docs/development/wikidot-page-action-surfaces.json",
     "wws_route_registry": "wws/src/route.rs",
     "open43_audits": [
       "docs/development/open43-q-search-users-closure-audit.json",
@@ -19,7 +20,7 @@
     ]
   },
   "counts": {
-    "total": 826,
+    "total": 851,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 152,
@@ -29,6 +30,7 @@
       "framerail_server_action": 93,
       "framerail_xmlrpc_method": 17,
       "open43_audit_case": 285,
+      "page_action": 25,
       "wws_route": 29
     }
   },
@@ -29102,6 +29104,972 @@
       "source": {
         "status": "implemented",
         "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:backlinks",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:delete",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/DeletePane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/DeletePane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:discuss",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/wikidot-page-actions.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:edit",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-action-request-context.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:edit-append",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:edit-meta",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:edit-sections",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:file-delete",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:file-edit",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:file-history",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:file-info",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:file-move",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FileList.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:file-upload",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-file-upload-lifecycle.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:files",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/FilePane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-file-list-public-boundary.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/FilePane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "failed",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:history",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/authoring-workflows.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "in_progress",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:lock",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/LockPane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/LockPane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:more-options",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:parent",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/ParentPane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/ParentPane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:print",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/lib/wikidot/wikidot-page-actions.js"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/wikidot-page-actions.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/lib/wikidot/wikidot-page-actions.js"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:rate",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/VotePane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-rating-public-boundary.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/VotePane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:rename-move",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/MovePane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/MovePane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:site-tools",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:tags",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/TagsPane.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": [
+          "framerail/tests/page-tags-public-boundary.test.js"
+        ]
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/TagsPane.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:view-source",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "page-action:watchers",
+      "kind": "page_action",
+      "public_owner": "framerail",
+      "public_reference": [
+        "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "partial",
+        "references": [
+          "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+        ]
+      },
+      "source": {
+        "status": "pending",
+        "references": [
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
       },
       "candidate": {
         "status": "pending",

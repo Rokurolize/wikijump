@@ -589,6 +589,43 @@ async function discoverFramerailXmlRpc(root) {
   )
 }
 
+async function discoverPageActionSurfaces(root) {
+  const registryPath = "docs/development/wikidot-page-action-surfaces.json"
+  const registry = await readJson(root, registryPath)
+  if (registry.schema !== "wikijump.wikidot_page_action_surface_registry.v1") {
+    throw new Error(`${registryPath} has an unsupported schema`)
+  }
+  if (!Array.isArray(registry.evidence_references) || registry.evidence_references.length === 0) {
+    throw new Error(`${registryPath} must declare evidence_references`)
+  }
+  if (!Array.isArray(registry.surfaces) || registry.surfaces.length === 0) {
+    throw new Error(`${registryPath} must declare surfaces`)
+  }
+  return registry.surfaces.map((entry) => {
+    if (!entry || !/^[a-z][a-z0-9-]+$/u.test(entry.action_id ?? "")) {
+      throw new Error(`${registryPath} contains an invalid action_id`)
+    }
+    if (!LEDGER_STATUSES.has(entry.source_status)) {
+      throw new Error(`${registryPath} has an unknown source status for ${entry.action_id}`)
+    }
+    const standingStatus = entry.standing_status ?? "pending"
+    if (!PHASE_STATUSES.standing.has(standingStatus)) {
+      throw new Error(`${registryPath} has an unknown standing status for ${entry.action_id}`)
+    }
+    return surface({
+      surfaceId: `page-action:${entry.action_id}`,
+      kind: "page_action",
+      publicOwner: "framerail",
+      publicReference: [registryPath, ...(entry.public_references ?? [])],
+      issues: entry.issues ?? [],
+      tests: entry.test_references ?? [],
+      evidence: phase("partial", registry.evidence_references),
+      source: phase(entry.source_status, entry.public_references ?? []),
+      standing: phase(standingStatus)
+    })
+  })
+}
+
 async function discoverWwsRoutes(root) {
   const registryPath = "wws/src/route.rs"
   const sourceText = (await readText(root, registryPath)).split("#[cfg(test)]", 1)[0]
@@ -724,12 +761,13 @@ function validateInventory(surfaces) {
 }
 
 async function buildInventory(root) {
-  const [catalog, deepwell, framerailRoutes, amc, xmlRpc, wws, open43] = await Promise.all([
+  const [catalog, deepwell, framerailRoutes, amc, xmlRpc, pageActions, wws, open43] = await Promise.all([
     discoverCatalogFeatures(root),
     discoverDeepwellJsonRpc(root),
     discoverFramerailRoutes(root),
     discoverFramerailAmc(root),
     discoverFramerailXmlRpc(root),
+    discoverPageActionSurfaces(root),
     discoverWwsRoutes(root),
     discoverOpen43AuditCases(root)
   ])
@@ -739,6 +777,7 @@ async function buildInventory(root) {
     ...framerailRoutes,
     ...amc,
     ...xmlRpc,
+    ...pageActions,
     ...wws,
     ...open43.records
   ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en"))
@@ -756,6 +795,7 @@ async function buildInventory(root) {
       framerail_routes_root: "framerail/src/routes",
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",
       framerail_xmlrpc_registry: "framerail/src/lib/server/xmlrpc/methods.ts",
+      page_action_registry: "docs/development/wikidot-page-action-surfaces.json",
       wws_route_registry: "wws/src/route.rs",
       open43_audits: open43.auditPaths
     },

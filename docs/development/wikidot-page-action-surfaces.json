@@ -1,0 +1,142 @@
+{
+  "schema": "wikijump.wikidot_page_action_surface_registry.v1",
+  "evidence_references": [
+    "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
+  ],
+  "surfaces": [
+    {
+      "action_id": "edit",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "test_references": ["framerail/tests/page-action-request-context.test.js"]
+    },
+    {
+      "action_id": "rate",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/VotePane.svelte"],
+      "test_references": ["framerail/tests/page-rating-public-boundary.test.js"]
+    },
+    {
+      "action_id": "tags",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/TagsPane.svelte"],
+      "test_references": ["framerail/tests/page-tags-public-boundary.test.js"]
+    },
+    {
+      "action_id": "discuss",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "test_references": ["framerail/tests/wikidot-page-actions.test.js"]
+    },
+    {
+      "action_id": "history",
+      "source_status": "in_progress",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte"],
+      "test_references": ["framerail/tests/authoring-workflows.test.js"]
+    },
+    {
+      "action_id": "files",
+      "source_status": "implemented",
+      "standing_status": "failed",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FilePane.svelte"],
+      "test_references": ["framerail/tests/page-file-list-public-boundary.test.js"]
+    },
+    {
+      "action_id": "print",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/lib/wikidot/wikidot-page-actions.js"],
+      "test_references": ["framerail/tests/wikidot-page-actions.test.js"]
+    },
+    {
+      "action_id": "site-tools",
+      "source_status": "pending",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "more-options",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "edit-sections",
+      "source_status": "pending",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "edit-append",
+      "source_status": "pending",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "edit-meta",
+      "source_status": "pending",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "watchers",
+      "source_status": "pending",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "backlinks",
+      "source_status": "pending",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "view-source",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+    },
+    {
+      "action_id": "parent",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/ParentPane.svelte"]
+    },
+    {
+      "action_id": "lock",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/LockPane.svelte"]
+    },
+    {
+      "action_id": "rename-move",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/MovePane.svelte"]
+    },
+    {
+      "action_id": "delete",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/DeletePane.svelte"]
+    },
+    {
+      "action_id": "file-upload",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte"],
+      "test_references": ["framerail/tests/page-file-upload-lifecycle.test.js"]
+    },
+    {
+      "action_id": "file-history",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"]
+    },
+    {
+      "action_id": "file-info",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+    },
+    {
+      "action_id": "file-move",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+    },
+    {
+      "action_id": "file-edit",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+    },
+    {
+      "action_id": "file-delete",
+      "source_status": "implemented",
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+    }
+  ]
+}

@@ -47,6 +47,18 @@ async function writeRepositoryFixture(root) {
     "deepwell/src/api.rs",
     'register!("ping", ping);\n'
   )
+  await writeJson(root, "docs/development/wikidot-page-action-surfaces.json", {
+    schema: "wikijump.wikidot_page_action_surface_registry.v1",
+    evidence_references: ["evidence/page-shell.html"],
+    surfaces: [
+      {
+        action_id: "edit",
+        source_status: "implemented",
+        public_references: ["framerail/src/routes/+page.svelte"],
+        test_references: ["tests/page-edit.test.js"]
+      }
+    ]
+  })
   await writeText(root, "framerail/src/routes/+page.svelte", "<h1>Fixture</h1>\n")
   await writeText(
     root,
@@ -131,11 +143,11 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 13 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 14 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.deepEqual(inventory.counts, {
-    total: 13,
+    total: 14,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
@@ -145,6 +157,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
       framerail_server_action: 1,
       framerail_xmlrpc_method: 1,
       open43_audit_case: 1,
+      page_action: 1,
       wws_route: 1
     }
   })
