@@ -13,7 +13,7 @@
 use super::get_site_id;
 use crate::deepwell::FileData;
 use crate::error::{BasicError, build_basic_error_response};
-use crate::fetch::fetch_fresh_file_info;
+use crate::fetch::fetch_file_info;
 use crate::state::ServerState;
 use axum::body::Body;
 use axum::extract::{Path, State};
@@ -98,8 +98,7 @@ pub async fn handle_resized_image(
         return resized_not_found(&state, &headers, site_id, &page_slug, &filename).await;
     };
     let file_info =
-        match fetch_fresh_file_info(&state, &headers, site_id, &mut page_slug, &filename)
-            .await
+        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
         {
             Ok(file_info) => file_info,
             Err(response) => return response,
@@ -382,6 +381,7 @@ mod tests {
 
     #[derive(Debug)]
     struct MockState {
+        page_exists: AtomicBool,
         file_reply: Mutex<FileReply>,
         blobs: Mutex<HashMap<String, Vec<u8>>>,
         rpc_requests: Mutex<Vec<Value>>,
@@ -391,6 +391,10 @@ mod tests {
     }
 
     impl MockState {
+        fn set_page_exists(&self, exists: bool) {
+            self.page_exists.store(exists, Ordering::SeqCst);
+        }
+
         fn set_file_reply(&self, reply: FileReply) {
             *self.file_reply.lock().unwrap() = reply;
         }
@@ -411,6 +415,7 @@ mod tests {
     impl TestApp {
         async fn spawn(source: Vec<u8>) -> Self {
             let mock = Arc::new(MockState {
+                page_exists: AtomicBool::new(true),
                 file_reply: Mutex::new(FileReply::Found {
                     revision_id: 11,
                     mime: "image/png",
@@ -495,6 +500,16 @@ mod tests {
                 .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
                 .header("cookie", "unrelated=1; wikijump_token=actor-session")
         }
+
+        fn original_request(&self, method: reqwest::Method) -> reqwest::RequestBuilder {
+            self.client
+                .request(
+                    method,
+                    format!("{}/-/file/{PAGE_SLUG}/{FILE_NAME}", self.base_url,),
+                )
+                .header(HEADER_SITE_ID.as_str(), SITE_ID.to_string())
+                .header("cookie", "unrelated=1; wikijump_token=actor-session")
+        }
     }
 
     impl Drop for TestApp {
@@ -512,7 +527,7 @@ mod tests {
         let response = match method {
             "page_get" => json!({
                 "jsonrpc": "2.0",
-                "result": {"page_id": PAGE_ID},
+                "result": state.page_exists.load(Ordering::SeqCst).then_some(json!({"page_id": PAGE_ID})),
                 "id": id,
             }),
             "file_get" => match state.file_reply.lock().unwrap().clone() {
@@ -712,6 +727,24 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(stale_name.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn original_file_route_rechecks_page_existence_without_the_slug_cache() {
+        let app = TestApp::spawn(png(800, 400, 17)).await;
+        app.mock.set_page_exists(false);
+
+        let response = app
+            .original_request(reqwest::Method::GET)
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let requests = app.mock.rpc_requests.lock().unwrap();
+        assert_eq!(requests[0]["method"], "page_get");
+        assert_eq!(requests[1]["method"], "basic_error_missing_page_slug");
+        assert_eq!(requests.len(), 2);
     }
 
     #[tokio::test]

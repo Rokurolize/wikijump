@@ -38,31 +38,6 @@ pub async fn fetch_file_info(
     normalize(page_slug);
 
     let page_id = state
-        .get_page_or_response(headers, site_id, page_slug)
-        .await?;
-
-    state
-        .get_file_or_response(
-            headers,
-            site_id,
-            page_id,
-            page_slug,
-            filename,
-            get_session_token(headers),
-        )
-        .await
-}
-
-pub async fn fetch_fresh_file_info(
-    state: &ServerState,
-    headers: &HeaderMap,
-    site_id: i64,
-    page_slug: &mut String,
-    filename: &str,
-) -> ResponseResult<FileData> {
-    normalize(page_slug);
-
-    let page_id = state
         .get_page_fresh_or_response(headers, site_id, page_slug)
         .await?;
 
