@@ -12,9 +12,8 @@ test("Files form name controls do not expose the generic name theme hook", async
 
   for (const component of components) {
     const source = await readFile(new URL(`../${component}`, import.meta.url), "utf8")
-    const nameControl = source.match(
-      /<input\s+[\s\S]*?name="name"[\s\S]*?class="([^"]+)"[\s\S]*?>/u
-    )
+    const nameControl =
+      /<input\s+[\s\S]*?name="name"[\s\S]*?class="([^"]+)"[\s\S]*?>/u.exec(source)
 
     assert.ok(nameControl, `${component} renders the file name control`)
     const classes = nameControl[1].split(/\s+/u)

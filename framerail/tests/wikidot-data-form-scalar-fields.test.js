@@ -167,8 +167,10 @@ test("url-explicit-ftp-schema-survives-edit while dangerous schemes fail closed"
     text: "ftp://example.com/beta",
     href: "ftp://example.com/beta"
   })
-  assert.deepEqual(wikidotDataFormUrlDisplay("javascript:alert(1)"), {
-    text: "javascript:alert(1)",
+  // eslint-disable-next-line no-script-url -- exact unsafe input verifies fail-closed handling
+  const dangerousScriptUrl = "javascript:alert(1)"
+  assert.deepEqual(wikidotDataFormUrlDisplay(dangerousScriptUrl), {
+    text: dangerousScriptUrl,
     href: null
   })
   assert.deepEqual(wikidotDataFormUrlDisplay("https://example.com/unobserved"), {

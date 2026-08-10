@@ -59,7 +59,7 @@ const PRIVATE_MESSAGE_CONTROL = Object.freeze({
  * @param {LoadAvatar | undefined} loadAvatar
  * @returns {Promise<PublicUser>}
  */
-async function projectPublicUser(user, loadAvatar) {
+const projectPublicUser = async (user, loadAvatar) => {
   const avatar =
     user.avatar_s3_hash !== null && loadAvatar
       ? await loadAvatar(user.avatar_s3_hash)
@@ -85,13 +85,13 @@ async function projectPublicUser(user, loadAvatar) {
  * }} options
  * @returns {Promise<UserInfoFound | UserInfoMissing>}
  */
-export async function loadWikidotUserInfo({
+export const loadWikidotUserInfo = async ({
   siteId,
   locales,
   target,
   userView,
   loadAvatar
-}) {
+}) => {
   const response = await userView(siteId, locales, undefined, target)
   const responseType = response.type
 
