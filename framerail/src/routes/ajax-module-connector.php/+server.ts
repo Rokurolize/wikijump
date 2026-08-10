@@ -1,6 +1,9 @@
 import { handleAjaxModuleConnectorRequest } from "$lib/server/ajax-module-connector.js"
 import {
   renderWikidotPageFiles,
+  renderWikidotPageRevisionList,
+  renderWikidotPageRevisionSource,
+  renderWikidotPageRevisionVersion,
   renderWikidotViewSource
 } from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
@@ -11,7 +14,9 @@ import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
   pageEdit,
   pageGet,
+  pageHistory,
   pageRevision,
+  pageRevisionById,
   pageViewPermission,
   pageParentUpdate,
   wikidotPageDiscussionCreate,
@@ -178,8 +183,43 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       moduleName: string
       parameters: Record<string, string>
     }) => {
+      if (
+        moduleName === "history/PageSourceModule" ||
+        moduleName === "history/PageVersionModule"
+      ) {
+        const revisionId = Number.parseInt(parameters.revision_id, 10)
+        const revision = await pageRevisionById(
+          siteId,
+          revisionId,
+          moduleName === "history/PageVersionModule",
+          moduleName === "history/PageSourceModule",
+          requestContext
+        )
+        if (!revision) throw new Error("History target revision is missing")
+        return {
+          status: "ok",
+          body:
+            moduleName === "history/PageSourceModule"
+              ? renderWikidotPageRevisionSource(revision)
+              : renderWikidotPageRevisionVersion(revision)
+        }
+      }
+
       const pageId = Number.parseInt(parameters.page_id, 10)
       const pageRequestContext = { ...requestContext, page: pageId }
+      if (moduleName === "history/PageRevisionListModule") {
+        const revisions = await pageHistory(
+          siteId,
+          pageId,
+          -1,
+          Number.parseInt(parameters.perpage, 10),
+          pageRequestContext
+        )
+        return {
+          status: "ok",
+          body: renderWikidotPageRevisionList(revisions)
+        }
+      }
       if (moduleName === "viewsource/ViewSourceModule") {
         const revision = await pageRevision(
           siteId,

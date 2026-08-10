@@ -22812,6 +22812,20 @@ async fn page_revision_reads_require_page_view_permission() {
 
     let error = run_endpoint_err!(
         runner,
+        page_revision_get_by_id,
+        json!({
+            "site_id": site_id,
+            "revision_id": created.revision_id,
+            "details": {
+                "wikitext": true,
+                "compiled_html": true
+            },
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let error = run_endpoint_err!(
+        runner,
         page_revision_range,
         json!({
             "site_id": site_id,
@@ -22867,6 +22881,43 @@ async fn page_revision_reads_require_page_view_permission() {
             .compiled_body_html
             .as_deref()
             .is_some_and(|html| html.contains("private revision body marker")),
+    );
+
+    let revision = run_endpoint!(
+        runner,
+        page_revision_get_by_id,
+        json!({
+            "site_id": site_id,
+            "revision_id": created.revision_id,
+            "details": {
+                "wikitext": true,
+                "compiled_html": true
+            },
+        }),
+    )
+    .expect("admin should be allowed to resolve a private revision by ID");
+    assert_eq!(revision.page_id, created.page_id);
+    assert_eq!(revision.revision_id, created.revision_id);
+    assert_eq!(
+        revision.author.as_ref().map(|author| author.user_id),
+        Some(ADMIN_USER_ID)
+    );
+    assert_eq!(
+        revision.wikitext.as_deref(),
+        Some("private revision body marker")
+    );
+
+    let revision = run_endpoint!(
+        runner,
+        page_revision_get_by_id,
+        json!({
+            "site_id": site_id + 1,
+            "revision_id": created.revision_id,
+        }),
+    );
+    assert!(
+        revision.is_none(),
+        "a revision ID must not cross its site boundary"
     );
 
     let revisions = run_endpoint!(

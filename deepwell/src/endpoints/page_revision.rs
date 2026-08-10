@@ -22,9 +22,10 @@ use super::prelude::*;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::page::{GetPageReference, PageService};
 use crate::services::page_revision::{
-    CountPageRevisions, GetPageRevisionDetails, GetPageRevisionDiff,
-    GetPageRevisionRangeDetails, PageRevisionCountOutput, PageRevisionDiffOutput,
-    PageRevisionModelFiltered, UpdatePageRevisionDetails,
+    CountPageRevisions, GetPageRevision, GetPageRevisionByIdDetails,
+    GetPageRevisionDetails, GetPageRevisionDiff, GetPageRevisionRangeDetails,
+    PageRevisionCountOutput, PageRevisionDiffOutput, PageRevisionModelFiltered,
+    UpdatePageRevisionDetails,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{MutationAuthorization, TextService};
@@ -76,6 +77,61 @@ pub async fn page_revision_get(
     let revision = PageRevisionService::get_optional(ctx, input)
         .await
         .or_raise(make_error)?;
+
+    match revision {
+        None => Ok(None),
+        Some(revision) => {
+            let authors = resolve_revision_authors(ctx, std::slice::from_ref(&revision))
+                .await
+                .or_raise(make_error)?;
+            let author = authors.get(&revision.user_id).cloned();
+            let revision = filter_and_populate_revision(ctx, revision, details, author)
+                .await
+                .or_raise(make_error)?;
+
+            Ok(Some(revision))
+        }
+    }
+}
+
+pub async fn page_revision_get_by_id(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageRevisionModelFiltered>> {
+    let GetPageRevisionByIdDetails {
+        site_id,
+        revision_id,
+        details,
+    } = parse!(params, PageRevision);
+    let make_error = || {
+        Error::new(
+            "failed to get a page revision by ID",
+            ErrorType::PageRevision,
+        )
+    };
+
+    let Some(coordinate) =
+        PageRevisionService::get_coordinate_by_id(ctx, site_id, revision_id)
+            .await
+            .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+
+    ensure_page_view_permission(ctx, site_id, Reference::Id(coordinate.page_id))
+        .await
+        .or_raise(make_error)?;
+
+    let revision = PageRevisionService::get_optional(
+        ctx,
+        GetPageRevision {
+            site_id,
+            page_id: coordinate.page_id,
+            revision_number: coordinate.revision_number,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
 
     match revision {
         None => Ok(None),

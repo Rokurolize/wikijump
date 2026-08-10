@@ -463,6 +463,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     // Page revisions
     register!("page_revision_create", page_revision_edit);
     register!("page_revision_get", page_revision_get);
+    register!("page_revision_get_by_id", page_revision_get_by_id);
     register!("page_revision_count", page_revision_count);
     register!("page_revision_diff", page_revision_diff);
     register!("page_revision_range", page_revision_range);

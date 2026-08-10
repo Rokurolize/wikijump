@@ -38,7 +38,10 @@ const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
 const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group", "page"])
 const PAGE_READ_MODULE_PARAMETERS = new Map([
   ["viewsource/ViewSourceModule", new Set(["page_id"])],
-  ["files/PageFilesModule", new Set(["page_id"])]
+  ["files/PageFilesModule", new Set(["page_id"])],
+  ["history/PageRevisionListModule", new Set(["page_id", "options", "perpage"])],
+  ["history/PageSourceModule", new Set(["revision_id"])],
+  ["history/PageVersionModule", new Set(["revision_id"])]
 ])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
@@ -137,6 +140,27 @@ const jsonResponse = (body, status = 200, extraHeaders = {}) =>
     status,
     headers: { ...AJAX_MODULE_CONNECTOR_HEADERS, ...extraHeaders }
   })
+
+/**
+ * @param {string} moduleName
+ * @param {Record<string, string>} parameters
+ */
+const isSupportedPageReadShape = (moduleName, parameters) => {
+  if (
+    moduleName === "viewsource/ViewSourceModule" ||
+    moduleName === "files/PageFilesModule"
+  ) {
+    return isPositiveSafeDecimal(parameters.page_id)
+  }
+  if (moduleName === "history/PageRevisionListModule") {
+    return (
+      isPositiveSafeDecimal(parameters.page_id) &&
+      parameters.options === "{'all': True}" &&
+      parameters.perpage === "100000000"
+    )
+  }
+  return isPositiveSafeDecimal(parameters.revision_id)
+}
 
 /**
  * @param {Request} request
@@ -760,7 +784,7 @@ export const handleAjaxModuleConnectorRequest = async (
     if (
       Object.keys(parameters).length !== pageReadParameters.size ||
       ![...pageReadParameters].every((name) => Object.hasOwn(parameters, name)) ||
-      !isPositiveSafeDecimal(parameters.page_id)
+      !isSupportedPageReadShape(moduleName, parameters)
     ) {
       return jsonResponse({
         status: "not_ok",

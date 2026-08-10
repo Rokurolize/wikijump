@@ -152,6 +152,21 @@ pub struct GetPageRevisionDetails {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct GetPageRevisionByIdDetails {
+    pub site_id: i64,
+    pub revision_id: i64,
+
+    #[serde(default)]
+    pub details: PageDetails,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PageRevisionCoordinate {
+    pub page_id: i64,
+    pub revision_number: i32,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct UpdatePageRevision {
     pub site_id: i64,
     pub page_id: i64,

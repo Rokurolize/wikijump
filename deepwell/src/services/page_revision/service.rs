@@ -22,8 +22,9 @@ use super::structs::{
     CountPageRevisions, CreateFirstPageRevision, CreateFirstPageRevisionOutput,
     CreatePageRevision, CreatePageRevisionBody, CreatePageRevisionOutput,
     CreateResurrectionPageRevision, CreateTombstonePageRevision, FirstRevisionFollowups,
-    GetPageRevision, GetPageRevisionDiff, GetPageRevisionRange, PageRevisionDiffLine,
-    PageRevisionDiffLineKind, PageRevisionDiffOutput, RerenderType, UpdatePageRevision,
+    GetPageRevision, GetPageRevisionDiff, GetPageRevisionRange, PageRevisionCoordinate,
+    PageRevisionDiffLine, PageRevisionDiffLineKind, PageRevisionDiffOutput, RerenderType,
+    UpdatePageRevision,
 };
 use super::tasks::PageRevisionTasks;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -1760,6 +1761,43 @@ impl PageRevisionService {
             .or_raise(make_error)?;
 
         Ok(revision)
+    }
+
+    pub async fn get_coordinate_by_id(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        revision_id: i64,
+    ) -> Result<Option<PageRevisionCoordinate>> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to resolve page revision ID {} on site ID {}",
+                    revision_id, site_id,
+                ),
+                ErrorType::PageRevision,
+            )
+        };
+
+        let coordinate = PageRevision::find()
+            .select_only()
+            .column(page_revision::Column::PageId)
+            .column(page_revision::Column::RevisionNumber)
+            .filter(
+                Condition::all()
+                    .add(page_revision::Column::SiteId.eq(site_id))
+                    .add(page_revision::Column::RevisionId.eq(revision_id)),
+            )
+            .into_tuple::<(i64, i32)>()
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        Ok(
+            coordinate.map(|(page_id, revision_number)| PageRevisionCoordinate {
+                page_id,
+                revision_number,
+            }),
+        )
     }
 
     pub async fn get_diff(

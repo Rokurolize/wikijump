@@ -3,6 +3,9 @@ import test from "node:test"
 
 import {
   renderWikidotPageFiles,
+  renderWikidotPageRevisionList,
+  renderWikidotPageRevisionSource,
+  renderWikidotPageRevisionVersion,
   renderWikidotViewSource
 } from "../src/lib/server/ajax-module-connector-page-reads.js"
 
@@ -31,5 +34,74 @@ test("renders an empty file list without fabricating rows", () => {
   assert.equal(
     renderWikidotPageFiles("main", []),
     "<h1>Files</h1>\n<p>No files attached to this page</p>"
+  )
+})
+
+test("renders typed Deepwell revisions in the wikidot.py history parser boundary", () => {
+  const body = renderWikidotPageRevisionList([
+    {
+      revision_id: 1000003,
+      revision_type: "move",
+      revision_number: 2,
+      created_at: "2023-11-14T22:46:40Z",
+      user_id: 12345,
+      author: {
+        "user-id": 12345,
+        "user-slug": "test-user",
+        "user-name": "Test <User>"
+      },
+      changes: ["slug"],
+      comments: "Renamed & retained",
+      wikitext: null,
+      compiled_body_html: null
+    },
+    {
+      revision_id: 1000002,
+      revision_type: "regular",
+      revision_number: 1,
+      created_at: "2023-11-14T22:30:00Z",
+      user_id: 45678,
+      author: null,
+      changes: ["title"],
+      comments: null,
+      wikitext: null,
+      compiled_body_html: null
+    }
+  ])
+
+  assert.match(body, /^<table class="page-history">/u)
+  assert.match(body, /<tr id="revision-row-1000003"><td>3\.<\/td>/u)
+  assert.match(body, /name="to" value="1000003" checked="checked"/u)
+  assert.match(body, /name="from" value="1000002" checked="checked"/u)
+  assert.match(
+    body,
+    /<span class="printuser"><a href="http:\/\/www\.wikidot\.com\/user:info\/test-user" onclick="WIKIDOT\.page\.listeners\.userInfo\(12345\); return false;">Test &lt;User&gt;<\/a><\/span>/u
+  )
+  assert.match(body, /<span class="odate time_1700002000">14 Nov 2023<\/span>/u)
+  assert.match(body, /Renamed &amp; retained/u)
+  assert.match(body, /<span class="printuser deleted" data-id="45678"><\/span>/u)
+})
+
+test("renders historical source and compiled HTML without exposing source markup", () => {
+  const revision = {
+    revision_id: 1000003,
+    revision_type: "regular",
+    revision_number: 2,
+    created_at: "2023-11-14T22:46:40Z",
+    user_id: 12345,
+    author: null,
+    changes: ["wikitext"],
+    comments: null,
+    wikitext: 'alpha < beta & [[div title="x"]]',
+    compiled_body_html: '<p class="historical">Rendered revision</p>'
+  }
+
+  assert.equal(
+    renderWikidotPageRevisionSource(revision),
+    '<div class="page-source">alpha &lt; beta &amp; [[div title=&quot;x&quot;]]</div>'
+  )
+  assert.equal(
+    renderWikidotPageRevisionVersion(revision),
+    '<p class="historical">Rendered revision</p>'
   )
 })

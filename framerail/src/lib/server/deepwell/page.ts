@@ -265,8 +265,8 @@ export async function wikidotPageDiscussionCreate(
 export interface PageRevisionModelFiltered {
   revision_id: number
   revision_type: PageRevisionType
-  created_at: number
-  updated_at: Nullable<number>
+  created_at: string
+  updated_at: Nullable<string>
   from_wikidot: boolean
   revision_number: number
   page_id: number
@@ -279,7 +279,7 @@ export interface PageRevisionModelFiltered {
   compiled_body_styles: Nullable<string[]>
   compiled_top_bar_html: Nullable<string>
   compiled_side_bar_html: Nullable<string>
-  compiled_at: number
+  compiled_at: string
   compiled_generator: string
   comments: Nullable<string>
   hidden: string[]
@@ -373,6 +373,27 @@ export async function pageRevision(
       details: {
         compiled_html: compiledHtml ?? false,
         wikitext: wikitext ?? false
+      }
+    },
+    requestContext
+  )
+}
+
+export async function pageRevisionById(
+  siteId: number,
+  revisionId: number,
+  compiledHtml: boolean,
+  wikitext: boolean,
+  requestContext: RequestContext = {}
+): Promise<Nullable<PageRevisionModelFiltered>> {
+  return client.request(
+    "page_revision_get_by_id",
+    {
+      site_id: siteId,
+      revision_id: revisionId,
+      details: {
+        compiled_html: compiledHtml,
+        wikitext
       }
     },
     requestContext

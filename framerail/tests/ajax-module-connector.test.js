@@ -584,6 +584,81 @@ test("dispatches wikidot.py page reads without rewriting their request fields", 
   ])
 })
 
+test("dispatches the exact wikidot.py page revision list shape", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "history/PageRevisionListModule",
+      page_id: "1469071756",
+      options: "{'all': True}",
+      perpage: "100000000",
+      callbackIndex: "client-history"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async (input) => {
+        received = input
+        return { status: "ok", body: '<table class="page-history"></table>' }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  delete body.CURRENT_TIMESTAMP
+  assert.deepEqual(body, {
+    status: "ok",
+    body: '<table class="page-history"></table>',
+    callbackIndex: "client-history",
+    cssInclude: [],
+    jsInclude: []
+  })
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    moduleName: "history/PageRevisionListModule",
+    parameters: {
+      page_id: "1469071756",
+      options: "{'all': True}",
+      perpage: "100000000"
+    }
+  })
+})
+
+test("dispatches the exact wikidot.py historical source and version shapes", async () => {
+  const calls = []
+  for (const moduleName of ["history/PageSourceModule", "history/PageVersionModule"]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ moduleName, revision_id: "1000003" }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderPageReadModule: async (input) => {
+          calls.push(input)
+          return { status: "ok", body: `<div>${moduleName}</div>` }
+        }
+      }
+    )
+
+    assert.equal(response.status, 200)
+    assert.equal((await response.json()).status, "ok")
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleName: "history/PageSourceModule",
+      parameters: { revision_id: "1000003" }
+    },
+    {
+      siteId: 6000006,
+      moduleName: "history/PageVersionModule",
+      parameters: { revision_id: "1000003" }
+    }
+  ])
+})
+
 test("fails closed for unevidenced wikidot.py page read shapes", async () => {
   let calls = 0
   for (const form of [
@@ -593,6 +668,27 @@ test("fails closed for unevidenced wikidot.py page read shapes", async () => {
       moduleName: "viewsource/ViewSourceModule",
       page_id: "1469071756",
       pageId: "1469071756"
+    },
+    {
+      moduleName: "history/PageRevisionListModule",
+      page_id: "1469071756",
+      options: "{'all': False}",
+      perpage: "100000000"
+    },
+    {
+      moduleName: "history/PageRevisionListModule",
+      page_id: "1469071756",
+      options: "{'all': True}",
+      perpage: "100"
+    },
+    {
+      moduleName: "history/PageSourceModule",
+      revision_id: "1000003",
+      page_id: "1469071756"
+    },
+    {
+      moduleName: "history/PageVersionModule",
+      revision_id: "0"
     }
   ]) {
     const response = await handleAjaxModuleConnectorRequest(request(form), {
