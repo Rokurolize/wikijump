@@ -17,8 +17,8 @@ const requireOkResponse = (value) => {
 }
 
 /**
- * The legacy response is parsed in inert documents. Its inline handlers are
- * never inserted into the displayed page.
+ * The legacy response is parsed in inert documents. Its inline handlers
+ * are never inserted into the displayed page.
  *
  * @param {string} body
  * @param {typeof DOMParser} [Parser]
@@ -40,7 +40,10 @@ export const parseWikidotEditMetaRows = (body, Parser = DOMParser) => {
   )
 }
 
-/** @param {typeof fetch} fetchImplementation @param {URLSearchParams} fields */
+/**
+ * @param {typeof fetch} fetchImplementation @param {URLSearchParams}
+ *   fields
+ */
 const requestEditMeta = async (fetchImplementation, fields) => {
   const response = await fetchImplementation("/ajax-module-connector.php", {
     method: "POST",
@@ -64,7 +67,12 @@ export const loadWikidotEditMetaRows = async (fetchImplementation, pageId) => {
 
 /**
  * @param {typeof fetch} fetchImplementation
- * @param {{ pageId: number; name: string; content: string; allPages: boolean }} input
+ * @param {{
+ *   pageId: number
+ *   name: string
+ *   content: string
+ *   allPages: boolean
+ * }} input
  */
 export const saveWikidotMetaTag = (fetchImplementation, input) =>
   requestEditMeta(

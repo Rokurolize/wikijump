@@ -76,7 +76,7 @@
 {#if rows === null}
   <p class="pane-loading" aria-live="polite">Loading…</p>
 {:else}
-  <div style="padding-left:3em;">
+  <div style:padding-left="3em">
     {#each rows as row (`${row.all_pages}:${row.name}`)}
       <div>
         <button
@@ -99,20 +99,25 @@
   <div id="edit-meta-newtag">
     <h2>Add a new meta tag</h2>
     <form id="edit-meta-newtag-form" onsubmit={(event) => event.preventDefault()}>
-      <table style="margin: 0 auto;">
+      <table style:margin="0 auto">
         <tbody>
           <tr>
             <td>&lt;meta&nbsp;&nbsp;&nbsp;name="</td>
-            <td><input bind:value={metaName} name="metaName" type="text" size="20" /></td>
+            <td><input name="metaName" size="20" type="text" bind:value={metaName} /></td>
             <td>"&nbsp;&nbsp;&nbsp;content="</td>
             <td
-              ><input bind:value={metaContent} name="metaContent" type="text" size="30"
-            /></td>
+              ><input
+                name="metaContent"
+                size="30"
+                type="text"
+                bind:value={metaContent}
+              /></td
+            >
             <td>" /&gt;</td>
           </tr>
         </tbody>
       </table>
-      <div style="text-align: center; padding: 1em;">
+      <div style:text-align="center" style:padding="1em">
         <button
           class="btn btn-danger btn-small btn-sm"
           disabled={busy}
@@ -142,7 +147,11 @@
   </p>
 {/if}
 
-<p>Adding a meta tag with the name already used will effectively replace the existing entry. <br /><br /> Meta entries added to a page override global meta information added to all pages.</p>
+<p>
+  Adding a meta tag with the name already used will effectively replace the existing
+  entry. <br /><br /> Meta entries added to a page override global meta information added to
+  all pages.
+</p>
 
 <style lang="scss">
   .edit-meta-remove {
