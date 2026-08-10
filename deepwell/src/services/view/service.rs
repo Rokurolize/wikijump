@@ -70,8 +70,8 @@ use crate::services::view::ViewType;
 use crate::services::vote::GetVote;
 use crate::services::{
     BlueprintPageService, CategoryService, DataFormEditor, DomainService,
-    PageLockService, PageRevisionService, PageService, SessionService, SiteService,
-    TextService, UserService, VoteService,
+    PageLockService, PageMetaTagService, PageRevisionService, PageService,
+    SessionService, SiteService, TextService, UserService, VoteService,
 };
 use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
@@ -1088,6 +1088,10 @@ impl ViewService {
                 )
                 .await
                 .or_raise(make_error)?;
+                let meta_tags =
+                    PageMetaTagService::effective(ctx, page.site_id, page.page_id)
+                        .await
+                        .or_raise(make_error)?;
                 GetPageViewOutput::Found {
                     options,
                     page,
@@ -1095,6 +1099,7 @@ impl ViewService {
                     wikidot_snapshot,
                     wikidot_breadcrumbs,
                     attributions,
+                    meta_tags,
                     page_rating,
                     page_discussion,
                     data_form,

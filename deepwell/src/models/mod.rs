@@ -29,6 +29,7 @@ pub mod page_connection;
 pub mod page_connection_missing;
 pub mod page_link;
 pub mod page_lock;
+pub mod page_meta_tag;
 pub mod page_parent;
 pub mod page_revision;
 pub mod page_vote;

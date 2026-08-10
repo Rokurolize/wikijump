@@ -27,6 +27,7 @@ pub use super::page_connection::Entity as PageConnection;
 pub use super::page_connection_missing::Entity as PageConnectionMissing;
 pub use super::page_link::Entity as PageLink;
 pub use super::page_lock::Entity as PageLock;
+pub use super::page_meta_tag::Entity as PageMetaTag;
 pub use super::page_parent::Entity as PageParent;
 pub use super::page_revision::Entity as PageRevision;
 pub use super::page_vote::Entity as PageVote;

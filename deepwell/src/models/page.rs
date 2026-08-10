@@ -53,6 +53,8 @@ pub enum Relation {
     PageLink,
     #[sea_orm(has_many = "super::page_lock::Entity")]
     PageLock,
+    #[sea_orm(has_many = "super::page_meta_tag::Entity")]
+    PageMetaTag,
     #[sea_orm(
         belongs_to = "super::page_revision::Entity",
         from = "Column::LatestRevisionId",
@@ -114,6 +116,12 @@ impl Related<super::page_link::Entity> for Entity {
 impl Related<super::page_lock::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::PageLock.def()
+    }
+}
+
+impl Related<super::page_meta_tag::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PageMetaTag.def()
     }
 }
 

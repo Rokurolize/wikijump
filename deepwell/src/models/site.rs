@@ -76,6 +76,8 @@ pub enum Relation {
     MessageReport,
     #[sea_orm(has_many = "super::page::Entity")]
     Page,
+    #[sea_orm(has_many = "super::page_meta_tag::Entity")]
+    PageMetaTag,
     #[sea_orm(has_many = "super::page_category::Entity")]
     PageCategory,
     #[sea_orm(has_many = "super::page_connection_missing::Entity")]
@@ -157,6 +159,12 @@ impl Related<super::message_report::Entity> for Entity {
 impl Related<super::page::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::Page.def()
+    }
+}
+
+impl Related<super::page_meta_tag::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::PageMetaTag.def()
     }
 }
 

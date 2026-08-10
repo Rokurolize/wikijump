@@ -27,6 +27,7 @@ use crate::models::site::Model as SiteModel;
 use crate::models::user::Model as WikijumpUserModel;
 use crate::services::DataFormEditor;
 use crate::services::membership::MembershipBrowserAction;
+use crate::services::page_meta_tag::PageMetaTag;
 use crate::services::relation::PageAttribution;
 use crate::services::render::{LegacyBrowserAction, RateBrowserActionRegistry};
 use crate::services::settings::{
@@ -114,6 +115,8 @@ pub enum GetPageViewOutput {
         wikidot_snapshot: Option<WikidotPageSnapshotView>,
         wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
         attributions: Vec<PageAttribution>,
+        #[serde(default)]
+        meta_tags: Vec<PageMetaTag>,
         #[serde(default)]
         page_rating: PageRatingSettings,
         #[serde(default)]
