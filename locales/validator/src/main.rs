@@ -28,10 +28,12 @@ mod check;
 mod messages;
 
 use check::ValidationOutcome;
+use std::path::Path;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
-    match check::run("../fluent") {
+    let fluent_directory = Path::new(env!("CARGO_MANIFEST_DIR")).join("../fluent");
+    match check::run(&fluent_directory) {
         Ok(ValidationOutcome::Valid) => {
             println!();
             println!("Everything looks in order.");
