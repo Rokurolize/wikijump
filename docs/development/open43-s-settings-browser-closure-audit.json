@@ -22,7 +22,9 @@
     "selected_content_include_commit": "2edfc82b19d6198b0a3173985bf0f315df863134",
     "selected_content_include_commit_tree": "69a9267adb4cd0109c8e3d0d99141a1d56f2fc92",
     "selected_content_include_is_ancestor": true,
-    "final_source_freeze_reconciliation_required": true,
+    "observed_integration_head": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+    "observed_integration_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
+    "final_source_freeze_reconciliation_required": false,
     "standing_is_acceptance_evidence": false
   },
   "source_residual_lane": {
@@ -1150,16 +1152,16 @@
   },
   "renderer_epoch_finalization": {
     "classification": "source_ready",
-    "current_epoch": 6,
+    "current_epoch": 7,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
     "required_bump_count": 1,
     "completed_bump_count": 1,
     "lane_must_not_bump": true,
     "finalized_by": {
-      "source_commit": "28728b2ea0ff9047d8e7c8e7dd698dc7bc16df79",
-      "source_tree": "dabc3ab9295438a2e7300feb6f47d7628f317faf",
-      "subject": "render: finalize renderer epoch v6",
+      "source_commit": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+      "source_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
+      "subject": "render: finalize renderer epoch v7",
       "integration_commit_reconciliation_required": false,
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     }

@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.open43.closure_audit_ownership_reconciliation.v1",
   "source": {
-    "integration_base": "cd50c230aad9b1e5e9b65084914cd45faabacdf0",
-    "integration_tree": "e9dd8cf01315c903db47812a6e43420117b157a0",
+    "integration_base": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+    "integration_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
     "open_issue_snapshot_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr1-debug-80225efc3/open-issues-after-pr1.json",
     "open_issue_snapshot_sha256": "ade352ee99aa4094c2868458add052d3c114e40b75d0154de8f88bad3cf799b0",
     "tracking_issue": 1089,
@@ -17,7 +17,7 @@
   "closure_audits": [
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "da33a14da61cc66b437dd48a99b99b36c7d8d495a179f004a3f4dd1d47f1e7d8",
+      "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1",
       "issue_count": 9,
       "case_count": 64,
       "classification_counts": {"source_ready": 26, "needs_source": 1, "candidate_required": 18, "blocked_evidence": 19},
@@ -46,15 +46,15 @@
     },
     {
       "path": "docs/development/open43-m-closure-audit.json",
-      "sha256": "f57e4cb20046f9518c559e7c695efcbc4057082264c9b6432926148a5ce449b1",
+      "sha256": "743b4f02fefd8d3c867825401b368dd62f33c5aeb86c3d618914c599328947d3",
       "issue_count": 7,
-      "case_count": 47,
-      "classification_counts": {"source_ready": 25, "needs_source": 2, "candidate_required": 11, "blocked_evidence": 9},
+      "case_count": 48,
+      "classification_counts": {"source_ready": 27, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 10},
       "issue_summaries": [
         {"issue": 756, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 2}},
         {"issue": 776, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 806, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1039, "case_count": 11, "classification_counts": {"source_ready": 5, "needs_source": 2, "candidate_required": 1, "blocked_evidence": 3}},
+        {"issue": 1039, "case_count": 12, "classification_counts": {"source_ready": 7, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 4}},
         {"issue": 1042, "case_count": 5, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 0}},
         {"issue": 1043, "case_count": 9, "classification_counts": {"source_ready": 6, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
         {"issue": 1062, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}}
@@ -104,7 +104,7 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "06fa881a364dff5db658a8df5b3413d84c60cfa759ca2e605e7981be0866bf03",
+      "sha256": "2bbf1557c5d38f2b3ad172cf4087e716ba1c2b263a4d05d0f42e7b2e21074943",
       "issue_count": 9,
       "case_count": 60,
       "classification_counts": {"source_ready": 23, "needs_source": 0, "candidate_required": 25, "blocked_evidence": 12},
@@ -127,12 +127,12 @@
     "duplicate_issue_numbers": [],
     "unexpected_or_closed_issue_numbers": [],
     "tracking_issue_numbers_owned": [],
-    "case_count": 284,
-    "unique_case_count": 284,
+    "case_count": 285,
+    "unique_case_count": 285,
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 129, "needs_source": 4, "candidate_required": 84, "blocked_evidence": 67}
+    "classification_counts": {"source_ready": 131, "needs_source": 2, "candidate_required": 84, "blocked_evidence": 68}
   },
   "validation": {
     "jq_structural_assertions": "pass",

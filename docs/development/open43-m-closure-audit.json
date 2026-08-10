@@ -28,7 +28,8 @@
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
     "framerail_package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
     "framerail_svelte_config_sha256": "52b02a44f682cd0bb12b8b968e4a0dc5f84eda1b76c2201aee9566bc236fbcbc",
-    "observed_integration_head": "cd50c230aad9b1e5e9b65084914cd45faabacdf0",
+    "observed_integration_head": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+    "observed_integration_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
     "observed_integration_head_is_dynamic": false,
     "final_source_freeze_reconciliation_required": false,
     "standing_is_acceptance_evidence": false
@@ -128,19 +129,21 @@
       "M1042_RENDER_CACHE_IDENTITY",
       "M1043_RENDER_CACHE_IDENTITY"
     ],
-    "base_commit": "132c01334aa9448b24f73647d46a2b3834a76310",
-    "base_tree": "48e97dee87afff2e1e9e2828c24a17733be85c6e",
-    "source_commit": "28728b2ea0ff9047d8e7c8e7dd698dc7bc16df79",
-    "source_tree": "dabc3ab9295438a2e7300feb6f47d7628f317faf",
-    "previous_epoch": 5,
-    "final_epoch": 6,
+    "base_commit": "f0c8682882e58b4d0f5191bf9577f8379c4bab68",
+    "base_tree": "8ba889a3b66d79360a0a89d8bc638461190c68c5",
+    "source_commit": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+    "source_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
+    "previous_epoch": 6,
+    "final_epoch": 7,
     "bump_count": 1,
-    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v5 namespace.",
-    "prior_epoch_v5_bump": {
-      "source_commit": "6f5d639eecea2100d3fc51c7200e40aeebb29246",
-      "source_tree": "e5f0ff88a395f83991a84b39b7040f1bceeea89d",
-      "previous_epoch": 4,
-      "final_epoch": 5,
+    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v6 namespace.",
+    "prior_epoch_v6_bump": {
+      "base_commit": "132c01334aa9448b24f73647d46a2b3834a76310",
+      "base_tree": "48e97dee87afff2e1e9e2828c24a17733be85c6e",
+      "source_commit": "28728b2ea0ff9047d8e7c8e7dd698dc7bc16df79",
+      "source_tree": "dabc3ab9295438a2e7300feb6f47d7628f317faf",
+      "previous_epoch": 5,
+      "final_epoch": 6,
       "bump_count": 1
     },
     "integration_commit_reconciliation_required": false,
@@ -509,7 +512,7 @@
         },
         {
           "path": "install/local/wikidot-verification/src/candidate-case-runner.mjs",
-          "sha256": "f42dc99bb8ce61870f1f7f90eddcbce2f3e252fa8f29832903a7b9e860e9feb7",
+          "sha256": "cdcc3bf70038d1027c46e61f6e23a22e91766dc8d3df0b76d7d6a73acc8dc028",
           "reuse": "Own sealed external-candidate attachment, exact denominator reconciliation, cleanup gating, stable runtime identity, and no-replace terminal receipts for every source-owned CandidateCaseSet."
         },
         {
@@ -519,12 +522,12 @@
         },
         {
           "path": "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs",
-          "sha256": "10f8a02cf3e63af38343e599755ec8b2d00cf2edc43eea63c280bd7507699a1c",
+          "sha256": "082b80679fb3f7d9f02c97cb00f812e9d26077c450877c1b5631f37b70cef10f",
           "reuse": "Own the fixed four-case media denominator, public operations, run-owned page and pending-blob cleanup, and raw public observations."
         },
         {
           "path": "install/local/wikidot-verification/src/open43-media-candidate-contract.mjs",
-          "sha256": "ec8f06368a8cdfea3f8ceabd62e16629078217b5fd0fe5f4d3df99974a77c7a4",
+          "sha256": "e406ac9f9b27ccabf9140ab8557c4fec0b54af75fa24c3e31c207f4db62cf9ca",
           "reuse": "Independently verify exact action bytes, file inventories, original and resized identities, public absence, and adapter-issued request order."
         },
         {
@@ -539,7 +542,7 @@
         },
         {
           "path": "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
-          "sha256": "73360aaf4ff403c6999140b57ca29711e766d6528d4e6ad67dfc2f590712b536",
+          "sha256": "9ed1f3c883cc6248bf03a73d50adc4f6921e5819190a09271371a3d4e17de89b",
           "reuse": "Observe every declared candidate service before and after execution, bind required private loopback publications to exact Compose roles, and reject infrastructure drift."
         },
         {
@@ -1250,7 +1253,7 @@
           "case_id": "M1039_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before the Files renderer landed and rerender it under the final source-frozen renderer identity.",
           "classification": "source_ready",
-          "reason": "The final renderer epoch is v6, the anonymous article cache namespace derives from that same epoch, and the public article_view regression proves a stored v5 cache entry is ignored.",
+          "reason": "The final renderer epoch is v7, the anonymous article cache namespace derives from that same epoch, and the public article_view regression proves a stored v6 cache entry is ignored.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/file_modules.rs",
@@ -1313,7 +1316,7 @@
           "case_id": "M1042_RENDER_CACHE_IDENTITY",
           "acceptance": "Bind saved output to the final provider policy and renderer semantics so pre-policy compiled output is not reused.",
           "classification": "source_ready",
-          "reason": "Preview and saved output now assert deepwell-render/v6, while the shared article cache namespace and public regression reject an otherwise valid v5 artifact.",
+          "reason": "Preview and saved output now assert deepwell-render/v7, while the shared article cache namespace and public regression reject an otherwise valid v6 artifact.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/view/article_cache.rs",
@@ -1476,7 +1479,7 @@
           "case_id": "M1043_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before Gallery resolution landed and bind the next read to the final renderer epoch and exact file revision.",
           "classification": "source_ready",
-          "reason": "Gallery is covered by the final v6 compiled generator, and the v6 article cache namespace plus public article_view regression prevents reuse of a v5 artifact even when its stored page identity remains otherwise valid.",
+          "reason": "Gallery is covered by the final v7 compiled generator, and the v7 article cache namespace plus public article_view regression prevents reuse of a v6 artifact even when its stored page identity remains otherwise valid.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/compat/wikidot_gallery.rs",
@@ -1656,17 +1659,23 @@
   ],
   "renderer_epoch_finalization": {
     "classification": "source_ready",
-    "current_epoch": 6,
+    "current_epoch": 7,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
     "required_bump_count": 1,
     "completed_bump_count": 1,
     "lane_must_not_bump": true,
     "finalized_by": {
+      "source_commit": "489452b432eccdb2ebe2897d421ba5c6f456ed90",
+      "source_tree": "4b508ba16e32eab79d6362869a3960f0cdcf80d0",
+      "subject": "render: finalize renderer epoch v7",
+      "integration_commit_reconciliation_required": false,
+      "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+    },
+    "prior_epoch_v6_finalization": {
       "source_commit": "28728b2ea0ff9047d8e7c8e7dd698dc7bc16df79",
       "source_tree": "dabc3ab9295438a2e7300feb6f47d7628f317faf",
       "subject": "render: finalize renderer epoch v6",
-      "integration_commit_reconciliation_required": false,
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     },
     "prior_epoch_v5_finalization": {
@@ -1892,15 +1901,62 @@
         "semantic_effect": "No rendered-output change; explicit format arguments make the integrated Files renderer compile under Rust format macro rules."
       }
     ],
+    "production_renderer_commits_after_v6_through_epoch_v7": [
+      {
+        "commit": "a370a37e5f8fb60e2926383814d8d23db1fdbc60",
+        "tree": "1d9a6af51c57a6b2abd1931f12196ef7810c39e9",
+        "subject": "fix(history): resolve revision author identities"
+      },
+      {
+        "commit": "22d7963fe0c04cad610fe9ce0dc61785fb219d08",
+        "tree": "43e13dcdee6b5266b14ed8d4a3f4c2efce1330d5",
+        "subject": "fix(render): add admin site utility read models"
+      },
+      {
+        "commit": "46ab33fa0976560d69e6ceaeb056e8b858c7640d",
+        "tree": "9a996e3fd414dc8155662c313d4062192668bd0c",
+        "subject": "feat: render observed FrontForum custom bodies"
+      },
+      {
+        "commit": "07889c6c0eb9689aaac12205ecbd9f2ae4d20d8e",
+        "tree": "3eb8683c183db982542b59fcbbec01ef28400f6b",
+        "subject": "feat: support wikidot.py SiteChanges requests"
+      },
+      {
+        "commit": "43471ea5a4759e3cf855bf3a3ec5456d0901ce01",
+        "tree": "d74bd2faaaf9d72d59f5f0588ec46a947609ba95",
+        "subject": "test: exercise observed FrontForum body layout",
+        "semantic_effect": "FrontForum plain title variables now escape HTML before entering the custom-body render stream."
+      },
+      {
+        "commit": "c78561b3f6dc35198658f618fc01d10e4bcad6d0",
+        "tree": "9f236023be41fd9c807272bbb16dd060b500b140",
+        "subject": "test(deepwell): finish page suite regression repairs",
+        "semantic_effect": "Legacy tag actions remove re-added tags before appending them, making replay output idempotent."
+      },
+      {
+        "commit": "69b27c0642934262658c904bff9b39b6653a59d7",
+        "tree": "1c2fd26af05173024ef9c2ca5c10e82bd2445049",
+        "subject": "test(deepwell): finish page suite replay repairs",
+        "semantic_effect": "Forum visibility and user-directory rendering use page-view permission rather than site-view permission."
+      },
+      {
+        "commit": "b25cfc0d7e717d4c1e65caf932baab4c8d96d0e4",
+        "tree": "2051c54cc90d22f501b4ba8d7541ab224762dcd6",
+        "subject": "fix(deepwell): satisfy warnings-as-errors clippy",
+        "semantic_effect": "No rendered-output change; the renderer edits are lint-only control-flow and annotation rewrites."
+      }
+    ],
     "source_freeze_actions": [
-      "The renderer commit inventory records the exact post-v4 forum scalar and PageTree commits and the post-v5 Files renderer integration commits.",
+      "The renderer commit inventory records the exact post-v4 forum scalar and PageTree commits, the post-v5 Files renderer commits, and every production renderer touch after v6 through the v7 source freeze.",
       "The earlier source freeze bumped DEEPWELL_RENDERER_EPOCH once from v2 to v3 before the late renderer lanes landed.",
       "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v3 to v4.",
       "The previous correction bumped DEEPWELL_RENDERER_EPOCH once from v4 to v5 after the two post-v4 semantic renderer commits landed.",
-      "The final correction bumped DEEPWELL_RENDERER_EPOCH once from v5 to v6 after the Files renderer landed.",
-      "Saved-output tests now assert the final v6 identity.",
+      "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v5 to v6 after the Files renderer landed.",
+      "The final correction bumped DEEPWELL_RENDERER_EPOCH once from v6 to v7 after the later author, utility, FrontForum, SiteChanges, tag-action, and visibility renderer changes landed.",
+      "Saved-output tests now assert the final v7 identity.",
       "C_RENDER_EPOCH exists and remains mandatory before the expensive runtime candidate.",
-      "The public article_view regression inserts an otherwise valid v5 cache entry and proves the v6 request does not reuse it."
+      "The public article_view regression inserts an otherwise valid v6 cache entry and proves the v7 request does not reuse it."
     ]
   },
   "reconciliation": {
