@@ -23,18 +23,27 @@ use deepwell::api::{
     build_server_state_without_workers_with_job_queue_namespace,
 };
 use deepwell::config::{Config, Secrets};
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
+use deepwell::license::License;
 use deepwell::models::page::{Entity as PageTable, Model as PageModel};
 use deepwell::models::page_connection::{self, Entity as PageConnection};
 use deepwell::redis::connect_with_namespace;
+use deepwell::services::category::CategoryService;
 use deepwell::services::job::{
     JOB_QUEUE_DELAY, JOB_QUEUE_MAXIMUM_SIZE, JOB_QUEUE_NAME, JOB_QUEUE_PROCESS_TIME, Job,
     JobService, JobWorker,
 };
 use deepwell::services::page_revision::{PageRevisionService, RerenderType};
+use deepwell::services::permission::PermissionService;
+use deepwell::services::role::{
+    InternalCreateRoleInput, RoleService, SystemRole, UpdateRolePermissionsInput,
+};
 use deepwell::services::session::{CreateSession, SessionService};
+use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::{OutdateService, ServiceContext};
-use deepwell::types::{ConnectionType, PageId, RerenderDepth};
+use deepwell::types::{
+    Action, ConnectionType, PageId, Permission, Reference, RerenderDepth, Resource,
+};
 use redis::AsyncCommands;
 use rsmq_async::{Rsmq, RsmqConnection};
 use sea_orm::{
@@ -216,6 +225,78 @@ async fn create_admin_session(state: &ServerState) -> String {
         .await
         .expect("admin session transaction should commit");
     session_token
+}
+
+async fn create_editable_site_fixture(state: &ServerState, site_slug: &str) -> i64 {
+    let transaction = state
+        .database
+        .begin()
+        .await
+        .expect("editable site fixture transaction should begin");
+    let site_id = {
+        let ctx = ServiceContext::new(state, &transaction);
+        let site = SiteService::create(
+            &ctx,
+            CreateSite {
+                slug: site_slug.to_owned(),
+                name: String::from("Post-commit rerender fixture"),
+                tagline: String::new(),
+                description: String::from("Isolated editable job queue test site"),
+                default_page: None,
+                layout: Some(ftml::layout::Layout::Wikidot),
+                license: License::CcBySa40,
+                locale: String::from("en"),
+                ip_address: IpAddr::V4(Ipv4Addr::new(192, 0, 2, 61)),
+            },
+        )
+        .await
+        .expect("editable site fixture should be created");
+        for category in ["_default", "component"] {
+            CategoryService::get_or_create(&ctx, site.site_id, category)
+                .await
+                .expect("editable page category fixture should be created");
+        }
+        let everyone = RoleService::create(
+            &ctx,
+            InternalCreateRoleInput {
+                site_id: site.site_id,
+                name: SystemRole::Everyone.to_string(),
+                description: Some(String::from("Editable page fixture role")),
+                is_virtual: true,
+                parent_role_id: None,
+                creating_user_id: SYSTEM_USER_ID,
+                ip_address: IpAddr::V4(Ipv4Addr::new(192, 0, 2, 61)),
+            },
+        )
+        .await
+        .expect("editable page role fixture should be created");
+        PermissionService::update_permissions_for_role(
+            &ctx,
+            UpdateRolePermissionsInput {
+                site_id: site.site_id,
+                role_reference: Reference::Id(everyone.role_id),
+                new_permissions: [Action::View, Action::Create, Action::Edit]
+                    .into_iter()
+                    .map(|action| Permission {
+                        resource_type: Resource::Page,
+                        resource_category: None,
+                        action,
+                    })
+                    .collect(),
+                cascade_removals: false,
+                updating_user_id: SYSTEM_USER_ID,
+                ip_address: IpAddr::V4(Ipv4Addr::new(192, 0, 2, 61)),
+            },
+        )
+        .await
+        .expect("editable page role permissions should be granted");
+        site.site_id
+    };
+    transaction
+        .commit()
+        .await
+        .expect("editable site fixture transaction should commit");
+    site_id
 }
 
 async fn rpc_request(
@@ -415,6 +496,8 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
     let mut rsmq = Rsmq::clone(&state.rsmq);
     clear_job_queue(&mut rsmq).await;
 
+    let site_slug = format!("job-queue-1061-{run_id}");
+    let fixture_site_id = create_editable_site_fixture(&state, &site_slug).await;
     let session_token = create_admin_session(&state).await;
     let (address, handle) = build_server_at(
         state.clone(),
@@ -430,12 +513,13 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
         None,
         None,
         "site_get",
-        json!({"site": "scpaiueouiuiuiui"}),
+        json!({"site": site_slug}),
     )
     .await;
     let site_id = site["site"]["site_id"]
         .as_i64()
         .expect("editable site ID should be present");
+    assert_eq!(site_id, fixture_site_id);
     let component_slug = format!("component:authoring-post-commit-{run_id}");
     let dependent_slug = format!("authoring-post-commit-dependent-{run_id}");
     let red_css = "[[module CSS]]\n.authoring-color { color: red; }\n[[/module]]";
