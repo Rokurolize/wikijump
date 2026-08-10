@@ -50,7 +50,7 @@ export async function pageFileUploadAction(event: RequestEvent) {
   const { request, getClientAddress } = event
   const form = await superValidate(request, valibot(pageFileUploadSchema))
   if (!form.valid) {
-    return fail(400, { form })
+    return withFiles(fail(400, { form }))
   }
 
   try {
@@ -73,7 +73,7 @@ export async function pageFileUploadAction(event: RequestEvent) {
 
     return withFiles({ form, res })
   } catch (error) {
-    return failForActionError(error, { form })
+    return withFiles(failForActionError(error, { form }))
   }
 }
 
@@ -121,7 +121,7 @@ export async function pageFileEditAction(event: RequestEvent) {
   const { request, getClientAddress } = event
   const form = await superValidate(request, valibot(pageFileEditSchema))
   if (!form.valid) {
-    return fail(400, { form })
+    return withFiles(fail(400, { form }))
   }
 
   try {
@@ -146,7 +146,7 @@ export async function pageFileEditAction(event: RequestEvent) {
 
     return withFiles({ form, res })
   } catch (error) {
-    return failForActionError(error, { form })
+    return withFiles(failForActionError(error, { form }))
   }
 }
 
