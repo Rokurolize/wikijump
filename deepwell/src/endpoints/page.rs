@@ -42,6 +42,7 @@ use crate::services::render::{
     WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
     WikidotSiteChangesModuleResponse,
 };
+use crate::services::settings::PageRatingVisibility;
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
@@ -52,7 +53,7 @@ use ftml::data::UserInfo;
 use futures::future::try_join_all;
 use regex::Regex;
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 use wikidot_normalize::normalize;
 
@@ -119,6 +120,19 @@ struct WikidotPageDiscussionInput {
 struct PageWatchersInput {
     site_id: i64,
     page_id: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PageWhoRatedInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PageWhoRatedVote {
+    pub user: UserInfo<'static>,
+    pub value: i16,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -685,6 +699,96 @@ pub async fn page_watchers(
         )
     });
     Ok(watchers)
+}
+
+pub async fn page_who_rated(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<PageWhoRatedVote>> {
+    let PageWhoRatedInput { site_id, page_id } = parse!(params, Page);
+    let make_error = || {
+        Error::new(
+            format!("failed to list current ratings for page ID {page_id} in site ID {site_id}"),
+            ErrorType::PageVote,
+        )
+    };
+
+    let page = get_page_who_rated_target(ctx, site_id, page_id).await?;
+    let settings = SettingsService::get_page_rating_settings(
+        ctx,
+        page.site_id,
+        page.page_category_id,
+    )
+    .await
+    .or_raise(make_error)?;
+    if settings.visibility == PageRatingVisibility::Anonymous {
+        return Err(Error::new(
+            "this category keeps individual page ratings anonymous",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    let votes = VoteService::get_current_page_votes(
+        ctx,
+        page.page_id,
+        settings.rating_type.vote_store_key(),
+    )
+    .await
+    .or_raise(make_error)?;
+    let user_ids = votes.iter().map(|vote| vote.user_id).collect::<BTreeSet<_>>();
+    let mut identities = UserService::get_public_identities(ctx, &user_ids)
+        .await
+        .or_raise(make_error)?;
+    let mut output = Vec::with_capacity(votes.len());
+    for vote in votes {
+        let Some(user) = identities.remove(&vote.user_id) else {
+            return Err(make_error().into());
+        };
+        output.push(PageWhoRatedVote {
+            user,
+            value: vote.value,
+        });
+    }
+    Ok(output)
+}
+
+async fn get_page_who_rated_target(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page_id: i64,
+) -> Result<PageModel> {
+    let deny = || {
+        Error::new(
+            "page ratings are not available to this request",
+            ErrorType::PermissionDenied,
+        )
+    };
+    let Some(page) = PageService::get_optional(ctx, site_id, Reference::Id(page_id))
+        .await
+        .or_raise(|| Error::new("failed to resolve page ratings", ErrorType::PageVote))?
+    else {
+        return Err(deny().into());
+    };
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to check page rating visibility", ErrorType::Permission))?;
+    if !can_view {
+        return Err(deny().into());
+    }
+    Ok(page)
 }
 
 pub async fn page_get_direct(
@@ -1298,7 +1402,7 @@ async fn ensure_page_view_permission(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_id: i64,
-) -> Result<()> {
+) -> Result<PageModel> {
     let page = PageService::get(ctx, site_id, Reference::Id(page_id))
         .await
         .or_raise(|| {
@@ -1330,7 +1434,7 @@ async fn ensure_page_view_permission(
     })?;
 
     if can_view {
-        Ok(())
+        Ok(page)
     } else {
         Err(Error::new(
             "user does not have permission to view this page",

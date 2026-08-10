@@ -584,6 +584,78 @@ test("dispatches wikidot.py page reads without rewriting their request fields", 
   ])
 })
 
+test("dispatches only the canonical wikidot.py WhoRated shape", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "pagerate/WhoRatedPageModule",
+      pageId: "1468540301",
+      callbackIndex: "client-who-rated"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async (input) => {
+        received = input
+        return {
+          status: "ok",
+          body: '<h2>Users who rated:</h2>\n\n<div style="-moz-column-count:3"></div>'
+        }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body.length, 66)
+  assert.equal(body.callbackIndex, "client-who-rated")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    moduleName: "pagerate/WhoRatedPageModule",
+    parameters: { pageId: "1468540301" }
+  })
+})
+
+test("WhoRated pageId zero follows the observed HTTP failure boundary", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "0" }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async () => assert.fail("must not expose votes")
+    }
+  )
+
+  assert.equal(response.status, 500)
+  assert.equal((await response.json()).status, "not_ok")
+})
+
+test("WhoRated rejects unknown, duplicate, and malformed request fields", async () => {
+  const malformedShapes = [
+    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "+1" }),
+    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "1", extra: "1" }),
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=pagerate%2FWhoRatedPageModule&pageId=1&pageId=2"
+    })
+  ]
+  let renders = 0
+  for (const malformed of malformedShapes) {
+    const response = await handleAjaxModuleConnectorRequest(malformed, {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async () => {
+        renders += 1
+        return { status: "ok", body: "must not render" }
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+  }
+  assert.equal(renders, 0)
+})
+
 test("dispatches the exact wikidot.py page revision list shape", async () => {
   let received
   const response = await handleAjaxModuleConnectorRequest(

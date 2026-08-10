@@ -43,6 +43,7 @@ const SITE_TOOLS_READ_MODULES = new Map([
   ["list/ListDraftsModule", { callbackIndex: "4", parameters: new Set(["location"]) }]
 ])
 const PAGE_READ_MODULE_PARAMETERS = new Map([
+  ["pagerate/WhoRatedPageModule", new Set(["pageId"])],
   ["viewsource/ViewSourceModule", new Set(["page_id"])],
   ["files/PageFilesModule", new Set(["page_id"])],
   ["history/PageRevisionListModule", new Set(["page_id", "options", "perpage"])],
@@ -156,6 +157,9 @@ const jsonResponse = (body, status = 200, extraHeaders = {}) =>
  * @param {Record<string, string>} parameters
  */
 const isSupportedPageReadShape = (moduleName, parameters) => {
+  if (moduleName === "pagerate/WhoRatedPageModule") {
+    return isPositiveSafeDecimal(parameters.pageId)
+  }
   if (
     moduleName === "viewsource/ViewSourceModule" ||
     moduleName === "files/PageFilesModule"
@@ -851,10 +855,13 @@ export const handleAjaxModuleConnectorRequest = async (
       ![...pageReadParameters].every((name) => Object.hasOwn(parameters, name)) ||
       !isSupportedPageReadShape(moduleName, parameters)
     ) {
-      return jsonResponse({
-        status: "not_ok",
-        message: `Unsupported AJAX module shape: ${moduleName}`
-      })
+      return jsonResponse(
+        {
+          status: "not_ok",
+          message: `Unsupported AJAX module shape: ${moduleName}`
+        },
+        moduleName === "pagerate/WhoRatedPageModule" ? 500 : 200
+      )
     }
 
     const responseMetadata = () => ({

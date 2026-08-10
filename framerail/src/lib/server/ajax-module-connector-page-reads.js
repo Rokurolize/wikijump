@@ -13,6 +13,35 @@ export const renderWikidotViewSource = (wikitext) =>
 /** @param {string} value */
 const escapeHtmlAttribute = (value) => escapeHtml(value).replaceAll("'", "&#39;")
 
+/**
+ * @typedef {{
+ *   user: {
+ *     "user-id": number
+ *     "user-name": string
+ *     "user-slug": string
+ *   }
+ *   value: number
+ * }} WikidotWhoRatedVote
+ */
+
+/** @param {WikidotWhoRatedVote[]} votes */
+export const renderWikidotWhoRated = (votes) => {
+  const rows = votes
+    .map(({ user, value }) => {
+      if (value !== 1 && value !== -1) {
+        throw new TypeError("WhoRated supports only observed plus/minus vote values")
+      }
+      const userId = user["user-id"]
+      const userSlug = escapeHtmlAttribute(user["user-slug"])
+      const profileUrl = `http://www.wikidot.com/user:info/${userSlug}`
+      const userName = escapeHtml(user["user-name"])
+      const sign = value === 1 ? "+" : "-"
+      return `<span class="printuser avatarhover"><a href="${profileUrl}" onclick="WIKIDOT.page.listeners.userInfo(${userId}); return false;">${userName}</a></span>\n        <span style="color:#777">\n                    ${sign}              </span><br/>`
+    })
+    .join("")
+  return `<h2>Users who rated:</h2>\n\n<div style="-moz-column-count:3">${rows}</div>`
+}
+
 /** @param {string} createdAt */
 const wikidotDateText = (createdAt) => {
   const date = new Date(createdAt)

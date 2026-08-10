@@ -6,6 +6,7 @@ import {
   renderWikidotPageRevisionList,
   renderWikidotPageRevisionSource,
   renderWikidotPageRevisionVersion,
+  renderWikidotWhoRated,
   renderWikidotViewSource
 } from "../src/lib/server/ajax-module-connector-page-reads.js"
 
@@ -13,6 +14,56 @@ test("renders page source in the Wikidot client parsing boundary", () => {
   assert.equal(
     renderWikidotViewSource('alpha < beta & [[div title="x"]]'),
     '<h1>Page Source</h1>\n\n<div class="page-source">\n\talpha &lt; beta &amp; [[div title=&quot;x&quot;]]\n</div>\n'
+  )
+})
+
+test("renders typed WhoRated votes in the exact wikidot.py DOM boundary", () => {
+  assert.equal(
+    renderWikidotWhoRated([
+      {
+        user: {
+          "user-id": 11111,
+          "user-name": "Voter <One>",
+          "user-slug": "voter-one"
+        },
+        value: 1
+      },
+      {
+        user: {
+          "user-id": 22222,
+          "user-name": "Voter Two",
+          "user-slug": "voter-two"
+        },
+        value: -1
+      }
+    ]),
+    '<h2>Users who rated:</h2>\n\n<div style="-moz-column-count:3"><span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/voter-one" onclick="WIKIDOT.page.listeners.userInfo(11111); return false;">Voter &lt;One&gt;</a></span>\n        <span style="color:#777">\n                    +              </span><br/><span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/voter-two" onclick="WIKIDOT.page.listeners.userInfo(22222); return false;">Voter Two</a></span>\n        <span style="color:#777">\n                    -              </span><br/></div>'
+  )
+})
+
+test("renders the observed 66-byte empty WhoRated body without identities", () => {
+  const body = renderWikidotWhoRated([])
+  assert.equal(
+    body,
+    '<h2>Users who rated:</h2>\n\n<div style="-moz-column-count:3"></div>'
+  )
+  assert.equal(body.length, 66)
+})
+
+test("WhoRated rejects unevidenced vote values instead of widening its DOM", () => {
+  assert.throws(
+    () =>
+      renderWikidotWhoRated([
+        {
+          user: {
+            "user-id": 11111,
+            "user-name": "Voter One",
+            "user-slug": "voter-one"
+          },
+          value: 5
+        }
+      ]),
+    /only observed plus\/minus/u
   )
 })
 

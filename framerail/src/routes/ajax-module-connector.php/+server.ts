@@ -4,6 +4,7 @@ import {
   renderWikidotPageRevisionList,
   renderWikidotPageRevisionSource,
   renderWikidotPageRevisionVersion,
+  renderWikidotWhoRated,
   renderWikidotViewSource
 } from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
@@ -15,6 +16,7 @@ import {
   pageEdit,
   pageGet,
   pageHistory,
+  pageWhoRated,
   pageRevision,
   pageRevisionById,
   pageViewPermission,
@@ -211,6 +213,14 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       moduleName: string
       parameters: Record<string, string>
     }) => {
+      if (moduleName === "pagerate/WhoRatedPageModule") {
+        const pageId = Number.parseInt(parameters.pageId, 10)
+        const votes = await pageWhoRated(siteId, pageId, {
+          ...requestContext,
+          page: pageId
+        })
+        return { status: "ok", body: renderWikidotWhoRated(votes) }
+      }
       if (
         moduleName === "history/PageSourceModule" ||
         moduleName === "history/PageVersionModule"

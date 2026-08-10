@@ -22826,7 +22826,7 @@ async fn page_watchers_requires_target_view_permission_and_site_ownership() {
         page_watchers,
         json!({"site_id": other_site.site_id, "page_id": target.page_id}),
     );
-    assert_contains_error!(wrong_site, ErrorType::PageNotFound);
+    assert_contains_error!(wrong_site, ErrorType::PermissionDenied);
 
     runner.set_request_context(RequestContext {
         user_id: Some(ADMIN_USER_ID),
@@ -22932,6 +22932,211 @@ async fn page_watchers_fails_closed_instead_of_returning_a_saturated_prefix() {
         json!({"site_id": site.site_id, "page_id": target.page_id}),
     );
     assert_contains_error!(error, ErrorType::PageWatchRelation);
+}
+
+#[tokio::test]
+async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-who-rated";
+    const OTHER_SLUG: &str = "fixture-page-who-rated-other";
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Who Rated",
+        "WhoRated target",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        OTHER_SLUG,
+        "Fixture Page Who Rated Other",
+        "other target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("WhoRated target should exist");
+    let other = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": OTHER_SLUG}),
+    )
+    .expect("other target should exist");
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO page_vote ",
+                "(from_wikidot, page_id, user_id, rating_system, value, deleted_at, disabled_at) VALUES ",
+                "(false, $1, $2, 'points', 1, NULL, NULL), ",
+                "(false, $1, $3, 'points', -1, NULL, NULL), ",
+                "(false, $1, $4, 'points', 1, NOW(), NULL), ",
+                "(false, $1, $5, 'points', -1, NULL, NOW()), ",
+                "(false, $6, $4, 'points', 1, NULL, NULL)",
+            ),
+            [
+                Value::from(target.page_id),
+                Value::from(ADMIN_USER_ID),
+                Value::from(SAMPLE_USER_ID),
+                Value::from(SYSTEM_USER_ID),
+                Value::from(UNKNOWN_USER_ID),
+                Value::from(other.page_id),
+            ],
+        ))
+        .await
+        .expect("WhoRated vote fixtures should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let output = run_endpoint!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let output = serde_json::to_value(output).expect("WhoRated output should serialize");
+    assert_eq!(output.as_array().map(Vec::len), Some(2));
+    assert_eq!(output[0]["user"]["user-name"], "Administrator");
+    assert_eq!(output[0]["value"], 1);
+    assert_eq!(output[1]["user"]["user-name"], "User");
+    assert_eq!(output[1]["value"], -1);
+    assert!(output[0].get("user_id").is_none());
+
+    let malformed = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id, "extra": true}),
+    );
+    assert_contains_error!(malformed, ErrorType::BadRequest);
+
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) VALUES (19000001)",
+        ))
+        .await
+        .expect("incomplete WhoRated identity should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) VALUES (false, $1, 19000001, 'points', 1)",
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("incomplete WhoRated vote should insert");
+    let incomplete = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(incomplete, ErrorType::PageVote);
+}
+
+#[tokio::test]
+async fn page_who_rated_checks_view_and_visible_rating_policy_before_votes() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-who-rated-policy";
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Who Rated Policy",
+        "WhoRated policy target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("WhoRated policy target should exist");
+    let category = PageCategoryTable::find_by_id(target.page_category_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("WhoRated category lookup should succeed")
+        .expect("WhoRated category should exist");
+    let mut category = category.into_active_model();
+    category.rating_visibility = Set(Some("anonymous".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("WhoRated category visibility should update");
+
+    runner.set_request_context(RequestContext::default());
+    let hidden = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(hidden, ErrorType::PermissionDenied);
+
+    let wrong_site = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id + 1, "page_id": target.page_id}),
+    );
+    assert_contains_error!(wrong_site, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn page_who_rated_fails_closed_only_after_a_scan_above_observed_live_counts() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-who-rated-saturated";
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Who Rated Saturated",
+        "WhoRated saturated target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("WhoRated saturated target should exist");
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) SELECT 19000000 + n FROM generate_series(1, 16385) AS n",
+        ))
+        .await
+        .expect("WhoRated saturated known users should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) ",
+                "SELECT false, $1, 19000000 + n, 'points', 1 ",
+                "FROM generate_series(1, 16385) AS n",
+            ),
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("WhoRated saturated votes should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(error, ErrorType::PageVote);
 }
 
 #[tokio::test]

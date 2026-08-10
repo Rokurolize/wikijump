@@ -134,6 +134,20 @@ test("page score pane sends no client-selected target", async () => {
   assert.doesNotMatch(body, /siteId|pageId|body:/u)
 })
 
+test("Wikidot WhoRated pane uses the exact AMC pageId contract", async () => {
+  const source = await readFile(votePaneSourceUrl, "utf8")
+  const start = source.indexOf("async function getWikidotWhoRated")
+  const end = source.indexOf("\n  async function getVoteList", start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const body = source.slice(start, end)
+
+  assert.match(body, /fetch\("\/ajax-module-connector\.php"/u)
+  assert.match(body, /moduleName: "pagerate\/WhoRatedPageModule"/u)
+  assert.match(body, /pageId: String\(pageId\)/u)
+  assert.doesNotMatch(body, /siteId|userId|vote_id|page_vote_id/u)
+})
+
 test("set-tags resolves the actor and alterations behind the trusted route", async () => {
   const actionSource = await readFile(pageActionsSourceUrl, "utf8")
   const actionStart = actionSource.indexOf(

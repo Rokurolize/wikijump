@@ -204,6 +204,26 @@ export async function pageWatchers(
   )
 }
 
+export interface PageWhoRatedVote {
+  user: UserInfo
+  value: number
+}
+
+export async function pageWhoRated(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<PageWhoRatedVote[]> {
+  return client.request(
+    "page_who_rated",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
 export interface WikidotSiteChangesModuleInput {
   pageId: string
   page: string
