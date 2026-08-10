@@ -225,9 +225,7 @@
   {#if pageRating.visibility === "visible"}
     <p>
       <!-- svelte-ignore a11y_invalid_attribute -->
-      <a href="javascript:;" onclick={getWikidotWhoRated}>
-        Look who rated this page
-      </a>
+      <a href="javascript:;" onclick={getWikidotWhoRated}> Look who rated this page </a>
     </p>
     <div id="who-rated-page-area">
       {#if showVoteList}
