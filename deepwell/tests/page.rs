@@ -7353,8 +7353,8 @@ async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
 }
 
 #[tokio::test]
-async fn sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads()
-{
+async fn wikidot_site_changes_ajax_endpoint_filters_before_pagination_and_matches_observed_reads()
+ {
     const PRIVATE_CATEGORY: &str = "fixture-sitechanges-ajax-private";
     const PRIVATE_PAGE: &str = "fixture-sitechanges-ajax-private-page";
     const PRIVATE_TITLE: &str = "Fixture SiteChanges Ajax Private Page";
@@ -7440,7 +7440,7 @@ async fn sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observe
     )
     .await;
 
-    insert_source_revisions(&runner, public_revision_id, 105, 0, 100).await;
+    insert_source_revisions(&runner, public_revision_id, 2_105, 0, 100).await;
     insert_source_revisions(&runner, private_revision_id, 25, 0, 1_000).await;
 
     let holder = run_endpoint!(
@@ -7488,9 +7488,9 @@ async fn sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observe
     }
 
     for (body, first_revision, last_revision, outside_revision) in [
-        (&page_bodies[0], 105, 86, 85),
-        (&page_bodies[1], 85, 66, 65),
-        (&page_bodies[2], 65, 46, 45),
+        (&page_bodies[0], 2_105, 2_086, 2_085),
+        (&page_bodies[1], 2_085, 2_066, 2_065),
+        (&page_bodies[2], 2_065, 2_046, 2_045),
     ] {
         assert!(body.contains(PUBLIC_TITLE));
         assert!(body.contains(&format!("(rev. {first_revision})")), "{body}");
@@ -7521,6 +7521,114 @@ async fn sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observe
         "page three should preserve the sealed pager shape: {}",
         page_bodies[2],
     );
+
+    // client-page-one-default and client-later-page: browser-only host fields are
+    // absent, and page 2 remains the second 1000-row page.
+    let wikidot_py_page_one = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(wikidot_py_page_one.status, "ok");
+    assert!(wikidot_py_page_one.body.contains("(rev. 2105)"));
+    assert!(wikidot_py_page_one.body.contains("(rev. 1106)"));
+    assert!(!wikidot_py_page_one.body.contains("(rev. 1105)"));
+    assert!(!wikidot_py_page_one.body.contains(PRIVATE_TITLE));
+
+    let wikidot_py_page_two = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "2",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(wikidot_py_page_two.status, "ok");
+    assert!(wikidot_py_page_two.body.contains("(rev. 1105)"));
+    assert!(wikidot_py_page_two.body.contains("(rev. 106)"));
+    assert!(!wikidot_py_page_two.body.contains("(rev. 1106)"));
+
+    // control-bad-perpage must not run an unbounded query.
+    let malformed_perpage = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "not-a-number",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(malformed_perpage.status, "ok");
+    assert_eq!(
+        malformed_perpage.body,
+        "\tSorry, no revisions matching your criteria.",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authorized = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "2",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(authorized.status, "ok");
+    assert!(authorized.body.contains(PRIVATE_TITLE));
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id + 1),
+        ..Default::default()
+    });
+    run_endpoint_err!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    for mixed in [
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "1000",
+            "category_id": "",
+            "options": "{\"all\":true}",
+        }),
+    ] {
+        let output = run_endpoint!(runner, wikidot_site_changes_module, mixed);
+        assert_eq!(output.status, "not_ok");
+        assert!(output.body.is_empty());
+    }
 
     create_empty_file_fixture(
         &runner,
@@ -7566,7 +7674,7 @@ async fn sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observe
         );
         assert_eq!(output.status, "ok");
         assert!(
-            output.body.contains("source fixture 105"),
+            output.body.contains("source fixture 2105"),
             "{}",
             output.body
         );

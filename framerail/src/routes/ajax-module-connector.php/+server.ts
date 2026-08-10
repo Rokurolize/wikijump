@@ -226,10 +226,10 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       options
     }: {
       siteId: number
-      pageId: string
+      pageId?: string
       page: string
       perpage: string
-      categoryId: string
+      categoryId?: string
       options: string
     }) =>
       wikidotSiteChangesModule(

@@ -286,10 +286,10 @@ export async function pageMetaTagDelete(
 }
 
 export interface WikidotSiteChangesModuleInput {
-  pageId: string
+  pageId?: string
   page: string
   perpage: string
-  categoryId: string
+  categoryId?: string
   options: string
 }
 
@@ -307,11 +307,11 @@ export async function wikidotSiteChangesModule(
     "wikidot_site_changes_module",
     {
       site_id: siteId,
-      page_id: input.pageId,
       page: input.page,
       perpage: input.perpage,
-      category_id: input.categoryId,
-      options: input.options
+      options: input.options,
+      ...(input.pageId === undefined ? {} : { page_id: input.pageId }),
+      ...(input.categoryId === undefined ? {} : { category_id: input.categoryId })
     },
     requestContext
   )

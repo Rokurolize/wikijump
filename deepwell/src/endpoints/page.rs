@@ -82,10 +82,10 @@ struct WikidotForumModuleInput {
 #[serde(deny_unknown_fields)]
 struct WikidotSiteChangesModuleInput {
     site_id: i64,
-    page_id: String,
+    page_id: Option<String>,
     page: String,
     perpage: String,
-    category_id: String,
+    category_id: Option<String>,
     options: String,
 }
 
@@ -352,66 +352,97 @@ pub async fn wikidot_site_changes_module(
         .into());
     }
 
-    let Some(page_id) = wikidot_positive_decimal::<i64>(&input.page_id) else {
-        return Ok(not_ok());
-    };
     let Some(page) = wikidot_positive_decimal::<u32>(&input.page) else {
         return Ok(not_ok());
     };
-    if input.perpage != "20" {
-        return Ok(not_ok());
-    }
-    let category_id = if input.category_id.is_empty() {
-        None
-    } else {
-        let Some(category_id) = wikidot_positive_decimal::<i64>(&input.category_id)
-        else {
-            return Ok(not_ok());
-        };
-        Some(category_id)
-    };
-    let Some(filter) = WikidotSiteChangesFilter::from_options(&input.options) else {
-        return Ok(not_ok());
-    };
+    let (rows_per_page, category_id, filter) = match (input.page_id, input.category_id) {
+        (Some(page_id), Some(category_id)) => {
+            let Some(page_id) = wikidot_positive_decimal::<i64>(&page_id) else {
+                return Ok(not_ok());
+            };
+            if input.perpage != "20" {
+                return Ok(not_ok());
+            }
+            let category_id = if category_id.is_empty() {
+                None
+            } else {
+                let Some(category_id) = wikidot_positive_decimal::<i64>(&category_id)
+                else {
+                    return Ok(not_ok());
+                };
+                Some(category_id)
+            };
+            let Some(filter) =
+                WikidotSiteChangesFilter::from_browser_options(&input.options)
+            else {
+                return Ok(not_ok());
+            };
 
-    let Some(host_page) =
-        PageService::get_optional(ctx, input.site_id, Reference::Id(page_id))
+            let Some(host_page) =
+                PageService::get_optional(ctx, input.site_id, Reference::Id(page_id))
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            "failed to resolve SiteChanges host page",
+                            ErrorType::Page,
+                        )
+                    })?
+            else {
+                return Ok(not_ok());
+            };
+            let can_view_host = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: ctx.request().user_id,
+                    site_id: input.site_id,
+                    page_reference: Some(Reference::Id(host_page.page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(host_page.page_category_id)),
+                    action: Action::View,
+                },
+            )
             .await
             .or_raise(|| {
-                Error::new("failed to resolve SiteChanges host page", ErrorType::Page)
-            })?
-    else {
-        return Ok(not_ok());
+                Error::new(
+                    "failed to check SiteChanges host page visibility",
+                    ErrorType::Permission,
+                )
+            })?;
+            if !can_view_host {
+                return Ok(not_ok());
+            }
+            (20, category_id, filter)
+        }
+        (None, None) => {
+            let rows_per_page = match input.perpage.as_str() {
+                "20" => 20,
+                "1000" => 1_000,
+                malformed if wikidot_bounded_word_scalar(malformed) => {
+                    return Ok(WikidotSiteChangesModuleResponse {
+                        status: "ok".to_owned(),
+                        body: "\tSorry, no revisions matching your criteria.".to_owned(),
+                    });
+                }
+                _ => return Ok(not_ok()),
+            };
+            let Some(filter) =
+                WikidotSiteChangesFilter::from_wikidot_py_options(&input.options)
+            else {
+                return Ok(not_ok());
+            };
+            (rows_per_page, None, filter)
+        }
+        _ => return Ok(not_ok()),
     };
-    let can_view_host = PermissionService::check_user_can(
-        ctx,
-        &CheckPermissionContext {
-            user_id: ctx.request().user_id,
-            site_id: input.site_id,
-            page_reference: Some(Reference::Id(host_page.page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(host_page.page_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .or_raise(|| {
-        Error::new(
-            "failed to check SiteChanges host page visibility",
-            ErrorType::Permission,
-        )
-    })?;
-    if !can_view_host {
-        return Ok(not_ok());
-    }
 
     let outcome = RenderService::render_wikidot_site_changes_module(
         ctx,
         input.site_id,
         WikidotSiteChangesModuleRequest {
             page,
+            rows_per_page,
             category_id,
             filter,
         },
@@ -430,6 +461,14 @@ pub async fn wikidot_site_changes_module(
         SiteChangesLoad::Complete(response) => Ok(response),
         SiteChangesLoad::Saturated => Ok(not_ok()),
     }
+}
+
+fn wikidot_bounded_word_scalar(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphabetic() || byte == b'-')
 }
 
 fn wikidot_positive_decimal<T>(value: &str) -> Option<T>

@@ -1,3 +1,5 @@
+import { classifyWikidotSiteChangesRequest } from "./wikidot-site-changes.js"
+
 const AJAX_MODULE_CONNECTOR_HEADERS = {
   "cache-control": "no-store",
   "content-type": "text/plain; charset=UTF-8"
@@ -20,19 +22,6 @@ const FORUM_READ_MODULE_PARAMETERS = new Map([
 ])
 const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
-const SITE_CHANGES_READ_FIELDS = new Set([
-  "page",
-  "perpage",
-  "pageId",
-  "categoryId",
-  "options"
-])
-const SITE_CHANGES_OPTIONS = new Set([
-  "{}",
-  '{"all":true}',
-  '{"source":true}',
-  '{"files":true}'
-])
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const MANAGE_SITE_GENERAL_MODULE = "managesite/ManageSiteGeneralModule"
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
@@ -106,10 +95,10 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *
  * @typedef {{
  *   siteId: number
- *   pageId: string
+ *   pageId?: string
  *   page: string
  *   perpage: string
- *   categoryId: string
+ *   categoryId?: string
  *   options: string
  * }} SiteChangesRenderInput
  *
@@ -821,35 +810,8 @@ export const handleAjaxModuleConnectorRequest = async (
       })
     }
 
-    /** @type {Record<string, string>} */
-    const parameters = {}
-    for (const [key, value] of fields) {
-      if (CONTROL_FIELDS.has(key)) {
-        if (key === "module_body") {
-          return jsonResponse({
-            status: "not_ok",
-            message: `Unsupported AJAX module shape: ${moduleName}`
-          })
-        }
-        continue
-      }
-      if (!SITE_CHANGES_READ_FIELDS.has(key)) {
-        return jsonResponse({
-          status: "not_ok",
-          message: `Unsupported AJAX module shape: ${moduleName}`
-        })
-      }
-      parameters[key] = value
-    }
-    if (
-      Object.keys(parameters).length !== SITE_CHANGES_READ_FIELDS.size ||
-      ![...SITE_CHANGES_READ_FIELDS].every((name) => Object.hasOwn(parameters, name)) ||
-      !isPositiveSafeDecimal(parameters.page) ||
-      parameters.perpage !== "20" ||
-      !isPositiveSafeDecimal(parameters.pageId) ||
-      !(parameters.categoryId === "" || isPositiveSafeDecimal(parameters.categoryId)) ||
-      !SITE_CHANGES_OPTIONS.has(parameters.options)
-    ) {
+    const parameters = classifyWikidotSiteChangesRequest(fields)
+    if (parameters === null) {
       return jsonResponse({
         status: "not_ok",
         message: `Unsupported AJAX module shape: ${moduleName}`
@@ -868,11 +830,13 @@ export const handleAjaxModuleConnectorRequest = async (
     try {
       const output = await renderSiteChangesModule({
         siteId,
-        pageId: parameters.pageId,
         page: parameters.page,
         perpage: parameters.perpage,
-        categoryId: parameters.categoryId,
-        options: parameters.options
+        options: parameters.options,
+        ...(parameters.pageId === undefined ? {} : { pageId: parameters.pageId }),
+        ...(parameters.categoryId === undefined
+          ? {}
+          : { categoryId: parameters.categoryId })
       })
       return jsonResponse({
         status: output.status,

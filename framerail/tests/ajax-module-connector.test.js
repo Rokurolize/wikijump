@@ -397,7 +397,7 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
   assert.equal(calls, 1)
 })
 
-test("dispatches the sealed SiteChanges read matrix with Wikidot metadata", async () => {
+test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikidot metadata", async () => {
   const cases = [
     { page: "1", categoryId: "", options: '{"all":true}' },
     { page: "2", categoryId: "", options: '{"all":true}' },
@@ -459,6 +459,240 @@ test("dispatches the sealed SiteChanges read matrix with Wikidot metadata", asyn
       options
     })
   }
+})
+
+test("SiteChanges accepts wikidot.py client-page-one-default without browser host fields", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      perpage: "1000",
+      page: "1",
+      options: "{'all':true}"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: '<div class="pager">page 1</div>' }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, '<div class="pager">page 1</div>')
+  assert.equal(body.callbackIndex, null)
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(body.cssInclude, [])
+  assert.deepEqual(body.jsInclude, [])
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    page: "1",
+    perpage: "1000",
+    options: '{"all":true}'
+  })
+})
+
+test("SiteChanges keeps client-later-page on the wikidot.py 1000-row family", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      perpage: "1000",
+      page: "2",
+      options: "{'all':true}"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: '<div class="pager">page 2</div>' }
+      }
+    }
+  )
+
+  assert.equal((await response.json()).status, "ok")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    page: "2",
+    perpage: "1000",
+    options: '{"all":true}'
+  })
+})
+
+test("SiteChanges preserves control-empty-options control-source-options and control-missing-options", async () => {
+  const cases = [
+    { options: undefined, expected: '{"all":true}' },
+    { options: "{}", expected: '{"all":true}' },
+    { options: "{'source':true}", expected: '{"source":true}' }
+  ]
+
+  for (const { options, expected } of cases) {
+    let received
+    const form = {
+      moduleName: "changes/SiteChangesListModule",
+      perpage: "20",
+      page: "1"
+    }
+    if (options !== undefined) form.options = options
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: "rows" }
+      }
+    })
+
+    assert.equal((await response.json()).status, "ok")
+    assert.deepEqual(received, {
+      siteId: 6000006,
+      page: "1",
+      perpage: "20",
+      options: expected
+    })
+  }
+})
+
+test("SiteChanges gives control-bad-page bounded nonnumeric first-page semantics", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      perpage: "20",
+      page: "not-a-page",
+      options: "{'all':true}"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: "20 rows" }
+      }
+    }
+  )
+
+  assert.equal((await response.json()).status, "ok")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    page: "1",
+    perpage: "20",
+    options: '{"all":true}'
+  })
+})
+
+test("SiteChanges returns the control-bad-perpage empty result without widening valid sizes", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      perpage: "not-a-number",
+      page: "1",
+      options: "{'all':true}"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return {
+          status: "ok",
+          body: "\tSorry, no revisions matching your criteria."
+        }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, "\tSorry, no revisions matching your criteria.")
+  assert.equal(body.callbackIndex, null)
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(body.cssInclude, [])
+  assert.deepEqual(body.jsInclude, [])
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    page: "1",
+    perpage: "not-a-number",
+    options: '{"all":true}'
+  })
+})
+
+test("SiteChanges ignores one bounded control-unknown-field only in the wikidot.py family", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      perpage: "20",
+      page: "1",
+      options: "{'all':true}",
+      unknownField: "control"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: "rows" }
+      }
+    }
+  )
+
+  assert.equal((await response.json()).status, "ok")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    page: "1",
+    perpage: "20",
+    options: '{"all":true}'
+  })
+})
+
+test("SiteChanges wikidot.py family fails closed for mixed and unobserved scalar shapes", async () => {
+  const overrides = [
+    { page: "0" },
+    { page: "-1" },
+    { page: "1.5" },
+    { page: "1tail" },
+    { page: "9007199254740993" },
+    { perpage: "10" },
+    { options: "{'files':true}" },
+    { options: '{"all":true}' },
+    { pageId: "74503778" },
+    { categoryId: "" },
+    { module_body: "" },
+    { action: "read" },
+    { event: "read" },
+    { unknownOne: "1", unknownTwo: "2" }
+  ]
+  let calls = 0
+  const valid = {
+    moduleName: "changes/SiteChangesListModule",
+    page: "1",
+    perpage: "1000",
+    options: "{'all':true}"
+  }
+
+  for (const override of overrides) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ ...valid, ...override }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderSiteChangesModule: async () => {
+          calls += 1
+          assert.fail("unsupported wikidot.py shape must fail before Deepwell")
+        }
+      }
+    )
+    assert.equal((await response.json()).status, "not_ok")
+  }
+  assert.equal(calls, 0)
 })
 
 test("fails closed for unobserved SiteChanges shapes before Deepwell", async () => {

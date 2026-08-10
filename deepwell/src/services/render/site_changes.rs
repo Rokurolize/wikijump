@@ -38,7 +38,7 @@ use serde::Serialize;
 use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
-const SITE_CHANGES_ROWS_PER_PAGE: usize = 20;
+const SITE_CHANGES_BROWSER_ROWS_PER_PAGE: usize = 20;
 const SITE_CHANGES_QUERY_BATCH: usize = 250;
 const SITE_CHANGES_MAX_RAW_SCAN: usize = 5_000;
 const SITE_CHANGES_EMPTY: &str = "Sorry, no revisions matching your criteria.";
@@ -102,11 +102,19 @@ pub enum WikidotSiteChangesFilter {
 }
 
 impl WikidotSiteChangesFilter {
-    pub fn from_options(options: &str) -> Option<Self> {
+    pub fn from_browser_options(options: &str) -> Option<Self> {
         match options {
             "{}" | "{\"all\":true}" => Some(Self::All),
             "{\"source\":true}" => Some(Self::Source),
             "{\"files\":true}" => Some(Self::Files),
+            _ => None,
+        }
+    }
+
+    pub fn from_wikidot_py_options(options: &str) -> Option<Self> {
+        match options {
+            "{}" | "{\"all\":true}" => Some(Self::All),
+            "{\"source\":true}" => Some(Self::Source),
             _ => None,
         }
     }
@@ -123,6 +131,7 @@ impl WikidotSiteChangesFilter {
 #[derive(Clone, Copy, Debug)]
 pub struct WikidotSiteChangesModuleRequest {
     pub page: u32,
+    pub rows_per_page: usize,
     pub category_id: Option<i64>,
     pub filter: WikidotSiteChangesFilter,
 }
@@ -153,6 +162,7 @@ pub(super) async fn expand_site_changes_modules(
         viewer_user_id,
         WikidotSiteChangesModuleRequest {
             page: 1,
+            rows_per_page: SITE_CHANGES_BROWSER_ROWS_PER_PAGE,
             category_id: None,
             filter: WikidotSiteChangesFilter::All,
         },
@@ -215,7 +225,7 @@ async fn load_site_changes_list(
     };
     let page_start = usize::try_from(request.page.saturating_sub(1))
         .ok()
-        .and_then(|page| page.checked_mul(SITE_CHANGES_ROWS_PER_PAGE))
+        .and_then(|page| page.checked_mul(request.rows_per_page))
         .unwrap_or(SITE_CHANGES_MAX_RAW_SCAN);
     if page_start >= SITE_CHANGES_MAX_RAW_SCAN {
         return Ok(SiteChangesLoad::Complete(SiteChangesList {
@@ -229,7 +239,7 @@ async fn load_site_changes_list(
     let last_candidate_page = request.page.saturating_add(2);
     let visible_row_target = usize::try_from(last_candidate_page)
         .ok()
-        .and_then(|page| page.checked_mul(SITE_CHANGES_ROWS_PER_PAGE))
+        .and_then(|page| page.checked_mul(request.rows_per_page))
         .and_then(|rows| rows.checked_add(1))
         .unwrap_or(SITE_CHANGES_MAX_RAW_SCAN)
         .min(SITE_CHANGES_MAX_RAW_SCAN);
@@ -356,22 +366,22 @@ async fn load_site_changes_list(
 
     let available_pages = revisions
         .len()
-        .div_ceil(SITE_CHANGES_ROWS_PER_PAGE)
+        .div_ceil(request.rows_per_page)
         .try_into()
         .unwrap_or(u32::MAX);
     let last_link_page = available_pages.min(last_candidate_page).max(request.page);
     let has_next = revisions.len()
         > usize::try_from(request.page)
             .unwrap_or(usize::MAX)
-            .saturating_mul(SITE_CHANGES_ROWS_PER_PAGE);
+            .saturating_mul(request.rows_per_page);
     let has_dots = revisions.len()
         > usize::try_from(last_candidate_page)
             .unwrap_or(usize::MAX)
-            .saturating_mul(SITE_CHANGES_ROWS_PER_PAGE);
+            .saturating_mul(request.rows_per_page);
     let revisions = revisions
         .into_iter()
         .skip(page_start)
-        .take(SITE_CHANGES_ROWS_PER_PAGE)
+        .take(request.rows_per_page)
         .collect();
 
     Ok(SiteChangesLoad::Complete(SiteChangesList {
@@ -732,19 +742,19 @@ mod tests {
     #[test]
     fn site_changes_options_accept_only_the_observed_read_filters() {
         assert_eq!(
-            WikidotSiteChangesFilter::from_options("{}"),
+            WikidotSiteChangesFilter::from_browser_options("{}"),
             Some(WikidotSiteChangesFilter::All),
         );
         assert_eq!(
-            WikidotSiteChangesFilter::from_options("{\"all\":true}"),
+            WikidotSiteChangesFilter::from_browser_options("{\"all\":true}"),
             Some(WikidotSiteChangesFilter::All),
         );
         assert_eq!(
-            WikidotSiteChangesFilter::from_options("{\"source\":true}"),
+            WikidotSiteChangesFilter::from_browser_options("{\"source\":true}"),
             Some(WikidotSiteChangesFilter::Source),
         );
         assert_eq!(
-            WikidotSiteChangesFilter::from_options("{\"files\":true}"),
+            WikidotSiteChangesFilter::from_browser_options("{\"files\":true}"),
             Some(WikidotSiteChangesFilter::Files),
         );
         for unsupported in [
@@ -754,7 +764,22 @@ mod tests {
             "{\"source\":true,\"files\":true}",
             "{\"unknown\":true}",
         ] {
-            assert_eq!(WikidotSiteChangesFilter::from_options(unsupported), None);
+            assert_eq!(
+                WikidotSiteChangesFilter::from_browser_options(unsupported),
+                None,
+            );
         }
+        assert_eq!(
+            WikidotSiteChangesFilter::from_wikidot_py_options("{\"all\":true}"),
+            Some(WikidotSiteChangesFilter::All),
+        );
+        assert_eq!(
+            WikidotSiteChangesFilter::from_wikidot_py_options("{\"source\":true}"),
+            Some(WikidotSiteChangesFilter::Source),
+        );
+        assert_eq!(
+            WikidotSiteChangesFilter::from_wikidot_py_options("{\"files\":true}"),
+            None,
+        );
     }
 }
