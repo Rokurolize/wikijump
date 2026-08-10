@@ -92,6 +92,7 @@ use sea_orm::{
     PaginatorTrait, QueryFilter, QueryOrder, Set, Statement, TransactionTrait, Value,
 };
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::panic::{AssertUnwindSafe, resume_unwind};
@@ -11875,6 +11876,141 @@ async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
 }
 
 #[tokio::test]
+async fn authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models()
+ {
+    const MANAGE_SITE_SOURCE: &str = "[[module ManageSite]]";
+    const MANAGE_SITE_BODY_SHA256: &str =
+        "7daaec8dc6eca01b2bec08d9959dff6d0ed562c404cd20e1d5b156bc26da0b57";
+    const PETITION_ADMIN_SOURCE: &str = "[[module PetitionAdmin]]";
+    const PETITION_ADMIN_BODY_SHA256: &str =
+        "b80d4331c4edc47c4129f08701a14e031c07f7f302b1384614eedb38ced2124c";
+
+    let body_sha256 = |body: &str| hex::encode(Sha256::digest(body.trim().as_bytes()));
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    SiteService::update(
+        runner.context(),
+        Reference::Id(site_id),
+        UpdateSiteBody {
+            name: Maybe::Set(
+                r#"<script data-site-text="unsafe">probe</script>"#.to_owned(),
+            ),
+            ..Default::default()
+        },
+        None,
+        ADMIN_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("hostile site text fixture should be stored");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let manage_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite administrator read model",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let petition_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin administrator read model",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert_eq!(
+        body_sha256(&manage_preview.body),
+        MANAGE_SITE_BODY_SHA256,
+        "administrator ManageSite preview must match the captured initial manager shell exactly",
+    );
+    assert_eq!(
+        body_sha256(&petition_preview.body),
+        PETITION_ADMIN_BODY_SHA256,
+        "administrator PetitionAdmin preview must match the captured no-campaign body exactly",
+    );
+    assert!(
+        !manage_preview.body.contains("data-site-text")
+            && !petition_preview.body.contains("data-site-text"),
+        "captured initial read models must not interpolate dynamic site text",
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-admin-manage-site-read-model",
+        "Fixture Admin ManageSite Read Model",
+        MANAGE_SITE_SOURCE,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-admin-petition-read-model",
+        "Fixture Admin Petition Read Model",
+        PETITION_ADMIN_SOURCE,
+    )
+    .await;
+    let administrator_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "site utility administrator read model".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("administrator session should be created");
+    let body = |view| match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved administrator site utility page, got {other:?}"),
+    };
+    let saved_manage = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": administrator_session.clone(),
+            "route": {"slug": "fixture-admin-manage-site-read-model", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    let saved_petition = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": administrator_session,
+            "route": {"slug": "fixture-admin-petition-read-model", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert_eq!(
+        body_sha256(&saved_manage),
+        MANAGE_SITE_BODY_SHA256,
+        "saved administrator ManageSite must re-render the captured initial manager shell",
+    );
+    assert_eq!(
+        body_sha256(&saved_petition),
+        PETITION_ADMIN_BODY_SHA256,
+        "saved administrator PetitionAdmin must re-render the captured no-campaign body",
+    );
+}
+
+#[tokio::test]
 async fn authenticated_site_utility_preview_denies_only_non_administrators() {
     const MANAGE_SITE_SOURCE: &str = "[[module ManageSite]]";
     const PETITION_ADMIN_SOURCE: &str = "[[module PetitionAdmin]]";
@@ -12008,19 +12144,23 @@ async fn authenticated_site_utility_preview_denies_only_non_administrators() {
         }),
     );
     assert!(
-        admin_manage_site.body.contains("No such module, please")
-            && admin_manage_site.body.contains("<em>ManageSite</em>")
+        admin_manage_site.body.contains("id=\"site-manager-menu\"")
+            && admin_manage_site.body.contains("id=\"sm-action-area\"")
             && !admin_manage_site.body.contains(MANAGE_SITE_NON_ADMIN_HTML),
-        "administrator ManageSite must remain fail-closed without being misclassified as a non-admin:\n{}",
+        "administrator ManageSite must render the manager shell without a denial:\n{}",
         admin_manage_site.body,
     );
     assert!(
-        admin_petition_admin.body.contains("No such module, please")
-            && admin_petition_admin.body.contains("<em>PetitionAdmin</em>")
+        admin_petition_admin
+            .body
+            .contains("id=\"petition-admin-module-box\"")
+            && admin_petition_admin
+                .body
+                .contains("You have no petition campaigns defined.")
             && !admin_petition_admin
                 .body
                 .contains(PETITION_ADMIN_DENIAL_HTML),
-        "administrator PetitionAdmin must remain fail-closed without being misclassified as a non-admin:\n{}",
+        "administrator PetitionAdmin must render the no-campaign body without a denial:\n{}",
         admin_petition_admin.body,
     );
 }
@@ -12122,12 +12262,13 @@ async fn saved_site_utility_modules_recheck_the_session_actor() {
         }),
     ));
     assert!(
-        administrator.contains("No such module, please")
-            && administrator.contains("<em>ManageSite</em>")
-            && administrator.contains("<em>PetitionAdmin</em>")
+        administrator.contains("id=\"site-manager-menu\"")
+            && administrator.contains("id=\"sm-action-area\"")
+            && administrator.contains("id=\"petition-admin-module-box\"")
+            && administrator.contains("You have no petition campaigns defined.")
             && !administrator.contains(MANAGE_SITE_NON_ADMIN_HTML)
             && !administrator.contains(PETITION_ADMIN_DENIAL_HTML),
-        "saved administrator view must remain generic fail-closed and never reuse non-admin denial DOM:\n{administrator}",
+        "saved administrator view must recheck authority and render both read models:\n{administrator}",
     );
 }
 
@@ -12233,8 +12374,20 @@ async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
         "FOREIGN_RUNTIME\n",
         "[[module RuntimeOwnershipProbe]]\n",
         "[[/module]]\n",
-        "ARGUMENT\n",
+        "MANAGE_BODY\n",
+        "[[module ManageSite]]\n",
+        "unsupported\n",
+        "[[/module]]\n",
+        "PETITION_BODY\n",
+        "[[module PetitionAdmin]]\n",
+        "unsupported\n",
+        "[[/module]]\n",
+        "UNKNOWN_ARGUMENTS\n",
         "[[module ManageSite unexpected=\"x\"]]\n",
+        "[[module PetitionAdmin unexpected=\"x\"]]\n",
+        "DUPLICATE_ARGUMENTS\n",
+        "[[module ManageSite unexpected=\"x\" unexpected=\"y\"]]\n",
+        "[[module PetitionAdmin unexpected=\"x\" unexpected=\"y\"]]\n",
         "END",
     );
 
@@ -12266,7 +12419,7 @@ async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
             .contains("You should be logged in to clone a site.")
             && !preview.body.contains("No sites provided.")
             && !preview.body.contains("404_homer.png"),
-        "literal, body-bearing, and unsupported-argument shapes must not enter the evidenced anonymous consumers:\n{}",
+        "literal, body-bearing, and unsupported-argument shapes must not enter the evidenced consumers:\n{}",
         preview.body,
     );
     assert!(

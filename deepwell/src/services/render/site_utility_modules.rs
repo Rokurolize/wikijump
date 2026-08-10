@@ -20,6 +20,8 @@
 
 //! Fail-closed rendering for site utility modules with frozen anonymous output.
 
+mod admin_read_models;
+
 use std::borrow::Cow;
 use std::sync::LazyLock;
 
@@ -27,6 +29,7 @@ use ftml::settings::WikitextSettings;
 use ftml::tree::{AttributeMap, Container, ContainerType, Element, Module, SyntaxTree};
 use regex::Regex;
 
+use self::admin_read_models::{MANAGE_SITE_ADMIN_HTML, PETITION_ADMIN_ADMIN_HTML};
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use crate::error::prelude::Result;
@@ -121,6 +124,7 @@ pub(super) async fn expand_site_utility_modules(
                 let head = captures.name("head").map_or("", |head| head.as_str());
                 !literal_regions.contains(matched.start())
                     && head.trim().is_empty()
+                    && !opens_module_body(&wikitext, matched.end())
                     && (name.eq_ignore_ascii_case("ManageSite")
                         || name.eq_ignore_ascii_case("PetitionAdmin"))
             });
@@ -156,19 +160,26 @@ pub(super) async fn expand_site_utility_modules(
             .expect("a site utility module capture always has a name")
             .as_str();
         let head = captures.name("head").map_or("", |head| head.as_str());
+        let is_standalone =
+            head.trim().is_empty() && !opens_module_body(&wikitext, matched.end());
         let rendered = if name.eq_ignore_ascii_case("Clone") {
             (viewer_user_id.is_none() && head.trim().is_empty())
                 .then_some(CLONE_ANONYMOUS_HTML)
         } else if name.eq_ignore_ascii_case("ManageSite") {
-            match (head.trim().is_empty(), viewer_user_id, viewer_can_edit_site) {
+            match (is_standalone, viewer_user_id, viewer_can_edit_site) {
                 (true, None, _) => Some(MANAGE_SITE_ANONYMOUS_HTML),
                 (true, Some(_), Some(false)) => Some(MANAGE_SITE_NON_ADMIN_HTML),
+                (true, Some(_), Some(true)) => Some(MANAGE_SITE_ADMIN_HTML),
                 _ => None,
             }
         } else if name.eq_ignore_ascii_case("PetitionAdmin") {
-            (head.trim().is_empty()
-                && (viewer_user_id.is_none() || viewer_can_edit_site == Some(false)))
-            .then_some(PETITION_ADMIN_ANONYMOUS_HTML)
+            match (is_standalone, viewer_user_id, viewer_can_edit_site) {
+                (true, None, _) | (true, Some(_), Some(false)) => {
+                    Some(PETITION_ADMIN_ANONYMOUS_HTML)
+                }
+                (true, Some(_), Some(true)) => Some(PETITION_ADMIN_ADMIN_HTML),
+                _ => None,
+            }
         } else {
             debug_assert!(name.eq_ignore_ascii_case("SiteGrid"));
             (head.trim().is_empty() && !opens_module_body(&wikitext, matched.end()))
