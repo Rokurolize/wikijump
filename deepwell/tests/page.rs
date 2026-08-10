@@ -101,6 +101,7 @@ use time::{Duration, OffsetDateTime};
 
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
+use ftml::parsing::ParseErrorKind;
 use ftml::settings::{WikitextMode, WikitextSettings};
 use redis::AsyncCommands;
 
@@ -6667,14 +6668,14 @@ async fn members_list_ajax_paginates_only_filtered_site_identities() {
                 "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
                 ") ",
                 "SELECT CASE WHEN fixture.n = 101 THEN 'site-member' ELSE 'member' END, ",
-                "'site', $2, 'user', $1 + fixture.n::BIGINT, '{}', $3, ",
+                "'site', $2, 'user', $1 + fixture.n::BIGINT, '{}'::jsonb, $3, ",
                 "TIMESTAMPTZ '2020-01-01 00:00:00+00' + (fixture.n + 2) * INTERVAL '1 second' ",
                 "FROM generate_series(0, 101) AS fixture(n) ",
-                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 102, '{}', $3, ",
+                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 102, '{}'::jsonb, $3, ",
                 "TIMESTAMPTZ '2020-01-01 00:00:00+00' ",
-                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 103, '{}', $3, ",
+                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 103, '{}'::jsonb, $3, ",
                 "TIMESTAMPTZ '2020-01-01 00:00:01+00' ",
-                "UNION ALL SELECT 'member', 'site', $4, 'user', $1 + 104, '{}', $3, ",
+                "UNION ALL SELECT 'member', 'site', $4, 'user', $1 + 104, '{}'::jsonb, $3, ",
                 "TIMESTAMPTZ '2019-12-31 23:59:59+00'",
             ),
             [
@@ -13574,15 +13575,42 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         }),
     )
     .expect("NextPreviousPage holder edit should succeed");
+    let parser_errors = edited_holder
+        .parser_errors
+        .as_ref()
+        .expect("NextPreviousPage source edit should return parser diagnostics");
+    assert_eq!(parser_errors.len(), 2);
+    assert!(
+        parser_errors
+            .iter()
+            .all(|error| error.kind() == ParseErrorKind::NotStartOfLine),
+        "the two intentionally literal inline modules should retain their parser diagnostics: {parser_errors:?}",
+    );
     let holder_revision = edited_holder.revision_id;
-    set_listpages_test_tags(
-        &mut runner,
-        site_id,
-        holder_slug,
-        holder_revision,
-        &[shared_tag],
+    let tagged_holder = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "last_revision_id": holder_revision,
+            "revision_comments": "set NextPreviousPage fixture tags",
+            "user_id": ADMIN_USER_ID,
+            "tags": [shared_tag],
+            "ip_address": common::IP_ADDRESS,
+        }),
     )
-    .await;
+    .expect("NextPreviousPage tag edit should create a revision");
+    let parser_errors = tagged_holder
+        .parser_errors
+        .expect("NextPreviousPage tag edit should return parser diagnostics");
+    assert_eq!(parser_errors.len(), 2);
+    assert!(
+        parser_errors
+            .iter()
+            .all(|error| error.kind() == ParseErrorKind::NotStartOfLine),
+        "tagging should preserve the two expected inline-module diagnostics: {parser_errors:?}",
+    );
 
     let last_source = format!(
         concat!(
@@ -23087,7 +23115,7 @@ async fn page_watchers_requires_target_view_permission_and_site_ownership() {
         page_watchers,
         json!({"site_id": other_site.site_id, "page_id": target.page_id}),
     );
-    assert_contains_error!(wrong_site, ErrorType::PermissionDenied);
+    assert_contains_error!(wrong_site, ErrorType::PageNotFound);
 
     runner.set_request_context(RequestContext {
         user_id: Some(ADMIN_USER_ID),
