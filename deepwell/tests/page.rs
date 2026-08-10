@@ -6178,7 +6178,7 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             " does not match any existing user name</span>",
         ),
         concat!(
-            r#"<span class="error-inline"><em>v7arg='single quoted' data-v7=unquoted</em>"#,
+            r#"<span class="error-inline"><em>v7arg=&#39;single quoted&#39; data-v7=unquoted</em>"#,
             " does not match any existing user name</span>",
         ),
     ];
@@ -6815,6 +6815,12 @@ async fn members_list_ajax_paginates_only_filtered_site_identities() {
             );
         }
     }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
 
     for parameters in [
         json!({"group": "", "order": "joined"}),
@@ -9762,10 +9768,12 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         saved_body.contains(r#"<div class="comments-box">"#)
             && saved_body.contains(r#"id="comments-options-hidden""#)
             && saved_body.contains(r#"id="thread-container""#)
-            && !saved_body.contains(r#"id="comments-options-shown""#)
-            && !saved_body.contains("Page Comment 00")
+            && saved_body.contains(r#"id="comments-options-shown""#)
+            && saved_body.contains("Page Comment 00")
+            && saved_body.contains("Page Comment 09")
+            && !saved_body.contains(r#">Page Comment 10</div>"#)
             && !saved_body.contains("[[module Comments]]"),
-        "saved page_view should retain the inert Comments shell before Ajax loads posts:\n{saved_body}",
+        "saved page_view should embed the permission-filtered first Comments page:\n{saved_body}",
     );
 
     let forwards_body = saved_comments_body(
@@ -9780,8 +9788,8 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
                 .contains(r#"id="comments-options-hidden" style="display: none""#)
             && forwards_body.contains(r#"class="thread-container""#)
             && !forwards_body.contains(r#"class="thread-container reverse""#)
-            && !forwards_body.contains("Page Comment 400"),
-        "exact hide=false and order=forwards should retain the forward shell:\n{forwards_body}",
+            && forwards_body.contains("Page Comment 400"),
+        "exact hide=false and order=forwards should embed the forward page:\n{forwards_body}",
     );
 
     let reverse_body = saved_comments_body(
@@ -9793,11 +9801,11 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     assert!(
         reverse_body.contains("<h1>Reverse Saved</h1>")
             && reverse_body.contains(r#"class="thread-container reverse""#)
+            && reverse_body.find("Page Comment 411")
+                < reverse_body.find("Page Comment 410")
             && reverse_body.find("new-post-button")
-                < reverse_body.find("comments-options-hidden")
-            && !reverse_body.contains("Page Comment 410")
-            && !reverse_body.contains("Page Comment 411"),
-        "exact order=reverse should retain the reverse shell:\n{reverse_body}",
+                < reverse_body.find("comments-options-shown"),
+        "exact order=reverse should embed the reverse page:\n{reverse_body}",
     );
 
     let hidden_body =
@@ -10211,8 +10219,8 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     }
 
     let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
-        .expect("seeded test site should exist");
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
     let visible_group = ForumService::create_group(
         runner.context(),
