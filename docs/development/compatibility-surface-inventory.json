@@ -21,10 +21,10 @@
     ]
   },
   "counts": {
-    "total": 886,
+    "total": 888,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 155,
+      "deepwell_jsonrpc_method": 157,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 17,
       "framerail_route": 27,
@@ -12367,6 +12367,72 @@
       "public_owner": "deepwell",
       "public_reference": [
         "deepwell/src/api.rs#register:site_get"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:site_tools_orphaned_pages",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:site_tools_orphaned_pages"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:site_tools_wanted_pages",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:site_tools_wanted_pages"
       ],
       "existing_refs": {
         "issues": [],
@@ -30383,13 +30449,17 @@
       "kind": "page_action",
       "public_owner": "framerail",
       "public_reference": [
+        "deepwell/src/services/view/site_tools.rs",
         "docs/development/wikidot-page-action-surfaces.json",
-        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        "framerail/src/routes/[slug]/[...extra]/SiteToolsPane.svelte"
       ],
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs",
+          "framerail/tests/site-tools-read-actions.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -30398,9 +30468,10 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": [
-          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+          "deepwell/src/services/view/site_tools.rs",
+          "framerail/src/routes/[slug]/[...extra]/SiteToolsPane.svelte"
         ]
       },
       "candidate": {

@@ -53,8 +53,15 @@
     },
     {
       "action_id": "site-tools",
-      "source_status": "pending",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "source_status": "implemented",
+      "public_references": [
+        "deepwell/src/services/view/site_tools.rs",
+        "framerail/src/routes/[slug]/[...extra]/SiteToolsPane.svelte"
+      ],
+      "test_references": [
+        "deepwell/tests/page.rs",
+        "framerail/tests/site-tools-read-actions.test.js"
+      ]
     },
     {
       "action_id": "more-options",
