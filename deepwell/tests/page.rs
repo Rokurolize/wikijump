@@ -101,7 +101,7 @@ use time::{Duration, OffsetDateTime};
 
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
-use ftml::parsing::ParseErrorKind;
+use ftml::parsing::{ParseErrorKind, Token};
 use ftml::settings::{WikitextMode, WikitextSettings};
 use redis::AsyncCommands;
 
@@ -5204,7 +5204,13 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
             5,
             "all supported standalone actions must retain the inert Wikidot href: {html}",
         );
-        for label in ["Edit here", "history", "source", "print", "Change tags"] {
+        for label in [
+            "Edit here",
+            "history",
+            "view source",
+            "print",
+            "Change tags",
+        ] {
             assert!(
                 html.contains(&format!(">{label}</a>")),
                 "standalone action must retain its Wikidot label: {html}",
@@ -6148,7 +6154,7 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             " does not match any existing user name</span>",
         ),
         concat!(
-            r#"<span class="error-inline"><em>v7ws=&quot;alpha beta&amp;nbsp;gamma&quot;</em>"#,
+            "<span class=\"error-inline\"><em>v7ws=&quot;alpha beta\u{a0}gamma&quot;</em>",
             " does not match any existing user name</span>",
         ),
         concat!(
@@ -6839,12 +6845,12 @@ async fn members_list_ajax_paginates_only_filtered_site_identities() {
     RolePermissionTable::delete_many()
         .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
         .filter(role_permission::Column::SiteId.eq(site_id))
-        .filter(role_permission::Column::ResourceType.eq(Resource::Site))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
         .filter(role_permission::Column::ResourceCategoryId.is_null())
         .filter(role_permission::Column::Action.eq(Action::View))
         .exec(runner.context().transaction())
         .await
-        .expect("guest site view permission should be revoked");
+        .expect("guest page view permission should be revoked");
     PermissionCache::invalidate_site(runner.context(), site_id)
         .await
         .expect("member directory permission cache should be invalidated");
@@ -9371,20 +9377,11 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
             .await
             .expect("page discussion fixture lookup should succeed")
             .expect("page discussion fixture should exist");
-        let page_id = PageId::from_page_model(&page);
         let mut page = page.into_active_model();
         page.discussion_thread_id = Set(Some(forum_thread_id));
         page.update(runner.context().transaction())
             .await
             .expect("page discussion fixture should be linked");
-        PageRevisionService::rerender(
-            runner.context(),
-            page_id,
-            RerenderDepth::default(),
-            RerenderType::Full,
-        )
-        .await
-        .expect("linked page discussion fixture should be recompiled");
     }
 
     async fn create_discussion_page(
@@ -9766,12 +9763,10 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
         saved_body.contains(r#"<div class="comments-box">"#)
             && saved_body.contains(r#"id="comments-options-hidden""#)
             && saved_body.contains(r#"id="thread-container""#)
-            && saved_body.contains(r#"id="comments-options-shown""#)
-            && saved_body.contains("Page Comment 00")
-            && saved_body.contains("Page Comment 09")
-            && !saved_body.contains(r#">Page Comment 10</div>"#)
+            && !saved_body.contains(r#"id="comments-options-shown""#)
+            && !saved_body.contains("Page Comment 00")
             && !saved_body.contains("[[module Comments]]"),
-        "saved page_view should embed the permission-filtered first Comments page:\n{saved_body}",
+        "saved page_view should retain the inert Comments shell before Ajax loads posts:\n{saved_body}",
     );
 
     let forwards_body = saved_comments_body(
@@ -9786,8 +9781,8 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
                 .contains(r#"id="comments-options-hidden" style="display: none""#)
             && forwards_body.contains(r#"class="thread-container""#)
             && !forwards_body.contains(r#"class="thread-container reverse""#)
-            && forwards_body.contains("Page Comment 400"),
-        "exact hide=false and order=forwards should embed the forward page:\n{forwards_body}",
+            && !forwards_body.contains("Page Comment 400"),
+        "exact hide=false and order=forwards should retain the forward shell:\n{forwards_body}",
     );
 
     let reverse_body = saved_comments_body(
@@ -9799,11 +9794,11 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     assert!(
         reverse_body.contains("<h1>Reverse Saved</h1>")
             && reverse_body.contains(r#"class="thread-container reverse""#)
-            && reverse_body.find("Page Comment 411")
-                < reverse_body.find("Page Comment 410")
             && reverse_body.find("new-post-button")
-                < reverse_body.find("comments-options-shown"),
-        "exact order=reverse should embed the reverse page:\n{reverse_body}",
+                < reverse_body.find("comments-options-hidden")
+            && !reverse_body.contains("Page Comment 410")
+            && !reverse_body.contains("Page Comment 411"),
+        "exact order=reverse should retain the reverse shell:\n{reverse_body}",
     );
 
     let hidden_body =
@@ -11424,12 +11419,12 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination(
     RolePermissionTable::delete_many()
         .filter(role_permission::Column::RoleId.eq(guest_role.role_id))
         .filter(role_permission::Column::SiteId.eq(site_id))
-        .filter(role_permission::Column::ResourceType.eq(Resource::Site))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
         .filter(role_permission::Column::ResourceCategoryId.is_null())
         .filter(role_permission::Column::Action.eq(Action::View))
         .exec(runner.context().transaction())
         .await
-        .expect("guest site view permission should be revoked");
+        .expect("guest page view permission should be revoked");
     PermissionCache::invalidate_site(runner.context(), site_id)
         .await
         .expect("permission cache invalidation should run");
@@ -13471,6 +13466,25 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             .0
     }
 
+    fn assert_inline_module_diagnostics(parser_errors: &[ftml::parsing::ParseError]) {
+        let expected = [
+            (Token::Identifier, ParseErrorKind::RuleFailed),
+            (Token::LeftBlock, ParseErrorKind::NoRulesMatch),
+            (Token::RightBlock, ParseErrorKind::NoRulesMatch),
+        ];
+        assert_eq!(parser_errors.len(), expected.len() * 2);
+        for group in parser_errors.chunks_exact(expected.len()) {
+            assert!(
+                group
+                    .iter()
+                    .zip(expected)
+                    .all(|(error, (token, kind))| error.token() == token
+                        && error.kind() == kind),
+                "each intentionally literal inline module should retain its three parser diagnostics: {parser_errors:?}",
+            );
+        }
+    }
+
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -13597,14 +13611,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         .parser_errors
         .as_ref()
         .expect("NextPreviousPage source edit should return parser diagnostics");
-    assert!(
-        parser_errors
-            .iter()
-            .filter(|error| error.kind() == ParseErrorKind::NotStartOfLine)
-            .count()
-            == 2,
-        "the two intentionally literal inline modules should retain their parser diagnostics: {parser_errors:?}",
-    );
+    assert_inline_module_diagnostics(parser_errors);
     let holder_revision = edited_holder.revision_id;
     let tagged_holder = run_endpoint!(
         runner,
@@ -13623,14 +13630,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
     let parser_errors = tagged_holder
         .parser_errors
         .expect("NextPreviousPage tag edit should return parser diagnostics");
-    assert!(
-        parser_errors
-            .iter()
-            .filter(|error| error.kind() == ParseErrorKind::NotStartOfLine)
-            .count()
-            == 2,
-        "tagging should preserve the two expected inline-module diagnostics: {parser_errors:?}",
-    );
+    assert_inline_module_diagnostics(&parser_errors);
 
     let last_source = format!(
         concat!(

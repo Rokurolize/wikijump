@@ -64,7 +64,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
                         page_reference: None,
                     },
                     Permission {
-                        resource_type: Resource::Site,
+                        resource_type: Resource::Page,
                         resource_category: None,
                         action: Action::View,
                     },
