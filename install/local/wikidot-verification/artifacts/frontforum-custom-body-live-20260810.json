@@ -1,0 +1,253 @@
+{
+  "schema": "wikijump.frontforum_custom_body_live_evidence.v1",
+  "captured_at": "2026-08-10T08:50:34.165Z",
+  "surface_ids": [
+    "catalog-feature:module-frontforum",
+    "Q1034_POPULATED_READ_MODEL_COVERAGE"
+  ],
+  "public_interface": "anonymous edit/PagePreviewModule via Ajax Module Connector",
+  "provenance": {
+    "actor": "anonymous",
+    "authenticated": false,
+    "mutated": false,
+    "site": "sandbox-for-codex",
+    "capture_script": "install/local/wikidot-verification/scripts/capture-frontforum-custom-body.mjs",
+    "capture_script_sha256": "4b06d6791003739c8a949d2aa961a606c3b3f138139450435acaa8aab187482f"
+  },
+  "inputs": {
+    "cases": "install/local/wikidot-verification/fixtures/frontforum-custom-body/cases.json",
+    "cases_sha256": "00caa48eeaa95754da0b7fd6744f5db046ff38151cd4e20359c00dadba7251c0"
+  },
+  "case_ids": [
+    "frontforum-custom-body-canonical",
+    "frontforum-custom-body-alias-offset-multi",
+    "frontforum-custom-body-unknown",
+    "frontforum-custom-body-malformed-owner-control"
+  ],
+  "controls": {
+    "positive": 2,
+    "negative": 2
+  },
+  "ownership_boundary": {
+    "owner": "FrontForum body-bearing runtime module",
+    "observed": "A recognized body-bearing FrontForum consumes its closer and evaluates documented variables once per selected thread; an unknown variable remains literal; malformed category selection renders the module error without leaking the custom body.",
+    "forbidden_inferences": [
+      "raw closer consumption outside the typed FrontForum owner",
+      "feed or document-head ownership",
+      "fixRelativeLinks behavior",
+      "private or deleted visibility",
+      "forum mutation authority"
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "frontforum-custom-body-canonical",
+      "control": "positive",
+      "mutated": false,
+      "selection": {
+        "category_ids": [
+          8503559
+        ],
+        "offset": 0,
+        "limit": 1
+      },
+      "variables": [
+        "title",
+        "linked_title",
+        "author",
+        "date",
+        "comments",
+        "category",
+        "description",
+        "content"
+      ],
+      "variable_results": {
+        "title": "populated",
+        "linked_title": "populated_link",
+        "author": "populated_printuser",
+        "date": "populated_odate",
+        "comments": "populated_link",
+        "category": "populated_link",
+        "description": "populated",
+        "content": "populated"
+      },
+      "thread_ids": [
+        18029831
+      ],
+      "source": "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n[[div class=\"fw11-title\"]]\n%%title%%\n[[/div]]\n[[div class=\"fw11-linked-title\"]]\n%%linked_title%%\n[[/div]]\n[[div class=\"fw11-author\"]]\n%%author%%\n[[/div]]\n[[div class=\"fw11-date\"]]\n%%date|%Y-%m-%d%%\n[[/div]]\n[[div class=\"fw11-comments\"]]\n%%comments%%\n[[/div]]\n[[div class=\"fw11-category\"]]\n%%category%%\n[[/div]]\n[[div class=\"fw11-description\"]]\n%%description%%\n[[/div]]\n[[div class=\"fw11-content\"]]\n%%content%%\n[[/div]]\n[[/module]]",
+      "source_sha256": "6e212464c1cf4f008b2ccc63d71bf9c7dd0db5b9f36098ebef1452c55e03513b",
+      "request": {
+        "method": "POST",
+        "url": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+        "module_name": "edit/PagePreviewModule",
+        "mode": "page",
+        "title": "frontforum-custom-body-canonical"
+      },
+      "response": {
+        "http_status": 200,
+        "status": "ok",
+        "title": "frontforum-custom-body-canonical",
+        "current_timestamp": 1786351833,
+        "body": "\n\n<div class=\"front-forum-box\">\n\t\t\t<div>\n\t\t\t\n\n<div class=\"fw11-title\">\n<p>Codex smoke thread 20260617194313</p>\n</div>\n<div class=\"fw11-linked-title\">\n<p><a href=\"/forum/t-18029831/codex-smoke-thread-20260617194313\">Codex smoke thread 20260617194313</a></p>\n</div>\n<div class=\"fw11-author\">\n<p><span class=\"printuser avatarhover\"><a href=\"http://www.wikidot.com/user:info/[REDACTED_SANDBOX_AUTHOR]\" onclick=\"WIKIDOT.page.listeners.userInfo(8955132); return false;\"  ><img class=\"small\" src=\"http://www.wikidot.com/avatar.php?userid=8955132&amp;amp;size=small&amp;amp;timestamp=1786351833\" alt=\"[REDACTED_SANDBOX_AUTHOR]\" style=\"background-image:url(http://www.wikidot.com/userkarma.php?u=8955132)\"/></a><a href=\"http://www.wikidot.com/user:info/[REDACTED_SANDBOX_AUTHOR]\" onclick=\"WIKIDOT.page.listeners.userInfo(8955132); return false;\" >[REDACTED_SANDBOX_AUTHOR]</a></span></p>\n</div>\n<div class=\"fw11-date\">\n<p><span class=\"odate time_1781693034 format_%25Y-%25m-%25d\">17 Jun 2026 10:43</span></p>\n</div>\n<div class=\"fw11-comments\">\n<p><a href=\"/forum/t-18029831/codex-smoke-thread-20260617194313\">Comments: 1</a></p>\n</div>\n<div class=\"fw11-category\">\n<p><a href=\"/forum/c-8503559/open-topic\">Community / Open Topic</a></p>\n</div>\n<div class=\"fw11-description\">\n<div>Codex live smoke thread 20260617194313</div>\n</div>\n<div class=\"fw11-content\">\n<div>\n\n<p>Edited forum post for live smoke 20260617194313.</p>\n</div>\n</div>\n\n\t\t</div>\n\t\t</div>",
+        "body_sha256": "a5de155db6ffecf290914ba0e7a6f8fb9caa6f39edd4c07afbee24214d2c5175",
+        "unredacted_body_sha256": "72667f38365841eb58da177490b791b747fc73af42af57a91d3ae04999177df6",
+        "raw_response_sha256": "04b04aa8ae260b7e4ece748f7eca838db67ead5d012de4b665feac7c387df31e",
+        "redactions": [
+          "sandbox author login ID and display name"
+        ],
+        "js_include": [],
+        "css_include": []
+      }
+    },
+    {
+      "case_id": "frontforum-custom-body-alias-offset-multi",
+      "control": "positive",
+      "mutated": false,
+      "selection": {
+        "category_ids": [
+          8503561,
+          8503559
+        ],
+        "offset": 1,
+        "limit": 1
+      },
+      "variables": [
+        "title_linked",
+        "link",
+        "short",
+        "summary",
+        "text",
+        "long",
+        "body"
+      ],
+      "variable_results": {
+        "title_linked": "populated_link",
+        "link": "populated_url",
+        "short": "populated",
+        "summary": "populated",
+        "text": "populated",
+        "long": "populated",
+        "body": "populated"
+      },
+      "thread_ids": [
+        18295079
+      ],
+      "selection_result": {
+        "observed_thread_ids": [
+          18295079
+        ],
+        "requested_offset": 1,
+        "requested_category_ids": [
+          8503561,
+          8503559
+        ],
+        "observation": "one populated alias item rendered after combined-category offset selection"
+      },
+      "source": "[[module FrontForum category=\"8503561;8503559\" limit=\"1\" offset=\"1\"]]\n[[div class=\"fw11-title-linked\"]]\n%%title_linked%%\n[[/div]]\n[[div class=\"fw11-link\"]]\n%%link%%\n[[/div]]\n[[div class=\"fw11-short\"]]\n%%short%%\n[[/div]]\n[[div class=\"fw11-summary\"]]\n%%summary%%\n[[/div]]\n[[div class=\"fw11-text\"]]\n%%text%%\n[[/div]]\n[[div class=\"fw11-long\"]]\n%%long%%\n[[/div]]\n[[div class=\"fw11-body\"]]\n%%body%%\n[[/div]]\n[[/module]]",
+      "source_sha256": "9389488d04457cb5f34c59075e37b6284cc913948908d2c5acee61ab378f8ca1",
+      "request": {
+        "method": "POST",
+        "url": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+        "module_name": "edit/PagePreviewModule",
+        "mode": "page",
+        "title": "frontforum-custom-body-alias-offset-multi"
+      },
+      "response": {
+        "http_status": 200,
+        "status": "ok",
+        "title": "frontforum-custom-body-alias-offset-multi",
+        "current_timestamp": 1786351833,
+        "body": "\n\n<div class=\"front-forum-box\">\n\t\t\t<div>\n\t\t\t\n\n<div class=\"fw11-title-linked\">\n<p><a href=\"/forum/t-18295079/fw07-forum-revision-evidence-primary-20260810\">FW07 forum revision evidence primary 20260810</a></p>\n</div>\n<div class=\"fw11-link\">\n<p>/forum/t-18295079/fw07-forum-revision-evidence-primary-20260810</p>\n</div>\n<div class=\"fw11-short\">\n<div>Run-owned FW07 live evidence fixture</div>\n</div>\n<div class=\"fw11-summary\">\n<div>Run-owned FW07 live evidence fixture</div>\n</div>\n<div class=\"fw11-text\">\n<div>\n\n<p>FW07 revision two</p>\n</div>\n</div>\n<div class=\"fw11-long\">\n<div>\n\n<p>FW07 revision two</p>\n</div>\n</div>\n<div class=\"fw11-body\">\n<div>\n\n<p>FW07 revision two</p>\n</div>\n</div>\n\n\t\t</div>\n\t\t</div>",
+        "body_sha256": "d0c88d73ab5043565c284567934efce221044d01280a7199ff427432fee23531",
+        "unredacted_body_sha256": "d0c88d73ab5043565c284567934efce221044d01280a7199ff427432fee23531",
+        "raw_response_sha256": "189cc5d6ac2b79c410b2543ba4bc05f0c6f3e85399b3ab25cdb95881d58b4c0d",
+        "redactions": [],
+        "js_include": [],
+        "css_include": []
+      }
+    },
+    {
+      "case_id": "frontforum-custom-body-unknown",
+      "control": "negative",
+      "mutated": false,
+      "selection": {
+        "category_ids": [
+          8503559
+        ],
+        "offset": 0,
+        "limit": 1
+      },
+      "variables": [
+        "unknown"
+      ],
+      "variable_results": {
+        "unknown": "literal"
+      },
+      "thread_ids": [],
+      "source": "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n[[div class=\"fw11-unknown\"]]\n%%unknown%%\n[[/div]]\n[[/module]]",
+      "source_sha256": "cb01b8053bb67854dd71845fdcee02325d0b7d351ccb5e6f46f1835c363aa81c",
+      "request": {
+        "method": "POST",
+        "url": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+        "module_name": "edit/PagePreviewModule",
+        "mode": "page",
+        "title": "frontforum-custom-body-unknown"
+      },
+      "response": {
+        "http_status": 200,
+        "status": "ok",
+        "title": "frontforum-custom-body-unknown",
+        "current_timestamp": 1786351833,
+        "body": "\n\n<div class=\"front-forum-box\">\n\t\t\t<div>\n\t\t\t\n\n<div class=\"fw11-unknown\">\n<p>%%unknown%%</p>\n</div>\n\n\t\t</div>\n\t\t</div>",
+        "body_sha256": "3e9bf1fa8be141579bfc4a75420eed8b2bedd5def1f756c10fc608999fda956f",
+        "unredacted_body_sha256": "3e9bf1fa8be141579bfc4a75420eed8b2bedd5def1f756c10fc608999fda956f",
+        "raw_response_sha256": "509fbcea588c107530e4fcf11b7a2101e3595e47ea4b8b12bd73b400af32c1b0",
+        "redactions": [],
+        "js_include": [],
+        "css_include": []
+      }
+    },
+    {
+      "case_id": "frontforum-custom-body-malformed-owner-control",
+      "control": "negative",
+      "mutated": false,
+      "selection": {
+        "category_ids": [
+          8503559
+        ],
+        "malformed_element": "bad",
+        "offset": 0,
+        "limit": 1
+      },
+      "variables": [
+        "title"
+      ],
+      "variable_results": {
+        "title": "not_evaluated_after_malformed_selector"
+      },
+      "thread_ids": [],
+      "source": "[[module FrontForum category=\"8503559;bad\" limit=\"1\"]]\nFW11-OWNER-CONTROL %%title%%\n[[/module]]",
+      "source_sha256": "377a51df65fa5a25b592c25b1868f09b4c816c5e1ebe10e78062ba9543d526cb",
+      "request": {
+        "method": "POST",
+        "url": "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php",
+        "module_name": "edit/PagePreviewModule",
+        "mode": "page",
+        "title": "frontforum-custom-body-malformed-owner-control"
+      },
+      "response": {
+        "http_status": 200,
+        "status": "ok",
+        "title": "frontforum-custom-body-malformed-owner-control",
+        "current_timestamp": 1786351834,
+        "body": "\n\n<div class=\"error-block\">Problem parsing attribute \"category\".</div>",
+        "body_sha256": "b77b20c0f90367c65f39202b8b0082a6ca5e752ca1c63867041bd9fa636dd2e2",
+        "unredacted_body_sha256": "b77b20c0f90367c65f39202b8b0082a6ca5e752ca1c63867041bd9fa636dd2e2",
+        "raw_response_sha256": "ab678c4a19ac62a8cd7eae35ce85cdf65fe6de533d47f85cc242001a80ca5699",
+        "redactions": [],
+        "js_include": [],
+        "css_include": []
+      }
+    }
+  ]
+}
