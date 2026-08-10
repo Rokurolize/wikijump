@@ -22,9 +22,7 @@ const escapeJavascriptSingleQuotedString = (value) =>
     .replaceAll("\n", "\\n")
     .replaceAll("<", "\\x3c")
 
-/**
- * @param {{ name: string; content: string; all_pages: boolean }[]} tags
- */
+/** @param {{ name: string; content: string; all_pages: boolean }[]} tags */
 export const renderWikidotEditMeta = (tags) => {
   const renderRow = ({ name, content, all_pages: allPages }) => {
     const deleteArguments = `'${escapeJavascriptSingleQuotedString(name)}'${allPages ? ", true" : ""}`
