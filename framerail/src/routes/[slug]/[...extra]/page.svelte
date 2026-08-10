@@ -26,6 +26,7 @@
   } from "$lib/wikidot/wikidot-legacy-action-request"
   import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
   import { requestMembershipJoin } from "$lib/wikidot/wikidot-membership-action-request"
+  import { toggleWikidotEditSections } from "$lib/wikidot/wikidot-edit-sections"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
   import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
   import { onMount } from "svelte"
@@ -50,6 +51,13 @@
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let pagePaneState = $state<PagePane>(PagePane.None)
   let EditorPane = $state<typeof import("./EditorPane.svelte").default>()
+  let EditSectionPane = $state<typeof import("./EditSectionPane.svelte").default>()
+  let editSection = $state<{
+    index: number
+    level: number
+    start: number
+    end: number
+  }>()
   let wikidotPageActions = $derived(data.wikidot_page_actions)
   let wikidotPageWatch = $derived(data.wikidot_page_watch)
   let dataFormEditing = $derived(!!data.options?.edit && !!data.data_form)
@@ -158,9 +166,35 @@
     EditorPane ??= (await import("./EditorPane.svelte")).default
   }
 
+  async function ensureEditSectionPane() {
+    EditSectionPane ??= (await import("./EditSectionPane.svelte")).default
+  }
+
   function activatePagePane(pane: PagePane) {
     showSource = false
+    editSection = undefined
     pagePaneState = pane
+  }
+
+  function closeEditSection() {
+    editSection = undefined
+  }
+
+  function toggleEditSections() {
+    const pageContent = document.querySelector<HTMLElement>("#page-content")
+    if (!pageContent || showRevision) return
+
+    const visible = toggleWikidotEditSections(
+      pageContent,
+      data.wikitext,
+      (section) => {
+        showSource = false
+        pagePaneState = PagePane.None
+        editSection = section
+        void ensureEditSectionPane()
+      }
+    )
+    if (!visible) closeEditSection()
   }
 
   const legacyRequestRuntime = { fetch, deserialize }
@@ -536,6 +570,16 @@
         </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
+          id="edit-sections-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={toggleEditSections}
+          type="button"
+        >
+          Edit Sections
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
           id="watchers-button"
           class="btn btn-default"
           href="javascript:;"
@@ -620,8 +664,11 @@
       </div>
     {/if}
 
-    <div id="action-area" class:hidden={!showSource && pagePaneState === PagePane.None}>
-      {#if showSource || pagePaneState !== PagePane.None}
+    <div
+      id="action-area"
+      class:hidden={!showSource && pagePaneState === PagePane.None && !editSection}
+    >
+      {#if showSource || pagePaneState !== PagePane.None || editSection}
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
           class="action-area-close btn btn-danger"
@@ -629,11 +676,22 @@
           onclick={() => {
             showSource = false
             pagePaneState = PagePane.None
+            closeEditSection()
           }}
           type="button"
         >
           {data.internationalization?.close}
         </a>
+      {/if}
+
+      {#if editSection}
+        {#if EditSectionPane}
+          {#key editSection.index}
+            <EditSectionPane {...props} section={editSection} close={closeEditSection} />
+          {/key}
+        {:else}
+          <p class="pane-loading" aria-live="polite">Loading…</p>
+        {/if}
       {/if}
 
       <PagePaneContent

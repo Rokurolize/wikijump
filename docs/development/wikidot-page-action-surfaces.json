@@ -70,8 +70,13 @@
     },
     {
       "action_id": "edit-sections",
-      "source_status": "pending",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "source_status": "implemented",
+      "public_references": [
+        "framerail/src/lib/wikidot/wikidot-edit-sections.js",
+        "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
+        "framerail/src/routes/[slug]/[...extra]/page.svelte"
+      ],
+      "test_references": ["framerail/tests/wikidot-edit-sections.test.js"]
     },
     {
       "action_id": "edit-append",
