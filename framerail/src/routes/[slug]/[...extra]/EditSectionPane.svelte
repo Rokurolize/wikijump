@@ -22,6 +22,7 @@
     close
   }: PageProps & { section: EditSection; close: () => void } = $props()
   const originalSource = untrack(() => data.wikitext)
+  const selectedSection = untrack(() => section)
 
   const { form, enhance } = superForm(
     untrack(() => data.forms.pageEditForm),
@@ -40,7 +41,7 @@
               tags: data.page_revision?.tags?.join(" ") ?? "",
               source: originalSource
             },
-            section,
+            selectedSection,
             $form.wikitext
           )
         )
@@ -65,7 +66,7 @@
   $form.altTitle = untrack(() => data.page_revision?.alt_title ?? "")
   $form.tags = untrack(() => data.page_revision?.tags?.join(" ") ?? "")
   $form.comments = untrack(() => data.page_revision?.comments ?? "")
-  $form.wikitext = originalSource.slice(section.start, section.end)
+  $form.wikitext = originalSource.slice(selectedSection.start, selectedSection.end)
 </script>
 
 <div id="edit-section-content">

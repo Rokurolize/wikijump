@@ -184,16 +184,12 @@
     const pageContent = document.querySelector<HTMLElement>("#page-content")
     if (!pageContent || showRevision) return
 
-    const visible = toggleWikidotEditSections(
-      pageContent,
-      data.wikitext,
-      (section) => {
-        showSource = false
-        pagePaneState = PagePane.None
-        editSection = section
-        void ensureEditSectionPane()
-      }
-    )
+    const visible = toggleWikidotEditSections(pageContent, data.wikitext, (section) => {
+      showSource = false
+      pagePaneState = PagePane.None
+      editSection = section
+      void ensureEditSectionPane()
+    })
     if (!visible) closeEditSection()
   }
 
@@ -687,7 +683,7 @@
       {#if editSection}
         {#if EditSectionPane}
           {#key editSection.index}
-            <EditSectionPane {...props} section={editSection} close={closeEditSection} />
+            <EditSectionPane {...props} close={closeEditSection} section={editSection} />
           {/key}
         {:else}
           <p class="pane-loading" aria-live="polite">Loading…</p>

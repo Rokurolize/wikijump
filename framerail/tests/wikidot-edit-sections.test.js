@@ -21,11 +21,10 @@ const pageContent = (directHeadings, descendantHeadings = directHeadings) => ({
 test("Edit Sections maps top-level source headings to exact rendered sections", () => {
   const source =
     "+ Alpha heading\n\nAlpha body.\n\n++ Beta heading\n\nBeta body.\n\n+ Gamma heading\n\nGamma body."
-  const sections = findWikidotEditSections(source, pageContent([
-    heading(1, 0),
-    heading(2, 1),
-    heading(1, 2)
-  ]))
+  const sections = findWikidotEditSections(
+    source,
+    pageContent([heading(1, 0), heading(2, 1), heading(1, 2)])
+  )
 
   assert.deepEqual(sections, [
     { index: 0, level: 1, start: 0, end: 59 },
@@ -67,10 +66,7 @@ test("Edit Sections fails closed without a one-to-one direct heading match", () 
     ),
     []
   )
-  assert.deepEqual(
-    findWikidotEditSections(source, pageContent([heading(2, 0)])),
-    []
-  )
+  assert.deepEqual(findWikidotEditSections(source, pageContent([heading(2, 0)])), [])
   assert.deepEqual(
     findWikidotEditSections(source, pageContent([{ id: "toc1", tagName: "H1" }])),
     []
@@ -122,12 +118,14 @@ test("Edit Sections inserts evidenced controls and toggles them off", () => {
     [
       {
         className: "edit-section-button",
+        // eslint-disable-next-line no-script-url -- This fixture asserts Wikidot's observed inert href.
         href: "javascript:;",
         id: "edit-section-b-0",
         textContent: "edit"
       },
       {
         className: "edit-section-button",
+        // eslint-disable-next-line no-script-url -- This fixture asserts Wikidot's observed inert href.
         href: "javascript:;",
         id: "edit-section-b-1",
         textContent: "edit"
@@ -136,7 +134,10 @@ test("Edit Sections inserts evidenced controls and toggles them off", () => {
   )
   controls[1].click()
   assert.deepEqual(edits, [1])
-  assert.equal(toggleWikidotEditSections(root, "ignored", () => {}), false)
+  assert.equal(
+    toggleWikidotEditSections(root, "ignored", () => {}),
+    false
+  )
   assert.deepEqual(controls, [])
 })
 

@@ -29868,12 +29868,16 @@
       "public_owner": "framerail",
       "public_reference": [
         "docs/development/wikidot-page-action-surfaces.json",
+        "framerail/src/lib/wikidot/wikidot-edit-sections.js",
+        "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
         "framerail/src/routes/[slug]/[...extra]/page.svelte"
       ],
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-edit-sections.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -29882,8 +29886,10 @@
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": [
+          "framerail/src/lib/wikidot/wikidot-edit-sections.js",
+          "framerail/src/routes/[slug]/[...extra]/EditSectionPane.svelte",
           "framerail/src/routes/[slug]/[...extra]/page.svelte"
         ]
       },

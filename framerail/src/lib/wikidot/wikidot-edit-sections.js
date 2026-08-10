@@ -11,10 +11,14 @@ const editControlsByPage = new WeakMap()
  */
 
 /**
- * Match source-owned headings to the direct rendered Wikidot heading sequence.
+ * Match source-owned headings to the direct rendered Wikidot heading
+ * sequence.
  *
  * @param {string} source
- * @param {{ children: ArrayLike<Element>, querySelectorAll: (selector: string) => ArrayLike<Element> }} pageContent
+ * @param {{
+ *   children: ArrayLike<Element>
+ *   querySelectorAll: (selector: string) => ArrayLike<Element>
+ * }} pageContent
  * @returns {WikidotEditSection[]}
  */
 export const findWikidotEditSections = (source, pageContent) => {
@@ -86,6 +90,7 @@ export const toggleWikidotEditSections = (pageContent, source, edit) => {
     const heading = directHeadings[section.index]
     const control = pageContent.ownerDocument.createElement("a")
     control.className = "edit-section-button"
+    // eslint-disable-next-line no-script-url -- Wikidot's observed control contract uses this exact inert href.
     control.href = "javascript:;"
     control.id = `edit-section-b-${section.index}`
     control.textContent = "edit"
@@ -111,11 +116,19 @@ export const buildWikidotSectionEditSource = (source, section, replacement) =>
   source.slice(0, section.start) + replacement + source.slice(section.end)
 
 /**
- * Build the existing edit action payload without allowing section editing to
- * change page metadata.
+ * Build the existing edit action payload without allowing section editing
+ * to change page metadata.
  *
  * @param {Record<string, unknown>} form
- * @param {{ siteId: number, pageId: number | undefined, revisionId: number | undefined, title: string, altTitle: string, tags: string, source: string }} revision
+ * @param {{
+ *   siteId: number
+ *   pageId: number | undefined
+ *   revisionId: number | undefined
+ *   title: string
+ *   altTitle: string
+ *   tags: string
+ *   source: string
+ * }} revision
  * @param {WikidotEditSection} section
  * @param {string} replacement
  */
