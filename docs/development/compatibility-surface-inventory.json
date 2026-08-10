@@ -29771,7 +29771,9 @@
         "issues": [],
         "cases": [],
         "tests": [
-          "framerail/tests/authoring-workflows.test.js"
+          "deepwell/tests/page.rs",
+          "framerail/tests/authoring-workflows.test.js",
+          "framerail/tests/page-history-author-public-boundary.test.js"
         ]
       },
       "evidence": {
@@ -29781,7 +29783,7 @@
         ]
       },
       "source": {
-        "status": "in_progress",
+        "status": "implemented",
         "references": [
           "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte"
         ]

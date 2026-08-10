@@ -30,9 +30,13 @@
     },
     {
       "action_id": "history",
-      "source_status": "in_progress",
+      "source_status": "implemented",
       "public_references": ["framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte"],
-      "test_references": ["framerail/tests/authoring-workflows.test.js"]
+      "test_references": [
+        "deepwell/tests/page.rs",
+        "framerail/tests/authoring-workflows.test.js",
+        "framerail/tests/page-history-author-public-boundary.test.js"
+      ]
     },
     {
       "action_id": "files",
