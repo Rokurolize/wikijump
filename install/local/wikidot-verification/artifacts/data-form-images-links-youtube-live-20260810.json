@@ -1,0 +1,364 @@
+{
+  "schema": "wikidot.live.data-form.images-links-youtube.v1",
+  "captured_at_utc": "2026-08-10T09:23:42Z",
+  "site": "sandbox-for-codex",
+  "surface_ids": [
+    "data-forms-images",
+    "data-forms-links",
+    "data-forms-youtube"
+  ],
+  "actors": [
+    "account-a",
+    "anonymous"
+  ],
+  "status": "blocked",
+  "features": [
+    {
+      "feature": "images",
+      "surface_id": "data-forms-images",
+      "status": "blocked",
+      "fixture_matrix": {
+        "field_type": "file",
+        "create_filename": "synthetic-create.png",
+        "edit_filename": "synthetic-edit.png",
+        "layouts": [
+          "form_raw",
+          "form_data-control",
+          "empty-field",
+          "local-default-image"
+        ],
+        "storage_checks": [
+          "target-attachments",
+          "separate-image-page",
+          "image-page-attachments",
+          "category"
+        ]
+      },
+      "attempted_rule": {
+        "rule_id": "images-form-raw-display-boundary",
+        "controls": [
+          {
+            "case_id": "images-create-form-raw-output",
+            "polarity": "positive"
+          },
+          {
+            "case_id": "images-edit-form-raw-output-after-reload",
+            "polarity": "positive"
+          },
+          {
+            "case_id": "images-form-data-is-not-image-output",
+            "polarity": "negative"
+          },
+          {
+            "case_id": "images-empty-field-does-not-fabricate-upload-url",
+            "polarity": "negative"
+          }
+        ]
+      },
+      "phases": {
+        "create_form": {
+          "status": "observed",
+          "actor": "account-a",
+          "interface": "edit/PageEditModule",
+          "selected": {
+            "form": {
+              "tag": "form",
+              "classes": [
+                "form-horizontal",
+                "data-form"
+              ],
+              "method": null,
+              "enctype": null,
+              "action": null
+            },
+            "control": {
+              "tag": "input",
+              "type": "hidden",
+              "name": "field-image",
+              "classes": [
+                "dataform-file-value"
+              ],
+              "accept": null
+            },
+            "public_attachment_cleanup_action_exposed": false
+          }
+        },
+        "create_submission": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_saved_source": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_storage": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_display": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_form": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_submission": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_saved_source": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_storage": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_display": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "reload": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "cleanup": {
+          "status": "complete",
+          "template_deleted": true,
+          "absence_verified": true
+        }
+      },
+      "observations_promoted": false
+    },
+    {
+      "feature": "links",
+      "surface_id": "data-forms-links",
+      "status": "blocked",
+      "fixture_matrix": {
+        "external_field_type": "url",
+        "external_create": "example.com/fw17-alpha",
+        "external_edit": "https://example.com/fw17-beta",
+        "external_layouts": [
+          "normal-window",
+          "leading-star-new-window"
+        ],
+        "internal_field_type": "text",
+        "internal_cases": [
+          "run-owned-existing-alpha",
+          "run-owned-existing-beta",
+          "run-owned-missing"
+        ]
+      },
+      "attempted_rule": {
+        "rule_id": "links-field-type-layout-boundary",
+        "controls": [
+          {
+            "case_id": "links-external-url-form-data-output",
+            "polarity": "positive"
+          },
+          {
+            "case_id": "links-internal-text-link-syntax-output",
+            "polarity": "positive"
+          },
+          {
+            "case_id": "links-external-is-not-internal-page-name",
+            "polarity": "negative"
+          },
+          {
+            "case_id": "links-internal-is-not-protocol-normalized",
+            "polarity": "negative"
+          }
+        ]
+      },
+      "phases": {
+        "create_form": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_submission": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_saved_source": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_storage": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_display": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_form": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_submission": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_saved_source": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_storage": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_display": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "reload": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "cleanup": {
+          "status": "not_needed",
+          "mutation_performed": false
+        }
+      },
+      "observations_promoted": false
+    },
+    {
+      "feature": "youtube",
+      "surface_id": "data-forms-youtube",
+      "status": "blocked",
+      "fixture_matrix": {
+        "field_type": "wiki",
+        "create_marker": "FW17_EMBED_CREATE",
+        "edit_marker": "FW17_EMBED_EDIT",
+        "embed_origin": "https://example.invalid/",
+        "layouts": [
+          "form_raw-inside-html",
+          "form_data-control",
+          "form_raw-outside-html"
+        ],
+        "remote_media_fetch_allowed": false
+      },
+      "attempted_rule": {
+        "rule_id": "youtube-form-raw-html-boundary",
+        "controls": [
+          {
+            "case_id": "youtube-create-marker-form-raw-html-output",
+            "polarity": "positive"
+          },
+          {
+            "case_id": "youtube-edit-marker-form-raw-html-output-after-reload",
+            "polarity": "positive"
+          },
+          {
+            "case_id": "youtube-form-data-is-not-raw-embedded-output",
+            "polarity": "negative"
+          },
+          {
+            "case_id": "youtube-form-raw-outside-html-is-not-claimed-identical",
+            "polarity": "negative"
+          }
+        ]
+      },
+      "phases": {
+        "create_form": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_submission": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_saved_source": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_storage": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "create_display": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_form": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_submission": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_saved_source": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_storage": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "edit_display": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "reload": {
+          "status": "not_attempted",
+          "reason": "lane stopped at image attachment cleanup preflight"
+        },
+        "cleanup": {
+          "status": "not_needed",
+          "mutation_performed": false
+        }
+      },
+      "observations_promoted": false
+    }
+  ],
+  "promoted_rules": [],
+  "public_interfaces_used": [
+    "authenticated wikidot.py site and page lifecycle",
+    "edit/PageEditModule",
+    "anonymous HTTP GET"
+  ],
+  "attempted_routes": [
+    {
+      "interface": "authenticated site lookup",
+      "result": "account-a client established"
+    },
+    {
+      "interface": "anonymous saved-site GET",
+      "result": "HTTP 200"
+    },
+    {
+      "interface": "wikidot.py public page publish",
+      "result": "run-owned template created"
+    },
+    {
+      "interface": "edit/PageEditModule",
+      "result": "file control observed"
+    },
+    {
+      "interface": "wikidot.py public page deletion",
+      "result": "run-owned template absent"
+    }
+  ],
+  "setup_progress": {
+    "run_owned_template_created": true,
+    "file_control_observed": true,
+    "upload_performed": false,
+    "saved_data_form_pages_created": 0
+  },
+  "blocked_reason": "Image upload stopped at cleanup preflight: the live create form exposed the file control but no public attachment cleanup action for the separate storage page. The task forbids guessing a raw action or using a browser to discover it after mutation.",
+  "missing_authority": "Exact public attachment deletion action for a data-form image's separate storage page before upload",
+  "remote_media_fetches": [],
+  "cleanup": {
+    "verified": true,
+    "remaining_pages": [],
+    "remaining_attachments": [],
+    "run_owned_template_deleted": true
+  },
+  "credentials_exposed": false,
+  "cases_fixture": {
+    "path": "install/local/wikidot-verification/fixtures/data-form-images-links-youtube/cases.json",
+    "sha256": "234d79e0d2692c76be9b3e627178d8d38989c4eb5cf85aef5163b92227a68d12"
+  }
+}
