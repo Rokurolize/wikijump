@@ -191,14 +191,18 @@ async fn render_wikidot_data_form_wiki_values(
     tokio::time::timeout(ctx.config().render_timeout, async {
         let mut rendered = BTreeMap::new();
         for field in &data_form.definition.fields {
-            if field.field_type.as_deref() != Some("wiki") {
+            if !matches!(field.field_type.as_deref(), Some("wiki" | "static")) {
                 continue;
             }
-            let source = data_form
-                .values
-                .get(&field.name)
-                .cloned()
-                .unwrap_or_default();
+            let source = if field.field_type.as_deref() == Some("static") {
+                field.configured_value.clone().unwrap_or_default()
+            } else {
+                data_form
+                    .values
+                    .get(&field.name)
+                    .cloned()
+                    .unwrap_or_default()
+            };
             let output = RenderService::render_wikidot_fragment_for_page(
                 ctx, source, page_info, page_id,
             )

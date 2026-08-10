@@ -44,6 +44,16 @@ impl DataFormDefinition {
     }
 
     pub fn supports_observed_create_edit(&self) -> bool {
+        if self.fields.len() != 1
+            && self.fields.iter().any(|field| {
+                matches!(
+                    field.field_type.as_deref(),
+                    Some("hidden" | "password" | "static" | "url")
+                )
+            })
+        {
+            return false;
+        }
         self.observed_create_edit_compatible
             && self.default_layout
             && !self.fields.is_empty()
@@ -51,15 +61,67 @@ impl DataFormDefinition {
                 .fields
                 .iter()
                 .all(|field| match field.field_type.as_deref() {
-                    Some("text") => !field.has_values_property && field.values.is_empty(),
+                    Some("text") => {
+                        field.configured_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                    }
                     Some("checkbox") => {
-                        !field.has_values_property
+                        field.configured_value.is_none()
+                            && !field.has_values_property
                             && field.values.is_empty()
                             && !field.has_text_specific_properties
                     }
-                    Some("wiki") => !field.has_values_property && field.values.is_empty(),
+                    Some("wiki") => {
+                        field.configured_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                    }
+                    Some("hidden") => {
+                        field
+                            .configured_value
+                            .as_ref()
+                            .is_some_and(|value| !value.is_empty())
+                            && field.default_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && !field.has_text_specific_properties
+                            && field.hint.is_empty()
+                            && field.before.is_empty()
+                            && field.after.is_empty()
+                            && !field.join
+                            && field.has_only_properties(&["label", "type", "value"])
+                    }
+                    Some("password" | "url") => {
+                        field.configured_value.is_none()
+                            && field.default_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && !field.has_text_specific_properties
+                            && field.hint.is_empty()
+                            && field.before.is_empty()
+                            && field.after.is_empty()
+                            && !field.join
+                            && field.has_only_properties(&["label", "type"])
+                    }
+                    Some("static") => {
+                        field
+                            .configured_value
+                            .as_ref()
+                            .is_some_and(|value| !value.is_empty())
+                            && field.default_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && !field.has_text_specific_properties
+                            && field.hint.is_empty()
+                            && field.before.is_empty()
+                            && field.after.is_empty()
+                            && !field.join
+                            && field.has_only_properties(&["label", "type", "value"])
+                    }
                     Some("select") => {
-                        !field.has_text_specific_properties
+                        field.configured_value.is_none()
+                            && !field.has_text_specific_properties
                             && field
                                 .default_value
                                 .as_ref()
@@ -78,6 +140,8 @@ pub struct DataFormFieldDefinition {
     pub field_type: Option<String>,
     pub values: Vec<DataFormValueDefinition>,
     pub default_value: Option<String>,
+    #[serde(default)]
+    pub configured_value: Option<String>,
     pub width: usize,
     pub height: usize,
     pub match_pattern: Option<String>,
@@ -96,6 +160,8 @@ pub struct DataFormFieldDefinition {
     authored_width: Option<String>,
     #[serde(skip)]
     authored_height: Option<String>,
+    #[serde(skip)]
+    authored_properties: BTreeSet<String>,
 }
 
 impl Default for DataFormFieldDefinition {
@@ -107,6 +173,7 @@ impl Default for DataFormFieldDefinition {
             field_type: None,
             values: Vec::new(),
             default_value: None,
+            configured_value: None,
             width: 40,
             height: 1,
             match_pattern: None,
@@ -118,6 +185,7 @@ impl Default for DataFormFieldDefinition {
             has_values_property: false,
             authored_width: None,
             authored_height: None,
+            authored_properties: BTreeSet::new(),
         }
     }
 }
@@ -128,6 +196,12 @@ impl DataFormFieldDefinition {
             .iter()
             .find(|candidate| candidate.value == value)
             .map(|candidate| candidate.label.as_str())
+    }
+
+    fn has_only_properties(&self, allowed: &[&str]) -> bool {
+        self.authored_properties
+            .iter()
+            .all(|property| allowed.contains(&property.as_str()))
     }
 }
 
@@ -284,6 +358,9 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             if !current_properties.insert(key.to_owned()) {
                 definition.observed_create_edit_compatible = false;
             }
+            if let Some(field) = definition.field_mut(field_name) {
+                field.authored_properties.insert(key.to_owned());
+            }
             match key {
                 "label" => {
                     if definition
@@ -331,6 +408,19 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                     }
                     if let Some(field) = definition.field_mut(field_name) {
                         field.default_value =
+                            Some(unquote_wikidot_data_form_scalar(value).to_owned());
+                    }
+                    current_values_field = None;
+                }
+                "value" => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.configured_value.is_some())
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        field.configured_value =
                             Some(unquote_wikidot_data_form_scalar(value).to_owned());
                     }
                     current_values_field = None;
@@ -517,6 +607,18 @@ pub fn parse_observed_wikidot_data_form_values(
         return None;
     }
 
+    if let [field] = definition.fields.as_slice()
+        && field.field_type.as_deref() == Some("static")
+    {
+        if wikitext != "null" {
+            return None;
+        }
+        return Some(BTreeMap::from([(
+            field.name.clone(),
+            field.configured_value.clone()?,
+        )]));
+    }
+
     let lines = wikitext.lines().collect::<Vec<_>>();
     if lines.len() != definition.fields.len() {
         return None;
@@ -532,6 +634,16 @@ pub fn parse_observed_wikidot_data_form_values(
             Some("text") => parse_wikidot_stored_text_scalar(raw_value)?,
             Some("wiki") => parse_wikidot_stored_wiki_scalar(raw_value)?,
             Some("checkbox") => parse_wikidot_stored_checkbox_scalar(raw_value)?,
+            Some("hidden") => {
+                let value = parse_wikidot_stored_text_scalar(raw_value)?;
+                (Some(value.as_str()) == field.configured_value.as_deref())
+                    .then_some(value)?
+            }
+            Some("password") => parse_wikidot_stored_text_scalar(raw_value)?,
+            Some("static") => {
+                (raw_value == "null").then(|| field.configured_value.clone())??
+            }
+            Some("url") => parse_wikidot_stored_url_scalar(raw_value)?,
             Some("select") => {
                 if raw_value == "null" {
                     String::new()
@@ -547,6 +659,10 @@ pub fn parse_observed_wikidot_data_form_values(
             Some("text") => serialize_wikidot_stored_text_scalar(&value),
             Some("wiki") => serialize_wikidot_stored_wiki_scalar(&value),
             Some("checkbox") => serialize_wikidot_stored_checkbox_scalar(&value),
+            Some("hidden") => serialize_wikidot_stored_text_scalar(&value),
+            Some("password") => serialize_wikidot_stored_text_scalar(&value),
+            Some("static") => "null".to_owned(),
+            Some("url") => serialize_wikidot_stored_url_scalar(&value),
             Some("select") => serialize_wikidot_stored_select_scalar(&value),
             _ => return None,
         };
@@ -599,7 +715,7 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
         } else {
             raw_value
         };
-        if field.field_type.as_deref() == Some("wiki") {
+        if matches!(field.field_type.as_deref(), Some("wiki" | "static")) {
             html.push_str(r#"<div class="form-value field-"#);
             html.push_str(&field.name);
             html.push_str(r#"">"#);
@@ -622,7 +738,13 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
             append_wikidot_data_form_display_text(&mut html, field.before.trim());
             html.push(' ');
         }
-        append_wikidot_data_form_display_text(&mut html, display_value);
+        match field.field_type.as_deref() {
+            Some("password") => {
+                html.extend(std::iter::repeat_n('*', display_value.chars().count()))
+            }
+            Some("url") => append_wikidot_data_form_url(&mut html, display_value),
+            _ => append_wikidot_data_form_display_text(&mut html, display_value),
+        }
         if !field.after.is_empty() {
             html.push(' ');
             append_wikidot_data_form_display_text(&mut html, field.after.trim());
@@ -634,6 +756,26 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
     }
     html.push_str("</tbody></table>");
     html
+}
+
+fn append_wikidot_data_form_url(output: &mut String, value: &str) {
+    let href = if valid_wikidot_bare_url_scalar(value) {
+        Some(format!("http://{value}"))
+    } else if valid_wikidot_ftp_url(value) {
+        Some(value.to_owned())
+    } else {
+        None
+    };
+    let Some(href) = href else {
+        append_wikidot_data_form_display_text(output, value);
+        return;
+    };
+    output.push_str(r#"<a href="#);
+    output.push('"');
+    output.push_str(&escape_html_attribute(&href));
+    output.push_str(r#"">"#);
+    append_wikidot_data_form_display_text(output, &href);
+    output.push_str("</a>");
 }
 
 fn append_wikidot_data_form_wiki_affix(output: &mut String, value: &str) {
@@ -738,6 +880,38 @@ fn parse_wikidot_stored_wiki_scalar(value: &str) -> Option<String> {
     }
 }
 
+fn parse_wikidot_stored_url_scalar(value: &str) -> Option<String> {
+    let parsed = if value.starts_with('\'') {
+        parse_wikidot_single_quoted_scalar(value)?
+    } else if valid_wikidot_bare_url_scalar(value) {
+        value.to_owned()
+    } else {
+        return None;
+    };
+    (serialize_wikidot_stored_url_scalar(&parsed) == value).then_some(parsed)
+}
+
+fn valid_wikidot_bare_url_scalar(value: &str) -> bool {
+    let (host, path) = value.split_once('/').unwrap_or((value, ""));
+    host.split('.').count() >= 2
+        && host.split('.').all(|part| {
+            !part.is_empty()
+                && part.chars().all(|character| {
+                    character.is_ascii_alphanumeric() || character == '-'
+                })
+        })
+        && path.chars().all(|character| {
+            character.is_ascii_alphanumeric()
+                || matches!(character, '.' | '-' | '_' | '/')
+        })
+}
+
+fn valid_wikidot_ftp_url(value: &str) -> bool {
+    value
+        .strip_prefix("ftp://")
+        .is_some_and(valid_wikidot_bare_url_scalar)
+}
+
 fn valid_wikidot_stored_wiki_plain_scalar(value: &str) -> bool {
     valid_wikidot_stored_plain_scalar(value)
         || (value.starts_with('/')
@@ -791,6 +965,14 @@ fn serialize_wikidot_stored_wiki_scalar(value: &str) -> String {
         value.to_owned()
     } else {
         serialize_wikidot_stored_select_scalar(value)
+    }
+}
+
+fn serialize_wikidot_stored_url_scalar(value: &str) -> String {
+    if valid_wikidot_bare_url_scalar(value) {
+        value.to_owned()
+    } else {
+        serialize_wikidot_stored_text_scalar(value)
     }
 }
 
@@ -933,6 +1115,12 @@ fn escape_html_text(value: &str) -> String {
         .replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
+}
+
+fn escape_html_attribute(value: &str) -> String {
+    escape_html_text(value)
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
 }
 
 #[cfg(test)]
@@ -1452,5 +1640,79 @@ fields:
                 "wiki height {authored:?}",
             );
         }
+    }
+
+    #[test]
+    fn scalar_fields_follow_live_storage_and_display_contracts() {
+        let hidden = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  scalar:\n    label: Hidden\n    type: hidden\n    value: HIDDEN_CONFIGURED_ALPHA\n[[/form]]",
+        )
+        .expect("hidden definition");
+        assert!(hidden.supports_observed_create_edit());
+        assert_eq!(
+            parse_observed_wikidot_data_form_values(
+                &hidden,
+                "scalar: HIDDEN_CONFIGURED_ALPHA",
+            ),
+            Some(BTreeMap::from([(
+                "scalar".to_owned(),
+                "HIDDEN_CONFIGURED_ALPHA".to_owned(),
+            )])),
+        );
+        assert_eq!(
+            parse_observed_wikidot_data_form_values(&hidden, "scalar: INJECTED"),
+            None,
+        );
+
+        let password = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  scalar:\n    label: Password\n    type: password\n[[/form]]",
+        )
+        .expect("password definition");
+        let password_values = parse_observed_wikidot_data_form_values(
+            &password,
+            "scalar: NONSECRET_PASSWORD_ALPHA",
+        )
+        .expect("password values");
+        let password_html = render_wikidot_data_form_table(&password, &password_values);
+        assert!(password_html.contains("************************"));
+        assert!(!password_html.contains("NONSECRET_PASSWORD_ALPHA"));
+
+        let static_field = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  scalar:\n    label: Static\n    type: static\n    value: 'STATIC **BOLD** ALPHA'\n[[/form]]",
+        )
+        .expect("static definition");
+        assert_eq!(
+            parse_observed_wikidot_data_form_values(&static_field, "null"),
+            Some(BTreeMap::from([(
+                "scalar".to_owned(),
+                "STATIC **BOLD** ALPHA".to_owned(),
+            )])),
+        );
+        assert_eq!(
+            parse_observed_wikidot_data_form_values(&static_field, "scalar: null"),
+            None,
+        );
+
+        let url = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  scalar:\n    label: URL\n    type: url\n[[/form]]",
+        )
+        .expect("url definition");
+        let bare_url =
+            parse_observed_wikidot_data_form_values(&url, "scalar: example.com/alpha")
+                .expect("bare URL");
+        assert!(render_wikidot_data_form_table(&url, &bare_url).contains(
+            r#"<a href="http://example.com/alpha">http://example.com/alpha</a>"#,
+        ),);
+        let dangerous =
+            BTreeMap::from([("scalar".to_owned(), "javascript:alert(1)".to_owned())]);
+        let dangerous_html = render_wikidot_data_form_table(&url, &dangerous);
+        assert!(dangerous_html.contains("javascript:alert(1)"));
+        assert!(!dangerous_html.contains("<a href="));
+
+        let mixed = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  scalar:\n    type: url\n  other:\n    type: text\n[[/form]]",
+        )
+        .expect("mixed definition");
+        assert!(!mixed.supports_observed_create_edit());
     }
 }

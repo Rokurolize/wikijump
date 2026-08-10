@@ -1490,3 +1490,233 @@ async fn page_view_exposes_live_checkbox_and_wiki_contract() {
         "wiki affixes must stay literal while the stored value is parsed:\n{rendered_html}",
     );
 }
+
+#[tokio::test]
+async fn page_view_exposes_live_hidden_password_static_url_scalar_contract() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell scalar data-form contract test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let cases = [
+        (
+            "hidden",
+            "[[form]]\nfields:\n  scalar:\n    label: Hidden <scalar>\n    type: hidden\n    value: HIDDEN_CONFIGURED_ALPHA\n[[/form]]",
+            "scalar: HIDDEN_CONFIGURED_ALPHA",
+            Some("HIDDEN_CONFIGURED_ALPHA"),
+        ),
+        (
+            "password",
+            "[[form]]\nfields:\n  scalar:\n    label: Password scalar\n    type: password\n[[/form]]",
+            "scalar: NONSECRET_PASSWORD_ALPHA",
+            None,
+        ),
+        (
+            "static",
+            "[[form]]\nfields:\n  scalar:\n    label: Static scalar\n    type: static\n    value: 'STATIC **BOLD** ALPHA'\n[[/form]]",
+            "null",
+            Some("STATIC **BOLD** ALPHA"),
+        ),
+        (
+            "url",
+            "[[form]]\nfields:\n  scalar:\n    label: URL scalar\n    type: url\n[[/form]]",
+            "scalar: example.com/alpha",
+            None,
+        ),
+    ];
+
+    for (field_type, template_source, saved_source, configured_value) in cases {
+        let category_name = format!("data-form-scalar-{field_type}");
+        let template_slug = format!("{category_name}:_template");
+        let template =
+            create_page(&mut runner, site_id, &template_slug, template_source).await;
+        let category =
+            CategoryService::get_or_create(runner.context(), site_id, &category_name)
+                .await
+                .expect("data-form target category should be created");
+        grant_category_permission(
+            &runner,
+            site_id,
+            category.category_id,
+            &format!("{category_name}-creators"),
+            Action::Create,
+            &[ADMIN_USER_ID],
+        )
+        .await;
+        run_endpoint!(
+            runner,
+            category_update,
+            json!({
+                "site": site_id,
+                "category": category.category_id,
+                "user_id": ADMIN_USER_ID,
+                "template_page_id": template.page_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+
+        let create_slug = format!("{category_name}:new");
+        let definition = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": create_slug, "extra": "/edit/true" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Missing {
+                data_form: Some(data_form),
+                ..
+            } => data_form.definition,
+            other => panic!("expected {field_type} create definition, got {other:?}"),
+        };
+        assert_eq!(definition.fields.len(), 1);
+        let scalar = definition.field("scalar").expect("scalar field");
+        assert_eq!(scalar.field_type.as_deref(), Some(field_type));
+        assert_eq!(scalar.configured_value.as_deref(), configured_value);
+
+        let saved_slug = format!("{category_name}:saved");
+        create_page(&mut runner, site_id, &saved_slug, saved_source).await;
+        let editor = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": saved_slug, "extra": "/edit" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: Some(data_form),
+                ..
+            } => data_form,
+            other => panic!("expected {field_type} edit definition, got {other:?}"),
+        };
+        let expected_value = match field_type {
+            "hidden" => "HIDDEN_CONFIGURED_ALPHA",
+            "password" => "NONSECRET_PASSWORD_ALPHA",
+            "static" => "STATIC **BOLD** ALPHA",
+            "url" => "example.com/alpha",
+            _ => unreachable!(),
+        };
+        assert_eq!(
+            editor.values.get("scalar").map(String::as_str),
+            Some(expected_value)
+        );
+
+        let rendered_html = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": { "slug": saved_slug, "extra": "" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: None,
+                compiled_body_html,
+                ..
+            } => compiled_body_html,
+            other => panic!("expected {field_type} rendered page, got {other:?}"),
+        };
+        match field_type {
+            "hidden" => assert!(
+                rendered_html.contains("Hidden &lt;scalar&gt;")
+                    && rendered_html.contains("HIDDEN_CONFIGURED_ALPHA"),
+                "{rendered_html}",
+            ),
+            "password" => assert!(
+                rendered_html.contains("************************")
+                    && !rendered_html.contains("NONSECRET_PASSWORD_ALPHA"),
+                "password display must be masked: {rendered_html}",
+            ),
+            "static" => assert!(
+                rendered_html.contains(r#"<div class="form-value field-scalar">"#)
+                    && rendered_html.contains("<strong>BOLD</strong>"),
+                "static configured wiki must use the trusted renderer: {rendered_html}",
+            ),
+            "url" => assert!(
+                rendered_html.contains(
+                    r#"<a href="http://example.com/alpha">http://example.com/alpha</a>"#,
+                ),
+                "bare URL display must normalize without changing source: {rendered_html}",
+            ),
+            _ => unreachable!(),
+        }
+    }
+
+    let unsupported_template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-scalar-unsupported:_template",
+        "[[form]]\nfields:\n  scalar:\n    type: hidden\n[[/form]]",
+    )
+    .await;
+    let unsupported_category = CategoryService::get_or_create(
+        runner.context(),
+        site_id,
+        "data-form-scalar-unsupported",
+    )
+    .await
+    .expect("unsupported data-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        unsupported_category.category_id,
+        "data-form-scalar-unsupported-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": unsupported_category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": unsupported_template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {
+                "slug": "data-form-scalar-unsupported:new",
+                "extra": "/edit/true"
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: None, ..
+        } => {}
+        other => {
+            panic!("hidden fields without configured values must fail closed: {other:?}")
+        }
+    }
+}
