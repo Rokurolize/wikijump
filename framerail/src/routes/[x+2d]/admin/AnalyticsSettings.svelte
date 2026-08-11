@@ -19,9 +19,10 @@
           expectedSettingsRevision: data.site.settings_revision
         })
       },
-      onResult: async ({ result }) => {
+      onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data?.res) await invalidateAll()
         if (result.type === "failure" && result.data) {
+          cancel()
           errorPopupState.current = {
             state: true,
             message: result.data.message,
