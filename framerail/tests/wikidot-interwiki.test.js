@@ -105,6 +105,26 @@ test("does not preload a styleFrame theme already imported by page CSS", () => {
   )
 })
 
+test("keeps a styleFrame theme when the page import has cascade qualifiers", () => {
+  const iframe =
+    '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&amp;theme=%2Ftheme.css"></iframe>'
+
+  for (const qualifiedImport of [
+    '@import url("/theme.css") screen;',
+    '@import url("/theme.css") layer(page);',
+    '@import url("/theme.css") supports(display: grid);'
+  ]) {
+    assert.equal(
+      extractWikidotStyleFrameDeclarations(
+        [iframe],
+        "https://scp-wiki.wikijump.localhost",
+        [qualifiedImport]
+      ).length,
+      1
+    )
+  }
+})
+
 const cromPage = {
   translations: [
     { url: "http://scp-wiki-cn.wikidot.com/1231-warning" },

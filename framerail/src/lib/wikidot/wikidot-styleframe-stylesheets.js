@@ -8,7 +8,8 @@ import {
 const styleFrameSource =
   /<iframe\b[^>]*\bsrc=(['"])([^'"]*\/-\/wikidot-interwiki\/styleFrame\.html\?[^'"]*)\1[^>]*>/giu
 const styleElementSource = /<style\b[^>]*>([\s\S]*?)<\/style>/giu
-const cssImportSource = /@import\s+(?:url\(\s*)?(['"]?)([^'"\s;)]+)\1\s*\)?/giu
+const cssImportSource =
+  /@import\s+(?:url\(\s*(['"]?)([^'"\s;)]+)\1\s*\)|(['"])([^'"]+)\3)\s*;/giu
 
 const themeIdentity = (value, origin) => {
   try {
@@ -31,7 +32,7 @@ const importedThemeIdentities = (renderedHtml, generatedStyles, origin) => {
   }
   for (const css of cssSources) {
     for (const importMatch of css.matchAll(cssImportSource)) {
-      const identity = themeIdentity(importMatch[2], origin)
+      const identity = themeIdentity(importMatch[2] ?? importMatch[4], origin)
       if (identity) identities.add(identity)
     }
   }

@@ -391,6 +391,7 @@ export async function captureDocumentObservation(
     element.direct_text_normalized = normalizedText !== element.direct_text;
     if (element.direct_text_kind !== null) {
       element.direct_text_normalization = element.direct_text_kind;
+      element.direct_text_observed = element.direct_text;
     }
     delete element.direct_text_kind;
     delete element.direct_text;

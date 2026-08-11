@@ -261,6 +261,7 @@ test("ordered element traces preserve but normalize mutable page rating scores",
   });
   const [element] = observation.first_divergence_trace.elements;
   assert.equal(element.direct_text_normalization, "page_rating_score");
+  assert.equal(element.direct_text_observed, "+312");
   assert.equal(element.direct_text_normalized, true);
   assert.notEqual(element.direct_text_sha256, element.normalized_direct_text_sha256);
 });

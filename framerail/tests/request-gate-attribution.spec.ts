@@ -5,7 +5,10 @@ import {
   installBrowserRequestGate,
   isWikidotCapturePublicOrigin
 } from "../../install/local/wikidot-verification/src/browser-request-gate.mjs"
-import { captureBrowserParityObservation } from "../../install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"
+import {
+  captureBrowserParityObservation,
+  captureDocumentObservation
+} from "../../install/local/wikidot-verification/src/standing-browser-parity-observation.mjs"
 
 test("an intentional request-gate abort is sealed separately from organic page failures", async ({
   context,
@@ -53,4 +56,44 @@ test("an intentional request-gate abort is sealed separately from organic page f
     unsupported_requests_blocked: 1,
     grants: []
   })
+})
+
+test("rating-score normalization is limited to the real rating widget node", async ({
+  page
+}) => {
+  await page.setContent(`
+    <main id="page-content">
+      <div class="page-rate-widget-box">
+        <span class="rate-points">rating: <span class="number prw54353">+312</span></span>
+      </div>
+      <span class="number prw54353">stable 312</span>
+    </main>
+  `)
+
+  const observation = await captureDocumentObservation(page, {
+    contract: {
+      geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+      first_divergence_trace: {
+        root_selector: "#page-content",
+        max_elements: 10
+      }
+    },
+    phase: "settled",
+    viewport: { width: 800, height: 600 }
+  })
+  const scores = observation.first_divergence_trace.elements.filter(
+    (element: { classes: string[] }) => element.classes.includes("prw54353")
+  )
+
+  expect(scores).toHaveLength(2)
+  expect(scores[0]).toMatchObject({
+    direct_text_normalization: "page_rating_score",
+    direct_text_observed: "+312",
+    direct_text_normalized: true
+  })
+  expect(scores[1]).toMatchObject({ direct_text_normalized: false })
+  expect(scores[1]).not.toHaveProperty("direct_text_normalization")
+  expect(scores[1]).not.toHaveProperty("direct_text_observed")
 })
