@@ -15,6 +15,10 @@ const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
 const LOCAL_WIKIJUMP_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
 const WIKIDOT_STATIC_CDN_RE = /^[a-z0-9-]+\.cloudfront\.net$/u;
+const WIKIDOT_INTERWIKI_DOCUMENT_PATHS = new Set([
+  "/interwikiFrame.html",
+  "/styleFrame.html",
+]);
 const CAPTURE_DEPENDENCY_RESOURCE_TYPES = new Set([
   "stylesheet",
   "font",
@@ -149,15 +153,21 @@ export function localBrowserCaptureOrigins(value) {
   return [url.origin, `https://${site}.wjfiles.localhost`];
 }
 
-export function isWikidotCapturePublicOrigin(value) {
+export function isWikidotCapturePublicOrigin(value, resourceType, method) {
   const url = value instanceof URL ? value : new URL(value);
+  const hostname = url.hostname.toLowerCase();
   return new Set(["http:", "https:"]).has(url.protocol) &&
     !url.username &&
     !url.password &&
     !url.port &&
-    (url.hostname.toLowerCase() === "wikidot.com" ||
-      isWikidotResourceHost(url.hostname.toLowerCase()) ||
-      (WIKIDOT_STATIC_CDN_RE.test(url.hostname.toLowerCase()) && url.pathname.startsWith("/v--")));
+    (hostname === "wikidot.com" ||
+      isWikidotResourceHost(hostname) ||
+      (WIKIDOT_STATIC_CDN_RE.test(hostname) && url.pathname.startsWith("/v--")) ||
+      (url.protocol === "https:" &&
+        hostname === "interwiki.scpwiki.com" &&
+        resourceType === "document" &&
+        method === "GET" &&
+        WIKIDOT_INTERWIKI_DOCUMENT_PATHS.has(url.pathname)));
 }
 
 export function isCaptureDependencyResourceType(resourceType) {
@@ -512,7 +522,11 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
       }
       if (
         publicOriginPredicate !== null &&
-        !publicOriginPredicate(url) &&
+        !publicOriginPredicate(
+          url,
+          route.request().resourceType(),
+          route.request().method(),
+        ) &&
         !isCaptureDependencyResourceType(route.request().resourceType())
       ) {
         gate.recordUnsupportedRequestBlocked(url.hostname);

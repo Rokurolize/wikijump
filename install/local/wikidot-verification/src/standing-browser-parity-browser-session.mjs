@@ -206,7 +206,7 @@ export function parityBrowserThrottleConfig({
     public_request_policy:
       "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
     public_origin_policy:
-      "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, and /v-- static assets on a CloudFront host) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+      "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
     credentials,
