@@ -274,6 +274,11 @@ export async function captureDocumentObservation(
                     .map((node) => node.textContent ?? "")
                     .join(" "),
                 ),
+                direct_text_kind: element.matches(
+                  ".page-rate-widget-box .rate-points > .number.prw54353",
+                )
+                  ? "page_rating_score"
+                  : null,
                 rect: {
                   x: rounded(box.x + window.scrollX),
                   y: rounded(box.y + window.scrollY),
@@ -373,7 +378,10 @@ export async function captureDocumentObservation(
     },
   );
   for (const element of documentPhase.first_divergence_trace?.elements ?? []) {
-    const normalizedText = normalizeText(element.direct_text).text;
+    const normalizedText =
+      element.direct_text_kind === "page_rating_score"
+        ? "{{page-rating-score}}"
+        : normalizeText(element.direct_text).text;
     element.direct_text_sha256 = createHash("sha256")
       .update(element.direct_text)
       .digest("hex");
@@ -381,6 +389,10 @@ export async function captureDocumentObservation(
       .update(normalizedText)
       .digest("hex");
     element.direct_text_normalized = normalizedText !== element.direct_text;
+    if (element.direct_text_kind !== null) {
+      element.direct_text_normalization = element.direct_text_kind;
+    }
+    delete element.direct_text_kind;
     delete element.direct_text;
   }
   if (typeof documentPhase.page_content_html === "string") {

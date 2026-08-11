@@ -29,6 +29,22 @@ type PresentedFrame = {
   probe: Promise<NavigationAnimationFrame | null>
 }
 
+test("page CSS keeps its cascade position when it already imports a styleFrame theme", async ({
+  page
+}) => {
+  await page.route("**/navigation-style-duplicate-theme.css", async (route) => {
+    await route.fulfill({
+      body: "#cascade-probe { color: rgb(255, 0, 0); }",
+      contentType: "text/css"
+    })
+  })
+  await page.setExtraHTTPHeaders(SITE_HEADERS)
+  await page.goto("/navigation-style-duplicate")
+
+  await expect(page.locator("link[data-wikidot-style-preloaded]")).toHaveCount(0)
+  await expect(page.locator("#cascade-probe")).toHaveCSS("color", "rgb(0, 0, 255)")
+})
+
 test("Wikidot page links do not present the destination before its CSS", async ({
   page
 }) => {

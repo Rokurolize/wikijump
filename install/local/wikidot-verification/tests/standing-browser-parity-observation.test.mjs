@@ -207,3 +207,60 @@ test("ordered element trace text is fingerprinted outside the browser capture", 
   );
   assert.equal(element.direct_text_normalized, false);
 });
+
+test("ordered element traces preserve but normalize mutable page rating scores", async () => {
+  const fakePage = {
+    evaluate: async () => ({
+      geometry: {},
+      presence_probes: [],
+      custom_properties: {},
+      dom_signatures: [],
+      page_content_html: "",
+      attribute_signatures: [],
+      rendered_images: 0,
+      broken_images: [],
+      page_content_rendered_images: 0,
+      page_content_broken_images: [],
+      page_chrome_skeleton: null,
+      first_divergence_trace: {
+        root_selector: "#page-content",
+        root_count: 1,
+        element_count: 1,
+        captured_count: 1,
+        truncated: false,
+        incomplete_image_count: 0,
+        elements: [
+          {
+            path: "div[1]/span[1]/span[1]",
+            tag: "span",
+            id: null,
+            classes: ["number", "prw54353"],
+            child_element_count: 0,
+            direct_text: "+312",
+            direct_text_kind: "page_rating_score",
+            rect: { x: 0, y: 0, width: 40, height: 20 },
+            style: { display: "inline" },
+          },
+        ],
+      },
+    }),
+  };
+  const observation = await captureDocumentObservation(fakePage, {
+    contract: {
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+      first_divergence_trace: {
+        root_selector: "#page-content",
+        max_elements: 100,
+      },
+    },
+    phase: "settled",
+    viewport: { width: 1366, height: 900 },
+  });
+  const [element] = observation.first_divergence_trace.elements;
+  assert.equal(element.direct_text_normalization, "page_rating_score");
+  assert.equal(element.direct_text_normalized, true);
+  assert.notEqual(element.direct_text_sha256, element.normalized_direct_text_sha256);
+});

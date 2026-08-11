@@ -10996,6 +10996,33 @@ fn restores_standalone_residual_wikidot_alignment_lines() {
 }
 
 #[test]
+fn compatibility_pipeline_restores_escaped_right_alignment_around_rate_output() {
+    let html = concat!(
+        "<p>[[&gt;]]</p>",
+        r#"<div class="page-rate-widget-box">rating</div>"#,
+        "<p>[[/&gt;]]</p>",
+    );
+
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            html,
+            None,
+            &Config::integration_testing(),
+            true,
+            &[],
+        );
+
+    assert_eq!(
+        restored,
+        concat!(
+            r#"<div style="text-align: right;">"#,
+            r#"<div class="page-rate-widget-box">rating</div>"#,
+            "</div>",
+        ),
+    );
+}
+
+#[test]
 fn restores_residual_wikidot_alignment_html_markers_around_collapsible() {
     let html = concat!(
         "<hr><p>[[=]]</p>",

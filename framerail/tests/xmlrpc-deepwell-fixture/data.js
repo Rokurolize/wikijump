@@ -325,6 +325,26 @@ x^2 + y^2 = z^2
       '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=4&amp;css=.styleframe-d%7Bcolor%3Ablack%7D"></iframe>',
     compiled_body_styles: [".generated-style-d { color: black; }"]
   },
+  "navigation-style-duplicate": {
+    page_id: 3000395,
+    revision_id: 9000395,
+    page_created_at: "2026-08-12T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-12T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Navigation Style Duplicate",
+    slug: "navigation-style-duplicate",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Navigation style duplicate",
+    compiled_body_html:
+      '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&amp;theme=%2Fnavigation-style-duplicate-theme.css"></iframe><div id="cascade-probe">Cascade probe</div>',
+    compiled_body_styles: [
+      '@import url("/navigation-style-duplicate-theme.css"); #cascade-probe { color: rgb(0, 0, 255); }'
+    ]
+  },
   "listpages-navigation": {
     page_id: 3000400,
     revision_id: 9000400,
