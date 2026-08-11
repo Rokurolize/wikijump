@@ -32,7 +32,7 @@ function parseArgs(argv) {
   return args;
 }
 
-function decodeHtml(value) {
+export function decodeHtml(value) {
   return value
     .replace(/&#(\d+);/gu, (_, digits) => String.fromCodePoint(Number(digits)))
     .replace(/&#x([0-9a-f]+);/giu, (_, digits) => String.fromCodePoint(Number.parseInt(digits, 16)))
@@ -283,4 +283,4 @@ async function main() {
   process.stdout.write(`${JSON.stringify({output: args.output, cases: observations.length, actor_differences: differingNormalizedBodies, sha256: sha256(await fs.readFile(args.output))})}\n`);
 }
 
-await main();
+if (process.argv[1] && path.resolve(process.argv[1]) === scriptPath) await main();
