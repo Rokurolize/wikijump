@@ -111,6 +111,30 @@ test("settings candidate session reports success and transport-backed action err
   }
 });
 
+test("settings candidate session records an exact wrong-origin transport rejection", async () => {
+  const response = {
+    status: 403,
+    headers: { "content-type": "application/json" },
+    body: Buffer.from('{"message":"Cross-site POST form submissions are forbidden"}'),
+  };
+  const session = new Open43SettingsCandidateSession({
+    candidateIdentity,
+    privateInput,
+    requestImpl: async () => response,
+  });
+
+  const result = await session.action(
+    "site",
+    { siteId: 17 },
+    { origin: "https://wrong-origin.invalid" },
+  );
+
+  assert.equal(result.http_status, 403);
+  assert.equal(result.transport_status, 403);
+  assert.equal(result.action_type, "transport_rejection");
+  await assert.rejects(session.action("site", { siteId: 17 }), /returned a malformed result/u);
+});
+
 test("settings candidate session rejects malformed public action results", async () => {
   for (const [body, message] of [
     ["not-json", /returned non-JSON/u],

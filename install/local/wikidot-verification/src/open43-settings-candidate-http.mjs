@@ -178,6 +178,22 @@ export class Open43SettingsCandidateSession {
     });
     let actionResult;
     try { actionResult = JSON.parse(response.body); } catch { throw new Error(`${name} returned non-JSON at the public Framerail action seam`); }
+    if (
+      response.status === 403 &&
+      origin !== this.pageOrigin &&
+      actionResult !== null &&
+      typeof actionResult === "object" &&
+      typeof actionResult.message === "string" &&
+      actionResult.message.length > 0
+    ) {
+      return {
+        http_status: response.status,
+        transport_status: response.status,
+        action_type: "transport_rejection",
+        content_type: response.headers["content-type"] ?? null,
+        response_body_sha256: sha256(response.body),
+      };
+    }
     if (!actionResult || typeof actionResult !== "object" || !["error", "failure", "redirect", "success"].includes(actionResult.type)) {
       throw new Error(`${name} returned a malformed result at the public Framerail action seam`);
     }
