@@ -1,12 +1,28 @@
 import { fixtureState, hasExactKeys, pageById } from "./context.js"
 import { pages, toPageResult } from "./data.js"
 
-/** @param {{ rpcRequest: any }} input */
-export const handlePageLookupRpc = ({ rpcRequest }) => {
+/**
+ * @param {{
+ *   rpcRequest: any
+ *   request: import("node:http").IncomingMessage
+ * }} input
+ */
+export const handlePageLookupRpc = ({ rpcRequest, request }) => {
   const { pageReadRequests } = fixtureState
   let result
 
   if (
+    rpcRequest.method === "page_view_permission" &&
+    hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    typeof rpcRequest.params.page === "string" &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    request.headers["x-deepwell-page"] === rpcRequest.params.page &&
+    (request.headers["x-deepwell-session-token"] === undefined ||
+      request.headers["x-deepwell-session-token"] === "fixture-session-token")
+  ) {
+    result = pages[rpcRequest.params.page] !== undefined
+  } else if (
     rpcRequest.method === "page_get" &&
     hasExactKeys(rpcRequest.params, ["details", "page", "site_id"]) &&
     rpcRequest.params.site_id === 6000005 &&

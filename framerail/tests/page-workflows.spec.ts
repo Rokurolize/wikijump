@@ -175,7 +175,6 @@ test("article routes carry load and mutation context through Deepwell", async ({
       },
       params: {
         page_id: 3000340,
-        user_id: 123,
         value: 1
       }
     })

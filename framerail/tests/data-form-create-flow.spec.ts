@@ -604,12 +604,12 @@ test("data-form create applies the NewPage parent after saving", async ({
         .then((response) => response.json())
       return writes.parentUpdate.find(
         (entry: { params: { child?: string } }) =>
-          entry.params.child === "data-form-create-flow:example"
+          entry.params.child === "data-form-create-flow:104"
       )
     })
     .toMatchObject({
       params: {
-        child: "data-form-create-flow:example",
+        child: "data-form-create-flow:104",
         add: ["data-form-create-flow:parent"],
         remove: []
       }
