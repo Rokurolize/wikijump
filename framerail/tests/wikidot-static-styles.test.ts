@@ -26,6 +26,15 @@ const styles = [
   }
 ]
 
+const baseAssets = [
+  {
+    file: "common--theme/base/images/shade2_n.png",
+    sha256: "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+    source:
+      "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/images/shade2_n.png"
+  }
+]
+
 test("pinned Wikidot shell styles match their content-addressed filenames", async () => {
   for (const style of styles) {
     const contents = await fs.readFile(
@@ -33,6 +42,16 @@ test("pinned Wikidot shell styles match their content-addressed filenames", asyn
     )
     assert.equal(crypto.createHash("sha256").update(contents).digest("hex"), style.sha256)
     assert.match(style.source, /^https:\/\//u)
+  }
+})
+
+test("vendored Wikidot base assets match their pinned sources", async () => {
+  for (const asset of baseAssets) {
+    const contents = await fs.readFile(
+      new URL(`../static/${asset.file}`, import.meta.url)
+    )
+    assert.equal(crypto.createHash("sha256").update(contents).digest("hex"), asset.sha256)
+    assert.match(asset.source, /^https:\/\//u)
   }
 })
 
