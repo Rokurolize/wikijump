@@ -22,6 +22,7 @@ test("standing parity CLI exposes result and help without opening a browser", as
     output_dir: "/tmp/parity",
   }]);
   assert.match(parityCliUsage(), /live-reference/u);
+  assert.match(parityCliUsage(), /candidate-diagnostic/u);
 });
 
 test("parity browser cleanup attempts every resource and reports every failure", async () => {
@@ -113,4 +114,25 @@ test("candidate capture requires its sealed identity and exact live reference di
   ]);
   assert.equal(args.mode, "candidate");
   assert.equal(args.liveReferenceSha256, "a".repeat(64));
+});
+
+test("candidate diagnostic capture requires the same sealed inputs but remains a distinct mode", () => {
+  const args = parseStandingBrowserParityArgs([
+    "node",
+    "runner",
+    "--mode",
+    "candidate-diagnostic",
+    "--output-dir",
+    "/tmp/standing-candidate-diagnostic",
+    "--live-completion-policy",
+    policy,
+    "--candidate-identity",
+    "/tmp/candidate.json",
+    "--live-reference-ledger",
+    "/tmp/reference.json",
+    "--live-reference-sha256",
+    "b".repeat(64),
+  ]);
+  assert.equal(args.mode, "candidate-diagnostic");
+  assert.equal(args.liveReferenceSha256, "b".repeat(64));
 });

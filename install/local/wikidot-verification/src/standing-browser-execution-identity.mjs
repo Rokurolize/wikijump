@@ -1,10 +1,13 @@
 import {
   collectCandidateSourceExecutionIdentity,
+  collectCandidateSourceExecutionSnapshot,
   validateCandidateSourceExecutionIdentity,
 } from "./candidate-source-execution-identity.mjs";
 
 export const STANDING_BROWSER_EXECUTION_IDENTITY_SCHEMA =
   "wikijump.standing_browser_execution_identity.v1";
+export const STANDING_BROWSER_DIAGNOSTIC_EXECUTION_IDENTITY_SCHEMA =
+  "wikijump.standing_browser_diagnostic_execution_identity.v1";
 
 export const STANDING_BROWSER_EXECUTION_MODULES = Object.freeze([
   "install/local/wikidot-verification/src/standing-browser-execution-identity.mjs",
@@ -40,5 +43,12 @@ export async function collectCandidateExecutionIdentity(candidateIdentity) {
     candidateIdentity,
     STANDING_BROWSER_EXECUTION_MODULES,
     { schema: STANDING_BROWSER_EXECUTION_IDENTITY_SCHEMA },
+  );
+}
+
+export async function collectCandidateDiagnosticExecutionIdentity() {
+  return await collectCandidateSourceExecutionSnapshot(
+    STANDING_BROWSER_EXECUTION_MODULES,
+    { schema: STANDING_BROWSER_DIAGNOSTIC_EXECUTION_IDENTITY_SCHEMA },
   );
 }

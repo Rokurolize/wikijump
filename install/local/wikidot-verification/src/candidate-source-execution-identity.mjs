@@ -85,7 +85,7 @@ async function git(args) {
   return stdout.trim();
 }
 
-export async function collectCandidateSourceExecutionIdentity(candidateIdentity, files, options = {}) {
+export async function collectCandidateSourceExecutionSnapshot(files, options = {}) {
   const sourceFiles = sourceManifest(files);
   const [status, head, tree, lockContents] = await Promise.all([
     git(["status", "--porcelain=v1", "--untracked-files=all"]),
@@ -102,7 +102,7 @@ export async function collectCandidateSourceExecutionIdentity(candidateIdentity,
     manifest.push({ path: relativePath, sha256: await sha256File(filePath) });
   }
   const schema = options.schema ?? CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA;
-  return validateCandidateSourceExecutionIdentity({
+  return Object.freeze({
     schema,
     source_clean: true,
     wikijump_commit: head,
@@ -110,5 +110,12 @@ export async function collectCandidateSourceExecutionIdentity(candidateIdentity,
     ftml_sha: ftmlPin(lockContents),
     modules: manifest,
     module_manifest_sha256: sha256Value(manifest),
-  }, candidateIdentity, sourceFiles, { schema });
+  });
+}
+
+export async function collectCandidateSourceExecutionIdentity(candidateIdentity, files, options = {}) {
+  const snapshot = await collectCandidateSourceExecutionSnapshot(files, options);
+  return validateCandidateSourceExecutionIdentity(snapshot, candidateIdentity, files, {
+    schema: options.schema ?? CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA,
+  });
 }

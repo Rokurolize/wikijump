@@ -44,7 +44,10 @@ import {
   assertStableCandidateRuntimeIdentity,
   observeCandidateRuntimeIdentity,
 } from "./standing-browser-runtime-identity.mjs";
-import { collectCandidateExecutionIdentity } from "./standing-browser-execution-identity.mjs";
+import {
+  collectCandidateDiagnosticExecutionIdentity,
+  collectCandidateExecutionIdentity,
+} from "./standing-browser-execution-identity.mjs";
 import {
   createPrivateEmptyDirectory,
   readJsonObject,
@@ -154,15 +157,15 @@ export function parseStandingBrowserParityArgs(argv) {
     }
   }
   if (!args.outputDir) throw new Error("--output-dir is required");
-  if (!new Set(["live-reference", "candidate"]).has(args.mode)) {
-    throw new Error("--mode must be live-reference or candidate");
+  if (!new Set(["live-reference", "candidate", "candidate-diagnostic"]).has(args.mode)) {
+    throw new Error("--mode must be live-reference, candidate, or candidate-diagnostic");
   }
   if (!args.liveCompletionPolicy) {
     throw new Error(
       "--live-completion-policy is required before any browser request",
     );
   }
-  if (args.mode === "candidate") {
+  if (new Set(["candidate", "candidate-diagnostic"]).has(args.mode)) {
     for (const [flag, value] of [
       ["--candidate-identity", args.candidateIdentity],
       ["--live-reference-ledger", args.liveReferenceLedger],
@@ -445,6 +448,77 @@ async function sealCandidateParity({
   capture,
 }) {
   assertCandidateIdentityFresh(candidateIdentity.value);
+  const {ledger, liveReference} = await buildCandidateParityLedger({
+    args,
+    candidateIdentity,
+    finalGateSnapshot,
+    capture,
+  });
+  const records = ledger.records;
+  const ledgerPath = path.join(args.outputDir, "standing-browser-parity.json");
+  const builtReceipt = buildCandidateParityReceipt({
+    identity: candidateIdentity.value,
+    identitySha256: candidateIdentity.sha256,
+    parity: ledger,
+    parityLedgerSha256: sha256Value(ledger),
+    liveReference: liveReference.identity,
+    browserEnvironment,
+    runtimeIdentity,
+    executionIdentity,
+    runnerSha256: await sha256File(fileURLToPath(import.meta.url)),
+    observationSha256: await sha256File(
+      path.join(SOURCE_DIR, "standing-browser-parity-observation.mjs"),
+    ),
+  });
+  const receipt = builtReceipt.receipt;
+  requireExactHash(
+    sha256Value(ledger),
+    receipt.parity.ledger_sha256,
+    "parity ledger",
+  );
+  requireExactHash(
+    await sha256File(candidateIdentity.filePath),
+    receipt.parity.candidate_identity_sha256,
+    "candidate identity",
+  );
+  requireExactHash(
+    await sha256File(args.liveReferenceLedger),
+    receipt.parity.live_reference_sha256,
+    "live reference",
+  );
+  requireExactHash(
+    finalGateSnapshot.config_sha256,
+    receipt.parity.request_gate_config_sha256,
+    "request gate configuration",
+  );
+  if (sha256Value(records) !== sha256Value(receipt.parity.records)) {
+    throw new Error(
+      "candidate parity receipt records do not match the sealed ledger",
+    );
+  }
+  assertCandidateIdentityFresh(candidateIdentity.value);
+  validateCandidateParityReceipt(receipt, { requirePass: false });
+  const ledgerSeal = await sealJsonNoReplace(ledgerPath, ledger);
+  requireExactHash(
+    ledgerSeal.sha256,
+    receipt.parity.ledger_sha256,
+    "sealed parity ledger",
+  );
+  assertCandidateIdentityFresh(candidateIdentity.value);
+  const receiptPath = path.join(
+    args.outputDir,
+    "standing-candidate-parity-receipt.json",
+  );
+  const receiptSeal = await sealJsonNoReplace(receiptPath, receipt);
+  return { ledger, ledgerSeal, receipt, receiptSeal };
+}
+
+async function buildCandidateParityLedger({
+  args,
+  candidateIdentity,
+  finalGateSnapshot,
+  capture,
+}) {
   const { pairs, liveReference, captures } = capture;
   assertRequestGateAbortAccounting(captures, finalGateSnapshot);
   const records = captures.map((local, index) => {
@@ -488,74 +562,68 @@ async function sealCandidateParity({
       pairs_passed: records.length - pairsFailed,
     },
   };
-  const ledgerPath = path.join(args.outputDir, "standing-browser-parity.json");
-  const builtReceipt = buildCandidateParityReceipt({
-    identity: candidateIdentity.value,
-    identitySha256: candidateIdentity.sha256,
-    parity: ledger,
-    parityLedgerSha256: sha256Value(ledger),
-    liveReference: liveReference.identity,
-    browserEnvironment,
-    runtimeIdentity,
-    executionIdentity,
-    runnerSha256: await sha256File(fileURLToPath(import.meta.url)),
-    observationSha256: await sha256File(
-      path.join(SOURCE_DIR, "standing-browser-parity-observation.mjs"),
-    ),
+  return {ledger, liveReference};
+}
+
+async function sealCandidateDiagnostic({
+  args,
+  candidateIdentity,
+  browserEnvironment,
+  finalGateSnapshot,
+  runtimeIdentity,
+  executionIdentity,
+  capture,
+}) {
+  const {ledger} = await buildCandidateParityLedger({
+    args,
+    candidateIdentity,
+    finalGateSnapshot,
+    capture,
   });
-  const receipt = builtReceipt.receipt;
-  requireExactHash(
-    sha256Value(ledger),
-    receipt.parity.ledger_sha256,
-    "parity ledger",
+  const diagnosticLedger = {
+    ...ledger,
+    schema: "wikijump.standing_browser_parity_diagnostic.v1",
+    promotion_admissible: false,
+  };
+  const sourceMatchesCandidate =
+    executionIdentity.wikijump_commit === candidateIdentity.value.wikijump_commit
+    && executionIdentity.wikijump_tree === candidateIdentity.value.wikijump_tree;
+  const diagnostic = {
+    schema: "wikijump.standing_browser_candidate_diagnostic.v1",
+    status: diagnosticLedger.status,
+    classification: "diagnostic_non_promotional",
+    promotion_admissible: false,
+    source_matches_candidate: sourceMatchesCandidate,
+    candidate_identity_sha256: candidateIdentity.sha256,
+    live_reference_sha256: diagnosticLedger.live_reference_sha256,
+    browser_environment: browserEnvironment,
+    runtime_identity: runtimeIdentity,
+    execution_identity: executionIdentity,
+    parity: diagnosticLedger,
+  };
+  const ledgerSeal = await sealJsonNoReplace(
+    path.join(args.outputDir, "standing-browser-parity-diagnostic.json"),
+    diagnosticLedger,
   );
-  requireExactHash(
-    await sha256File(candidateIdentity.filePath),
-    receipt.parity.candidate_identity_sha256,
-    "candidate identity",
+  const diagnosticSeal = await sealJsonNoReplace(
+    path.join(args.outputDir, "standing-candidate-parity-diagnostic.json"),
+    diagnostic,
   );
-  requireExactHash(
-    await sha256File(args.liveReferenceLedger),
-    receipt.parity.live_reference_sha256,
-    "live reference",
-  );
-  requireExactHash(
-    finalGateSnapshot.config_sha256,
-    receipt.parity.request_gate_config_sha256,
-    "request gate configuration",
-  );
-  if (sha256Value(ledger.records) !== sha256Value(receipt.parity.records)) {
-    throw new Error(
-      "candidate parity receipt records do not match the sealed ledger",
-    );
-  }
-  assertCandidateIdentityFresh(candidateIdentity.value);
-  validateCandidateParityReceipt(receipt, { requirePass: false });
-  const ledgerSeal = await sealJsonNoReplace(ledgerPath, ledger);
-  requireExactHash(
-    ledgerSeal.sha256,
-    receipt.parity.ledger_sha256,
-    "sealed parity ledger",
-  );
-  assertCandidateIdentityFresh(candidateIdentity.value);
-  const receiptPath = path.join(
-    args.outputDir,
-    "standing-candidate-parity-receipt.json",
-  );
-  const receiptSeal = await sealJsonNoReplace(receiptPath, receipt);
-  return { ledger, ledgerSeal, receipt, receiptSeal };
+  return {ledger: diagnosticLedger, ledgerSeal, diagnostic, diagnosticSeal};
 }
 
 export async function runStandingBrowserParity(args) {
   const policy = await readPolicy(args.liveCompletionPolicy);
   const candidateIdentity =
-    args.mode === "candidate"
+    new Set(["candidate", "candidate-diagnostic"]).has(args.mode)
       ? await readCandidateIdentity(args.candidateIdentity)
       : null;
   if (candidateIdentity) assertCandidateIdentityFresh(candidateIdentity.value);
-  const executionIdentity = candidateIdentity
+  const executionIdentity = args.mode === "candidate"
     ? await collectCandidateExecutionIdentity(candidateIdentity.value)
-    : null;
+    : args.mode === "candidate-diagnostic"
+      ? await collectCandidateDiagnosticExecutionIdentity()
+      : null;
   await createPrivateEmptyDirectory(args.outputDir);
   let controls = null;
   let browser = null;
@@ -637,19 +705,32 @@ export async function runStandingBrowserParity(args) {
           finalGateSnapshot,
           capture,
         })
-      : await sealCandidateParity({
-          args,
-          candidateIdentity,
-          browserEnvironment,
-          finalGateSnapshot,
-          runtimeIdentity: runtimeIdentityAfter,
-          executionIdentity,
-          capture,
-        });
+      : args.mode === "candidate-diagnostic"
+        ? await sealCandidateDiagnostic({
+            args,
+            candidateIdentity,
+            browserEnvironment,
+            finalGateSnapshot,
+            runtimeIdentity: runtimeIdentityAfter,
+            executionIdentity,
+            capture,
+          })
+        : await sealCandidateParity({
+            args,
+            candidateIdentity,
+            browserEnvironment,
+            finalGateSnapshot,
+            runtimeIdentity: runtimeIdentityAfter,
+            executionIdentity,
+            capture,
+          });
   return {
     mode: args.mode,
     output_dir: args.outputDir,
-    status: result.receipt?.status ?? result.verdict.status,
+    status:
+      result.receipt?.status
+      ?? result.verdict?.status
+      ?? result.diagnostic.status,
     result,
   };
 }
