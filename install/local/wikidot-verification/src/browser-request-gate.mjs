@@ -15,9 +15,11 @@ const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
 const LOCAL_WIKIJUMP_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
 const WIKIDOT_STATIC_CDN_RE = /^[a-z0-9-]+\.cloudfront\.net$/u;
-const WIKIDOT_INTERWIKI_DOCUMENT_PATHS = new Set([
-  "/interwikiFrame.html",
-  "/styleFrame.html",
+const WIKIDOT_INTERWIKI_GET_PATH_TYPES = new Map([
+  ["/interwiki.js", "script"],
+  ["/interwikiFrame.html", "document"],
+  ["/resizeIframe.js", "script"],
+  ["/styleFrame.html", "document"],
 ]);
 const CAPTURE_DEPENDENCY_RESOURCE_TYPES = new Set([
   "stylesheet",
@@ -165,9 +167,8 @@ export function isWikidotCapturePublicOrigin(value, resourceType, method) {
       (WIKIDOT_STATIC_CDN_RE.test(hostname) && url.pathname.startsWith("/v--")) ||
       (url.protocol === "https:" &&
         hostname === "interwiki.scpwiki.com" &&
-        resourceType === "document" &&
         method === "GET" &&
-        WIKIDOT_INTERWIKI_DOCUMENT_PATHS.has(url.pathname)));
+        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType));
 }
 
 export function isCaptureDependencyResourceType(resourceType) {
