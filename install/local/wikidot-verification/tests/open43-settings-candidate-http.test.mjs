@@ -91,6 +91,41 @@ test("settings candidate session hashes private actors and uses public HTTP seam
   assert.equal(form.has("enabled"), false);
 });
 
+test("settings candidate session reports success and transport-backed action errors", async () => {
+  for (const [response, expected] of [
+    [
+      { status: 200, headers: { "content-type": "application/json" }, body: Buffer.from('{"type":"success","status":200,"data":"[]"}') },
+      { http_status: 200, transport_status: 200, action_type: "success" },
+    ],
+    [
+      { status: 500, headers: { "content-type": "application/json" }, body: Buffer.from('{"type":"error","error":{"message":"Internal Error"}}') },
+      { http_status: 500, transport_status: 500, action_type: "error" },
+    ],
+  ]) {
+    const session = new Open43SettingsCandidateSession({ candidateIdentity, privateInput, requestImpl: async () => response });
+    const result = await session.action("analytics", { siteId: 17 });
+    assert.deepEqual(
+      { http_status: result.http_status, transport_status: result.transport_status, action_type: result.action_type },
+      expected,
+    );
+  }
+});
+
+test("settings candidate session rejects malformed public action results", async () => {
+  for (const [body, message] of [
+    ["not-json", /returned non-JSON/u],
+    ['{"type":"unknown","status":200}', /returned a malformed result/u],
+    ['{"type":"success","status":"200"}', /returned a malformed status/u],
+  ]) {
+    const session = new Open43SettingsCandidateSession({
+      candidateIdentity,
+      privateInput,
+      requestImpl: async () => ({ status: 200, headers: { "content-type": "application/json" }, body: Buffer.from(body) }),
+    });
+    await assert.rejects(session.action("analytics", { siteId: 17 }), message);
+  }
+});
+
 test("settings candidate session admits active and expired actors through public session_get", async () => {
   const requests = [];
   const results = new Map([
