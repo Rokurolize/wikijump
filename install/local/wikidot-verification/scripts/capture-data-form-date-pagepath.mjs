@@ -3,6 +3,8 @@ import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
+import {parseFragment} from "parse5";
+
 import {visibleText as parsedVisibleText} from "../src/syntax-differential.mjs";
 
 const ORIGIN = "http://sandbox-for-codex.wikidot.com";
@@ -27,17 +29,15 @@ function parseArgs(argv) {
 }
 
 function decodeHtml(value) {
-  return value
-    .replace(/<br\s*\/?>/giu, "\n")
-    .replace(/<[^>]*>/gu, "")
-    .replace(/&nbsp;/gu, " ")
-    .replace(/&#39;|&apos;/gu, "'")
-    .replace(/&quot;/gu, '"')
-    .replace(/&lt;/gu, "<")
-    .replace(/&gt;/gu, ">")
-    .replace(/&amp;/gu, "&")
-    .replace(/&#(\d+);/gu, (_, code) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-f]+);/giu, (_, code) => String.fromCodePoint(Number.parseInt(code, 16)));
+  const text = [];
+  const hidden = new Set(["script", "style", "template"]);
+  const visit = (node) => {
+    if (node.nodeName === "#text") text.push(node.value);
+    else if (node.tagName === "br") text.push("\n");
+    else if (!hidden.has(node.tagName)) for (const child of node.childNodes ?? []) visit(child);
+  };
+  for (const node of parseFragment(value).childNodes) visit(node);
+  return text.join("");
 }
 
 function pageId(html) {

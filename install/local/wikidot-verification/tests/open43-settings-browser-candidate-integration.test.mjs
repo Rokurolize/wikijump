@@ -190,7 +190,7 @@ function semantic(state, rawUrl = PAGE_ORIGIN) {
   const toolbarVisible = state.site.show_top_toolbar;
   return {
     analytics: { profile, queue: enabled ? [["_setAccount", profile], ["_trackPageview"]] : [], nonce: enabled ? "fixture-csp-nonce" : "", meta_present: enabled, script_count: 1 },
-    theme: { marker: styleValue("--open43-theme-marker"), stylesheet_order: ["base", "site", "page"], site_theme_count: 1, site_theme_css: css, body_font_family: styleValue("font-family", "Times New Roman"), body_background_color: styleValue("background-color", "rgba(0, 0, 0, 0)"), body_color: styleValue("color", "rgb(0, 0, 0)") },
+    theme: { marker: styleValue("--open43-theme-marker"), stylesheet_order: ["base", "site"], site_theme_count: 1, site_theme_css: css, body_font_family: styleValue("font-family", "Times New Roman"), body_background_color: styleValue("background-color", "rgba(0, 0, 0, 0)"), body_color: styleValue("color", "rgb(0, 0, 0)") },
     toolbar: { top_toolbar_count: toolbarVisible ? 1 : 0, geometry: toolbarVisible ? { width: 500, height: 42 } : null, hit_target: toolbarVisible ? { width: 80, height: 32 } : null },
     page_content_text: state.pages.get(pathname)?.wikitext.split("\n").at(-1) ?? "",
     admin: { controls: Object.keys(names), general_values: names },

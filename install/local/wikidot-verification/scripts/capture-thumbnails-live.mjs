@@ -55,9 +55,10 @@ function validateCases(cases, integrationCommit) {
   if (cases.budgets.maximum_http_transactions > 128 || cases.budgets.maximum_redirect_hops_per_probe > 5 || cases.budgets.timeout_ms_per_transaction > 15_000 || cases.budgets.maximum_body_bytes_per_response > 4 * 1024 * 1024 || cases.budgets.maximum_aggregate_body_bytes > 16 * 1024 * 1024) throw new Error("Network budget exceeds the lane envelope");
   const probeIds = probes.map(({probe}) => probe.probe_id);
   if (new Set(probeIds).size !== probeIds.length) throw new Error("Probe IDs must be unique");
+  const allowedInitialHosts = new Set(cases.safety.allowed_initial_hosts);
   for (const {entry, probe} of probes) {
     if (!cases.safety.allowed_methods.includes(probe.method) || !["GET", "HEAD"].includes(probe.method)) throw new Error(`Unsafe method in ${probe.probe_id}`);
-    if (!cases.safety.allowed_initial_hosts.includes(expectedHost)) throw new Error("Initial-host policy omits the thumbnail host");
+    if (!allowedInitialHosts.has(expectedHost)) throw new Error("Initial-host policy omits the thumbnail host");
     if (!["site", "theme"].includes(entry.route_family) || !["http", "https"].includes(entry.scheme)) throw new Error(`Invalid route declaration in ${entry.case_id}`);
     if (!/^[a-z0-9.-]+$/u.test(entry.identity) || !Number.isInteger(entry.size) || entry.size < 0) throw new Error(`Invalid route components in ${entry.case_id}`);
   }

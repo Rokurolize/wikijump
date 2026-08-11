@@ -11,7 +11,7 @@ const REVISION_CONFLICT_MESSAGE = "The request is in some way malformed or incor
 
 const semantic = {
   analytics: { profile: "UA-754-1", queue: [["_setAccount", "UA-754-1"], ["_trackPageview"]], nonce: "nonce" },
-  theme: { marker: "open43-fixture", stylesheet_order: ["base", "site", "page"], site_theme_count: 1, site_theme_css: ":root{}" },
+  theme: { marker: "open43-fixture", stylesheet_order: ["base", "site"], site_theme_count: 1, site_theme_css: ":root{}" },
   toolbar: { top_toolbar_count: 1 },
   admin: { controls: [], general_values: {} },
 };

@@ -5,7 +5,7 @@
   "captured_at": "2026-08-10T09:13:18.110Z",
   "capture_script": {
     "path": "install/local/wikidot-verification/scripts/capture-thumbnails-live.mjs",
-    "sha256": "44ecde047abf426f328ff50f5414fbb96c92b7645abad4e448105b2588211724"
+    "sha256": "0d50a7774334d75777039d4e9c71f1f85d765ce0024671e255c2fdea1fffa37b"
   },
   "case_manifest": {
     "path": "install/local/wikidot-verification/fixtures/thumbnails-live/cases.json",

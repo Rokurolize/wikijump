@@ -137,11 +137,11 @@ function verifyTheme(observations, plan, settled) {
     new Set([defaultTemporal.artifact.path, transitionTemporal.artifact.path, categoryTransitionTemporal.artifact.path]).size !== 3 ||
     defaultTheme.expected_marker !== plan.theme_marker ||
     defaultTheme.computed_marker !== plan.theme_marker ||
-    JSON.stringify(defaultTheme.stylesheet_order) !== JSON.stringify(["base", "site", "page"]) ||
+    JSON.stringify(defaultTheme.stylesheet_order) !== JSON.stringify(["base", "site"]) ||
     defaultTheme.stale_theme_present !== false ||
     transitionTheme.expected_marker !== plan.transition_theme_marker ||
     transitionTheme.computed_marker !== plan.transition_theme_marker ||
-    JSON.stringify(transitionTheme.stylesheet_order) !== JSON.stringify(["base", "site", "page"]) ||
+    JSON.stringify(transitionTheme.stylesheet_order) !== JSON.stringify(["base", "site"]) ||
     transitionTheme.stale_previous_theme_present !== false
   ) {
     throw new Error("theme observation is stale or has the wrong cascade");
@@ -149,7 +149,7 @@ function verifyTheme(observations, plan, settled) {
   if (
     categoryTransitionTheme.expected_marker !== plan.transition_theme_marker ||
     categoryTransitionTheme.computed_marker !== plan.transition_theme_marker ||
-    JSON.stringify(categoryTransitionTheme.stylesheet_order) !== JSON.stringify(["base", "site", "page"]) ||
+    JSON.stringify(categoryTransitionTheme.stylesheet_order) !== JSON.stringify(["base", "site"]) ||
     categoryTransitionTheme.stale_previous_theme_present !== false ||
     categoryTransitionTheme.navigation_source_marker !== plan.theme_marker ||
     categoryTransitionTheme.navigation_from_url !== plan.default_page_url
