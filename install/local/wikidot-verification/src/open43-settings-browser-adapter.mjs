@@ -371,7 +371,7 @@ export class Open43SettingsBrowserAdapter {
         success_submitted_revision: successSubmittedRevision,
         confirmation_submitted_revision: confirmationSubmittedRevision,
         success_error_visible: await dialog.isVisible(),
-        edited_description_sha256: sha256(description),
+        edited_description_sha256: sha256Value(description),
         success_dom_values: successDom.admin.general_values,
         console_errors: [...new Set(consoleErrors)].sort(),
       };

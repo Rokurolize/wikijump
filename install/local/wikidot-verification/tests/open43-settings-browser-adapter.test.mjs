@@ -343,6 +343,10 @@ test("the settings adapter exercises stale error and success through the public 
   assert.equal(result.success_submitted_revision, 11);
   assert.equal(result.confirmation_submitted_revision, 12);
   assert.equal(result.success_error_visible, false);
+  assert.equal(
+    result.edited_description_sha256,
+    sha256Value("Open43 general marker"),
+  );
   assert.deepEqual(result.console_errors, []);
   assert.deepEqual(result.success_dom_values, semantic.admin.general_values);
   assert.deepEqual(events, [

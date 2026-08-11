@@ -412,6 +412,19 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   assert.equal(actorSessionReads.length, 3);
   assert.equal(events.indexOf(actorSessionReads.at(-1)) < firstSettingsRead, true);
   assert.equal(events.indexOf(actorSessionReads.at(-1)) < firstMutation, true);
+  const firstVisualCapture = events.findIndex(
+    ({ seam, label }) => seam === "browser-adapter" && label !== undefined,
+  );
+  const nonAdminPermissionProbe = events.findIndex(
+    ({ seam, name, actor }) =>
+      seam === "action" && name === "site" && actor === "non_admin",
+  );
+  const deniedAdminProbe = events.findIndex(
+    ({ seam, fixtureId }) =>
+      seam === "gate" && fixtureId === "S1046_ADMIN_INITIAL",
+  );
+  assert.ok(nonAdminPermissionProbe > 0 && nonAdminPermissionProbe < firstVisualCapture);
+  assert.ok(deniedAdminProbe > 0 && deniedAdminProbe < firstVisualCapture);
 
   const requiredSources = [
     "candidate-browser-contexts.mjs",

@@ -232,6 +232,11 @@ class Open43SettingsRun {
 
   async execute() {
     await this.#setup();
+    const denied = await Promise.all([
+      this.#browser.deniedAdmin("anonymous"),
+      this.#browser.deniedAdmin("non_admin"),
+    ]);
+    const matrix = await this.#matrix();
     const pageUrl = new URL(`/${encodeURIComponent(this.#fixture.default_category.page_slug)}`, this.#session.pageOrigin).href;
     const transitionUrl = new URL(`/${encodeURIComponent(this.#fixture.transition_category.page_slug)}`, this.#session.pageOrigin).href;
     const analyticsDisabled = await this.#browser.capturePagePair({ url: pageUrl, label: "S754_ANALYTICS", index: 0 });
@@ -281,8 +286,6 @@ class Open43SettingsRun {
     const adminSettledSite = await this.#site();
     const adminSettledPublicValuesSha256 = sha256Value(generalValues(adminSettledSite));
     const adminSettled = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 11 });
-    const denied = await Promise.all([this.#browser.deniedAdmin("anonymous"), this.#browser.deniedAdmin("non_admin")]);
-    const matrix = await this.#matrix();
     this.#verificationPlan = { ...this.#fixedPlan, default_page_url: pageUrl, transition_page_url: transitionUrl, admin_url: adminUrl, admin_initial_values_sha256: adminInitialValuesSha256, admin_settled_values_sha256: adminSettledValuesSha256, admin_initial_revision: adminInitialSite.settings_revision, admin_settled_revision: adminInitialSite.settings_revision + 3, general_description_sha256: sha256Value(this.#fixedPlan.general_ui_description_marker), matrix_site_id: matrix.site_id, matrix_before_revision: matrix.before_revision, matrix_admin_after_revision: matrix.admin_after_revision, matrix_before_sha256: matrix.before_sha256, matrix_admin_after_sha256: matrix.expected_admin_after_sha256 };
     const analyticsState = (pair, enabled) => {
       const { nonce, ...analytics } = pair.initial.analytics;
