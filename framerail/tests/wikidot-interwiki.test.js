@@ -90,6 +90,41 @@ test("extracts external and inline styleFrame CSS in canonical cascade order", (
   )
 })
 
+test("does not preload a styleFrame theme already imported by page CSS", () => {
+  assert.deepEqual(
+    extractWikidotStyleFrameDeclarations(
+      [
+        '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&amp;theme=https%3A%2F%2Fscp-wiki.wdfiles.com%2Flocal--code%2Ftheme%253Ay2k%2F1"></iframe>'
+      ],
+      "https://scp-wiki.wikijump.localhost",
+      [
+        '@import url("https://scp-wiki.wdfiles.com/local--code/theme%3Ay2k/1"); .page-rule { color: red; }'
+      ]
+    ),
+    []
+  )
+})
+
+test("keeps a styleFrame theme when the page import has cascade qualifiers", () => {
+  const iframe =
+    '<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1&amp;theme=%2Ftheme.css"></iframe>'
+
+  for (const qualifiedImport of [
+    '@import url("/theme.css") screen;',
+    '@import url("/theme.css") layer(page);',
+    '@import url("/theme.css") supports(display: grid);'
+  ]) {
+    assert.equal(
+      extractWikidotStyleFrameDeclarations(
+        [iframe],
+        "https://scp-wiki.wikijump.localhost",
+        [qualifiedImport]
+      ).length,
+      1
+    )
+  }
+})
+
 const cromPage = {
   translations: [
     { url: "http://scp-wiki-cn.wikidot.com/1231-warning" },

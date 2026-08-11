@@ -122,9 +122,13 @@ impl RenderService {
         if html.contains("[[=")
             || html.contains("[[<")
             || html.contains("[[>")
+            || html.contains("[[&lt;")
+            || html.contains("[[&gt;")
             || html.contains("[[/=")
             || html.contains("[[/<")
             || html.contains("[[/>")
+            || html.contains("[[/&lt;")
+            || html.contains("[[/&gt;")
         {
             html = Self::restore_residual_wikidot_alignment_markers(&html);
         }

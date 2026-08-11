@@ -134,7 +134,8 @@
         viewData?.compiled_side_bar_html,
         viewData?.compiled_body_html
       ],
-      page.url.origin
+      page.url.origin,
+      viewData?.compiled_body_styles ?? []
     )
   )
   const pageLayoutContext = $state<PageLayoutContext>({
