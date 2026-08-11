@@ -75,6 +75,16 @@ function failureKey(failure) {
   ]);
 }
 
+function requestGateAbortKey(abort) {
+  return JSON.stringify([
+    abort?.kind ?? null,
+    abort?.url ?? null,
+    abort?.resource_type ?? null,
+    abort?.decision ?? null,
+    abort?.abort_reason ?? null,
+  ]);
+}
+
 const REQUEST_GATE_ABORT_DECISIONS = new Set([
   "unsupported_protocol",
   "unsupported_public_origin_resource_type",
@@ -720,12 +730,12 @@ export function compareCaptures(
     (failure) => !localFailureKeys.has(failureKey(failure)),
   );
   const liveGateAbortKeys = new Set(
-    (live.request_gate_aborts ?? []).map(failureKey),
+    (live.request_gate_aborts ?? []).map(requestGateAbortKey),
   );
   const classifiedRequestGateAborts = (
     local.request_gate_aborts ?? []
   ).map((abort) => {
-    const classification = liveGateAbortKeys.has(failureKey(abort))
+    const classification = liveGateAbortKeys.has(requestGateAbortKey(abort))
       ? "parity_matched"
       : "local_only";
     if (classification === "local_only") {
@@ -734,11 +744,11 @@ export function compareCaptures(
     return { ...abort, classification };
   });
   const localGateAbortKeys = new Set(
-    (local.request_gate_aborts ?? []).map(failureKey),
+    (local.request_gate_aborts ?? []).map(requestGateAbortKey),
   );
   const liveOnlyRequestGateAborts = (
     live.request_gate_aborts ?? []
-  ).filter((abort) => !localGateAbortKeys.has(failureKey(abort)));
+  ).filter((abort) => !localGateAbortKeys.has(requestGateAbortKey(abort)));
   if (local.navigation_status !== 200) {
     anomalies.push({
       code: "local_main_response_not_200",

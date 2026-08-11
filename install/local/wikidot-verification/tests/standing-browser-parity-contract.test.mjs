@@ -62,6 +62,36 @@ test("a candidate-only request-gate abort remains a parity failure", () => {
   );
 });
 
+test("request-gate parity does not depend on Chromium error suffix text", () => {
+  const common = {
+    kind: "request_gate_abort",
+    url: "https://cdn.example.test/shared.js",
+    resource_type: "script",
+    decision: "unsupported_public_origin_resource_type",
+    abort_reason: "blockedbyclient",
+  };
+  const local = capture({
+    request_gate_aborts: [
+      { ...common, error: "net::ERR_BLOCKED_BY_CLIENT.Inspector" },
+    ],
+  });
+  const live = capture({
+    input_url: "https://scp-wiki.wikidot.com/scp-9506",
+    final_url: "https://scp-wiki.wikidot.com/scp-9506",
+    request_gate_aborts: [
+      { ...common, error: "net::ERR_BLOCKED_BY_CLIENT" },
+    ],
+  });
+
+  const result = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], null);
+
+  assert.equal(result.status, "pass");
+  assert.equal(
+    result.classified_request_gate_aborts[0].classification,
+    "parity_matched",
+  );
+});
+
 test("immediate theme properties fail before a settled state can conceal a flash", () => {
   const expectations = canaryForUrl(
     "https://scp-wiki.wikidot.com/scp-9506",
