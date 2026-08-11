@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { parse as parseDevalue } from "devalue";
+
 import { Open43SettingsCandidateSession } from "../src/open43-settings-candidate-http.mjs";
 
 const candidateIdentity = {
@@ -50,7 +52,7 @@ test("settings candidate session hashes private actors and uses public HTTP seam
         };
       }
       return {
-        status: 403,
+        status: 200,
         headers: { "content-type": "application/json" },
         body: Buffer.from('{"type":"failure","status":403}'),
       };
@@ -73,10 +75,20 @@ test("settings candidate session hashes private actors and uses public HTTP seam
     { actor: "non_admin", origin: "https://wrong.example" },
   );
   assert.equal(action.http_status, 403);
+  assert.equal(action.transport_status, 200);
   assert.equal(requests[1].connectAddress, "127.0.0.1");
   assert.equal(requests[1].tlsCa, "private-ca");
   assert.equal(requests[1].headers.cookie, "wikijump_token=non-admin-secret");
   assert.equal(requests[1].headers.origin, "https://wrong.example");
+  const form = new URLSearchParams(requests[1].body.toString());
+  assert.deepEqual(parseDevalue(form.get("__superform_json")), {
+    siteId: 17,
+    expectedSettingsRevision: 4,
+    enabled: true,
+    profile: "UA-754-1",
+  });
+  assert.equal(form.has("siteId"), false);
+  assert.equal(form.has("enabled"), false);
 });
 
 test("settings candidate session admits active and expired actors through public session_get", async () => {

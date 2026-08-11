@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import net from "node:net";
 
+import { stringify as stringifyDevalue } from "devalue";
+
 import { requestCandidateCaseHttp } from "./candidate-case-http.mjs";
 import { deepwellRpcAuthorization } from "./deepwell-rpc-auth.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
@@ -156,7 +158,7 @@ export class Open43SettingsCandidateSession {
     const selected = actorName === "anonymous" ? null : this.#actors[actorName];
     if (actorName !== "anonymous" && !selected) throw new Error(`unknown settings action actor: ${actorName}`);
     const body = new URLSearchParams();
-    for (const [key, value] of Object.entries(fields)) body.set(key, String(value));
+    body.set("__superform_json", stringifyDevalue(fields));
     const bytes = Buffer.from(body.toString());
     const response = await this.#request({
       url: new URL(`/_admin?/${encodeURIComponent(name)}`, this.pageOrigin),
@@ -174,8 +176,19 @@ export class Open43SettingsCandidateSession {
       tlsCa: this.#tlsCa,
       signal: cleanup ? null : this.#signal,
     });
+    let actionResult;
+    try { actionResult = JSON.parse(response.body); } catch { throw new Error(`${name} returned non-JSON at the public Framerail action seam`); }
+    if (!actionResult || typeof actionResult !== "object" || !["error", "failure", "redirect", "success"].includes(actionResult.type)) {
+      throw new Error(`${name} returned a malformed result at the public Framerail action seam`);
+    }
+    const httpStatus = actionResult.type === "error" ? response.status : actionResult.status;
+    if (!Number.isSafeInteger(httpStatus) || httpStatus < 100 || httpStatus > 599) {
+      throw new Error(`${name} returned a malformed status at the public Framerail action seam`);
+    }
     return {
-      http_status: response.status,
+      http_status: httpStatus,
+      transport_status: response.status,
+      action_type: actionResult.type,
       content_type: response.headers["content-type"] ?? null,
       response_body_sha256: sha256(response.body),
     };
