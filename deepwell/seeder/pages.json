@@ -142,6 +142,11 @@
     ],
     "scpaiueouiuiuiui": [
         {
+            "slug": "system:join",
+            "title": "Join this site",
+            "wikitext": "local-authoring-join"
+        },
+        {
             "slug": "boundary-check",
             "title": "Boundary Check: Local Translation Corpus",
             "wikitext": "issue50-editable-corpus-boundary"

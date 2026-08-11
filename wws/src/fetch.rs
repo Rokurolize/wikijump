@@ -38,7 +38,7 @@ pub async fn fetch_file_info(
     normalize(page_slug);
 
     let page_id = state
-        .get_page_or_response(headers, site_id, page_slug)
+        .get_page_fresh_or_response(headers, site_id, page_slug)
         .await?;
 
     state
@@ -267,6 +267,7 @@ mod tests {
     fn file_data() -> FileData {
         FileData {
             file_id: 1,
+            revision_id: 17,
             mime: str!("text/plain"),
             size: 6,
             s3_hash: str!("sha512-hash"),

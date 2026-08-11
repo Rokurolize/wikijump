@@ -30,6 +30,12 @@ export interface SiteModel {
   favicon_source: Nullable<string>
   ios_icon_source: Nullable<string>
   windows_tile_source: Nullable<string>
+  settings_revision: number
+  welcome_page: string
+  google_analytics_enabled: boolean
+  google_analytics_profile: Nullable<string>
+  show_top_toolbar: boolean
+  show_bottom_toolbar: boolean
 }
 
 // deepwell src/models/page_category.rs
@@ -50,7 +56,33 @@ export interface PageCategoryModel {
   rating_visibility: Nullable<PageRatingVisibility>
   rating_type: Nullable<PageRatingType>
   per_page_discussion: Nullable<boolean>
+  settings_revision: number
+  theme_kind: "inherit" | "built_in" | "external" | "custom"
+  theme_builtin_id: Nullable<number>
+  theme_external_url: Nullable<string>
+  theme_custom_css: Nullable<string>
+  autonumber_enabled: boolean
+  autonumber_next: number
 }
+
+export interface SiteSettings {
+  revision: number
+  welcome_page: string
+  google_analytics: {
+    enabled: boolean
+    profile: Nullable<string>
+  }
+  toolbars: {
+    top: boolean
+    bottom: boolean
+  }
+}
+
+export type ThemeSetting =
+  | { type: "inherit" }
+  | { type: "built_in"; id: number }
+  | { type: "external"; url: string }
+  | { type: "custom"; css: string }
 
 export type PageRatingPermission = "registered" | "members"
 export type PageRatingVisibility = "visible" | "anonymous"
@@ -224,6 +256,16 @@ export interface ParseError {
   kind: string
 }
 
+// ftml src/data/user_info.rs
+export interface UserInfo {
+  "user-id": number
+  "user-slug": string
+  "user-name": string
+  "user-karma": number
+  "user-avatar-data": string
+  "user-profile-url": string
+}
+
 export enum Layout {
   WIKIDOT = "wikidot",
   WIKIJUMP = "wikijump"
@@ -235,13 +277,19 @@ export enum PageLockType {
 }
 export enum PagePane {
   None = "none",
+  Append = "append",
+  Backlinks = "backlinks",
   File = "file",
   History = "history",
+  Tags = "tags",
   Layout = "layout",
   Move = "move",
   Parent = "parent",
+  Watchers = "watchers",
+  SiteTools = "site-tools",
   Vote = "vote",
   Delete = "delete",
+  EditMeta = "edit-meta",
   Lock = "lock"
 }
 export enum UserType {

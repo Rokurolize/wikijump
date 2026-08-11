@@ -16,18 +16,23 @@ import {
   pageFileUploadAction
 } from "$lib/server/load/page/page-file-actions"
 import {
+  pageBacklinksAction,
   pageParentGetAction,
   pageParentSetAction,
   pageScoreAction,
+  pageWatchersAction,
   pageVoteCastAction,
   pageVoteListAction,
-  pageVoteRemoveAction
+  pageVoteRemoveAction,
+  wikidotLegacyRateAction,
+  wikidotLegacySetTagsAction
 } from "$lib/server/load/page/page-relation-actions"
 import {
   pageDeletedGetAction,
   pageHistoryAction,
   pageRestoreAction,
   pageRevisionAction,
+  pageRevisionDiffAction,
   pageRollbackAction
 } from "$lib/server/load/page/page-revision-actions"
 import {
@@ -35,8 +40,10 @@ import {
   pageLockHistoryAction,
   pageLockRemoveAction
 } from "$lib/server/load/page/page-lock-actions"
+import { membershipJoinAction } from "$lib/server/load/page/page-membership-actions"
 
 export const pageActions = {
+  backlinks: pageBacklinksAction,
   delete: pageDeleteAction,
   edit: pageEditAction,
   editPermission: pageEditPermissionAction,
@@ -53,6 +60,7 @@ export const pageActions = {
   lockHistory: pageLockHistoryAction,
   lockRemove: pageLockRemoveAction,
   revision: pageRevisionAction,
+  revisionDiff: pageRevisionDiffAction,
   rollback: pageRollbackAction,
   layout: pageLayoutAction,
   move: pageMoveAction,
@@ -62,6 +70,10 @@ export const pageActions = {
   voteCast: pageVoteCastAction,
   voteCancel: pageVoteRemoveAction,
   score: pageScoreAction,
+  watchers: pageWatchersAction,
+  legacyRate: wikidotLegacyRateAction,
+  legacySetTags: wikidotLegacySetTagsAction,
+  membershipJoin: membershipJoinAction,
   deletedGet: pageDeletedGetAction,
   restore: pageRestoreAction
 }

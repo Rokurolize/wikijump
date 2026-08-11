@@ -154,7 +154,24 @@ export const pages = {
     wikitext:
       "[[tabview]]\n[[tab First]]First panel[[/tab]]\n[[tab Second]]Second panel[[/tab]]\n[[/tabview]]",
     compiled_body_html:
-      '<div class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;">First</a></li><li><a href="javascript:;">Second</a></li></ul><div class="yui-content"><div style="display: block;"><p>First panel</p></div><div style="display:none"><p>Second panel</p></div></div></div><script type="text/javascript"></script>'
+      '<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset yui-navset-top"><ul class="yui-nav"><li class="selected" title="active"><a href="javascript:;"><em>First</em></a></li><li><a href="javascript:;"><em>Second</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0" style="display: block;"><p>First panel</p></div><div id="wiki-tab-0-1" style="display: none;"><p>Second panel</p></div></div></div>'
+  },
+  "search:all": {
+    page_id: 3000325,
+    revision_id: 9000325,
+    page_created_at: "2026-08-09T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-09T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Search All",
+    slug: "search:all",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "[[module SearchAll]]",
+    compiled_body_html:
+      '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
   },
   "wikidot-collapsible": {
     page_id: 3000330,

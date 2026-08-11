@@ -38,9 +38,8 @@ export const handlePageRevisionRpc = ({ rpcRequest, request }) => {
     }
   } else if (
     rpcRequest.method === "vote_set" &&
-    hasExactKeys(rpcRequest.params, ["page_id", "user_id", "value"]) &&
+    hasExactKeys(rpcRequest.params, ["page_id", "value"]) &&
     pageById(rpcRequest.params.page_id) &&
-    rpcRequest.params.user_id === 123 &&
     (rpcRequest.params.value === -1 || rpcRequest.params.value === 1) &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
     request.headers["x-deepwell-site-id"] === "6000005" &&
@@ -53,7 +52,7 @@ export const handlePageRevisionRpc = ({ rpcRequest, request }) => {
     result = {
       page_vote_id: 7000001,
       page_id: rpcRequest.params.page_id,
-      user_id: rpcRequest.params.user_id,
+      user_id: 123,
       value: rpcRequest.params.value
     }
   } else {

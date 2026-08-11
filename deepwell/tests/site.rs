@@ -27,9 +27,11 @@ use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::alias::{self, Entity as AliasTable};
 use deepwell::models::site::Entity as SiteTable;
+use deepwell::services::PageService;
 use deepwell::services::RequestContext;
 use deepwell::services::alias::{AliasService, CreateAlias};
 use deepwell::services::category::CategoryService;
+use deepwell::services::page::CreatePage;
 use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
@@ -152,6 +154,7 @@ async fn site_update_without_request_actor_does_not_reveal_site_existence() {
         json!({
             "site": -1_i64,
             "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
             "name": "Anonymous site rename",
             "ip_address": common::IP_ADDRESS,
         }),
@@ -176,6 +179,7 @@ async fn site_update_without_site_edit_does_not_reveal_missing_site_ids() {
         json!({
             "site": -1_i64,
             "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
             "name": "Probe site rename",
             "ip_address": common::IP_ADDRESS,
         }),
@@ -201,6 +205,7 @@ async fn site_update_requires_site_edit_permission() {
         json!({
             "site": site_id,
             "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
             "name": "Unauthorized site rename",
             "ip_address": common::IP_ADDRESS,
         }),
@@ -231,6 +236,7 @@ async fn site_update_allows_users_with_site_edit_permission() {
         json!({
             "site": site_id,
             "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
             "name": "Authorized site rename",
             "ip_address": common::IP_ADDRESS,
         }),
@@ -238,6 +244,147 @@ async fn site_update_allows_users_with_site_edit_permission() {
 
     assert_eq!(updated.site_id, site_id);
     assert_eq!(updated.name, "Authorized site rename");
+}
+
+#[tokio::test]
+async fn site_update_with_unchanged_slug_does_not_create_a_self_alias() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let user_id = create_user(&runner, n, "same-slug-editor").await;
+    grant_site_edit(&runner, site_id, user_id, n).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let before = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("test site should exist");
+    assert!(before.aliases.is_empty());
+
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": before.settings.revision,
+            "slug": before.site.slug,
+            "description": "Saved without renaming the site",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let after = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("test site should still exist");
+    assert_eq!(after.site.slug, before.site.slug);
+    assert_eq!(after.site.description, "Saved without renaming the site");
+    assert!(
+        after.aliases.is_empty(),
+        "saving unchanged site settings must not create an alias for the canonical slug",
+    );
+}
+
+#[tokio::test]
+async fn site_settings_update_round_trips_and_rejects_stale_revision() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    for slug in ["home:home", "system:welcome"] {
+        PageService::create(
+            runner.context(),
+            CreatePage {
+                site_id,
+                wikitext: format!("Settings target {slug}"),
+                title: format!("Settings target {slug}"),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: slug.to_owned(),
+                layout: None,
+                revision_comments: String::from("create settings target"),
+                user_id: SYSTEM_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("settings target page should be created");
+    }
+    let user_id = create_user(&runner, n, "settings-editor").await;
+    grant_site_edit(&runner, site_id, user_id, n).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let updated = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "locale": "ja-corrections",
+            "default_page": "home:home",
+            "welcome_page": "system:welcome",
+            "google_analytics": {
+                "enabled": true,
+                "profile": "UA-00000000-2"
+            },
+            "toolbars": { "top": true, "bottom": false },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(updated.settings_revision, 1);
+
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("updated site should exist");
+    assert_eq!(fetched.settings.revision, 1);
+    assert_eq!(fetched.settings.welcome_page, "system:welcome");
+    assert!(fetched.settings.google_analytics.enabled);
+    assert_eq!(
+        fetched.settings.google_analytics.profile.as_deref(),
+        Some("UA-00000000-2"),
+    );
+    assert!(fetched.settings.toolbars.top);
+    assert!(!fetched.settings.toolbars.bottom);
+
+    let disabled = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 1,
+            "google_analytics": {
+                "enabled": false,
+                "profile": ""
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(disabled.settings_revision, 2);
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("updated site should exist");
+    assert!(!fetched.settings.google_analytics.enabled);
+    assert_eq!(fetched.settings.google_analytics.profile, None);
+
+    let stale = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "toolbars": { "top": false, "bottom": true },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::BadRequest);
+    let fetched = run_endpoint!(runner, site_get, json!({ "site": site_id }))
+        .expect("updated site should exist");
+    assert!(fetched.settings.toolbars.top);
+    assert!(!fetched.settings.toolbars.bottom);
 }
 
 #[tokio::test]
@@ -260,6 +407,7 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
             favicon_source: Maybe::Set(Some(local_source.clone())),
             ..Default::default()
         },
+        None,
         SYSTEM_USER_ID,
         common::IP_ADDRESS,
     )
@@ -279,6 +427,7 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
             favicon_source: Maybe::Set(Some(imported_source.clone())),
             ..Default::default()
         },
+        None,
         SYSTEM_USER_ID,
         common::IP_ADDRESS,
     )
@@ -315,6 +464,7 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
             windows_tile_source: Maybe::Set(Some(tile_source.clone())),
             ..Default::default()
         },
+        None,
         SYSTEM_USER_ID,
         common::IP_ADDRESS,
     )
@@ -354,6 +504,7 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
                 favicon_source: Maybe::Set(Some(source)),
                 ..Default::default()
             },
+            None,
             SYSTEM_USER_ID,
             common::IP_ADDRESS,
         )
@@ -376,6 +527,7 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
             runner.context(),
             Reference::Id(site_id),
             body,
+            None,
             SYSTEM_USER_ID,
             common::IP_ADDRESS,
         )
@@ -567,6 +719,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
             slug: Maybe::Set(String::from("ＥＣＨ.")),
             ..Default::default()
         },
+        None,
         SYSTEM_USER_ID,
         common::IP_ADDRESS,
     )
@@ -594,6 +747,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
             slug: Maybe::Set(renamed_slug.clone()),
             ..Default::default()
         },
+        None,
         SYSTEM_USER_ID,
         common::IP_ADDRESS,
     )

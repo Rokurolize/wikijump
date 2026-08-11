@@ -22,6 +22,9 @@ use crate::license::License;
 use crate::models::alias::Model as AliasModel;
 use crate::models::site::Model as SiteModel;
 use crate::models::site_domain::Model as SiteDomainModel;
+use crate::services::settings::{
+    SiteSettings, ToolbarSettings, UpdateGoogleAnalyticsSettings,
+};
 use crate::types::{Maybe, Reference};
 use ftml::layout::Layout;
 use std::net::IpAddr;
@@ -57,6 +60,7 @@ pub struct GetSiteOutput {
     pub site: SiteModel,
     pub aliases: Vec<AliasModel>,
     pub domains: Vec<SiteDomainModel>,
+    pub settings: SiteSettings,
 }
 
 #[allow(dead_code)] // TODO
@@ -70,6 +74,7 @@ pub struct SiteForumSettings {
 pub struct UpdateSite<'a> {
     pub site: Reference<'a>,
     pub user_id: i64,
+    pub expected_settings_revision: i64,
 
     #[serde(flatten)]
     pub body: UpdateSiteBody,
@@ -85,6 +90,7 @@ pub struct UpdateSiteBody {
     pub description: Maybe<String>,
     pub locale: Maybe<String>,
     pub default_page: Maybe<String>,
+    pub welcome_page: Maybe<String>,
     pub top_bar_page: Maybe<String>,
     pub side_bar_page: Maybe<String>,
     pub preferred_domain: Maybe<Option<String>>,
@@ -94,4 +100,6 @@ pub struct UpdateSiteBody {
     pub favicon_source: Maybe<Option<String>>,
     pub ios_icon_source: Maybe<Option<String>>,
     pub windows_tile_source: Maybe<Option<String>>,
+    pub google_analytics: Maybe<UpdateGoogleAnalyticsSettings>,
+    pub toolbars: Maybe<ToolbarSettings>,
 }

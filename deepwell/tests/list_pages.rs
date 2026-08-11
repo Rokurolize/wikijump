@@ -217,6 +217,7 @@ async fn create_listpages_file_fixture(
             s3_hash: EMPTY_BLOB_HASH,
             size: 0,
             mime: mime.to_owned(),
+            content_type: None,
             blob_created: false,
             revision_comments: "create ListPages file fixture".to_owned(),
         },
@@ -4871,7 +4872,7 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
         );
     }
     assert!(
-        preview.contains("Please create an account and/or sign in first.")
+        preview.contains("Invalid indentification token.")
             && preview.contains("Inviting users has been disabled due to severe abuse.")
             && preview.contains("The SimpleTodo module must have an id.")
             && preview.contains(
@@ -4888,11 +4889,9 @@ async fn listpages_default_rows_expand_secondary_page_body_modules() {
                 "This tool is for use by the administrators of this site",
             )
             && preview.contains("No sites provided.")
-            && preview.contains(r#"<div class="featured-site-box">"#)
-            && preview.contains(r#"href="http://scp-wiki.wikidot.com""#)
-            && preview.contains("SCP Foundation")
-            && preview.contains("Contributions last month: 0")
-            && preview.contains("Contributors: 1"),
+            && preview.contains("[[module <em>FeaturedSite</em>]] No such module")
+            && !preview.contains("thumbnails.wdfiles.com")
+            && !preview.contains("OZONE.dialog.hovertip"),
         "selected page content should use the same secondary runtime-module handlers as a page view:\n{preview}",
     );
     for module in [
@@ -5791,16 +5790,40 @@ async fn listpages_rating_vote_scalars_resolve_authored_expr_envelopes() {
 
 #[tokio::test]
 async fn listpages_created_by_id_comment_gates_resolve_after_row_substitution() {
-    let runner = TestRunner::setup().await;
+    const TARGET_SLUG: &str = "listpages-created-by-id-comment-gate-target";
+
+    let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site.site_id,
+            "wikitext": "Comment gate target",
+            "title": "ListPages created-by-id comment gate target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deterministic comment gate target",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
 
     let preview = RenderService::render_wikidot_page_preview(
         runner.context(),
         site.site.site_id,
         "ListPages created-by-id comment gates",
         concat!(
-            "[[module ListPages category=\"*\" order=\"name\" limit=\"1\"]]\n",
+            "[[module ListPages name=\"listpages-created-by-id-comment-gate-target\"]]\n",
             "[[#ifexpr %%created_by_id%% < 1486450 |  | [!-- ]]\n",
             "LOW\n",
             "[!-- --]\n",

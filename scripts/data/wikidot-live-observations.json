@@ -1,8 +1,412 @@
 {
   "schema": "wikijump.wikidot_live_observations.v1",
-  "generated_date": "2026-07-28",
+  "generated_date": "2026-08-10",
   "authority": "Reproducible live Wikidot behavior is canonical and overrides conflicting or incomplete documentation-derived claims.",
   "observations": [
+    {
+      "id": "image-head-ascii-whitespace-boundary-20260810",
+      "title": "Image heads accept ASCII horizontal whitespace but not NBSP or lookalike names",
+      "feature_ids": [
+        "syntax-images"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-08-10",
+      "analysis": "Ten anonymous PagePreviewModule probes isolate the head boundary for the f=image and =image spellings. One ASCII space, two ASCII spaces, and one tab each activate the image. Replacing the separators with NBSP keeps the construct literal, as do the ff=image and ==image lookalike names.",
+      "normative_behavior": [
+        "The exact f=image and =image heads accept one or more ASCII spaces or a tab before the source and between the source and attributes.",
+        "An active f=image external source renders a plain image-container. An active =image external source renders an image-container aligncenter. Both retain the external image URL, width, image class, and filename-derived alt text.",
+        "NBSP is not an image-head or image-argument separator. The tested NBSP forms remain literal text, while their URL-shaped substring can still receive ordinary automatic-link rendering.",
+        "The ff=image and ==image lookalikes are not image heads and remain literal text. They do not create an image element or acquire image-source ownership.",
+        "These observations define only the image head and horizontal separator boundary. They do not widen unobserved width, size, quote, or alignment-token rules."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+          "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+          "case_ids": [
+            "m776-space-one",
+            "m776-space-two",
+            "m776-tab",
+            "m776-nbsp",
+            "m776-float-lookalike",
+            "m806-space-one",
+            "m806-space-two",
+            "m806-tab",
+            "m806-nbsp",
+            "m806-lookalike"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sitechanges-readonly-ajax-contract-20260810",
+      "title": "SiteChanges read pagination and filters use one exact Ajax contract",
+      "feature_ids": [
+        "module-sitechanges"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-08-10",
+      "analysis": "Eight anonymous changes/SiteChangesListModule captures establish one read-only request and response slice: pages 1 through 3, an out-of-range page, source and files filters, empty options, and a missing category. They do not establish alternative per-page values, browser transition behavior, or any mutation.",
+      "normative_behavior": [
+        "The observed request uses moduleName changes/SiteChangesListModule with page, perpage, pageId, categoryId, and options form fields. Only perpage 20 is established by this evidence.",
+        "The exact options values {}, {\"all\":true}, {\"source\":true}, and {\"files\":true} select the observed all, source, and file read rows. Other option shapes are not established.",
+        "Pages 1 through 3 return distinct ordered revision rows and their observed pager states. An out-of-range page and a nonexistent category return Sorry, no revisions matching your criteria.",
+        "The observed response has status ok, a replacement body, a current timestamp, and empty callbackIndex, cssInclude, and jsInclude fields.",
+        "The capture uses one pageId host and does not establish that pageId equals another request-context page identity. Host-page visibility is a Wikijump safety boundary, not a claimed live equality rule.",
+        "Per-page alternatives, malformed or duplicate fields, unknown options, file and metadata mutation, delete or restore mutation, loading, failure, focus, history, keyboard, and temporal browser behavior remain unestablished."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+          "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+          "case_ids": [
+            "q1035-sitechanges-page-one",
+            "q1035-sitechanges-page-two",
+            "q1035-sitechanges-page-three",
+            "q1035-sitechanges-page-out",
+            "q1035-sitechanges-source",
+            "q1035-sitechanges-files",
+            "q1035-sitechanges-empty-options",
+            "q1035-sitechanges-missing-category"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-readonly-surfaces-20260809",
+      "title": "RecentThreads currently renders one site-independent placeholder",
+      "feature_ids": [
+        "module-recentthreads"
+      ],
+      "classification": "live-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes on sandbox-for-codex, scp-wiki, and community establish that RecentThreads currently renders one site-independent placeholder and preserves own-line and literal-owner boundaries. The same artifact also records nonterminal read-only observations for adjacent issue 1034 surfaces, but those do not define a complete implementation contract and do not authorize forum mutations.",
+      "normative_behavior": [
+        "A recognized own-line RecentThreads invocation currently renders the exact visible text later. on all three observed sites. The observed limit and unknown attributes do not change it, and module-name matching is ASCII-case-insensitive.",
+        "RecentThreads consumes an observed closing module body. Inline and raw-owned invocations remain literal, and the RecentThreadsX lookalike remains unknown."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
+          "sha256": "0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4",
+          "case_ids": [
+            "recentthreads-sandbox-bare",
+            "recentthreads-sandbox-limit",
+            "recentthreads-sandbox-unknown",
+            "recentthreads-sandbox-mixed-case",
+            "recentthreads-sandbox-body",
+            "recentthreads-sandbox-inline",
+            "recentthreads-sandbox-raw",
+            "recentthreads-sandbox-lookalike",
+            "recentthreads-scp-bare",
+            "recentthreads-community-bare"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-readonly-route-core-20260809",
+      "title": "Forum read-only surfaces share category, thread, post, route, and Ajax identities",
+      "feature_ids": [
+        "module-comments",
+        "module-frontforum",
+        "module-forumstart",
+        "module-forumcategory",
+        "module-forumthread",
+        "module-recentposts"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, or browser transitions.",
+      "normative_behavior": [
+        "FrontForum with a double-quoted positive category ID and an observed positive limit renders newest threads from that category in a front-forum-box. Each item uses the first post as content and reports comments as the active post count minus one. A nonexistent category renders Requested forum category does not exist.",
+        "forum/ForumCommentsListModule accepts the observed pageId request and the same request with order=reverse. It maps the page to threadId and returns the first comments page with the observed thread script, comments options, hidden thread-container-posts, duplicate pager, ten root comment trees and their descendants, new-comment control, and post-options template. Forward selects the oldest ten roots and orders their trees forward; reverse selects the newest ten roots and reverses root order while retaining descendants under their parent. The pager counts root comments. The forward jsInclude order is ForumViewThreadModule.js, ForumViewThreadPostsModule.js, ForumNewPostFormModule.js; reverse places ForumNewPostFormModule.js before ForumViewThreadPostsModule.js. These remote URLs are observed response metadata and do not establish loader or mutation authority. A nonexistent page returns no_page.",
+        "forum/ForumStartModule accepts the observed absent parameters or hidden=true. Its read model includes category counts and last-post identity; the ordinary view hides hidden groups and hidden=true includes them.",
+        "forum/ForumViewCategoryModule uses c and p, returns status no_category for a nonexistent category, and renders the category summary and ordered thread table for existing data. The observed populated category uses 20 thread rows per page; a final partial page has one row, and an out-of-range page has no thread rows.",
+        "forum/ForumViewThreadModule uses t and returns status no_thread for a nonexistent thread. Its body owns forum-thread-box, options, hidden thread-container-posts, first-page post-container roots, post templates, edited metadata, and the sibling thread-id script. forum/ForumViewThreadPostsModule requires t and first-page pageNo and returns sibling post-container roots without an outer thread-container.",
+        "The thread response jsInclude order is ForumViewThreadPostsModule.js then ForumViewThreadModule.js; the posts response lists only ForumViewThreadPostsModule.js. These remote URLs are observed response metadata and do not establish loader authority.",
+        "forum/ForumRecentPostsListModule uses page and categoryId. The empty category selects all visible categories, an existing category narrows the result, and a nonexistent numeric category returns status ok with an empty post container.",
+        "The observed public GET routes are /forum/start, /forum/start/hidden/show, /forum/c-<id>/<name>, /forum/c-<id>/p/<page>, and /forum/t-<id>/<name>. Missing category and thread routes remain successful page responses with the observed error text; other suffixes are not established.",
+        "The category response has duplicate top and bottom pagers on full pages and one top pager on final partial and out-of-range pages. Page 1 links 1, 2, 3, ..., 10, 11 and next 2; page 2 links previous 1, 1, 2, 3, 4, ..., 10, 11 and next 3; page 11 links previous 10, 1, 2, ..., 9, 10, 11; page 12 deliberately says page 12 of 11 and links previous 11, 1, 2, ..., 10, 11, 12, and next 13. Pager hrefs use /forum/c-<id>/p/<page>.",
+        "All captured requests are anonymous and read-only. Observed controls and templates do not establish Comments, new-thread, post, edit, delete, lock, move, or other mutation authority."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
+          "sha256": "0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4",
+          "case_ids": [
+            "frontforum-sandbox-limit-one",
+            "frontforum-sandbox-limit-two",
+            "frontforum-sandbox-invalid-category",
+            "frontforum-scp-limit-one",
+            "sandbox-forum-start-visible",
+            "sandbox-forum-start-hidden",
+            "sandbox-category-populated-page-one",
+            "sandbox-category-empty-page-one",
+            "sandbox-category-missing",
+            "sandbox-thread-populated",
+            "sandbox-thread-missing",
+            "sandbox-thread-posts-populated",
+            "sandbox-thread-posts-missing",
+            "scp-comments-forward",
+            "scp-comments-reverse",
+            "scp-comments-missing-page",
+            "sandbox-recent-posts-all-page-one",
+            "sandbox-recent-posts-category-page-one",
+            "sandbox-recent-posts-missing-category"
+          ]
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-pagination-live-20260809.json",
+          "sha256": "48c014f29e3ffa893073ef90048b353880d929e2bb612d358ee977dafbe679b2",
+          "case_ids": [
+            "scp-category-1113520-page-1",
+            "scp-category-1113520-page-2",
+            "scp-category-1113520-page-11",
+            "scp-category-1113520-page-12"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-frontforum-scalar-boundaries-20260810",
+      "title": "FrontForum category lists and offsets select one global visible sequence",
+      "feature_ids": [
+        "module-frontforum"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-10",
+      "analysis": "Anonymous PagePreviewModule observations establish the semicolon category-list and offset boundaries over existing forum data. They do not establish custom-format ownership, feed delivery or head metadata, effective relative-link rewriting, non-anonymous visibility, deletion, mutation authority, or browser transitions.",
+      "normative_behavior": [
+        "The exact lowercase category attribute accepts a double-quoted semicolon-separated list of positive numeric category IDs. A list containing a non-numeric element renders Problem parsing attribute category. If every numeric category is missing, the module renders Requested forum category does not exist; if at least one numeric category exists, missing IDs do not suppress rows from the existing categories.",
+        "Existing selected categories contribute one global newest-first thread sequence. An existing empty category contributes no rows regardless of its position in the category list. Site, group, category, and linked-page visibility are resolved before global ordering, offset, and limit, and each rendered item keeps its own category ID and link.",
+        "Omitted offset and exact offset=0 select from the first visible row. Exact offset=1 skips the first visible row, a positive offset beyond the available rows renders an empty front-forum-box, and the observed non-numeric offset=bad falls back to zero.",
+        "All captures are anonymous and read-only. The scalar output does not establish custom body templates, feed or head ownership, link rewriting, post actions, or any mutation authority."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+          "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410",
+          "case_ids": [
+            "q1034-frontforum-multi-populated-empty",
+            "q1034-frontforum-multi-empty-populated",
+            "q1034-frontforum-multi-missing",
+            "q1034-frontforum-multi-malformed"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-zero.json",
+          "sha256": "b658bc9b2f2c08214d64b331ffff35c6e6f8a7e32c9f39750efdfe0ab47b0d27",
+          "case_ids": [
+            "q1034-frontforum-offset-zero"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-one.json",
+          "sha256": "b9910ec2ec7ba5a0fce786b2e4f895dc6fb2411f77f37412dc37282f12afedc4",
+          "case_ids": [
+            "q1034-frontforum-offset-one"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-large.json",
+          "sha256": "f6acea4c49603e657d174e0cf1aa24758198fc84158954ff1383d1b5580ef845",
+          "case_ids": [
+            "q1034-frontforum-offset-large"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-invalid.json",
+          "sha256": "174e0987cc2b54927704ee03253d8fa31295007ee4d67fa13609f1024b3959fb",
+          "case_ids": [
+            "q1034-frontforum-offset-invalid"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-comments-attributes-anonymous-20260809",
+      "title": "Comments title, hide, and order have exact authored scalar boundaries",
+      "feature_ids": [
+        "module-comments"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule, existing served pages, and read-only ForumCommentsListModule requests establish the exact source forms and output for title, hide, and order. The evidence does not establish hideForm for a permitted actor, browser transitions, or any comment mutation.",
+      "normative_behavior": [
+        "The module name is ASCII-case-insensitive. An exact lowercase title key with a nonempty double-quoted value emits one direct h1 child of comments-box, with HTML-escaped text. Empty, single-quoted, bare, and wrong-case title forms emit no custom heading.",
+        "Exact hide=true keeps a saved page on the visible Show Comments link and an empty thread-container. Omitted hide and exact hide=false hide comments-options-hidden with display:none and embed the anonymous permission-filtered first comments page. PagePreview has no saved page identity and always keeps the inert shell.",
+        "Exact order=reverse adds the reverse class to thread-container and selects the newest ten root comment trees. Omitted order and exact order=forwards select the oldest ten. Invalid, empty, single-quoted, bare, uppercase-value, and wrong-case source forms do not establish a reverse or saved-page query.",
+        "Direct read-only ForumCommentsListModule accepts omitted order, order=forwards, and order=reverse. Other order values remain unsupported.",
+        "Anonymous output cannot distinguish the documented hideForm setting from actor permission. Rendered controls do not establish a browser handler, CSRF policy, form authority, or mutation authority."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json",
+          "sha256": "37c2b8366caf1ebea665b5c958e20c66ac118f8b0cffae5d73bc805f99f61533",
+          "case_ids": [
+            "comments-baseline",
+            "comments-mixed-module-case",
+            "title-alpha",
+            "title-escaped",
+            "title-empty",
+            "title-single-quoted",
+            "title-bare",
+            "title-key-case",
+            "order-forwards",
+            "order-reverse",
+            "order-reverse-with-title",
+            "order-forward-singular",
+            "order-uppercase-reverse",
+            "order-uppercase-forwards",
+            "order-empty",
+            "order-single-quoted",
+            "order-bare",
+            "order-key-case",
+            "ajax-order-omitted",
+            "ajax-order-forwards",
+            "ajax-order-reverse",
+            "hide-true-casos-served",
+            "hide-true-historias-served",
+            "default-blog-index-served",
+            "explicit-false-howto-served"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "forum-mini-current-preview-and-workbench-20260809",
+      "title": "Forum mini modules share own-line, limit, activity, route, and literal-owner contracts",
+      "feature_ids": [
+        "module-minirecentthreads",
+        "module-miniactivethreads",
+        "module-minirecentposts"
+      ],
+      "classification": "live-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes establish the own-line invocation, invalid-limit fallback, empty wrapper, and literal-owner boundaries for all three mini modules. A fresh anonymous read of the public sandbox workbench establishes populated compact rows and routes without mutating Wikidot. The populated values are point-in-time evidence, not repository fixtures.",
+      "normative_behavior": [
+        "Each recognized own-line module renders a forum-mini-stat wrapper; an empty result keeps the wrapper and renders no item rows.",
+        "The default limit is 5. A positive limit constrains rows. Zero, negative, nonnumeric, and unknown attributes preserve the default in the observed matrix.",
+        "Inline module text and a module opener owned by a raw span remain literal.",
+        "MiniRecentThreads orders by newest thread and renders thread routes, started dates, and reply counts.",
+        "MiniActiveThreads renders recently active threads using the documented last-seven-days window and the compact thread row contract.",
+        "MiniRecentPosts orders replies by recency and renders a post anchor, excerpt, printuser identity, date, and thread reply count. Standalone thread roots are absent from the observed saved-page output.",
+        "Live private-content actor matrices, rich-markup excerpt reduction, no-title text, exact truncation, tie-breaking, and mutation-driven cache behavior remain nonterminal gaps."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json",
+          "sha256": "ff093dc2d48fc197828f11271689cb1254057d28e5e9614ccac7f7e8b0a1aee8",
+          "case_ids": [
+            "mini-recent-threads-bare",
+            "mini-recent-threads-limit-one",
+            "mini-recent-threads-limit-zero",
+            "mini-recent-threads-limit-negative",
+            "mini-recent-threads-limit-text",
+            "mini-recent-threads-unknown-argument",
+            "mini-recent-threads-inline",
+            "mini-recent-threads-literal",
+            "mini-active-threads-bare",
+            "mini-active-threads-limit-one",
+            "mini-active-threads-limit-zero",
+            "mini-active-threads-limit-negative",
+            "mini-active-threads-limit-text",
+            "mini-active-threads-unknown-argument",
+            "mini-active-threads-inline",
+            "mini-active-threads-literal",
+            "mini-recent-posts-bare",
+            "mini-recent-posts-limit-one",
+            "mini-recent-posts-limit-zero",
+            "mini-recent-posts-limit-negative",
+            "mini-recent-posts-limit-text",
+            "mini-recent-posts-unknown-argument",
+            "mini-recent-posts-inline",
+            "mini-recent-posts-literal"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "search-feed-current-unavailable-boundaries-20260809",
+      "title": "Search is currently unavailable and Feed source recognition remains source-sensitive",
+      "feature_ids": [
+        "module-search",
+        "module-feed"
+      ],
+      "classification": "live-correction",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes show that current Wikidot recognizes Search but renders one unavailable notice across the documented and malformed heads. Feed retains a narrower parser boundary: only a non-empty lowercase src assignment in double quotes is recognized in the observed matrix; missing, empty, single-quoted, and uppercase-key forms all render the missing-source error. A recognized but inaccessible source renders a separate processing error.",
+      "normative_behavior": [
+        "Search renders the current temporary-unavailable error for the observed bare, documented, unknown-argument, single-quoted, and uppercase-module-name forms.",
+        "Feed without a recognized source renders the exact missing-src error.",
+        "In the observed Feed matrix, src is recognized only when the key is lowercase, the value is double-quoted, and the value is non-empty.",
+        "A recognized source that cannot be read renders the exact processing error with the escaped source URL.",
+        "Active Search results and successful remote Feed item rendering remain unimplemented until a reproducible live contract and a safe runtime adapter are available."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json",
+          "sha256": "b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565",
+          "case_ids": [
+            "search-bare",
+            "search-mini-true",
+            "search-area-pages",
+            "search-unknown-argument",
+            "search-single-quoted-mini",
+            "search-uppercase-name",
+            "feed-bare",
+            "feed-empty-src",
+            "feed-missing-src-with-limit",
+            "feed-single-quoted-src",
+            "feed-uppercase-src",
+            "feed-valid-src"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "searchall-form-routes-current-unavailable-20260809",
+      "title": "SearchAll preserves its legacy form and routes while the global backend is unavailable",
+      "feature_ids": [
+        "module-searchall"
+      ],
+      "classification": "live-clarification",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous PagePreviewModule probes establish the SearchAll form DOM and source-owner boundary. A run-owned public sandbox holder plus the module's delivered browser script establish untrimmed query encoding and the pf, p, and f navigation routes. Anonymous HTTPS reads of www.wikidot.com/search:all establish that an empty query renders the form while every observed non-empty query route currently renders the same ElasticSearch-down error. Successful global result semantics remain unobservable while that service is down.",
+      "normative_behavior": [
+        "A standalone SearchAll opener renders the legacy search-box, query-area, search-form-all, three area radio controls, and empty search-results container.",
+        "Observed uppercase module spelling and unknown double-quoted or single-quoted attributes render the same form.",
+        "Inline SearchAll text and SearchAll inside a raw span remain literal.",
+        "The default area is pf; the browser submit route is /search:all/a/<area>/q/<encodeURIComponent(query)> and preserves leading and trailing spaces.",
+        "An absent or empty q path value renders the form.",
+        "Every observed non-empty query route currently renders the exact ElasticSearch-down error, including pf, p, f, an unknown area, and a route without area.",
+        "Successful result DOM, ranking, pagination, highlighting, and visibility filtering remain unimplemented until a reproducible live result contract is available."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/searchall-live-preview-routes-20260809.json",
+          "sha256": "378ddb0e93d5d20709f857d17dc7cb538f6e393f68c0f68016bb370ff60c4c67",
+          "case_ids": [
+            "searchall-bare",
+            "searchall-uppercase-name",
+            "searchall-unknown-argument",
+            "searchall-single-quoted-argument",
+            "searchall-inline",
+            "searchall-literal",
+            "searchall-route-pf-query",
+            "searchall-route-p-query",
+            "searchall-route-f-query",
+            "searchall-route-unknown-area-query",
+            "searchall-route-query-without-area",
+            "searchall-route-empty-query",
+            "searchall-browser-pf-spaced-query",
+            "searchall-browser-p-query",
+            "searchall-browser-f-query"
+          ]
+        }
+      ]
+    },
     {
       "id": "listpages-invalid-numeric-fallbacks",
       "title": "Invalid and extreme numeric arguments use compatibility fallbacks",
@@ -1347,6 +1751,44 @@
             "authenticated-create-form",
             "authenticated-save",
             "authenticated-edit-form"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "members-list-amc-pagination-20260809",
+      "title": "Members paging uses a 100-row Ajax module with page 0 as a page 1 alias",
+      "feature_ids": [
+        "module-members"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-08-09",
+      "analysis": "Anonymous SCP Wiki responses establish the successful MembersListModule wire and pager for pages 0 through 3. Authenticated sandbox responses establish the empty body for three actor classes on page 2 and page 1468. The SCP Wiki page 1467 and page 1468 attempts retained only not_ok acquisition exceptions, so they do not establish a high-page response body.",
+      "normative_behavior": [
+        "The captured Members paging request uses moduleName=membership/MembersListModule, group as the empty string, order=joined, and an integer page value.",
+        "Pages 0 and 1 return the same first 100 ordered member rows and the page 1 pager state. Pages 2 and 3 return the next distinct 100-row slices.",
+        "The page 1 pager links pages 2 and 3, an ellipsis, pages 1470 and 1471, and next page 2. Pages 2 and 3 add the observed previous target and centered nearby-page window.",
+        "Each captured successful response has status ok, an integer CURRENT_TIMESTAMP, a body, empty jsInclude and cssInclude arrays, and callbackIndex null.",
+        "For the captured sandbox administrator, member, and moderator-or-nonmember actors, page 2 and page 1468 return the same No users body without a table, member script, or pager.",
+        "The blocked SCP Wiki page 1467 and page 1468 captures do not establish a response body or envelope. Admin and moderator groups, other order values, unknown or malformed fields, populated actor differences, mutations, invalidation, and browser transitions remain unobserved."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json",
+          "sha256": "6f7be3f18a5e21397affbc33f3419ec67d3deca3648a524c76c42e4e9b16e3e7",
+          "case_ids": [
+            "q1032-members-zero",
+            "q1032-members-one",
+            "q1032-members-two",
+            "q1032-members-three",
+            "q1032-members-last",
+            "q1032-members-out",
+            "q1032-members-page-two-actor-a",
+            "q1032-members-page-two-actor-b",
+            "q1032-members-page-two-actor-c",
+            "q1032-members-page-out-actor-a",
+            "q1032-members-page-out-actor-b",
+            "q1032-members-page-out-actor-c"
           ]
         }
       ]

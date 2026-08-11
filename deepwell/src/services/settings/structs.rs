@@ -18,6 +18,153 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::error::prelude::{Error, ErrorType, Result};
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
+pub struct GoogleAnalyticsSettings {
+    pub enabled: bool,
+    pub profile: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct UpdateGoogleAnalyticsSettings {
+    pub enabled: bool,
+    pub profile: String,
+}
+
+impl UpdateGoogleAnalyticsSettings {
+    pub fn profile(&self) -> Result<Option<&str>> {
+        if !self.enabled && self.profile.is_empty() {
+            return Ok(None);
+        }
+
+        let valid = self
+            .profile
+            .strip_prefix("UA-")
+            .and_then(|profile| profile.split_once('-'))
+            .is_some_and(|(account, property)| {
+                !account.is_empty()
+                    && account.bytes().all(|byte| byte.is_ascii_digit())
+                    && !property.is_empty()
+                    && property.bytes().all(|byte| byte.is_ascii_digit())
+            });
+        if valid {
+            Ok(Some(&self.profile))
+        } else {
+            Err(Error::new(
+                "Google Analytics profile must use the UA-<account>-<property> format",
+                ErrorType::BadRequest,
+            )
+            .into())
+        }
+    }
+
+    pub fn validate(&self) -> Result<()> {
+        self.profile()?;
+        Ok(())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, Eq)]
+pub struct ToolbarSettings {
+    pub top: bool,
+    pub bottom: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct SiteSettings {
+    pub revision: i64,
+    pub welcome_page: String,
+    pub google_analytics: GoogleAnalyticsSettings,
+    pub toolbars: ToolbarSettings,
+}
+
+impl Default for SiteSettings {
+    fn default() -> Self {
+        Self {
+            revision: 0,
+            welcome_page: String::from("system:welcome"),
+            google_analytics: GoogleAnalyticsSettings::default(),
+            toolbars: ToolbarSettings::default(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum ThemeSetting {
+    Inherit,
+    BuiltIn { id: i64 },
+    External { url: String },
+    Custom { css: String },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ThemeStorage<'a> {
+    pub kind: &'static str,
+    pub builtin_id: Option<i64>,
+    pub external_url: Option<&'a str>,
+    pub custom_css: Option<&'a str>,
+}
+
+impl Default for ThemeSetting {
+    fn default() -> Self {
+        Self::BuiltIn { id: 1 }
+    }
+}
+
+impl ThemeSetting {
+    pub fn validate(&self) -> Result<()> {
+        let valid = match self {
+            Self::Inherit => true,
+            Self::BuiltIn { id } => *id > 0,
+            Self::External { url } => reqwest::Url::parse(url).is_ok_and(|url| {
+                url.scheme() == "https"
+                    && url.host_str().is_some()
+                    && url.username().is_empty()
+                    && url.password().is_none()
+            }),
+            Self::Custom { css } => {
+                css.len() <= 65_535 && !css.to_ascii_lowercase().contains("</style")
+            }
+        };
+        if valid {
+            Ok(())
+        } else {
+            Err(Error::new("invalid theme setting", ErrorType::BadRequest).into())
+        }
+    }
+
+    pub fn to_storage(&self) -> ThemeStorage<'_> {
+        match self {
+            Self::Inherit => ThemeStorage {
+                kind: "inherit",
+                builtin_id: None,
+                external_url: None,
+                custom_css: None,
+            },
+            Self::BuiltIn { id } => ThemeStorage {
+                kind: "built_in",
+                builtin_id: Some(*id),
+                external_url: None,
+                custom_css: None,
+            },
+            Self::External { url } => ThemeStorage {
+                kind: "external",
+                builtin_id: None,
+                external_url: Some(url),
+                custom_css: None,
+            },
+            Self::Custom { css } => ThemeStorage {
+                kind: "custom",
+                builtin_id: None,
+                external_url: None,
+                custom_css: Some(css),
+            },
+        }
+    }
+}
+
 /// Describes a navigation page slug.
 ///
 /// This can either be `Enabled(_)`, containing the page slug to use (if it exists),
@@ -224,5 +371,53 @@ mod tests {
             assert_eq!(PageRatingType::from_storage(stored), Some(value));
             assert_eq!(value.as_storage(), stored);
         }
+    }
+
+    #[test]
+    fn site_settings_defaults_disable_analytics_and_both_toolbars() {
+        assert_eq!(
+            SiteSettings::default(),
+            SiteSettings {
+                revision: 0,
+                welcome_page: String::from("system:welcome"),
+                google_analytics: GoogleAnalyticsSettings::default(),
+                toolbars: ToolbarSettings::default(),
+            }
+        );
+    }
+
+    #[test]
+    fn theme_storage_keeps_each_variant_separate_and_rejects_unsafe_urls() {
+        let built_in = ThemeSetting::BuiltIn { id: 1 };
+        assert_eq!(
+            built_in.to_storage(),
+            ThemeStorage {
+                kind: "built_in",
+                builtin_id: Some(1),
+                external_url: None,
+                custom_css: None,
+            }
+        );
+        assert!(
+            ThemeSetting::External {
+                url: String::from("https://themes.example/theme.css"),
+            }
+            .validate()
+            .is_ok()
+        );
+        assert!(
+            ThemeSetting::External {
+                url: String::from("http://themes.example/theme.css"),
+            }
+            .validate()
+            .is_err()
+        );
+        assert!(
+            ThemeSetting::Custom {
+                css: String::from("</style><script>alert(1)</script>"),
+            }
+            .validate()
+            .is_err()
+        );
     }
 }

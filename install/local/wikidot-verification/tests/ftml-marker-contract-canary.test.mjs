@@ -25,7 +25,7 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "902e72a2ff261b7af42402734b2f8b659e6a294a";
+const candidateFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const sanitizedEnvironment = Object.fromEntries(
@@ -109,6 +109,59 @@ test("the 2026-08-04 marker canary receipt remains immutable", () => {
   assert.deepEqual(receipt.resource_disposition, {
     policy: "delete-on-close",
     disposable_containers_remaining: 0,
+  });
+});
+
+test("the 2026-08-10 ownership pin marker canary receipt remains immutable", () => {
+  const receipt = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts",
+        "ftml-ownership-pin-canary-20260810-62ebba4e.json",
+      ),
+      "utf8",
+    ),
+  );
+
+  assert.equal(receipt.status, "pass");
+  assert.equal(
+    receipt.wikijump_base_sha,
+    "78d83cb920a7ea72626f2bcfc747f1493686900b",
+  );
+  assert.equal(
+    receipt.baseline_ftml_sha,
+    "902e72a2ff261b7af42402734b2f8b659e6a294a",
+  );
+  assert.equal(receipt.candidate_ftml_sha, candidateFtml);
+  assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
+  assert.deepEqual(
+    {
+      schema: receipt.comparison.schema,
+      pairs_total: receipt.comparison.pairs_total,
+      matches: receipt.comparison.matches,
+      accepted_differences: receipt.comparison.accepted_differences,
+      regressions: receipt.comparison.regressions,
+    },
+    {
+      schema: "wikijump_local_lab.render_compare.v1",
+      pairs_total: requiredSurfaces.length,
+      matches: requiredSurfaces.length,
+      accepted_differences: 0,
+      regressions: 0,
+    },
+  );
+  assert.equal(
+    receipt.evidence.root_path,
+    "/home/roku/wjlab/evidence/20260810-open43-ftml-marker-62ebba4e-pin78d",
+  );
+  assert.deepEqual(receipt.resource_disposition, {
+    policy: "delete-on-close",
+    disposable_worktrees_remaining: 0,
+    disposable_containers_remaining: 0,
+    disposable_volumes_remaining: 0,
+    disposable_networks_remaining: 0,
+    outer_worktree_removed: true,
   });
 });
 

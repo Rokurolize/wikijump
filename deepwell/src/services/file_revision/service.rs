@@ -103,6 +103,8 @@ impl FileRevisionService {
             mut s3_hash,
             mut mime,
             mut size,
+            mut content_type_label,
+            mut content_type_description,
             ..
         } = previous;
 
@@ -128,12 +130,29 @@ impl FileRevisionService {
         if let Maybe::Set(new_blob) = body.blob
             && (s3_hash != new_blob.s3_hash
                 || size != new_blob.size
-                || mime != new_blob.mime)
+                || mime != new_blob.mime
+                || content_type_label.as_deref()
+                    != new_blob
+                        .content_type
+                        .as_ref()
+                        .map(|descriptor| descriptor.label.as_str())
+                || content_type_description.as_deref()
+                    != new_blob
+                        .content_type
+                        .as_ref()
+                        .map(|descriptor| descriptor.description.as_str()))
         {
             changes.push(str!("blob"));
             s3_hash = new_blob.s3_hash.to_vec();
             size = new_blob.size;
             mime = new_blob.mime;
+            content_type_label = new_blob
+                .content_type
+                .as_ref()
+                .map(|descriptor| descriptor.label.clone());
+            content_type_description = new_blob
+                .content_type
+                .map(|descriptor| descriptor.description);
             blob_created = Maybe::Set(new_blob.blob_created);
         }
 
@@ -182,6 +201,8 @@ impl FileRevisionService {
             s3_hash: Set(s3_hash.to_vec()),
             size: Set(size),
             mime: Set(mime),
+            content_type_label: Set(content_type_label),
+            content_type_description: Set(content_type_description),
             changes: Set(changes),
             comments: Set(revision_comments),
             hidden: Set(vec![]),
@@ -190,6 +211,14 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        OutdateService::outdate(ctx, page_id, RerenderDepth::default())
+            .await
+            .or_raise(make_error)?;
+        if original_page_id != page_id {
+            OutdateService::outdate(ctx, original_page_id, RerenderDepth::default())
+                .await
+                .or_raise(make_error)?;
+        }
         Ok(Some(CreateFileRevisionOutput {
             file_revision_id: revision_id,
             file_revision_number: revision_number,
@@ -211,6 +240,7 @@ impl FileRevisionService {
             s3_hash,
             size,
             mime,
+            content_type,
             blob_created,
             revision_comments,
         }: CreateFirstFileRevision,
@@ -254,6 +284,12 @@ impl FileRevisionService {
             s3_hash: Set(s3_hash.to_vec()),
             mime: Set(mime),
             size: Set(size),
+            content_type_label: Set(content_type
+                .as_ref()
+                .map(|descriptor| descriptor.label.clone())),
+            content_type_description: Set(
+                content_type.map(|descriptor| descriptor.description)
+            ),
             changes: Set(ALL_CHANGES.clone()),
             comments: Set(revision_comments),
             hidden: Set(vec![]),
@@ -262,6 +298,9 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        OutdateService::outdate(ctx, page_id, RerenderDepth::default())
+            .await
+            .or_raise(make_error)?;
 
         Ok(CreateFirstFileRevisionOutput {
             file_id,
@@ -310,6 +349,8 @@ impl FileRevisionService {
             mut s3_hash,
             mime,
             size,
+            content_type_label,
+            content_type_description,
             ..
         } = previous;
 
@@ -348,6 +389,8 @@ impl FileRevisionService {
             s3_hash: Set(s3_hash),
             mime: Set(mime),
             size: Set(size),
+            content_type_label: Set(content_type_label),
+            content_type_description: Set(content_type_description),
             changes: Set(vec![]),
             comments: Set(revision_comments),
             hidden: Set(hidden),
@@ -356,6 +399,9 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        OutdateService::outdate(ctx, page_id, RerenderDepth::default())
+            .await
+            .or_raise(make_error)?;
 
         Ok(CreateFileRevisionOutput {
             file_revision_id: revision_id,
@@ -412,6 +458,8 @@ impl FileRevisionService {
             s3_hash,
             mime,
             size,
+            content_type_label,
+            content_type_description,
             ..
         } = previous;
 
@@ -456,6 +504,8 @@ impl FileRevisionService {
             s3_hash: Set(s3_hash),
             mime: Set(mime),
             size: Set(size),
+            content_type_label: Set(content_type_label),
+            content_type_description: Set(content_type_description),
             changes: Set(changes),
             comments: Set(revision_comments),
             hidden: Set(vec![]),
@@ -464,6 +514,9 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        OutdateService::outdate(ctx, new_page_id, RerenderDepth::default())
+            .await
+            .or_raise(make_error)?;
 
         Ok(CreateFileRevisionOutput {
             file_revision_id: revision_id,

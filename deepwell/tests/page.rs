@@ -22,12 +22,19 @@
 mod common;
 
 use self::common::TestRunner;
+use cuid2::cuid;
 use deepwell::constants::{
     ADMIN_USER_ID, ANONYMOUS_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID, UNKNOWN_USER_ID,
 };
 use deepwell::error::prelude::*;
+use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::license::License;
+use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
+use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
 use deepwell::models::file;
+use deepwell::models::forum_post::{self, Entity as ForumPostTable};
+use deepwell::models::forum_thread::Entity as ForumThreadTable;
+use deepwell::models::known_user;
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
 use deepwell::models::page_revision::Entity as PageRevisionTable;
@@ -35,25 +42,34 @@ use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
 use deepwell::models::text;
 use deepwell::models::text_block;
 use deepwell::models::user::Entity as UserTable;
-use deepwell::services::blob::{EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
+use deepwell::services::blob::{ContentTypeDescriptor, EMPTY_BLOB_HASH, EMPTY_BLOB_MIME};
 use deepwell::services::category::CategoryService;
 use deepwell::services::file_revision::CreateFirstFileRevision;
-use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
-use deepwell::services::forum_post::CreateForumPost;
+use deepwell::services::forum::{
+    CreateForumCategory, CreateForumGroup, DeleteForumCategory, DeleteForumGroup,
+    GetForumStructure,
+};
+use deepwell::services::forum_post::{
+    CreateForumPost, UpdateForumPost, UpdateForumPostBody,
+};
 use deepwell::services::forum_thread::CreateForumThread;
+use deepwell::services::page::CreatePage;
+use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
     DateSelector, FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
     PageParentSelector, PageQuery, PageQueryService, PageTypeSelector,
     PaginationSelector, RangeSelector, ScoreSelector, TagCondition,
 };
+use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
 use deepwell::services::relation::{
-    CreateSiteMember, SiteMemberAccepted, SiteMemberData,
+    CreatePageWatch, CreateSiteMember, RemovePageWatch, SiteMemberAccepted,
+    SiteMemberData,
 };
-use deepwell::services::render::{UrlArgumentPair, UrlArguments};
+use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
@@ -63,25 +79,111 @@ use deepwell::services::site::UpdateSiteBody;
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
-    PageService, RelationService, RenderService, RequestContext, SessionService,
-    SettingsService, SiteService, TextService,
+    PageService, RelationService, RenderService, RequestContext, ServiceContext,
+    SessionService, SettingsService, SiteService, TextService, ThemeSetting,
 };
 use deepwell::types::{
-    Action, ConnectionType, Maybe, PageId, PageRevisionType, Permission, Reference,
-    Resource, TextBlockType,
+    Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
+    Reference, RerenderDepth, Resource, TextBlockType,
 };
+use futures::FutureExt;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
-    PaginatorTrait, QueryFilter, Set, Statement, Value,
+    PaginatorTrait, QueryFilter, QueryOrder, Set, Statement, TransactionTrait, Value,
 };
 use serde_json::json;
+use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::panic::{AssertUnwindSafe, resume_unwind};
+use std::time::Duration as StdDuration;
 use time::{Duration, OffsetDateTime};
 
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
+use ftml::parsing::{ParseErrorKind, Token};
 use ftml::settings::{WikitextMode, WikitextSettings};
+use redis::AsyncCommands;
+
+#[tokio::test]
+async fn public_membership_module_states_are_distinct_and_opaque() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    let source = concat!(
+        "[[module Join button=\"one\" button=\"two\" class=\"membership-join-fixture\"]]\n",
+        "[[module JOIN BUTTON='single-quoted-is-ignored']]\n",
+        "[[module Join button=\"\"]]\n",
+        "[[module MembershipApply]]\n",
+        "[[module MembershipByPassword]]\n",
+        "[[module MembershipEmailInvitation token=\"invitation-secret\"]]\n",
+        "[[module AnonymousNotificationsUnsubscribe token=\"unsubscribe-secret\"]]\n",
+        "[[module SendInvitations]]",
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let anonymous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Membership public states",
+            "wikitext": source,
+        }),
+    );
+
+    for expected in [
+        r#"<div class="membership-join-fixture"><a href="javascript:;" onclick="WIKIDOT.page.listeners.join(event, 'unified')">two</a></div>"#,
+        r#"<div class="join-box"><a href="javascript:;" onclick="WIKIDOT.page.listeners.join(event, 'unified')">Join</a></div>"#,
+        "You need to have a Wikidot.com account and be signed to apply for membership.",
+        "Membership via password is not enabled for this site.",
+        "Sorry, the invitation could not be found.",
+        "Invalid indentification token.",
+        "Inviting users has been disabled due to severe abuse.",
+    ] {
+        assert!(
+            anonymous.body.contains(expected),
+            "anonymous preview should contain {expected:?}:\n{}",
+            anonymous.body,
+        );
+    }
+    for secret in ["invitation-secret", "unsubscribe-secret"] {
+        assert!(
+            !anonymous.body.contains(secret),
+            "opaque token failures must not reflect {secret:?}:\n{}",
+            anonymous.body,
+        );
+    }
+    assert!(
+        anonymous.membership_actions.is_empty(),
+        "PagePreview must render exact Join DOM without issuing a saved-page mutation binding",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let member = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Membership member states",
+            "wikitext": source,
+        }),
+    );
+    assert!(
+        !member.body.contains("membership-join-fixture"),
+        "a current site member must not see Join:\n{}",
+        member.body,
+    );
+    assert!(member.membership_actions.is_empty());
+}
 
 fn set_mutation_request_context(
     runner: &mut TestRunner,
@@ -95,6 +197,857 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+async fn set_page_rating_policy(
+    runner: &TestRunner,
+    category_id: i64,
+    enabled: bool,
+    permission: &str,
+) {
+    let category = PageCategoryTable::find_by_id(category_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Rate policy category lookup should succeed")
+        .expect("Rate policy category should exist");
+    let mut category = category.into_active_model();
+    category.rating_enabled = Set(Some(enabled));
+    category.rating_permission = Set(Some(permission.to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("Rate policy category update should succeed");
+}
+
+#[tokio::test]
+async fn component_css_edit_refreshes_only_the_recorded_dependent_page() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const COMPONENT_SLUG: &str = "component:authoring-css-invalidation";
+    const DEPENDENT_SLUG: &str = "authoring-css-dependent";
+    const UNRELATED_SLUG: &str = "authoring-css-unrelated";
+    const RED_CSS: &str = "[[module CSS]]\n.authoring-color { color: red; }\n[[/module]]";
+    const BLUE_CSS: &str =
+        "[[module CSS]]\n.authoring-color { color: blue; }\n[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    let site_id = site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(COMPONENT_SLUG)),
+    );
+    let component = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": RED_CSS,
+            "title": "Authoring CSS component",
+            "alt_title": null,
+            "slug": COMPONENT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create authoring CSS component",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DEPENDENT_SLUG)),
+    );
+    let dependent = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[include {COMPONENT_SLUG}]]\nDependent body"),
+            "title": "Authoring CSS dependent",
+            "alt_title": null,
+            "slug": DEPENDENT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create CSS dependent",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(UNRELATED_SLUG)),
+    );
+    let unrelated = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Unrelated body",
+            "title": "Authoring CSS unrelated",
+            "alt_title": null,
+            "slug": UNRELATED_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create unrelated page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let before_dependent = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("dependent page should exist before the component edit");
+    let before_unrelated = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": unrelated.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("unrelated page should exist before the component edit");
+    assert!(
+        before_dependent
+            .compiled_body_styles
+            .as_ref()
+            .is_some_and(|styles| styles
+                .iter()
+                .any(|style| style.contains("color: red"))),
+        "the dependent page should initially carry the component's red CSS",
+    );
+
+    let dependencies = LinkService::get_to(
+        runner.context(),
+        component.page_id,
+        Some(&[
+            ConnectionType::IncludeMessy,
+            ConnectionType::IncludeElements,
+            ConnectionType::Component,
+        ]),
+    )
+    .await
+    .expect("component dependents should be readable");
+    assert_eq!(
+        dependencies
+            .connections
+            .iter()
+            .filter(|connection| connection.from_page_id == dependent.page_id)
+            .count(),
+        1,
+        "the component should record the dependent page exactly once",
+    );
+    assert!(
+        dependencies
+            .connections
+            .iter()
+            .all(|connection| connection.from_page_id != unrelated.page_id),
+        "the unrelated page must not enter the component dependency graph",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(component.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": component.page_id,
+            "last_revision_id": component.revision_id,
+            "revision_comments": "change authoring CSS to blue",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": BLUE_CSS,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("component CSS edit should create a revision");
+
+    let dependent_page =
+        PageService::get(runner.context(), site_id, Reference::Id(dependent.page_id))
+            .await
+            .expect("dependent page identity should remain available");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&dependent_page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("the queued dependent rerender should succeed");
+
+    let served_dependent = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": DEPENDENT_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                compiled_body_styles: served_styles,
+                ..
+            },
+        ..
+    } = served_dependent
+    else {
+        panic!("the dependent article should be served after its queued rerender");
+    };
+    assert!(
+        served_styles
+            .iter()
+            .any(|style| style.contains("color: blue")),
+        "the dependent article's next public read should serve the updated CSS",
+    );
+    assert!(
+        served_styles
+            .iter()
+            .all(|style| !style.contains("color: red")),
+        "the dependent article's next public read must not reuse stale CSS",
+    );
+
+    let after_dependent = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": dependent.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("dependent page should remain readable after the component edit");
+    let after_unrelated = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": unrelated.page_id,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("unrelated page should remain readable after the component edit");
+    let after_styles = after_dependent
+        .compiled_body_styles
+        .as_ref()
+        .expect("dependent compiled styles should be populated");
+    assert!(
+        after_styles
+            .iter()
+            .any(|style| style.contains("color: blue"))
+    );
+    assert!(
+        after_styles
+            .iter()
+            .all(|style| !style.contains("color: red"))
+    );
+    assert_ne!(
+        after_dependent.compiled_at, before_dependent.compiled_at,
+        "the dependent revision should be recompiled",
+    );
+    assert_eq!(after_dependent.revision_id, before_dependent.revision_id);
+    assert_eq!(
+        after_unrelated.compiled_body_styles, before_unrelated.compiled_body_styles,
+        "the unrelated page's compiled styles must remain untouched",
+    );
+    assert_eq!(
+        after_unrelated.compiled_at, before_unrelated.compiled_at,
+        "the unrelated page must not be recompiled",
+    );
+    assert_eq!(after_unrelated.revision_id, before_unrelated.revision_id);
+}
+
+#[tokio::test]
+async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-diff";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    let site_id = site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "alpha\nold <script>alert(1)</script>\nomega",
+            "title": "Authoring revision diff",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create revision diff fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let edited = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "edit revision diff fixture",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "alpha\nnew & safe\nomega",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("revision diff fixture edit should create a revision");
+
+    let diff = run_endpoint!(
+        runner,
+        page_revision_diff,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": 1,
+        }),
+    )
+    .expect("two visible revisions should produce a diff");
+    assert_eq!(
+        serde_json::to_value(diff).expect("revision diff should serialize"),
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": 1,
+            "lines": [
+                {"kind": "unchanged", "text": "alpha"},
+                {"kind": "removed", "text": "old <script>alert(1)</script>"},
+                {"kind": "added", "text": "new & safe"},
+                {"kind": "unchanged", "text": "omega"},
+            ],
+        }),
+    );
+
+    let missing = run_endpoint!(
+        runner,
+        page_revision_diff,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": 99,
+        }),
+    );
+    assert!(
+        missing.is_none(),
+        "a missing revision must not widen to another source"
+    );
+
+    run_endpoint!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "hidden": ["wikitext"],
+        }),
+    );
+    let hidden = run_endpoint!(
+        runner,
+        page_revision_diff,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "from_revision_number": 0,
+            "to_revision_number": edited.revision_number,
+        }),
+    );
+    assert!(
+        hidden.is_none(),
+        "a hidden source revision must make the entire pair unavailable",
+    );
+}
+
+#[tokio::test]
+async fn normal_page_create_allocates_category_numbers_without_consuming_conflicts() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let category =
+        CategoryService::get_or_create(runner.context(), site.site_id, "issue")
+            .await
+            .expect("issue category should exist");
+    CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            autonumber_enabled: Maybe::Set(true),
+            ..Default::default()
+        },
+        Some(category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("autonumber should be enabled");
+
+    let explicit_category =
+        CategoryService::get_or_create(runner.context(), site.site_id, "notes")
+            .await
+            .expect("notes category should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("notes:explicit")),
+    );
+    let explicit = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "Explicit page",
+            "title": "Explicit page",
+            "alt_title": null,
+            "slug": "notes:explicit",
+            "layout": "wikidot",
+            "revision_comments": "create explicit page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(explicit.slug, "notes:explicit");
+    let explicit_category = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(explicit_category.category_id),
+    )
+    .await
+    .expect("notes category should remain available");
+    assert_eq!(explicit_category.autonumber_next, 1);
+    let themed_category = CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(explicit_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from("https://themes.example/notes.css"),
+            }),
+            ..Default::default()
+        },
+        Some(explicit_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("external theme should be stored");
+    assert_eq!(themed_category.settings_revision, 1);
+    let stale_theme = CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(themed_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::BuiltIn { id: 1 }),
+            ..Default::default()
+        },
+        Some(0),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect_err("stale category revision should be rejected");
+    assert_contains_error!(stale_theme, ErrorType::BadRequest);
+    let themed = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": { "slug": "notes:explicit", "extra": "" },
+            "locales": ["en"],
+        }),
+    );
+    assert!(matches!(
+        themed.page,
+        GetPageViewOutput::Found {
+            theme: ThemeSetting::External { ref url },
+            ..
+        } if url == "https://themes.example/notes.css"
+    ));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("issue:new-issue")),
+    );
+    let first = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "First numbered issue",
+            "title": "First numbered issue",
+            "alt_title": null,
+            "slug": "issue:new-issue",
+            "layout": "wikidot",
+            "revision_comments": "create first numbered issue",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(first.slug, "issue:1");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("issue:another-suggestion")),
+    );
+    let second = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "Second numbered issue",
+            "title": "Second numbered issue",
+            "alt_title": null,
+            "slug": "issue:another-suggestion",
+            "layout": "wikidot",
+            "revision_comments": "create second numbered issue",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(second.slug, "issue:2");
+
+    let default_category =
+        CategoryService::get_or_create(runner.context(), site.site_id, "_default")
+            .await
+            .expect("default category should exist");
+    CategoryService::update(
+        runner.context(),
+        site.site_id,
+        Reference::Id(default_category.category_id),
+        deepwell::services::category::UpdateCategoryBody {
+            theme: Maybe::Set(ThemeSetting::External {
+                url: String::from("https://themes.example/default.css"),
+            }),
+            ..Default::default()
+        },
+        Some(default_category.settings_revision),
+        SYSTEM_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("default category theme should be stored");
+    let inherited = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": { "slug": "issue:1", "extra": "" },
+            "locales": ["en"],
+        }),
+    );
+    assert!(matches!(
+        inherited.page,
+        GetPageViewOutput::Found {
+            theme: ThemeSetting::External { ref url },
+            ..
+        } if url == "https://themes.example/default.css"
+    ));
+
+    let current = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(category.category_id),
+    )
+    .await
+    .expect("issue category should remain available");
+    assert_eq!(current.autonumber_next, 3);
+
+    let mut stale_allocator = current.into_active_model();
+    stale_allocator.autonumber_next = Set(2);
+    stale_allocator
+        .update(runner.context().transaction())
+        .await
+        .expect("stale allocator fixture should be installed");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed("issue:conflicting-suggestion")),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "Conflicting numbered issue",
+            "title": "Conflicting numbered issue",
+            "alt_title": null,
+            "slug": "issue:conflicting-suggestion",
+            "layout": "wikidot",
+            "revision_comments": "attempt conflicting numbered issue",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageExists);
+    let after_conflict = CategoryService::get(
+        runner.context(),
+        site.site_id,
+        Reference::Id(category.category_id),
+    )
+    .await
+    .expect("issue category should remain available");
+    assert_eq!(after_conflict.autonumber_next, 2);
+}
+
+#[tokio::test]
+async fn normal_page_creates_do_not_serialize_on_category_settings() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let state = runner.state().clone();
+    runner.teardown().await;
+
+    let first_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("first page-create transaction should start");
+    let first_context = ServiceContext::new(&state, &first_transaction);
+    PageService::create(
+        &first_context,
+        CreatePage {
+            site_id: site.site_id,
+            wikitext: String::from("First concurrent normal page"),
+            title: String::from("First concurrent normal page"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: format!("normal-concurrency-first-{}", cuid()),
+            layout: Some(Layout::Wikidot),
+            revision_comments: String::from("exercise normal page concurrency"),
+            user_id: ADMIN_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("first normal page should be created");
+
+    let second_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("second page-create transaction should start");
+    let second_context = ServiceContext::new(&state, &second_transaction);
+    tokio::time::timeout(
+        StdDuration::from_secs(2),
+        PageService::create(
+            &second_context,
+            CreatePage {
+                site_id: site.site_id,
+                wikitext: String::from("Second concurrent normal page"),
+                title: String::from("Second concurrent normal page"),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: format!("normal-concurrency-second-{}", cuid()),
+                layout: Some(Layout::Wikidot),
+                revision_comments: String::from("exercise normal page concurrency"),
+                user_id: ADMIN_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        ),
+    )
+    .await
+    .expect("a normal page create must not wait for another page in the category")
+    .expect("second normal page should be created");
+
+    drop(second_context);
+    second_transaction
+        .rollback()
+        .await
+        .expect("second page-create transaction should roll back");
+    drop(first_context);
+    first_transaction
+        .rollback()
+        .await
+        .expect("first page-create transaction should roll back");
+}
+
+#[tokio::test]
+async fn autonumber_allocator_holds_the_category_lock_until_request_completion() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let category =
+        CategoryService::get(runner.context(), site.site_id, Reference::from("_default"))
+            .await
+            .expect("seeded default category should exist");
+    let state = runner.state().clone();
+
+    let first_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("first allocator transaction should start");
+    let first_context = ServiceContext::new(&state, &first_transaction);
+    CategoryService::get_for_update(
+        &first_context,
+        site.site_id,
+        Reference::Id(category.category_id),
+    )
+    .await
+    .expect("first allocator should lock the category");
+
+    let second_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("competing allocator transaction should start");
+    let second_context = ServiceContext::new(&state, &second_transaction);
+    let mut second_lock = Box::pin(CategoryService::get_for_update(
+        &second_context,
+        site.site_id,
+        Reference::Id(category.category_id),
+    ));
+    assert!(
+        tokio::time::timeout(StdDuration::from_millis(100), second_lock.as_mut())
+            .await
+            .is_err(),
+        "a concurrent page create must wait for the category allocator lock",
+    );
+
+    drop(first_context);
+    first_transaction
+        .rollback()
+        .await
+        .expect("first allocator transaction should roll back");
+    let locked_category =
+        tokio::time::timeout(StdDuration::from_secs(2), second_lock.as_mut())
+            .await
+            .expect("competing allocator should proceed after the first request ends")
+            .expect("competing allocator lock should succeed");
+    assert_eq!(locked_category.category_id, category.category_id);
+    drop(second_lock);
+    drop(second_context);
+    second_transaction
+        .rollback()
+        .await
+        .expect("competing allocator transaction should roll back");
+}
+
+#[tokio::test]
+async fn failed_page_create_rolls_back_its_allocated_number() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site;
+    let original =
+        CategoryService::get(runner.context(), site.site_id, Reference::from("_default"))
+            .await
+            .expect("seeded default category should exist");
+    let state = runner.state().clone();
+
+    let transaction = state
+        .database
+        .begin()
+        .await
+        .expect("failed-create transaction should start");
+    let context = ServiceContext::new(&state, &transaction);
+    let category =
+        CategoryService::get(&context, site.site_id, Reference::Id(original.category_id))
+            .await
+            .expect("default category should be available in the request transaction");
+    let mut category = category.into_active_model();
+    category.autonumber_enabled = Set(true);
+    category.autonumber_next = Set(8_000_000_000_000_000_000);
+    category
+        .update(&transaction)
+        .await
+        .expect("autonumber failure fixture should be installed");
+
+    PageService::create(
+        &context,
+        CreatePage {
+            site_id: site.site_id,
+            wikitext: String::from("This request must roll back."),
+            title: String::from("Failed autonumber request"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: String::from("suggested-page-name"),
+            layout: Some(Layout::Wikidot),
+            revision_comments: String::from("exercise failed allocator rollback"),
+            user_id: i64::MAX,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect_err("the unknown revision author should fail after number allocation");
+
+    drop(context);
+    transaction
+        .rollback()
+        .await
+        .expect("failed page-create transaction should roll back");
+
+    let assertion_transaction = state
+        .database
+        .begin()
+        .await
+        .expect("allocator assertion transaction should start");
+    let assertion_context = ServiceContext::new(&state, &assertion_transaction);
+    let after_failure = CategoryService::get(
+        &assertion_context,
+        site.site_id,
+        Reference::Id(original.category_id),
+    )
+    .await
+    .expect("default category should remain available after rollback");
+    assert_eq!(
+        after_failure.autonumber_enabled,
+        original.autonumber_enabled
+    );
+    assert_eq!(after_failure.autonumber_next, original.autonumber_next);
+    drop(assertion_context);
+    assertion_transaction
+        .rollback()
+        .await
+        .expect("allocator assertion transaction should roll back");
 }
 
 async fn set_stored_point_vote(runner: &TestRunner, page_id: i64, value: i16) {
@@ -672,6 +1625,7 @@ async fn article_view_uses_effective_page_discussion_policy_and_stored_nesting()
             forum_max_nest_level: Maybe::Set(3),
             ..Default::default()
         },
+        None,
         ADMIN_USER_ID,
         common::IP_ADDRESS,
     )
@@ -691,6 +1645,7 @@ async fn article_view_uses_effective_page_discussion_policy_and_stored_nesting()
             forum_max_nest_level: Maybe::Set(11),
             ..Default::default()
         },
+        None,
         ADMIN_USER_ID,
         common::IP_ADDRESS,
     )
@@ -859,8 +1814,218 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v1")
+            .ends_with("; deepwell-render/v8")
     );
+}
+
+#[tokio::test]
+async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page() {
+    const SOURCE: &str = r###"[[a href="##"]]Issue 610 fragment closer[[/a]]"###;
+    const EXPECTED_ANCHOR: &str = r###"<a href="##">Issue 610 fragment closer</a>"###;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Issue 610 fragment preview",
+            "wikitext": SOURCE,
+        }),
+    );
+    assert!(
+        preview.body.contains(EXPECTED_ANCHOR),
+        "PagePreview must preserve the exact fragment-only href:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains(r#"href="/&#35;&#35;""#),
+        "PagePreview rewrote the fragment-only href as a path:\n{}",
+        preview.body,
+    );
+
+    let nav_side = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "nav:side",
+        }),
+    )
+    .expect("seeded nav:side should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(nav_side.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": nav_side.page_id,
+            "last_revision_id": nav_side.revision_id,
+            "revision_comments": "replace sidebar with Issue 610 fragment fixture",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("editing nav:side should create a revision");
+
+    let home = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": "home",
+        }),
+    )
+    .expect("seeded home page should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": home.page_category_id,
+            "page_id": home.page_id,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "home",
+                "extra": "",
+            },
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let side_bar = match view {
+        GetPageViewOutput::Found {
+            compiled_side_bar_html,
+            ..
+        } => compiled_side_bar_html.expect("side bar should be compiled"),
+        other => panic!("expected found page view, got {other:?}"),
+    };
+    assert!(
+        side_bar.contains(EXPECTED_ANCHOR),
+        "saved navigation rerender must preserve the exact fragment-only href:\n{side_bar}",
+    );
+    assert!(
+        !side_bar.contains("All wikis") && !side_bar.contains(r#"href="/&#35;&#35;""#),
+        "page_view reused stale navigation or rewrote the href:\n{side_bar}",
+    );
+}
+
+#[tokio::test]
+async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
+    const SLUG: &str = "renderer-epoch-cache-fixture";
+    const CURRENT_BODY: &str = "renderer epoch current body";
+    const STALE_BODY: &str = "stale deepwell-render/v7 body";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Renderer epoch cache fixture",
+        CURRENT_BODY,
+    )
+    .await;
+
+    let page = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("renderer epoch page lookup should not fail")
+        .expect("renderer epoch page should exist");
+    let mut page = page.into_active_model();
+    page.from_wikidot = Set(true);
+    page.update(runner.context().transaction())
+        .await
+        .expect("renderer epoch page should be marked imported");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let input = json!({
+        "site_id": site_id,
+        "session_token": null,
+        "route": {"slug": SLUG, "extra": ""},
+        "locales": ["en-US", "en"],
+    });
+    let mut stale_page = run_endpoint!(runner, page_view, input.clone());
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = &mut stale_page
+    else {
+        panic!("renderer epoch fixture should have a public page view");
+    };
+    *compiled_body_html = STALE_BODY.to_owned();
+
+    let metadata = run_endpoint!(runner, article_view_cache_metadata, input.clone());
+    let current_key = metadata
+        .article_page_cache_key
+        .expect("imported static page should have an anonymous cache key");
+    assert!(
+        current_key.starts_with("deepwell:article-view:page:v8:"),
+        "source-freeze cache key must carry the final renderer epoch: {current_key}",
+    );
+    let stale_key = current_key.replacen(
+        "deepwell:article-view:page:v8:",
+        "deepwell:article-view:page:v7:",
+        1,
+    );
+    assert_ne!(stale_key, current_key);
+    let stale_json =
+        serde_json::to_string(&stale_page).expect("stale page should serialize");
+    let mut redis = runner.context().redis();
+    redis
+        .set::<_, _, ()>(&stale_key, stale_json)
+        .await
+        .expect("stale v7 page should be inserted into the test cache");
+    drop(redis);
+
+    let view = run_endpoint!(runner, article_view, input);
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Found {
+            compiled_body_html, ..
+        },
+        article_page_cache_key: Some(served_key),
+        ..
+    } = view
+    else {
+        panic!("renderer epoch fixture should return an article view");
+    };
+    assert_eq!(served_key, current_key);
+    assert!(compiled_body_html.contains(CURRENT_BODY));
+    assert!(!compiled_body_html.contains(STALE_BODY));
 }
 
 #[tokio::test]
@@ -2762,6 +3927,1805 @@ async fn direct_message_render_leaves_image_block_include_literal() {
 }
 
 #[tokio::test]
+async fn wikidot_gallery_preview_uses_the_typed_no_page_error_boundary() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Gallery no-page fixture",
+            "wikitext": concat!(
+                "GALLERY_BEFORE\n",
+                "[[gallery]]\n",
+                "[[code]]\n[[gallery]]\n[[/code]]\n",
+                "A[[gallery]]B\n",
+                "GALLERY_AFTER",
+            ),
+        }),
+    );
+
+    assert_eq!(
+        preview
+            .body
+            .matches(r#"<div class="error-block">Error selecting page.</div>"#)
+            .count(),
+        1,
+        "only the authored own-line Gallery should execute:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("<pre><code>[[gallery]]</code></pre>"),
+        "Gallery inside code must remain literal:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("A[[gallery]]B"),
+        "Gallery in prose must remain literal:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("wj-gallery"),
+        "FTML Gallery requirement IDs must not reach served HTML:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
+async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl() {
+    const PAGE_SLUG: &str = "fixture-gallery-current-page";
+    const PRIVATE_PAGE_SLUG: &str = "fixture-gallery-private:current-page";
+    const PRIVATE_CATEGORY: &str = "fixture-gallery-private";
+    const SOURCE: &str = "[[gallery size=\"thumbnail\"]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    let site_id = site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Gallery current page fixture",
+        SOURCE,
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site_id, PAGE_SLUG).await;
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Gallery page lookup should succeed")
+        .expect("Gallery page should exist");
+
+    let empty_html = load_listpages_test_compiled_html(&runner, site_id, PAGE_SLUG).await;
+    assert!(
+        empty_html.contains(
+            r#"<div class="error-block">Sorry, we couldn't find any images attached to this page.</div>"#,
+        ),
+        "a saved empty Gallery must match the frozen Wikidot error contract:\n{empty_html}",
+    );
+
+    create_file_fixture_with_mime(&runner, site_id, page_id, "image-b.png", "image/png")
+        .await;
+    create_file_fixture_with_mime(&runner, site_id, page_id, "notes.txt", "text/plain")
+        .await;
+    create_file_fixture_with_mime(&runner, site_id, page_id, "image-a.png", "image/png")
+        .await;
+
+    let page_info = PageInfo {
+        page: Cow::Borrowed(PAGE_SLUG),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Gallery current page fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let rendered = RenderService::render_page_for_viewer(
+        runner.context(),
+        SOURCE.to_owned(),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: page.page_category_id,
+            page_id,
+        },
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("authorized current-page Gallery should render")
+    .html_output
+    .body;
+
+    let first = rendered
+        .find("image-a.png")
+        .expect("name-ordered Gallery should contain image-a.png");
+    let second = rendered
+        .find("image-b.png")
+        .expect("name-ordered Gallery should contain image-b.png");
+    assert!(
+        first < second,
+        "Gallery files should use name order:\n{rendered}"
+    );
+    assert!(
+        rendered.contains(r#"<div class="gallery-box" id="gallery-box-1">"#),
+        "Gallery must expose the frozen Wikidot wrapper:\n{rendered}",
+    );
+    assert!(
+        rendered.contains(r#"class="gallery-image-size-thumbnail""#),
+        "Gallery must expose the frozen thumbnail class:\n{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "https://scp-wiki.wjfiles.com/local--files/fixture-gallery-current-page/image-a.png",
+        ),
+        "Gallery links must retain the original local site/page/file identity:\n{rendered}",
+    );
+    assert!(
+        rendered.contains(
+            "https://scp-wiki.wjfiles.com/local--resized-images/fixture-gallery-current-page/image-a.png/thumbnail.jpg",
+        ),
+        "Gallery images must use the documented resized asset identity:\n{rendered}",
+    );
+    assert!(!rendered.contains("notes.txt"), "{rendered}");
+    assert!(!rendered.contains("wj-gallery"), "{rendered}");
+
+    let explicit = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[gallery size=\"thumbnail\"]]\n: image-b.png\n: notes.txt\n[[/gallery]]"
+            .to_owned(),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: page.page_category_id,
+            page_id,
+        },
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("explicit current-page Gallery files should render")
+    .html_output
+    .body;
+    assert_eq!(
+        explicit.matches("gallery-item thumbnail").count(),
+        1,
+        "explicit Gallery selection should retain authored order and skip non-images:\n{explicit}",
+    );
+    assert!(explicit.contains("image-b.png"), "{explicit}");
+    assert!(!explicit.contains("image-a.png"), "{explicit}");
+    assert!(!explicit.contains("notes.txt"), "{explicit}");
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Private Gallery current page fixture",
+        SOURCE,
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_page = PageTable::find_by_id(private_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("private Gallery page lookup should succeed")
+        .expect("private Gallery page should exist");
+    create_file_fixture_with_mime(
+        &runner,
+        site_id,
+        private_page_id,
+        "private-gallery-image.png",
+        "image/png",
+    )
+    .await;
+    let private_page_info = PageInfo {
+        page: Cow::Borrowed(PRIVATE_PAGE_SLUG),
+        category: Some(Cow::Borrowed(PRIVATE_CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Private Gallery current page fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let anonymous = RenderService::render_page_for_viewer(
+        runner.context(),
+        SOURCE.to_owned(),
+        &private_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id,
+            category_id: private_page.page_category_id,
+            page_id: private_page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("private Gallery should fail closed for an anonymous renderer")
+    .html_output
+    .body;
+    assert!(anonymous.contains("Error selecting page."), "{anonymous}");
+    assert!(
+        !anonymous.contains("private-gallery-image.png"),
+        "{anonymous}"
+    );
+    assert!(!anonymous.contains("wjfiles"), "{anonymous}");
+}
+
+#[tokio::test]
+async fn wikidot_gallery_explicit_entries_resolve_only_owned_visible_files() {
+    const TARGET_SLUG: &str = "fixture-gallery-explicit-target";
+    const FILE_NAME: &str = "gallery image.png";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Gallery explicit target",
+        "Gallery target page.",
+    )
+    .await;
+    let target_page_id = listpages_test_page_id(&runner, site.site_id, TARGET_SLUG).await;
+    create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        target_page_id,
+        FILE_NAME,
+        "image/png",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let source = concat!(
+        "[[gallery size=\"thumbnail\"]]\n",
+        ": https://scp-wiki.wikidot.com/local--files/fixture-gallery-explicit-target/gallery%20image.png\n",
+        ": https://example.invalid/local--files/fixture-gallery-explicit-target/gallery%20image.png\n",
+        ": https://scp-jp.wikidot.com/local--files/fixture-gallery-explicit-target/gallery%20image.png\n",
+        "[[/gallery]]",
+    );
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Gallery explicit entries",
+            "wikitext": source,
+        }),
+    );
+
+    assert_eq!(
+        preview.body.matches("gallery-item thumbnail").count(),
+        1,
+        "only the exact site-owned file may become a Gallery row:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(
+            "https://scp-wiki.wjfiles.com/local--files/fixture-gallery-explicit-target/gallery%20image.png",
+        ),
+        "the resolved entry must use the local owned-file route:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("example.invalid"),
+        "{}",
+        preview.body
+    );
+    assert!(!preview.body.contains("scp-jp"), "{}", preview.body);
+    assert!(!preview.body.contains("wj-gallery"), "{}", preview.body);
+}
+
+#[tokio::test]
+async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix() {
+    const TARGET_SLUG: &str = "fixture-gallery-options-preview-target";
+    const FILE_NAME: &str = "gallery-options.png";
+    const SELECTION_ERROR: &str =
+        r#"<div class="error-block">Error selecting page.</div>"#;
+
+    struct RenderCase {
+        case_id: &'static str,
+        arguments: &'static str,
+        expected_size: &'static str,
+        viewer: bool,
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Gallery options preview target",
+        "Gallery options target page.",
+    )
+    .await;
+    let target_page_id = listpages_test_page_id(&runner, site.site_id, TARGET_SLUG).await;
+    create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        target_page_id,
+        FILE_NAME,
+        "image/png",
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let valid_cases = [
+        RenderCase {
+            case_id: "M1043_SIZE_DEFAULT",
+            arguments: "",
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_SQUARE",
+            arguments: r#"size="square""#,
+            expected_size: "square",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_THUMBNAIL",
+            arguments: r#"size="thumbnail""#,
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_SMALL",
+            arguments: r#"size="small""#,
+            expected_size: "small",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_SIZE_MEDIUM",
+            arguments: r#"size="medium""#,
+            expected_size: "medium",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_YES",
+            arguments: r#"viewer="yes""#,
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_TRUE",
+            arguments: r#"viewer="true""#,
+            expected_size: "thumbnail",
+            viewer: true,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_NO",
+            arguments: r#"viewer="no""#,
+            expected_size: "thumbnail",
+            viewer: false,
+        },
+        RenderCase {
+            case_id: "M1043_VIEWER_FALSE",
+            arguments: r#"viewer="false""#,
+            expected_size: "thumbnail",
+            viewer: false,
+        },
+    ];
+    for case in valid_cases {
+        let arguments = if case.arguments.is_empty() {
+            String::new()
+        } else {
+            format!(" {}", case.arguments)
+        };
+        let source = format!(
+            "[[gallery{arguments}]]\n: https://scp-wiki.wikidot.com/local--files/{TARGET_SLUG}/{FILE_NAME}\n[[/gallery]]",
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site.site_id,
+                "title": case.case_id,
+                "wikitext": source,
+            }),
+        );
+
+        assert_eq!(
+            preview.body.matches("gallery-item ").count(),
+            1,
+            "{} should render exactly one owned image:\n{}",
+            case.case_id,
+            preview.body,
+        );
+        assert!(
+            preview
+                .body
+                .contains(&format!(r#"class="gallery-item {}""#, case.expected_size)),
+            "{} should use the independent expected item size {}:\n{}",
+            case.case_id,
+            case.expected_size,
+            preview.body,
+        );
+        assert!(
+            preview.body.contains(&format!(
+                r#"class="gallery-image-size-{}""#,
+                case.expected_size,
+            )),
+            "{} should use the independent expected image size {}:\n{}",
+            case.case_id,
+            case.expected_size,
+            preview.body,
+        );
+        assert!(
+            preview.body.contains(&format!(
+                "/local--resized-images/{TARGET_SLUG}/{FILE_NAME}/{}.jpg",
+                case.expected_size,
+            )),
+            "{} should bind the expected resized variant:\n{}",
+            case.case_id,
+            preview.body,
+        );
+        assert_eq!(
+            preview.body.contains(r#"class="with-lb""#),
+            case.viewer,
+            "{} should bind viewer={} without executing authored JavaScript:\n{}",
+            case.case_id,
+            case.viewer,
+            preview.body,
+        );
+    }
+
+    for (case_id, arguments) in [
+        ("M1043_INVALID_SIZE", r#"size="large""#),
+        ("M1043_EMPTY_LAST_SIZE", r#"size="medium" size="""#),
+        ("M1043_INVALID_ORDER", r#"order="score""#),
+        ("M1043_EMPTY_LAST_ORDER", r#"order="name" order="""#),
+        ("M1043_INVALID_VIEWER", r#"viewer="maybe""#),
+        ("M1043_EMPTY_LAST_VIEWER", r#"viewer="yes" viewer="""#),
+    ] {
+        let source = format!(
+            "[[gallery {arguments}]]\n: https://scp-wiki.wikidot.com/local--files/{TARGET_SLUG}/{FILE_NAME}\n[[/gallery]]",
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site.site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+
+        assert_eq!(
+            preview.body, SELECTION_ERROR,
+            "{case_id} must fail closed at the exact public selection-error boundary",
+        );
+    }
+}
+
+#[tokio::test]
+async fn wikidot_gallery_saved_page_view_enforces_order_and_last_occurrence_matrix() {
+    const PAGE_SLUG: &str = "fixture-gallery-options-saved";
+    const ALPHA_NEW: &str = "alpha-new.png";
+    const ZULU_OLD: &str = "zulu-old.png";
+
+    struct OrderCase {
+        case_id: &'static str,
+        arguments: &'static str,
+        first: &'static str,
+        second: &'static str,
+    }
+
+    let cases = [
+        OrderCase {
+            case_id: "M1043_ORDER_DEFAULT",
+            arguments: "",
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_NAME",
+            arguments: r#"order="name""#,
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_NAME_DESC",
+            arguments: r#"order="name desc""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_NAME_DESC_ALIAS",
+            arguments: r#"order="nameDesc""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_CREATED_AT",
+            arguments: r#"order="created_at""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_DATE_ADDED_ALIAS",
+            arguments: r#"order="dateAdded""#,
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_CREATED_AT_DESC",
+            arguments: r#"order="created_at desc""#,
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_ORDER_DATE_ADDED_DESC_ALIAS",
+            arguments: r#"order="dateAddedDesc""#,
+            first: ALPHA_NEW,
+            second: ZULU_OLD,
+        },
+        OrderCase {
+            case_id: "M1043_LAST_CANONICAL_OCCURRENCE",
+            arguments: concat!(
+                r#"size="square" size="medium" "#,
+                r#"order="name desc" order="created_at" "#,
+                r#"viewer="no" viewer="yes""#,
+            ),
+            first: ZULU_OLD,
+            second: ALPHA_NEW,
+        },
+    ];
+    let source = cases
+        .iter()
+        .map(|case| {
+            let arguments = if case.arguments.is_empty() {
+                String::new()
+            } else {
+                format!(" {}", case.arguments)
+            };
+            format!(
+                "{}_BEGIN\n[[gallery{arguments}]]\n{}_END",
+                case.case_id, case.case_id,
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PAGE_SLUG,
+        "Gallery saved options matrix",
+        &source,
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, PAGE_SLUG).await;
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Gallery options page lookup should succeed")
+        .expect("Gallery options page should exist");
+    let zulu_file_id = create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        page_id,
+        ZULU_OLD,
+        "image/png",
+    )
+    .await;
+    let alpha_file_id = create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        page_id,
+        ALPHA_NEW,
+        "image/png",
+    )
+    .await;
+    for (file_id, created_at) in [
+        (
+            zulu_file_id,
+            OffsetDateTime::from_unix_timestamp(1_600_000_000)
+                .expect("old fixture timestamp should be valid"),
+        ),
+        (
+            alpha_file_id,
+            OffsetDateTime::from_unix_timestamp(1_700_000_000)
+                .expect("new fixture timestamp should be valid"),
+        ),
+    ] {
+        let file = file::Entity::find_by_id(file_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("Gallery option file lookup should succeed")
+            .expect("Gallery option file should exist");
+        let mut file = file.into_active_model();
+        file.created_at = Set(created_at);
+        file.update(runner.context().transaction())
+            .await
+            .expect("Gallery option fixture timestamp should update");
+    }
+
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site.site_id,
+            "category_id": page.page_category_id,
+            "page_id": page_id,
+        }),
+    );
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let rendered = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected Gallery options page view, got {other:?}"),
+    };
+
+    for case in cases {
+        let begin = format!("{}_BEGIN", case.case_id);
+        let end = format!("{}_END", case.case_id);
+        let start = rendered.find(&begin).unwrap_or_else(|| {
+            panic!("{} should expose its begin sentinel", case.case_id)
+        });
+        let tail = &rendered[start + begin.len()..];
+        let finish = tail
+            .find(&end)
+            .unwrap_or_else(|| panic!("{} should expose its end sentinel", case.case_id));
+        let fragment = &tail[..finish];
+        let first = fragment.find(case.first).unwrap_or_else(|| {
+            panic!(
+                "{} should contain {}:\n{fragment}",
+                case.case_id, case.first
+            )
+        });
+        let second = fragment.find(case.second).unwrap_or_else(|| {
+            panic!(
+                "{} should contain {}:\n{fragment}",
+                case.case_id, case.second,
+            )
+        });
+        assert!(
+            first < second,
+            "{} should order {} before {} from independent fixture dimensions:\n{}",
+            case.case_id,
+            case.first,
+            case.second,
+            fragment,
+        );
+
+        if case.case_id == "M1043_LAST_CANONICAL_OCCURRENCE" {
+            assert_eq!(
+                fragment.matches(r#"class="gallery-item medium""#).count(),
+                2,
+                "the last canonical size occurrence should replace the earlier size:\n{fragment}",
+            );
+            assert_eq!(
+                fragment.matches(r#"class="with-lb""#).count(),
+                2,
+                "the last canonical viewer occurrence should replace the earlier viewer:\n{fragment}",
+            );
+            assert!(
+                !fragment.contains("gallery-item square"),
+                "the replaced size must not survive:\n{fragment}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn wikidot_saved_files_modules_remain_literal_without_module_instance_identity() {
+    const SLUG: &str = "fixture-files-module-instance-unavailable";
+    const SOURCE: &str =
+        "FILES_ONE\n[[module Files]]\nFILES_TWO\n[[module Files]]\nFILES_END";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        SLUG,
+        "Files module instance unavailable fixture",
+        SOURCE,
+    )
+    .await;
+
+    let saved = load_listpages_test_compiled_html(&runner, site.site_id, SLUG).await;
+    assert_eq!(
+        saved
+            .matches(
+                r#"<div class="error-block">[[module <em>Files</em>]] No such module"#
+            )
+            .count(),
+        2,
+        "saved Files modules must fail closed until their distinct module-instance identity is evidenced:\n{saved}",
+    );
+    assert!(!saved.contains(r#"id=\"files-"#), "{saved}");
+    assert!(!saved.contains("updateFileSimpleList"), "{saved}");
+}
+
+#[tokio::test]
+async fn wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts() {
+    const FILES_SLUG: &str = "fixture-files-module-empty";
+    const PRIVATE_FILES_SLUG: &str = "fixture-files-private:module-empty";
+    const PRIVATE_FILES_CATEGORY: &str = "fixture-files-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Files preview fixture",
+            "wikitext": "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+        }),
+    );
+    assert!(
+        preview.body.contains(r#"<div id="files-">"#),
+        "Files PagePreview must retain the evidenced empty-id state:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("No files attached to this page."),
+        "{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("Manage attachments"),
+        "{}",
+        preview.body,
+    );
+    assert!(!preview.body.contains("No such module"), "{}", preview.body);
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        FILES_SLUG,
+        "Files module empty fixture",
+        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+    )
+    .await;
+    let saved =
+        load_listpages_test_compiled_html(&runner, site.site_id, FILES_SLUG).await;
+    assert!(
+        saved.contains(
+            r#"<div class="error-block">[[module <em>Files</em>]] No such module"#
+        ),
+        "saved Files output must fail closed without a module-instance identity:\n{saved}",
+    );
+    assert!(!saved.contains(r#"id="files-"#), "{saved}");
+    assert!(!saved.contains("updateFileSimpleList"), "{saved}");
+    assert!(!saved.contains("Manage attachments"), "{saved}");
+
+    make_listpages_test_category_admin_only(
+        &runner,
+        site.site_id,
+        PRIVATE_FILES_CATEGORY,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PRIVATE_FILES_SLUG,
+        "Private Files module fixture",
+        "[[module Files]]",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site.site_id,
+        PRIVATE_FILES_SLUG,
+        PRIVATE_FILES_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site.site_id, PRIVATE_FILES_SLUG).await;
+    let private_page = PageTable::find_by_id(private_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("private Files page lookup should succeed")
+        .expect("private Files page should exist");
+    create_file_fixture_with_mime(
+        &runner,
+        site.site_id,
+        private_page_id,
+        "private-file-name.png",
+        "image/png",
+    )
+    .await;
+    let private_page_info = PageInfo {
+        page: Cow::Borrowed(PRIVATE_FILES_SLUG),
+        category: Some(Cow::Borrowed(PRIVATE_FILES_CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Private Files module fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let denied = RenderService::render_page_for_viewer(
+        runner.context(),
+        "[[module Files]]".to_owned(),
+        &private_page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id: site.site_id,
+            category_id: private_page.page_category_id,
+            page_id: private_page_id,
+        },
+        None,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("a denied Files module should fail closed")
+    .html_output
+    .body;
+    assert!(denied.contains("No such module"), "{denied}");
+    assert!(!denied.contains(r#"id="files-"#), "{denied}");
+    assert!(!denied.contains(&private_page_id.to_string()), "{denied}");
+    assert!(!denied.contains("private-file-name.png"), "{denied}");
+
+    let flickr = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Flickr preview fixture",
+            "wikitext": "FLICKR_BEFORE\n[[module FlickrGallery]]\nFLICKR_AFTER",
+        }),
+    );
+    for expected in [
+        r#"<div class="flickr-gallery-box makeHoverTitles">"#,
+        "Sorry, no photos.",
+        "moduleName ::: edit/PagePreviewModule",
+        "mode ::: page",
+        "source ::: [[module FlickrGallery]]",
+        "title ::: Flickr preview fixture",
+    ] {
+        assert!(
+            flickr.body.contains(expected),
+            "Flickr PagePreview should contain {expected:?}:\n{}",
+            flickr.body,
+        );
+    }
+    assert!(!flickr.body.contains("No such module"), "{}", flickr.body);
+}
+
+#[tokio::test]
+async fn wikidot_files_saved_view_hides_rows_without_module_instance_authority() {
+    const ROW_SLUG: &str = "fixture-files-module-row";
+    const MISSING_DESCRIPTOR_SLUG: &str = "fixture-files-module-missing-descriptor";
+    const MISSING_REVISION_SLUG: &str = "fixture-files-module-missing-revision";
+    const SMALL_SIZE_SLUG: &str = "fixture-files-module-small-size";
+    const OVERFLOW_SLUG: &str = "fixture-files-module-overflow";
+    const FILE_NAME: &str = "that man&\".jpg";
+    const TYPE_LABEL: &str = "JPEG image data";
+    const TYPE_DESCRIPTION: &str = "JPEG image data, EXIF standard";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        ROW_SLUG,
+        "Files module row fixture",
+        "FILES_BEFORE\n[[module Files]]\nFILES_AFTER",
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site.site_id, ROW_SLUG).await;
+    create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        page_id,
+        FILE_NAME,
+        180_296,
+        Some(ContentTypeDescriptor {
+            label: TYPE_LABEL.to_owned(),
+            description: TYPE_DESCRIPTION.to_owned(),
+        }),
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Files preview has no saved page identity",
+            "wikitext": "[[module Files]]",
+        }),
+    );
+    assert!(preview.body.contains(r#"<div id="files-">"#));
+    assert!(preview.body.contains("No files attached to this page."));
+    assert!(!preview.body.contains(FILE_NAME));
+
+    let view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": ROW_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view.page
+    else {
+        panic!("saved Files row fixture should be publicly viewable");
+    };
+    assert!(
+        compiled_body_html.contains(
+            r#"<div class="error-block">[[module <em>Files</em>]] No such module"#
+        ),
+        "saved Files output must fail closed without a module-instance identity:\n{compiled_body_html}",
+    );
+    assert!(
+        !compiled_body_html.contains(FILE_NAME),
+        "{compiled_body_html}"
+    );
+    assert!(
+        !compiled_body_html.contains(TYPE_LABEL),
+        "{compiled_body_html}"
+    );
+    assert!(
+        !compiled_body_html.contains(TYPE_DESCRIPTION),
+        "{compiled_body_html}"
+    );
+    assert!(
+        !compiled_body_html.contains("page-files"),
+        "{compiled_body_html}"
+    );
+    assert!(
+        !compiled_body_html.contains("updateFileSimpleList"),
+        "{compiled_body_html}"
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        MISSING_DESCRIPTOR_SLUG,
+        "Files module missing descriptor fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let missing_page_id =
+        listpages_test_page_id(&runner, site.site_id, MISSING_DESCRIPTOR_SLUG).await;
+    create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        missing_page_id,
+        "must-not-leak.bin",
+        12_345,
+        None,
+    )
+    .await;
+    let missing_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": MISSING_DESCRIPTOR_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: missing_html,
+        ..
+    } = missing_view.page
+    else {
+        panic!("missing-descriptor Files fixture should still serve its page");
+    };
+    assert!(
+        !missing_html.contains("must-not-leak.bin"),
+        "{missing_html}"
+    );
+    assert!(!missing_html.contains("page-files"), "{missing_html}");
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        MISSING_REVISION_SLUG,
+        "Files module missing revision fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let missing_revision_page_id =
+        listpages_test_page_id(&runner, site.site_id, MISSING_REVISION_SLUG).await;
+    file::ActiveModel {
+        name: Set("orphan-must-not-leak.bin".to_owned()),
+        site_id: Set(site.site_id),
+        page_id: Set(missing_revision_page_id),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("orphan file fixture should be inserted");
+    rerender_file_fixture_page(&runner, missing_revision_page_id).await;
+    let missing_revision_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": MISSING_REVISION_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: missing_revision_html,
+        ..
+    } = missing_revision_view.page
+    else {
+        panic!("missing-revision Files fixture should still serve its page");
+    };
+    assert!(
+        !missing_revision_html.contains("orphan-must-not-leak.bin"),
+        "{missing_revision_html}"
+    );
+    assert!(
+        !missing_revision_html.contains("page-files"),
+        "{missing_revision_html}"
+    );
+
+    for (slug, hidden_field) in [
+        ("fixture-files-module-hidden-name", "name"),
+        ("fixture-files-module-hidden-s3-hash", "s3_hash"),
+        ("fixture-files-module-hidden-mime", "mime"),
+        ("fixture-files-module-hidden-size", "size"),
+        (
+            "fixture-files-module-unknown-hidden",
+            "future-private-field",
+        ),
+    ] {
+        create_listpages_test_page(
+            &mut runner,
+            site.site_id,
+            slug,
+            "Files module moderated revision fixture",
+            "[[module Files]]",
+        )
+        .await;
+        let moderated_page_id = listpages_test_page_id(&runner, site.site_id, slug).await;
+        let moderated_file_id = create_file_fixture_with_descriptor(
+            &runner,
+            site.site_id,
+            moderated_page_id,
+            "moderated-must-not-leak.bin",
+            4096,
+            Some(ContentTypeDescriptor {
+                label: "data".to_owned(),
+                description: "data".to_owned(),
+            }),
+        )
+        .await;
+        let revision = FileRevisionService::get_latest(
+            runner.context(),
+            site.site_id,
+            moderated_page_id,
+            moderated_file_id,
+        )
+        .await
+        .expect("moderated file revision fixture should be readable");
+        let mut revision = revision.into_active_model();
+        revision.hidden = Set(vec![hidden_field.to_owned()]);
+        revision
+            .update(runner.context().transaction())
+            .await
+            .expect("moderated file revision fixture should be updated");
+        rerender_file_fixture_page(&runner, moderated_page_id).await;
+
+        let moderated_view = run_endpoint!(
+            runner,
+            article_view,
+            json!({
+                "site_id": site.site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        let GetPageViewOutput::Found {
+            compiled_body_html: moderated_html,
+            ..
+        } = moderated_view.page
+        else {
+            panic!("moderated Files fixture should still serve its page");
+        };
+        assert!(
+            !moderated_html.contains("moderated-must-not-leak.bin"),
+            "hidden field {hidden_field} leaked a moderated row: {moderated_html}",
+        );
+        assert!(
+            !moderated_html.contains("page-files"),
+            "hidden field {hidden_field} exposed a partial table: {moderated_html}",
+        );
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        SMALL_SIZE_SLUG,
+        "Files module unobserved small-size fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let small_page_id =
+        listpages_test_page_id(&runner, site.site_id, SMALL_SIZE_SLUG).await;
+    create_file_fixture_with_descriptor(
+        &runner,
+        site.site_id,
+        small_page_id,
+        "unobserved-small.bin",
+        1023,
+        Some(ContentTypeDescriptor {
+            label: "data".to_owned(),
+            description: "data".to_owned(),
+        }),
+    )
+    .await;
+    let small_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": SMALL_SIZE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: small_html,
+        ..
+    } = small_view.page
+    else {
+        panic!("small-size Files fixture should still serve its page");
+    };
+    assert!(!small_html.contains("unobserved-small.bin"), "{small_html}");
+    assert!(!small_html.contains("page-files"), "{small_html}");
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        OVERFLOW_SLUG,
+        "Files module overflow fixture",
+        "[[module Files]]",
+    )
+    .await;
+    let overflow_page_id =
+        listpages_test_page_id(&runner, site.site_id, OVERFLOW_SLUG).await;
+    for index in 0_i64..16 {
+        insert_file_fixture_with_descriptor(
+            &runner,
+            site.site_id,
+            overflow_page_id,
+            &format!("overflow-{index:02}.png"),
+            1024 + index,
+            Some(ContentTypeDescriptor {
+                label: "PNG image data".to_owned(),
+                description: "PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced"
+                    .to_owned(),
+            }),
+        )
+        .await;
+    }
+    rerender_file_fixture_page(&runner, overflow_page_id).await;
+    let overflow_view = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site.site_id,
+            "session_token": null,
+            "route": {"slug": OVERFLOW_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html: overflow_html,
+        ..
+    } = overflow_view.page
+    else {
+        panic!("overflow Files fixture should still serve its page");
+    };
+    assert!(
+        !overflow_html.contains("overflow-00.png"),
+        "{overflow_html}"
+    );
+    assert!(!overflow_html.contains("page-files"), "{overflow_html}");
+}
+
+#[tokio::test]
+async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() {
+    const SLUG: &str = "legacy-action-render-fixture";
+    const SOURCE: &str = concat!(
+        "[[button edit text=\"Edit here\" onclick=\"alert(1)\"]]\n",
+        "[[button history]]\n",
+        "[[button source]]\n",
+        "[[button print style=\"color: #444\"]]\n",
+        "[[button set-tags -* +favorite text=\"Change tags\"]]\n",
+        "[[button unsupported text=\"Never active\"]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "Legacy action render fixture",
+            "alt_title": null,
+            "slug": SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create legacy action render fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": SLUG,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("legacy action page should exist")
+    .compiled_body_html
+    .expect("legacy action page should have compiled HTML");
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let view_actions = match view {
+        GetPageViewOutput::Found { legacy_actions, .. } => legacy_actions,
+        other => panic!("expected found page view, got {other:?}"),
+    };
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Legacy action preview fixture",
+            "wikitext": SOURCE,
+        }),
+    );
+
+    let view_actions = serde_json::to_value(view_actions).unwrap();
+    assert_eq!(
+        &view_actions.as_array().unwrap()[..4],
+        &[
+            json!({"type": "edit"}),
+            json!({"type": "history"}),
+            json!({"type": "source"}),
+            json!({"type": "print"}),
+        ],
+    );
+    assert_eq!(view_actions[4]["type"], "set-tags");
+    assert_eq!(view_actions[4]["index"], 4);
+    assert_eq!(view_actions[4]["fingerprint"].as_str().unwrap().len(), 32);
+    assert_eq!(
+        serde_json::to_value(&preview.legacy_actions).unwrap(),
+        view_actions,
+    );
+
+    for html in [saved, preview.body] {
+        assert_eq!(
+            html.matches(r#"class="wiki-standalone-button""#).count(),
+            5,
+            "all supported standalone actions must retain the Wikidot button class: {html}",
+        );
+        assert_eq!(
+            html.matches(r#"href="javascript:;""#).count(),
+            5,
+            "all supported standalone actions must retain the inert Wikidot href: {html}",
+        );
+        for label in [
+            "Edit here",
+            "history",
+            "view source",
+            "print",
+            "Change tags",
+        ] {
+            assert!(
+                html.contains(&format!(">{label}</a>")),
+                "standalone action must retain its Wikidot label: {html}",
+            );
+        }
+        assert!(
+            html.contains(r#"style="color: #444""#),
+            "the print action must retain its Wikidot style: {html}",
+        );
+        assert!(
+            !html.contains("wj-button-"),
+            "internal FTML IDs must not leak: {html}"
+        );
+        assert!(
+            !html.contains("data-wikijump"),
+            "Wikijump hooks must remain outside served Wikidot DOM: {html}"
+        );
+        assert!(
+            !html.contains("onclick"),
+            "authored script must stay inert: {html}"
+        );
+        assert!(
+            !html.contains("alert(1)"),
+            "authored script must stay inert: {html}"
+        );
+        assert!(
+            html.contains(
+                r#"<div class="error-block"><em>unsupported</em> is not a valid button type</div>"#,
+            ),
+            "unsupported actions must fail closed: {html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent() {
+    const SLUG: &str = "legacy-action-set-tags-fixture";
+    const SOURCE: &str =
+        "[[button set-tags -* +favorite +_book -_movie text=\"Change tags\"]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "Legacy action set-tags fixture",
+            "alt_title": null,
+            "tags": ["ordinary", "favorite", "_movie", "_kept"],
+            "slug": SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create legacy action set-tags fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let action_fingerprint = LegacyActionRegistry::from_wikidot_source(SOURCE)
+        .fingerprint(0)
+        .expect("set-tags descriptor should have a fingerprint");
+    let mismatched = run_endpoint_err!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": created.revision_id,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(mismatched, ErrorType::Page);
+    let changed = run_endpoint!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": created.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint.clone(),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("first set-tags activation should create a revision");
+    let page =
+        run_endpoint!(runner, page_get, json!({"site_id": site_id, "page": SLUG}),)
+            .expect("set-tags page should still exist");
+    assert_eq!(page.tags, ["_kept", "favorite", "_book"]);
+
+    let repeated = run_endpoint!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": changed.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint.clone(),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(repeated.is_none(), "same action should be idempotent");
+
+    let stale = run_endpoint_err!(
+        runner,
+        wikidot_legacy_set_tags,
+        json!({
+            "page_id": created.page_id,
+            "last_revision_id": created.revision_id,
+            "action_index": 0,
+            "action_fingerprint": action_fingerprint,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::Page);
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct SetTagsMutationSnapshot {
+    tags: Vec<String>,
+    revision_id: i64,
+    revision_count: i32,
+    updated_at: Option<OffsetDateTime>,
+    deleted_at: Option<OffsetDateTime>,
+    compiled_body_html: Option<String>,
+    page_edit_audit_count: u64,
+}
+
+async fn snapshot_set_tags_mutation_state(
+    runner: &mut TestRunner,
+    site_id: i64,
+    page_id: i64,
+    allow_deleted: bool,
+) -> SetTagsMutationSnapshot {
+    set_mutation_request_context(runner, ADMIN_USER_ID, site_id, Reference::Id(page_id));
+    let page = if allow_deleted {
+        run_endpoint!(
+            runner,
+            page_get_direct,
+            json!({
+                "site_id": site_id,
+                "page_id": page_id,
+                "allow_deleted": true,
+                "details": {"compiled_html": true},
+            }),
+        )
+    } else {
+        run_endpoint!(
+            runner,
+            page_get,
+            json!({
+                "site_id": site_id,
+                "page": page_id,
+                "details": {"compiled_html": true},
+            }),
+        )
+    }
+    .expect("set-tags denial fixture should remain readable by its administrator");
+    let page_edit_audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page.edit"))
+        .filter(AuditLogColumn::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("set-tags denial audit supplement should be readable");
+
+    SetTagsMutationSnapshot {
+        tags: page.tags,
+        revision_id: page.revision_id,
+        revision_count: page.page_revision_count,
+        updated_at: page.page_updated_at,
+        deleted_at: page.page_deleted_at,
+        compiled_body_html: page.compiled_body_html,
+        page_edit_audit_count,
+    }
+}
+
+#[tokio::test]
+async fn wikidot_set_tags_denials_preserve_public_page_state() {
+    const LOCKED_CATEGORY: &str = "fixture-set-tags-denial-locked-category";
+    const PRIVATE_CATEGORY: &str = "fixture-set-tags-denial-private-category";
+    const LOCKED_SLUG: &str = "fixture-set-tags-denial-locked";
+    const DELETED_SLUG: &str = "fixture-set-tags-denial-deleted";
+    const PRIVATE_SLUG: &str = "fixture-set-tags-denial-private";
+    const ROUTE_TARGET_SLUG: &str = "fixture-set-tags-denial-route-target";
+    const ROUTE_MISMATCH_SLUG: &str = "fixture-set-tags-denial-other-route";
+    const ACTOR_MISMATCH_SLUG: &str = "fixture-set-tags-denial-actor";
+    const CROSS_SITE_TARGET_SLUG: &str = "fixture-set-tags-denial-cross-site-target";
+    const CROSS_SITE_ROUTE_SLUG: &str = "fixture-set-tags-denial-cross-site-route";
+    const SOURCE: &str = "[[button set-tags +favorite text=\"Change tags\"]]";
+
+    #[derive(Debug)]
+    struct DenialCase {
+        name: &'static str,
+        target_page_id: i64,
+        allow_deleted: bool,
+        request_actor_id: i64,
+        request_site_id: i64,
+        route_slug: &'static str,
+        submitted_user_id: i64,
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let cross_site = run_endpoint!(runner, site_get, json!({"site": "scp-jp"}))
+        .expect("seeded SCP-JP site should exist");
+    let cross_site_id = cross_site.site.site_id;
+
+    for (slug, title) in [
+        (LOCKED_SLUG, "Set-tags locked target"),
+        (DELETED_SLUG, "Set-tags deleted target"),
+        (PRIVATE_SLUG, "Set-tags private target"),
+        (ROUTE_TARGET_SLUG, "Set-tags route target"),
+        (ROUTE_MISMATCH_SLUG, "Set-tags mismatched route"),
+        (ACTOR_MISMATCH_SLUG, "Set-tags actor target"),
+        (CROSS_SITE_TARGET_SLUG, "Set-tags cross-site target"),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, SOURCE).await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        cross_site_id,
+        CROSS_SITE_ROUTE_SLUG,
+        "Set-tags cross-site route",
+        SOURCE,
+    )
+    .await;
+
+    let mut pages = Vec::new();
+    for slug in [
+        LOCKED_SLUG,
+        DELETED_SLUG,
+        PRIVATE_SLUG,
+        ROUTE_TARGET_SLUG,
+        ACTOR_MISMATCH_SLUG,
+        CROSS_SITE_TARGET_SLUG,
+    ] {
+        pages.push(
+            run_endpoint!(runner, page_get, json!({"site_id": site_id, "page": slug}),)
+                .expect("set-tags denial target should exist"),
+        );
+    }
+    let locked_page_id = pages[0].page_id;
+    let deleted_page_id = pages[1].page_id;
+    let private_page_id = pages[2].page_id;
+    let route_target_page_id = pages[3].page_id;
+    let actor_mismatch_page_id = pages[4].page_id;
+    let cross_site_target_page_id = pages[5].page_id;
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        LOCKED_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::View, Action::Edit],
+        "set-tags-editor",
+    )
+    .await;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    set_listpages_test_category_slug(&runner, site_id, LOCKED_SLUG, LOCKED_CATEGORY)
+        .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("set-tags denial permission cache should be invalidated");
+    PageLockService::create(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(locked_page_id),
+        CreatePageLockInput {
+            page: Reference::Id(locked_page_id),
+            expires_at: None,
+            from_wikidot: false,
+            lock_type: PageLockType::PermissionOnly,
+            reason: Some("set-tags denial matrix".to_owned()),
+            override_existing: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("set-tags denial page lock should be created");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(deleted_page_id),
+    );
+    let deleted_revision_id = pages[1].revision_id;
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_page_id,
+            "last_revision_id": deleted_revision_id,
+            "revision_comments": "delete set-tags denial target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let fingerprint = LegacyActionRegistry::from_wikidot_source(SOURCE)
+        .fingerprint(0)
+        .expect("set-tags denial fixture should have a registry fingerprint");
+    let cases = [
+        DenialCase {
+            name: "locked",
+            target_page_id: locked_page_id,
+            allow_deleted: false,
+            request_actor_id: SAMPLE_USER_ID,
+            request_site_id: site_id,
+            route_slug: LOCKED_SLUG,
+            submitted_user_id: SAMPLE_USER_ID,
+        },
+        DenialCase {
+            name: "deleted",
+            target_page_id: deleted_page_id,
+            allow_deleted: true,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: site_id,
+            route_slug: DELETED_SLUG,
+            submitted_user_id: ADMIN_USER_ID,
+        },
+        DenialCase {
+            name: "private",
+            target_page_id: private_page_id,
+            allow_deleted: false,
+            request_actor_id: SAMPLE_USER_ID,
+            request_site_id: site_id,
+            route_slug: PRIVATE_SLUG,
+            submitted_user_id: SAMPLE_USER_ID,
+        },
+        DenialCase {
+            name: "route mismatch",
+            target_page_id: route_target_page_id,
+            allow_deleted: false,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: site_id,
+            route_slug: ROUTE_MISMATCH_SLUG,
+            submitted_user_id: ADMIN_USER_ID,
+        },
+        DenialCase {
+            name: "actor mismatch",
+            target_page_id: actor_mismatch_page_id,
+            allow_deleted: false,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: site_id,
+            route_slug: ACTOR_MISMATCH_SLUG,
+            submitted_user_id: SAMPLE_USER_ID,
+        },
+        DenialCase {
+            name: "cross-site",
+            target_page_id: cross_site_target_page_id,
+            allow_deleted: false,
+            request_actor_id: ADMIN_USER_ID,
+            request_site_id: cross_site_id,
+            route_slug: CROSS_SITE_ROUTE_SLUG,
+            submitted_user_id: ADMIN_USER_ID,
+        },
+    ];
+
+    for case in cases {
+        let before = snapshot_set_tags_mutation_state(
+            &mut runner,
+            site_id,
+            case.target_page_id,
+            case.allow_deleted,
+        )
+        .await;
+        set_mutation_request_context(
+            &mut runner,
+            case.request_actor_id,
+            case.request_site_id,
+            Reference::Slug(Cow::Borrowed(case.route_slug)),
+        );
+        let error = run_endpoint_err!(
+            runner,
+            wikidot_legacy_set_tags,
+            json!({
+                "page_id": case.target_page_id,
+                "last_revision_id": before.revision_id,
+                "action_index": 0,
+                "action_fingerprint": fingerprint.clone(),
+                "user_id": case.submitted_user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::Page);
+
+        let after = snapshot_set_tags_mutation_state(
+            &mut runner,
+            site_id,
+            case.target_page_id,
+            case.allow_deleted,
+        )
+        .await;
+        assert_eq!(
+            after, before,
+            "{} set-tags denial must preserve public page and audit state",
+            case.name,
+        );
+    }
+}
+
+#[tokio::test]
 async fn page_render_emits_wikidot_rate_widget_structure() {
     let runner = TestRunner::setup().await;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -2792,11 +5756,266 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
     assert!(html.contains(
         r#"<span class="rateup btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)" title="I like it">+</a></span>"#,
     ));
+    assert!(html.contains(
+        r#"<span class="ratedown btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)" title="I don't like it">–</a></span>"#,
+    ));
+    assert!(html.contains(
+        r#"<span class="cancel btn btn-default"><a href="javascript:;" onclick="WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)" title="Cancel my vote">x</a></span>"#,
+    ));
+    assert!(!html.contains("data-wikijump"));
     assert!(!html.contains(r#"<div class="page-rate-widget-box"><p>"#));
     assert!(!html.contains(r#"<p><div class="page-rate-widget-box">"#));
     assert!(!html.contains(r#"<a href="javascript:;"><span class="rateup"#));
     assert_eq!(html.matches(r#"class="rate-points""#).count(), 1);
     assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"));
+}
+
+#[tokio::test]
+async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
+    const SLUG: &str = "fixture-rate-action-sidecar";
+    const SOURCE: &str = "[[module Rate]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Fixture Rate Action Sidecar",
+        SOURCE,
+    )
+    .await;
+    let page =
+        run_endpoint!(runner, page_get, json!({"site_id": site_id, "page": SLUG}),)
+            .expect("Rate sidecar page should exist");
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "Rate action sidecar test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("Rate action actor session should be created");
+
+    let anonymous = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(matches!(
+        anonymous,
+        GetPageViewOutput::Found {
+            rate_actions: None,
+            ..
+        }
+    ));
+
+    let authenticated = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token.clone(),
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let registry = match authenticated {
+        GetPageViewOutput::Found {
+            rate_actions: Some(registry),
+            ..
+        } => registry,
+        other => panic!("expected authenticated Rate sidecar, got {other:?}"),
+    };
+    assert_eq!(registry.site_id, site_id);
+    assert_eq!(registry.page_id, page.page_id);
+    assert_eq!(registry.revision_id, revision_id);
+    assert_eq!(registry.current_value, None);
+    let actions = serde_json::to_value(&registry.actions).unwrap();
+    assert_eq!(actions[0]["type"], "rate");
+    assert_eq!(actions[1]["type"], "rate");
+    assert_eq!(actions[2]["type"], "rate-cancel");
+    assert_eq!(actions[0]["value"], 1);
+    assert_eq!(actions[1]["value"], -1);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    let activate = |action: &serde_json::Value| {
+        json!({
+            "page_id": registry.page_id,
+            "last_revision_id": registry.revision_id,
+            "action_index": action["index"],
+            "action_fingerprint": action["fingerprint"],
+            "value": 5,
+            "score": 500,
+            "user_id": SAMPLE_USER_ID,
+            "site_id": -1,
+        })
+    };
+
+    let first = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[0]));
+    assert_eq!(first.score, ScoreValue::Integer(1));
+    let repeated = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[0]));
+    assert_eq!(repeated.score, ScoreValue::Integer(1));
+    let changed = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[1]));
+    assert_eq!(changed.score, ScoreValue::Integer(-1));
+    let canceled = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[2]));
+    assert_eq!(canceled.score, ScoreValue::Integer(0));
+    let repeated_cancel =
+        run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[2]));
+    assert_eq!(repeated_cancel.score, ScoreValue::Integer(0));
+
+    let forged = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": registry.page_id,
+            "last_revision_id": registry.revision_id,
+            "action_index": 0,
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(forged, ErrorType::PermissionDenied);
+    let stale = run_endpoint_err!(
+        runner,
+        wikidot_legacy_rate,
+        json!({
+            "page_id": registry.page_id,
+            "last_revision_id": registry.revision_id - 1,
+            "action_index": actions[0]["index"],
+            "action_fingerprint": actions[0]["fingerprint"],
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+
+    set_page_rating_policy(&runner, page.page_category_id, false, "registered").await;
+    let disabled_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token.clone(),
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(matches!(
+        disabled_view,
+        GetPageViewOutput::Found {
+            rate_actions: None,
+            ..
+        }
+    ));
+    let disabled = run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(disabled, ErrorType::PermissionDenied);
+
+    set_page_rating_policy(&runner, page.page_category_id, true, "members").await;
+    set_mutation_request_context(
+        &mut runner,
+        SAMPLE_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    let non_member =
+        run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(non_member, ErrorType::PermissionDenied);
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("Rate policy fixture actor should become a member");
+    let member = run_endpoint!(runner, wikidot_legacy_rate, activate(&actions[0]));
+    assert_eq!(member.score, ScoreValue::Integer(1));
+
+    set_page_rating_policy(&runner, page.page_category_id, true, "registered").await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SLUG)),
+    );
+    PageLockService::create(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(page.page_id),
+        CreatePageLockInput {
+            page: Reference::Id(page.page_id),
+            expires_at: None,
+            from_wikidot: false,
+            lock_type: PageLockType::PermissionOnly,
+            reason: Some("Rate policy fixture".to_owned()),
+            override_existing: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Rate policy fixture lock should be created");
+    let locked_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(matches!(
+        locked_view,
+        GetPageViewOutput::Found {
+            rate_actions: None,
+            ..
+        }
+    ));
+    let locked = run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(locked, ErrorType::PermissionDenied);
+    PageLockService::remove(
+        runner.context(),
+        site_id,
+        ADMIN_USER_ID,
+        Reference::Id(page.page_id),
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("Rate policy fixture lock removal should succeed")
+    .expect("Rate policy fixture lock should remain active until removal");
+
+    let stored_page = PageTable::find_by_id(page.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("Rate deletion fixture lookup should succeed")
+        .expect("Rate deletion fixture page should exist");
+    let mut stored_page = stored_page.into_active_model();
+    stored_page.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    stored_page
+        .update(runner.context().transaction())
+        .await
+        .expect("Rate deletion fixture should be soft deleted");
+    let deleted = run_endpoint_err!(runner, wikidot_legacy_rate, activate(&actions[0]),);
+    assert_contains_error!(deleted, ErrorType::PageVote);
 }
 
 #[tokio::test]
@@ -2911,6 +6130,174 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
     assert!(!html.contains(r#"class="page-rate-widget-box""#), "{html}");
     assert!(!html.contains("[[/module]]"), "{html}");
     assert!(!html.contains("WIKIJUMPWIKIDOTCOMPATHTML"), "{html}");
+}
+
+#[tokio::test]
+async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries() {
+    const EXTANT_USER_ID: i64 = 19_102_600;
+    const DELETED_USER_ID: i64 = 19_102_601;
+    const PAGE_SLUG: &str = "fixture-wikidot-user-identity-matrix";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1), ($2)",
+            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+        ))
+        .await
+        .expect("user-block known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") VALUES ",
+                "($1, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Extant User', 'extant-user', 5, FALSE), ",
+                "($2, NOW() - INTERVAL '1 second', NOW(), TRUE, 'Deleted User', 'deleted-user', 0, FALSE)",
+            ),
+            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+        ))
+        .await
+        .expect("user-block Wikidot fixtures should be inserted");
+
+    let source = format!(
+        concat!(
+            "NAME=[[user Extant User]]\n",
+            "ID=[[*user {EXTANT_USER_ID}]]\n",
+            "DELETED=[[user Deleted User]]\n",
+            "A=[[user v7ws=\"alpha\tbeta\u{00a0}gamma\"]]\n",
+            "B=[[user v7ser=\"serialized body\"]]\n",
+            "C=[[user v7text=\"visible text\"]]\n",
+            "D=[[user v7arg=\"one\" v7arg=\"two\"]]\n",
+            "E=[[user v7arg=\"\"]]\n",
+            "F=[[user v7UnknownArgument=\"x\"]]\n",
+            "G=[[user v7arg='single quoted' data-v7=unquoted]]",
+        ),
+        EXTANT_USER_ID = EXTANT_USER_ID,
+    );
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Wikidot user identity matrix",
+            "wikitext": source,
+        }),
+    );
+    let html = preview.body;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Wikidot User Identity Matrix",
+        &source,
+    )
+    .await;
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_html = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved Wikidot user matrix, got {other:?}"),
+    };
+
+    assert!(
+        html.contains("http://www.wikidot.com/user:info/extant-user")
+            && html.contains(&format!(
+                "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID}); return false;"
+            ))
+            && html.contains(">Extant User</a>"),
+        "extant name and numeric ID references should share the imported identity:\n{html}",
+    );
+    assert_eq!(
+        html.matches(&format!(
+            "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID})"
+        ))
+        .count(),
+        3,
+        "a plain user has one profile link and a starred user has avatar and name links:\n{html}",
+    );
+    // Sealed anonymous PagePreview cases 1421 and 1423-1428 in
+    // /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/comparison.json
+    // (SHA-256 87e8ae77db8cfe526fcd46fb13e2843968fcc80d9e6bebdc0692bd636f57ff76).
+    let live_missing_user_fragments = [
+        concat!(
+            r#"<span class="error-inline"><em>Deleted User</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            "<span class=\"error-inline\"><em>v7ws=&quot;alpha beta\u{a0}gamma&quot;</em>",
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7ser=&quot;serialized body&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7text=&quot;visible text&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7arg=&quot;one&quot; v7arg=&quot;two&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7arg=&quot;&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7UnknownArgument=&quot;x&quot;</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>v7arg=&#39;single quoted&#39; data-v7=unquoted</em>"#,
+            " does not match any existing user name</span>",
+        ),
+    ];
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        for expected in live_missing_user_fragments {
+            assert!(
+                output.contains(expected),
+                "{label} must keep the exact live missing-user text inside span.error-inline:\n{output}",
+            );
+        }
+        assert_eq!(
+            output
+                .matches("does not match any existing user name")
+                .count(),
+            8,
+            "{label} must fail closed for the deleted identity and seven unknown lookup keys:\n{output}",
+        );
+        assert!(
+            !output.contains("user:info/deleted-user"),
+            "{label} must not expose a profile URL for the deleted identity:\n{output}",
+        );
+    }
 }
 
 #[tokio::test]
@@ -3142,6 +6529,467 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
 }
 
 #[tokio::test]
+async fn members_module_queries_only_visible_site_members_and_roles() {
+    const ALPHA_USER_ID: i64 = 19_103_200;
+    const ZETA_USER_ID: i64 = 19_103_201;
+    const DELETED_USER_ID: i64 = 19_103_202;
+    const OTHER_SITE_USER_ID: i64 = 19_103_203;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let other_site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded comparison site should exist")
+        .site
+        .site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "INSERT INTO known_user (user_id) VALUES ($1), ($2), ($3), ($4)",
+            [
+                Value::from(ALPHA_USER_ID),
+                Value::from(ZETA_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(OTHER_SITE_USER_ID),
+            ],
+        ))
+        .await
+        .expect("member-directory known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") VALUES ",
+                "($1, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Alpha Member', 'alpha-member', 2, FALSE), ",
+                "($2, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Zeta Member', 'zeta-member', 4, FALSE), ",
+                "($3, NOW() - INTERVAL '1 second', NOW(), TRUE, 'Deleted Member', 'deleted-member', 0, FALSE), ",
+                "($4, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Other Site Member', 'other-site-member', 3, FALSE)",
+            ),
+            [
+                Value::from(ALPHA_USER_ID),
+                Value::from(ZETA_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(OTHER_SITE_USER_ID),
+            ],
+        ))
+        .await
+        .expect("member-directory Wikidot fixtures should be inserted");
+    for user_id in [ALPHA_USER_ID, ZETA_USER_ID, DELETED_USER_ID] {
+        RelationService::create_site_member(
+            runner.context(),
+            CreateSiteMember {
+                site_id,
+                user_id,
+                metadata: SiteMemberData {
+                    accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+                },
+                created_by: SYSTEM_USER_ID,
+            },
+        )
+        .await
+        .expect("member-directory fixture membership should be created");
+    }
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id: other_site_id,
+            user_id: OTHER_SITE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::Accepted(SYSTEM_USER_ID),
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("comparison-site member fixture should be created");
+    let moderator_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("moderator")),
+    )
+    .await
+    .expect("seeded moderator role should exist");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: ALPHA_USER_ID,
+            role_id: moderator_role.role_id,
+            site_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("member-directory moderator fixture should be granted");
+
+    let source = concat!(
+        "MEMBERS_START\n",
+        "[[module Members order=\"nameDesc\" showSince=\"false\"]]\n",
+        "MEMBERS_END\n",
+        "MODERATORS_START\n",
+        "[[module Members group=\"moderators\"]]\n",
+        "MODERATORS_END\n",
+        "INVALID_START\n",
+        "[[module Members group=\"owners\"]]\n",
+        "INVALID_END",
+    );
+    let mut bodies = Vec::new();
+    for actor in [None, Some(SAMPLE_USER_ID), Some(ADMIN_USER_ID)] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: actor,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        bodies.push(
+            run_endpoint!(
+                runner,
+                wikidot_page_preview,
+                json!({
+                    "site_id": site_id,
+                    "title": "Members directory matrix",
+                    "wikitext": source,
+                }),
+            )
+            .body,
+        );
+    }
+
+    for (actor, html) in ["anonymous", "non-member", "administrator"]
+        .into_iter()
+        .zip(&bodies)
+    {
+        let members = html
+            .split_once("MEMBERS_START")
+            .and_then(|(_, tail)| tail.split_once("MEMBERS_END"))
+            .map(|(members, _)| members)
+            .expect("member directory should remain between authored markers");
+        let moderators = html
+            .split_once("MODERATORS_START")
+            .and_then(|(_, tail)| tail.split_once("MODERATORS_END"))
+            .map(|(moderators, _)| moderators)
+            .expect("moderator directory should remain between authored markers");
+
+        let zeta = members
+            .find("Zeta Member")
+            .expect("visible Zeta member should render");
+        let alpha = members
+            .find("Alpha Member")
+            .expect("visible Alpha member should render");
+        assert!(
+            zeta < alpha,
+            "nameDesc must order after identity filtering: {members}"
+        );
+        assert!(
+            !members.contains("Deleted Member")
+                && !members.contains("since <span class=\"odate"),
+            "{actor} output must hide deleted identities and honor showSince=false:\n{members}",
+        );
+        assert!(
+            html.contains(r#"id="ml-1""#)
+                && html.contains(r#"id="ml-2""#)
+                && moderators.contains("Alpha Member")
+                && !moderators.contains("Zeta Member")
+                && moderators.contains("p.group     = 'moderators'"),
+            "module IDs must be unique and moderator rows must come from this site's active role assignments:\n{html}",
+        );
+        assert!(
+            members.contains("p.group     = ''")
+                && members.contains("p.order     = 'nameDesc'")
+                && members.contains("membership/MembersListModule"),
+            "member directory must retain Wikidot's read-only paging contract:\n{members}",
+        );
+        assert!(
+            !html.contains("ml-607935")
+                && !html.contains("lambert-eggman")
+                && !html.contains("user:info/deleted-member")
+                && !html.contains("Other Site Member"),
+            "directory output must not retain captured, deleted, or cross-site identities:\n{html}",
+        );
+        let invalid = html
+            .split_once("INVALID_START")
+            .and_then(|(_, tail)| tail.split_once("INVALID_END"))
+            .map(|(invalid, _)| invalid)
+            .expect("invalid module should remain between authored markers");
+        assert!(
+            invalid.contains("No such module")
+                && !invalid.contains("Alpha Member")
+                && !invalid.contains("Zeta Member"),
+            "unverified groups must fail closed instead of widening the site query:\n{invalid}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn members_list_ajax_paginates_only_filtered_site_identities() {
+    const FIXTURE_USER_ID: i64 = 19_103_300;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let other_site_id = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded comparison site should exist")
+        .site
+        .site_id;
+    let transaction = runner.context().transaction();
+
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO known_user (user_id) ",
+                "SELECT $1 + fixture.n::BIGINT FROM generate_series(0, 104) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("Members Ajax known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") ",
+                "SELECT $1 + fixture.n::BIGINT, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + fixture.n * INTERVAL '1 second', ",
+                "TIMESTAMPTZ '2021-01-01 00:00:00+00', fixture.n = 102, ",
+                "'AMC Member ' || lpad(fixture.n::TEXT, 3, '0'), ",
+                "'amc-member-' || lpad(fixture.n::TEXT, 3, '0'), 2, FALSE ",
+                "FROM generate_series(0, 102) AS fixture(n) ",
+                "UNION ALL SELECT $1 + 104, TIMESTAMPTZ '2020-01-01 00:00:00+00', ",
+                "TIMESTAMPTZ '2021-01-01 00:00:00+00', FALSE, ",
+                "'Other Site AMC Member', 'other-site-amc-member', 2, FALSE",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("Members Ajax Wikidot-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") ",
+                "SELECT CASE WHEN fixture.n = 101 THEN 'site-member' ELSE 'member' END, ",
+                "'site', $2, 'user', $1 + fixture.n::BIGINT, '{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + (fixture.n + 2) * INTERVAL '1 second' ",
+                "FROM generate_series(0, 101) AS fixture(n) ",
+                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 102, '{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' ",
+                "UNION ALL SELECT 'member', 'site', $2, 'user', $1 + 103, '{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:01+00' ",
+                "UNION ALL SELECT 'member', 'site', $4, 'user', $1 + 104, '{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2019-12-31 23:59:59+00'",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+                Value::from(other_site_id),
+            ],
+        ))
+        .await
+        .expect("Members Ajax relation fixtures should be inserted");
+
+    let request_for = |request_site_id: i64, page: &str| {
+        json!({
+            "site_id": request_site_id,
+            "parameters": {
+                "group": "",
+                "order": "joined",
+                "page": page,
+            },
+        })
+    };
+    let request = |page: &str| request_for(site_id, page);
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let page_one = run_endpoint!(runner, wikidot_members_list_module, request("1"));
+    assert_eq!(page_one.status, "ok");
+    assert_eq!(page_one.body.matches("<tr>").count(), 100);
+    for index in 0..100 {
+        assert!(
+            page_one.body.contains(&format!("AMC Member {index:03}")),
+            "page 1 should contain filtered member {index:03}:\n{}",
+            page_one.body,
+        );
+    }
+    assert!(
+        !page_one.body.contains("AMC Member 100")
+            && !page_one.body.contains("AMC Member 102")
+            && !page_one.body.contains("Other Site AMC Member")
+            && page_one
+                .body
+                .contains(r#"<span class="pager-no">page 1 of 2</span>"#),
+        "page 1 must filter identities before its 100-row slice:\n{}",
+        page_one.body,
+    );
+
+    let page_zero = run_endpoint!(runner, wikidot_members_list_module, request("0"));
+    assert_eq!(page_zero.status, "ok");
+    assert_eq!(page_zero.body.matches("<tr>").count(), 100);
+    for index in 0..100 {
+        assert!(
+            page_zero.body.contains(&format!("AMC Member {index:03}")),
+            "page 0 should alias page 1 member {index:03}:\n{}",
+            page_zero.body,
+        );
+    }
+    assert!(
+        page_zero
+            .body
+            .contains(r#"<span class="pager-no">page 1 of 2</span>"#),
+        "page 0 must use the page 1 pager state:\n{}",
+        page_zero.body,
+    );
+
+    let page_two = run_endpoint!(runner, wikidot_members_list_module, request("2"));
+    assert_eq!(page_two.status, "ok");
+    assert_eq!(page_two.body.matches("<tr>").count(), 2);
+    assert!(
+        page_two.body.find("AMC Member 100") < page_two.body.find("AMC Member 101")
+            && !page_two.body.contains("AMC Member 099")
+            && !page_two.body.contains("AMC Member 102")
+            && page_two
+                .body
+                .contains(r#"<span class="pager-no">page 2 of 2</span>"#)
+            && page_two.body.contains(r#"<span class="current">2</span>"#)
+            && page_two.body.contains("&laquo; previous")
+            && !page_two.body.contains("next &raquo;"),
+        "the filtered second page should retain the observed pager contract:\n{}",
+        page_two.body,
+    );
+
+    for (actor_class, actor) in [
+        ("sandbox-admin", ADMIN_USER_ID),
+        ("sandbox-member", FIXTURE_USER_ID + 104),
+        ("sandbox-moderator-or-nonmember", SAMPLE_USER_ID),
+    ] {
+        runner.set_request_context(RequestContext {
+            user_id: Some(actor),
+            site_id: Some(other_site_id),
+            ..Default::default()
+        });
+        for page in ["2", "1468"] {
+            let empty = run_endpoint!(
+                runner,
+                wikidot_members_list_module,
+                request_for(other_site_id, page),
+            );
+            assert_eq!(empty.status, "ok");
+            let (container, empty_body) = empty
+                .body
+                .split_once("\">")
+                .expect("empty member response should have a container");
+            assert!(
+                container.starts_with("\n<div id=\"ml-")
+                    && container
+                        .trim_start_matches("\n<div id=\"ml-")
+                        .bytes()
+                        .all(|byte| byte.is_ascii_digit())
+                    && empty_body
+                        == "\n\t\tNo users.\t\t<div style=\"text-align: center\">\n\t\t\t\t\n\t</div>\n</div>"
+                    && !empty.body.contains("<table>")
+                    && !empty.body.contains("MembersListModule")
+                    && !empty.body.contains("class=\"pager\""),
+                "{actor_class} page {page} should retain the observed exact empty body:\n{}",
+                empty.body,
+            );
+        }
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    for parameters in [
+        json!({"group": "", "order": "joined"}),
+        json!({"group": "members", "order": "joined", "page": "1"}),
+        json!({"group": "", "order": "name", "page": "1"}),
+        json!({"group": "", "order": "joined", "page": "-1"}),
+        json!({"group": "", "order": "joined", "page": "01"}),
+        json!({"group": "", "order": "joined", "page": "1.0"}),
+        json!({"group": "", "order": "joined", "page": "1", "extra": "1"}),
+        json!({"group": "", "order": "joined", "page": "4294967296"}),
+    ] {
+        let rejected = run_endpoint!(
+            runner,
+            wikidot_members_list_module,
+            json!({"site_id": site_id, "parameters": parameters}),
+        );
+        assert_eq!(rejected.status, "not_ok");
+        assert!(rejected.body.is_empty());
+    }
+
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    let everyone_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("everyone")),
+    )
+    .await
+    .expect("everyone role should exist");
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.is_in([
+            guest_role.role_id,
+            anonymous_role.role_id,
+            everyone_role.role_id,
+        ]))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+        .filter(role_permission::Column::ResourceCategoryId.is_null())
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("anonymous public page view permissions should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("member directory permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let private_site = run_endpoint!(runner, wikidot_members_list_module, request("1"));
+    assert_eq!(private_site.status, "not_ok");
+    assert!(private_site.body.is_empty());
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(other_site_id),
+        ..Default::default()
+    });
+    let mismatched_site =
+        run_endpoint_err!(runner, wikidot_members_list_module, request("1"),);
+    assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
 async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
     fn section<'a>(html: &'a str, start: &str, end: &str) -> &'a str {
         html.split_once(start)
@@ -3286,26 +7134,82 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
         site_id: Some(site_id),
         page_reference: None,
     });
-    let preview = run_endpoint!(
-        runner,
-        wikidot_page_preview,
-        json!({
-            "site_id": site_id,
-            "title": "ListDrafts empty preview",
-            "wikitext": source,
-        }),
-    );
-    assert!(
-        preview.body.contains(r#"<div class="list-drafts-box">"#),
-        "ListDrafts should render Wikidot's empty draft-list wrapper:\n{}",
-        preview.body,
-    );
-    assert!(
-        !preview.body.contains("[[module ListDrafts")
-            && !preview.body.contains("list-drafts-item"),
-        "empty ListDrafts should not leak raw source or render draft items:\n{}",
-        preview.body,
-    );
+    for (case_id, source, closing_is_literal) in [
+        (
+            "exact-existing-page-filter",
+            r#"[[module ListDrafts pageType="exists"]]"#,
+            false,
+        ),
+        ("omitted-filter", "[[module ListDrafts]]", false),
+        (
+            "exact-missing-page-filter",
+            r#"[[module ListDrafts pageType="notexists"]]"#,
+            false,
+        ),
+        (
+            "unsupported-filter-is-omitted",
+            r#"[[module ListDrafts pageType="other"]]"#,
+            false,
+        ),
+        (
+            "empty-filter-is-omitted",
+            r#"[[module ListDrafts pageType=""]]"#,
+            false,
+        ),
+        (
+            "single-quoted-filter-is-omitted",
+            "[[module ListDrafts pageType='exists']]",
+            false,
+        ),
+        (
+            "bare-filter-is-omitted",
+            "[[module ListDrafts pageType=exists]]",
+            false,
+        ),
+        (
+            "module-name-is-case-insensitive",
+            r#"[[module LISTDRAFTS pageType="exists"]]"#,
+            false,
+        ),
+        (
+            "argument-name-is-case-sensitive",
+            r#"[[module ListDrafts PAGETYPE="exists"]]"#,
+            false,
+        ),
+        (
+            "standalone-opener-leaves-closing-marker-literal",
+            "[[module ListDrafts pageType=\"exists\"]]\n[[/module]]",
+            true,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("ListDrafts empty preview: {case_id}"),
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="list-drafts-box">"#),
+            "{case_id}: ListDrafts should render Wikidot's empty draft-list wrapper:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module ListDrafts")
+                && !preview.body.contains("[[module LISTDRAFTS")
+                && !preview.body.contains("list-drafts-item"),
+            "{case_id}: empty ListDrafts should not leak its opener or render draft items:\n{}",
+            preview.body,
+        );
+        assert_eq!(
+            preview.body.contains("[[/module]]"),
+            closing_is_literal,
+            "{case_id}: standalone closing-marker behavior should match the live preview:\n{}",
+            preview.body,
+        );
+    }
 
     create_listpages_test_page(
         &mut runner,
@@ -3342,6 +7246,668 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
         !body.contains("[[module ListDrafts") && !body.contains("list-drafts-item"),
         "saved page view should not leak raw ListDrafts source or render nonexistent drafts:\n{body}",
     );
+}
+
+#[tokio::test]
+async fn categories_runtime_inventory_is_scoped_to_the_request_actor() {
+    const PRIVATE_CATEGORY: &str = "fixture-categories-private-runtime";
+    const PRIVATE_PAGE: &str = "fixture-categories-private-runtime-page";
+    const PUBLIC_PAGE: &str = "fixture-categories-public-runtime-page";
+    const HOLDER: &str = "fixture-categories-runtime-holder";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        "Fixture Categories Public Runtime Page",
+        "public Categories runtime fixture",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        "Fixture Categories Private Runtime Page",
+        "private Categories runtime fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture Categories Runtime Holder",
+        "CATEGORIES_RUNTIME_START\n[[module Categories includeHidden=\"true\"]]\nCATEGORIES_RUNTIME_END",
+    )
+    .await;
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "Categories actor runtime test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+
+    let body = |view| match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found Categories page view, got {other:?}"),
+    };
+
+    let anonymous = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        anonymous.contains("CATEGORIES_RUNTIME_START")
+            && anonymous.contains("CATEGORIES_RUNTIME_END")
+            && anonymous.contains("<h3>_default</h3>"),
+        "anonymous page_view should runtime-render the public category inventory:\n{anonymous}",
+    );
+    assert!(
+        !anonymous.contains(PRIVATE_CATEGORY),
+        "anonymous Categories output must not reveal an inaccessible category:\n{anonymous}",
+    );
+
+    let admin = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        admin.contains(&format!("<h3>{PRIVATE_CATEGORY}</h3>")),
+        "an authorized actor should receive the private category in the same public page_view seam:\n{admin}",
+    );
+}
+
+#[tokio::test]
+async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
+    const PRIVATE_CATEGORY: &str = "fixture-sitechanges-private";
+    const PRIVATE_PAGE: &str = "fixture-sitechanges-private-page";
+    const PUBLIC_PAGE: &str = "fixture-sitechanges-public-page";
+    const PUBLIC_TITLE: &str = "Fixture SiteChanges Public Page";
+    const PRIVATE_TITLE: &str = "Fixture SiteChanges Private Page";
+    const HOLDER: &str = "fixture-sitechanges-holder";
+    const SOURCE: &str = "SITECHANGES_START\n[[module SiteChanges]]\nSITECHANGES_END";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        PUBLIC_TITLE,
+        "public SiteChanges fixture",
+    )
+    .await;
+    let mut private_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        PRIVATE_TITLE,
+        "private SiteChanges fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    for index in 0..22 {
+        let tag = format!("sitechanges-private-{index}");
+        private_revision_id = set_listpages_test_tags(
+            &mut runner,
+            site_id,
+            PRIVATE_PAGE,
+            private_revision_id,
+            &[&tag],
+        )
+        .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture SiteChanges Holder",
+        SOURCE,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "SiteChanges anonymous preview",
+            "wikitext": SOURCE,
+        }),
+    );
+    for expected in [
+        r#"<div class="site-changes-box">"#,
+        "Revision types:",
+        r#"id="rev-type-all" checked="checked""#,
+        r#"id="rev-category""#,
+        r#"id="rev-perpage""#,
+        r#"class="changes-list" id="site-changes-list""#,
+        PUBLIC_TITLE,
+    ] {
+        assert!(
+            preview.body.contains(expected),
+            "anonymous preview should contain {expected:?}:\n{}",
+            preview.body,
+        );
+    }
+    for forbidden in [PRIVATE_TITLE, PRIVATE_CATEGORY, "[[module SiteChanges"] {
+        assert!(
+            !preview.body.contains(forbidden),
+            "anonymous preview must not contain {forbidden:?}:\n{}",
+            preview.body,
+        );
+    }
+
+    let anonymous_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found SiteChanges page view, got {other:?}"),
+    };
+    assert!(
+        anonymous_body.contains(PUBLIC_TITLE) && !anonymous_body.contains(PRIVATE_TITLE),
+        "saved anonymous page_view must filter hidden revisions before selecting its first 20 rows:\n{anonymous_body}",
+    );
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "SiteChanges actor runtime test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let admin_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let admin_body = match admin_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found admin SiteChanges page view, got {other:?}"),
+    };
+    assert!(
+        admin_body.contains(PRIVATE_TITLE)
+            && admin_body.contains(&format!(">{PRIVATE_CATEGORY}</option>"))
+            && admin_body.contains(r#"<div class="pager">"#),
+        "an authorized actor should receive private changes, the category selector, and a pager:\n{admin_body}",
+    );
+}
+
+#[tokio::test]
+async fn wikidot_site_changes_ajax_endpoint_filters_before_pagination_and_matches_observed_reads()
+ {
+    const PRIVATE_CATEGORY: &str = "fixture-sitechanges-ajax-private";
+    const PRIVATE_PAGE: &str = "fixture-sitechanges-ajax-private-page";
+    const PRIVATE_TITLE: &str = "Fixture SiteChanges Ajax Private Page";
+    const PUBLIC_PAGE: &str = "fixture-sitechanges-ajax-public-page";
+    const PUBLIC_TITLE: &str = "Fixture SiteChanges Ajax Public Page";
+    const HOLDER: &str = "fixture-sitechanges-ajax-holder";
+
+    async fn insert_source_revisions(
+        runner: &TestRunner,
+        initial_revision_id: i64,
+        count: i32,
+        revision_number_offset: i32,
+        time_offset_seconds: i32,
+    ) {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_revision (",
+                    "revision_type, created_at, updated_at, revision_number, page_id, ",
+                    "site_id, user_id, from_wikidot, changes, wikitext_hash, ",
+                    "compiled_body_html_hash, compiled_body_styles_hash, ",
+                    "compiled_top_bar_html_hash, compiled_side_bar_html_hash, ",
+                    "compiled_at, compiled_generator, comments, hidden, title, ",
+                    "alt_title, slug, tags",
+                    ") SELECT ",
+                    "'regular', NOW() + make_interval(secs => ",
+                    "($4 + fixture.sequence)::DOUBLE PRECISION), ",
+                    "source.updated_at, $3 + fixture.sequence, source.page_id, ",
+                    "source.site_id, source.user_id, source.from_wikidot, ",
+                    "ARRAY['wikitext']::TEXT[], source.wikitext_hash, ",
+                    "source.compiled_body_html_hash, source.compiled_body_styles_hash, ",
+                    "source.compiled_top_bar_html_hash, source.compiled_side_bar_html_hash, ",
+                    "source.compiled_at, source.compiled_generator, ",
+                    "'source fixture ' || ($3 + fixture.sequence), source.hidden, ",
+                    "source.title, source.alt_title, source.slug, source.tags ",
+                    "FROM page_revision source ",
+                    "CROSS JOIN generate_series(1, $2::INTEGER) fixture(sequence) ",
+                    "WHERE source.revision_id = $1",
+                ),
+                [
+                    Value::from(initial_revision_id),
+                    Value::from(count),
+                    Value::from(revision_number_offset),
+                    Value::from(time_offset_seconds),
+                ],
+            ))
+            .await
+            .expect("SiteChanges source fixtures should be inserted");
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    let public_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        PUBLIC_TITLE,
+        "public SiteChanges Ajax fixture",
+    )
+    .await;
+    let private_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        PRIVATE_TITLE,
+        "private SiteChanges Ajax fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture SiteChanges Ajax Holder",
+        "[[module SiteChanges]]",
+    )
+    .await;
+
+    insert_source_revisions(&runner, public_revision_id, 2_105, 0, 100).await;
+    insert_source_revisions(&runner, private_revision_id, 25, 0, 1_000).await;
+
+    let holder = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": HOLDER}),
+    )
+    .expect("SiteChanges Ajax holder should exist");
+    let public_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": PUBLIC_PAGE}),
+    )
+    .expect("SiteChanges Ajax public page should exist");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(
+            "fixture-sitechanges-unrelated-request-page",
+        ))),
+        ..Default::default()
+    });
+
+    let mut page_bodies = Vec::new();
+    for page in ["1", "2", "3"] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_site_changes_module,
+            json!({
+                "site_id": site_id,
+                "page_id": holder.page_id.to_string(),
+                "page": page,
+                "perpage": "20",
+                "category_id": "",
+                "options": "{\"all\":true}",
+            }),
+        );
+        assert_eq!(output.status, "ok");
+        assert!(
+            !output.body.contains(PRIVATE_TITLE),
+            "private revisions must be filtered before page selection:\n{}",
+            output.body,
+        );
+        page_bodies.push(output.body);
+    }
+
+    for (body, first_revision, last_revision, outside_revision) in [
+        (&page_bodies[0], 2_105, 2_086, 2_085),
+        (&page_bodies[1], 2_085, 2_066, 2_065),
+        (&page_bodies[2], 2_065, 2_046, 2_045),
+    ] {
+        assert!(body.contains(PUBLIC_TITLE));
+        assert!(body.contains(&format!("(rev. {first_revision})")), "{body}");
+        assert!(body.contains(&format!("(rev. {last_revision})")), "{body}");
+        assert!(
+            !body.contains(&format!("(rev. {outside_revision})")),
+            "adjacent-page revision leaked across the page boundary: {body}",
+        );
+    }
+    assert!(
+        page_bodies[0].contains(r#">page 1</span>"#)
+            && page_bodies[0].contains("updateList(3)")
+            && page_bodies[0].contains("next &raquo;"),
+        "page one should preserve the sealed pager shape: {}",
+        page_bodies[0],
+    );
+    assert!(
+        page_bodies[1].contains(r#">page 2</span>"#)
+            && page_bodies[1].contains("&laquo; previous")
+            && page_bodies[1].contains("updateList(4)"),
+        "page two should preserve the sealed pager shape: {}",
+        page_bodies[1],
+    );
+    assert!(
+        page_bodies[2].contains(r#">page 3</span>"#)
+            && page_bodies[2].contains("updateList(5)")
+            && page_bodies[2].contains(r#"<span class="dots">...</span>"#),
+        "page three should preserve the sealed pager shape: {}",
+        page_bodies[2],
+    );
+
+    // client-page-one-default and client-later-page: browser-only host fields are
+    // absent, and page 2 remains the second 1000-row page.
+    let wikidot_py_page_one = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(wikidot_py_page_one.status, "ok");
+    assert!(wikidot_py_page_one.body.contains("(rev. 2105)"));
+    assert!(wikidot_py_page_one.body.contains("(rev. 1106)"));
+    assert!(!wikidot_py_page_one.body.contains("(rev. 1105)"));
+    assert!(!wikidot_py_page_one.body.contains(PRIVATE_TITLE));
+
+    let wikidot_py_page_two = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "2",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(wikidot_py_page_two.status, "ok");
+    assert!(wikidot_py_page_two.body.contains("(rev. 1105)"));
+    assert!(wikidot_py_page_two.body.contains("(rev. 106)"));
+    assert!(!wikidot_py_page_two.body.contains("(rev. 1106)"));
+
+    // control-bad-perpage must not run an unbounded query.
+    let malformed_perpage = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "not-a-number",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(malformed_perpage.status, "ok");
+    assert_eq!(
+        malformed_perpage.body,
+        "\tSorry, no revisions matching your criteria.",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authorized = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "2",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(authorized.status, "ok");
+    assert!(authorized.body.contains(PRIVATE_TITLE));
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id + 1),
+        ..Default::default()
+    });
+    run_endpoint_err!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    for mixed in [
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "1000",
+            "options": "{\"all\":true}",
+        }),
+        json!({
+            "site_id": site_id,
+            "page": "1",
+            "perpage": "1000",
+            "category_id": "",
+            "options": "{\"all\":true}",
+        }),
+    ] {
+        let output = run_endpoint!(runner, wikidot_site_changes_module, mixed);
+        assert_eq!(output.status, "not_ok");
+        assert!(output.body.is_empty());
+    }
+
+    create_empty_file_fixture(
+        &runner,
+        site_id,
+        public_page.page_id,
+        "sitechanges-ajax-file.txt",
+    )
+    .await;
+    let files = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "20",
+            "category_id": "",
+            "options": "{\"files\":true}",
+        }),
+    );
+    assert_eq!(files.status, "ok");
+    assert!(
+        files.body.contains(PUBLIC_TITLE)
+            && files.body.contains("file/attachment action\">F")
+            && files.body.contains("create file fixture")
+            && !files.body.contains("source fixture"),
+        "files filter should select only stored file activity:\n{}",
+        files.body,
+    );
+
+    for options in ["{\"source\":true}", "{}"] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_site_changes_module,
+            json!({
+                "site_id": site_id,
+                "page_id": holder.page_id.to_string(),
+                "page": "1",
+                "perpage": "20",
+                "category_id": "",
+                "options": options,
+            }),
+        );
+        assert_eq!(output.status, "ok");
+        assert!(
+            output.body.contains("source fixture 2105"),
+            "{}",
+            output.body
+        );
+        if options.contains("source") {
+            assert!(!output.body.contains("file/attachment action"));
+        }
+    }
+
+    for (page, category_id) in [("999999", ""), ("1", "999999999")] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_site_changes_module,
+            json!({
+                "site_id": site_id,
+                "page_id": holder.page_id.to_string(),
+                "page": page,
+                "perpage": "20",
+                "category_id": category_id,
+                "options": "{\"all\":true}",
+            }),
+        );
+        assert_eq!(output.status, "ok");
+        assert_eq!(output.body, "Sorry, no revisions matching your criteria.");
+    }
+
+    for invalid in [
+        json!({"page_id": "0", "page": "1", "perpage": "20", "category_id": "", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "0", "perpage": "20", "category_id": "", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "10", "category_id": "", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "20", "category_id": "missing", "options": "{\"all\":true}"}),
+        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "20", "category_id": "", "options": "{\"all\":false}"}),
+    ] {
+        let mut input = invalid;
+        input["site_id"] = json!(site_id);
+        let output = run_endpoint!(runner, wikidot_site_changes_module, input);
+        assert_eq!(output.status, "not_ok");
+        assert!(output.body.is_empty());
+    }
+
+    run_endpoint_err!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "20",
+            "category_id": "",
+            "options": "{\"all\":true}",
+            "unknown": "value",
+        }),
+    );
+
+    insert_source_revisions(&runner, private_revision_id, 5_000, 25, 10_000).await;
+    let saturated_ajax = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "20",
+            "category_id": "",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(saturated_ajax.status, "not_ok");
+    assert!(
+        saturated_ajax.body.is_empty(),
+        "raw-scan saturation must not expose partial rows:\n{}",
+        saturated_ajax.body,
+    );
+
+    let saturated_snapshot = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "SiteChanges saturated anonymous preview",
+            "wikitext": "[[module SiteChanges]]",
+        }),
+    );
+    assert!(
+        saturated_snapshot
+            .body
+            .contains(r#"[[module <em>SiteChanges</em>]] No such module"#,),
+        "a saturated initial snapshot should follow the literal fail-closed path:\n{}",
+        saturated_snapshot.body,
+    );
+    for forbidden in [PUBLIC_TITLE, PRIVATE_TITLE, r#"class="changes-list""#] {
+        assert!(
+            !saturated_snapshot.body.contains(forbidden),
+            "a saturated initial snapshot must not expose partial row {forbidden:?}:\n{}",
+            saturated_snapshot.body,
+        );
+    }
 }
 
 #[tokio::test]
@@ -3506,6 +8072,49 @@ async fn adsenseunit_module_matches_live_deprecated_empty_output() {
 }
 
 #[tokio::test]
+async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "FeaturedSite unavailable policy",
+            "wikitext": "FEATURED_START\n[[module FeaturedSite]]\nFEATURED_END",
+        }),
+    );
+    let html = preview.body;
+
+    assert!(
+        html.contains(
+            r#"[[module <em>FeaturedSite</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank" rel="noopener noreferrer">check available modules</a> and fix this page."#,
+        ),
+        "a module backed only by Wikidot's global rotation must use the established unavailable-module result:\n{html}",
+    );
+    for forbidden in [
+        "featured-site-box",
+        "thumbnails.wdfiles.com",
+        "OZONE.dialog.hovertip",
+        "scp-wiki.wikidot.com",
+        "<script",
+    ] {
+        assert!(
+            !html.contains(forbidden),
+            "FeaturedSite fail-closed output must not fabricate a card or browser authority ({forbidden}):\n{html}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn static_account_modules_match_live_preview_and_page_view_basics() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -3521,6 +8130,9 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
         "SEARCHUSERS_START\n",
         "[[module SearchUsers]]\n",
         "SEARCHUSERS_END\n",
+        "WATCHERS_START\n",
+        "[[module Watchers]]\n",
+        "WATCHERS_END\n",
         "MBE_START\n",
         "[[module MembershipEmailInvitation]]\n",
         "MBE_END\n",
@@ -3563,6 +8175,12 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
             "{label} should render SearchUsers' live disabled notice:\n{html}",
         );
         assert!(
+            html.contains("WATCHERS_START")
+                && html.contains("<p>\n\n\n\n\n</p>")
+                && html.contains("WATCHERS_END"),
+            "{label} should preserve Wikidot's observed empty Watchers block boundary:\n{html}",
+        );
+        assert!(
             html.contains(r#"<div id="membership-email-invitation-box">"#)
                 && html.contains("Sorry, the invitation could not be found.")
                 && html.contains("aleady\n\t\t\tused by someone"),
@@ -3578,6 +8196,7 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
             "AnonymousNotificationsUnsubscribe",
             "UserInfo",
             "SearchUsers",
+            "Watchers",
             "MembershipEmailInvitation",
             "WhoInvited",
         ] {
@@ -3637,6 +8256,12 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
         "saved page view should preserve SearchUsers markers around the live disabled notice:\n{body}",
     );
     assert!(
+        body.contains("WATCHERS_START")
+            && body.contains("<p>\n\n\n\n\n</p>")
+            && body.contains("WATCHERS_END"),
+        "saved page view should preserve Wikidot's observed empty Watchers block boundary:\n{body}",
+    );
+    assert!(
         body.contains("MBE_START")
             && body.contains(r#"<div id="membership-email-invitation-box">"#)
             && body.contains("Sorry, the invitation could not be found.")
@@ -3654,10 +8279,3377 @@ async fn static_account_modules_match_live_preview_and_page_view_basics() {
         !body.contains("[[module AnonymousNotificationsUnsubscribe")
             && !body.contains("[[module UserInfo")
             && !body.contains("[[module SearchUsers")
+            && !body.contains("[[module Watchers")
             && !body.contains("[[module MembershipEmailInvitation")
             && !body.contains("[[module WhoInvited"),
         "saved page view should consume all covered modules:\n{body}",
     );
+}
+
+#[tokio::test]
+async fn search_and_feed_modules_match_live_preview_and_page_view_boundaries() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let search_error = r#"<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>"#;
+    let feed_missing = r#"<div class="error-block">No feed source specified ("src" element missing).</div>"#;
+    let feed_unavailable = r#"<div class="error-block">Error processing the feed "https://example.com/feed.xml". The feed can not be accessed or contains errors. </div>"#;
+    let cases = [
+        ("search-bare", "[[module Search]]", search_error),
+        (
+            "search-mini-true",
+            "[[module Search mini=\"true\"]]",
+            search_error,
+        ),
+        (
+            "search-area-pages",
+            "[[module Search a=\"p\"]]",
+            search_error,
+        ),
+        (
+            "search-unknown-argument",
+            "[[module Search unknown=\"x\"]]",
+            search_error,
+        ),
+        (
+            "search-single-quoted-mini",
+            "[[module Search mini='true']]",
+            search_error,
+        ),
+        ("search-uppercase-name", "[[module SEARCH]]", search_error),
+        ("feed-bare", "[[module Feed]]", feed_missing),
+        ("feed-empty-src", "[[module Feed src=\"\"]]", feed_missing),
+        (
+            "feed-missing-src-with-limit",
+            "[[module Feed limit=\"1\"]]",
+            feed_missing,
+        ),
+        (
+            "feed-single-quoted-src",
+            "[[module Feed src='https://example.com/feed.xml']]",
+            feed_missing,
+        ),
+        (
+            "feed-uppercase-src",
+            "[[module Feed SRC=\"https://example.com/feed.xml\"]]",
+            feed_missing,
+        ),
+        (
+            "feed-valid-unavailable-src",
+            "[[module Feed src=\"https://example.com/feed.xml\"]]",
+            feed_unavailable,
+        ),
+    ];
+
+    for (case_id, source, expected) in cases {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(expected),
+            "{case_id} should render the frozen live boundary:\n{}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module"),
+            "{case_id} should consume the runtime module:\n{}",
+            preview.body,
+        );
+    }
+
+    let saved_source = concat!(
+        "SEARCH_START\n[[module Search]]\nSEARCH_END\n",
+        "FEED_START\n[[module Feed]]\nFEED_END",
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-search-feed-boundary",
+        "Fixture Search Feed Boundary",
+        saved_source,
+    )
+    .await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-search-feed-boundary", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found Search and Feed view, got {other:?}"),
+    };
+    assert!(
+        body.contains("SEARCH_START")
+            && body.contains(search_error)
+            && body.contains("SEARCH_END")
+            && body.contains("FEED_START")
+            && body.contains(feed_missing)
+            && body.contains("FEED_END")
+            && !body.contains("[[module"),
+        "saved page view should preserve both live module boundaries:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let form_markers = [
+        r#"<div class="search-box">"#,
+        r#"<div class="query-area">"#,
+        r#"<form action="dummy" id="search-form-all">"#,
+        r#"<input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""/>"#,
+        r#"<input class="button" type="submit" value="Search"/>"#,
+        r#"<input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"/>"#,
+        r#"<label for="search-all-pf">pages and forums</label>"#,
+        r#"<input id="search-all-p" class="radio" type="radio" name="area" value="p"/>"#,
+        r#"<label for="search-all-p">pages only</label>"#,
+        r#"<input id="search-all-f" class="radio" type="radio" name="area" value="f"/>"#,
+        r#"<label for="search-all-f">forums only</label>"#,
+        r#"<div class="search-results">"#,
+    ];
+
+    for (case_id, source) in [
+        ("searchall-bare", "[[module SearchAll]]"),
+        ("searchall-uppercase-name", "[[module SEARCHALL]]"),
+        (
+            "searchall-unknown-argument",
+            "[[module SearchAll unknown=\"x\"]]",
+        ),
+        (
+            "searchall-single-quoted-argument",
+            "[[module SearchAll unknown='x']]",
+        ),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        for marker in form_markers {
+            assert!(
+                preview.body.contains(marker),
+                "{case_id} should render the frozen SearchAll form marker {marker}:\n{}",
+                preview.body,
+            );
+        }
+        assert!(
+            !preview.body.contains("[[module"),
+            "{case_id} should consume the SearchAll module:\n{}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source, expected) in [
+        (
+            "searchall-inline",
+            "before [[module SearchAll]] after",
+            "before [[module SearchAll]] after",
+        ),
+        (
+            "searchall-literal",
+            "@@[[module SearchAll]]@@",
+            "[[module SearchAll]]",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(expected) && !preview.body.contains("No such module"),
+            "{case_id} should preserve the live literal owner boundary:\n{}",
+            preview.body,
+        );
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-searchall-boundary",
+        "Fixture SearchAll Boundary",
+        "[[module SearchAll]]",
+    )
+    .await;
+    let view = async |extra: &str| match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-searchall-boundary", "extra": extra},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found SearchAll page view for {extra}, got {other:?}"),
+    };
+
+    let bare = view("").await;
+    assert!(
+        bare.contains(r#"<form action="dummy" id="search-form-all">"#),
+        "bare SearchAll view should render its form:\n{bare}",
+    );
+    let empty_query = view("/a/pf/q/").await;
+    assert!(
+        empty_query.contains(r#"<form action="dummy" id="search-form-all">"#),
+        "empty SearchAll query should render its form:\n{empty_query}",
+    );
+    for (case_id, extra) in [
+        ("searchall-route-pf-query", "/a/pf/q/wikidot"),
+        ("searchall-route-p-query", "/a/p/q/wikidot"),
+        ("searchall-route-f-query", "/a/f/q/wikidot"),
+        ("searchall-route-unknown-area-query", "/a/x/q/wikidot"),
+        ("searchall-route-query-without-area", "/q/wikidot"),
+    ] {
+        let queried = view(extra).await;
+        assert!(
+            queried.contains(
+                r#"<div class="error-block">Couldnt connect to host, ElasticSearch down?</div>"#
+            ) && !queried.contains("search-form-all"),
+            "{case_id} should render the current live backend failure:\n{queried}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries() {
+    async fn load_forum_mini_page_view(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected found forum mini page view for {slug}, got {other:?}")
+            }
+        }
+    }
+
+    async fn create_thread_with_replies(
+        runner: &TestRunner,
+        category_id: i64,
+        title: &str,
+        root_title: &str,
+        reply_titles: &[&str],
+    ) -> (i64, Vec<i64>) {
+        let thread = ForumThreadService::create(
+            runner.context(),
+            CreateForumThread {
+                forum_category_id: category_id,
+                user_id: SAMPLE_USER_ID,
+                associated_page_id: None,
+                title: title.to_owned(),
+                description: String::new(),
+                sticky: false,
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum mini fixture thread should be created");
+        let root = ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id: thread.forum_thread_id,
+                parent_post_id: None,
+                user_id: SAMPLE_USER_ID,
+                title: root_title.to_owned(),
+                wikitext: format!("{root_title} body"),
+                comments: "create forum mini root fixture".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum mini fixture root should be created");
+        let mut reply_ids = Vec::with_capacity(reply_titles.len());
+        for reply_title in reply_titles {
+            let reply = ForumPostService::create(
+                runner.context(),
+                CreateForumPost {
+                    forum_thread_id: thread.forum_thread_id,
+                    parent_post_id: Some(root.forum_post_id),
+                    user_id: SAMPLE_USER_ID,
+                    title: (*reply_title).to_owned(),
+                    wikitext: format!("{reply_title} body <unsafe>"),
+                    comments: "create forum mini reply fixture".to_owned(),
+                    from_wikidot: false,
+                },
+            )
+            .await
+            .expect("forum mini fixture reply should be created");
+            reply_ids.push(reply.forum_post_id);
+        }
+        (thread.forum_thread_id, reply_ids)
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let visible_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini visible group".to_owned(),
+            description: "Visible forum mini fixture".to_owned(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible forum mini group should be created");
+    let visible_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini visible category".to_owned(),
+            description: "Visible forum mini category fixture".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible forum mini category should be created");
+
+    for (case_id, source) in [
+        ("mini-recent-threads-empty", "[[module MiniRecentThreads]]"),
+        ("mini-active-threads-empty", "[[module MiniActiveThreads]]"),
+        ("mini-recent-posts-empty", "[[module MiniRecentPosts]]"),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="forum-mini-stat""#)
+                && preview.body.matches(r#"<div class="item""#).count() == 0,
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    let (high_thread_id, high_reply_ids) = create_thread_with_replies(
+        &runner,
+        visible_category.forum_category_id,
+        "High Activity Thread",
+        "High Root",
+        &["High Reply One", "High Reply Two", "High Reply Three"],
+    )
+    .await;
+
+    for (slug, title, source) in [
+        (
+            "fixture-mini-recent-threads",
+            "Fixture Mini Recent Threads",
+            "[[module MiniRecentThreads limit=\"2\"]]",
+        ),
+        (
+            "fixture-mini-active-threads",
+            "Fixture Mini Active Threads",
+            "[[module MiniActiveThreads limit=\"2\"]]",
+        ),
+        (
+            "fixture-mini-recent-posts",
+            "Fixture Mini Recent Posts",
+            "[[module MiniRecentPosts limit=\"3\"]]",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, source).await;
+    }
+
+    let (low_thread_id, low_reply_ids) = create_thread_with_replies(
+        &runner,
+        visible_category.forum_category_id,
+        "Low Recent Thread",
+        "Low Root",
+        &["Low Newest Reply"],
+    )
+    .await;
+
+    const PRIVATE_PAGE_SLUG: &str = "fixture-forum-mini-private-page";
+    const PRIVATE_PAGE_CATEGORY: &str = "fixture-forum-mini-private-category";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_PAGE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Forum Mini Private Page",
+        "private forum mini page fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_PAGE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_page_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: visible_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(private_page_id),
+            title: "Private Page Activity Marker".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum mini thread should be created");
+    let private_page_post = ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: private_page_thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: ADMIN_USER_ID,
+            title: "Private Page Post Marker".to_owned(),
+            wikitext: "private page post marker body".to_owned(),
+            comments: "create private-page forum mini fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum mini post should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: private_page_thread.forum_thread_id,
+            parent_post_id: Some(private_page_post.forum_post_id),
+            user_id: ADMIN_USER_ID,
+            title: "Private Page Reply Marker".to_owned(),
+            wikitext: "private page reply marker body".to_owned(),
+            comments: "create private-page forum mini reply fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private-page forum mini reply should be created");
+
+    let hidden_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini hidden group".to_owned(),
+            description: "Hidden forum mini fixture".to_owned(),
+            visible: false,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum mini group should be created");
+    let hidden_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: hidden_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Forum mini hidden category".to_owned(),
+            description: "Hidden forum mini category fixture".to_owned(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum mini category should be created");
+    create_thread_with_replies(
+        &runner,
+        hidden_category.forum_category_id,
+        "Hidden Newest Thread",
+        "Hidden Root",
+        &[
+            "Hidden Reply One",
+            "Hidden Reply Two",
+            "Hidden Reply Three",
+            "Hidden Reply Four",
+        ],
+    )
+    .await;
+
+    runner.set_request_context(RequestContext::default());
+
+    let recent_threads =
+        load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-threads").await;
+    let low_recent_position = recent_threads
+        .find("Low Recent Thread")
+        .expect("newer visible thread should render");
+    let high_recent_position = recent_threads
+        .find("High Activity Thread")
+        .expect("older visible thread should render");
+    assert!(
+        low_recent_position < high_recent_position,
+        "{recent_threads}"
+    );
+    assert!(
+        recent_threads.contains(&format!(
+            r#"href="/forum/t-{low_thread_id}/low-recent-thread""#
+        )) && recent_threads.contains("Posts: 1"),
+        "{recent_threads}",
+    );
+    assert!(
+        !recent_threads.contains("Hidden Newest Thread")
+            && !recent_threads.contains("Private Page Activity Marker")
+            && recent_threads.contains("class=\"odate time_")
+            && recent_threads.contains("format_%25O%20ago"),
+        "{recent_threads}",
+    );
+
+    let active_threads =
+        load_forum_mini_page_view(&runner, site_id, "fixture-mini-active-threads").await;
+    let high_active_position = active_threads
+        .find("High Activity Thread")
+        .expect("more active visible thread should render");
+    let low_active_position = active_threads
+        .find("Low Recent Thread")
+        .expect("less active visible thread should render");
+    assert!(
+        high_active_position < low_active_position,
+        "{active_threads}"
+    );
+    assert!(
+        active_threads.contains(&format!(
+            r#"href="/forum/t-{high_thread_id}/high-activity-thread""#
+        )) && active_threads.contains("Posts: 3")
+            && !active_threads.contains("Hidden Newest Thread")
+            && !active_threads.contains("Private Page Activity Marker"),
+        "{active_threads}",
+    );
+
+    let recent_posts =
+        load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-posts").await;
+    let low_reply_id = low_reply_ids[0];
+    assert!(
+        recent_posts.contains(&format!(
+            r#"href="/forum/t-{low_thread_id}/low-recent-thread#post-{low_reply_id}""#
+        )) && recent_posts.contains("Low Newest Reply")
+            && recent_posts.contains("Low Newest Reply body &lt;unsafe&gt;")
+            && recent_posts.contains("class=\"printuser\""),
+        "{recent_posts}",
+    );
+    assert!(
+        !recent_posts.contains("Low Root")
+            && !recent_posts.contains("High Root")
+            && !recent_posts.contains("Hidden Reply")
+            && !recent_posts.contains("Private Page Reply Marker")
+            && recent_posts.contains(&format!("#post-{}", high_reply_ids[2])),
+        "{recent_posts}",
+    );
+
+    for (case_id, source, expected_items) in [
+        (
+            "mini-recent-threads-bare",
+            "[[module MiniRecentThreads]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-limit-one",
+            "[[module MiniRecentThreads limit=\"1\"]]",
+            1usize,
+        ),
+        (
+            "mini-recent-threads-limit-zero",
+            "[[module MiniRecentThreads limit=\"0\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-limit-negative",
+            "[[module MiniRecentThreads limit=\"-1\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-limit-text",
+            "[[module MiniRecentThreads limit=\"abc\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-threads-unknown-argument",
+            "[[module MiniRecentThreads unknown=\"x\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-bare",
+            "[[module MiniActiveThreads]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-limit-one",
+            "[[module MiniActiveThreads limit=\"1\"]]",
+            1usize,
+        ),
+        (
+            "mini-active-threads-limit-zero",
+            "[[module MiniActiveThreads limit=\"0\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-limit-negative",
+            "[[module MiniActiveThreads limit=\"-1\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-limit-text",
+            "[[module MiniActiveThreads limit=\"abc\"]]",
+            2usize,
+        ),
+        (
+            "mini-active-threads-unknown-argument",
+            "[[module MiniActiveThreads unknown=\"x\"]]",
+            2usize,
+        ),
+        (
+            "mini-recent-posts-bare",
+            "[[module MiniRecentPosts]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-limit-one",
+            "[[module MiniRecentPosts limit=\"1\"]]",
+            1usize,
+        ),
+        (
+            "mini-recent-posts-limit-zero",
+            "[[module MiniRecentPosts limit=\"0\"]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-limit-negative",
+            "[[module MiniRecentPosts limit=\"-1\"]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-limit-text",
+            "[[module MiniRecentPosts limit=\"abc\"]]",
+            4usize,
+        ),
+        (
+            "mini-recent-posts-unknown-argument",
+            "[[module MiniRecentPosts unknown=\"x\"]]",
+            4usize,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert_eq!(
+            preview.body.matches(r#"<div class="item""#).count(),
+            expected_items,
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source) in [
+        (
+            "mini-recent-threads-inline",
+            "before [[module MiniRecentThreads limit=\"1\"]] after",
+        ),
+        (
+            "mini-recent-threads-literal",
+            "@@[[module MiniRecentThreads limit=\"1\"]]@@",
+        ),
+        (
+            "mini-active-threads-inline",
+            "before [[module MiniActiveThreads limit=\"1\"]] after",
+        ),
+        (
+            "mini-active-threads-literal",
+            "@@[[module MiniActiveThreads limit=\"1\"]]@@",
+        ),
+        (
+            "mini-recent-posts-inline",
+            "before [[module MiniRecentPosts limit=\"1\"]] after",
+        ),
+        (
+            "mini-recent-posts-literal",
+            "@@[[module MiniRecentPosts limit=\"1\"]]@@",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("[[module")
+                && !preview.body.contains("forum-mini-stat")
+                && !preview.body.contains("No such module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
+async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source, expected) in [
+        (
+            "forum-comments-no-context",
+            "[[module Comments]]",
+            concat!(
+                r#"<div class="comments-box"><div class="options" id="comments-options-hidden" >"#,
+                r#"<a href="javascript:;" onclick="WIKIDOT.modules.ForumCommentsModule.listeners.showComments(event)">Show Comments</a>"#,
+                r#"</div><div id="thread-container" class="thread-container" style="margin-top: 1em"></div></div>"#,
+            ),
+        ),
+        (
+            "forum-front-no-category",
+            "[[module FrontForum]]",
+            concat!(
+                r#"<div class="error-block">No forum category has been specified. "#,
+                r#"Please use attribute category="id" where id is the index number of the category.</div>"#,
+            ),
+        ),
+        (
+            "forum-category-no-context",
+            "[[module ForumCategory]]",
+            r#"<div class="error-block">No forum category has been specified.</div>"#,
+        ),
+        (
+            "forum-new-thread-no-context",
+            "[[module ForumNewThread]]",
+            r#"<div class="error-block">No forum category has been specified.</div>"#,
+        ),
+        (
+            "forum-thread-no-context",
+            "[[module ForumThread]]",
+            concat!(
+                r#"<div class="error-block">No thread to show - click Back once or twice "#,
+                r#"and try again</div>"#,
+            ),
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(expected) && !preview.body.contains("[[module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source, expected_heading, reverse) in [
+        (
+            "comments-title",
+            r#"[[module Comments title="Alpha Heading"]]"#,
+            Some("<h1>Alpha Heading</h1>"),
+            false,
+        ),
+        (
+            "comments-escaped-title",
+            r#"[[module Comments title="<Tag & Text>"]]"#,
+            Some("<h1>&lt;Tag &amp; Text&gt;</h1>"),
+            false,
+        ),
+        (
+            "comments-mixed-module-case",
+            r#"[[MoDuLe cOmMeNtS title="Mixed Module"]]"#,
+            Some("<h1>Mixed Module</h1>"),
+            false,
+        ),
+        (
+            "comments-reverse",
+            r#"[[module Comments order="reverse"]]"#,
+            None,
+            true,
+        ),
+        (
+            "comments-reverse-with-title",
+            r#"[[module Comments title="Reverse Two" order="reverse"]]"#,
+            Some("<h1>Reverse Two</h1>"),
+            true,
+        ),
+        (
+            "comments-forwards",
+            r#"[[module Comments order="forwards"]]"#,
+            None,
+            false,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="comments-box">"#)
+                && preview.body.contains(r#"id="comments-options-hidden""#)
+                && preview.body.contains(r#"id="thread-container""#)
+                && !preview.body.contains("comments-options-shown")
+                && !preview.body.contains("thread-container-posts")
+                && !preview.body.contains("[[module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+        assert_eq!(
+            preview.body.contains(r#"class="thread-container reverse""#),
+            reverse,
+            "{case_id}: {}",
+            preview.body,
+        );
+        match expected_heading {
+            Some(heading) => assert!(
+                preview.body.contains(heading),
+                "{case_id}: {}",
+                preview.body,
+            ),
+            None => assert!(
+                !preview.body.contains("<h1>"),
+                "{case_id}: {}",
+                preview.body,
+            ),
+        }
+    }
+
+    for (case_id, source) in [
+        ("comments-title-empty", r#"[[module Comments title=""]]"#),
+        (
+            "comments-title-single-quoted",
+            "[[module Comments title='Alpha Heading']]",
+        ),
+        ("comments-title-bare", "[[module Comments title=Alpha]]"),
+        (
+            "comments-title-key-case",
+            r#"[[module Comments Title="Alpha Heading"]]"#,
+        ),
+        (
+            "comments-order-forward-singular",
+            r#"[[module Comments order="forward"]]"#,
+        ),
+        (
+            "comments-order-uppercase",
+            r#"[[module Comments order="REVERSE"]]"#,
+        ),
+        ("comments-order-empty", r#"[[module Comments order=""]]"#),
+        (
+            "comments-order-single-quoted",
+            "[[module Comments order='reverse']]",
+        ),
+        ("comments-order-bare", "[[module Comments order=reverse]]"),
+        (
+            "comments-order-key-case",
+            r#"[[module Comments Order="reverse"]]"#,
+        ),
+        (
+            "comments-hide-single-quoted",
+            "[[module Comments hide='true']]",
+        ),
+        ("comments-hide-bare", "[[module Comments hide=true]]"),
+        ("comments-hide-empty", r#"[[module Comments hide=""]]"#),
+        (
+            "comments-hide-key-case",
+            r#"[[module Comments Hide="true"]]"#,
+        ),
+        (
+            "comments-unknown-attribute",
+            r#"[[module Comments unknown="x"]]"#,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains(r#"<div class="comments-box">"#)
+                && preview.body.contains(r#"class="thread-container""#)
+                && !preview.body.contains(r#"class="thread-container reverse""#)
+                && !preview.body.contains("<h1>")
+                && !preview.body.contains("comments-options-shown")
+                && !preview.body.contains("thread-container-posts")
+                && !preview.body.contains("[[module"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source) in [
+        (
+            "forum-start-inline-owner",
+            "before [[module ForumStart]] after",
+        ),
+        ("recent-posts-raw-owner", "@@[[module RecentPosts]]@@"),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("[[module")
+                && !preview.body.contains("forum-start-box")
+                && !preview.body.contains("forum-recent-posts-box")
+                && !preview.body.contains("error-block"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    let unsupported = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum-unobserved-arguments",
+            "wikitext": r#"[[module FrontForum category="1" feed="news"]]"#,
+        }),
+    );
+    assert!(
+        unsupported.body.contains("No such module")
+            && !unsupported.body.contains("forum-start-box")
+            && !unsupported.body.contains("forum-recent-posts-box"),
+        "an unobserved FrontForum query must fail closed: {}",
+        unsupported.body,
+    );
+
+    let unsupported_malformed_category = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum-unobserved-arguments-with-malformed-category",
+            "wikitext": r#"[[module FrontForum category="bad" feed="news"]]"#,
+        }),
+    );
+    assert!(
+        unsupported_malformed_category
+            .body
+            .contains("No such module")
+            && !unsupported_malformed_category
+                .body
+                .contains("Problem parsing attribute"),
+        "an unobserved FrontForum argument must take precedence over scalar parsing: {}",
+        unsupported_malformed_category.body,
+    );
+
+    let custom_body = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum-unobserved-custom-format",
+            "wikitext": "[[module FrontForum category=\"1\"]]\n%%linked_title%%\n[[/module]]",
+        }),
+    );
+    assert_eq!(
+        custom_body.body,
+        r#"<div class="error-block">Requested forum category does not exist.</div>"#,
+        "a missing FrontForum category must fail closed before evaluating its custom body",
+    );
+}
+
+#[tokio::test]
+async fn recent_threads_matches_live_placeholder_and_owner_boundaries() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source) in [
+        ("recentthreads-bare", "[[module RecentThreads]]"),
+        (
+            "recentthreads-limit",
+            r#"[[module RecentThreads limit="5"]]"#,
+        ),
+        (
+            "recentthreads-unknown-argument",
+            r#"[[module RecentThreads unknown="x"]]"#,
+        ),
+        ("recentthreads-mixed-case", "[[MoDuLe rEcEnTtHrEaDs]]"),
+        (
+            "recentthreads-body",
+            "[[module RecentThreads]]\nRECENT_THREADS_BODY_MUST_BE_CONSUMED\n[[/module]]",
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert_eq!(
+            preview.body.matches("later.").count(),
+            1,
+            "{case_id}: {}",
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains("[[module")
+                && !preview.body.contains("No such module")
+                && !preview
+                    .body
+                    .contains("RECENT_THREADS_BODY_MUST_BE_CONSUMED"),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    for (case_id, source) in [
+        (
+            "recentthreads-inline",
+            "before [[module RecentThreads]] after",
+        ),
+        ("recentthreads-raw-owner", "@@[[module RecentThreads]]@@"),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert!(
+            preview.body.contains("[[module") && !preview.body.contains("later."),
+            "{case_id}: {}",
+            preview.body,
+        );
+    }
+
+    let lookalike = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "recentthreads-lookalike",
+            "wikitext": "[[module RecentThreadsX]]",
+        }),
+    );
+    assert!(
+        lookalike.body.contains("No such module") && !lookalike.body.contains("later."),
+        "{}",
+        lookalike.body,
+    );
+
+    let unrelated_closer = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "recentthreads-unrelated-module-closer",
+            "wikitext": concat!(
+                "[[module RecentThreads]]\n",
+                "RECENT_THREADS_BOUNDARY_BEFORE\n",
+                "[[module FrontForum]]\n",
+                "UNRELATED_FRONT_FORUM_BODY\n",
+                "[[/module]]\n",
+                "RECENT_THREADS_BOUNDARY_AFTER",
+            ),
+        }),
+    );
+    assert!(
+        unrelated_closer.body.contains("later.")
+            && unrelated_closer
+                .body
+                .contains("RECENT_THREADS_BOUNDARY_BEFORE")
+            && unrelated_closer
+                .body
+                .contains("RECENT_THREADS_BOUNDARY_AFTER")
+            && unrelated_closer.body.contains("No such module"),
+        "RecentThreads must not consume a later module's body closer: {}",
+        unrelated_closer.body,
+    );
+}
+
+#[tokio::test]
+async fn forum_comments_list_resolves_only_visible_page_discussions() {
+    async fn create_comment(
+        runner: &TestRunner,
+        forum_thread_id: i64,
+        parent_post_id: Option<i64>,
+        number: usize,
+    ) -> i64 {
+        ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id,
+                parent_post_id,
+                user_id: SAMPLE_USER_ID,
+                title: format!("Page Comment {number:02}"),
+                wikitext: "Shared page comment body <observable>".to_owned(),
+                comments: "create page comments read-model fixture".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("page comment fixture should be created")
+        .forum_post_id
+    }
+
+    async fn point_page_at_discussion(
+        runner: &TestRunner,
+        page_id: i64,
+        forum_thread_id: i64,
+    ) {
+        let page = PageTable::find_by_id(page_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("page discussion fixture lookup should succeed")
+            .expect("page discussion fixture should exist");
+        let mut page = page.into_active_model();
+        page.discussion_thread_id = Set(Some(forum_thread_id));
+        page.update(runner.context().transaction())
+            .await
+            .expect("page discussion fixture should be linked");
+    }
+
+    async fn create_discussion_page(
+        runner: &mut TestRunner,
+        site_id: i64,
+        forum_category_id: i64,
+        slug: &str,
+        title: &str,
+        source: &str,
+    ) -> (i64, i64) {
+        create_listpages_test_page(runner, site_id, slug, title, source).await;
+        let page_id = listpages_test_page_id(runner, site_id, slug).await;
+        let thread = ForumThreadService::create(
+            runner.context(),
+            CreateForumThread {
+                forum_category_id,
+                user_id: SAMPLE_USER_ID,
+                associated_page_id: Some(page_id),
+                title: format!("{title} Thread"),
+                description: String::new(),
+                sticky: false,
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("page discussion fixture thread should be created");
+        point_page_at_discussion(runner, page_id, thread.forum_thread_id).await;
+        (page_id, thread.forum_thread_id)
+    }
+
+    async fn saved_comments_body(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+    ) -> String {
+        let saved_page = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        match saved_page {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected a found Comments attribute page view, got {other:?}")
+            }
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") VALUES ($1, NOW() - INTERVAL '1 second', NOW(), FALSE, ",
+                "'Comments Imported User', 'comments-imported-user', 3, FALSE) ",
+                "ON CONFLICT (user_id) DO UPDATE SET is_deleted = FALSE, ",
+                "name = EXCLUDED.name, slug = EXCLUDED.slug, karma = EXCLUDED.karma",
+            ),
+            [Value::from(SAMPLE_USER_ID)],
+        ))
+        .await
+        .expect("page comments Wikidot user fixture should be inserted");
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page Comments Read Model Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: Some(20_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("page comments forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Page Comments Read Model".to_owned(),
+            description: String::new(),
+            sort_index: Some(10),
+            max_nest_level: Some(2),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("page comments forum category should be created");
+
+    const PUBLIC_PAGE: &str = "fixture-forum-comments-public";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE,
+        "Public Page Comments Fixture",
+        "[[module Comments]]",
+    )
+    .await;
+    let public_page_id = listpages_test_page_id(&runner, site_id, PUBLIC_PAGE).await;
+    let public_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: SAMPLE_USER_ID,
+            associated_page_id: Some(public_page_id),
+            title: "Public Page Comments Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("public page discussion should be created");
+    point_page_at_discussion(&runner, public_page_id, public_thread.forum_thread_id)
+        .await;
+    let mut root_comment_ids = Vec::new();
+    for number in 0..12 {
+        root_comment_ids.push(
+            create_comment(&runner, public_thread.forum_thread_id, None, number).await,
+        );
+    }
+    let early_reply = create_comment(
+        &runner,
+        public_thread.forum_thread_id,
+        Some(root_comment_ids[0]),
+        100,
+    )
+    .await;
+    create_comment(
+        &runner,
+        public_thread.forum_thread_id,
+        Some(early_reply),
+        101,
+    )
+    .await;
+    create_comment(
+        &runner,
+        public_thread.forum_thread_id,
+        Some(root_comment_ids[11]),
+        200,
+    )
+    .await;
+
+    let (_, forwards_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-forwards-attributes",
+        "Page Comments Forwards Attributes",
+        r#"[[module Comments title="<Attribute & Forward>" hide="false" order="forwards"]]"#,
+    )
+    .await;
+    create_comment(&runner, forwards_thread_id, None, 400).await;
+
+    let (_, reverse_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-reverse-attributes",
+        "Page Comments Reverse Attributes",
+        r#"[[module Comments title="Reverse Saved" order="reverse"]]"#,
+    )
+    .await;
+    create_comment(&runner, reverse_thread_id, None, 410).await;
+    create_comment(&runner, reverse_thread_id, None, 411).await;
+
+    let (_, hidden_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-hidden",
+        "Page Comments Hidden",
+        r#"[[module Comments hide="true"]]"#,
+    )
+    .await;
+    create_comment(&runner, hidden_thread_id, None, 420).await;
+
+    let (_, invalid_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-invalid-attributes",
+        "Page Comments Invalid Attributes",
+        "[[module Comments title='Invalid Heading' hide='true' order=reverse]]",
+    )
+    .await;
+    create_comment(&runner, invalid_thread_id, None, 430).await;
+
+    let (deep_page_id, deep_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-depth-overflow",
+        "Page Comments Depth Overflow",
+        "[[module Comments]]",
+    )
+    .await;
+    let mut parent_post_id = create_comment(&runner, deep_thread_id, None, 300).await;
+    let mut deep_post_ids = vec![parent_post_id];
+    for number in 301..=430 {
+        parent_post_id =
+            create_comment(&runner, deep_thread_id, Some(parent_post_id), number).await;
+        deep_post_ids.push(parent_post_id);
+    }
+    // ForumPostService intentionally caps ordinary replies at the category's
+    // nesting setting. Rewire this defensive read fixture to model an imported
+    // relation graph that exceeds the renderer's independent safety boundary.
+    for pair in deep_post_ids.windows(2) {
+        runner
+            .context()
+            .transaction()
+            .execute_raw(Statement::from_sql_and_values(
+                runner.context().transaction().get_database_backend(),
+                "UPDATE forum_post SET parent_post_id = $1 WHERE forum_post_id = $2",
+                [Value::from(pair[0]), Value::from(pair[1])],
+            ))
+            .await
+            .expect("deep imported comment fixture should be rewired");
+    }
+
+    let deleted_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Deleted Page Comments Category".to_owned(),
+            description: String::new(),
+            sort_index: Some(11),
+            max_nest_level: Some(2),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted page comments category should be created");
+    let (deleted_category_page_id, _) = create_discussion_page(
+        &mut runner,
+        site_id,
+        deleted_category.forum_category_id,
+        "fixture-forum-comments-deleted-category",
+        "Deleted Category Page Comments",
+        "[[module Comments]]",
+    )
+    .await;
+    ForumService::delete_category(
+        runner.context(),
+        DeleteForumCategory {
+            forum_category_id: deleted_category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("page comments category fixture should be deleted");
+
+    let deleted_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Deleted Page Comments Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: Some(20_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted page comments group should be created");
+    let deleted_group_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: deleted_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Deleted Group Page Comments Category".to_owned(),
+            description: String::new(),
+            sort_index: Some(10),
+            max_nest_level: Some(2),
+            per_page_discussion: Some(true),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("deleted-group page comments category should be created");
+    let (deleted_group_page_id, _) = create_discussion_page(
+        &mut runner,
+        site_id,
+        deleted_group_category.forum_category_id,
+        "fixture-forum-comments-deleted-group",
+        "Deleted Group Page Comments",
+        "[[module Comments]]",
+    )
+    .await;
+    ForumService::delete_group(
+        runner.context(),
+        DeleteForumGroup {
+            forum_group_id: deleted_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("page comments group fixture should be deleted");
+
+    const PRIVATE_CATEGORY: &str = "forum-comments-private";
+    const PRIVATE_PAGE: &str = "fixture-forum-comments-private";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE,
+        "Private Page Comments Fixture",
+        "private page comments fixture",
+    )
+    .await;
+    set_listpages_test_category_slug(&runner, site_id, PRIVATE_PAGE, PRIVATE_CATEGORY)
+        .await;
+    let private_page_id = listpages_test_page_id(&runner, site_id, PRIVATE_PAGE).await;
+    let private_thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: Some(private_page_id),
+            title: "Private Page Comments Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("private page discussion should be created");
+    point_page_at_discussion(&runner, private_page_id, private_thread.forum_thread_id)
+        .await;
+    create_comment(&runner, private_thread.forum_thread_id, None, 99).await;
+
+    let foreign_site = run_endpoint!(runner, site_get, json!({"site": "scp-jp"}))
+        .expect("seeded SCP-JP site should exist");
+    let foreign_page_id =
+        listpages_test_page_id(&runner, foreign_site.site.site_id, "boundary-check")
+            .await;
+    runner.set_request_context(RequestContext::default());
+
+    let public_page_before = PageTable::find_by_id(public_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("public comments page snapshot should load")
+        .expect("public comments page should exist");
+    let public_thread_before =
+        ForumThreadTable::find_by_id(public_thread.forum_thread_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("public comments thread snapshot should load")
+            .expect("public comments thread should exist");
+    let public_posts_before = ForumPostTable::find()
+        .filter(forum_post::Column::ForumThreadId.eq(public_thread.forum_thread_id))
+        .order_by_asc(forum_post::Column::ForumPostId)
+        .all(runner.context().transaction())
+        .await
+        .expect("public comments post snapshot should load");
+
+    let saved_page = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PUBLIC_PAGE, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let saved_body = match saved_page {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found Comments page view, got {other:?}"),
+    };
+    assert!(
+        saved_body.contains(r#"<div class="comments-box">"#)
+            && saved_body.contains(r#"id="comments-options-hidden""#)
+            && saved_body.contains(r#"id="thread-container""#)
+            && saved_body.contains(r#"id="comments-options-shown""#)
+            && saved_body.contains("Page Comment 00")
+            && saved_body.contains("Page Comment 09")
+            && !saved_body.contains(r#">Page Comment 10</div>"#)
+            && !saved_body.contains("[[module Comments]]"),
+        "saved page_view should embed the permission-filtered first Comments page:\n{saved_body}",
+    );
+
+    let forwards_body = saved_comments_body(
+        &runner,
+        site_id,
+        "fixture-forum-comments-forwards-attributes",
+    )
+    .await;
+    assert!(
+        forwards_body.contains("<h1>&lt;Attribute &amp; Forward&gt;</h1>")
+            && forwards_body
+                .contains(r#"id="comments-options-hidden" style="display: none""#)
+            && forwards_body.contains(r#"class="thread-container""#)
+            && !forwards_body.contains(r#"class="thread-container reverse""#)
+            && forwards_body.contains("Page Comment 400"),
+        "exact hide=false and order=forwards should embed the forward page:\n{forwards_body}",
+    );
+
+    let reverse_body = saved_comments_body(
+        &runner,
+        site_id,
+        "fixture-forum-comments-reverse-attributes",
+    )
+    .await;
+    assert!(
+        reverse_body.contains("<h1>Reverse Saved</h1>")
+            && reverse_body.contains(r#"class="thread-container reverse""#)
+            && reverse_body.find("Page Comment 411")
+                < reverse_body.find("Page Comment 410")
+            && reverse_body.find("new-post-button")
+                < reverse_body.find("comments-options-shown"),
+        "exact order=reverse should embed the reverse page:\n{reverse_body}",
+    );
+
+    let hidden_body =
+        saved_comments_body(&runner, site_id, "fixture-forum-comments-hidden").await;
+    assert!(
+        hidden_body.contains(r#"id="comments-options-hidden""#)
+            && hidden_body.contains(r#"id="thread-container""#)
+            && !hidden_body.contains("comments-options-shown")
+            && !hidden_body.contains("thread-container-posts")
+            && !hidden_body.contains("Page Comment 420"),
+        "exact hide=true should keep the saved Comments shell inert:\n{hidden_body}",
+    );
+
+    let invalid_body = saved_comments_body(
+        &runner,
+        site_id,
+        "fixture-forum-comments-invalid-attributes",
+    )
+    .await;
+    assert!(
+        invalid_body.contains(r#"<div class="comments-box">"#)
+            && invalid_body.contains(r#"class="thread-container""#)
+            && !invalid_body.contains(r#"class="thread-container reverse""#)
+            && !invalid_body.contains("<h1>")
+            && !invalid_body.contains("comments-options-shown")
+            && !invalid_body.contains("thread-container-posts")
+            && !invalid_body.contains("Page Comment 430"),
+        "unobserved saved attribute forms must fail closed without querying:\n{invalid_body}",
+    );
+
+    let forward = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": public_page_id.to_string()},
+        }),
+    );
+    assert_eq!(forward.status, "ok");
+    assert_eq!(forward.thread_id, Some(public_thread.forum_thread_id));
+    assert!(
+        forward
+            .body
+            .contains(r#"<div class="options" id="comments-options-shown">"#)
+            && forward
+                .body
+                .contains(r#"<div id="thread-container-posts" style="display: none">"#)
+            && forward
+                .body
+                .contains(r#"<span class="pager-no">page 1 of 2</span>"#)
+            && forward
+                .body
+                .matches(r#"<div class="post-container" id="fpc-"#)
+                .count()
+                == 12
+            && forward.body.contains("Page Comment 00")
+            && forward.body.contains("Page Comment 09")
+            && forward.body.contains("Page Comment 100")
+            && forward.body.contains("Page Comment 101")
+            && forward
+                .body
+                .matches("Shared page comment body &lt;observable&gt;")
+                .count()
+                == 12
+            && !forward.body.contains(r#">Page Comment 10</div>"#)
+            && !forward.body.contains(r#">Page Comment 11</div>"#)
+            && !forward.body.contains("Page Comment 200"),
+        "{}",
+        forward.body,
+    );
+    for expected in [
+        format!(
+            "https://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}&amp;amp;size=small&amp;amp;timestamp="
+        ),
+        format!(
+            "background-image:url(https://www.wikidot.com/userkarma.php?u={SAMPLE_USER_ID})"
+        ),
+    ] {
+        assert!(
+            forward.body.contains(&expected),
+            "Comments must use the sealed HTTPS Wikidot user resources ({expected}):\n{}",
+            forward.body,
+        );
+    }
+    assert!(
+        !forward.body.contains(&format!(
+            "http://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}"
+        )) && !forward.body.contains(&format!(
+            "background-image:url(http://www.wikidot.com/userkarma.php?u={SAMPLE_USER_ID})"
+        )),
+        "Comments must not downgrade imported Wikidot user resources:\n{}",
+        forward.body,
+    );
+    assert!(
+        forward.body.find("Page Comment 00") < forward.body.find("Page Comment 100")
+            && forward.body.find("Page Comment 100")
+                < forward.body.find("Page Comment 101")
+            && forward.body.find("Page Comment 101")
+                < forward.body.find("Page Comment 01"),
+        "{}",
+        forward.body,
+    );
+    assert!(
+        forward.body.find("comments-options-shown")
+            < forward.body.find("new-post-button"),
+        "{}",
+        forward.body,
+    );
+    assert_eq!(forward.js_include.len(), 3);
+    assert!(
+        forward.js_include[0].ends_with("/ForumViewThreadModule.js")
+            && forward.js_include[1].ends_with("/ForumViewThreadPostsModule.js")
+            && forward.js_include[2].ends_with("/ForumNewPostFormModule.js"),
+        "{:?}",
+        forward.js_include,
+    );
+
+    let reverse = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {
+                "pageId": public_page_id.to_string(),
+                "order": "reverse",
+            },
+        }),
+    );
+    assert_eq!(reverse.status, "ok");
+    assert_eq!(reverse.thread_id, Some(public_thread.forum_thread_id));
+    assert!(
+        reverse.body.contains(r#">Page Comment 11</div>"#)
+            && reverse.body.contains(r#">Page Comment 02</div>"#)
+            && reverse.body.contains("Page Comment 200")
+            && !reverse.body.contains(r#">Page Comment 00</div>"#)
+            && !reverse.body.contains(r#">Page Comment 01</div>"#)
+            && !reverse.body.contains("Page Comment 100")
+            && !reverse.body.contains("Page Comment 101")
+            && reverse
+                .body
+                .matches(r#"<div class="post-container" id="fpc-"#)
+                .count()
+                == 11
+            && reverse.body.find("Page Comment 11")
+                < reverse.body.find("Page Comment 200")
+            && reverse.body.find("Page Comment 200")
+                < reverse.body.find("Page Comment 10")
+            && reverse.body.find("Page Comment 10")
+                < reverse.body.find("Page Comment 09")
+            && reverse.body.find("new-post-button")
+                < reverse.body.find("comments-options-shown"),
+        "{}",
+        reverse.body,
+    );
+    assert_eq!(reverse.js_include.len(), 3);
+    assert!(
+        reverse.js_include[0].ends_with("/ForumViewThreadModule.js")
+            && reverse.js_include[1].ends_with("/ForumNewPostFormModule.js")
+            && reverse.js_include[2].ends_with("/ForumViewThreadPostsModule.js"),
+        "{:?}",
+        reverse.js_include,
+    );
+
+    let ordinary_thread = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": public_thread.forum_thread_id.to_string()},
+        }),
+    );
+    assert_eq!(ordinary_thread.status, "ok");
+    assert!(
+        ordinary_thread.body.contains(&format!(
+            "http://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}&amp;amp;size=small&amp;amp;timestamp="
+        )) && ordinary_thread.body.contains(&format!(
+            "background-image:url(http://www.wikidot.com/userkarma.php?u={SAMPLE_USER_ID})"
+        )) && !ordinary_thread.body.contains(&format!(
+            "https://www.wikidot.com/avatar.php?userid={SAMPLE_USER_ID}"
+        )),
+        "non-Comments forum surfaces must retain their sealed HTTP resource scheme:\n{}",
+        ordinary_thread.body,
+    );
+
+    let depth_overflow = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": deep_page_id.to_string()},
+        }),
+    );
+    assert_eq!(depth_overflow.status, "not_ok");
+    assert!(depth_overflow.body.is_empty());
+    assert_eq!(depth_overflow.thread_id, None);
+    assert!(depth_overflow.js_include.is_empty());
+
+    let mut hidden_results = Vec::new();
+    for page_id in [
+        i64::MAX,
+        private_page_id,
+        foreign_page_id,
+        deleted_category_page_id,
+        deleted_group_page_id,
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumCommentsListModule",
+                "parameters": {"pageId": page_id.to_string()},
+            }),
+        );
+        hidden_results.push((
+            output.status,
+            output.body,
+            output.thread_id,
+            output.js_include,
+        ));
+    }
+    assert!(
+        hidden_results
+            .iter()
+            .all(|result| result == &hidden_results[0])
+    );
+    assert_eq!(hidden_results[0].0, "no_page");
+    assert!(hidden_results[0].1.is_empty());
+    assert_eq!(hidden_results[0].2, None);
+    assert!(hidden_results[0].3.is_empty());
+
+    let explicit_forwards = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {
+                "pageId": public_page_id.to_string(),
+                "order": "forwards",
+            },
+        }),
+    );
+    assert_eq!(explicit_forwards.status, "ok");
+    assert_eq!(
+        explicit_forwards.thread_id,
+        Some(public_thread.forum_thread_id)
+    );
+    assert!(
+        explicit_forwards.body.contains("Page Comment 00")
+            && explicit_forwards.body.contains("Page Comment 09")
+            && !explicit_forwards.body.contains(r#">Page Comment 10</div>"#)
+            && explicit_forwards.js_include[0].ends_with("/ForumViewThreadModule.js")
+            && explicit_forwards.js_include[1]
+                .ends_with("/ForumViewThreadPostsModule.js")
+            && explicit_forwards.js_include[2].ends_with("/ForumNewPostFormModule.js"),
+        "exact order=forwards should select the forward first page:\n{}",
+        explicit_forwards.body,
+    );
+
+    for page_id in [format!("+{public_page_id}"), format!("0{public_page_id}")] {
+        let noncanonical = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumCommentsListModule",
+                "parameters": {"pageId": page_id},
+            }),
+        );
+        assert_eq!(noncanonical.status, "no_page");
+        assert!(noncanonical.body.is_empty());
+        assert_eq!(noncanonical.thread_id, None);
+        assert!(noncanonical.js_include.is_empty());
+    }
+
+    for order in [
+        "forward",
+        "REVERSE",
+        "FORWARDS",
+        "",
+        "yes",
+        "true",
+        " reverse ",
+    ] {
+        let unsupported = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": "forum/ForumCommentsListModule",
+                "parameters": {
+                    "pageId": public_page_id.to_string(),
+                    "order": order,
+                },
+            }),
+        );
+        assert_eq!(unsupported.status, "not_ok", "order={order:?}");
+    }
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(foreign_site.site.site_id),
+        ..Default::default()
+    });
+    let mismatched_site = run_endpoint_err!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumCommentsListModule",
+            "parameters": {"pageId": public_page_id.to_string()},
+        }),
+    );
+    assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext::default());
+    let public_page_after = PageTable::find_by_id(public_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("public comments page snapshot should reload")
+        .expect("public comments page should still exist");
+    let public_thread_after = ForumThreadTable::find_by_id(public_thread.forum_thread_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("public comments thread snapshot should reload")
+        .expect("public comments thread should still exist");
+    let public_posts_after = ForumPostTable::find()
+        .filter(forum_post::Column::ForumThreadId.eq(public_thread.forum_thread_id))
+        .order_by_asc(forum_post::Column::ForumPostId)
+        .all(runner.context().transaction())
+        .await
+        .expect("public comments post snapshot should reload");
+    assert_eq!(public_page_after, public_page_before);
+    assert_eq!(public_thread_after, public_thread_before);
+    assert_eq!(public_posts_after, public_posts_before);
+}
+
+#[test]
+fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
+    // This comprehensive forum fixture exceeds the test harness's 2 MiB async
+    // poll stack. Keep it on the same bounded named-thread runtime pattern used
+    // by the large ListPages pagination regression below.
+    std::thread::Builder::new()
+        .name("forum-read-model-test".to_owned())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("forum read-model test runtime should build")
+                .block_on(
+                    forum_start_and_recent_posts_filter_before_counts_order_and_pagination_impl(),
+                );
+        })
+        .expect("forum read-model test thread should spawn")
+        .join()
+        .expect("forum read-model test thread should complete");
+}
+
+async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_impl() {
+    async fn create_thread(
+        runner: &TestRunner,
+        category_id: i64,
+        title: &str,
+        associated_page_id: Option<i64>,
+    ) -> i64 {
+        ForumThreadService::create(
+            runner.context(),
+            CreateForumThread {
+                forum_category_id: category_id,
+                user_id: SAMPLE_USER_ID,
+                associated_page_id,
+                title: title.to_owned(),
+                description: String::new(),
+                sticky: false,
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum read-model fixture thread should be created")
+        .forum_thread_id
+    }
+
+    async fn create_post(
+        runner: &TestRunner,
+        thread_id: i64,
+        parent_post_id: Option<i64>,
+        title: &str,
+    ) -> i64 {
+        ForumPostService::create(
+            runner.context(),
+            CreateForumPost {
+                forum_thread_id: thread_id,
+                parent_post_id,
+                user_id: SAMPLE_USER_ID,
+                title: title.to_owned(),
+                wikitext: format!("{title} body <observable>"),
+                comments: "create forum read-model fixture".to_owned(),
+                from_wikidot: false,
+            },
+        )
+        .await
+        .expect("forum read-model fixture post should be created")
+        .forum_post_id
+    }
+
+    async fn page_view_html(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+        extra: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": extra},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found forum read-model page view, got {other:?}"),
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let visible_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Visible Group".to_owned(),
+            description: "Visible <group> description".to_owned(),
+            visible: true,
+            sort_index: Some(10_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("visible forum read-model group should be created");
+    let primary_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model: Primary".to_owned(),
+            description: "Primary <category> description".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("primary forum read-model category should be created");
+    let empty_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Empty".to_owned(),
+            description: "Empty category".to_owned(),
+            sort_index: Some(20),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("empty forum read-model category should be created");
+    let pagination_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: visible_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Pagination".to_owned(),
+            description: "First-page category fixture".to_owned(),
+            sort_index: Some(30),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("pagination forum read-model category should be created");
+    let hidden_group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Hidden Group".to_owned(),
+            description: "Hidden forum read-model fixture".to_owned(),
+            visible: false,
+            sort_index: Some(10_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum read-model group should be created");
+    let hidden_category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: hidden_group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Read Model Hidden Category".to_owned(),
+            description: "Hidden category".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("hidden forum read-model category should be created");
+
+    let visible_structure = ForumService::get_structure(
+        runner.context(),
+        GetForumStructure {
+            site_id,
+            include_deleted: false,
+            visible_groups_only: true,
+        },
+    )
+    .await
+    .expect("public forum structure should load");
+    assert!(
+        visible_structure
+            .iter()
+            .all(|group| group.group.forum_group_id != hidden_group.forum_group_id),
+        "normal forum structure must exclude hidden groups before rendering",
+    );
+    let complete_structure = ForumService::get_structure(
+        runner.context(),
+        GetForumStructure {
+            site_id,
+            include_deleted: false,
+            visible_groups_only: false,
+        },
+    )
+    .await
+    .expect("complete forum structure should load");
+    assert!(
+        complete_structure
+            .iter()
+            .any(|group| group.group.forum_group_id == hidden_group.forum_group_id),
+        "direct hidden forum routes need the complete structure",
+    );
+
+    let empty_recent_posts = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "recent-posts empty fixture",
+            "wikitext": "[[module RecentPosts]]",
+        }),
+    )
+    .body;
+    assert!(
+        empty_recent_posts.contains(r#"<div class="forum-recent-posts-box" >"#)
+            && empty_recent_posts.contains(r#"<div class="thread-container"></div>"#)
+            && !empty_recent_posts.contains(r#"<div class="post" id="post-"#)
+            && !empty_recent_posts.contains(r#"<div class="pager">"#),
+        "{empty_recent_posts}",
+    );
+
+    for number in 0..21 {
+        let thread = create_thread(
+            &runner,
+            pagination_category.forum_category_id,
+            &format!("Pagination Thread {number:02}"),
+            None,
+        )
+        .await;
+        create_post(
+            &runner,
+            thread,
+            None,
+            &format!("Pagination Post {number:02}"),
+        )
+        .await;
+    }
+
+    let visible_thread = create_thread(
+        &runner,
+        primary_category.forum_category_id,
+        "Read Model Visible Thread",
+        None,
+    )
+    .await;
+    let root_id = create_post(&runner, visible_thread, None, "Visible Post 00").await;
+    ForumPostService::update(
+        runner.context(),
+        UpdateForumPost {
+            forum_post_id: root_id,
+            user_id: SAMPLE_USER_ID,
+            comments: "edit forum read-model fixture".to_owned(),
+            body: UpdateForumPostBody {
+                title: Maybe::Set("Visible Post 00 edited".to_owned()),
+                wikitext: Maybe::Set(
+                    "Visible Post 00 edited body <observable>".to_owned(),
+                ),
+            },
+        },
+    )
+    .await
+    .expect("forum read-model fixture post edit should succeed")
+    .expect("forum read-model fixture post edit should create a revision");
+    let mut visible_post_ids = vec![root_id];
+    for number in 1..22 {
+        visible_post_ids.push(
+            create_post(
+                &runner,
+                visible_thread,
+                Some(root_id),
+                &format!("Visible Post {number:02}"),
+            )
+            .await,
+        );
+    }
+
+    const PUBLIC_PAGE_SLUG: &str = "fixture-forum-read-model-public";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PUBLIC_PAGE_SLUG,
+        "Public Forum Read Model Page",
+        "public forum read-model page",
+    )
+    .await;
+    let public_page_id = listpages_test_page_id(&runner, site_id, PUBLIC_PAGE_SLUG).await;
+    let public_page_thread = create_thread(
+        &runner,
+        primary_category.forum_category_id,
+        "Public Page Discussion Marker",
+        Some(public_page_id),
+    )
+    .await;
+    let public_page_post_id =
+        create_post(&runner, public_page_thread, None, "Public Page Comment").await;
+
+    let hidden_thread = create_thread(
+        &runner,
+        hidden_category.forum_category_id,
+        "Read Model Hidden Thread",
+        None,
+    )
+    .await;
+    create_post(&runner, hidden_thread, None, "Hidden Newest Post").await;
+
+    const PRIVATE_PAGE_CATEGORY: &str = "forum-read-model-private";
+    const PRIVATE_PAGE_SLUG: &str = "fixture-forum-read-model-private";
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_PAGE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        "Private Forum Read Model Page",
+        "private forum read-model page",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        PRIVATE_PAGE_SLUG,
+        PRIVATE_PAGE_CATEGORY,
+    )
+    .await;
+    let private_page_id =
+        listpages_test_page_id(&runner, site_id, PRIVATE_PAGE_SLUG).await;
+    let private_thread = create_thread(
+        &runner,
+        primary_category.forum_category_id,
+        "Private Page Discussion Marker",
+        Some(private_page_id),
+    )
+    .await;
+    create_post(&runner, private_thread, None, "Private Newest Post").await;
+
+    const RECENT_POSTS_PAGE: &str = "fixture-forum-recent-posts";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        RECENT_POSTS_PAGE,
+        "Fixture Forum Recent Posts",
+        "[[module RecentPosts]]",
+    )
+    .await;
+    runner.set_request_context(RequestContext::default());
+
+    let forum_start = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "forum-start permission-first fixture",
+            "wikitext": "[[module ForumStart]]",
+        }),
+    )
+    .body;
+    assert!(
+        forum_start.contains(r#"<div class="forum-start-box">"#)
+            && forum_start.contains("Visible &lt;group&gt; description")
+            && forum_start.contains("Primary &lt;category&gt; description")
+            && forum_start.contains(&format!(
+                r#"href="/forum/c-{}/{}""#,
+                primary_category.forum_category_id,
+                deepwell::utils::normalize_page_slug("Read Model: Primary"),
+            ))
+            && !forum_start.contains("Read Model Hidden Group")
+            && !forum_start.contains("Private Page Discussion Marker"),
+        "{forum_start}",
+    );
+    let primary_row_start = forum_start
+        .find("Read Model: Primary")
+        .expect("primary category should render");
+    let primary_row = &forum_start[primary_row_start..];
+    assert!(
+        primary_row.contains(
+            r#"</div></td><td class="threads">2</td><td class="posts">23</td>"#,
+        ),
+        "private page activity must be filtered before category counts: {primary_row}",
+    );
+    let empty_row_start = forum_start
+        .find("Read Model Empty")
+        .expect("empty category should render");
+    let empty_row = &forum_start[empty_row_start..];
+    assert!(
+        empty_row.contains(
+            r#"</div></td><td class="threads">0</td><td class="posts">0</td>"#,
+        ),
+        "{empty_row}",
+    );
+    assert!(primary_row_start < empty_row_start, "{forum_start}");
+    assert!(
+        forum_start.contains(&format!(
+            r#"href="/forum/t-{public_page_thread}#post-{public_page_post_id}">Jump!</a>"#,
+        )),
+        "{forum_start}",
+    );
+
+    let front_forum = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum permission-first fixture",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{}" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum.contains(r#"<div class="front-forum-box">"#)
+            && front_forum
+                .matches(r#"<h1><span><a href="/forum/t-"#)
+                .count()
+                == 2
+            && front_forum.contains("Public Page Discussion Marker")
+            && front_forum.contains("Public Page Comment body &lt;observable&gt;")
+            && front_forum.contains("Comments: 0")
+            && front_forum.contains("Read Model Visible Thread")
+            && front_forum.contains("Comments: 21")
+            && front_forum.contains("Read Model Visible Group / Read Model: Primary")
+            && !front_forum.contains("Private Page Discussion Marker")
+            && !front_forum.contains("Read Model Hidden Thread"),
+        "{front_forum}",
+    );
+    let front_forum_missing = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum missing category fixture",
+            "wikitext": r#"[[module FrontForum category="9223372036854775807" limit="1"]]"#,
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_missing.contains("Requested forum category does not exist.")
+            && !front_forum_missing.contains(r#"<div class="front-forum-box">"#),
+        "{front_forum_missing}",
+    );
+
+    for (case_id, categories) in [
+        (
+            "front-forum populated-empty categories",
+            format!(
+                "{};{}",
+                primary_category.forum_category_id, empty_category.forum_category_id,
+            ),
+        ),
+        (
+            "front-forum empty-populated categories",
+            format!(
+                "{};{}",
+                empty_category.forum_category_id, primary_category.forum_category_id,
+            ),
+        ),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!(
+                    r#"[[module FrontForum category="{categories}" limit="2"]]"#,
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            output.matches(r#"<h1><span><a href="/forum/t-"#).count() == 2
+                && output.contains("Public Page Discussion Marker")
+                && output.contains("Read Model Visible Thread")
+                && !output.contains("Private Page Discussion Marker"),
+            "{case_id}: {output}",
+        );
+        let newest = output
+            .find("Public Page Discussion Marker")
+            .expect("newest permitted category item should render");
+        let next = output
+            .find("Read Model Visible Thread")
+            .expect("next permitted category item should render");
+        assert!(newest < next, "{case_id}: {output}");
+    }
+
+    for (case_id, categories) in [
+        (
+            "front-forum populated-missing categories",
+            format!("{};9223372036854775807", primary_category.forum_category_id,),
+        ),
+        (
+            "front-forum missing-populated categories",
+            format!("9223372036854775807;{}", primary_category.forum_category_id,),
+        ),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!(
+                    r#"[[module FrontForum category="{categories}" limit="2"]]"#,
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            output.matches(r#"<h1><span><a href="/forum/t-"#).count() == 2
+                && output.contains("Public Page Discussion Marker")
+                && output.contains("Read Model Visible Thread")
+                && !output.contains("Requested forum category does not exist."),
+            "{case_id}: {output}",
+        );
+    }
+
+    let front_forum_global = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum global category order",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{};{}" limit="3"]]"#,
+                primary_category.forum_category_id,
+                pagination_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    let public_position = front_forum_global
+        .find("Public Page Discussion Marker")
+        .expect("newest permitted thread should render");
+    let visible_position = front_forum_global
+        .find("Read Model Visible Thread")
+        .expect("second newest permitted thread should render");
+    let pagination_position = front_forum_global
+        .find("Pagination Thread 20")
+        .expect("newest thread from the second category should render");
+    assert!(
+        public_position < visible_position
+            && visible_position < pagination_position
+            && front_forum_global.contains(&format!(
+                r#"href="/forum/c-{}/read-model:primary">Read Model Visible Group / Read Model: Primary</a>"#,
+                primary_category.forum_category_id,
+            ))
+            && front_forum_global.contains(&format!(
+                r#"href="/forum/c-{}/read-model-pagination">Read Model Visible Group / Read Model Pagination</a>"#,
+                pagination_category.forum_category_id,
+            )),
+        "{front_forum_global}",
+    );
+
+    let front_forum_missing_list = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum all categories missing",
+            "wikitext": r#"[[module FrontForum category="9223372036854775806;9223372036854775807" limit="2"]]"#,
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_missing_list.contains(
+            r#"<div class="error-block">Requested forum category does not exist.</div>"#
+        ) && !front_forum_missing_list.contains("front-forum-box"),
+        "{front_forum_missing_list}",
+    );
+
+    let front_forum_malformed = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum malformed category list",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{};bad" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_malformed.contains(
+            r#"<div class="error-block">Problem parsing attribute "category".</div>"#
+        ) && !front_forum_malformed.contains("front-forum-box")
+            && !front_forum_malformed.contains("[[module"),
+        "{front_forum_malformed}",
+    );
+
+    for (case_id, offset) in [
+        ("front-forum explicit zero offset", "0"),
+        ("front-forum invalid offset defaults", "bad"),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": format!(
+                    r#"[[module FrontForum category="{}" limit="2" offset="{offset}"]]"#,
+                    primary_category.forum_category_id,
+                ),
+            }),
+        )
+        .body;
+        assert!(
+            output.matches(r#"<h1><span><a href="/forum/t-"#).count() == 2
+                && output.contains("Public Page Discussion Marker")
+                && output.contains("Read Model Visible Thread")
+                && !output.contains("Private Page Discussion Marker"),
+            "{case_id}: {output}",
+        );
+    }
+
+    let front_forum_offset_one = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum offset one",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{}" limit="1" offset="1"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_offset_one.contains("Read Model Visible Thread")
+            && !front_forum_offset_one.contains("Public Page Discussion Marker")
+            && !front_forum_offset_one.contains("Private Page Discussion Marker")
+            && front_forum_offset_one
+                .matches(r#"<h1><span><a href="/forum/t-"#)
+                .count()
+                == 1,
+        "{front_forum_offset_one}",
+    );
+
+    let front_forum_large_offset = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum large offset",
+            "wikitext": format!(
+                r#"[[module FrontForum category="{}" limit="2" offset="999"]]"#,
+                primary_category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        front_forum_large_offset.contains(r#"<div class="front-forum-box"></div>"#)
+            && !front_forum_large_offset.contains(r#"<h1><span><a href="/forum/t-"#),
+        "{front_forum_large_offset}",
+    );
+
+    for (case_id, wikitext) in [
+        (
+            "front-forum duplicate limit",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+        (
+            "front-forum duplicate offset",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" offset="1" offset="0"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+    ] {
+        let output = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": wikitext,
+            }),
+        )
+        .body;
+        assert!(
+            output.contains("No such module")
+                && !output.contains("front-forum-box")
+                && !output.contains("Public Page Discussion Marker")
+                && !output.contains("Read Model Visible Thread"),
+            "{case_id}: {output}",
+        );
+    }
+
+    let saved_multi_source = format!(
+        r#"[[module FrontForum category="{};{}" limit="3"]]"#,
+        primary_category.forum_category_id, pagination_category.forum_category_id,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-front-forum-multiple-categories",
+        "Fixture FrontForum Multiple Categories",
+        &saved_multi_source,
+    )
+    .await;
+    let saved_offset_source = format!(
+        r#"[[module FrontForum category="{}" limit="1" offset="1"]]"#,
+        primary_category.forum_category_id,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-front-forum-offset",
+        "Fixture FrontForum Offset",
+        &saved_offset_source,
+    )
+    .await;
+    let saved_malformed_source = format!(
+        r#"[[module FrontForum category="{};bad" limit="2"]]"#,
+        primary_category.forum_category_id,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-front-forum-malformed-category",
+        "Fixture FrontForum Malformed Category",
+        &saved_malformed_source,
+    )
+    .await;
+    for (slug, title, source) in [
+        (
+            "fixture-front-forum-duplicate-limit",
+            "Fixture FrontForum Duplicate Limit",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" limit="2"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+        (
+            "fixture-front-forum-duplicate-offset",
+            "Fixture FrontForum Duplicate Offset",
+            format!(
+                r#"[[module FrontForum category="{}" limit="1" offset="1" offset="0"]]"#,
+                primary_category.forum_category_id,
+            ),
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, &source).await;
+    }
+    runner.set_request_context(RequestContext::default());
+
+    let saved_multi = page_view_html(
+        &runner,
+        site_id,
+        "fixture-front-forum-multiple-categories",
+        "",
+    )
+    .await;
+    assert!(
+        saved_multi.matches(r#"<h1><span><a href="/forum/t-"#).count() == 3
+            && saved_multi.contains("Public Page Discussion Marker")
+            && saved_multi.contains("Read Model Visible Thread")
+            && saved_multi.contains("Pagination Thread 20")
+            && saved_multi.contains(&format!(
+                r#"href="/forum/c-{}/read-model-pagination">Read Model Visible Group / Read Model Pagination</a>"#,
+                pagination_category.forum_category_id,
+            ))
+            && !saved_multi.contains("Private Page Discussion Marker"),
+        "{saved_multi}",
+    );
+    let saved_offset =
+        page_view_html(&runner, site_id, "fixture-front-forum-offset", "").await;
+    assert!(
+        saved_offset.contains("Read Model Visible Thread")
+            && !saved_offset.contains("Public Page Discussion Marker")
+            && !saved_offset.contains("Private Page Discussion Marker"),
+        "{saved_offset}",
+    );
+    let saved_malformed = page_view_html(
+        &runner,
+        site_id,
+        "fixture-front-forum-malformed-category",
+        "",
+    )
+    .await;
+    assert!(
+        saved_malformed.contains(
+            r#"<div class="error-block">Problem parsing attribute "category".</div>"#
+        ) && !saved_malformed.contains("front-forum-box")
+            && !saved_malformed.contains("[[module"),
+        "{saved_malformed}",
+    );
+    for slug in [
+        "fixture-front-forum-duplicate-limit",
+        "fixture-front-forum-duplicate-offset",
+    ] {
+        let output = page_view_html(&runner, site_id, slug, "").await;
+        assert!(
+            output.contains("No such module")
+                && !output.contains("front-forum-box")
+                && !output.contains("Public Page Discussion Marker")
+                && !output.contains("Read Model Visible Thread"),
+            "{slug}: {output}",
+        );
+    }
+
+    let forum_start_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumStartModule",
+            "parameters": {},
+        }),
+    );
+    assert_eq!(forum_start_ajax.status, "ok");
+    assert!(
+        forum_start_ajax
+            .body
+            .contains(r#"<div class="forum-start-box">"#)
+            && forum_start_ajax.body.contains("Read Model Visible Group")
+            && !forum_start_ajax.body.contains("Read Model Hidden Group"),
+        "{}",
+        forum_start_ajax.body,
+    );
+
+    let category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": primary_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    assert_eq!(category_ajax.status, "ok");
+    assert!(
+        category_ajax
+            .body
+            .contains(r#"<div class="forum-category-box">"#)
+            && category_ajax.body.contains("Read Model Visible Thread")
+            && category_ajax.body.contains("Public Page Discussion Marker")
+            && !category_ajax
+                .body
+                .contains("Private Page Discussion Marker")
+            && !category_ajax.body.contains("Create a new thread"),
+        "{}",
+        category_ajax.body,
+    );
+    let missing_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {"c": "9223372036854775807", "p": "1"},
+        }),
+    );
+    assert_eq!(missing_category_ajax.status, "no_category");
+    assert!(missing_category_ajax.body.is_empty());
+    let empty_second_page = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": empty_category.forum_category_id.to_string(),
+                "p": "2",
+            },
+        }),
+    );
+    assert_eq!(empty_second_page.status, "not_ok");
+    assert!(empty_second_page.body.is_empty());
+
+    let hidden_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": hidden_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    assert_eq!(hidden_category_ajax.status, "ok");
+    assert!(
+        hidden_category_ajax
+            .body
+            .contains("Read Model Hidden Category"),
+        "a hidden group remains directly addressable by its observed category route: {}",
+        hidden_category_ajax.body,
+    );
+
+    let paginated_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": pagination_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    assert_eq!(paginated_category_ajax.status, "ok");
+    assert!(
+        paginated_category_ajax
+            .body
+            .contains("Number of threads: 21")
+            && paginated_category_ajax.body.contains("Number of posts: 21")
+            && paginated_category_ajax
+                .body
+                .matches(r#"<td class="name"><div class="title"><a href="/forum/t-"#)
+                .count()
+                == 20
+            && paginated_category_ajax
+                .body
+                .contains("Pagination Thread 20")
+            && !paginated_category_ajax
+                .body
+                .contains("Pagination Thread 00")
+            && paginated_category_ajax
+                .body
+                .matches(r#"<div class="pager">"#)
+                .count()
+                == 2,
+        "{}",
+        paginated_category_ajax.body,
+    );
+    let second_category_page = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": pagination_category.forum_category_id.to_string(),
+                "p": "2",
+            },
+        }),
+    );
+    assert_eq!(second_category_page.status, "ok");
+    assert!(
+        second_category_page.body.contains("Pagination Thread 00")
+            && !second_category_page.body.contains("Pagination Thread 20")
+            && second_category_page
+                .body
+                .contains(r#"<span class="pager-no">page 2 of 2</span>"#)
+            && second_category_page.body.contains(&format!(
+                r#"href="/forum/c-{}/p/1">&laquo; previous</a>"#,
+                pagination_category.forum_category_id,
+            ))
+            && second_category_page
+                .body
+                .matches(r#"<div class="pager">"#)
+                .count()
+                == 1,
+        "{}",
+        second_category_page.body,
+    );
+
+    let thread_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": visible_thread.to_string()},
+        }),
+    );
+    assert_eq!(thread_ajax.status, "ok");
+    assert!(
+        thread_ajax
+            .body
+            .contains(r#"<div class="forum-thread-box ">"#)
+            && thread_ajax.body.contains("Read Model Visible Thread")
+            && thread_ajax.body.contains("Number of posts: 22")
+            && thread_ajax
+                .body
+                .contains(r#"<div id="thread-container" class="thread-container">"#)
+            && thread_ajax
+                .body
+                .contains(r#"<div id="thread-container-posts" style="display: none">"#,)
+            && thread_ajax.body.contains(&format!(
+                r#"<div class="post-container" id="fpc-{root_id}">"#,
+            ))
+            && thread_ajax.body.contains("Visible Post 00 edited")
+            && thread_ajax.body.contains(r#"<div class="changes">"#)
+            && thread_ajax.body.contains("Last edited on")
+            && thread_ajax
+                .body
+                .contains(r#"<div class="revisions" style="display: none"></div>"#)
+            && thread_ajax.body.contains("Show more")
+            && thread_ajax.body.contains("Unfold All")
+            && thread_ajax.body.contains("Edit Title &amp; Description")
+            && thread_ajax.body.contains("New Post")
+            && thread_ajax.body.contains(r#"id="post-options-template""#),
+        "{}",
+        thread_ajax.body,
+    );
+    assert_eq!(thread_ajax.js_include.len(), 2);
+    assert!(
+        thread_ajax.js_include[0].ends_with("/ForumViewThreadPostsModule.js")
+            && thread_ajax.js_include[1].ends_with("/ForumViewThreadModule.js"),
+        "{:?}",
+        thread_ajax.js_include,
+    );
+    let thread_posts_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": visible_thread.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(thread_posts_ajax.status, "ok");
+    assert!(
+        thread_posts_ajax.body.starts_with(&format!(
+            r#"<div class="post-container" id="fpc-{root_id}">"#,
+        )) && !thread_posts_ajax
+            .body
+            .contains(r#"id="thread-container-posts""#)
+            && thread_posts_ajax.body.contains("Visible Post 00")
+            && thread_posts_ajax.body.contains("Visible Post 19")
+            && !thread_posts_ajax.body.contains("Visible Post 20")
+            && !thread_posts_ajax.body.contains("Private Newest Post")
+            && thread_posts_ajax.body.contains("Visible Post 00 edited")
+            && thread_posts_ajax.body.contains("Last edited on")
+            && !thread_posts_ajax.body.contains("Edit")
+            && !thread_posts_ajax.body.contains("Delete"),
+        "{}",
+        thread_posts_ajax.body,
+    );
+    assert_eq!(thread_posts_ajax.js_include.len(), 1);
+    assert!(
+        thread_posts_ajax.js_include[0].ends_with("/ForumViewThreadPostsModule.js"),
+        "{:?}",
+        thread_posts_ajax.js_include,
+    );
+    let private_thread_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": private_thread.to_string()},
+        }),
+    );
+    assert_eq!(private_thread_ajax.status, "no_thread");
+
+    for (module_name, parameters) in [
+        (
+            "forum/ForumViewCategoryModule",
+            json!({"c": primary_category.forum_category_id.to_string()}),
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": visible_thread.to_string()}),
+        ),
+        ("forum/ForumRecentPostsListModule", json!({"page": "1"})),
+    ] {
+        let widened = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": module_name,
+                "parameters": parameters,
+            }),
+        );
+        assert_eq!(
+            widened.status, "not_ok",
+            "{module_name} must require its exact observed parameter set",
+        );
+    }
+
+    let recent_posts_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumRecentPostsListModule",
+            "parameters": {
+                "page": "1",
+                "categoryId": primary_category.forum_category_id.to_string(),
+            },
+        }),
+    );
+    assert_eq!(recent_posts_ajax.status, "ok");
+    assert!(
+        recent_posts_ajax
+            .body
+            .starts_with(r#"<div id="recent-posts-container">"#)
+            && recent_posts_ajax.body.contains("Visible Post 21")
+            && recent_posts_ajax.body.contains("Public Page Comment")
+            && !recent_posts_ajax.body.contains("Private Newest Post")
+            && !recent_posts_ajax.body.contains("Hidden Newest Post"),
+        "{}",
+        recent_posts_ajax.body,
+    );
+
+    let invalid_numeric_requests = [
+        (
+            "forum/ForumViewCategoryModule",
+            json!({
+                "c": format!("+{}", primary_category.forum_category_id),
+                "p": "1",
+            }),
+            "no_category",
+        ),
+        (
+            "forum/ForumViewCategoryModule",
+            json!({
+                "c": format!("0{}", primary_category.forum_category_id),
+                "p": "1",
+            }),
+            "no_category",
+        ),
+        (
+            "forum/ForumViewCategoryModule",
+            json!({"c": primary_category.forum_category_id.to_string(), "p": "+1"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumViewCategoryModule",
+            json!({"c": primary_category.forum_category_id.to_string(), "p": "01"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumViewThreadModule",
+            json!({"t": format!("+{visible_thread}")}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadModule",
+            json!({"t": format!("0{visible_thread}")}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": format!("+{visible_thread}"), "pageNo": "1"}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": format!("0{visible_thread}"), "pageNo": "1"}),
+            "no_thread",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": visible_thread.to_string(), "pageNo": "+1"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumViewThreadPostsModule",
+            json!({"t": visible_thread.to_string(), "pageNo": "01"}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "+1", "categoryId": primary_category.forum_category_id.to_string()}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "01", "categoryId": primary_category.forum_category_id.to_string()}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "1", "categoryId": format!("+{}", primary_category.forum_category_id)}),
+            "not_ok",
+        ),
+        (
+            "forum/ForumRecentPostsListModule",
+            json!({"page": "1", "categoryId": format!("0{}", primary_category.forum_category_id)}),
+            "not_ok",
+        ),
+    ];
+    for (module_name, parameters, expected_status) in invalid_numeric_requests {
+        let noncanonical = run_endpoint!(
+            runner,
+            wikidot_forum_module,
+            json!({
+                "site_id": site_id,
+                "module_name": module_name,
+                "parameters": parameters,
+            }),
+        );
+        assert_eq!(
+            noncanonical.status, expected_status,
+            "{module_name} must reject noncanonical numeric scalars",
+        );
+        assert!(noncanonical.body.is_empty(), "{module_name}");
+        assert_eq!(noncanonical.thread_id, None, "{module_name}");
+        assert!(noncanonical.js_include.is_empty(), "{module_name}");
+    }
+
+    let unsupported_recent_posts_page = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumRecentPostsListModule",
+            "parameters": {"page": "2", "categoryId": ""},
+        }),
+    );
+    assert_eq!(unsupported_recent_posts_page.status, "not_ok");
+
+    let first_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "").await;
+    assert!(
+        first_page.contains(r#"<div class="forum-recent-posts-box" >"#)
+            && first_page.contains(r#"id="recent-posts-category""#)
+            && first_page.contains("Read Model Visible Group: Read Model: Primary")
+            && !first_page.contains("Read Model Hidden Group")
+            && !first_page.contains("Hidden Newest Post")
+            && !first_page.contains("Private Newest Post")
+            && first_page.matches(r#"<div class="post" id="post-"#).count() == 20
+            && first_page.contains("Public Page Comment")
+            && first_page.contains(&format!(
+                r#"href="/{PUBLIC_PAGE_SLUG}/comments/show#post-{public_page_post_id}""#,
+            ))
+            && first_page.contains(&format!(
+                r#"href="/forum/t-{visible_thread}/read-model-visible-thread#post-{}""#,
+                visible_post_ids[21],
+            ))
+            && first_page.contains("Visible Post 21")
+            && !first_page.contains("Visible Post 00")
+            && first_page.contains("updateList(2)")
+            && first_page.contains("class=\"odate time_")
+            && first_page
+                .contains("format_%25e%20%25b%20%25Y%2C%20%25H%3A%25M%7Cagohover")
+            && first_page.contains("Visible Post 21 body &lt;observable&gt;"),
+        "{first_page}",
+    );
+    let post_21 = first_page
+        .find("Visible Post 21")
+        .expect("newest visible post should render");
+    let post_20 = first_page
+        .find("Visible Post 20")
+        .expect("next visible post should render");
+    assert!(post_21 < post_20, "{first_page}");
+
+    let second_page = page_view_html(&runner, site_id, RECENT_POSTS_PAGE, "/p/2").await;
+    let expected_second_page_titles = [
+        "Visible Post 02".to_owned(),
+        "Visible Post 01".to_owned(),
+        "Visible Post 00".to_owned(),
+    ]
+    .into_iter()
+    .chain(
+        (4..=20)
+            .rev()
+            .map(|number| format!("Pagination Post {number:02}")),
+    )
+    .collect::<Vec<_>>();
+    let second_page_positions = expected_second_page_titles
+        .iter()
+        .map(|title| {
+            second_page
+                .find(title)
+                .unwrap_or_else(|| panic!("page 2 should contain {title}: {second_page}"))
+        })
+        .collect::<Vec<_>>();
+    assert!(
+        second_page
+            .matches(r#"<div class="post" id="post-"#)
+            .count()
+            == 20
+            && second_page_positions
+                .windows(2)
+                .all(|pair| pair[0] < pair[1])
+            && !second_page.contains("Visible Post 03")
+            && !second_page.contains("Pagination Post 03")
+            && !second_page.contains("Hidden Newest Post")
+            && !second_page.contains("Private Newest Post")
+            && second_page.contains(r#"<span class="pager-no">page 2</span>"#)
+            && second_page.contains("updateList(1)"),
+        "{second_page}",
+    );
+
+    let guest_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("guest")),
+    )
+    .await
+    .expect("guest role should exist");
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    let everyone_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("everyone")),
+    )
+    .await
+    .expect("everyone role should exist");
+    RolePermissionTable::delete_many()
+        .filter(role_permission::Column::RoleId.is_in([
+            guest_role.role_id,
+            anonymous_role.role_id,
+            everyone_role.role_id,
+        ]))
+        .filter(role_permission::Column::SiteId.eq(site_id))
+        .filter(role_permission::Column::ResourceType.eq(Resource::Page))
+        .filter(role_permission::Column::ResourceCategoryId.is_null())
+        .filter(role_permission::Column::Action.eq(Action::View))
+        .exec(runner.context().transaction())
+        .await
+        .expect("anonymous page view permissions should be revoked");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("permission cache invalidation should run");
+    let denied = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadModule",
+            "parameters": {"t": visible_thread.to_string()},
+        }),
+    );
+    assert_eq!(denied.status, "not_ok");
+    assert!(denied.body.is_empty());
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id + 1),
+        ..Default::default()
+    });
+    let mismatched_site = run_endpoint_err!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumStartModule",
+            "parameters": {},
+        }),
+    );
+    assert_contains_error!(mismatched_site, ErrorType::PermissionDenied);
 }
 
 #[tokio::test]
@@ -3689,15 +11681,8 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
             .contains(r#"<div id="membership-by-password-box">"#)
             && anonymous_preview
                 .body
-                .contains("Please create an account and/or sign in first.")
-            && anonymous_preview
-                .body
-                .contains("WIKIDOT.page.listeners.loginClick(event)")
-            && anonymous_preview
-                .body
-                .contains("WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)")
-            && anonymous_preview.body.contains("Create a new account"),
-        "anonymous MembershipByPassword should render the live sign-in/create-account prompt:\n{}",
+                .contains("Membership via password is not enabled for this site."),
+        "anonymous MembershipByPassword should render the current disabled state:\n{}",
         anonymous_preview.body,
     );
     assert!(
@@ -3745,8 +11730,8 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
             && member_preview.body.contains("You can not apply.<br/>")
             && member_preview
                 .body
-                .contains("It seems you already are a member of this site."),
-        "member MembershipByPassword should render the live already-member error:\n{}",
+                .contains("Membership via password is not enabled for this site."),
+        "member MembershipByPassword should render the current disabled state:\n{}",
         member_preview.body,
     );
     assert!(
@@ -3787,9 +11772,10 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
     assert!(
         anonymous_body.contains("MBP_START")
             && anonymous_body.contains(r#"<div id="membership-by-password-box">"#)
-            && anonymous_body.contains("Please create an account and/or sign in first.")
+            && anonymous_body
+                .contains("Membership via password is not enabled for this site.")
             && anonymous_body.contains("MBP_END"),
-        "saved anonymous page view should render the live sign-in/create-account prompt:\n{anonymous_body}",
+        "saved anonymous page view should render the current disabled state:\n{anonymous_body}",
     );
 
     let sample_session_token = SessionService::create(
@@ -3823,9 +11809,10 @@ async fn membership_by_password_module_matches_live_anonymous_and_member_output(
         member_body.contains("MBP_START")
             && member_body.contains(r#"<div id="membership-by-password-box">"#)
             && member_body.contains("You can not apply.<br/>")
-            && member_body.contains("It seems you already are a member of this site.")
+            && member_body
+                .contains("Membership via password is not enabled for this site.")
             && member_body.contains("MBP_END"),
-        "saved member page view should render the live already-member error:\n{member_body}",
+        "saved member page view should render the current disabled state:\n{member_body}",
     );
     assert!(
         !anonymous_body.contains("[[module MembershipByPassword")
@@ -3953,6 +11940,818 @@ async fn simpletodo_and_sendinvitations_modules_match_live_preview_basics() {
         assert!(
             !saved_html.contains(forbidden),
             "saved SimpleToDo must not restore active page-origin content {forbidden:?}:\n{saved_html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views()
+ {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = concat!(
+        "BEFORE\n",
+        "[[module MailForm to=\"dummy\" button=\"Send\"]]\n",
+        "* first-field\n",
+        " * title: First field\n",
+        " * default: harmless\n",
+        " * type: text\n",
+        "* second-field\n",
+        " * title: Second field\n",
+        " * type: textarea\n",
+        "[[/module]]\n",
+        "AFTER",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "MailForm fail-closed preview",
+            "wikitext": source,
+        }),
+    );
+    assert_mailform_is_literal_and_inert(&preview.body);
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-mailform-fail-closed",
+        "Fixture MailForm Fail Closed",
+        source,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-mailform-fail-closed", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found MailForm view, got {other:?}"),
+    };
+    assert_mailform_is_literal_and_inert(&body);
+}
+
+fn assert_mailform_is_literal_and_inert(body: &str) {
+    assert!(
+        body.contains("BEFORE")
+            && body.contains("<em>MailForm</em>")
+            && body.contains("No such module")
+            && body.contains("AFTER"),
+        "MailForm without a trusted action contract must fail closed between authored boundaries:\n{body}",
+    );
+    for forbidden in [
+        r#"<div class="mailform-box""#,
+        "<form",
+        "javascript:",
+        "mailformdef-",
+        "MailFormModule.listeners",
+    ] {
+        assert!(
+            !body.contains(forbidden),
+            "fail-closed MailForm output must not expose active control {forbidden:?}:\n{body}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn anonymous_page_and_site_utility_modules_match_frozen_safe_states() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let cases = [
+        (
+            "module-own-line-redirect",
+            "[[module Redirect]]",
+            r#"<div class="error-block">No redirection destination specified. Please use the destination="page-name" or destination="url" attribute.</div>"#,
+        ),
+        (
+            "module-own-line-themepreviewer",
+            "[[module ThemePreviewer]]",
+            r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#,
+        ),
+        (
+            "module-own-line-managesite",
+            "[[module ManageSite]]",
+            concat!(
+                r#"<div class="row-fluid">"#,
+                "\n\t",
+                r#"<div class="span3 offset1">"#,
+                "\n\t\t",
+                r#"<div class="homer">"#,
+                "\n\t\t",
+                r#"<img src="/common--images/404_homer.png">"#,
+                "\n\t\t</div>\n\t</div>\n\t",
+                r#"<div class="span7">"#,
+                "\n\t\t<h1>Doh!</h1>\n",
+                "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+                "\t\t\t\t",
+                r#"<div class="form-actions">"#,
+                "\n\t\t\t",
+                r#"<a href="javascript:;" class="btn btn-primary btn-large" onclick="WIKIDOT.page.listeners.loginClick(event)">Sign in</a>"#,
+                "\n\t\t</div>\n\t\t\t</div>\n</div>",
+            ),
+        ),
+        (
+            "module-own-line-clone",
+            "[[module Clone]]",
+            r#"<div class="error-block">You should be logged in to clone a site.</div>"#,
+        ),
+        (
+            "module-own-line-dashboard",
+            "[[module Dashboard]]",
+            r#"<div class="error-block">Not allowed. Error.</div>"#,
+        ),
+        (
+            "module-own-line-petitionadmin",
+            "[[module PetitionAdmin]]",
+            r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#,
+        ),
+        (
+            "module-own-line-sitegrid",
+            "[[module SiteGrid]]",
+            r#"<div class="error-block">No sites provided.</div>"#,
+        ),
+    ];
+
+    for (case_id, module_source, expected) in cases {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": module_source,
+            }),
+        );
+        assert_eq!(
+            preview.body.trim(),
+            expected,
+            "{case_id} should match the frozen anonymous PagePreview output",
+        );
+        assert!(
+            !preview.body.contains(module_source)
+                && !preview.body.contains("No such module, please"),
+            "{case_id} should consume the evidenced module without the generic fallback:\n{}",
+            preview.body,
+        );
+    }
+
+    let source = concat!(
+        "REDIRECT\n",
+        "[[module Redirect]]\n",
+        "THEME\n",
+        "[[module ThemePreviewer]]\n",
+        "MANAGE\n",
+        "[[module ManageSite]]\n",
+        "CLONE\n",
+        "[[module Clone]]\n",
+        "DASHBOARD\n",
+        "[[module Dashboard]]\n",
+        "PETITION\n",
+        "[[module PetitionAdmin]]\n",
+        "SITEGRID\n",
+        "[[module SiteGrid]]\n",
+        "END",
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-anonymous-site-utility-modules",
+        "Fixture Anonymous Site Utility Modules",
+        source,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": "fixture-anonymous-site-utility-modules", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found site utility module view, got {other:?}"),
+    };
+    for expected in [
+        "You're not signed in or you are not an administrator of this Wiki.",
+        "You should be logged in to clone a site.",
+        "This tool is for use by the administrators of this site",
+        "No sites provided.",
+    ] {
+        assert!(
+            body.contains(expected),
+            "saved anonymous utility view should contain {expected:?}:\n{body}",
+        );
+    }
+    assert!(
+        !body.contains("No such module, please")
+            && !body.contains("data-wikijump-compat-clone"),
+        "saved anonymous utility view must not reuse the authoring actor's compiled branch:\n{body}",
+    );
+}
+
+#[tokio::test]
+async fn authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models()
+ {
+    const MANAGE_SITE_SOURCE: &str = "[[module ManageSite]]";
+    const MANAGE_SITE_BODY_SHA256: &str =
+        "7daaec8dc6eca01b2bec08d9959dff6d0ed562c404cd20e1d5b156bc26da0b57";
+    const PETITION_ADMIN_SOURCE: &str = "[[module PetitionAdmin]]";
+    const PETITION_ADMIN_BODY_SHA256: &str =
+        "b80d4331c4edc47c4129f08701a14e031c07f7f302b1384614eedb38ced2124c";
+
+    let body_sha256 = |body: &str| hex::encode(Sha256::digest(body.trim().as_bytes()));
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    SiteService::update(
+        runner.context(),
+        Reference::Id(site_id),
+        UpdateSiteBody {
+            name: Maybe::Set(
+                r#"<script data-site-text="unsafe">probe</script>"#.to_owned(),
+            ),
+            ..Default::default()
+        },
+        None,
+        ADMIN_USER_ID,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("hostile site text fixture should be stored");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let manage_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite administrator read model",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let petition_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin administrator read model",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert_eq!(
+        body_sha256(&manage_preview.body),
+        MANAGE_SITE_BODY_SHA256,
+        "administrator ManageSite preview must match the captured initial manager shell exactly",
+    );
+    assert_eq!(
+        body_sha256(&petition_preview.body),
+        PETITION_ADMIN_BODY_SHA256,
+        "administrator PetitionAdmin preview must match the captured no-campaign body exactly",
+    );
+    assert!(
+        !manage_preview.body.contains("data-site-text")
+            && !petition_preview.body.contains("data-site-text"),
+        "captured initial read models must not interpolate dynamic site text",
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-admin-manage-site-read-model",
+        "Fixture Admin ManageSite Read Model",
+        MANAGE_SITE_SOURCE,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-admin-petition-read-model",
+        "Fixture Admin Petition Read Model",
+        PETITION_ADMIN_SOURCE,
+    )
+    .await;
+    let administrator_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "site utility administrator read model".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("administrator session should be created");
+    let body = |view| match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved administrator site utility page, got {other:?}"),
+    };
+    let saved_manage = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": administrator_session.clone(),
+            "route": {"slug": "fixture-admin-manage-site-read-model", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    let saved_petition = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": administrator_session,
+            "route": {"slug": "fixture-admin-petition-read-model", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert_eq!(
+        body_sha256(&saved_manage),
+        MANAGE_SITE_BODY_SHA256,
+        "saved administrator ManageSite must re-render the captured initial manager shell",
+    );
+    assert_eq!(
+        body_sha256(&saved_petition),
+        PETITION_ADMIN_BODY_SHA256,
+        "saved administrator PetitionAdmin must re-render the captured no-campaign body",
+    );
+}
+
+#[tokio::test]
+async fn authenticated_site_utility_preview_denies_only_non_administrators() {
+    const MANAGE_SITE_SOURCE: &str = "[[module ManageSite]]";
+    const PETITION_ADMIN_SOURCE: &str = "[[module PetitionAdmin]]";
+    const MANAGE_SITE_ANONYMOUS_HTML: &str = concat!(
+        r#"<div class="row-fluid">"#,
+        "\n\t",
+        r#"<div class="span3 offset1">"#,
+        "\n\t\t",
+        r#"<div class="homer">"#,
+        "\n\t\t",
+        r#"<img src="/common--images/404_homer.png">"#,
+        "\n\t\t</div>\n\t</div>\n\t",
+        r#"<div class="span7">"#,
+        "\n\t\t<h1>Doh!</h1>\n",
+        "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+        "\t\t\t\t",
+        r#"<div class="form-actions">"#,
+        "\n\t\t\t",
+        r#"<a href="javascript:;" class="btn btn-primary btn-large" onclick="WIKIDOT.page.listeners.loginClick(event)">Sign in</a>"#,
+        "\n\t\t</div>\n\t\t\t</div>\n</div>",
+    );
+    const MANAGE_SITE_NON_ADMIN_HTML: &str = concat!(
+        r#"<div class="row-fluid">"#,
+        "\n\t",
+        r#"<div class="span3 offset1">"#,
+        "\n\t\t",
+        r#"<div class="homer">"#,
+        "\n\t\t",
+        r#"<img src="/common--images/404_homer.png">"#,
+        "\n\t\t</div>\n\t</div>\n\t",
+        r#"<div class="span7">"#,
+        "\n\t\t<h1>Doh!</h1>\n",
+        "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+        "\t\t\t</div>\n</div>",
+    );
+    const PETITION_ADMIN_DENIAL_HTML: &str = r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_manage_site = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite anonymous actor boundary",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let anonymous_petition_admin = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin anonymous actor boundary",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert_eq!(
+        anonymous_manage_site.body.trim(),
+        MANAGE_SITE_ANONYMOUS_HTML,
+        "anonymous ManageSite must retain its login-capable live DOM",
+    );
+    assert_eq!(
+        anonymous_petition_admin.body.trim(),
+        PETITION_ADMIN_DENIAL_HTML,
+        "anonymous PetitionAdmin must retain its existing permission error",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let non_admin_manage_site = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite authenticated non-admin boundary",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let non_admin_petition_admin = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin authenticated non-admin boundary",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert_eq!(
+        non_admin_manage_site.body.trim(),
+        MANAGE_SITE_NON_ADMIN_HTML,
+        "an authenticated non-admin must receive the live ManageSite denial without a sign-in action",
+    );
+    assert_eq!(
+        non_admin_petition_admin.body.trim(),
+        PETITION_ADMIN_DENIAL_HTML,
+        "an authenticated non-admin must receive the live PetitionAdmin denial",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let admin_manage_site = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "ManageSite administrator residual",
+            "wikitext": MANAGE_SITE_SOURCE,
+        }),
+    );
+    let admin_petition_admin = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "PetitionAdmin administrator residual",
+            "wikitext": PETITION_ADMIN_SOURCE,
+        }),
+    );
+    assert!(
+        admin_manage_site.body.contains("id=\"site-manager-menu\"")
+            && admin_manage_site.body.contains("id=\"sm-action-area\"")
+            && !admin_manage_site.body.contains(MANAGE_SITE_NON_ADMIN_HTML),
+        "administrator ManageSite must render the manager shell without a denial:\n{}",
+        admin_manage_site.body,
+    );
+    assert!(
+        admin_petition_admin
+            .body
+            .contains("id=\"petition-admin-module-box\"")
+            && admin_petition_admin
+                .body
+                .contains("You have no petition campaigns defined.")
+            && !admin_petition_admin
+                .body
+                .contains(PETITION_ADMIN_DENIAL_HTML),
+        "administrator PetitionAdmin must render the no-campaign body without a denial:\n{}",
+        admin_petition_admin.body,
+    );
+}
+
+#[tokio::test]
+async fn saved_site_utility_modules_recheck_the_session_actor() {
+    const HOLDER: &str = "fixture-site-utility-actor-boundary";
+    const SOURCE: &str = concat!(
+        "MANAGE_START\n",
+        "[[module ManageSite]]\n",
+        "MANAGE_END\n",
+        "PETITION_START\n",
+        "[[module PetitionAdmin]]\n",
+        "PETITION_END",
+    );
+    const MANAGE_SITE_NON_ADMIN_HTML: &str = concat!(
+        r#"<div class="row-fluid">"#,
+        "\n\t",
+        r#"<div class="span3 offset1">"#,
+        "\n\t\t",
+        r#"<div class="homer">"#,
+        "\n\t\t",
+        r#"<img src="/common--images/404_homer.png">"#,
+        "\n\t\t</div>\n\t</div>\n\t",
+        r#"<div class="span7">"#,
+        "\n\t\t<h1>Doh!</h1>\n",
+        "\t\t<h3>You're not signed in or you are not an administrator of this Wiki.</h3>\n",
+        "\t\t\t</div>\n</div>",
+    );
+    const PETITION_ADMIN_DENIAL_HTML: &str = r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER,
+        "Fixture Site Utility Actor Boundary",
+        SOURCE,
+    )
+    .await;
+
+    let non_admin_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "site utility non-admin boundary".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("non-admin session should be created");
+    let administrator_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "site utility administrator residual".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("administrator session should be created");
+
+    let body = |view| match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found site utility page, got {other:?}"),
+    };
+    let non_admin = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": non_admin_session,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        non_admin.contains(MANAGE_SITE_NON_ADMIN_HTML)
+            && non_admin.contains(PETITION_ADMIN_DENIAL_HTML)
+            && !non_admin.contains(">Sign in</a>"),
+        "saved non-admin view must use the two exact authenticated denial states:\n{non_admin}",
+    );
+
+    let administrator = body(run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": administrator_session,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ));
+    assert!(
+        administrator.contains("id=\"site-manager-menu\"")
+            && administrator.contains("id=\"sm-action-area\"")
+            && administrator.contains("id=\"petition-admin-module-box\"")
+            && administrator.contains("You have no petition campaigns defined.")
+            && !administrator.contains(MANAGE_SITE_NON_ADMIN_HTML)
+            && !administrator.contains(PETITION_ADMIN_DENIAL_HTML),
+        "saved administrator view must recheck authority and render both read models:\n{administrator}",
+    );
+}
+
+#[tokio::test]
+async fn typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state() {
+    const EMPTY_HTML: &str = r#"<div class="error-block">No sites provided.</div>"#;
+    const SAVED_SOURCE: &str = "[[module SiteGrid]]\n \t\n[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (case_id, source) in [
+        ("typed-sitegrid-empty", "[[module SiteGrid]]\n[[/module]]"),
+        ("typed-sitegrid-whitespace", SAVED_SOURCE),
+    ] {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: None,
+            site_id: Some(site_id),
+            page_reference: None,
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+
+        assert_eq!(
+            preview.body.trim(),
+            EMPTY_HTML,
+            "{case_id} should resolve the typed empty SiteGrid node",
+        );
+        assert!(
+            !preview.body.contains("No such module, please"),
+            "{case_id} should not reach FTML's generic runtime-module fallback:\n{}",
+            preview.body,
+        );
+    }
+
+    let saved_slug = "fixture-typed-sitegrid-empty";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        saved_slug,
+        "Fixture Typed SiteGrid Empty",
+        SAVED_SOURCE,
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": saved_slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let body = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved typed SiteGrid view, got {other:?}"),
+    };
+    assert_eq!(
+        body.trim(),
+        EMPTY_HTML,
+        "saved pages should resolve the same typed empty SiteGrid node",
+    );
+}
+
+#[tokio::test]
+async fn site_utility_modules_preserve_literal_and_reject_unsupported_shapes() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let source = concat!(
+        "LITERAL\n",
+        "@@[[module Clone]][[module ManageSite]]@@\n",
+        "BODY\n",
+        "[[module SiteGrid]]\n",
+        "private-site-name\n",
+        "[[/module]]\n",
+        "ARGUMENTED_EMPTY_BODY\n",
+        "[[module SiteGrid limit=\"0\"]]\n",
+        "[[/module]]\n",
+        "CASE_VARIANT\n",
+        "[[module sitegrid]]\n",
+        "[[/module]]\n",
+        "FOREIGN_RUNTIME\n",
+        "[[module RuntimeOwnershipProbe]]\n",
+        "[[/module]]\n",
+        "MANAGE_BODY\n",
+        "[[module ManageSite]]\n",
+        "unsupported\n",
+        "[[/module]]\n",
+        "PETITION_BODY\n",
+        "[[module PetitionAdmin]]\n",
+        "unsupported\n",
+        "[[/module]]\n",
+        "UNKNOWN_ARGUMENTS\n",
+        "[[module ManageSite unexpected=\"x\"]]\n",
+        "[[module PetitionAdmin unexpected=\"x\"]]\n",
+        "DUPLICATE_ARGUMENTS\n",
+        "[[module ManageSite unexpected=\"x\" unexpected=\"y\"]]\n",
+        "[[module PetitionAdmin unexpected=\"x\" unexpected=\"y\"]]\n",
+        "END",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Site utility ownership boundaries",
+            "wikitext": source,
+        }),
+    );
+
+    assert!(
+        preview.body.contains("[[module Clone]]")
+            && preview.body.contains("[[module ManageSite]]"),
+        "literal-owned utility syntax must remain visible text:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview
+            .body
+            .contains("You should be logged in to clone a site.")
+            && !preview.body.contains("No sites provided.")
+            && !preview.body.contains("404_homer.png"),
+        "literal, body-bearing, and unsupported-argument shapes must not enter the evidenced consumers:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("No such module, please"),
+        "unsupported utility arguments should retain the established fail-closed output:\n{}",
+        preview.body,
+    );
+    for unconsumed_name in ["SiteGrid", "sitegrid", "RuntimeOwnershipProbe"] {
+        assert!(
+            preview
+                .body
+                .contains(&format!("<em>{unconsumed_name}</em>")),
+            "unsupported typed runtime shape {unconsumed_name:?} should retain FTML's generic fail-closed output:\n{}",
+            preview.body,
         );
     }
 }
@@ -4789,6 +13588,65 @@ async fn childpages_module_renders_live_child_list_and_empty_state() {
     );
 }
 
+/// Live anonymous PagePreview capture (2026-07-31), case IDs
+/// `module-own-line-nextpage` and `module-own-line-previouspage`: without a
+/// current page, both modules emit `<div class="error-block">Invalid range
+/// argument.</div>`.
+#[tokio::test]
+async fn nextpreviouspage_preview_without_page_context_renders_live_range_error() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "NextPreviousPage no-context preview",
+            "wikitext": concat!(
+                "NEXT_START\n[[module NextPage]]\nNEXT_END\n",
+                "PREVIOUS_START\n[[module PreviousPage]]\nPREVIOUS_END",
+            ),
+        }),
+    );
+
+    assert_eq!(
+        preview.body.matches("Invalid range argument.").count(),
+        2,
+        "live PagePreview returns the same range error for NextPage and PreviousPage without a current page:\n{}",
+        preview.body,
+    );
+    assert_eq!(
+        preview.body.matches(r#"<div class="error-block">"#).count(),
+        2,
+        "each no-context module should render one live error block:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("NEXT_START")
+            && preview.body.contains("NEXT_END")
+            && preview.body.contains("PREVIOUS_START")
+            && preview.body.contains("PREVIOUS_END"),
+        "range errors should remain in authored source order:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("No such module")
+            && !preview.body.contains("[[module NextPage")
+            && !preview.body.contains("[[module PreviousPage"),
+        "recognized no-context modules must not fall through to unknown-module output:\n{}",
+        preview.body,
+    );
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-28): `NextPage` and
 /// `PreviousPage` use the ListPages wrapper and template variables, default
 /// to creation-date adjacency, and have a legacy title-mode quirk where
@@ -4802,6 +13660,25 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             .split_once(end)
             .unwrap_or_else(|| panic!("missing section end {end:?}"))
             .0
+    }
+
+    fn assert_inline_module_diagnostics(parser_errors: &[ftml::parsing::ParseError]) {
+        let expected = [
+            (Token::Identifier, ParseErrorKind::RuleFailed),
+            (Token::LeftBlock, ParseErrorKind::NoRulesMatch),
+            (Token::RightBlock, ParseErrorKind::NoRulesMatch),
+        ];
+        assert_eq!(parser_errors.len(), expected.len() * 2);
+        for group in parser_errors.chunks_exact(expected.len()) {
+            assert!(
+                group
+                    .iter()
+                    .zip(expected)
+                    .all(|(error, (token, kind))| error.token() == token
+                        && error.kind() == kind),
+                "each intentionally literal inline module should retain its three parser diagnostics: {parser_errors:?}",
+            );
+        }
     }
 
     let mut runner = TestRunner::setup().await;
@@ -4897,6 +13774,10 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             "TAG_EQUALS=%%linked_title%%|%%fullname%%\n",
             "[[/module]]\n",
             "TAG_EQUALS_END\n\n",
+            "INLINE_START\n",
+            "start-[[module NextPage]]-middle\n",
+            "start-[[module PreviousPage]]-middle\n",
+            "INLINE_END\n\n",
             "NEXTPREV_END",
         ),
         category = category,
@@ -4922,15 +13803,30 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         }),
     )
     .expect("NextPreviousPage holder edit should succeed");
+    let parser_errors = edited_holder
+        .parser_errors
+        .as_ref()
+        .expect("NextPreviousPage source edit should return parser diagnostics");
+    assert_inline_module_diagnostics(parser_errors);
     let holder_revision = edited_holder.revision_id;
-    set_listpages_test_tags(
-        &mut runner,
-        site_id,
-        holder_slug,
-        holder_revision,
-        &[shared_tag],
+    let tagged_holder = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "last_revision_id": holder_revision,
+            "revision_comments": "set NextPreviousPage fixture tags",
+            "user_id": ADMIN_USER_ID,
+            "tags": [shared_tag],
+            "ip_address": common::IP_ADDRESS,
+        }),
     )
-    .await;
+    .expect("NextPreviousPage tag edit should create a revision");
+    let parser_errors = tagged_holder
+        .parser_errors
+        .expect("NextPreviousPage tag edit should return parser diagnostics");
+    assert_inline_module_diagnostics(&parser_errors);
 
     let last_source = format!(
         concat!(
@@ -5017,6 +13913,14 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             && tag_equals.contains("/fixture-nextpreviouspage:delta"),
         "NextPreviousPage tag selectors should filter candidates while using the current page as the position anchor:\n{html}",
     );
+    let inline = section(&html, "INLINE_START", "INLINE_END");
+    assert!(
+        inline.contains("start-[[module NextPage]]-middle")
+            && inline.contains("start-[[module PreviousPage]]-middle"),
+        "inline NextPage and PreviousPage invocations must remain literal:\n{inline}",
+    );
+    assert_eq!(html.matches("[[module NextPage]]").count(), 1);
+    assert_eq!(html.matches("[[module PreviousPage]]").count(), 1);
 
     let last = run_endpoint!(
         runner,
@@ -6654,6 +15558,276 @@ async fn list_pages_url_category_selector_reads_the_url_category_argument() {
 }
 
 #[tokio::test]
+async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
+    const TARGET_SLUG: &str = "fixture-page-backlinks-view-target";
+    const PRIVATE_CATEGORY: &str = "fixture-page-backlinks-view-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Backlinks View Target",
+        "Backlinks view target body",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-page-backlinks-view-beta",
+        "Beta Linker",
+        &format!("[[[{TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-page-backlinks-view-alpha",
+        "Alpha Linker",
+        &format!("[[[{TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-page-backlinks-view-private",
+        "Private Linker",
+        &format!("[[[{TARGET_SLUG}]]]"),
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-page-backlinks-view-private",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("backlinks view permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(TARGET_SLUG))),
+        ..Default::default()
+    });
+
+    let backlinks = run_endpoint!(
+        runner,
+        page_backlinks_view,
+        json!({"site_id": site_id, "page": TARGET_SLUG}),
+    );
+    assert_eq!(
+        backlinks
+            .iter()
+            .map(|page| (page.slug.as_str(), page.title.as_str()))
+            .collect::<Vec<_>>(),
+        vec![
+            ("fixture-page-backlinks-view-alpha", "Alpha Linker"),
+            ("fixture-page-backlinks-view-beta", "Beta Linker"),
+        ],
+    );
+    let serialized =
+        serde_json::to_value(&backlinks).expect("public backlinks view should serialize");
+    assert!(!serialized.to_string().contains("page_id"));
+    assert!(!serialized.to_string().contains("Private Linker"));
+
+    set_listpages_test_category_slug(&runner, site_id, TARGET_SLUG, PRIVATE_CATEGORY)
+        .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("target permission cache should be invalidated");
+    let error = run_endpoint_err!(
+        runner,
+        page_backlinks_view,
+        json!({"site_id": site_id, "page": TARGET_SLUG}),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn site_tools_orphaned_pages_filters_before_exposing_ordered_rows() {
+    const PREFIX: &str = "fixture-site-tools-orphaned-";
+    const PRIVATE_CATEGORY: &str = "fixture-site-tools-orphaned-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    for (slug, title) in [
+        ("fixture-site-tools-orphaned-zulu", "Zulu Orphan"),
+        ("fixture-site-tools-orphaned-alpha", "alpha Orphan"),
+        ("fixture-site-tools-orphaned-linked", "Linked Page"),
+        ("fixture-site-tools-orphaned-private", "Private Orphan"),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, "orphan body")
+            .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-orphaned-linker",
+        "Orphaned Linker",
+        "[[[fixture-site-tools-orphaned-linked]]]",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-site-tools-orphaned-private",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site tools permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let rows = run_endpoint!(
+        runner,
+        site_tools_orphaned_pages,
+        json!({"site_id": site_id}),
+    );
+    let fixture_rows = rows
+        .iter()
+        .filter(|row| row.slug.starts_with(PREFIX))
+        .map(|row| (row.slug.as_str(), row.title.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        fixture_rows,
+        vec![
+            ("fixture-site-tools-orphaned-alpha", "alpha Orphan"),
+            ("fixture-site-tools-orphaned-zulu", "Zulu Orphan"),
+        ],
+    );
+    let serialized =
+        serde_json::to_value(&rows).expect("public orphaned rows should serialize");
+    assert!(!serialized.to_string().contains("page_id"));
+    assert!(!serialized.to_string().contains("Private Orphan"));
+}
+
+#[tokio::test]
+async fn site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets() {
+    const PREFIX: &str = "fixture-site-tools-wanted-missing-";
+    const PRIVATE_CATEGORY: &str = "fixture-site-tools-wanted-private";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-zulu-source",
+        "Zulu Source",
+        "[[[fixture-site-tools-wanted-missing-zulu]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-alpha-source",
+        "alpha Source",
+        "[[[fixture-site-tools-wanted-missing-alpha]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-beta-source",
+        "Beta Source",
+        "[[[fixture-site-tools-wanted-missing-alpha]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-missing-existing",
+        "Existing Target",
+        "existing target body",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-wanted-existing-source",
+        "Existing Target Source",
+        "[[[fixture-site-tools-wanted-missing-existing]]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-site-tools-wanted-private-source",
+        "Private Source",
+        "[[[fixture-site-tools-wanted-missing-private]]]",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-site-tools-wanted-private-source",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("site tools permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let targets =
+        run_endpoint!(runner, site_tools_wanted_pages, json!({"site_id": site_id}),);
+    let fixture_targets = targets
+        .iter()
+        .filter(|target| target.slug.starts_with(PREFIX))
+        .map(|target| {
+            (
+                target.slug.as_str(),
+                target
+                    .sources
+                    .iter()
+                    .map(|source| (source.slug.as_str(), source.title.as_str()))
+                    .collect::<Vec<_>>(),
+            )
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        fixture_targets,
+        vec![
+            (
+                "fixture-site-tools-wanted-missing-alpha",
+                vec![
+                    ("fixture-site-tools-wanted-alpha-source", "alpha Source"),
+                    ("fixture-site-tools-wanted-beta-source", "Beta Source"),
+                ],
+            ),
+            (
+                "fixture-site-tools-wanted-missing-zulu",
+                vec![("fixture-site-tools-wanted-zulu-source", "Zulu Source")],
+            ),
+        ],
+    );
+    let serialized =
+        serde_json::to_value(&targets).expect("public wanted rows should serialize");
+    assert!(!serialized.to_string().contains("page_id"));
+    assert!(!serialized.to_string().contains("Private Source"));
+}
+
+#[tokio::test]
 async fn backlinks_module_renders_current_page_incoming_links() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -6666,7 +15840,10 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         site_id,
         target_slug,
         "Fixture Backlinks Current Target",
-        "BF_DEFAULT_START\n[[module Backlinks]]\nBF_DEFAULT_END",
+        concat!(
+            "BF_DEFAULT_START\n[[module Backlinks]]\nBF_DEFAULT_END\n",
+            "BF_INLINE_START\nstart-[[module Backlinks]]-middle\nBF_INLINE_END",
+        ),
     )
     .await;
     create_listpages_test_page(
@@ -6731,10 +15908,13 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 
     for expected in [
         "BF_DEFAULT_START",
-        r#"<div class="backlinks-module-box" data-wikijump-compat-backlinks="1">"#,
+        r#"<div class="backlinks-module-box"><ul>"#,
         r#"<a href="/fixture-backlinks-linker-alpha">Fixture Backlinks Linker Alpha</a>"#,
         r#"<a href="/fixture-backlinks-linker-beta">Fixture Backlinks Linker Beta</a>"#,
         "BF_DEFAULT_END",
+        "BF_INLINE_START",
+        "start-[[module Backlinks]]-middle",
+        "BF_INLINE_END",
     ] {
         assert!(
             html.contains(expected),
@@ -6744,7 +15924,7 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 
     for forbidden in [
         "TODO: module Backlinks",
-        "[[module Backlinks",
+        "data-wikijump-compat-backlinks",
         "Fixture Backlinks Excluded",
         "fixture-backlinks-excluded",
     ] {
@@ -6764,6 +15944,41 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         alpha < beta,
         "Backlinks should render in title order:\n{html}"
     );
+    assert_eq!(
+        html.matches("[[module Backlinks]]").count(),
+        1,
+        "only the live inline literal should retain a Backlinks opener:\n{html}",
+    );
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-linker-gamma",
+        "Fixture Backlinks Linker Gamma",
+        &format!("[[[{target_slug}|gamma target link]]]"),
+    )
+    .await;
+    let runtime_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": target_slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let runtime_html = match runtime_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found Backlinks page view, got {other:?}"),
+    };
+    assert!(
+        runtime_html.contains("Fixture Backlinks Linker Gamma"),
+        "Backlinks must query the current link graph on the next page view:\n{runtime_html}",
+    );
+    assert!(runtime_html.contains("start-[[module Backlinks]]-middle"));
 }
 
 #[tokio::test]
@@ -7477,6 +16692,7 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     const GRANDCHILD: &str = "fixture-pagetree-grandchild";
     const GREAT_GRANDCHILD: &str = "fixture-pagetree-great-grandchild";
     const PRIVATE_CHILD: &str = "fixture-pagetree-private-child";
+    const RUNTIME_CHILD: &str = "fixture-pagetree-runtime-child";
     const PRIVATE_CATEGORY: &str = "fixture-pagetree-private";
 
     let mut runner = TestRunner::setup().await;
@@ -7493,7 +16709,8 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
         concat!(
             "PT_DEFAULT_START\n[[module PageTree depth=\"2\"]]\nPT_DEFAULT_END\n",
             "PT_SHOW_START\n[[module PageTree showRoot=\"true\" depth=\"1\"]]\nPT_SHOW_END\n",
-            "PT_CASE_START\n[[module PageTree Showroot=\"true\" Depth=\"1\"]]\nPT_CASE_END",
+            "PT_CASE_START\n[[module PageTree Showroot=\"true\" Depth=\"1\"]]\nPT_CASE_END\n",
+            "PT_INLINE_START\nstart-[[module PageTree]]-middle\nPT_INLINE_END",
         ),
     )
     .await;
@@ -7596,8 +16813,327 @@ async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
             "PageTree DOM must remain plain ul, li, and a elements:\n{case_variant}"
         );
     }
-    assert!(!html.contains("[[module PageTree"));
+    let inline = section("PT_INLINE_START", "PT_INLINE_END");
+    assert!(
+        inline.contains("start-[[module PageTree]]-middle"),
+        "{inline}"
+    );
+    assert_eq!(html.matches("[[module PageTree]]").count(), 1);
     assert!(!html.contains("TODO: module PageTree"));
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        RUNTIME_CHILD,
+        "Runtime Child",
+        "PageTree runtime fixture",
+    )
+    .await;
+    set_listpages_test_parent(&mut runner, site_id, RUNTIME_CHILD, ROOT).await;
+    let runtime_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let runtime_html = match runtime_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found PageTree page view, got {other:?}"),
+    };
+    let runtime_default = section("PT_DEFAULT_START", "PT_DEFAULT_END");
+    assert!(
+        runtime_html
+            .contains(&format!(r#"<a href="/{RUNTIME_CHILD}">Runtime Child</a>"#))
+            && !runtime_default.contains(RUNTIME_CHILD),
+        "PageTree must query current parent state on the next page view:\n{runtime_html}",
+    );
+}
+
+#[tokio::test]
+async fn page_tree_resource_bounds_fail_closed_without_partial_visible_rows() {
+    const ROOT: &str = "fixture-pagetree-bound-root";
+    const TEMPLATE: &str = "fixture-pagetree-bound-template";
+    const NODE_PREFIX: &str = "fixture-pagetree-bound-node";
+    const PRIVATE_CATEGORY: &str = "fixture-pagetree-bound-private";
+    const PRIVATE_NODE: &str = "fixture-pagetree-bound-node-225";
+    const LAST_UNDER_BOUND_NODE: &str = "fixture-pagetree-bound-node-224";
+    const FIRST_OVER_BOUND_NODE: &str = "fixture-pagetree-bound-node-226";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        ROOT,
+        "PageTree resource-bound root",
+        "BOUND_START\n[[module PageTree]]\nBOUND_END",
+    )
+    .await;
+    let template_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE,
+        "PageTree bounded node",
+        "PageTree resource-bound fixture",
+    )
+    .await;
+    let root = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": ROOT,
+        }),
+    )
+    .expect("PageTree resource-bound root should exist");
+    let private_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, PRIVATE_CATEGORY)
+            .await
+            .expect("PageTree resource-bound private category should exist")
+            .category_id;
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page (",
+                    "site_id, latest_revision_id, page_category_id, slug, layout",
+                    ") SELECT $1, $2, $3, $4 || '-' || lpad(sequence::TEXT, 3, '0'), 'wikidot' ",
+                    "FROM generate_series(1, 225) AS sequence",
+                ),
+                [
+                    Value::from(site_id),
+                    Value::from(template_revision_id),
+                    Value::from(root.page_category_id),
+                    Value::from(NODE_PREFIX),
+                ],
+            ))
+            .await
+            .expect("PageTree bounded node fixtures should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "UPDATE page SET page_category_id = $1 WHERE site_id = $2 AND slug = $3",
+                [
+                    Value::from(private_category_id),
+                    Value::from(site_id),
+                    Value::from(PRIVATE_NODE),
+                ],
+            ))
+            .await
+            .expect(
+                "PageTree private node fixture should be hidden from anonymous viewers",
+            );
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_parent (parent_page_id, child_page_id, created_at) ",
+                    "SELECT parent.page_id, child.page_id, ",
+                    "TIMESTAMPTZ '2030-01-01 00:00:00+00' ",
+                    "FROM page AS parent CROSS JOIN page AS child ",
+                    "WHERE parent.site_id = $1 AND child.site_id = $1 ",
+                    "AND parent.slug LIKE $2 || '-%' AND child.slug LIKE $2 || '-%' ",
+                    "AND parent.page_id <> child.page_id",
+                ),
+                [Value::from(site_id), Value::from(NODE_PREFIX)],
+            ))
+            .await
+            .expect("PageTree bounded relation fixtures should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_parent (parent_page_id, child_page_id) ",
+                    "SELECT $1, page_id FROM page WHERE site_id = $2 AND slug = $3",
+                ),
+                [
+                    Value::from(root.page_id),
+                    Value::from(site_id),
+                    Value::from(format!("{NODE_PREFIX}-001")),
+                ],
+            ))
+            .await
+            .expect("PageTree root relation fixture should be inserted");
+    }
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let under_bound = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let under_bound = match under_bound {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found bounded PageTree view, got {other:?}"),
+    };
+    let under_bound = under_bound
+        .split_once("BOUND_START")
+        .and_then(|(_, tail)| tail.split_once("BOUND_END"))
+        .map(|(section, _)| section)
+        .expect("bounded PageTree markers should render");
+    assert!(
+        under_bound.contains(LAST_UNDER_BOUND_NODE)
+            && !under_bound.contains(PRIVATE_NODE),
+        "PageTree should apply anonymous visibility before its relation bound:\n{under_bound}",
+    );
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page (",
+                    "site_id, latest_revision_id, page_category_id, slug, layout",
+                    ") VALUES ($1, $2, $3, $4, 'wikidot')",
+                ),
+                [
+                    Value::from(site_id),
+                    Value::from(template_revision_id),
+                    Value::from(root.page_category_id),
+                    Value::from(FIRST_OVER_BOUND_NODE),
+                ],
+            ))
+            .await
+            .expect("PageTree first over-bound node should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page_parent (parent_page_id, child_page_id, created_at) ",
+                    "SELECT added.page_id, existing.page_id, ",
+                    "TIMESTAMPTZ '2030-01-02 00:00:00+00' ",
+                    "FROM page AS added CROSS JOIN page AS existing ",
+                    "WHERE added.site_id = $1 AND added.slug = $2 ",
+                    "AND existing.site_id = $1 AND existing.slug LIKE $3 || '-%' ",
+                    "AND added.page_id <> existing.page_id ",
+                    "UNION ALL ",
+                    "SELECT existing.page_id, added.page_id, ",
+                    "TIMESTAMPTZ '2030-01-02 00:00:00+00' ",
+                    "FROM page AS added CROSS JOIN page AS existing ",
+                    "WHERE added.site_id = $1 AND added.slug = $2 ",
+                    "AND existing.site_id = $1 AND existing.slug LIKE $3 || '-%' ",
+                    "AND added.page_id <> existing.page_id",
+                ),
+                [
+                    Value::from(site_id),
+                    Value::from(FIRST_OVER_BOUND_NODE),
+                    Value::from(NODE_PREFIX),
+                ],
+            ))
+            .await
+            .expect("PageTree over-bound relation fixtures should be inserted");
+    }
+
+    let relation_saturated = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let relation_saturated = match relation_saturated {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => {
+            panic!("expected a found relation-saturated PageTree view, got {other:?}")
+        }
+    };
+    let relation_saturated = relation_saturated
+        .split_once("BOUND_START")
+        .and_then(|(_, tail)| tail.split_once("BOUND_END"))
+        .map(|(section, _)| section)
+        .expect("relation-saturated PageTree markers should render");
+    assert!(
+        !relation_saturated.contains(NODE_PREFIX) && !relation_saturated.contains("<ul>"),
+        "an exhausted PageTree relation bound must not return a partial visible tree:\n{relation_saturated}",
+    );
+
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "DELETE FROM page_parent AS relation USING page AS parent, page AS child ",
+                    "WHERE relation.parent_page_id = parent.page_id ",
+                    "AND relation.child_page_id = child.page_id ",
+                    "AND (parent.slug LIKE $1 || '-%' OR child.slug LIKE $1 || '-%') ",
+                    "AND NOT (relation.parent_page_id = $2 AND child.slug = $3)",
+                ),
+                [
+                    Value::from(NODE_PREFIX),
+                    Value::from(root.page_id),
+                    Value::from(format!("{NODE_PREFIX}-001")),
+                ],
+            ))
+            .await
+            .expect("PageTree relation fixtures should be reduced to one visible edge");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO page (site_id, page_category_id, slug) ",
+                    "SELECT $1, $2, 'fixture-pagetree-bound-unrelated-' || sequence ",
+                    "FROM generate_series(1, 50001) AS sequence",
+                ),
+                [Value::from(site_id), Value::from(root.page_category_id)],
+            ))
+            .await
+            .expect("PageTree over-bound page candidates should be inserted");
+    }
+
+    let page_saturated = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": ROOT, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let page_saturated = match page_saturated {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found page-saturated PageTree view, got {other:?}"),
+    };
+    let page_saturated = page_saturated
+        .split_once("BOUND_START")
+        .and_then(|(_, tail)| tail.split_once("BOUND_END"))
+        .map(|(section, _)| section)
+        .expect("page-saturated PageTree markers should render");
+    assert!(
+        !page_saturated.contains(NODE_PREFIX) && !page_saturated.contains("<ul>"),
+        "an exhausted PageTree candidate bound must not return a partial visible tree:\n{page_saturated}",
+    );
 }
 
 #[tokio::test]
@@ -10272,6 +19808,78 @@ async fn listpages_summary_aliases_cover_the_first_section_but_first_paragraph_d
 }
 
 #[tokio::test]
+async fn listpages_plain_content_executes_selected_page_includes_only() {
+    const COMPONENT_SLUG: &str = "component:listpages-plain-content-include";
+    const TARGET_SLUG: &str = "fixture-listpages-plain-content-target";
+    const INDEX_SLUG: &str = "fixture-listpages-plain-content-index";
+    const INCLUDE_MARKER: &str = "LISTPAGES_PLAIN_CONTENT_INCLUDE";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPONENT_SLUG,
+        "Fixture ListPages Plain Content Include",
+        INCLUDE_MARKER,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "Fixture ListPages Plain Content Target",
+        &format!("FIRST-SECTION\n[[include {COMPONENT_SLUG}]]\n=====\nSECOND-SECTION"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Fixture ListPages Plain Content Index",
+        &format!(
+            concat!(
+                "[[module ListPages fullname=\"{TARGET_SLUG}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "PLAIN-BEGIN|%%content%%|PLAIN-END\n",
+                "SECTION-BEGIN|%%content{{1}}%%|SECTION-END\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG = TARGET_SLUG,
+        ),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("ListPages plain-content index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled ListPages plain-content body should be available");
+
+    assert_eq!(
+        html.matches(INCLUDE_MARKER).count(),
+        1,
+        "plain content must execute the selected page include exactly once:\n{html}",
+    );
+    assert_eq!(
+        html.matches(&format!("[[include {COMPONENT_SLUG}]]"))
+            .count(),
+        1,
+        "numbered content must preserve the selected page include literally:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_numbered_content_does_not_recursively_expand_selected_page_includes() {
     const INCLUDED_SLUG: &str = "fixture-listpages-content-phase-included";
     const TARGET_SLUG: &str = "fixture-listpages-content-phase-target";
@@ -12743,7 +22351,7 @@ async fn listpages_fragment_content_skips_hidden_pages_by_default() {
 }
 
 #[tokio::test]
-async fn listpages_fragment_content_preserves_child_includes_literally() {
+async fn listpages_fragment_content_executes_child_includes() {
     const INDEX_SLUG: &str = "fixture-listpages-fragment-include-index";
     const FRAGMENT_SLUG: &str = "fixture-listpages-fragment-include-child";
     const INCLUDE_SLUG: &str = "fixture-listpages-fragment-include-target";
@@ -12860,14 +22468,14 @@ async fn listpages_fragment_content_preserves_child_includes_literally() {
         );
     }
     assert!(
-        html.contains(&format!("[[include {INCLUDE_SLUG}]]"))
-            && !html.contains(INCLUDE_MARKER),
-        "fragment ListPages content must keep child includes at the authored insertion phase:\n{html}"
+        html.contains(INCLUDE_MARKER)
+            && !html.contains(&format!("[[include {INCLUDE_SLUG}]]")),
+        "plain fragment content must execute child includes:\n{html}"
     );
 }
 
 #[tokio::test]
-async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
+async fn listpages_content_executes_attachment_syntax_with_selected_page_owner() {
     const INDEX_SLUG: &str = "fixture-listpages-attachment-owner-index";
     const FRAGMENT_SLUG: &str = "fragment:fixture-listpages-attachment-owner-row";
     const FILE_NAME: &str = "2117.png";
@@ -12945,14 +22553,17 @@ async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
     assert_eq!(
         html.matches(&format!("/local--files/{FRAGMENT_SLUG}/{FILE_NAME}"))
             .count(),
-        1,
-        "the authored include URL must survive without being executed: {html}",
+        2,
+        "the component image link and image must retain the selected page owner: {html}",
     );
     assert!(
-        html.contains("[[include component:image-block ")
-            && html.contains("[[image direct-row.png link=direct-row-full.png]]")
-            && !html.contains(&format!("/local--files/{FRAGMENT_SLUG}/direct-row.png")),
-        "selected-page attachment directives must remain authored text: {html}",
+        !html.contains("[[include component:image-block ")
+            && !html.contains("[[image direct-row.png link=direct-row-full.png]]")
+            && html.contains(&format!("/local--files/{FRAGMENT_SLUG}/direct-row.png"))
+            && html.contains(&format!(
+                "/local--resized-images/{FRAGMENT_SLUG}/direct-row.png/medium.jpg"
+            )),
+        "plain selected content must render attachment syntax with row ownership: {html}",
     );
     for forbidden_owner in [
         INDEX_SLUG,
@@ -12973,7 +22584,7 @@ async fn listpages_content_keeps_selected_page_attachment_syntax_literal() {
 }
 
 #[tokio::test]
-async fn listpages_content_keeps_same_named_attachment_directives_literal_per_row() {
+async fn listpages_content_keeps_same_named_attachment_owners_per_row() {
     const INDEX_SLUG: &str = "fixture-listpages-two-row-attachment-owner-index";
     const FIRST_FRAGMENT: &str =
         "fragment:fixture-listpages-two-row-attachment-owner-first";
@@ -13060,13 +22671,15 @@ async fn listpages_content_keeps_same_named_attachment_directives_literal_per_ro
             "[[include component:image-block name=shared-row.png|link=shared-row.png]]",
         )
         .count(),
-        2,
-        "each selected row must retain its authored attachment directive: {html}",
+        0,
+        "plain selected rows must execute their attachment directives: {html}",
     );
     for fragment in [FIRST_FRAGMENT, SECOND_FRAGMENT] {
-        assert!(
-            !html.contains(&format!("/local--files/{fragment}/{FILE_NAME}")),
-            "literal selected-page directives must not create attachment URLs: {html}",
+        assert_eq!(
+            html.matches(&format!("/local--files/{fragment}/{FILE_NAME}"))
+                .count(),
+            1,
+            "each rendered attachment must retain its selected row owner: {html}",
         );
     }
     for forbidden_owner in [
@@ -13556,6 +23169,489 @@ async fn listpages_content_body_supports_bounded_ordered_child_results() {
 }
 
 #[tokio::test]
+async fn page_watchers_returns_active_typed_identities_in_deterministic_order() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-watchers-active";
+    const OTHER_SLUG: &str = "fixture-page-watchers-other";
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Watchers Active",
+        "page watcher target",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        OTHER_SLUG,
+        "Fixture Page Watchers Other",
+        "other page watcher target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("page watcher target should exist");
+    let other = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": OTHER_SLUG}),
+    )
+    .expect("other page watcher target should exist");
+
+    for user_id in [SAMPLE_USER_ID, ADMIN_USER_ID, ADMIN_USER_ID] {
+        RelationService::create_page_watch(
+            runner.context(),
+            CreatePageWatch {
+                page_id: target.page_id,
+                user_id,
+                metadata: (),
+                created_by: ADMIN_USER_ID,
+            },
+        )
+        .await
+        .expect("active page watcher fixture should insert");
+    }
+    RelationService::create_page_watch(
+        runner.context(),
+        CreatePageWatch {
+            page_id: target.page_id,
+            user_id: SYSTEM_USER_ID,
+            metadata: (),
+            created_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("removed page watcher fixture should insert");
+    RelationService::remove_page_watch(
+        runner.context(),
+        RemovePageWatch {
+            page_id: target.page_id,
+            user_id: SYSTEM_USER_ID,
+            removed_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("removed page watcher fixture should be deleted");
+    RelationService::create_page_watch(
+        runner.context(),
+        CreatePageWatch {
+            page_id: other.page_id,
+            user_id: UNKNOWN_USER_ID,
+            metadata: (),
+            created_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("other-page watcher fixture should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let output = run_endpoint!(
+        runner,
+        page_watchers,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let output = serde_json::to_value(output)
+        .expect("public page watcher identities should serialize");
+
+    assert_eq!(output.as_array().map(Vec::len), Some(2));
+    assert_eq!(output[0]["user-name"], "Administrator");
+    assert_eq!(output[0]["user-slug"], "administrator");
+    assert_eq!(output[1]["user-name"], "User");
+    assert_eq!(output[1]["user-slug"], "user");
+    assert!(output.to_string().find("Administrator") < output.to_string().find("User"));
+    assert!(!output.to_string().contains("Unknown"));
+    assert!(!output.to_string().contains("System"));
+}
+
+#[tokio::test]
+async fn page_watchers_requires_target_view_permission_and_site_ownership() {
+    let mut runner = TestRunner::setup().await;
+    const PAGE_SLUG: &str = "fixture-private-page-watchers";
+    const PRIVATE_CATEGORY: &str = "fixture-page-watchers-private-view";
+    let mirror = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    let other_site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    make_listpages_test_category_admin_only(&runner, mirror.site_id, PRIVATE_CATEGORY)
+        .await;
+    create_listpages_test_page(
+        &mut runner,
+        mirror.site_id,
+        PAGE_SLUG,
+        "Fixture Private Page Watchers",
+        "private page watcher target",
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        mirror.site_id,
+        PAGE_SLUG,
+        PRIVATE_CATEGORY,
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": mirror.site_id, "page": PAGE_SLUG}),
+    )
+    .expect("admin should resolve the private page watcher target");
+    RelationService::create_page_watch(
+        runner.context(),
+        CreatePageWatch {
+            page_id: target.page_id,
+            user_id: ADMIN_USER_ID,
+            metadata: (),
+            created_by: ADMIN_USER_ID,
+        },
+    )
+    .await
+    .expect("private page watcher fixture should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let denied = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": mirror.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    let wrong_site = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": other_site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(wrong_site, ErrorType::PageNotFound);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(mirror.site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let watchers = run_endpoint!(
+        runner,
+        page_watchers,
+        json!({"site_id": mirror.site_id, "page_id": target.page_id}),
+    );
+    assert_eq!(watchers.len(), 1);
+}
+
+#[tokio::test]
+async fn page_watchers_fails_closed_when_any_active_identity_is_incomplete() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const PAGE_SLUG: &str = "fixture-page-watchers-incomplete";
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PAGE_SLUG,
+        "Fixture Page Watchers Incomplete",
+        "incomplete page watcher target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": PAGE_SLUG}),
+    )
+    .expect("incomplete page watcher target should exist");
+    for user_id in [ADMIN_USER_ID, 19_000_001] {
+        RelationService::create_page_watch(
+            runner.context(),
+            CreatePageWatch {
+                page_id: target.page_id,
+                user_id,
+                metadata: (),
+                created_by: ADMIN_USER_ID,
+            },
+        )
+        .await
+        .expect("incomplete page watcher fixture should insert");
+    }
+
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(error, ErrorType::PageWatchRelation);
+}
+
+#[tokio::test]
+async fn page_watchers_fails_closed_instead_of_returning_a_saturated_prefix() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const PAGE_SLUG: &str = "fixture-page-watchers-saturated";
+
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        PAGE_SLUG,
+        "Fixture Page Watchers Saturated",
+        "saturated page watcher target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": PAGE_SLUG}),
+    )
+    .expect("saturated page watcher target should exist");
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO relation ",
+                "(relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by) ",
+                "SELECT 'watch', 'page', $1, 'user', 19000000 + n, '{}'::jsonb, $2 ",
+                "FROM generate_series(1, 501) AS n",
+            ),
+            [Value::from(target.page_id), Value::from(ADMIN_USER_ID)],
+        ))
+        .await
+        .expect("saturated page watcher fixtures should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner,
+        page_watchers,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(error, ErrorType::PageWatchRelation);
+}
+
+#[tokio::test]
+async fn page_who_rated_returns_only_current_typed_votes_in_creation_order() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-who-rated";
+    const OTHER_SLUG: &str = "fixture-page-who-rated-other";
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Who Rated",
+        "WhoRated target",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        OTHER_SLUG,
+        "Fixture Page Who Rated Other",
+        "other target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("WhoRated target should exist");
+    let other = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": OTHER_SLUG}),
+    )
+    .expect("other target should exist");
+    {
+        let transaction = runner.context().transaction();
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                sea_orm::DatabaseBackend::Postgres,
+                concat!(
+                    "INSERT INTO page_vote ",
+                    "(from_wikidot, page_id, user_id, rating_system, value, deleted_at, disabled_at, disabled_by) VALUES ",
+                    "(false, $1, $2, 'points', 1, NULL, NULL, NULL), ",
+                    "(false, $1, $3, 'points', -1, NULL, NULL, NULL), ",
+                    "(true, $1, $4, 'points', 1, NOW(), NULL, NULL), ",
+                    "(true, $1, $5, 'points', -1, NULL, NOW(), $2), ",
+                    "(true, $6, $4, 'points', 1, NULL, NULL, NULL)",
+                ),
+                [
+                    Value::from(target.page_id),
+                    Value::from(ADMIN_USER_ID),
+                    Value::from(SAMPLE_USER_ID),
+                    Value::from(SYSTEM_USER_ID),
+                    Value::from(UNKNOWN_USER_ID),
+                    Value::from(other.page_id),
+                ],
+            ))
+            .await
+            .expect("WhoRated vote fixtures should insert");
+    }
+
+    runner.set_request_context(RequestContext::default());
+    let output = run_endpoint!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    let output = serde_json::to_value(output).expect("WhoRated output should serialize");
+    assert_eq!(output.as_array().map(Vec::len), Some(2));
+    assert_eq!(output[0]["user"]["user-name"], "Administrator");
+    assert_eq!(output[0]["value"], 1);
+    assert_eq!(output[1]["user"]["user-name"], "User");
+    assert_eq!(output[1]["value"], -1);
+    assert!(output[0].get("user_id").is_none());
+
+    let malformed = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id, "extra": true}),
+    );
+    assert!(
+        format!("{malformed:?}").contains("InvalidParams"),
+        "JSONRPC InvalidParams error not returned:\n{:?}",
+        malformed,
+    );
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) VALUES (19000001)",
+        ))
+        .await
+        .expect("incomplete WhoRated identity should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) VALUES (false, $1, 19000001, 'points', 1)",
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("incomplete WhoRated vote should insert");
+    let incomplete = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(incomplete, ErrorType::PageVote);
+}
+
+#[tokio::test]
+async fn page_who_rated_checks_view_and_visible_rating_policy_before_votes() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-who-rated-policy";
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Who Rated Policy",
+        "WhoRated policy target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("WhoRated policy target should exist");
+    let category = PageCategoryTable::find_by_id(target.page_category_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("WhoRated category lookup should succeed")
+        .expect("WhoRated category should exist");
+    let mut category = category.into_active_model();
+    category.rating_visibility = Set(Some("anonymous".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("WhoRated category visibility should update");
+
+    runner.set_request_context(RequestContext::default());
+    let hidden = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(hidden, ErrorType::PermissionDenied);
+
+    let wrong_site = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id + 1, "page_id": target.page_id}),
+    );
+    assert_contains_error!(wrong_site, ErrorType::PermissionDenied);
+}
+
+#[tokio::test]
+async fn page_who_rated_fails_closed_only_after_a_scan_above_observed_live_counts() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const TARGET_SLUG: &str = "fixture-page-who-rated-saturated";
+    create_listpages_test_page(
+        &mut runner,
+        site.site_id,
+        TARGET_SLUG,
+        "Fixture Page Who Rated Saturated",
+        "WhoRated saturated target",
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": TARGET_SLUG}),
+    )
+    .expect("WhoRated saturated target should exist");
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_string(
+            sea_orm::DatabaseBackend::Postgres,
+            "INSERT INTO known_user (user_id) SELECT 19000000 + n FROM generate_series(1, 16385) AS n",
+        ))
+        .await
+        .expect("WhoRated saturated known users should insert");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            sea_orm::DatabaseBackend::Postgres,
+            concat!(
+                "INSERT INTO page_vote (from_wikidot, page_id, user_id, rating_system, value) ",
+                "SELECT false, $1, 19000000 + n, 'points', 1 ",
+                "FROM generate_series(1, 16385) AS n",
+            ),
+            [Value::from(target.page_id)],
+        ))
+        .await
+        .expect("WhoRated saturated votes should insert");
+
+    runner.set_request_context(RequestContext::default());
+    let error = run_endpoint_err!(
+        runner,
+        page_who_rated,
+        json!({"site_id": site.site_id, "page_id": target.page_id}),
+    );
+    assert_contains_error!(error, ErrorType::PageVote);
+}
+
+#[tokio::test]
 async fn page_revision_reads_require_page_view_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
@@ -13601,6 +23697,20 @@ async fn page_revision_reads_require_page_view_permission() {
             "site_id": site_id,
             "page_id": created.page_id,
             "revision_number": 0,
+            "details": {
+                "wikitext": true,
+                "compiled_html": true
+            },
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_get_by_id,
+        json!({
+            "site_id": site_id,
+            "revision_id": created.revision_id,
             "details": {
                 "wikitext": true,
                 "compiled_html": true
@@ -13668,6 +23778,43 @@ async fn page_revision_reads_require_page_view_permission() {
             .is_some_and(|html| html.contains("private revision body marker")),
     );
 
+    let revision = run_endpoint!(
+        runner,
+        page_revision_get_by_id,
+        json!({
+            "site_id": site_id,
+            "revision_id": created.revision_id,
+            "details": {
+                "wikitext": true,
+                "compiled_html": true
+            },
+        }),
+    )
+    .expect("admin should be allowed to resolve a private revision by ID");
+    assert_eq!(revision.page_id, created.page_id);
+    assert_eq!(revision.revision_id, created.revision_id);
+    assert_eq!(
+        revision.author.as_ref().map(|author| author.user_id),
+        Some(ADMIN_USER_ID)
+    );
+    assert_eq!(
+        revision.wikitext.as_deref(),
+        Some("private revision body marker")
+    );
+
+    let revision = run_endpoint!(
+        runner,
+        page_revision_get_by_id,
+        json!({
+            "site_id": site_id + 1,
+            "revision_id": created.revision_id,
+        }),
+    );
+    assert!(
+        revision.is_none(),
+        "a revision ID must not cross its site boundary"
+    );
+
     let revisions = run_endpoint!(
         runner,
         page_revision_range,
@@ -13698,6 +23845,116 @@ async fn page_revision_reads_require_page_view_permission() {
         }),
     );
     assert_eq!(count.revision_count.get(), 1);
+}
+
+#[tokio::test]
+async fn page_revision_range_returns_resolved_authors_and_hides_missing_identities() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    const PAGE_SLUG: &str = "history-author-identity";
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "first revision",
+            "title": "History author identity",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "created by the seeded administrator",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let edited = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site.site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "missing author fixture",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("page edit should create a second revision");
+
+    let missing_user_id = 19_000_001_i64;
+    known_user::ActiveModel {
+        user_id: Set(missing_user_id),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("orphan known-user fixture should insert");
+    let revision = PageRevisionTable::find_by_id(edited.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("revision author fixture lookup should succeed")
+        .expect("edited revision should exist");
+    let mut revision = revision.into_active_model();
+    revision.user_id = Set(missing_user_id);
+    revision
+        .update(runner.context().transaction())
+        .await
+        .expect("revision author fixture should update");
+
+    runner.set_request_context(RequestContext::default());
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 1,
+            "revision_direction": "before",
+            "limit": 2,
+        }),
+    );
+    let output = serde_json::to_value(revisions)
+        .expect("public page revision range output should serialize");
+
+    assert_eq!(output[1]["author"]["user-name"], "Administrator");
+    assert_eq!(output[1]["author"]["user-slug"], "administrator");
+    assert_eq!(output[0]["author"], serde_json::Value::Null);
+    assert_ne!(output[0]["author"], missing_user_id);
+
+    let administrator = UserTable::find_by_id(ADMIN_USER_ID)
+        .one(runner.context().transaction())
+        .await
+        .expect("administrator identity lookup should succeed")
+        .expect("seeded administrator identity should exist");
+    let mut administrator = administrator.into_active_model();
+    administrator.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    administrator
+        .update(runner.context().transaction())
+        .await
+        .expect("deleted author fixture should update");
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "revision_direction": "before",
+            "limit": 1,
+        }),
+    );
+    let output = serde_json::to_value(revisions)
+        .expect("deleted author page revision range should serialize");
+    assert_eq!(output[0]["author"], serde_json::Value::Null);
 }
 
 #[tokio::test]
@@ -15359,6 +25616,17 @@ async fn file_mutations_require_parent_page_edit_permission() {
     );
     let error = run_endpoint_err!(
         runner,
+        blob_upload,
+        json!({
+            "user_id": UNKNOWN_USER_ID,
+            "blob_size": 0,
+            "scope": "page",
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let error = run_endpoint_err!(
+        runner,
         file_create,
         json!({
             "site_id": site_id,
@@ -15711,6 +25979,571 @@ async fn file_mutations_require_parent_page_edit_permission() {
     assert!(rolled_back.file_revision_id > edited_for_rollback.file_revision_id);
 }
 
+struct PagePendingBlobFixture {
+    pending_blob_id: String,
+    s3_path: String,
+}
+
+fn page_pending_blob_model(
+    pending_blob_id: String,
+    s3_path: String,
+    user_id: i64,
+    site_id: Option<i64>,
+    page_id: Option<i64>,
+    expected_length: usize,
+) -> blob_pending::ActiveModel {
+    let created_at = OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id),
+        created_by: Set(user_id),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + Duration::minutes(5)),
+        expected_length: Set(expected_length
+            .try_into()
+            .expect("pending blob fixture length should fit in i64")),
+        s3_path: Set(s3_path),
+        s3_hash: Set(None),
+        presign_url: Set("https://uploads.example.test/issue-1062".to_owned()),
+        site_id: Set(site_id),
+        page_id: Set(page_id),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
+    }
+}
+
+async fn create_request_pending_blob_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: Option<i64>,
+    page_id: Option<i64>,
+) -> PagePendingBlobFixture {
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let data = format!("issue 1062 rejected upload {pending_blob_id}").into_bytes();
+    let response = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, &data)
+        .await
+        .expect("request pending blob fixture should be uploaded");
+    assert_eq!(response.status_code(), 200);
+    page_pending_blob_model(
+        pending_blob_id.clone(),
+        s3_path.clone(),
+        user_id,
+        site_id,
+        page_id,
+        data.len(),
+    )
+    .insert(runner.context().transaction())
+    .await
+    .expect("request pending blob fixture should be inserted");
+    PagePendingBlobFixture {
+        pending_blob_id,
+        s3_path,
+    }
+}
+
+async fn create_committed_page_pending_blob_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+) -> (PagePendingBlobFixture, Vec<u8>) {
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let data = format!("issue 1062 page-owned upload {pending_blob_id}").into_bytes();
+    let response = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, &data)
+        .await
+        .expect("pending blob fixture should be uploaded");
+    if response.status_code() != 200 {
+        let cleanup = runner.state().s3_files_bucket.delete_object(&s3_path).await;
+        panic!(
+            "pending blob fixture upload returned HTTP {}; temporary cleanup: {cleanup:?}",
+            response.status_code()
+        );
+    }
+    let inserted = page_pending_blob_model(
+        pending_blob_id.clone(),
+        s3_path.clone(),
+        user_id,
+        Some(site_id),
+        Some(page_id),
+        data.len(),
+    )
+    .insert(&runner.state().database)
+    .await;
+    if let Err(error) = inserted {
+        let cleanup = runner.state().s3_files_bucket.delete_object(&s3_path).await;
+        panic!(
+            "committed pending blob fixture should be inserted: {error:?}; temporary cleanup: {cleanup:?}"
+        );
+    }
+    (
+        PagePendingBlobFixture {
+            pending_blob_id,
+            s3_path,
+        },
+        data,
+    )
+}
+
+async fn cleanup_committed_page_pending_blob_fixture(
+    state: &deepwell::api::ServerState,
+    fixture: &PagePendingBlobFixture,
+    data: &[u8],
+) -> std::result::Result<(), String> {
+    let mut failures = Vec::new();
+    if let Err(error) = BlobPendingTable::delete_by_id(&fixture.pending_blob_id)
+        .exec(&state.database)
+        .await
+    {
+        failures.push(format!("pending row cleanup failed: {error:?}"));
+    }
+    for (label, path) in [
+        ("temporary", fixture.s3_path.clone()),
+        (
+            "permanent",
+            blob_hash_to_hex(&sha512_hash(data)).to_string(),
+        ),
+    ] {
+        match state.s3_files_bucket.delete_object(&path).await {
+            Ok(response) if response.status_code() == 204 => {}
+            Ok(response) => failures.push(format!(
+                "{label} object cleanup returned HTTP {}",
+                response.status_code()
+            )),
+            Err(error) => {
+                failures.push(format!("{label} object cleanup failed: {error:?}"))
+            }
+        }
+    }
+    if failures.is_empty() {
+        Ok(())
+    } else {
+        Err(failures.join("; "))
+    }
+}
+
+async fn assert_page_file_absent(
+    runner: &mut TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+) {
+    set_mutation_request_context(runner, user_id, site_id, Reference::Id(page_id));
+    let files = run_endpoint!(
+        runner,
+        page_get_files,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "deleted": false,
+        }),
+    );
+    assert!(
+        files.iter().all(|file| file.name != name),
+        "failed file mutation must not expose {name:?} through page_get_files"
+    );
+}
+
+async fn cancel_request_pending_blob(
+    runner: &mut TestRunner,
+    user_id: i64,
+    pending_blob_id: &str,
+) {
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        blob_cancel,
+        json!({
+            "user_id": user_id,
+            "pending_blob_id": pending_blob_id,
+        }),
+    );
+    assert!(
+        BlobPendingTable::find_by_id(pending_blob_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("cancelled pending blob lookup should succeed")
+            .is_none(),
+        "blob_cancel should remove pending state"
+    );
+}
+
+async fn cancel_request_pending_blob_fixture(
+    runner: &mut TestRunner,
+    user_id: i64,
+    fixture: &PagePendingBlobFixture,
+) {
+    cancel_request_pending_blob(runner, user_id, &fixture.pending_blob_id).await;
+    let temporary = runner
+        .state()
+        .s3_files_bucket
+        .get_object(&fixture.s3_path)
+        .await
+        .expect("cancelled temporary upload lookup should succeed");
+    assert_eq!(
+        temporary.status_code(),
+        404,
+        "blob_cancel should remove the temporary upload"
+    );
+}
+
+#[tokio::test]
+async fn file_create_commits_only_its_actor_and_route_owned_pending_blob() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let other_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "nav:top"}),
+    )
+    .expect("seeded test navigation page should exist");
+    let other_site =
+        run_endpoint!(runner, site_get, json!({"site": "sandbox-for-codex"}))
+            .expect("seeded sandbox site should exist")
+            .site;
+    let other_site_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": other_site.site_id, "page": "start"}),
+    )
+    .expect("seeded sandbox start page should exist");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let scoped = run_endpoint!(
+        runner,
+        blob_upload,
+        json!({
+            "user_id": ADMIN_USER_ID,
+            "blob_size": 0,
+            "scope": "page",
+        }),
+    );
+    let scoped_row = BlobPendingTable::find_by_id(&scoped.pending_blob_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("page-scoped pending lookup should succeed")
+        .expect("page-scoped pending row should exist");
+    assert_eq!(scoped_row.created_by, ADMIN_USER_ID);
+    assert_eq!(scoped_row.site_id, Some(site.site_id));
+    assert_eq!(scoped_row.page_id, Some(page.page_id));
+    cancel_request_pending_blob(&mut runner, ADMIN_USER_ID, &scoped.pending_blob_id)
+        .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let unscoped = run_endpoint!(
+        runner,
+        blob_upload,
+        json!({
+            "user_id": ADMIN_USER_ID,
+            "blob_size": 0,
+            "scope": "unscoped",
+        }),
+    );
+    let unscoped_row = BlobPendingTable::find_by_id(&unscoped.pending_blob_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("unscoped pending lookup should succeed")
+        .expect("unscoped pending row should exist");
+    assert_eq!(unscoped_row.site_id, None);
+    assert_eq!(unscoped_row.page_id, None);
+    cancel_request_pending_blob(&mut runner, ADMIN_USER_ID, &unscoped.pending_blob_id)
+        .await;
+
+    let (owned, expected_data) = create_committed_page_pending_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+    let verification = AssertUnwindSafe(async {
+        let owned_name = format!("{}.txt", owned.pending_blob_id);
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let created = run_endpoint!(
+            runner,
+            file_create,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "name": owned_name,
+                "uploaded_blob_id": owned.pending_blob_id,
+                "revision_comments": "issue 1062 owned upload",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert!(created.file_id > 0);
+        let moved_pending = BlobPendingTable::find_by_id(&owned.pending_blob_id)
+            .one(&runner.state().database)
+            .await
+            .expect("moved pending descriptor lookup should succeed")
+            .expect("moved pending blob should remain available for retry");
+        assert_eq!(
+            moved_pending.content_type_label.as_deref(),
+            Some("ASCII text")
+        );
+        assert_eq!(
+            moved_pending.content_type_description.as_deref(),
+            Some("ASCII text, with no line terminators")
+        );
+        let created_revision = FileRevisionService::get_latest(
+            runner.context(),
+            site.site_id,
+            page.page_id,
+            created.file_id,
+        )
+        .await
+        .expect("created file revision should be readable");
+        assert_eq!(
+            created_revision.content_type_label.as_deref(),
+            Some("ASCII text")
+        );
+        assert_eq!(
+            created_revision.content_type_description.as_deref(),
+            Some("ASCII text, with no line terminators")
+        );
+        let files = run_endpoint!(
+            runner,
+            page_get_files,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "deleted": false,
+            }),
+        );
+        let listed = files
+            .iter()
+            .find(|file| file.file_id == created.file_id)
+            .expect("page_get_files should expose the committed file relation");
+        assert_eq!(listed.name, owned_name);
+        assert_eq!(listed.page_id, page.page_id);
+        assert_eq!(listed.size, expected_data.len() as i64);
+        let viewed = run_endpoint!(
+            runner,
+            file_get,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "file": created.file_id,
+                "details": {"data": true},
+            }),
+        )
+        .expect("file_get should expose the committed file");
+        assert_eq!(viewed.file_id, created.file_id);
+        assert_eq!(
+            viewed.data.as_ref().map(|data| data.as_ref()),
+            Some(expected_data.as_slice())
+        );
+
+        let other_actor = create_request_pending_blob_fixture(
+            &runner,
+            SAMPLE_USER_ID,
+            Some(site.site_id),
+            Some(page.page_id),
+        )
+        .await;
+        let other_actor_name = "issue-1062-other-actor.txt";
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let error = run_endpoint_err!(
+            runner,
+            file_create,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "name": other_actor_name,
+                "uploaded_blob_id": other_actor.pending_blob_id,
+                "revision_comments": "reject another actor pending upload",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::BlobNotFound);
+        assert!(
+            !format!("{error:?}").contains(&other_actor.pending_blob_id),
+            "ownership rejection must not reflect the pending blob token"
+        );
+        assert_page_file_absent(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            page.page_id,
+            other_actor_name,
+        )
+        .await;
+        cancel_request_pending_blob_fixture(&mut runner, SAMPLE_USER_ID, &other_actor)
+            .await;
+
+        for (target_site_id, target_page_id, label) in [
+            (site.site_id, other_page.page_id, "cross-page"),
+            (other_site.site_id, other_site_page.page_id, "cross-site"),
+        ] {
+            let misplaced = create_request_pending_blob_fixture(
+                &runner,
+                ADMIN_USER_ID,
+                Some(site.site_id),
+                Some(page.page_id),
+            )
+            .await;
+            let name = format!("issue-1062-{label}.txt");
+            set_mutation_request_context(
+                &mut runner,
+                ADMIN_USER_ID,
+                target_site_id,
+                Reference::Id(target_page_id),
+            );
+            let error = run_endpoint_err!(
+                runner,
+                file_create,
+                json!({
+                    "site_id": target_site_id,
+                    "page_id": target_page_id,
+                    "name": name,
+                    "uploaded_blob_id": misplaced.pending_blob_id,
+                    "revision_comments": format!("reject {label} pending upload"),
+                    "user_id": ADMIN_USER_ID,
+                    "ip_address": common::IP_ADDRESS,
+                }),
+            );
+            assert_contains_error!(error, ErrorType::BlobNotFound);
+            assert!(
+                !format!("{error:?}").contains(&misplaced.pending_blob_id),
+                "scope rejection must not reflect the pending blob token"
+            );
+            assert_page_file_absent(
+                &mut runner,
+                ADMIN_USER_ID,
+                target_site_id,
+                target_page_id,
+                &name,
+            )
+            .await;
+            cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &misplaced)
+                .await;
+        }
+
+        let generic =
+            create_request_pending_blob_fixture(&runner, ADMIN_USER_ID, None, None).await;
+        let generic_name = "issue-1062-unscoped.txt";
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let error = run_endpoint_err!(
+            runner,
+            file_create,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "name": generic_name,
+                "uploaded_blob_id": generic.pending_blob_id,
+                "revision_comments": "reject unscoped pending upload",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::BlobNotFound);
+        assert!(
+            !format!("{error:?}").contains(&generic.pending_blob_id),
+            "unscoped rejection must not reflect the pending blob token"
+        );
+        assert_page_file_absent(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            page.page_id,
+            generic_name,
+        )
+        .await;
+        cancel_request_pending_blob_fixture(&mut runner, ADMIN_USER_ID, &generic).await;
+
+        cancel_request_pending_blob(&mut runner, ADMIN_USER_ID, &owned.pending_blob_id)
+            .await;
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site.site_id,
+            Reference::Id(page.page_id),
+        );
+        let viewed_after_cancel = run_endpoint!(
+            runner,
+            file_get,
+            json!({
+                "site_id": site.site_id,
+                "page_id": page.page_id,
+                "file": created.file_id,
+                "details": {"data": true},
+            }),
+        )
+        .expect("blob_cancel must not remove permanent content-addressed file bytes");
+        assert_eq!(
+            viewed_after_cancel.data.as_ref().map(|data| data.as_ref()),
+            Some(expected_data.as_slice())
+        );
+    })
+    .catch_unwind()
+    .await;
+
+    let state = runner.state().clone();
+    let teardown = AssertUnwindSafe(runner.teardown()).catch_unwind().await;
+    let cleanup =
+        cleanup_committed_page_pending_blob_fixture(&state, &owned, &expected_data).await;
+    if let Err(payload) = verification {
+        if let Err(error) = &cleanup {
+            eprintln!("committed pending fixture cleanup after panic failed: {error}");
+        }
+        resume_unwind(payload);
+    }
+    if let Err(payload) = teardown {
+        if let Err(error) = &cleanup {
+            eprintln!(
+                "committed pending fixture cleanup after teardown panic failed: {error}"
+            );
+        }
+        resume_unwind(payload);
+    }
+    cleanup.expect("committed pending fixture cleanup should succeed");
+}
+
 #[tokio::test]
 async fn parent_mutations_require_child_page_edit_permission() {
     let mut runner = TestRunner::setup().await;
@@ -16042,6 +26875,16 @@ async fn create_empty_file_fixture(
     page_id: i64,
     name: &str,
 ) -> i64 {
+    create_file_fixture_with_mime(runner, site_id, page_id, name, EMPTY_BLOB_MIME).await
+}
+
+async fn create_file_fixture_with_mime(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    mime: &str,
+) -> i64 {
     let file = file::ActiveModel {
         name: Set(name.to_owned()),
         site_id: Set(site_id),
@@ -16061,7 +26904,8 @@ async fn create_empty_file_fixture(
             name: name.to_owned(),
             s3_hash: EMPTY_BLOB_HASH,
             size: 0,
-            mime: EMPTY_BLOB_MIME.to_owned(),
+            mime: mime.to_owned(),
+            content_type: None,
             blob_created: false,
             revision_comments: "create file fixture".to_owned(),
         },
@@ -16070,6 +26914,82 @@ async fn create_empty_file_fixture(
     .expect("file revision fixture should be created");
 
     file.file_id
+}
+
+async fn create_file_fixture_with_descriptor(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    size: i64,
+    content_type: Option<ContentTypeDescriptor>,
+) -> i64 {
+    let file_id = insert_file_fixture_with_descriptor(
+        runner,
+        site_id,
+        page_id,
+        name,
+        size,
+        content_type,
+    )
+    .await;
+    rerender_file_fixture_page(runner, page_id).await;
+    file_id
+}
+
+async fn insert_file_fixture_with_descriptor(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    name: &str,
+    size: i64,
+    content_type: Option<ContentTypeDescriptor>,
+) -> i64 {
+    let file = file::ActiveModel {
+        name: Set(name.to_owned()),
+        site_id: Set(site_id),
+        page_id: Set(page_id),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("descriptor file fixture should be inserted");
+    FileRevisionService::create_first(
+        runner.context(),
+        CreateFirstFileRevision {
+            site_id,
+            page_id,
+            file_id: file.file_id,
+            user_id: ADMIN_USER_ID,
+            name: name.to_owned(),
+            s3_hash: EMPTY_BLOB_HASH,
+            size,
+            mime: "image/jpeg".to_owned(),
+            content_type,
+            blob_created: false,
+            revision_comments: "create descriptor file fixture".to_owned(),
+        },
+    )
+    .await
+    .expect("descriptor file revision fixture should be created");
+
+    file.file_id
+}
+
+async fn rerender_file_fixture_page(runner: &TestRunner, page_id: i64) {
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("descriptor page fixture lookup should succeed")
+        .expect("descriptor page fixture should exist");
+    PageRevisionService::rerender(
+        runner.context(),
+        PageId::from_page_model(&page),
+        RerenderDepth::default(),
+        RerenderType::Full,
+    )
+    .await
+    .expect("descriptor page fixture should rerender after its file revision");
 }
 
 async fn create_text_block_fixture(
@@ -16290,7 +27210,7 @@ async fn create_listpages_test_page(
 }
 
 #[tokio::test]
-async fn listpages_content_cannot_consume_the_outer_include_budget() {
+async fn listpages_plain_content_shares_the_outer_include_budget() {
     const COMPONENT_SLUG: &str = "component:listpages-include-budget-cell";
     const INDEX_SLUG: &str = "fixture-listpages-include-budget-index";
     const SAME_ROW_CHILD_SLUG: &str = "fixture-listpages-include-budget-same-row-child";
@@ -16536,11 +27456,11 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("full content and a section in one row must remain non-recursive");
+    .expect("plain content may use the final include slot while a numbered section stays literal");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        255,
-        "only direct outer includes may execute",
+        256,
+        "plain selected content must execute within the caller's final include slot",
     );
     assert_eq!(
         output
@@ -16550,8 +27470,8 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        255,
-        "selected child includes must not create backlinks",
+        256,
+        "the selected child include must contribute its dependency backlink",
     );
     assert_eq!(
         output
@@ -16559,8 +27479,8 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        2,
-        "full content and section one must each preserve the authored include token",
+        1,
+        "only numbered section content may preserve the authored include token",
     );
 
     let direct_includes =
@@ -16581,15 +27501,15 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("selected child includes must not consume the public include limit");
+    .expect("selected child includes within the shared public limit should render");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only direct outer includes may execute",
+        256,
+        "direct and selected child includes must share the public include limit",
     );
 
     let repeated_child = format!("{direct_includes}{}{}", list_pages(1), list_pages(1),);
-    let output = RenderService::render_page(
+    let error = RenderService::render_page(
         runner.context(),
         repeated_child.clone(),
         &page_info,
@@ -16598,11 +27518,13 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("repeated selected child content must remain non-recursive");
-    assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only direct outer includes may execute",
+    .expect_err(
+        "repeated selected child includes must fail closed when the shared limit is exhausted",
+    );
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes"),
+        "the public failure must identify the include ceiling: {error:?}",
     );
     let output = RenderService::render_corpus_page(
         runner.context(),
@@ -16612,11 +27534,11 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         page_id,
     )
     .await
-    .expect("corpus rendering must preserve the same selected-content phase");
+    .expect("the trusted corpus include budget should cover both selected rows");
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "corpus rendering must not execute selected child includes",
+        384,
+        "corpus rendering must execute direct and selected child includes",
     );
     assert_eq!(
         output
@@ -16626,12 +27548,12 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "only direct outer includes may create backlinks",
+        384,
+        "every executed direct and selected include must create a backlink",
     );
 
     let over_budget = format!("{direct_includes}{}", list_pages(2));
-    let output = RenderService::render_page(
+    let error = RenderService::render_page(
         runner.context(),
         over_budget.clone(),
         &page_info,
@@ -16640,11 +27562,13 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         UrlArguments::default(),
     )
     .await
-    .expect("selected child content must not consume the public include budget");
-    assert_eq!(
-        output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "only direct outer includes may execute",
+    .expect_err(
+        "two selected include-heavy rows must fail closed when their partition exceeds the public budget",
+    );
+    assert!(
+        format!("{error:?}")
+            .contains("include expansion exceeded maximum total includes"),
+        "the public failure must identify the include ceiling: {error:?}",
     );
 
     let output = RenderService::render_corpus_page(
@@ -16655,11 +27579,13 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
         page_id,
     )
     .await
-    .expect("trusted corpus rendering must keep selected content non-recursive");
+    .expect(
+        "trusted corpus rendering should execute both selected rows within its budget",
+    );
     assert_eq!(
         output.html_output.body.matches(INCLUDE_MARKER).count(),
-        128,
-        "the corpus render must execute only direct outer includes",
+        384,
+        "the corpus render must execute direct and selected child includes",
     );
     assert_eq!(
         output
@@ -16669,8 +27595,8 @@ async fn listpages_content_cannot_consume_the_outer_include_budget() {
             .iter()
             .filter(|page| page.page() == COMPONENT_SLUG)
             .count(),
-        128,
-        "selected child includes must not create backlinks",
+        384,
+        "selected child includes must contribute dependency backlinks",
     );
 }
 
@@ -17780,7 +28706,7 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         "[[/module]]",
     )
     .to_owned();
-    let public_list_pages_output = RenderService::render_page(
+    let public_list_pages_error = RenderService::render_page(
         runner.context(),
         list_pages_wikitext.clone(),
         &page_info,
@@ -17789,23 +28715,11 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         UrlArguments::default(),
     )
     .await
-    .expect("ordinary ListPages content must not recursively execute selected includes");
-    assert_eq!(
-        public_list_pages_output
-            .html_output
-            .body
-            .matches(&format!("[[include {COMPONENT_SLUG}]]"))
-            .count(),
-        INCLUDE_COUNT,
-        "ordinary ListPages content must preserve every selected include literally",
-    );
-    assert_eq!(
-        public_list_pages_output
-            .html_output
-            .body
-            .matches(MARKER)
-            .count(),
-        0
+    .expect_err("ordinary ListPages content must enforce the public include ceiling");
+    assert!(
+        format!("{public_list_pages_error:?}")
+            .contains("include expansion exceeded maximum total includes 256"),
+        "the public ListPages failure must identify the ordinary include ceiling: {public_list_pages_error:?}",
     );
 
     let list_pages_output = RenderService::render_corpus_page(
@@ -17816,19 +28730,20 @@ async fn corpus_render_supports_dense_includes_without_raising_public_limit() {
         page_id,
     )
     .await
-    .expect("trusted ListPages content must preserve the same insertion phase");
+    .expect("trusted ListPages content should execute the evidenced dense include shape");
     assert_eq!(
         list_pages_output
             .html_output
             .body
             .matches(&format!("[[include {COMPONENT_SLUG}]]"))
             .count(),
-        INCLUDE_COUNT,
-        "corpus rendering must not grant ListPages child content recursive authority",
+        0,
+        "trusted plain content must not expose authored include tokens",
     );
     assert_eq!(
         list_pages_output.html_output.body.matches(MARKER).count(),
-        0
+        INCLUDE_COUNT,
+        "trusted plain content must execute every selected include within its corpus budget",
     );
 }
 
@@ -20432,7 +31347,8 @@ async fn first_revision_rerenders_tagcloud() {
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
-    let page_slug = "fixture-first-revision-tagcloud";
+    let category = "fixture-first-revision-tagcloud";
+    let page_slug = "fixture-first-revision-tagcloud:holder";
     let tag = "verification-first-revision-tagcloud";
 
     set_mutation_request_context(
@@ -20446,7 +31362,7 @@ async fn first_revision_rerenders_tagcloud() {
         page_create,
         json!({
             "site_id": site_id,
-            "wikitext": "[[module TagCloud]]",
+            "wikitext": format!("[[module TagCloud category=\"{category}\"]]"),
             "title": "Fixture First Revision TagCloud",
             "alt_title": null,
             "tags": [tag],
@@ -20476,7 +31392,7 @@ async fn first_revision_rerenders_tagcloud() {
 
     assert!(
         html.contains(&format!(
-            r#"<a class="tag" href="/system:page-tags/tag/{tag}""#
+            r#"<a class="tag" href="/system:page-tags/tag/{tag}/category/{category}""#
         )) && html.contains(&format!(">{tag}<")),
         "TagCloud should be rerendered after the first revision is attached:\n{html}"
     );
@@ -20782,7 +31698,7 @@ async fn tagcloud_module_renders_live_sitewide_skip_3d_and_color_error() {
             concat!(
                 "TAGCLOUD_EDGE_START\n\n",
                 "SITEWIDE_START\n",
-                "[[module TagCloud limit=\"4\"]]\n",
+                "[[module TagCloud limit=\"1000\"]]\n",
                 "SITEWIDE_END\n\n",
                 "SKIP_START\n",
                 "[[module TagCloud category=\"{category}\" target=\"{category}:target\" skipCategoryFromUrl=\"true\"]]\n",

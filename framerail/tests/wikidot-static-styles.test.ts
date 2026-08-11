@@ -3,6 +3,9 @@ import crypto from "node:crypto"
 import fs from "node:fs/promises"
 import test from "node:test"
 
+import postcss from "postcss"
+import scss from "postcss-scss"
+
 const styles = [
   {
     file: "wikidot-base-165bc434fd1d.css",
@@ -23,6 +26,15 @@ const styles = [
   }
 ]
 
+const baseAssets = [
+  {
+    file: "common--theme/base/images/shade2_n.png",
+    sha256: "2b3f53a407d5b25bc91bd9920f164b13e14d944bc95a7bf32a5138b30cef07c6",
+    source:
+      "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/images/shade2_n.png"
+  }
+]
+
 test("pinned Wikidot shell styles match their content-addressed filenames", async () => {
   for (const style of styles) {
     const contents = await fs.readFile(
@@ -30,6 +42,16 @@ test("pinned Wikidot shell styles match their content-addressed filenames", asyn
     )
     assert.equal(crypto.createHash("sha256").update(contents).digest("hex"), style.sha256)
     assert.match(style.source, /^https:\/\//u)
+  }
+})
+
+test("vendored Wikidot base assets match their pinned sources", async () => {
+  for (const asset of baseAssets) {
+    const contents = await fs.readFile(
+      new URL(`../static/${asset.file}`, import.meta.url)
+    )
+    assert.equal(crypto.createHash("sha256").update(contents).digest("hex"), asset.sha256)
+    assert.match(asset.source, /^https:\/\//u)
   }
 })
 
@@ -100,8 +122,56 @@ test("the modern page-tag layout cannot override imported Wikidot theme CSS", as
   ])
 
   assert.match(page, /@use "\.\/page";/u)
-  assert.match(pageStyles, /\.sigma-esque-container\s+\.page-tags\s*\{/u)
-  assert.doesNotMatch(pageStyles, /^\s*\.page-tags\s*\{/mu)
+
+  const root = postcss().process(pageStyles, {
+    from: "page.scss",
+    parser: scss
+  }).root
+  const owners: { properties: string[]; selector: string }[] = []
+  root.walkRules((rule) => {
+    for (const selector of rule.selectors.filter((candidate) =>
+      candidate.includes(".page-tags")
+    )) {
+      const properties = rule.nodes.flatMap((node) =>
+        node.type === "decl" && ["display", "justify-content"].includes(node.prop)
+          ? [node.prop]
+          : []
+      )
+      if (properties.length > 0) owners.push({ selector, properties })
+    }
+  })
+
+  assert.deepEqual(owners, [
+    {
+      selector: ".sigma-esque-container .page-tags",
+      properties: ["display", "justify-content"]
+    }
+  ])
+  assert.equal(
+    owners.some(({ selector }) => selector.trim() === ".page-tags"),
+    false
+  )
+})
+
+test("the Wikidot header exposes the three legacy extension hooks in source order", async () => {
+  const layout = await fs.readFile(
+    new URL("../src/lib/sigma-esque/wikidot.svelte", import.meta.url),
+    "utf8"
+  )
+  const header =
+    /<div id="header">(?<body>[\s\S]*?)<\/div>\s*<div id="content-wrap">/u.exec(layout)
+      ?.groups?.body
+
+  assert.ok(header)
+  const hookIds = [...header.matchAll(/id="(header-extra-div-[123])"/gu)].map(
+    (match) => match[1]
+  )
+  assert.deepEqual(hookIds, [
+    "header-extra-div-1",
+    "header-extra-div-2",
+    "header-extra-div-3"
+  ])
+  assert.match(header, /@render loginStatus\?\.\(\)[\s\S]*header-extra-div-1/u)
 })
 
 test("the Wikidot shell preserves the legacy two-input search chrome", async () => {
@@ -111,7 +181,10 @@ test("the Wikidot shell preserves the legacy two-input search chrome", async () 
   )
 
   assert.match(layout, /<div id="search-top-box">/u)
-  assert.match(layout, /<form id="search-top-box-form" action="dummy">/u)
+  assert.match(
+    layout,
+    /<form(?=[^>]*id="search-top-box-form")(?=[^>]*action="dummy")[^>]*>/u
+  )
   assert.match(layout, /id="search-top-box-input"[\s\S]*?type="text"/u)
   assert.match(
     layout,

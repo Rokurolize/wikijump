@@ -5,6 +5,10 @@ import {
   STANDING_BROWSER_EXECUTION_MODULES,
   validateCandidateExecutionIdentity,
 } from "../src/standing-browser-execution-identity.mjs";
+import {
+  CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA,
+  validateCandidateSourceExecutionIdentity,
+} from "../src/candidate-source-execution-identity.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const hash = (character) => character.repeat(64);
@@ -65,5 +69,20 @@ test("execution identity rejects a partial module manifest or substituted module
   assert.throws(
     () => validateCandidateExecutionIdentity(substituted, candidateIdentity()),
     /module manifest hash is invalid/u,
+  );
+});
+
+test("candidate source execution identity binds only the caller-supplied manifest", () => {
+  const files = ["adapter.mjs", "runner.mjs"];
+  const modules = [...files].sort().map((filePath) => ({ path: filePath, sha256: hash("f") }));
+  const identity = {
+    ...executionIdentity(),
+    schema: CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA,
+    modules,
+    module_manifest_sha256: sha256Value(modules),
+  };
+  assert.deepEqual(
+    validateCandidateSourceExecutionIdentity(identity, candidateIdentity(), files).modules,
+    modules,
   );
 });

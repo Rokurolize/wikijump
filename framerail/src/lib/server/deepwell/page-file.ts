@@ -1,7 +1,12 @@
 import defaults from "$lib/defaults"
 
 import { client } from "$lib/server/deepwell"
-import { startBlobUpload, uploadToPresignUrl } from "$lib/server/deepwell/file"
+import {
+  cancelBlobUpload,
+  startBlobUpload,
+  uploadToPresignUrl
+} from "$lib/server/deepwell/file"
+import { commitPendingBlobUpload } from "$lib/server/deepwell/pending-blob-upload"
 import { pageEditPermission } from "$lib/server/deepwell/page"
 import {
   buildPageFileCreatePayload,
@@ -103,23 +108,26 @@ export async function pageFileCreate(
     bypassFilter = false
   } = input
   await requireFileParentEditPermission(requestContext)
-  const presign = await startBlobUpload(userId, file.size)
-  await uploadToPresignUrl(presign.presign_url, file)
-
-  return await client.request(
-    "file_create",
-    buildPageFileCreatePayload({
-      siteId,
-      pageId,
-      userId,
-      name: name ?? file.name,
-      pendingBlobId: presign.pending_blob_id,
-      revisionComments: revisionComments ?? "",
-      ipAddress,
-      bypassFilter
-    }),
-    requestContext
-  )
+  return commitPendingBlobUpload({
+    start: () => startBlobUpload(userId, file.size, "page", requestContext),
+    upload: (presignUrl) => uploadToPresignUrl(presignUrl, file),
+    commit: (pendingBlobId) =>
+      client.request(
+        "file_create",
+        buildPageFileCreatePayload({
+          siteId,
+          pageId,
+          userId,
+          name: name ?? file.name,
+          pendingBlobId,
+          revisionComments: revisionComments ?? "",
+          ipAddress,
+          bypassFilter
+        }),
+        requestContext
+      ),
+    cancel: (pendingBlobId) => cancelBlobUpload(userId, pendingBlobId, requestContext)
+  })
 }
 
 /* ----- Page File Delete ----- */
@@ -184,12 +192,30 @@ export async function pageFileEdit(
     ipAddress,
     bypassFilter = false
   } = input
-  let presignId: Optional<string>
   if (file && file instanceof File) {
     await requireFileParentEditPermission(requestContext)
-    const presign = await startBlobUpload(userId, file.size)
-    await uploadToPresignUrl(presign.presign_url, file)
-    presignId = presign.pending_blob_id
+    return commitPendingBlobUpload({
+      start: () => startBlobUpload(userId, file.size, "page", requestContext),
+      upload: (presignUrl) => uploadToPresignUrl(presignUrl, file),
+      commit: (pendingBlobId) =>
+        client.request(
+          "file_edit",
+          buildPageFileEditPayload({
+            siteId,
+            pageId,
+            userId,
+            fileId,
+            lastRevisionId,
+            name,
+            pendingBlobId,
+            revisionComments,
+            ipAddress,
+            bypassFilter
+          }),
+          requestContext
+        ),
+      cancel: (pendingBlobId) => cancelBlobUpload(userId, pendingBlobId, requestContext)
+    })
   }
 
   return await client.request(
@@ -201,7 +227,7 @@ export async function pageFileEdit(
       fileId,
       lastRevisionId,
       name,
-      pendingBlobId: presignId,
+      pendingBlobId: undefined,
       revisionComments,
       ipAddress,
       bypassFilter

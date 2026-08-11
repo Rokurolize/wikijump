@@ -1,0 +1,384 @@
+{
+  "schema": "wikijump_forum_q1034_readonly_live.v1",
+  "captured_at": "2026-08-09T12:04:36.794960+00:00",
+  "provenance": {
+    "actor": "anonymous",
+    "mutated": false,
+    "sites": [
+      "sandbox-for-codex",
+      "scp-wiki",
+      "community"
+    ],
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "4bacf55c551bd2f6155bb0abdfc0ca59e3d073a1",
+    "external_evidence_root": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9",
+    "external_manifest_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/manifest.json",
+    "external_manifest_sha256": "10bd8aca6854fd54db4659b6c449548fad7ec730779fca70e3a495b59a0d97f5",
+    "external_sums_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/SHA256SUMS",
+    "external_sums_sha256": "a9f5453a596371509e9aa5e9a7f2cc45f68ee839f3a447a750c49f954510f909",
+    "capture_script_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9/capture-script.py",
+    "capture_script_sha256": "58d13a7f417610735f8908ebfb256ccbba882e0ee0c8a3c8856a516024b3dd70"
+  },
+  "case_ids": [
+    "recentthreads-sandbox-bare",
+    "recentthreads-sandbox-limit",
+    "recentthreads-sandbox-unknown",
+    "recentthreads-sandbox-mixed-case",
+    "recentthreads-sandbox-body",
+    "recentthreads-sandbox-inline",
+    "recentthreads-sandbox-raw",
+    "recentthreads-sandbox-lookalike",
+    "recentthreads-scp-bare",
+    "recentthreads-community-bare",
+    "frontforum-sandbox-limit-one",
+    "frontforum-sandbox-limit-two",
+    "frontforum-sandbox-invalid-category",
+    "frontforum-scp-limit-one",
+    "sandbox-forum-start-visible",
+    "sandbox-forum-start-hidden",
+    "sandbox-category-populated-page-one",
+    "sandbox-category-empty-page-one",
+    "sandbox-category-missing",
+    "sandbox-thread-populated",
+    "sandbox-thread-missing",
+    "sandbox-thread-posts-populated",
+    "sandbox-thread-posts-missing",
+    "scp-comments-forward",
+    "scp-comments-reverse",
+    "scp-comments-missing-page",
+    "sandbox-recent-posts-all-page-one",
+    "sandbox-recent-posts-category-page-one",
+    "sandbox-recent-posts-missing-category",
+    "sandbox-new-thread-anonymous"
+  ],
+  "cases": [
+    { "case_id": "recentthreads-sandbox-bare" },
+    { "case_id": "recentthreads-sandbox-limit" },
+    { "case_id": "recentthreads-sandbox-unknown" },
+    { "case_id": "recentthreads-sandbox-mixed-case" },
+    { "case_id": "recentthreads-sandbox-body" },
+    { "case_id": "recentthreads-sandbox-inline" },
+    { "case_id": "recentthreads-sandbox-raw" },
+    { "case_id": "recentthreads-sandbox-lookalike" },
+    { "case_id": "recentthreads-scp-bare" },
+    { "case_id": "recentthreads-community-bare" },
+    { "case_id": "frontforum-sandbox-limit-one" },
+    { "case_id": "frontforum-sandbox-limit-two" },
+    { "case_id": "frontforum-sandbox-invalid-category" },
+    { "case_id": "frontforum-scp-limit-one" },
+    { "case_id": "sandbox-forum-start-visible" },
+    { "case_id": "sandbox-forum-start-hidden" },
+    { "case_id": "sandbox-category-populated-page-one" },
+    { "case_id": "sandbox-category-empty-page-one" },
+    { "case_id": "sandbox-category-missing" },
+    { "case_id": "sandbox-thread-populated" },
+    { "case_id": "sandbox-thread-missing" },
+    { "case_id": "sandbox-thread-posts-populated" },
+    { "case_id": "sandbox-thread-posts-missing" },
+    { "case_id": "scp-comments-forward" },
+    { "case_id": "scp-comments-reverse" },
+    { "case_id": "scp-comments-missing-page" },
+    { "case_id": "sandbox-recent-posts-all-page-one" },
+    { "case_id": "sandbox-recent-posts-category-page-one" },
+    { "case_id": "sandbox-recent-posts-missing-category" },
+    { "case_id": "sandbox-new-thread-anonymous" }
+  ],
+  "recent_threads": {
+    "cases": [
+      {
+        "case_id": "recentthreads-sandbox-bare",
+        "site": "sandbox-for-codex",
+        "source": "[[module RecentThreads]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-sandbox-limit",
+        "site": "sandbox-for-codex",
+        "source": "[[module RecentThreads limit=\"5\"]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-sandbox-unknown",
+        "site": "sandbox-for-codex",
+        "source": "[[module RecentThreads unknown=\"x\"]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-sandbox-mixed-case",
+        "site": "sandbox-for-codex",
+        "source": "[[MoDuLe rEcEnTtHrEaDs]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-sandbox-body",
+        "site": "sandbox-for-codex",
+        "source": "[[module RecentThreads]]\nbody\n[[/module]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-scp-bare",
+        "site": "scp-wiki",
+        "source": "[[module RecentThreads]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-community-bare",
+        "site": "community",
+        "source": "[[module RecentThreads]]",
+        "raw_body": "\n\nlater.",
+        "body_sha256": "27c3ac5c25764544047a9c11938b74bef174ed5c78606bfc3e1e8e681b020499"
+      },
+      {
+        "case_id": "recentthreads-sandbox-inline",
+        "site": "sandbox-for-codex",
+        "source": "before [[module RecentThreads]] after",
+        "visible_text": "before [[module RecentThreads]] after",
+        "body_sha256": "516cd883c4714f84c9c2ee90ed86924ccfe624bd58d0018e37364d48d3e87555"
+      },
+      {
+        "case_id": "recentthreads-sandbox-raw",
+        "site": "sandbox-for-codex",
+        "source": "@@[[module RecentThreads]]@@",
+        "visible_text": "[[module RecentThreads]]",
+        "body_sha256": "71ce75e5efa7f2cd884c96ede9005fe7de66f29a9f529524b66895f5817628d2"
+      },
+      {
+        "case_id": "recentthreads-sandbox-lookalike",
+        "site": "sandbox-for-codex",
+        "source": "[[module RecentThreadsX]]",
+        "visible_text": "[[module RecentThreadsX]] No such module, please check available modules and fix this page.",
+        "body_sha256": "c3156eb3b04db1ffadea8d56bd1e261154cfbfb41ffee2a6a53d3cc2dba867c6"
+      }
+    ],
+    "observed_contract": [
+      "A recognized own-line RecentThreads invocation renders the exact visible text later. on all three observed public sites.",
+      "The observed limit and unknown attributes do not change the result, and module name matching is ASCII-case-insensitive.",
+      "A closing module body is consumed and does not reach output.",
+      "Inline and raw-owned invocations remain literal, and the RecentThreadsX lookalike remains an unknown module."
+    ]
+  },
+  "front_forum": {
+    "cases": [
+      {
+        "case_id": "frontforum-sandbox-limit-one",
+        "site": "sandbox-for-codex",
+        "category_id": 8503559,
+        "limit": 1,
+        "item_count": 1,
+        "wrapper_class": "front-forum-box",
+        "body_sha256": "f5a1331f981923dfb9d5d06a61d557301d773a4ffe12d4ade01a973e9c4d7d3b"
+      },
+      {
+        "case_id": "frontforum-sandbox-limit-two",
+        "site": "sandbox-for-codex",
+        "category_id": 8503559,
+        "limit": 2,
+        "item_count": 2,
+        "wrapper_class": "front-forum-box",
+        "body_sha256": "0492c02c00b7a542269548ead4ec11f64e8189ebd1ed526df350d4662072710c"
+      },
+      {
+        "case_id": "frontforum-scp-limit-one",
+        "site": "scp-wiki",
+        "category_id": 1113520,
+        "limit": 1,
+        "item_count": 1,
+        "wrapper_class": "front-forum-box",
+        "body_sha256": "da7dd869ef0ffc3a96940a944f0cacb1ead46b79504ff9e77387950d8b2f0856"
+      },
+      {
+        "case_id": "frontforum-sandbox-invalid-category",
+        "site": "sandbox-for-codex",
+        "category_id": 999999999,
+        "visible_text": "Requested forum category does not exist.",
+        "body_sha256": "28059d79f3da08861a4a6ab00890aa61b9d85061c55246e71ab24b40533fe188"
+      }
+    ],
+    "remaining_gaps": [
+      "The capture does not establish feed generation, offset bounds, multiple categories, custom template expansion, fixRelativeLinks, actor visibility, deletion, or pagination.",
+      "Point-in-time thread text and avatar timestamps are evidence values, not production matching keys."
+    ]
+  },
+  "ajax": {
+    "cases": [
+      {
+        "case_id": "sandbox-forum-start-visible",
+        "request": {
+          "moduleName": "forum/ForumStartModule"
+        },
+        "status": "ok",
+        "body_sha256": "20a56cecd205e6acf7a8cac118745cd051d3fa55d09c3a1d0042587fd4003058"
+      },
+      {
+        "case_id": "sandbox-forum-start-hidden",
+        "request": {
+          "moduleName": "forum/ForumStartModule",
+          "hidden": "true"
+        },
+        "status": "ok",
+        "body_sha256": "0c72009ea6b8e46183f8335a4ad08d20577725b22ee49501c9b698547b1e55ef"
+      },
+      {
+        "case_id": "sandbox-category-populated-page-one",
+        "request": {
+          "moduleName": "forum/ForumViewCategoryModule",
+          "c": 8503559,
+          "p": 1
+        },
+        "status": "ok",
+        "body_sha256": "bfe73cfbf1a12fd95d206f032f33df9978f70eba54c9c6c11cae73c886638f03"
+      },
+      {
+        "case_id": "sandbox-category-empty-page-one",
+        "request": {
+          "moduleName": "forum/ForumViewCategoryModule",
+          "c": 8503561,
+          "p": 1
+        },
+        "status": "ok",
+        "body_sha256": "5642683ad8701ee0d7fe1a95cb89b81628ccea0547187225659824089b019673"
+      },
+      {
+        "case_id": "sandbox-category-missing",
+        "request": {
+          "moduleName": "forum/ForumViewCategoryModule",
+          "c": 999999999,
+          "p": 1
+        },
+        "status": "no_category",
+        "attempt_sha256": "5aa333769d9b5ca970f9bf352a035134aa4c3b52034e82b8c2278c30c9972694"
+      },
+      {
+        "case_id": "sandbox-thread-populated",
+        "request": {
+          "moduleName": "forum/ForumViewThreadModule",
+          "t": 18029831
+        },
+        "status": "ok",
+        "body_sha256": "bccc876678f985685e35b7e74b0567aaf8e0ec41f1167becc80e0680fa13080c",
+        "js_include": [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js",
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadModule.js"
+        ]
+      },
+      {
+        "case_id": "sandbox-thread-posts-populated",
+        "request": {
+          "moduleName": "forum/ForumViewThreadPostsModule",
+          "t": "18029831",
+          "pageNo": "1"
+        },
+        "status": "ok",
+        "body_sha256": "dc1da37bb160720abd6df90bf4738df6b28ea73dd628163efc1d596ab1c5c45b",
+        "js_include": [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/forum/ForumViewThreadPostsModule.js"
+        ]
+      },
+      {
+        "case_id": "sandbox-thread-missing",
+        "request": {
+          "moduleName": "forum/ForumViewThreadModule",
+          "t": 999999999
+        },
+        "status": "no_thread",
+        "attempt_sha256": "007468cf24ceb18cfc6e32d0747a41cd88aabff8b7fd53f3b6e54cb386972ef1"
+      },
+      {
+        "case_id": "scp-comments-forward",
+        "request": {
+          "moduleName": "forum/ForumCommentsListModule",
+          "pageId": 1927127
+        },
+        "status": "ok",
+        "thread_id": 76632,
+        "body_sha256": "f70be4b6a8a8d0d747d8539c46b492599e3373eb95a0098ff88cf20340ef4710"
+      },
+      {
+        "case_id": "scp-comments-reverse",
+        "request": {
+          "moduleName": "forum/ForumCommentsListModule",
+          "pageId": 1927127,
+          "order": "reverse"
+        },
+        "status": "ok",
+        "thread_id": 76632,
+        "body_sha256": "b060232847149a0cabb9e5a6e3fb6b1fc6b5ed9cb039a885cda0b5542709f5a0"
+      },
+      {
+        "case_id": "scp-comments-missing-page",
+        "request": {
+          "moduleName": "forum/ForumCommentsListModule",
+          "pageId": 999999999
+        },
+        "status": "no_page",
+        "attempt_sha256": "3b4090799229a87c0a523e48316c6bd067675a3f6818181bb345df510e3b301e"
+      },
+      {
+        "case_id": "sandbox-recent-posts-all-page-one",
+        "request": {
+          "moduleName": "forum/ForumRecentPostsListModule",
+          "page": 1,
+          "categoryId": ""
+        },
+        "status": "ok",
+        "body_sha256": "0c029fdaa3c26c733e742170b82a42bab0858bf7a4631fa8535dcfeedcceaace"
+      },
+      {
+        "case_id": "sandbox-recent-posts-missing-category",
+        "request": {
+          "moduleName": "forum/ForumRecentPostsListModule",
+          "page": 1,
+          "categoryId": "999999999"
+        },
+        "status": "ok",
+        "body_sha256": "06aae7320f25163e1ea9558eac4219eb7be59681d671d870ea0089c8611939f4"
+      }
+    ],
+    "thread_contract": [
+      "ForumViewThreadModule owns the forum-thread-box, options, hidden thread-container-posts, both first-page post-container roots, post templates, and the sibling thread-id script.",
+      "ForumViewThreadPostsModule returns sibling post-container roots without an invented thread-container wrapper.",
+      "An edited post carries changes and hidden revisions metadata; an unedited post omits both.",
+      "The thread envelope lists ForumViewThreadPostsModule.js before ForumViewThreadModule.js; the posts envelope lists only ForumViewThreadPostsModule.js. These observations establish response metadata, not authority to execute the remote scripts."
+    ]
+  },
+  "routes": {
+    "observed": [
+      "/forum/start",
+      "/forum/start/hidden/show",
+      "/forum/c-8503559/open-topic",
+      "/forum/c-8503561/deleted-threads",
+      "/forum/c-999999999/missing",
+      "/forum/t-18029831/codex-smoke-thread-20260617194313",
+      "/forum/t-999999999/missing",
+      "/forum:new-thread/c/8503559"
+    ],
+    "contracts": [
+      "The forum start, category, and thread URLs return HTTP 200 and place the compatibility result inside forum-start-box, forum-category-box, or forum-thread-box respectively.",
+      "The served populated thread route nests forum-thread-box under page-content and does not fetch a second PostsModule body for composition.",
+      "A missing category renders Requested forum category does not exist. and a missing thread renders The thread you're trying to show seems to have been deleted.",
+      "The anonymous new-thread URL renders a permission error and does not expose a mutation form."
+    ]
+  },
+  "implementation_disposition": {
+    "source_ready": [
+      "RecentThreads own-line, argument-insensitive placeholder, typed body ownership, case, inline, raw-owner, unrelated-closer, and lookalike boundaries.",
+      "FrontForum baseline populated selection and invalid-category output.",
+      "Read-only ForumStart, category, thread, first thread-post page, and RecentPosts first-page Ajax modules.",
+      "Served ForumStart, category, and thread routes with exact observed suffix boundaries."
+    ],
+    "actionable_but_not_implemented": [
+      "Comments forward and reverse read models through ForumCommentsListModule."
+    ],
+    "blocked": [
+      "Forum post and standalone-thread mutation authority, CSRF, idempotency, rate limits, and full actor permissions.",
+      "Private, hidden, deleted, imported-user, and concurrent mutation matrices.",
+      "Browser focus, history, intermediate paint, and failed-request timing for Ajax updates."
+    ]
+  }
+}

@@ -1,0 +1,403 @@
+{
+  "schema": "wikidot.live.data-form.date-pagepath.v1",
+  "observed_at": "2026-08-10T09:04:48.456Z",
+  "site": "sandbox-for-codex",
+  "run_id": "dfdp-20260810-l1",
+  "surface_ids": [
+    "data-forms-date-field",
+    "data-forms-pagepath",
+    "data-forms-pagepath-field"
+  ],
+  "actor": "authenticated sandbox account A through direct public Wikidot page and Ajax interfaces",
+  "credential_material": "none; credentials and session material remained environment-only",
+  "environment": {
+    "locale": "en",
+    "capture_timezone": "Asia/Tokyo",
+    "utc_offset_minutes": 540,
+    "storage_interpretation": "Direct public Ajax saves stored the submitted date scalar verbatim and pagepath values as submitted page fullnames",
+    "generalization_limit": "Date parsing, display, and day boundaries are not generalized to other Wikidot locales or timezones."
+  },
+  "fixture": {
+    "identities": {
+      "requested": {
+        "form_category": "dfdp-20260810-l1",
+        "tree_category": "dfdptree-20260810-l1",
+        "template": "dfdp-20260810-l1:_template",
+        "tree_pages": [
+          "dfdptree-20260810-l1:_root",
+          "dfdptree-20260810-l1:alpha",
+          "dfdptree-20260810-l1:beta"
+        ]
+      },
+      "cases_sha256": "5fa3c7c35cbb2b1a4c26b9ddc06c9a11de53e22ebd6a2a4ff807e29a6ef0e8c8"
+    },
+    "cleanup": {
+      "template_restored_or_deleted": true,
+      "all_run_owned_pages_absent": true,
+      "remaining_pages": [],
+      "operations": [
+        {
+          "slug": "dfdp-20260810-l1:pagepath-malformed-cross-category",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:pagepath-nonexistent",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:pagepath-existing-second-level",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:pagepath-existing-first-level",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:date-boundary-malformed",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:date-boundary-non-leap-day",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:date-accepted-century-boundary",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:date-accepted-leap-day",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdptree-20260810-l1:beta",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdptree-20260810-l1:alpha",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdptree-20260810-l1:_root",
+          "status": "deleted"
+        },
+        {
+          "slug": "dfdp-20260810-l1:_template",
+          "status": "deleted"
+        }
+      ]
+    }
+  },
+  "routes": [
+    "HTTPS Login2Action session creation with credentials supplied only through environment variables",
+    "HTTP sandbox PageEditModule and WikiPageAction savePage for create, validation, and edit/reload forms",
+    "Authenticated ViewSourceModule for exact saved source and stored scalar representation",
+    "Anonymous public page GET for saved display",
+    "Identity-checked WikiPageAction deletePage followed by authenticated absence verification"
+  ],
+  "cases": [
+    {
+      "case_id": "date-accepted-leap-day",
+      "surface_id": "data-forms-date-field",
+      "control": "positive",
+      "submitted": "02/29/2024",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "b839568d86b452e7effa4fd38eeafe793ea0e785dc059f64830bc25f42ec1504",
+        "saved_source": "date_value: 02/29/2024\norigin: ''",
+        "stored_representation": "02/29/2024",
+        "submitted_fullname": null,
+        "display_http_status": 200,
+        "display": "Date value\n\n02/29/2024\n\nOrigin",
+        "edit_value": "02/29/2024",
+        "edit_field_values": [
+          "02/29/2024"
+        ],
+        "reload_value": "02/29/2024",
+        "reload_field_values": [
+          "02/29/2024"
+        ],
+        "edit_form_sha256": "d421c0c42e1e69798f21f14f380ed03c004c1447487c855b3787230b17ca720b",
+        "reload_form_sha256": "d421c0c42e1e69798f21f14f380ed03c004c1447487c855b3787230b17ca720b"
+      }
+    },
+    {
+      "case_id": "date-accepted-century-boundary",
+      "surface_id": "data-forms-date-field",
+      "control": "positive",
+      "submitted": "01/01/2000",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "48e45a74f70425b5d35d0c1977c9d0fbb910519172f3225b4956269769044989",
+        "saved_source": "date_value: 01/01/2000\norigin: ''",
+        "stored_representation": "01/01/2000",
+        "submitted_fullname": null,
+        "display_http_status": 200,
+        "display": "Date value\n\n01/01/2000\n\nOrigin",
+        "edit_value": "01/01/2000",
+        "edit_field_values": [
+          "01/01/2000"
+        ],
+        "reload_value": "01/01/2000",
+        "reload_field_values": [
+          "01/01/2000"
+        ],
+        "edit_form_sha256": "c444e07f31d5726008298c00cd351bb427adff2225e6bb6f19a3d7a3eba1d0d1",
+        "reload_form_sha256": "c444e07f31d5726008298c00cd351bb427adff2225e6bb6f19a3d7a3eba1d0d1"
+      }
+    },
+    {
+      "case_id": "date-boundary-non-leap-day",
+      "surface_id": "data-forms-date-field",
+      "control": "boundary",
+      "submitted": "02/29/2023",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "23df54005cd475006f7b7c0035f095dd0eeb34162e3c192d4fd3527c417b5369",
+        "saved_source": "date_value: 02/29/2023\norigin: ''",
+        "stored_representation": "02/29/2023",
+        "submitted_fullname": null,
+        "display_http_status": 200,
+        "display": "Date value\n\n02/29/2023\n\nOrigin",
+        "edit_value": "02/29/2023",
+        "edit_field_values": [
+          "02/29/2023"
+        ],
+        "reload_value": "02/29/2023",
+        "reload_field_values": [
+          "02/29/2023"
+        ],
+        "edit_form_sha256": "016a2fd204efe11b068cd6b476e0d38d52cd836f0dce724053f4c1a947d86710",
+        "reload_form_sha256": "016a2fd204efe11b068cd6b476e0d38d52cd836f0dce724053f4c1a947d86710"
+      }
+    },
+    {
+      "case_id": "date-boundary-malformed",
+      "surface_id": "data-forms-date-field",
+      "control": "boundary",
+      "submitted": "not-a-date",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "9cd5d511b6c2bd7dc97efd7ef4f48676ba5636b80c5479e78ce8ffacd70af068",
+        "saved_source": "date_value: not-a-date\norigin: ''",
+        "stored_representation": "not-a-date",
+        "submitted_fullname": null,
+        "display_http_status": 200,
+        "display": "Date value\n\nnot-a-date\n\nOrigin",
+        "edit_value": "not-a-date",
+        "edit_field_values": [
+          "not-a-date"
+        ],
+        "reload_value": "not-a-date",
+        "reload_field_values": [
+          "not-a-date"
+        ],
+        "edit_form_sha256": "54d05630bf022f853a2b66566446d4723449ba6ee0573b24f7719921acb0839f",
+        "reload_form_sha256": "54d05630bf022f853a2b66566446d4723449ba6ee0573b24f7719921acb0839f"
+      }
+    },
+    {
+      "case_id": "pagepath-existing-first-level",
+      "surface_id": "data-forms-pagepath-field",
+      "control": "positive",
+      "submitted": "dfdptree-20260810-l1:alpha",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "5780719a5a4a4529d057d802e6c89c3fe500afa0e3bfff67f71678667fc7827c",
+        "saved_source": "date_value: ''\norigin: 'dfdptree-20260810-l1:alpha'",
+        "stored_representation": "dfdptree-20260810-l1:alpha",
+        "submitted_fullname": "dfdptree-20260810-l1:alpha",
+        "display_http_status": 200,
+        "display": "Date value\n\nOrigin\n\nalpha",
+        "edit_value": "dfdptree-20260810-l1:alpha",
+        "edit_field_values": [
+          "dfdptree-20260810-l1:alpha"
+        ],
+        "reload_value": "dfdptree-20260810-l1:alpha",
+        "reload_field_values": [
+          "dfdptree-20260810-l1:alpha"
+        ],
+        "edit_form_sha256": "f40abc96d2c6b8caf539f23b5dfdf2f6ac23809b157d92d328bdd86fbab16a65",
+        "reload_form_sha256": "f40abc96d2c6b8caf539f23b5dfdf2f6ac23809b157d92d328bdd86fbab16a65"
+      }
+    },
+    {
+      "case_id": "pagepath-existing-second-level",
+      "surface_id": "data-forms-pagepath",
+      "control": "positive",
+      "submitted": "dfdptree-20260810-l1:beta",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "74578067874033532f9ccd25142266a998ac8bd96138fb61fe2fb3ea1c78ad1e",
+        "saved_source": "date_value: ''\norigin: 'dfdptree-20260810-l1:beta'",
+        "stored_representation": "dfdptree-20260810-l1:beta",
+        "submitted_fullname": "dfdptree-20260810-l1:beta",
+        "display_http_status": 200,
+        "display": "Date value\n\nOrigin\n\nbeta",
+        "edit_value": "dfdptree-20260810-l1:beta",
+        "edit_field_values": [
+          "dfdptree-20260810-l1:beta"
+        ],
+        "reload_value": "dfdptree-20260810-l1:beta",
+        "reload_field_values": [
+          "dfdptree-20260810-l1:beta"
+        ],
+        "edit_form_sha256": "62af40214ed7c8120d6cc64e261bdad4f8ec878f967cd5913e279ccbf8191e35",
+        "reload_form_sha256": "62af40214ed7c8120d6cc64e261bdad4f8ec878f967cd5913e279ccbf8191e35"
+      }
+    },
+    {
+      "case_id": "pagepath-nonexistent",
+      "surface_id": "data-forms-pagepath-field",
+      "control": "negative",
+      "submitted": "dfdptree-20260810-l1:missing",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "997c7f7a48c44cb551ef52ff877e5b6ccb557ff695103c1c4f65adb104e1ca68",
+        "saved_source": "date_value: ''\norigin: 'dfdptree-20260810-l1:missing'",
+        "stored_representation": "dfdptree-20260810-l1:missing",
+        "submitted_fullname": "dfdptree-20260810-l1:missing",
+        "display_http_status": 200,
+        "display": "Date value\n\nOrigin",
+        "edit_value": "dfdptree-20260810-l1:missing",
+        "edit_field_values": [
+          "dfdptree-20260810-l1:missing"
+        ],
+        "reload_value": "dfdptree-20260810-l1:missing",
+        "reload_field_values": [
+          "dfdptree-20260810-l1:missing"
+        ],
+        "edit_form_sha256": "c316e9b2ae01c627dcb638cc683e25ed743270665172ee951aa0be003c323668",
+        "reload_form_sha256": "c316e9b2ae01c627dcb638cc683e25ed743270665172ee951aa0be003c323668"
+      }
+    },
+    {
+      "case_id": "pagepath-malformed-cross-category",
+      "surface_id": "data-forms-pagepath",
+      "control": "negative",
+      "submitted": "outside-20260810-l1:alpha",
+      "lifecycle": {
+        "create_or_validation_captured": true,
+        "saved_source_captured": true,
+        "stored_representation_captured": true,
+        "display_captured": true,
+        "edit_captured": true,
+        "reload_captured": true
+      },
+      "result": {
+        "validation_status": "accepted",
+        "validation_messages": [],
+        "save_response_status": "ok",
+        "create_field_values": [
+          ""
+        ],
+        "create_form_sha256": "f24ff8104ab94c69656fab762a18e8c9c3841f30516928f92a9ca55ac79f841f",
+        "saved_source": "date_value: ''\norigin: 'outside-20260810-l1:alpha'",
+        "stored_representation": "outside-20260810-l1:alpha",
+        "submitted_fullname": "outside-20260810-l1:alpha",
+        "display_http_status": 200,
+        "display": "Date value\n\nOrigin",
+        "edit_value": "outside-20260810-l1:alpha",
+        "edit_field_values": [
+          "outside-20260810-l1:alpha"
+        ],
+        "reload_value": "outside-20260810-l1:alpha",
+        "reload_field_values": [
+          "outside-20260810-l1:alpha"
+        ],
+        "edit_form_sha256": "f950fb7651e3032a4d6400b6e5681419c7c436ffd89de8c761a605a33cd9d53b",
+        "reload_form_sha256": "f950fb7651e3032a4d6400b6e5681419c7c436ffd89de8c761a605a33cd9d53b"
+      }
+    }
+  ]
+}

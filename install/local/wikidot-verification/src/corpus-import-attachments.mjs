@@ -84,13 +84,39 @@ function putPresignedBytes(args, presignUrl, bytes, attachment) {
   });
 }
 
-async function uploadBlob({ args, attachment, bytes, actorUserId, rpc }) {
-  const upload = await rpc(args, 'blob_upload', { user_id: actorUserId, blob_size: bytes.byteLength });
-  const { statusCode } = await putPresignedBytes(args, upload.presign_url, bytes, attachment);
-  if (statusCode < 200 || statusCode >= 300) {
-    throw new Error(`${attachment.filename}: presigned PUT failed with status ${statusCode}`);
+async function uploadAndCreateFile({ args, pageId, attachment, bytes, actorUserId, rpc }) {
+  const upload = await rpc(
+    args,
+    'blob_upload',
+    { user_id: actorUserId, blob_size: bytes.byteLength, scope: 'page' },
+    { siteId: args.siteId, pageRef: pageId },
+  );
+  try {
+    const { statusCode } = await putPresignedBytes(args, upload.presign_url, bytes, attachment);
+    if (statusCode < 200 || statusCode >= 300) {
+      throw new Error(`${attachment.filename}: presigned PUT failed with status ${statusCode}`);
+    }
+    return await createFile({
+      args,
+      pageId,
+      attachment,
+      pendingBlobId: upload.pending_blob_id,
+      actorUserId,
+      rpc,
+    });
+  } catch (error) {
+    try {
+      await rpc(
+        args,
+        'blob_cancel',
+        { user_id: actorUserId, pending_blob_id: upload.pending_blob_id },
+        { siteId: args.siteId, pageRef: pageId },
+      );
+    } catch {
+      console.error(`${attachment.filename}: unable to cancel failed pending blob upload`);
+    }
+    throw error;
   }
-  return upload.pending_blob_id;
 }
 
 async function createFile({ args, pageId, attachment, pendingBlobId, actorUserId, rpc }) {
@@ -132,8 +158,7 @@ export async function materializeCorpusRowAttachments({ args, row, pageId, getFi
       skippedExisting += 1;
       continue;
     }
-    const pendingBlobId = await uploadBlob({ args, attachment, bytes, actorUserId, rpc });
-    await createFile({ args, pageId, attachment, pendingBlobId, actorUserId, rpc });
+    await uploadAndCreateFile({ args, pageId, attachment, bytes, actorUserId, rpc });
     uploaded += 1;
   }
   return { attachments_requested: attachments.length, attachments_uploaded: uploaded, attachments_skipped_existing: skippedExisting };
@@ -181,4 +206,34 @@ export async function commitDirectCorpusAttachmentStaging(args, sqlExecutor, dir
     commit: true,
   });
   return parseAttachmentStagingResults(await sqlExecutor.runSql(sql, { capture: true }));
+}
+
+export async function rerenderDirectCorpusAttachmentPages({
+  skipRerender,
+  stagingRows,
+  getPage,
+  rerenderPage,
+}) {
+  if (skipRerender) return { attachment_direct_pages_rerendered: 0 };
+
+  const changedPages = new Map();
+  for (const row of stagingRows) {
+    if (!['insert', 'backfill_descriptor', 'replace_descriptor'].includes(row.action)) continue;
+    const existingPageId = changedPages.get(row.fullname);
+    if (existingPageId !== undefined && existingPageId !== row.page_id) {
+      throw new Error(`${row.fullname}: direct attachment staging returned inconsistent page identity`);
+    }
+    changedPages.set(row.fullname, row.page_id);
+  }
+
+  let rerendered = 0;
+  for (const [fullname, pageId] of changedPages) {
+    const page = await getPage(fullname);
+    if (page === null || page.page_id !== pageId) {
+      throw new Error(`${fullname}: direct attachment page identity mismatch before rerender`);
+    }
+    await rerenderPage(page.page_id, page.page_category_id);
+    rerendered += 1;
+  }
+  return { attachment_direct_pages_rerendered: rerendered };
 }

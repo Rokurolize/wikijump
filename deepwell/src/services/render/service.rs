@@ -45,6 +45,7 @@ use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
 };
+use super::forum_modules::resolve_typed_root_recent_threads_runtime_modules;
 use super::ftml_page_existence::{
     FtmlRenderOutput, InnerPreparedRenderWikitext, ParsedFtmlRender,
     WikidotCompatLinkTitleMap, native_list_page_link_ref,
@@ -81,6 +82,7 @@ use super::include_variables::{
     is_include_variable_name, prepare_include_source_variables_and_comment_branches,
     protect_include_variables, unprotect_include_variables,
 };
+use super::legacy_actions::LegacyActionRegistry;
 #[cfg(test)]
 use super::list_pages::ResolvedListPagesAuthors;
 use super::list_pages::{
@@ -106,6 +108,7 @@ use super::render_options::{
 };
 use super::runtime::{IncludeSource, IncludeSourceCache, RenderRuntime};
 use super::runtime_modules::{RateModuleContext, SecondaryRuntimeModuleExpansionOptions};
+use super::site_utility_modules::resolve_typed_root_site_grid_runtime_modules;
 use super::structs::{RenderOutput, RenderPageOutput};
 use super::url_arguments::UrlArguments;
 use super::wikidot_hosts::{
@@ -255,6 +258,7 @@ pub(super) struct ProtectedWikidotCompatLink {
 struct ExpandedRenderWikitext {
     wikitext: String,
     included_pages: Vec<PageRef>,
+    expanded_include_count: usize,
     url_offset_list_pages_content_bytes: usize,
     wikidot_compat_html: CompatHtmlFragments,
     wikidot_compat_text: CompatTextFragments,
@@ -463,14 +467,17 @@ pub(super) static TAGCLOUD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+TagCloud(?P<head>[^\]]*)\]\]").unwrap()
 });
 pub(super) static RATEDPAGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+RatedPages(?P<head>(?:\s[^\]]*)?)\]\]").unwrap()
+    Regex::new(
+        r"(?im)^(?P<module>\[\[module[\t ]+RatedPages(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\])[\t ]*\r?$",
+    )
+    .unwrap()
 });
 pub(super) static PAGECALENDAR_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?is)\[\[module\s+PageCalendar(?P<head>[^\]]*)\]\]").unwrap()
 });
 pub(super) static REGISTRY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?is)\[\[module\s+(?P<name>Members|NewPage|Clone|Join)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
+        r#"(?is)\[\[module\s+(?P<name>NewPage|Clone|Join)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#,
     )
     .unwrap()
 });
@@ -609,24 +616,6 @@ pub(super) static WIKIDOT_COMPAT_STYLE_BLOCK_REGEX: LazyLock<Regex> =
         Regex::new(r#"(?is)<style\b[^>]*\btype\s*=\s*["']text/css["'][^>]*>.*?</style>"#)
             .unwrap()
     });
-pub(super) static WIKIDOT_RENDERED_MAILFORM_REGEX: LazyLock<Regex> = LazyLock::new(
-    || {
-        Regex::new(
-        r#"(?is)<p>\[\[module\s+MailForm(?P<head>[^\]]*)\]\]</p>(?P<body>.*?)<p>\[\[/module\]\]</p>"#,
-    )
-    .unwrap()
-    },
-);
-pub(super) static WIKIDOT_RENDERED_MAILFORM_FIELD_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"(?is)<ol>\s*<li>(?P<name>[^<]+)</li>"#).unwrap());
-pub(super) static WIKIDOT_RENDERED_MAILFORM_DEFAULT_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
-        Regex::new(r#"(?is)<li>default:\s*(?P<default>[^<]*)</li>"#).unwrap()
-    });
-pub(super) static WIKIDOT_RENDERED_MAILFORM_MAX_LENGTH_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| {
-        Regex::new(r#"(?is)<li>maxLength:\s*(?P<max>[0-9]+)</li>"#).unwrap()
-    });
 pub(super) static WIKIJUMP_INLINE_MATH_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)<span class="wj-math wj-math-inline"><code class="wj-math-source wj-hidden"[^>]*>(?P<source>.*?)</code><wj-math-ml class="wj-math-ml">.*?</wj-math-ml></span>"#,
@@ -716,6 +705,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = Box::pin(Self::render_inner(
             ctx,
             wikitext,
@@ -761,6 +751,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = Box::pin(Self::render_inner(
             ctx,
             wikitext,
@@ -822,6 +813,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            ..
         } = Box::pin(Self::render_inner(
             ctx,
             wikitext,
@@ -1060,6 +1052,7 @@ impl RenderService {
             mut html_output,
             errors,
             compiled_hash: compiled_body_html_hash,
+            ..
         } = Self::render_inner(
             ctx,
             wikitext,
@@ -1257,6 +1250,7 @@ impl RenderService {
         let expanded = ExpandedRenderWikitext {
             wikitext,
             included_pages,
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html,
             wikidot_compat_text,
@@ -1345,6 +1339,7 @@ impl RenderService {
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let mut include_budget = IncludeExpansionBudget::new(max_include_expansions);
+        let initial_include_expansions = include_budget.remaining;
         let mut include_source_cache = IncludeSourceCache::default();
         let metacomponent_context = if page_info
             .tags
@@ -1430,8 +1425,8 @@ impl RenderService {
         let ListPagesExpansion {
             wikitext: expanded_wikitext,
             included_pages: list_pages_included_pages,
+            expanded_include_count: list_pages_expanded_include_count,
             url_offset_content_bytes,
-            ..
         } = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ListPages);
             let protected_css =
@@ -1465,6 +1460,7 @@ impl RenderService {
         };
         wikitext = expanded_wikitext;
         included_pages.extend(list_pages_included_pages);
+        include_budget.consume(list_pages_expanded_include_count);
         wikitext = Box::pin(Self::expand_secondary_runtime_modules(
             ctx,
             wikitext,
@@ -1638,6 +1634,8 @@ impl RenderService {
         Ok(ExpandedRenderWikitext {
             wikitext,
             included_pages,
+            expanded_include_count: initial_include_expansions
+                .saturating_sub(include_budget.remaining),
             url_offset_list_pages_content_bytes: url_offset_content_bytes,
             wikidot_compat_html,
             wikidot_compat_text,
@@ -1903,6 +1901,7 @@ impl RenderService {
             page_info,
             settings,
             current_site_id,
+            current_page_id,
             viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,
@@ -1929,11 +1928,13 @@ impl RenderService {
                 wikidot_compat_text: CompatTextFragments::new(&wikitext),
                 wikitext,
                 included_pages: Vec::new(),
+                expanded_include_count: 0,
                 url_offset_list_pages_content_bytes: 0,
             },
             page_info,
             settings,
             Some(current_site_id),
+            None,
             viewer_user_id,
             None,
             true,
@@ -1951,6 +1952,7 @@ impl RenderService {
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
+        current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
         allow_wikidot_styleframe: bool,
@@ -1961,6 +1963,7 @@ impl RenderService {
         let config = ctx.config();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
+        let expanded_include_count = expanded.expanded_include_count;
         let mut expanded = expanded;
         if !allow_wikidot_styleframe {
             Self::neutralize_untrusted_wikidot_styleframe_embeds(&mut expanded.wikitext);
@@ -2107,13 +2110,36 @@ impl RenderService {
                     backlinks,
                 )
             });
-            let html_output = HtmlOutput {
+            let mut html_output = HtmlOutput {
                 body,
                 meta: Vec::new(),
                 styles: wikidot_css_modules,
                 resource_requirements: Vec::new(),
                 backlinks,
             };
+            if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
+                return Err(Error::new(
+                    "failed to resolve typed Wikidot embedvideo requirements",
+                    ErrorType::Render,
+                )
+                .into());
+            }
+            if !Self::resolve_wikidot_gallery_requirements(
+                ctx,
+                &mut html_output,
+                current_site_id,
+                current_page_id,
+                viewer_user_id,
+                current_site.as_ref(),
+            )
+            .await?
+            {
+                return Err(Error::new(
+                    "failed to resolve typed Wikidot gallery requirements",
+                    ErrorType::Render,
+                )
+                .into());
+            }
             drop(fallback_render_stage);
             if let Some((trace, CorpusRenderScope::Body)) = trace {
                 trace.set_dimension(
@@ -2184,6 +2210,7 @@ impl RenderService {
                 html_output,
                 errors: Vec::new(),
                 compiled_hash,
+                expanded_include_count,
             });
         }
         let render_page_info = Self::owned_page_info(page_info);
@@ -2209,7 +2236,15 @@ impl RenderService {
                 trace.record_elapsed(scope, CorpusRenderStage::WorkerQueue, queued_at);
             }
             let prepared = Self::prepare_inner_render_wikitext(outer, &parse_settings);
-            ParsedFtmlRender::parse(prepared, &parse_page_info, &parse_settings, trace)
+            let mut parsed = ParsedFtmlRender::parse(
+                prepared,
+                &parse_page_info,
+                &parse_settings,
+                trace,
+            );
+            resolve_typed_root_site_grid_runtime_modules(&mut parsed.tree);
+            resolve_typed_root_recent_threads_runtime_modules(&mut parsed.tree);
+            parsed
         });
         let parsed = timeout(render_timeout, parse_task)
             .await
@@ -2247,6 +2282,9 @@ impl RenderService {
                 page_existence.as_ref(),
                 &user_info,
                 trace,
+            );
+            let legacy_action_registry = LegacyActionRegistry::from_resource_requirements(
+                &html_output.resource_requirements,
             );
             let wikidot_tabview_ids: Vec<String> = html_output
                 .resource_requirements
@@ -2341,6 +2379,10 @@ impl RenderService {
                         );
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
+                    if render_settings.layout == Layout::Wikidot {
+                        legacy_action_registry
+                            .remove_renderer_ids_from_wikidot_html(&mut html_output.body);
+                    }
                     html_output.backlinks.included_pages.extend(included_pages);
                     let html_block_texts: Vec<String> = tree
                         .html_blocks
@@ -2403,7 +2445,7 @@ impl RenderService {
         });
 
         let FtmlRenderOutput {
-            html_output,
+            mut html_output,
             errors,
             html_block_texts,
             code_blocks,
@@ -2413,6 +2455,30 @@ impl RenderService {
                 Error::new("failed to render due to timeout", ErrorType::RenderTimeout)
             })?
             .or_raise(|| Error::new("failed to join render task", ErrorType::Render))?;
+
+        if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
+            return Err(Error::new(
+                "failed to resolve typed Wikidot embedvideo requirements",
+                ErrorType::Render,
+            )
+            .into());
+        }
+        if !Self::resolve_wikidot_gallery_requirements(
+            ctx,
+            &mut html_output,
+            current_site_id,
+            current_page_id,
+            viewer_user_id,
+            current_site.as_ref(),
+        )
+        .await?
+        {
+            return Err(Error::new(
+                "failed to resolve typed Wikidot gallery requirements",
+                ErrorType::Render,
+            )
+            .into());
+        }
 
         if let Some((trace, CorpusRenderScope::Body)) = trace {
             trace.set_dimension(
@@ -2512,6 +2578,7 @@ impl RenderService {
             html_output,
             errors,
             compiled_hash,
+            expanded_include_count,
         })
     }
 
@@ -5266,7 +5333,9 @@ pub(super) fn format_list_pages_rating(score: Option<f32>) -> String {
     }
 }
 
-pub(super) fn render_members_module_placeholder(group: &str) -> String {
+#[cfg(test)]
+/// Captured legacy HTML used only to exercise generic fragment protection.
+pub(super) fn members_compat_html_fixture(group: &str) -> String {
     let group_attr = escape_list_pages_html_attr(group);
     let group_script = escape_javascript_single_quoted(group);
     let body = if group.eq_ignore_ascii_case("moderators") {
@@ -5297,6 +5366,7 @@ pub(super) fn render_clone_module(head: &str) -> String {
     )
 }
 
+#[cfg(test)]
 fn escape_javascript_single_quoted(value: &str) -> String {
     value
         .replace('\\', r"\\")
@@ -5356,6 +5426,7 @@ pub(super) struct RenderInnerOutput {
     pub(super) html_output: HtmlOutput,
     pub(super) errors: Vec<ParseError>,
     pub(super) compiled_hash: TextHash,
+    pub(super) expanded_include_count: usize,
 }
 
 #[derive(Debug)]
@@ -5608,17 +5679,6 @@ fn preferred_domain_matches_wikidot_slug(
     };
 
     wikidot_slug.eq_ignore_ascii_case(site_slug)
-}
-
-pub(super) fn rendered_wikidot_mailform_attribute(
-    head: &str,
-    name: &str,
-) -> Option<String> {
-    let prefix = format!("{name}=&quot;");
-    let start = head.find(&prefix)? + prefix.len();
-    let rest = &head[start..];
-    let end = rest.find("&quot;")?;
-    Some(rest[..end].to_owned())
 }
 
 #[cfg(test)]

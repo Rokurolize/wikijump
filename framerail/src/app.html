@@ -7,6 +7,16 @@
       /*__WIKIDOT_REQUEST_INFO__*/
     </script>
     %sveltekit.head%
+    <script nonce="%sveltekit.nonce%">
+      const analyticsProfile = document.querySelector(
+        'meta[name="wikidot-site-analytics-profile"]'
+      )?.content
+      if (/^UA-[0-9]+-[0-9]+$/u.test(analyticsProfile ?? "")) {
+        var _gaq = (globalThis._gaq = globalThis._gaq || [])
+        _gaq.push(["userTracker._setAccount", analyticsProfile])
+        _gaq.push(["userTracker._trackPageview"])
+      }
+    </script>
   </head>
   <body id="html-body">
     %sveltekit.body%

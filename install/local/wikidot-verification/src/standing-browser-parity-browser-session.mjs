@@ -15,6 +15,8 @@ import {
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
 import {
+  requirePlainObject,
+  requireSha256,
   sealJsonNoReplace,
   sha256File,
 } from "./standing-browser-parity-util.mjs";
@@ -70,14 +72,36 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
   };
 }
 
-function throttleConfig({
+export function parityBrowserThrottleConfig({
   args,
   runId,
   lock,
   policy,
   localOrigins,
   candidate,
+  credentialPolicy = "none",
 }) {
+  let credentials = "none";
+  if (credentialPolicy !== "none") {
+    const value = requirePlainObject(credentialPolicy, "browser credential policy");
+    if (
+      value.mode !== "private-actor-storage-states" ||
+      !Number.isSafeInteger(value.storage_state_count) ||
+      value.storage_state_count < 1 ||
+      JSON.stringify(Object.keys(value).sort()) !==
+        JSON.stringify(["mode", "private_input_identity_sha256", "storage_state_count"])
+    ) {
+      throw new Error("browser credential policy must bind a private actor storage-state count");
+    }
+    credentials = {
+      mode: value.mode,
+      storage_state_count: value.storage_state_count,
+      private_input_identity_sha256: requireSha256(
+        value.private_input_identity_sha256,
+        "browser credential policy private input identity SHA-256",
+      ),
+    };
+  }
   return {
     schema: THROTTLE_CONFIG_SCHEMA,
     status: "sealed_before_browser_request",
@@ -96,7 +120,7 @@ function throttleConfig({
     public_origin_policy: "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, and /v-- static assets on a CloudFront host) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
-    credentials: "none",
+    credentials,
   };
 }
 
@@ -105,6 +129,7 @@ export async function createParityBrowserControls({
   outputDir,
   policy,
   candidate,
+  credentialPolicy = "none",
 }) {
   const runId = randomUUID();
   // Live-reference capture shares one host-global admission state. A caller
@@ -121,13 +146,14 @@ export async function createParityBrowserControls({
     const configPath = path.join(outputDir, "throttle-config-receipt.json");
     const configSeal = await sealJsonNoReplace(
       configPath,
-      throttleConfig({
+      parityBrowserThrottleConfig({
         args,
         runId,
         lock,
         policy,
         localOrigins,
         candidate: candidate?.candidate.endpoint ?? null,
+        credentialPolicy,
       }),
     );
     proxy = await startCaptureEgressProxy({
@@ -199,6 +225,7 @@ export async function launchParityBrowser({
   browserExecutable,
   controls,
   local,
+  storageState = null,
   viewport,
 }) {
   const { chromium } = requirePlaywright(browserRoot);
@@ -217,6 +244,7 @@ export async function launchParityBrowser({
       reducedMotion: "reduce",
       serviceWorkers: "block",
       proxy: { server: controls.proxy.url, bypass: "<-loopback>" },
+      ...(storageState === null ? {} : { storageState }),
     });
     await installBrowserRequestGate(context, {
       gate: controls.gate,

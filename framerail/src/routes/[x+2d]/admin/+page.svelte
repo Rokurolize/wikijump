@@ -1,11 +1,16 @@
 <script lang="ts">
+  import AnalyticsSettings from "./AnalyticsSettings.svelte"
+  import AutonumberSettings from "./AutonumberSettings.svelte"
   import ForumSettings from "./ForumSettings.svelte"
   import LicenseSettings from "./LicenseSettings.svelte"
+  import LayoutSettings from "./LayoutSettings.svelte"
   import NavigationSettings from "./NavigationSettings.svelte"
   import RatingSettings from "./RatingSettings.svelte"
   import SiteIconSettings from "./SiteIconSettings.svelte"
   import SiteSettings from "./SiteSettings.svelte"
   import TemplateSettings from "./TemplateSettings.svelte"
+  import ThemeSettings from "./ThemeSettings.svelte"
+  import ToolbarSettings from "./ToolbarSettings.svelte"
 
   import type { PageProps } from "./$types"
 
@@ -13,6 +18,11 @@
 </script>
 
 <SiteSettings {data} />
+<LayoutSettings {data} />
+<AnalyticsSettings {data} />
+<ThemeSettings {data} />
+<ToolbarSettings {data} />
+<AutonumberSettings {data} />
 <NavigationSettings {data} />
 <TemplateSettings {data} />
 <SiteIconSettings {data} />

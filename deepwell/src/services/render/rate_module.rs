@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::LegacyActionDescriptor;
 use super::service::{escape_list_pages_html_attr, escape_list_pages_html_text};
 use crate::services::settings::PageRatingType;
 
@@ -29,13 +30,11 @@ pub(super) fn render_read_only_rate_module(
     let score = format_score_value(score);
     let labels = wikidot_rate_module_labels(language);
     let downvote = if rating_type == PageRatingType::PlusMinus {
-        format!(
-            concat!(
-                "<span class=\"ratedown btn btn-default\">",
-                "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, -1)\" title=\"{}\">–</a>",
-                "</span>",
-            ),
+        render_rate_control(
+            "ratedown",
+            LegacyActionDescriptor::rate(-1).expect("downvote is a fixed action"),
             labels.down_title,
+            "–",
         )
     } else {
         String::new()
@@ -47,16 +46,48 @@ pub(super) fn render_read_only_rate_module(
             "<span class=\"rate-points\">{}",
             "<span class=\"number prw54353\">{}</span>",
             "</span>",
-            "<span class=\"rateup btn btn-default\">",
-            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, 1)\" title=\"{}\">+</a>",
-            "</span>",
             "{}",
-            "<span class=\"cancel btn btn-default\">",
-            "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)\" title=\"{}\">x</a>",
-            "</span>",
+            "{}",
+            "{}",
             "</div>"
         ),
-        labels.rating_prefix, score, labels.up_title, downvote, labels.cancel_title,
+        labels.rating_prefix,
+        score,
+        render_rate_control(
+            "rateup",
+            LegacyActionDescriptor::rate(1).expect("upvote is a fixed action"),
+            labels.up_title,
+            "+",
+        ),
+        downvote,
+        render_rate_control(
+            "cancel",
+            LegacyActionDescriptor::cancel_rate(),
+            labels.cancel_title,
+            "x",
+        ),
+    )
+}
+
+fn render_rate_control(
+    class: &str,
+    action: LegacyActionDescriptor,
+    title: &str,
+    label: &str,
+) -> String {
+    let onclick = match action {
+        LegacyActionDescriptor::Rate(value @ (-1 | 1)) => {
+            format!("WIKIDOT.modules.PageRateWidgetModule.listeners.rate(event, {value})")
+        }
+        LegacyActionDescriptor::CancelRate => {
+            "WIKIDOT.modules.PageRateWidgetModule.listeners.cancelVote(event)".to_owned()
+        }
+        _ => unreachable!("Rate controls use only fixed rate descriptors"),
+    };
+    format!(
+        r#"<span class="{class} btn btn-default"><a href="javascript:;" onclick="{onclick}" title="{title}">{label}</a></span>"#,
+        title = escape_list_pages_html_attr(title),
+        label = escape_list_pages_html_text(label),
     )
 }
 

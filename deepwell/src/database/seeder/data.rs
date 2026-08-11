@@ -354,4 +354,21 @@ mod tests {
             page_index("component:license-box-end") < page_index("component:license-box")
         );
     }
+
+    #[test]
+    fn editable_site_seeds_the_public_self_join_route() {
+        let seeder_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("seeder");
+        let seed = SeedData::load(&seeder_path).expect("seed data should load");
+        let pages = seed
+            .pages
+            .get("scpaiueouiuiuiui")
+            .expect("editable local site pages");
+        let join = pages
+            .iter()
+            .find(|page| page.slug == "system:join")
+            .expect("editable local site should expose its self-join route");
+
+        assert_eq!(join.title, "Join this site");
+        assert_eq!(join.wikitext.trim(), "[[module Join]]");
+    }
 }

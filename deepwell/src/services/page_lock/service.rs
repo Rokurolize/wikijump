@@ -244,6 +244,15 @@ impl PageLockService {
         Ok(active_lock)
     }
 
+    pub async fn active_lock_exists(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+    ) -> Result<bool> {
+        Ok(Self::get_active_lock_for_page(ctx, page_id)
+            .await?
+            .is_some())
+    }
+
     pub async fn can_user_bypass_lock(
         ctx: &ServiceContext<'_>,
         site_id: i64,

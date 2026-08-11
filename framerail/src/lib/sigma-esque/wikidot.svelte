@@ -21,6 +21,9 @@
             {@render topBar?.()}
           </div>
           {@render loginStatus?.()}
+          <div id="header-extra-div-1"><span></span></div>
+          <div id="header-extra-div-2"><span></span></div>
+          <div id="header-extra-div-3"><span></span></div>
         </div>
         <div id="content-wrap">
           <div id="side-bar">

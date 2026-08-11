@@ -774,22 +774,29 @@ async fn site_permission_cache_invalidation_publishes_anonymous_fence() {
         .await
         .expect("Failed to invalidate permission cache for site");
 
-    let message =
-        tokio::time::timeout(Duration::from_secs(2), pubsub.on_message().next())
-            .await
-            .expect("timed out waiting for permission invalidation")
-            .expect("pub/sub stream ended unexpectedly");
-    let payload: String = message
-        .get_payload()
-        .expect("failed to read permission invalidation payload");
-
-    assert_eq!(
-        payload,
-        format!(
-            r#"{{"type":"anonymous-permission","site_id":{},"site_version":"1","user_version":"0"}}"#,
-            f.site_id
-        )
+    let expected_payload = format!(
+        r#"{{"type":"anonymous-permission","site_id":{},"site_version":"1","user_version":"0"}}"#,
+        f.site_id
     );
+    let payload = tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            let message = pubsub
+                .on_message()
+                .next()
+                .await
+                .expect("pub/sub stream ended unexpectedly");
+            let payload: String = message
+                .get_payload()
+                .expect("failed to read permission invalidation payload");
+            if payload == expected_payload {
+                break payload;
+            }
+        }
+    })
+    .await
+    .expect("timed out waiting for permission invalidation");
+
+    assert_eq!(payload, expected_payload);
 
     let _: usize = redis
         .del((&site_key, &anonymous_user_key))

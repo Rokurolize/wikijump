@@ -76,6 +76,13 @@
     {data.internationalization?.history}
   </button>
   <button
+    class="action-button button-watchers clickable"
+    onclick={() => activatePagePane(PagePane.Watchers)}
+    type="button"
+  >
+    Watchers
+  </button>
+  <button
     class="action-button button-vote clickable"
     onclick={() => activatePagePane(PagePane.Vote)}
     type="button"

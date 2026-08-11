@@ -1,5 +1,26 @@
 {
   "schema": "wikijump_compat.corpus_pinned_literals.allowlist.v1",
   "note": "A literal belongs here only when the pinned form is the whole of Wikidot's behaviour and live observation with negative controls proves it. Recognising one captured page is not a reason. Every entry must cite at least two live observations.",
-  "entries": []
+  "entries": [
+    {
+      "file": "deepwell/src/services/render/runtime_modules.rs",
+      "literal_sha256": "c9b5dd06180df7f78f79fbb5056574ea0f9dcd701f5d1c57d77eb13113893720",
+      "reason": "AnonymousNotificationsUnsubscribe is the exact public Wikidot module identifier required for case-insensitive dispatch, not content copied from a captured page.",
+      "live_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#anonymous-anonymousnotificationsunsubscribe-invalid-token",
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#account-a-anonymousnotificationsunsubscribe-invalid-token",
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#anonymous-pageview-anonymousnotificationsunsubscribe-invalid-token"
+      ]
+    },
+    {
+      "file": "deepwell/src/services/render/runtime_modules.rs",
+      "literal_sha256": "afba8f53b1e7e65f74170358bad65f3fba11107cd507530939525fc964739217",
+      "reason": "MembershipEmailInvitation is the exact public Wikidot module identifier required for case-insensitive dispatch, not content copied from a captured page.",
+      "live_evidence": [
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#anonymous-membershipemailinvitation-no-token",
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#account-a-membershipemailinvitation-no-token",
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#anonymous-pageview-membershipemailinvitation-no-token"
+      ]
+    }
+  ]
 }

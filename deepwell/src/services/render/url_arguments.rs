@@ -24,6 +24,7 @@
 //! path arguments is only answered correctly if the view re-renders. This
 //! module decides when that is necessary.
 
+use super::backlinks::BACKLINKS_MODULE_REGEX;
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
@@ -31,8 +32,11 @@ use super::list_pages::{
     scanner::{find_list_pages_module_matches, list_pages_runtime_head_can_execute},
 };
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
+use super::page_tree::PAGE_TREE_MODULE_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
 use super::pages_by_tag::PAGES_BY_TAG_MODULE_REGEX;
+use super::service::RATEDPAGES_MODULE_REGEX;
+use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
 use crate::services::page_query::OrderProperty;
 use regex::Regex;
 use std::borrow::Cow;
@@ -52,8 +56,38 @@ static LIST_USERS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listusers\b").unwrap());
 static LIST_DRAFTS_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listdrafts\b").unwrap());
+static ACTOR_SENSITIVE_CATEGORIES_MODULE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+categories\b").unwrap());
+static ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?m)^[\t ]*\[\[module[\t ]+SiteChanges[\t ]*\]\][\t ]*$").unwrap()
+});
 static MEMBERSHIP_BY_PASSWORD_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+membershipbypassword\b").unwrap());
+static MEMBERSHIP_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?is)\[\[\s*module\s+(?:join|membershipapply)\b").unwrap()
+});
+static FORUM_MINI_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?im)^[\t ]*\[\[module\s+mini(?:recentthreads|activethreads|recentposts)\b",
+    )
+    .unwrap()
+});
+static FORUM_RECENT_POSTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?im)^[\t ]*\[\[module\s+recentposts\b(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#)
+        .unwrap()
+});
+static FORUM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(concat!(
+        r#"(?im)^[\t ]*\[\[module\s+(?:comments|frontforum|forumcategory|"#,
+        r#"forumnewthread|forumstart|forumthread|recentposts|recentthreads)\b"#,
+        r#"(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#,
+    ))
+    .unwrap()
+});
+static SEARCH_ALL_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?im)^[\t ]*\[\[module\s+searchall\b(?:[^\]"]+|"[^"]*")*\]\][\t ]*$"#)
+        .unwrap()
+});
 
 /// One raw URL path argument addressed to a page module.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -171,6 +205,8 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
         || LIST_PAGES_URL_SELECTOR_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || LIST_PAGES_MODULE_REGEX.is_match(wikitext)
+        || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
+        || FORUM_RECENT_POSTS_MODULE_REGEX.is_match(wikitext)
 }
 
 /// Whether a page view must render from source even without URL arguments.
@@ -182,11 +218,21 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
         || wikitext_has_executable_list_pages_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
+        || BACKLINKS_MODULE_REGEX.is_match(wikitext)
+        || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
+        || RATEDPAGES_MODULE_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
         || LIST_USERS_MODULE_REGEX.is_match(wikitext)
         || LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
+        || ACTOR_SENSITIVE_CATEGORIES_MODULE_REGEX.is_match(wikitext)
+        || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
+        || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
+        || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
+        || FORUM_MODULE_REGEX.is_match(wikitext)
+        || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
+        || wikitext_requires_site_utility_runtime_render(wikitext)
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
         || wikitext_has_random_list_pages_module(wikitext)
@@ -288,10 +334,104 @@ mod tests {
     }
 
     #[test]
+    fn search_all_reads_url_arguments_and_requires_runtime_rendering() {
+        assert!(wikitext_reads_url_arguments("[[module SearchAll]]"));
+        assert!(wikitext_requires_runtime_render("[[module SearchAll]]"));
+        assert!(!wikitext_reads_url_arguments(
+            "before [[module SearchAll]] after"
+        ));
+    }
+
+    #[test]
+    fn forum_mini_modules_require_runtime_rendering_only_on_their_own_line() {
+        for source in [
+            "[[module MiniRecentThreads]]",
+            r#"[[module MiniActiveThreads limit="1"]]"#,
+            "[[MoDuLe MiniRecentPosts unknown='x']]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        assert!(!wikitext_requires_runtime_render(
+            "before [[module MiniRecentThreads]] after",
+        ));
+    }
+
+    #[test]
+    fn forum_modules_require_runtime_rendering_and_only_recent_posts_reads_page() {
+        for source in [
+            "[[module Comments]]",
+            "[[module FrontForum]]",
+            "[[module ForumCategory]]",
+            "[[module ForumNewThread]]",
+            "[[module ForumStart]]",
+            "[[module ForumThread]]",
+            "[[module RecentThreads]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        assert!(wikitext_requires_runtime_render("[[module RecentPosts]]"));
+        assert!(wikitext_reads_url_arguments("[[module RecentPosts]]"));
+        assert!(!wikitext_requires_runtime_render(
+            "before [[module ForumStart]] after",
+        ));
+        assert!(!wikitext_reads_url_arguments(
+            "before [[module RecentPosts]] after",
+        ));
+    }
+
+    #[test]
+    fn actor_sensitive_site_utility_modules_require_runtime_rendering() {
+        for source in [
+            "[[module Clone]]",
+            "[[module ManageSite]]",
+            "[[module PetitionAdmin]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+    }
+
+    #[test]
     fn link_listing_modules_require_runtime_rendering() {
         for source in ["[[module OrphanedPages]]", "[[module WantedPages]]"] {
             assert!(wikitext_requires_runtime_render(source));
             assert!(!wikitext_reads_url_arguments(source));
+        }
+    }
+
+    #[test]
+    fn actor_sensitive_page_graph_modules_require_runtime_rendering() {
+        for source in [
+            "[[module Categories]]",
+            "before [[module categories]] after",
+            "[[module SiteChanges]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        assert!(!wikitext_requires_runtime_render(
+            "before [[module SiteChanges]] after"
+        ));
+    }
+
+    #[test]
+    fn read_only_page_query_modules_require_runtime_rendering_on_their_own_line() {
+        for source in [
+            "[[module Backlinks]]",
+            "[[module PageTree]]",
+            "[[module RatedPages]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source));
+            assert!(!wikitext_reads_url_arguments(source));
+        }
+        for source in [
+            "before [[module Backlinks]] after",
+            "before [[module PageTree]] after",
+            "before [[module RatedPages]] after",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source));
         }
     }
 

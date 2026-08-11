@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Run the checks CI would run for the paths this push changes.
+# Run the lightweight checkpoint for the paths this push changes.
 #
 # CI feedback costs minutes; this costs seconds for most changes. Set
 # WIKIJUMP_SKIP_PREFLIGHT=1 to push without it, or --no-verify.
@@ -17,14 +17,34 @@ if [[ ! -x "${REPO_ROOT}/scripts/preflight.sh" ]]; then
   exit 0
 fi
 
-# git passes the remote name and URL as arguments; preflight takes neither,
-# and reads the refs being pushed from the working tree instead.
-echo "pre-push: running preflight; WIKIJUMP_SKIP_PREFLIGHT=1 skips it"
-"${REPO_ROOT}/scripts/preflight.sh"
+# Use the remote tip only for one existing branch update of the current HEAD.
+# Every other push shape falls back to the full branch diff so an ambiguous ref
+# cannot narrow validation accidentally.
+REF_COUNT=0
+LOCAL_REF=""
+LOCAL_OID=""
+REMOTE_OID=""
+while read -r current_local_ref current_local_oid _current_remote_ref current_remote_oid; do
+  REF_COUNT=$((REF_COUNT + 1))
+  LOCAL_REF="${current_local_ref}"
+  LOCAL_OID="${current_local_oid}"
+  REMOTE_OID="${current_remote_oid}"
+done
+
+HEAD_OID="$(git rev-parse HEAD)"
+BASE="origin/develop"
+if [[ ${REF_COUNT} -eq 1 && "${LOCAL_REF}" == refs/heads/* && "${LOCAL_OID}" == "${HEAD_OID}" && ! "${REMOTE_OID}" =~ ^0+$ ]]; then
+  BASE="${REMOTE_OID}"
+  echo "pre-push: checkpoint base: ${BASE}"
+else
+  echo "pre-push: checkpoint base: ${BASE} (full branch fallback)"
+fi
+echo "pre-push: WIKIJUMP_SKIP_PREFLIGHT=1 skips this checkpoint"
+"${REPO_ROOT}/scripts/preflight.sh" --base "${BASE}"
 status=$?
 if [[ ${status} -ne 0 ]]; then
   echo ""
-  echo "pre-push: preflight failed, so CI would fail too. Fix it, or set"
+  echo "pre-push: checkpoint failed. Fix it, or set"
   echo "pre-push: WIKIJUMP_SKIP_PREFLIGHT=1 if you are pushing deliberately."
 fi
 exit ${status}

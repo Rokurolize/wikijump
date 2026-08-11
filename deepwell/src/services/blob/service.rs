@@ -19,8 +19,8 @@
  */
 
 use super::structs::{
-    BlobMetadata, FinalizeBlobUploadOutput, HardDelete, HardDeleteOutput,
-    StartBlobUpload, StartBlobUploadOutput,
+    BlobMetadata, ContentAnalysis, ContentTypeDescriptor, FinalizeBlobUploadOutput,
+    HardDelete, HardDeleteOutput, PendingBlobOwner, StartBlobUploadOutput,
 };
 use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -94,7 +94,9 @@ impl BlobService {
     /// The generated presign URL, which can be uploaded to.
     pub async fn start_upload(
         ctx: &ServiceContext<'_>,
-        StartBlobUpload { user_id, blob_size }: StartBlobUpload,
+        user_id: i64,
+        blob_size: u64,
+        owner: PendingBlobOwner,
     ) -> Result<StartBlobUploadOutput> {
         info!("Creating upload by {user_id} with promised length {blob_size}");
         let config = ctx.config();
@@ -144,10 +146,7 @@ impl BlobService {
             path
         };
 
-        info!(
-            "Creating presign upload URL for blob at path {} with primary key {}",
-            s3_path, pending_blob_id,
-        );
+        info!("Creating presign upload URL for a pending blob");
 
         // Create presign URL
         let bucket = ctx.s3_files_bucket();
@@ -163,6 +162,10 @@ impl BlobService {
             .ok_or_raise(make_error)?;
 
         // Add pending blob entry
+        let (site_id, page_id) = match owner {
+            PendingBlobOwner::Unscoped => (None, None),
+            PendingBlobOwner::Page { site_id, page_id } => (Some(site_id), Some(page_id)),
+        };
         let model = blob_pending::ActiveModel {
             external_id: Set(pending_blob_id),
             expected_length: Set(blob_size),
@@ -171,6 +174,8 @@ impl BlobService {
             created_by: Set(user_id),
             created_at: Set(created_at),
             expires_at: Set(expires_at),
+            site_id: Set(site_id),
+            page_id: Set(page_id),
             ..Default::default()
         };
 
@@ -189,22 +194,16 @@ impl BlobService {
         })
     }
 
-    async fn get_pending_blob_path(
+    async fn require_owned_pending_blob(
         ctx: &ServiceContext<'_>,
         user_id: i64,
         pending_blob_id: &str,
+        expected_owner: Option<PendingBlobOwner>,
     ) -> Result<PendingBlob> {
         let txn = ctx.transaction();
 
-        let make_error = || {
-            Error::new(
-                format!(
-                    "failed to get pending blob path for ID '{}' (from user ID {})",
-                    pending_blob_id, user_id,
-                ),
-                ErrorType::Blob,
-            )
-        };
+        let make_error =
+            || Error::new("failed to require owned pending blob", ErrorType::Blob);
 
         let row = BlobPending::find_by_id(pending_blob_id)
             .one(txn)
@@ -214,32 +213,40 @@ impl BlobService {
         let BlobPendingModel {
             s3_path,
             s3_hash,
+            content_type_label,
+            content_type_description,
             created_by,
             expected_length,
+            site_id,
+            page_id,
             ..
         } = match row {
             Some(pending) => pending,
             None => bail!(Error::new("blob does not exist", ErrorType::BlobNotFound)),
         };
 
-        if user_id != created_by {
-            error!(
-                "User mismatch, user ID {} is attempting to use blob uploaded by {}",
-                user_id, created_by,
-            );
-            bail!(Error::new(
-                format!(
-                    "failed to get blob, user mismatch (user ID {} is requested, but uploaded by user ID {}",
-                    user_id, created_by,
-                ),
-                ErrorType::BlobWrongUser,
-            ));
+        let owner = match (site_id, page_id) {
+            (None, None) => PendingBlobOwner::Unscoped,
+            (Some(site_id), Some(page_id)) => PendingBlobOwner::Page { site_id, page_id },
+            _ => bail!(Error::new(
+                "pending blob has an invalid ownership scope",
+                ErrorType::Blob,
+            )),
+        };
+
+        if user_id != created_by
+            || expected_owner.is_some_and(|expected| expected != owner)
+        {
+            error!("Pending blob ownership does not match the requested operation");
+            bail!(Error::new("blob does not exist", ErrorType::BlobNotFound));
         }
 
         Ok(PendingBlob {
             s3_path,
             expected_length,
             moved_hash: s3_hash,
+            content_type_label,
+            content_type_description,
         })
     }
 
@@ -248,21 +255,13 @@ impl BlobService {
         user_id: i64,
         pending_blob_id: &str,
     ) -> Result<()> {
-        info!("Cancelling upload for blob for pending ID {pending_blob_id}");
+        info!("Cancelling a pending blob upload");
         let txn = ctx.transaction();
 
-        let make_error = || {
-            Error::new(
-                format!(
-                    "failed to cancel pending blob for ID '{}' (from user ID {})",
-                    pending_blob_id, user_id,
-                ),
-                ErrorType::Blob,
-            )
-        };
+        let make_error = || Error::new("failed to cancel pending blob", ErrorType::Blob);
 
         let PendingBlob { s3_path, .. } =
-            Self::get_pending_blob_path(ctx, user_id, pending_blob_id)
+            Self::require_owned_pending_blob(ctx, user_id, pending_blob_id, None)
                 .await
                 .or_raise(make_error)?;
 
@@ -339,14 +338,14 @@ impl BlobService {
         let data: Vec<u8> = match response.status_code() {
             200 => response.into(),
             404 => {
-                error!("No blob uploaded at presign path {s3_path}");
+                error!("No blob uploaded at the pending presign path");
                 bail!(Error::new(
-                    format!("no blob uploaded at presign path {}", s3_path),
+                    "no blob uploaded at the pending presign path",
                     ErrorType::BlobNotUploaded,
                 ));
             }
             _ => {
-                error!("Unable to retrieve uploaded blob at {s3_path} from S3");
+                error!("Unable to retrieve the pending blob from S3");
                 bail!(s3_error(&response, "finalizing uploaded blob"));
             }
         };
@@ -374,10 +373,17 @@ impl BlobService {
         // Special handling for empty blobs
         if data.is_empty() {
             debug!("File being created is empty, special case");
+            let content_type = ctx
+                .mime()
+                .analyze(Vec::new())
+                .await
+                .or_raise(make_error)?
+                .content_type;
             return Ok(FinalizeBlobUploadOutput {
                 s3_hash: EMPTY_BLOB_HASH,
                 mime: str!(EMPTY_BLOB_MIME),
                 size: 0,
+                content_type,
                 created: false,
             });
         }
@@ -399,10 +405,7 @@ impl BlobService {
             .or_raise(make_error)?
         {
             let hex_hash = blob_hash_to_hex(&s3_hash);
-            error!(
-                "Newly-uploaded blob {} is blacklisted (hash {})",
-                pending_blob_id, hex_hash,
-            );
+            error!("Newly-uploaded blob is blacklisted (hash {hex_hash})");
 
             // Remove the temporary object before cancelling its database record.
             bucket.delete_object(&s3_path).await.or_raise(make_error)?;
@@ -424,6 +427,8 @@ impl BlobService {
         let model = blob_pending::ActiveModel {
             external_id: Set(str!(pending_blob_id)),
             s3_hash: Set(Some(result.s3_hash.to_vec())),
+            content_type_label: Set(Some(result.content_type.label.clone())),
+            content_type_description: Set(Some(result.content_type.description.clone())),
             ..Default::default()
         };
         model.update(txn).await.or_raise(make_error)?;
@@ -454,6 +459,18 @@ impl BlobService {
         // Convert size to correct integer type
         let size = data.len().try_into_i64().or_raise(make_error)?;
 
+        // Analyze the bytes even when their content-addressed object already exists.
+        // S3 stores only the transport MIME type; the Wikidot file type row requires
+        // the textual libmagic descriptor produced from this immutable byte stream.
+        let ContentAnalysis {
+            mime: analyzed_mime,
+            content_type,
+        } = ctx
+            .mime()
+            .analyze(data.clone())
+            .await
+            .or_raise(make_error)?;
+
         match Self::head(ctx, &hex_hash).await.or_raise(make_error)? {
             Some(result) => {
                 debug!("Blob with hash {hex_hash} already exists");
@@ -473,18 +490,14 @@ impl BlobService {
                     s3_hash,
                     mime,
                     size,
+                    content_type,
                     created: false,
                 })
             }
             None => {
                 debug!("Blob with hash {hex_hash} to be created");
 
-                // Determine MIME type for the new blob
-                let mime = ctx
-                    .mime()
-                    .get_mime_type(data.clone())
-                    .await
-                    .or_raise(make_error)?;
+                let mime = analyzed_mime;
 
                 // Upload S3 object
                 let response = bucket
@@ -498,6 +511,7 @@ impl BlobService {
                         s3_hash,
                         mime,
                         size,
+                        content_type,
                         created: true,
                     }),
                     _ => bail!(s3_error(&response, "creating finalized S3 blob")),
@@ -506,27 +520,30 @@ impl BlobService {
         }
     }
 
-    pub async fn finish_upload(
+    async fn finish_upload(
         ctx: &ServiceContext<'_>,
         user_id: i64,
         pending_blob_id: &str,
+        expected_owner: PendingBlobOwner,
     ) -> Result<FinalizeBlobUploadOutput> {
-        info!("Finishing upload for blob for pending ID {pending_blob_id}");
+        info!("Finishing a pending blob upload");
 
-        let make_error = || {
-            Error::new(
-                format!("failed to finalize blob upload for '{}'", pending_blob_id),
-                ErrorType::Blob,
-            )
-        };
+        let make_error = || Error::new("failed to finalize blob upload", ErrorType::Blob);
 
         let PendingBlob {
             s3_path,
             expected_length,
             moved_hash,
-        } = Self::get_pending_blob_path(ctx, user_id, pending_blob_id)
-            .await
-            .or_raise(make_error)?;
+            content_type_label,
+            content_type_description,
+        } = Self::require_owned_pending_blob(
+            ctx,
+            user_id,
+            pending_blob_id,
+            Some(expected_owner),
+        )
+        .await
+        .or_raise(make_error)?;
 
         let output = match moved_hash {
             // Need to move from pending to main hash area
@@ -550,6 +567,15 @@ impl BlobService {
                 let BlobMetadata { mime, size, .. } = Self::get_metadata(ctx, &hash_vec)
                     .await
                     .or_raise(make_error)?;
+                let content_type = match (content_type_label, content_type_description) {
+                    (Some(label), Some(description)) => {
+                        ContentTypeDescriptor { label, description }
+                    }
+                    _ => bail!(Error::new(
+                        "moved pending blob has no content descriptor",
+                        ErrorType::Blob,
+                    )),
+                };
 
                 debug_assert_eq!(expected_length, size);
 
@@ -557,6 +583,7 @@ impl BlobService {
                     s3_hash: slice_to_blob_hash(&hash_vec),
                     mime,
                     size,
+                    content_type,
                     created: false,
                 }
             }
@@ -564,6 +591,31 @@ impl BlobService {
 
         // Return result based on blob status
         Ok(output)
+    }
+
+    pub async fn finish_unscoped_upload(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        pending_blob_id: &str,
+    ) -> Result<FinalizeBlobUploadOutput> {
+        Self::finish_upload(ctx, user_id, pending_blob_id, PendingBlobOwner::Unscoped)
+            .await
+    }
+
+    pub async fn finish_page_upload(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        pending_blob_id: &str,
+    ) -> Result<FinalizeBlobUploadOutput> {
+        Self::finish_upload(
+            ctx,
+            user_id,
+            pending_blob_id,
+            PendingBlobOwner::Page { site_id, page_id },
+        )
+        .await
     }
 
     // Prune operations
@@ -1264,6 +1316,8 @@ struct PendingBlob {
     s3_path: String,
     expected_length: i64,
     moved_hash: Option<Vec<u8>>,
+    content_type_label: Option<String>,
+    content_type_description: Option<String>,
 }
 
 /// Helper struct to produce a count of items and a sample list.

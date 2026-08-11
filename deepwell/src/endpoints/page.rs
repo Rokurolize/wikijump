@@ -23,6 +23,8 @@ use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
 use crate::services::file::{GetFileOutput, GetPageFiles};
 use crate::services::forum_thread::ForumThreadService;
+use crate::services::legacy_action::{LegacyActionService, SetLegacyActionTags};
+use crate::services::membership::MembershipBrowserAction;
 use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
@@ -33,17 +35,25 @@ use crate::services::page::{
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
-use crate::services::render::{WikidotListPagesFeedInput, WikidotListPagesFeedOutput};
+use crate::services::render::{
+    LegacyActionRegistry, LegacyBrowserAction, SiteChangesLoad,
+    WikidotForumModuleRequest, WikidotForumModuleResponse, WikidotListPagesFeedInput,
+    WikidotListPagesFeedOutput, WikidotMembersListModuleResponse,
+    WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
+    WikidotSiteChangesModuleResponse,
+};
+use crate::services::settings::PageRatingVisibility;
 use crate::services::{MutationAuthorization, SettingsService, TextService};
 use crate::types::{
     Action, Bytes, FileOrder, PageDetails, PageId, Permission, Reference, RerenderDepth,
     Resource,
 };
 use crate::utils::get_category_name;
+use ftml::data::UserInfo;
 use futures::future::try_join_all;
 use regex::Regex;
 use std::borrow::Cow;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::sync::LazyLock;
 use wikidot_normalize::normalize;
 
@@ -58,6 +68,30 @@ static WIKIDOT_LIST_PAGES_SET_PAIR_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 struct WikidotListPagesModuleInput {
     site_id: i64,
     module_body: String,
+    parameters: BTreeMap<String, String>,
+}
+
+#[derive(Deserialize)]
+struct WikidotForumModuleInput {
+    site_id: i64,
+    module_name: String,
+    parameters: BTreeMap<String, String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WikidotSiteChangesModuleInput {
+    site_id: i64,
+    page_id: Option<String>,
+    page: String,
+    perpage: String,
+    category_id: Option<String>,
+    options: String,
+}
+
+#[derive(Deserialize)]
+struct WikidotMembersListModuleInput {
+    site_id: i64,
     parameters: BTreeMap<String, String>,
 }
 
@@ -81,6 +115,26 @@ struct WikidotPageDiscussionInput {
     page_id: i64,
 }
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PageWatchersInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PageWhoRatedInput {
+    site_id: i64,
+    page_id: i64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PageWhoRatedVote {
+    pub user: UserInfo<'static>,
+    pub value: i16,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct WikidotPageDiscussionOutput {
     pub thread_id: i64,
@@ -91,6 +145,18 @@ pub struct WikidotPageDiscussionOutput {
 pub struct WikidotPagePreviewOutput {
     pub body: String,
     pub styles: Vec<String>,
+    pub legacy_actions: Vec<LegacyBrowserAction>,
+    pub membership_actions: Vec<MembershipBrowserAction>,
+}
+
+#[derive(Deserialize)]
+struct WikidotLegacySetTagsInput {
+    page_id: i64,
+    last_revision_id: i64,
+    action_index: usize,
+    action_fingerprint: String,
+    user_id: i64,
+    ip_address: std::net::IpAddr,
 }
 
 pub async fn wikidot_page_preview(
@@ -126,6 +192,13 @@ pub async fn wikidot_page_preview(
     })?;
 
     Ok(WikidotPagePreviewOutput {
+        legacy_actions: LegacyActionRegistry::from_resource_requirements(
+            &output.html_output.resource_requirements,
+        )
+        .browser_actions_for_wikidot_html(&output.html_output.body),
+        // Preview reproduces the exact control DOM but has no immutable saved
+        // page revision to authorize a membership transition against.
+        membership_actions: Vec::new(),
         body: output.html_output.body,
         styles: output.html_output.styles,
     })
@@ -255,6 +328,228 @@ pub async fn wikidot_list_pages_module(
         body: normalize_wikidot_list_pages_set_spacing(
             &normalize_wikidot_list_pages_set_pairs(&output.html_output.body),
         ),
+    })
+}
+
+pub async fn wikidot_site_changes_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotSiteChangesModuleResponse> {
+    let input: WikidotSiteChangesModuleInput = parse!(params, Page);
+    let not_ok = || WikidotSiteChangesModuleResponse {
+        status: "not_ok".to_owned(),
+        body: String::new(),
+    };
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "SiteChanges module site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    let Some(page) = wikidot_positive_decimal::<u32>(&input.page) else {
+        return Ok(not_ok());
+    };
+    let (rows_per_page, category_id, filter) = match (input.page_id, input.category_id) {
+        (Some(page_id), Some(category_id)) => {
+            let Some(page_id) = wikidot_positive_decimal::<i64>(&page_id) else {
+                return Ok(not_ok());
+            };
+            if input.perpage != "20" {
+                return Ok(not_ok());
+            }
+            let category_id = if category_id.is_empty() {
+                None
+            } else {
+                let Some(category_id) = wikidot_positive_decimal::<i64>(&category_id)
+                else {
+                    return Ok(not_ok());
+                };
+                Some(category_id)
+            };
+            let Some(filter) =
+                WikidotSiteChangesFilter::from_browser_options(&input.options)
+            else {
+                return Ok(not_ok());
+            };
+
+            let Some(host_page) =
+                PageService::get_optional(ctx, input.site_id, Reference::Id(page_id))
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            "failed to resolve SiteChanges host page",
+                            ErrorType::Page,
+                        )
+                    })?
+            else {
+                return Ok(not_ok());
+            };
+            let can_view_host = PermissionService::check_user_can(
+                ctx,
+                &CheckPermissionContext {
+                    user_id: ctx.request().user_id,
+                    site_id: input.site_id,
+                    page_reference: Some(Reference::Id(host_page.page_id)),
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: Some(Reference::Id(host_page.page_category_id)),
+                    action: Action::View,
+                },
+            )
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to check SiteChanges host page visibility",
+                    ErrorType::Permission,
+                )
+            })?;
+            if !can_view_host {
+                return Ok(not_ok());
+            }
+            (20, category_id, filter)
+        }
+        (None, None) => {
+            let rows_per_page = match input.perpage.as_str() {
+                "20" => 20,
+                "1000" => 1_000,
+                malformed if wikidot_bounded_word_scalar(malformed) => {
+                    return Ok(WikidotSiteChangesModuleResponse {
+                        status: "ok".to_owned(),
+                        body: "\tSorry, no revisions matching your criteria.".to_owned(),
+                    });
+                }
+                _ => return Ok(not_ok()),
+            };
+            let Some(filter) =
+                WikidotSiteChangesFilter::from_wikidot_py_options(&input.options)
+            else {
+                return Ok(not_ok());
+            };
+            (rows_per_page, None, filter)
+        }
+        _ => return Ok(not_ok()),
+    };
+
+    let outcome = RenderService::render_wikidot_site_changes_module(
+        ctx,
+        input.site_id,
+        WikidotSiteChangesModuleRequest {
+            page,
+            rows_per_page,
+            category_id,
+            filter,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot SiteChanges module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })?;
+    match outcome {
+        SiteChangesLoad::Complete(response) => Ok(response),
+        SiteChangesLoad::Saturated => Ok(not_ok()),
+    }
+}
+
+fn wikidot_bounded_word_scalar(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphabetic() || byte == b'-')
+}
+
+fn wikidot_positive_decimal<T>(value: &str) -> Option<T>
+where
+    T: std::str::FromStr,
+{
+    let mut bytes = value.bytes();
+    if !matches!(bytes.next(), Some(b'1'..=b'9'))
+        || !bytes.all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+    value.parse().ok()
+}
+
+pub async fn wikidot_forum_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotForumModuleResponse> {
+    let input: WikidotForumModuleInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "forum module site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    RenderService::render_wikidot_forum_module(
+        ctx,
+        input.site_id,
+        WikidotForumModuleRequest {
+            module_name: input.module_name,
+            parameters: input.parameters,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot forum module in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
+    })
+}
+
+pub async fn wikidot_members_list_module(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotMembersListModuleResponse> {
+    let input: WikidotMembersListModuleInput = parse!(params, Page);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        return Err(Error::new(
+            "members list module site does not match the request context",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    RenderService::render_wikidot_members_list_module(
+        ctx,
+        input.site_id,
+        &input.parameters,
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            format!(
+                "failed to render Wikidot MembersListModule in site ID {}",
+                input.site_id,
+            ),
+            ErrorType::Page,
+        )
     })
 }
 
@@ -407,6 +702,142 @@ pub async fn page_view_permission(
             ErrorType::Permission,
         )
     })
+}
+
+pub async fn page_watchers(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<UserInfo<'static>>> {
+    let PageWatchersInput { site_id, page_id } = parse!(params, Page);
+    let make_error = || {
+        Error::new(
+            format!("failed to list watchers for page ID {page_id} in site ID {site_id}"),
+            ErrorType::PageWatchRelation,
+        )
+    };
+
+    ensure_page_view_permission(ctx, site_id, page_id).await?;
+    let user_ids = RelationService::get_active_page_watcher_ids(ctx, page_id)
+        .await
+        .or_raise(make_error)?;
+    let mut watchers = Vec::with_capacity(user_ids.len());
+    for user_id in user_ids {
+        let user = UserService::get_optional(ctx, Reference::Id(user_id))
+            .await
+            .or_raise(make_error)?;
+        let Some(identity) = user.and_then(|user| user.into_public_identity()) else {
+            return Err(make_error().into());
+        };
+        watchers.push(identity);
+    }
+    watchers.sort_by_key(|identity| {
+        (
+            identity.user_name.to_lowercase(),
+            identity.user_slug.to_lowercase(),
+            identity.user_id,
+        )
+    });
+    Ok(watchers)
+}
+
+pub async fn page_who_rated(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Vec<PageWhoRatedVote>> {
+    let PageWhoRatedInput { site_id, page_id } = parse!(params, Page);
+    let make_error = || {
+        Error::new(
+            format!(
+                "failed to list current ratings for page ID {page_id} in site ID {site_id}"
+            ),
+            ErrorType::PageVote,
+        )
+    };
+
+    let page = get_page_who_rated_target(ctx, site_id, page_id).await?;
+    let settings = SettingsService::get_page_rating_settings(
+        ctx,
+        page.site_id,
+        page.page_category_id,
+    )
+    .await
+    .or_raise(make_error)?;
+    if settings.visibility == PageRatingVisibility::Anonymous {
+        return Err(Error::new(
+            "this category keeps individual page ratings anonymous",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+
+    let votes = VoteService::get_current_page_votes(
+        ctx,
+        page.page_id,
+        settings.rating_type.vote_store_key(),
+    )
+    .await
+    .or_raise(make_error)?;
+    let user_ids = votes
+        .iter()
+        .map(|vote| vote.user_id)
+        .collect::<BTreeSet<_>>();
+    let mut identities = UserService::get_public_identities(ctx, &user_ids)
+        .await
+        .or_raise(make_error)?;
+    let mut output = Vec::with_capacity(votes.len());
+    for vote in votes {
+        let Some(user) = identities.remove(&vote.user_id) else {
+            return Err(make_error().into());
+        };
+        output.push(PageWhoRatedVote {
+            user,
+            value: vote.value,
+        });
+    }
+    Ok(output)
+}
+
+async fn get_page_who_rated_target(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page_id: i64,
+) -> Result<PageModel> {
+    let deny = || {
+        Error::new(
+            "page ratings are not available to this request",
+            ErrorType::PermissionDenied,
+        )
+    };
+    let Some(page) = PageService::get_optional(ctx, site_id, Reference::Id(page_id))
+        .await
+        .or_raise(|| Error::new("failed to resolve page ratings", ErrorType::PageVote))?
+    else {
+        return Err(deny().into());
+    };
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to check page rating visibility",
+            ErrorType::Permission,
+        )
+    })?;
+    if !can_view {
+        return Err(deny().into());
+    }
+    Ok(page)
 }
 
 pub async fn page_get_direct(
@@ -596,6 +1027,45 @@ pub async fn page_edit(
     PageService::edit(ctx, input)
         .await
         .or_raise(|| Error::new("failed to edit page", ErrorType::Page))
+}
+
+pub async fn wikidot_legacy_set_tags(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<EditPageOutput>> {
+    let input: WikidotLegacySetTagsInput = parse!(params, Page);
+    let site_id = ctx.request().site_id().or_raise(|| {
+        Error::new(
+            "set-tags requires a site request context",
+            ErrorType::PermissionDenied,
+        )
+    })?;
+    let actor_user_id = require_authenticated_mutation_actor(ctx, input.user_id)
+        .or_raise(|| {
+            Error::new("failed to authenticate set-tags actor", ErrorType::Page)
+        })?;
+    ensure_page_edit_permission(
+        ctx,
+        site_id,
+        Reference::Id(input.page_id),
+        actor_user_id,
+    )
+    .await
+    .or_raise(|| Error::new("failed to check set-tags permission", ErrorType::Page))?;
+
+    LegacyActionService::set_tags(
+        ctx,
+        SetLegacyActionTags {
+            page_id: input.page_id,
+            last_revision_id: input.last_revision_id,
+            action_index: input.action_index,
+            action_fingerprint: input.action_fingerprint,
+            user_id: actor_user_id,
+            ip_address: input.ip_address,
+        },
+    )
+    .await
+    .or_raise(|| Error::new("failed to apply set-tags action", ErrorType::Page))
 }
 
 pub async fn page_edit_permission(
@@ -981,7 +1451,7 @@ async fn ensure_page_view_permission(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_id: i64,
-) -> Result<()> {
+) -> Result<PageModel> {
     let page = PageService::get(ctx, site_id, Reference::Id(page_id))
         .await
         .or_raise(|| {
@@ -1013,7 +1483,7 @@ async fn ensure_page_view_permission(
     })?;
 
     if can_view {
-        Ok(())
+        Ok(page)
     } else {
         Err(Error::new(
             "user does not have permission to view this page",

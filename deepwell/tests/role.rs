@@ -22,10 +22,17 @@
 mod common;
 
 use deepwell::services::RequestContext;
-use deepwell::services::permission::PermissionService;
-use deepwell::services::role::{
-    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+use deepwell::services::membership::{
+    JoinActorState, MembershipJoinOutcome, MembershipService,
 };
+use deepwell::services::permission::PermissionService;
+use deepwell::services::relation::{RelationObject, RelationService, SiteBanData};
+use deepwell::services::role::{
+    GetUserRolesInput, GrantUserRoleInput, InternalCreateRoleInput, RoleService,
+    UpdateRolePermissionsInput,
+};
+use deepwell::services::session::CreateSession;
+use deepwell::services::view::GetPageViewOutput;
 use deepwell::utils::now;
 use std::sync::atomic::{AtomicU64, Ordering};
 use str_macro::str;
@@ -36,12 +43,311 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::role::Model as RoleModel;
+use deepwell::services::SessionService;
+use deepwell::services::page::{CreatePage, PageService};
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
-use deepwell::types::{Action, Permission, Reference, Resource, UserType};
+use deepwell::types::{Action, Permission, Reference, RelationType, Resource, UserType};
 use serde_json::json;
+use std::borrow::Cow;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
+
+#[tokio::test]
+async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
+    let mut runner = TestRunner::setup().await;
+    let editable = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+        .expect("seeded editable site should exist")
+        .site;
+    let mirror = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    if PageService::get_optional(
+        runner.context(),
+        editable.site_id,
+        Reference::Slug(Cow::Borrowed("system:join")),
+    )
+    .await
+    .expect("self-join fixture lookup should succeed")
+    .is_none()
+    {
+        PageService::create(
+            runner.context(),
+            CreatePage {
+                site_id: editable.site_id,
+                wikitext: "[[module Join]]".to_owned(),
+                title: "Join this site".to_owned(),
+                alt_title: None,
+                tags: Vec::new(),
+                slug: "system:join".to_owned(),
+                layout: None,
+                revision_comments: "Create self-join test fixture".to_owned(),
+                user_id: SYSTEM_USER_ID,
+                bypass_filter: true,
+                ip_address: common::IP_ADDRESS,
+            },
+        )
+        .await
+        .expect("self-join fixture should be created");
+    }
+    let n = next_n();
+    let user_id = create_test_user(&runner, n, "self-join").await;
+    let pending_user_id = create_test_user(&runner, n, "pending").await;
+    let banned_user_id = create_test_user(&runner, n, "banned").await;
+    let user_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "editable-site membership vertical slice".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("ordinary user session should be created");
+    RelationService::create(
+        runner.context(),
+        RelationType::SiteApplication,
+        RelationObject::Site(editable.site_id),
+        RelationObject::User(pending_user_id),
+        pending_user_id,
+        &json!({}),
+    )
+    .await
+    .expect("pending actor should have an application relation");
+    RelationService::create(
+        runner.context(),
+        RelationType::SiteBan,
+        RelationObject::Site(editable.site_id),
+        RelationObject::User(banned_user_id),
+        SYSTEM_USER_ID,
+        &SiteBanData {
+            banned_until: None,
+            reason: "membership actor matrix".to_owned(),
+        },
+    )
+    .await
+    .expect("banned actor should have a ban relation");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        ..Default::default()
+    });
+    let join_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": editable.site_id,
+            "session_token": user_session_token.clone(),
+            "route": {"slug": "system:join", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        page: join_page,
+        page_revision: join_revision,
+        compiled_body_html,
+        membership_actions,
+        ..
+    } = join_view
+    else {
+        panic!("editable site should serve its seeded self-join route");
+    };
+    assert!(compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    let membership_actions = serde_json::to_value(membership_actions).unwrap();
+    assert_eq!(membership_actions.as_array().unwrap().len(), 1);
+    let join_action = &membership_actions[0];
+    assert_eq!(join_action["type"], "join");
+    assert_eq!(join_action["page_id"], join_page.page_id);
+    assert_eq!(join_action["revision_id"], join_revision.revision_id);
+    assert_eq!(join_action["index"], 0);
+    assert_eq!(
+        join_action["fingerprint"].as_str().unwrap().len(),
+        32,
+        "saved Join actions must carry only an opaque server registry binding",
+    );
+
+    let anonymous_join_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": editable.site_id,
+            "session_token": null,
+            "route": {"slug": "system:join", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html,
+        membership_actions,
+        ..
+    } = anonymous_join_view
+    else {
+        panic!("anonymous viewer should receive the public self-join page");
+    };
+    assert!(compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    assert!(
+        membership_actions.is_empty(),
+        "anonymous Join DOM must remain inert until an authenticated actor has a bound action",
+    );
+
+    for (actor, expected) in [
+        (None, JoinActorState::Anonymous),
+        (Some(user_id), JoinActorState::Eligible),
+        (Some(pending_user_id), JoinActorState::Pending),
+        (Some(banned_user_id), JoinActorState::Banned),
+    ] {
+        runner.set_request_context(RequestContext {
+            user_id: actor,
+            site_id: Some(editable.site_id),
+            ..Default::default()
+        });
+        assert_eq!(
+            MembershipService::actor_state(runner.context(), editable.site_id, actor,)
+                .await
+                .expect("membership actor state should resolve"),
+            expected,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": editable.site_id,
+                "title": "Membership actor state",
+                "wikitext": "[[module Join]]",
+            }),
+        );
+        assert_eq!(
+            preview.body.contains("WIKIDOT.page.listeners.join"),
+            matches!(
+                expected,
+                JoinActorState::Anonymous | JoinActorState::Eligible
+            ),
+            "Join visibility should match actor state {expected:?}",
+        );
+        assert!(
+            preview.membership_actions.is_empty(),
+            "PagePreview must never issue a saved-page Join action binding",
+        );
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed("system:join"))),
+        ..Default::default()
+    });
+    let join_request = json!({
+        "page_id": join_action["page_id"],
+        "last_revision_id": join_action["revision_id"],
+        "action_index": join_action["index"],
+        "action_fingerprint": join_action["fingerprint"],
+        "actor": SYSTEM_USER_ID,
+        "site_id": mirror.site_id,
+        "policy": "closed",
+        "token": "not-authority",
+    });
+    let forged = run_endpoint_err!(
+        runner,
+        membership_join,
+        json!({
+            "page_id": join_action["page_id"],
+            "last_revision_id": join_action["revision_id"],
+            "action_index": join_action["index"],
+            "action_fingerprint": "00000000000000000000000000000000",
+        }),
+    );
+    assert_contains_error!(forged, ErrorType::PermissionDenied);
+    let joined = run_endpoint!(runner, membership_join, join_request.clone(),);
+    assert_eq!(joined, MembershipJoinOutcome::Joined);
+    assert_eq!(
+        MembershipService::actor_state(
+            runner.context(),
+            editable.site_id,
+            Some(user_id),
+        )
+        .await
+        .expect("joined actor state should resolve"),
+        JoinActorState::Member,
+    );
+    let repeated = run_endpoint!(runner, membership_join, join_request.clone(),);
+    assert_eq!(repeated, MembershipJoinOutcome::AlreadyMember);
+    let role_names = RoleService::get_all_roles_for_user_and_site(
+        runner.context(),
+        GetUserRolesInput {
+            site_id: editable.site_id,
+            user_id: Some(user_id),
+            page_reference: None,
+        },
+    )
+    .await
+    .expect("joined actor roles should resolve")
+    .into_iter()
+    .map(|role| role.name)
+    .collect::<Vec<_>>();
+    assert!(role_names.iter().any(|name| name == "member"));
+    assert!(!role_names.iter().any(|name| name == "admin"));
+
+    let page_slug = format!("component:membership-vertical-{n}");
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        page_reference: Some(Reference::Slug(Cow::Owned(page_slug.clone()))),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": editable.site_id,
+            "wikitext": "Membership vertical slice",
+            "title": "Membership vertical slice",
+            "alt_title": null,
+            "slug": page_slug,
+            "layout": "wikidot",
+            "revision_comments": "membership vertical slice",
+            "user_id": user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(created.page_id > 0);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(editable.site_id),
+        ..Default::default()
+    });
+    let joined_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": editable.site_id,
+            "session_token": user_session_token,
+            "route": {"slug": "system:join", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html,
+        membership_actions,
+        ..
+    } = joined_view
+    else {
+        panic!("joined user should still be able to view the self-join route");
+    };
+    assert!(!compiled_body_html.contains("WIKIDOT.page.listeners.join"));
+    assert!(membership_actions.is_empty());
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(mirror.site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed("system:join"))),
+        ..Default::default()
+    });
+    let mirror_error = run_endpoint_err!(runner, membership_join, join_request,);
+    assert_contains_error!(mirror_error, ErrorType::PermissionDenied);
+}
 
 fn next_n() -> u64 {
     FIXTURE_COUNTER.fetch_add(1, Ordering::Relaxed)

@@ -20,8 +20,9 @@
 
 use super::structs::{CreateSite, CreateSiteOutput, SiteForumSettings, UpdateSiteBody};
 use crate::constants::SYSTEM_USER_ID;
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::models::site::{self, Entity as Site, Model as SiteModel};
+use crate::services::PageService;
 use crate::services::ServiceContext;
 use crate::services::alias::CreateAlias;
 use crate::services::audit::{AuditEvent, AuditService, SiteFields};
@@ -32,11 +33,13 @@ use crate::services::{AliasService, RelationService, UserService};
 use crate::types::{AliasType, UserType};
 use crate::types::{Maybe, Reference};
 use crate::utils::now;
-use crate::utils::validate_locale;
+use crate::utils::{validate_locale, validate_wikidot_site_language};
 use ftml::layout::Layout;
 use paste::paste;
 use sea_orm::NotSet;
-use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QuerySelect, Set,
+};
 use std::net::IpAddr;
 use std::str::FromStr;
 use wikidot_normalize::normalize;
@@ -285,6 +288,7 @@ impl SiteService {
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
         mut input: UpdateSiteBody,
+        expected_settings_revision: Option<i64>,
         updating_user_id: i64,
         ip_address: IpAddr,
     ) -> Result<SiteModel> {
@@ -296,9 +300,35 @@ impl SiteService {
             normalize(slug);
         }
 
-        let site = Self::get(ctx, reference)
+        let site = Self::get_for_update(ctx, reference)
             .await
             .or_raise(|| Error::new("failed to update site data", ErrorType::Site))?;
+
+        if let Some(expected) = expected_settings_revision
+            && expected != site.settings_revision
+        {
+            bail!(Error::new(
+                format!(
+                    "site settings changed since revision {expected}; current revision is {}",
+                    site.settings_revision,
+                ),
+                ErrorType::BadRequest,
+            ));
+        }
+
+        if let Maybe::Set(analytics) = &input.google_analytics {
+            analytics.validate()?;
+        }
+        if let Maybe::Set(page_slug) = &input.default_page
+            && page_slug != &site.default_page
+        {
+            validate_settings_page(ctx, site.site_id, page_slug, "default page").await?;
+        }
+        if let Maybe::Set(page_slug) = &input.welcome_page
+            && page_slug != &site.welcome_page
+        {
+            validate_settings_page(ctx, site.site_id, page_slug, "welcome page").await?;
+        }
 
         let icon_site_slug = match &input.slug {
             Maybe::Set(slug) => slug.as_str(),
@@ -388,9 +418,27 @@ impl SiteService {
             add_changed_field!(move license);
             add_changed_field!(locale);
             add_changed_field!(default_page);
+            add_changed_field!(welcome_page);
             add_changed_field!(top_bar_page);
             add_changed_field!(side_bar_page);
             add_changed_field!(ref preferred_domain);
+
+            if let Maybe::Set(analytics) = &input.google_analytics {
+                previous_fields.google_analytics_enabled =
+                    Maybe::Set(site.google_analytics_enabled);
+                previous_fields.google_analytics_profile =
+                    Maybe::Set(site.google_analytics_profile.as_deref());
+                changed_fields.google_analytics_enabled = Maybe::Set(analytics.enabled);
+                changed_fields.google_analytics_profile =
+                    Maybe::Set(analytics.profile()?);
+            }
+            if let Maybe::Set(toolbars) = input.toolbars {
+                previous_fields.show_top_toolbar = Maybe::Set(site.show_top_toolbar);
+                previous_fields.show_bottom_toolbar =
+                    Maybe::Set(site.show_bottom_toolbar);
+                changed_fields.show_top_toolbar = Maybe::Set(toolbars.top);
+                changed_fields.show_bottom_toolbar = Maybe::Set(toolbars.bottom);
+            }
 
             if let Maybe::Set(value) = input.forum_max_nest_level {
                 previous_fields.forum_max_nest_level =
@@ -430,7 +478,9 @@ impl SiteService {
             model.name = Set(name);
         }
 
-        if let Maybe::Set(new_slug) = input.slug {
+        if let Maybe::Set(new_slug) = input.slug
+            && new_slug != site.slug
+        {
             Self::update_slug(ctx, &site, &new_slug, updating_user_id, ip_address)
                 .await
                 .or_raise(make_error)?;
@@ -449,13 +499,28 @@ impl SiteService {
         }
 
         if let Maybe::Set(locale) = input.locale {
-            validate_locale(&locale)?;
+            validate_wikidot_site_language(&locale)?;
             model.locale = Set(locale.clone());
             site_user_body.locales = Maybe::Set(vec![locale]);
         }
 
         if let Maybe::Set(default_page) = input.default_page {
             model.default_page = Set(default_page);
+        }
+
+        if let Maybe::Set(welcome_page) = input.welcome_page {
+            model.welcome_page = Set(welcome_page);
+        }
+
+        if let Maybe::Set(analytics) = input.google_analytics {
+            model.google_analytics_enabled = Set(analytics.enabled);
+            model.google_analytics_profile =
+                Set(analytics.profile()?.map(ToOwned::to_owned));
+        }
+
+        if let Maybe::Set(toolbars) = input.toolbars {
+            model.show_top_toolbar = Set(toolbars.top);
+            model.show_bottom_toolbar = Set(toolbars.bottom);
         }
 
         if let Maybe::Set(preferred_domain) = input.preferred_domain {
@@ -545,6 +610,7 @@ impl SiteService {
 
         // Update site
         model.updated_at = Set(Some(now()));
+        model.settings_revision = Set(site.settings_revision + 1);
         let new_site = model.update(txn).await.or_raise(make_error)?;
 
         // Update site user
@@ -725,6 +791,22 @@ impl SiteService {
         find_or_error!(Self::get_optional(ctx, reference), "site", Site)
     }
 
+    async fn get_for_update(
+        ctx: &ServiceContext<'_>,
+        reference: Reference<'_>,
+    ) -> Result<SiteModel> {
+        let site_id = match reference {
+            Reference::Id(site_id) => site_id,
+            Reference::Slug(slug) => Self::get(ctx, Reference::Slug(slug)).await?.site_id,
+        };
+        Site::find_by_id(site_id)
+            .lock_exclusive()
+            .one(ctx.transaction())
+            .await
+            .or_raise(|| Error::new("failed to lock site settings", ErrorType::Site))?
+            .ok_or_raise(|| Error::new("site does not exist", ErrorType::SiteNotFound))
+    }
+
     /// Gets the site ID from a reference, looking up if necessary.
     ///
     /// Convenience method since this is much more common than the optional
@@ -829,6 +911,27 @@ impl SiteService {
                 ));
             }
         }
+    }
+}
+
+async fn validate_settings_page(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page_slug: &str,
+    field_name: &str,
+) -> Result<()> {
+    if !page_slug.is_empty()
+        && PageService::get_optional(ctx, site_id, Reference::from(page_slug))
+            .await?
+            .is_some()
+    {
+        Ok(())
+    } else {
+        Err(Error::new(
+            format!("{field_name} must reference a live page in the same site"),
+            ErrorType::BadRequest,
+        )
+        .into())
     }
 }
 

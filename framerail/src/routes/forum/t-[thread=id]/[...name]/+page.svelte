@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ForumModuleBody from "$lib/ForumModuleBody.svelte"
+
   import type { PageData } from "./$types"
 
   interface Props {
@@ -8,5 +10,4 @@
   let { data }: Props = $props()
 </script>
 
-<h1>UNTRANSLATED:Loaded forum thread</h1>
-<p>UNTRANSLATED:This is the forum thread with ID {data.threadId}</p>
+<ForumModuleBody body={data.body} />

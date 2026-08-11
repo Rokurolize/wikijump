@@ -15,6 +15,7 @@ if (!directives) throw new Error("CSP directives are missing")
 test("allows captured Wikidot legacy asset origins in local CSP", () => {
   assert.equal(directives["upgrade-insecure-requests"], true)
   assert(directives["style-src"]?.some((source) => source === "https://cdn.jsdelivr.net"))
+  assert(directives["style-src"]?.some((source) => source === "https:"))
   assert(directives["font-src"]?.some((source) => source === "https://cdn.jsdelivr.net"))
   assert(
     directives["img-src"]?.some(
@@ -74,6 +75,10 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   assert(
     !directives["style-src"]?.some((source) => source === "https://*.wjfiles.localhost")
   )
-  assert.deepEqual(directives["frame-src"], ["self"])
+  assert.deepEqual(directives["frame-src"], [
+    "self",
+    "https://www.youtube.com",
+    "https://embed.acast.com"
+  ])
   assert(directives["script-src"]?.includes("self"))
 })

@@ -271,6 +271,7 @@ fn list_pages_template_requires_runtime_title(source: &str) -> bool {
             "[[code",
             "[[html",
             "[[collapsible",
+            "[[embedvideo",
         ]
         .iter()
         .any(|marker| line.starts_with(marker))
@@ -1721,6 +1722,14 @@ mod tests {
     use super::*;
     use crate::services::render::render_budget::RenderCostBudget;
     use std::collections::BTreeMap;
+
+    #[test]
+    fn embedvideo_keeps_runtime_titles_out_of_authored_provider_syntax() {
+        assert!(list_pages_template_requires_runtime_title(
+            "[[embedvideo]]%%title%%[[/embedvideo]]",
+        ));
+        assert!(!list_pages_template_requires_runtime_title("%%title%%"));
+    }
 
     #[test]
     fn nested_list_pages_protection_fails_closed_on_shared_budget_exhaustion() {

@@ -52,7 +52,7 @@
     {
         "name": "member",
         "description": "Regular site member",
-        "is-virtual": false,
+        "is-virtual": true,
         "is-system": true,
         "parent_role": "root",
         "permissions": [

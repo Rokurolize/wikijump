@@ -95,6 +95,10 @@ async fn prepare_blacklisted_upload(runner: &TestRunner) -> (String, String, Blo
         s3_path: Set(s3_path.clone()),
         s3_hash: Set(None),
         presign_url: Set("not-used-in-test".to_owned()),
+        site_id: Set(None),
+        page_id: Set(None),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
     }
     .insert(&runner.state().database)
     .await
@@ -240,9 +244,12 @@ async fn blob_finish_upload_rejects_blacklisted_content_before_permanent_write()
     let runner = TestRunner::setup().await;
     let (pending_blob_id, s3_path, s3_hash) = prepare_blacklisted_upload(&runner).await;
 
-    let output =
-        BlobService::finish_upload(runner.context(), ADMIN_USER_ID, &pending_blob_id)
-            .await;
+    let output = BlobService::finish_unscoped_upload(
+        runner.context(),
+        ADMIN_USER_ID,
+        &pending_blob_id,
+    )
+    .await;
     let permanent = BlobService::get_optional(runner.context(), &s3_hash).await;
     let pending = BlobPendingTable::find_by_id(&pending_blob_id)
         .one(&runner.state().database)

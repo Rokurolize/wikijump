@@ -22,12 +22,16 @@ use super::prelude::*;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::page::{GetPageReference, PageService};
 use crate::services::page_revision::{
-    CountPageRevisions, GetPageRevisionDetails, GetPageRevisionRangeDetails,
-    PageRevisionCountOutput, PageRevisionModelFiltered, UpdatePageRevisionDetails,
+    CountPageRevisions, GetPageRevision, GetPageRevisionByIdDetails,
+    GetPageRevisionDetails, GetPageRevisionDiff, GetPageRevisionRangeDetails,
+    PageRevisionCountOutput, PageRevisionDiffOutput, PageRevisionModelFiltered,
+    UpdatePageRevisionDetails,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{MutationAuthorization, TextService};
 use crate::types::{Action, PageDetails, Permission, Reference, Resource};
+use ftml::data::UserInfo;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub async fn page_revision_count(
     ctx: &ServiceContext<'_>,
@@ -77,7 +81,66 @@ pub async fn page_revision_get(
     match revision {
         None => Ok(None),
         Some(revision) => {
-            let revision = filter_and_populate_revision(ctx, revision, details)
+            let authors = resolve_revision_authors(ctx, std::slice::from_ref(&revision))
+                .await
+                .or_raise(make_error)?;
+            let author = authors.get(&revision.user_id).cloned();
+            let revision = filter_and_populate_revision(ctx, revision, details, author)
+                .await
+                .or_raise(make_error)?;
+
+            Ok(Some(revision))
+        }
+    }
+}
+
+pub async fn page_revision_get_by_id(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageRevisionModelFiltered>> {
+    let GetPageRevisionByIdDetails {
+        site_id,
+        revision_id,
+        details,
+    } = parse!(params, PageRevision);
+    let make_error = || {
+        Error::new(
+            "failed to get a page revision by ID",
+            ErrorType::PageRevision,
+        )
+    };
+
+    let Some(coordinate) =
+        PageRevisionService::get_coordinate_by_id(ctx, site_id, revision_id)
+            .await
+            .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+
+    ensure_page_view_permission(ctx, site_id, Reference::Id(coordinate.page_id))
+        .await
+        .or_raise(make_error)?;
+
+    let revision = PageRevisionService::get_optional(
+        ctx,
+        GetPageRevision {
+            site_id,
+            page_id: coordinate.page_id,
+            revision_number: coordinate.revision_number,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
+
+    match revision {
+        None => Ok(None),
+        Some(revision) => {
+            let authors = resolve_revision_authors(ctx, std::slice::from_ref(&revision))
+                .await
+                .or_raise(make_error)?;
+            let author = authors.get(&revision.user_id).cloned();
+            let revision = filter_and_populate_revision(ctx, revision, details, author)
                 .await
                 .or_raise(make_error)?;
 
@@ -128,8 +191,12 @@ pub async fn page_revision_edit(
         .or_raise(make_error)?;
     let revision = PageRevisionService::get_direct(ctx, revision_id).await;
     let revision = raise_multiple!(revision; make_error);
+    let authors = resolve_revision_authors(ctx, std::slice::from_ref(&revision))
+        .await
+        .or_raise(make_error)?;
+    let author = authors.get(&revision.user_id).cloned();
 
-    filter_and_populate_revision(ctx, revision, details)
+    filter_and_populate_revision(ctx, revision, details, author)
         .await
         .or_raise(make_error)
 }
@@ -156,6 +223,23 @@ pub async fn page_revision_range(
         .or_raise(make_error)?;
 
     filter_and_populate_revisions(ctx, revisions, details)
+        .await
+        .or_raise(make_error)
+}
+
+pub async fn page_revision_diff(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageRevisionDiffOutput>> {
+    let input: GetPageRevisionDiff = parse!(params, PageRevision);
+    let make_error =
+        || Error::new("failed to compare page revisions", ErrorType::PageRevision);
+
+    ensure_page_view_permission(ctx, input.site_id, Reference::Id(input.page_id))
+        .await
+        .or_raise(make_error)?;
+
+    PageRevisionService::get_diff(ctx, input)
         .await
         .or_raise(make_error)
 }
@@ -209,6 +293,7 @@ async fn filter_and_populate_revision(
     ctx: &ServiceContext<'_>,
     model: PageRevisionModel,
     mut details: PageDetails,
+    author: Option<UserInfo<'static>>,
 ) -> Result<PageRevisionModelFiltered> {
     let PageRevisionModel {
         revision_id,
@@ -322,6 +407,7 @@ async fn filter_and_populate_revision(
         page_id,
         site_id,
         user_id,
+        author,
         changes,
         wikitext,
         compiled_body_html,
@@ -344,7 +430,7 @@ async fn filter_and_populate_revisions(
     revisions: Vec<PageRevisionModel>,
     details: PageDetails,
 ) -> Result<Vec<PageRevisionModelFiltered>> {
-    let mut f_revisions = Vec::new();
+    let mut f_revisions = Vec::with_capacity(revisions.len());
 
     let make_error = || {
         Error::new(
@@ -353,8 +439,12 @@ async fn filter_and_populate_revisions(
         )
     };
 
+    let authors = resolve_revision_authors(ctx, &revisions)
+        .await
+        .or_raise(make_error)?;
     for revision in revisions {
-        let f_revision = filter_and_populate_revision(ctx, revision, details)
+        let author = authors.get(&revision.user_id).cloned();
+        let f_revision = filter_and_populate_revision(ctx, revision, details, author)
             .await
             .or_raise(make_error)?;
 
@@ -362,4 +452,25 @@ async fn filter_and_populate_revisions(
     }
 
     Ok(f_revisions)
+}
+
+async fn resolve_revision_authors(
+    ctx: &ServiceContext<'_>,
+    revisions: &[PageRevisionModel],
+) -> Result<BTreeMap<i64, UserInfo<'static>>> {
+    let user_ids = revisions
+        .iter()
+        .map(|revision| revision.user_id)
+        .collect::<BTreeSet<_>>();
+    let mut authors = BTreeMap::new();
+    for user_id in user_ids {
+        let Some(user) = UserService::get_optional(ctx, Reference::Id(user_id)).await?
+        else {
+            continue;
+        };
+        if let Some(author) = user.into_public_identity() {
+            authors.insert(user_id, author);
+        }
+    }
+    Ok(authors)
 }

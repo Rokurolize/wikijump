@@ -21,6 +21,8 @@ Object.assign(process.env, {
 const config: PlaywrightTestConfig = {
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
+  // The Deepwell fixture server keeps shared request and mutation state.
+  workers: 1,
   webServer: {
     command: `sh -c 'node tests/xmlrpc-deepwell-fixture-server.js & fixture=$!; trap "kill $fixture" EXIT INT TERM; pnpm build && NODE_ENV=development DEEPWELL_HOST=127.0.0.1 DEEPWELL_PORT=${fixturePort} DEEPWELL_RPC_TOKEN=${deepwellRpcToken} pnpm preview --host 127.0.0.1 --port ${appPort}'`,
     env: {

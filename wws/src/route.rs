@@ -61,6 +61,14 @@ pub fn build_router(state: ServerState) -> Router {
         .route("/-/file/{page_slug}/{filename}", get(handle_file_fetch))
         .route("/-/file/{page_slug}/{filename}", any(handle_invalid_method))
         .route(
+            "/local--resized-images/{page_slug}/{filename}/{variant}",
+            get(handle_resized_image),
+        )
+        .route(
+            "/local--resized-images/{page_slug}/{filename}/{variant}",
+            any(handle_invalid_method),
+        )
+        .route(
             "/-/download/{page_slug}/{filename}",
             get(handle_file_download),
         )

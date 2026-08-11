@@ -26,6 +26,7 @@ use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID};
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_post::CreateForumPost;
 use deepwell::services::forum_thread::CreateForumThread;
+use deepwell::services::view::GetPageViewOutput;
 use deepwell::services::{
     ForumPostService, ForumService, ForumThreadService, RequestContext,
 };
@@ -192,7 +193,7 @@ async fn ratedpages_renders_live_top_rated_box_and_rating_filters() {
         "2026-07-28T00:00:01Z",
     )
     .await;
-    create_page(
+    let zero_id = create_page(
         &mut runner,
         site_id,
         ZERO,
@@ -270,6 +271,10 @@ COMMENTS UPPERCASE KEY
 [[div class="ratedpages-case comments-last-empty"]]
 COMMENTS LAST EMPTY
 [[module RatedPages category="{CATEGORY}" comments="true" comments="" minRating="2" limit="1"]]
+[[/div]]
+[[div class="ratedpages-case inline"]]
+INLINE RATEDPAGES
+start-[[module RatedPages]]-middle
 [[/div]]"#,
     );
     set_page_context(&mut runner, site_id, HOLDER);
@@ -425,8 +430,40 @@ COMMENTS LAST EMPTY
             && !comments_last_empty_section.contains("Comments:"),
         "the final exact comments value controls comment-label presence:\n{html}",
     );
-    assert!(
-        !html.contains("[[module RatedPages"),
-        "compiled RatedPages output should not leak raw module markup:\n{html}",
+    assert!(html.contains("start-[[module RatedPages]]-middle"));
+    assert_eq!(
+        html.matches("[[module RatedPages]]").count(),
+        1,
+        "only the inline literal may retain RatedPages source:\n{html}",
     );
+
+    insert_vote(&runner, zero_id, SYSTEM_USER_ID, 1).await;
+    let runtime_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let runtime_html = match runtime_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found RatedPages page view, got {other:?}"),
+    };
+    let zero_row = runtime_html
+        .split_once("Run RatedPages Zero")
+        .expect("runtime RatedPages should retain the zero fixture")
+        .1
+        .split_once("</div>")
+        .expect("runtime RatedPages zero row should close")
+        .0;
+    assert!(
+        zero_row.contains("(Rating: 1)"),
+        "RatedPages must query the current score on the next page view:\n{runtime_html}",
+    );
+    assert!(runtime_html.contains("start-[[module RatedPages]]-middle"));
 }

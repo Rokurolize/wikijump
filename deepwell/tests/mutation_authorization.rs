@@ -69,6 +69,7 @@ async fn payload_actor_cannot_spoof_vote_or_message_attribution() {
         json!({
             "user_id": SAMPLE_USER_ID,
             "blob_size": 128,
+            "scope": "unscoped",
         }),
     );
     assert_contains_error!(blob_error, ErrorType::PermissionDenied);

@@ -1,0 +1,76 @@
+{
+  "schema": "wikijump.open43.readonly_live_evidence.v1",
+  "captured_at": "2026-08-10",
+  "actor_classes": ["anonymous", "sandbox-admin", "sandbox-member", "sandbox-moderator-or-nonmember"],
+  "mutated": false,
+  "external_evidence_root": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809",
+  "external_sha256s": {
+    "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/SHA256SUMS",
+    "sha256": "225897681df10c1e8c307053056849990fc32ebe10e47f2ab9012685bda709ff"
+  },
+  "external_indices": [
+    {"path":"/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/anonymous-index.json","sha256":"65b89a3fb1758a80dd20766be15d183e94e5afa9a5e0a4f3405630cd5682fa36","cases":77},
+    {"path":"/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/authenticated-index.json","sha256":"0ee1786699c88fe36908aa46d8347c38519e4270be638041b82e477a9426e435","cases":24},
+    {"path":"/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/flickr-index.json","sha256":"8bb2b1f0c038d0ca8b5e59ac99e7e8b916c3b87c87972a430bece513561bb9ce","cases":12}
+  ],
+  "acquisition_scripts": [
+    {"path":"/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/acquire_readonly.py","sha256":"835946c3b659a9da4fc6b0618093a2752326907fbb1ce762d5cc99f9bca6d86a"},
+    {"path":"/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/acquire_flickr_readonly.py","sha256":"5e4fcf7b836f44f3d76d56c68bef47af34e039599de4b738ae6a26846938114e"}
+  ],
+  "privacy": {
+    "credentials_or_cookie_hits": 0,
+    "stored_response_headers_exclude": ["authorization", "cookie", "set-cookie"],
+    "body_redaction": "Sandbox account login IDs appearing as public forum author text were replaced. Each affected record retains only the original response body SHA-256 and the redacted body."
+  },
+  "general_rules": [
+    {
+      "evidence_id": "E_OPEN43_FILES_ROWS_20260810",
+      "case_ids": ["m1039-files-scp-049", "m1039-files-scp-106", "m1039-files-scp-682", "m1039-files-scp-096", "m1039-files-scp-173", "m1039-files-system-recent-changes"],
+      "positive_controls": 3,
+      "negative_controls": 3,
+      "observation": "files/PageFilesSimpleModule returns table-like File name, File type, Size, row Info links, and a Manage attachments link for each of three public pages with files. Three pages without files return No files attached to this page and the same Manage attachments link."
+    },
+    {
+      "evidence_id": "E_OPEN43_SITECHANGES_AMC_20260810",
+      "case_ids": ["q1035-sitechanges-page-one", "q1035-sitechanges-page-two", "q1035-sitechanges-page-three", "q1035-sitechanges-page-out", "q1035-sitechanges-source", "q1035-sitechanges-files", "q1035-sitechanges-empty-options", "q1035-sitechanges-missing-category"],
+      "positive_controls": 5,
+      "negative_controls": 2,
+      "observation": "changes/SiteChangesListModule accepts page, perpage, pageId, categoryId, and JSON options. Pages 1 through 3 render distinct ordered rows and pager state. source and files select their revision kinds. An out-of-range page and a nonexistent category return Sorry, no revisions matching your criteria."
+    },
+    {
+      "evidence_id": "E_OPEN43_USERINFO_EXISTENCE_20260810",
+      "case_ids": ["q1032-userinfo-the-administrator", "q1032-userinfo-dr-clef", "q1032-userinfo-missing-one", "q1032-userinfo-missing-two"],
+      "positive_controls": 2,
+      "negative_controls": 2,
+      "observation": "Two existing user:info routes render populated User Information profiles. Two nonexistent names return HTTP 200 with the exact visible error User does not exist."
+    },
+    {
+      "evidence_id": "E_OPEN43_FRONTFORUM_BOUNDARIES_20260810",
+      "case_ids": ["q1034-frontforum-multi-populated-empty", "q1034-frontforum-multi-empty-populated", "q1034-frontforum-multi-missing", "q1034-frontforum-multi-malformed", "q1034-frontforum-custom-one", "q1034-frontforum-custom-two", "q1034-frontforum-custom-empty", "q1034-frontforum-custom-unknown"],
+      "positive_controls": 4,
+      "negative_controls": 4,
+      "observation": "A semicolon-separated category list renders the populated category regardless of whether an empty existing category comes first or last. Two missing categories return Requested forum category does not exist and a mixed numeric/non-numeric list returns Problem parsing attribute category. Two custom templates substitute documented variables; an empty category emits no item and an unknown variable stays literal."
+    },
+    {
+      "evidence_id": "E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810",
+      "case_ids": ["a1038-managesite-actor-a", "a1038-managesite-general-actor-a", "a1038-petitionadmin-actor-a", "a1038-managesite-actor-b", "a1038-managesite-actor-c", "a1038-managesite-general-actor-b", "a1038-managesite-general-actor-c", "a1038-petitionadmin-actor-b", "a1038-petitionadmin-actor-c"],
+      "positive_controls": 3,
+      "negative_controls": 6,
+      "observation": "The existing sandbox administrator receives populated ManageSite, General Settings, and PetitionAdmin output. The existing member and moderator-or-nonmember actors receive the observed administrator or permission error on all three surfaces."
+    },
+    {
+      "evidence_id": "E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810",
+      "case_ids": ["m776-space-one", "m776-space-two", "m776-tab", "m776-nbsp", "m776-float-lookalike", "m806-space-one", "m806-space-two", "m806-tab", "m806-nbsp", "m806-lookalike"],
+      "positive_controls": 6,
+      "negative_controls": 4,
+      "observation": "Both f=image and =image accept one or two ASCII spaces and a tab between the head and source. NBSP does not act as the same separator for either head, and the ff=image and ==image lookalikes remain literal."
+    }
+  ],
+  "attempted_but_still_blocked": [
+    {"case_id":"M1039_FLICKR_ARGUMENTS_AND_PROVIDER","reason":"All tag/size/perPage probes returned the no-photo diagnostic and a conflicting photoset/group probe returned a photoset failure; no provider success or network boundary appeared."},
+    {"case_id":"S755_BUILT_IN_ASSET_MAPPING","reason":"Admin received the Themes panel and B/C were denied, but no built-in ID-to-served-asset mapping appeared."},
+    {"case_id":"S1046_AUTOCOMPLETE_AND_INTERMEDIATE_FRAMES","reason":"PageLookupQModule returned positive and missing JSON, but no browser keyboard/focus/loading/save/cancel interval was observed."},
+    {"case_id":"Q1032_REMAINING_DIRECTORY_RUNTIME","reason":"Members and UserInfo reads succeeded, but Watchers/WhoInvited populated producers, privacy states, and invalidation were unavailable."},
+    {"case_id":"A1038_AUTHENTICATED_ACTOR_MATRIX","reason":"ManageSite, General, Themes, and PetitionAdmin actor boundaries were observed. Dashboard denied all three actors and Clone returned Site cannot be found for all three, so those positive actor states remain unavailable."}
+  ]
+}

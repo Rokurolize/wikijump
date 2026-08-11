@@ -19,7 +19,7 @@
  */
 
 use crate::services::settings::{
-    PageRatingPermission, PageRatingType, PageRatingVisibility,
+    PageRatingPermission, PageRatingType, PageRatingVisibility, ThemeSetting,
 };
 use crate::types::{Maybe, Reference};
 use std::net::IpAddr;
@@ -35,6 +35,7 @@ pub struct UpdateCategory<'a> {
     pub site: Reference<'a>,
     pub category: Reference<'a>,
     pub user_id: i64,
+    pub expected_settings_revision: Option<i64>,
     #[serde(flatten)]
     pub body: UpdateCategoryBody,
     pub ip_address: IpAddr,
@@ -53,4 +54,6 @@ pub struct UpdateCategoryBody {
     pub rating_visibility: Maybe<Option<PageRatingVisibility>>,
     pub rating_type: Maybe<Option<PageRatingType>>,
     pub per_page_discussion: Maybe<Option<bool>>,
+    pub theme: Maybe<ThemeSetting>,
+    pub autonumber_enabled: Maybe<bool>,
 }

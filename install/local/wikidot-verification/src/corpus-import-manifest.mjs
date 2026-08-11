@@ -276,6 +276,12 @@ function assertAttachmentSha256(value, field, rowPath) {
   }
 }
 
+function assertContentTypeDescription(value, rowPath) {
+  if (typeof value !== 'string' || value.length === 0 || /[\r\n\0]/u.test(value)) {
+    throw new Error(`${rowPath}: attachment mime_description must be a non-empty single-line string`);
+  }
+}
+
 function assertSafeAttachmentRelativePath(relativePath, rowPath) {
   if (typeof relativePath !== 'string' || relativePath.length === 0) {
     throw new Error(`${rowPath}: attachment path must be a non-empty string`);
@@ -385,6 +391,9 @@ function validateAttachmentEntry(entry, index, rowPath) {
   if (!Number.isSafeInteger(entry.size) || entry.size < 0) {
     throw new Error(`${entryPath}: attachment size must be a non-negative safe integer`);
   }
+  if (Object.hasOwn(entry, 'mime_description')) {
+    assertContentTypeDescription(entry.mime_description, entryPath);
+  }
 }
 
 // Convert a capture-state attachment manifest (files/_state.json, the
@@ -424,12 +433,56 @@ function attachmentEntriesFromStateManifest(statePath) {
       path: `files/${filename}`,
       sha256,
       mime: record.mime_type,
+      ...(Object.hasOwn(record, 'mime_description')
+        ? { mime_description: record.mime_description }
+        : {}),
       size: record.size,
     };
   });
 }
 
-function readAttachmentManifest({ pageDir, manifestRoot }) {
+function descriptorProvenanceByFile(provenanceFilesRoot) {
+  const descriptors = new Map();
+  if (provenanceFilesRoot === null || !fs.existsSync(provenanceFilesRoot)) {
+    return descriptors;
+  }
+  for (const fileDirectory of fs.readdirSync(provenanceFilesRoot, { withFileTypes: true })) {
+    if (!fileDirectory.isDirectory()) continue;
+    const snapshotsRoot = path.join(provenanceFilesRoot, fileDirectory.name, 'snapshots');
+    if (!fs.existsSync(snapshotsRoot)) continue;
+    for (const snapshot of fs.readdirSync(snapshotsRoot, { withFileTypes: true })) {
+      if (!snapshot.isFile() || path.extname(snapshot.name) !== '.json') continue;
+      const snapshotPath = path.join(snapshotsRoot, snapshot.name);
+      const record = readJson(snapshotPath);
+      const filename = record?.filename;
+      const bytesSha256 = typeof record?.bytes_sha256 === 'string'
+        ? record.bytes_sha256.replace(/^sha256:/u, '')
+        : null;
+      const description = record?.metadata?.mime_description;
+      if (typeof filename !== 'string' || !SHA256_RE.test(bytesSha256 ?? '')) continue;
+      if (description === undefined || description === null) continue;
+      assertContentTypeDescription(description, snapshotPath);
+      const key = `${filename}\0${bytesSha256.toLowerCase()}`;
+      const existing = descriptors.get(key);
+      if (existing !== undefined && existing !== description) {
+        throw new Error(`${snapshotPath}: conflicting attachment mime_description for ${filename}`);
+      }
+      descriptors.set(key, description);
+    }
+  }
+  return descriptors;
+}
+
+function resolveContentTypeDescription(entry, provenance, manifestPath) {
+  const explicit = entry.mime_description;
+  const captured = provenance.get(`${entry.filename}\0${entry.sha256}`);
+  if (explicit !== undefined && captured !== undefined && explicit !== captured) {
+    throw new Error(`${manifestPath}: attachment ${entry.filename} has conflicting mime_description provenance`);
+  }
+  return captured ?? explicit ?? null;
+}
+
+function readAttachmentManifest({ pageDir, manifestRoot, provenanceFilesRoot = null }) {
   let manifestPath = path.join(pageDir, ATTACHMENT_MANIFEST_FILENAME);
   let manifest;
   if (fs.existsSync(manifestPath)) {
@@ -446,6 +499,7 @@ function readAttachmentManifest({ pageDir, manifestRoot }) {
 
   const pageRoot = path.resolve(pageDir);
   const rootPath = path.resolve(manifestRoot);
+  const descriptorProvenance = descriptorProvenanceByFile(provenanceFilesRoot);
   const seenFilenames = new Set();
   const seenPaths = new Set();
   const attachments = manifest.map((entry, index) => {
@@ -473,6 +527,11 @@ function readAttachmentManifest({ pageDir, manifestRoot }) {
       throw new Error(`${pageDir}: attachment ${entry.filename} size mismatch: expected ${entry.size}, got ${bytes.length}`);
     }
 
+    const contentTypeDescription = resolveContentTypeDescription(
+      entry,
+      descriptorProvenance,
+      manifestPath,
+    );
     return {
       filename: entry.filename,
       original_url: entry.original_url,
@@ -480,6 +539,9 @@ function readAttachmentManifest({ pageDir, manifestRoot }) {
       sha256: entry.sha256,
       size: entry.size,
       mime: entry.mime,
+      ...(contentTypeDescription === null
+        ? {}
+        : { content_type_description: contentTypeDescription }),
       file_path: filePath,
       corpus_path: toPosixPath(path.relative(rootPath, filePath)),
       metadata_path: manifestPath,
@@ -669,6 +731,13 @@ export function buildCorpusImportManifest({ corpusRoot = null, sourceBundleRoot 
     const attachments = readAttachmentManifest({
       pageDir,
       manifestRoot: corpusRoot,
+      provenanceFilesRoot: path.join(
+        corpusRoot,
+        branch,
+        'by-uuid',
+        entityId,
+        'files',
+      ),
     });
 
     rows.push(rowFromRecord({

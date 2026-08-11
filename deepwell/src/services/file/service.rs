@@ -21,15 +21,15 @@
 use super::structs::{
     CreateFile, CreateFileOutput, DeleteFile, DeleteFileOutput, EditFile, EditFileBody,
     EditFileOutput, GetFile, MoveFile, MoveFileOutput, RestoreFile, RestoreFileOutput,
-    RollbackFile,
+    RollbackFile, VisibleFileRow,
 };
-use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::ServiceContext;
 use crate::services::audit::ObjectScope;
-use crate::services::blob::FinalizeBlobUploadOutput;
+use crate::services::blob::{ContentTypeDescriptor, FinalizeBlobUploadOutput};
 use crate::services::file_revision::{
     CreateFileRevision, CreateFileRevisionBody, CreateFirstFileRevision,
     CreateResurrectionFileRevision, CreateTombstoneFileRevision, FileBlob,
@@ -44,7 +44,8 @@ use crate::utils::trim_spaces_in_place;
 use paste::paste;
 use sea_orm::ActiveValue;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
+    FromQueryResult, QueryFilter, QueryOrder, Set, Statement, Value,
 };
 use std::net::IpAddr;
 
@@ -105,13 +106,20 @@ impl FileService {
             s3_hash,
             mime,
             size,
+            content_type,
             created: blob_created,
         } = match direct_upload {
             None => {
                 // Normal path, finish upload of blob from user
-                BlobService::finish_upload(ctx, user_id, &uploaded_blob_id)
-                    .await
-                    .or_raise(make_error)?
+                BlobService::finish_page_upload(
+                    ctx,
+                    user_id,
+                    site_id,
+                    page_id,
+                    &uploaded_blob_id,
+                )
+                .await
+                .or_raise(make_error)?
             }
             Some(data) => {
                 // Special path, used only internally to directly upload a blob,
@@ -143,6 +151,7 @@ impl FileService {
                 s3_hash,
                 size,
                 mime,
+                content_type: Some(content_type),
                 blob_created,
                 revision_comments,
             },
@@ -229,13 +238,16 @@ impl FileService {
                     s3_hash,
                     mime,
                     size,
+                    content_type,
                     created: blob_created,
                 } = match direct_upload {
                     Maybe::Unset => {
                         // Normal path, finish upload of blob from user
-                        BlobService::finish_upload(ctx, user_id, id)
-                            .await
-                            .or_raise(make_error)?
+                        BlobService::finish_page_upload(
+                            ctx, user_id, site_id, page_id, id,
+                        )
+                        .await
+                        .or_raise(make_error)?
                     }
                     Maybe::Set(data) => {
                         // Special path, used only internally to directly upload a blob
@@ -250,6 +262,7 @@ impl FileService {
                     s3_hash,
                     mime,
                     size,
+                    content_type: Some(content_type),
                     blob_created,
                 })
             }
@@ -642,6 +655,8 @@ impl FileService {
             s3_hash,
             mime,
             size,
+            content_type_label,
+            content_type_description,
             hidden,
             ..
         } = target_revision;
@@ -674,6 +689,16 @@ impl FileService {
                 s3_hash: slice_to_blob_hash(&s3_hash),
                 mime,
                 size,
+                content_type: match (content_type_label, content_type_description) {
+                    (Some(label), Some(description)) => {
+                        Some(crate::services::blob::ContentTypeDescriptor {
+                            label,
+                            description,
+                        })
+                    }
+                    (None, None) => None,
+                    _ => unreachable!("file revision descriptor columns are paired"),
+                },
                 // in a rollback, by definition the blob was already uploaded
                 blob_created: false,
             })
@@ -809,6 +834,107 @@ impl FileService {
             .or_raise(make_error)?;
 
         Ok(files)
+    }
+
+    /// Loads a bounded active file inventory and each file's latest revision.
+    ///
+    /// Callers must complete the parent page's Page:View decision before invoking
+    /// this method. Keeping authorization outside this query makes it impossible
+    /// for a denied render to load file names or revision metadata speculatively.
+    pub async fn get_visible_rows(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+        maximum_rows: u64,
+    ) -> Result<Option<Vec<VisibleFileRow>>> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to load visible file rows on page ID {} on site ID {}",
+                    page_id, site_id,
+                ),
+                ErrorType::File,
+            )
+        };
+        let query_limit = maximum_rows
+            .checked_add(1)
+            .and_then(|limit| i64::try_from(limit).ok())
+            .ok_or_raise(make_error)?;
+        let maximum_rows = usize::try_from(maximum_rows).or_raise(make_error)?;
+        let txn = ctx.transaction();
+        #[derive(Debug, FromQueryResult)]
+        struct VisibleFileRowQuery {
+            file_id: i64,
+            name: String,
+            revision_id: Option<i64>,
+            size: Option<i64>,
+            content_type_label: Option<String>,
+            content_type_description: Option<String>,
+            hidden: Option<Vec<String>>,
+        }
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            concat!(
+                "SELECT f.file_id, f.name, latest.revision_id, latest.size, ",
+                "latest.content_type_label, latest.content_type_description, latest.hidden ",
+                "FROM file f ",
+                "LEFT JOIN LATERAL (",
+                "SELECT fr.revision_id, fr.size, fr.content_type_label, ",
+                "fr.content_type_description, fr.hidden ",
+                "FROM file_revision fr ",
+                "WHERE fr.site_id = f.site_id AND fr.page_id = f.page_id ",
+                "AND fr.file_id = f.file_id ",
+                "ORDER BY fr.revision_number DESC, fr.revision_id DESC LIMIT 1",
+                ") latest ON TRUE ",
+                "WHERE f.site_id = $1 AND f.page_id = $2 AND f.deleted_at IS NULL ",
+                "ORDER BY f.name ASC, f.file_id ASC LIMIT $3",
+            ),
+            [
+                Value::from(site_id),
+                Value::from(page_id),
+                Value::from(query_limit),
+            ],
+        );
+        let rows = VisibleFileRowQuery::find_by_statement(statement)
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        if rows.len() > maximum_rows {
+            return Ok(None);
+        }
+
+        let mut visible = Vec::with_capacity(rows.len());
+        for row in rows {
+            if row.revision_id.is_none() {
+                return Ok(None);
+            }
+            let Some(hidden) = row.hidden else {
+                return Ok(None);
+            };
+            if hidden.iter().any(|field| field != "comments") {
+                return Ok(None);
+            }
+            let content_type =
+                match (row.content_type_label, row.content_type_description) {
+                    (Some(label), Some(description))
+                        if descriptor_field_is_valid(&label)
+                            && descriptor_field_is_valid(&description) =>
+                    {
+                        ContentTypeDescriptor { label, description }
+                    }
+                    _ => return Ok(None),
+                };
+            let Some(size) = row.size.filter(|size| *size >= 0) else {
+                return Ok(None);
+            };
+            visible.push(VisibleFileRow {
+                file_id: row.file_id,
+                name: row.name,
+                size,
+                content_type,
+            });
+        }
+        Ok(Some(visible))
     }
 
     /// Gets the ID of an active file within an explicit site and page scope.
@@ -1015,6 +1141,10 @@ fn normalize_and_validate_file_name(name: &mut String) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn descriptor_field_is_valid(value: &str) -> bool {
+    !value.is_empty() && !value.chars().any(|c| matches!(c, '\r' | '\n' | '\0'))
 }
 
 /// Verifies that the `last_revision_id` argument is the most recent.

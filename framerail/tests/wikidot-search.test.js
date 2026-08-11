@@ -1,0 +1,65 @@
+import assert from "node:assert/strict"
+import test from "node:test"
+
+import {
+  installWikidotSearchAll,
+  wikidotSearchAllPath,
+  wikidotSearchPath
+} from "../src/lib/wikidot/wikidot-search.js"
+
+test("Wikidot top search preserves and path-encodes the submitted query", () => {
+  assert.equal(
+    wikidotSearchPath("codex search probe"),
+    "/search:site/q/codex%20search%20probe"
+  )
+  assert.equal(wikidotSearchPath("  a/b? c  "), "/search:site/q/%20%20a%2Fb%3F%20c%20%20")
+  assert.equal(
+    wikidotSearchPath("Search this site"),
+    "/search:site/q/Search%20this%20site"
+  )
+})
+
+test("Wikidot SearchAll preserves its area and path-encodes the submitted query", () => {
+  assert.equal(wikidotSearchAllPath("wikidot", "pf"), "/search:all/a/pf/q/wikidot")
+  assert.equal(wikidotSearchAllPath("wikidot", "p"), "/search:all/a/p/q/wikidot")
+  assert.equal(wikidotSearchAllPath("wikidot", "f"), "/search:all/a/f/q/wikidot")
+  assert.equal(
+    wikidotSearchAllPath("  a/b? c  ", "pf"),
+    "/search:all/a/pf/q/%20%20a%2Fb%3F%20c%20%20"
+  )
+})
+
+test("Wikidot SearchAll submit listener navigates rendered module forms", () => {
+  const listeners = new Map()
+  const document = {
+    addEventListener(type, listener) {
+      listeners.set(type, listener)
+    },
+    removeEventListener(type, listener) {
+      if (listeners.get(type) === listener) listeners.delete(type)
+    }
+  }
+  const window = { document, location: { href: "http://example.test/current" } }
+  const controls = new Map([
+    ["query", { value: "  a/b? c  " }],
+    ["area", { value: "f" }]
+  ])
+  const form = {
+    id: "search-form-all",
+    elements: { namedItem: (name) => controls.get(name) ?? null }
+  }
+  let prevented = false
+
+  const dispose = installWikidotSearchAll(window)
+  listeners.get("submit")({
+    target: form,
+    preventDefault() {
+      prevented = true
+    }
+  })
+
+  assert.equal(prevented, true)
+  assert.equal(window.location.href, "/search:all/a/f/q/%20%20a%2Fb%3F%20c%20%20")
+  dispose()
+  assert.equal(listeners.has("submit"), false)
+})

@@ -17,6 +17,35 @@
   let showVoteList = $state<boolean>(false)
   let voteMap = new SvelteMap<number, PageVoteModel>()
   let voteRating = $state<number>()
+  let whoRatedBody = $state<string>("")
+
+  async function getWikidotWhoRated() {
+    const pageId = data.page?.page_id
+    if (pageId === undefined) return
+    const response = await fetch("/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        moduleName: "pagerate/WhoRatedPageModule",
+        pageId: String(pageId)
+      })
+    })
+    const result = (await response.json()) as {
+      status: string
+      body?: string
+      message?: string
+    }
+    if (response.ok && result.status === "ok" && typeof result.body === "string") {
+      whoRatedBody = result.body
+      showVoteList = true
+      return
+    }
+    errorPopupState.current = {
+      state: true,
+      message: result.message ?? "Unable to list page ratings",
+      data: {}
+    }
+  }
 
   async function getVoteList() {
     const res = await fetch(`?/voteGet`, {
@@ -196,25 +225,11 @@
   {#if pageRating.visibility === "visible"}
     <p>
       <!-- svelte-ignore a11y_invalid_attribute -->
-      <a
-        href="javascript:;"
-        onclick={() =>
-          getVoteList().then(() => {
-            showVoteList = true
-          })}
-      >
-        Look who rated this page
-      </a>
+      <a href="javascript:;" onclick={getWikidotWhoRated}> Look who rated this page </a>
     </p>
     <div id="who-rated-page-area">
       {#if showVoteList}
-        <ul class="vote-list">
-          {#each [...voteMap].sort((a, b) => b[0] - a[0]) as [userId, vote] (vote.page_vote_id)}
-            <li class="vote-item" data-id={vote.page_vote_id} data-user-id={userId}>
-              UT: User {vote.user_id}: {vote.value}
-            </li>
-          {/each}
-        </ul>
+        {@html whoRatedBody}
       {/if}
     </div>
   {/if}

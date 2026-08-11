@@ -29,6 +29,10 @@ export const REQUIRED_THEME_FAMILIES = Object.freeze([
   "flopstyle-y2k",
   "black-highlighter-calibri",
 ]);
+export const PAGE_CONTENT_FIRST_DIVERGENCE_TRACE = Object.freeze({
+  root_selector: "#page-content",
+  max_elements: 10_000,
+});
 
 const common = Object.freeze({
   geometry_selectors: COMMON_GEOMETRY_SELECTORS,
@@ -94,6 +98,7 @@ function canary({
   geometrySelectors = [],
   presenceProbes = [],
   firstPaintCustomProperties = {},
+  firstDivergenceTrace = null,
 }) {
   return Object.freeze({
     slug,
@@ -109,6 +114,9 @@ function canary({
     ]),
     first_paint_custom_properties: Object.freeze(firstPaintCustomProperties),
     page_chrome_skeleton: PAGE_CHROME_SKELETON,
+    ...(firstDivergenceTrace
+      ? { first_divergence_trace: firstDivergenceTrace }
+      : {}),
   });
 }
 
@@ -193,13 +201,30 @@ export const STANDING_BROWSER_CANARIES = Object.freeze([
       }),
     },
   }),
-  canary({ slug: "scp-744", themeFamily: "flopstyle-y2k" }),
-  canary({ slug: "scp-2117", themeFamily: "sigma" }),
-  canary({ slug: "scp-5516", themeFamily: "black-highlighter-calibri" }),
-  canary({ slug: "scp-8980", themeFamily: "basalt" }),
+  canary({
+    slug: "scp-744",
+    themeFamily: "flopstyle-y2k",
+    firstDivergenceTrace: PAGE_CONTENT_FIRST_DIVERGENCE_TRACE,
+  }),
+  canary({
+    slug: "scp-2117",
+    themeFamily: "sigma",
+    firstDivergenceTrace: PAGE_CONTENT_FIRST_DIVERGENCE_TRACE,
+  }),
+  canary({
+    slug: "scp-5516",
+    themeFamily: "black-highlighter-calibri",
+    firstDivergenceTrace: PAGE_CONTENT_FIRST_DIVERGENCE_TRACE,
+  }),
+  canary({
+    slug: "scp-8980",
+    themeFamily: "basalt",
+    firstDivergenceTrace: PAGE_CONTENT_FIRST_DIVERGENCE_TRACE,
+  }),
   canary({
     slug: "theme:basalt",
     themeFamily: "basalt",
+    firstDivergenceTrace: PAGE_CONTENT_FIRST_DIVERGENCE_TRACE,
     geometrySelectors: [".yui-navset"],
     presenceProbes: [
       Object.freeze({

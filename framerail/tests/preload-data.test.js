@@ -16,6 +16,12 @@ const assertBrowserSerializationIsPublic = (preloadData) => {
 test("public preload data is an allowlisted DTO", () => {
   const response = {
     site: { site_id: 1, name: "Example" },
+    site_settings: {
+      revision: 0,
+      welcome_page: "system:welcome",
+      google_analytics: { enabled: false, profile: null },
+      toolbars: { top: false, bottom: false }
+    },
     site_file_domain: "files.example",
     license_name: "CC BY-SA 3.0",
     license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
@@ -37,6 +43,7 @@ test("public preload data is an allowlisted DTO", () => {
 
   assert.deepEqual(result, {
     site: response.site,
+    site_settings: response.site_settings,
     site_file_domain: response.site_file_domain,
     license_name: response.license_name,
     license_url: response.license_url,
@@ -56,6 +63,12 @@ test("public preload data is an allowlisted DTO", () => {
 test("anonymous browser serialization excludes session and cache internals", () => {
   const response = {
     site: { site_id: 1, name: "Example" },
+    site_settings: {
+      revision: 0,
+      welcome_page: "system:welcome",
+      google_analytics: { enabled: false, profile: null },
+      toolbars: { top: false, bottom: false }
+    },
     site_file_domain: "files.example",
     license_name: "CC BY-SA 3.0",
     license_url: "https://creativecommons.org/licenses/by-sa/3.0/",

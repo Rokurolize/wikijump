@@ -20,6 +20,31 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Search is currently unavailable and Feed source recognition remains source-sensitive
+
+- Observation ID: `search-feed-current-unavailable-boundaries-20260809`
+- Classification: `live-correction`
+- Observed at: `2026-08-09`
+- Analysis: Anonymous PagePreviewModule probes show that current Wikidot recognizes Search but renders one unavailable notice across the documented and malformed heads. Feed retains a narrower parser boundary: only a non-empty lowercase src assignment in double quotes is recognized in the observed matrix; missing, empty, single-quoted, and uppercase-key forms all render the missing-source error. A recognized but inaccessible source renders a separate processing error.
+
+Normative behavior:
+
+- Search renders the current temporary-unavailable error for the observed bare, documented, unknown-argument, single-quoted, and uppercase-module-name forms.
+- Feed without a recognized source renders the exact missing-src error.
+- In the observed Feed matrix, src is recognized only when the key is lowercase, the value is double-quoted, and the value is non-empty.
+- A recognized source that cannot be read renders the exact processing error with the escaped source URL.
+- Active Search results and successful remote Feed item rendering remain unimplemented until a reproducible live contract and a safe runtime adapter are available.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json` (SHA-256 `b8642635e71c02bb9e798af5740be5de3c259fef13f000dc6f0bd0fe28946565`), cases: `search-bare`, `search-mini-true`, `search-area-pages`, `search-unknown-argument`, `search-single-quoted-mini`, `search-uppercase-name`, `feed-bare`, `feed-empty-src`, `feed-missing-src-with-limit`, `feed-single-quoted-src`, `feed-uppercase-src`, `feed-valid-src`
+
+
 
 ## Suggested public TDD seams
 

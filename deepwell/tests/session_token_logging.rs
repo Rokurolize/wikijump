@@ -22,12 +22,15 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::ADMIN_USER_ID;
 use deepwell::services::SessionService;
 use deepwell::services::session::{CreateSession, RenewSession};
+use deepwell::services::user::{CreateUser, UserService};
+use deepwell::types::UserType;
 use log::{LevelFilter, Log, Metadata, Record};
 use serde_json::json;
 use std::sync::Mutex;
+use str_macro::str;
+use uuid::Uuid;
 
 #[derive(Debug)]
 struct CaptureLogger {
@@ -75,12 +78,31 @@ async fn session_lifecycle_does_not_log_bearer_values() {
         .expect("capture logger lock should not be poisoned")
         .clear();
 
+    let fixture = Uuid::new_v4().as_simple().to_string();
+    let user_id = UserService::create(
+        runner.context(),
+        CreateUser {
+            user_type: UserType::Regular,
+            name: format!("Session Logging Test {fixture}"),
+            email: format!("session-logging-{fixture}@email.com"),
+            locales: vec![str!("en")],
+            password: "password-fixture".to_owned(),
+            bypass_filter: true,
+            bypass_email_verification: true,
+            override_user_id: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("session logging test user should be created")
+    .user_id;
+
     log::debug!("session debug control");
     log::trace!("session trace control");
     let session_token = SessionService::create(
         runner.context(),
         CreateSession {
-            user_id: ADMIN_USER_ID,
+            user_id,
             ip_address: common::IP_ADDRESS,
             user_agent: "session-token-logging-test".to_owned(),
             restricted: false,
@@ -91,7 +113,7 @@ async fn session_lifecycle_does_not_log_bearer_values() {
     let other_session_token = SessionService::create(
         runner.context(),
         CreateSession {
-            user_id: ADMIN_USER_ID,
+            user_id,
             ip_address: common::IP_ADDRESS,
             user_agent: "session-token-logging-test-other".to_owned(),
             restricted: false,
@@ -100,20 +122,16 @@ async fn session_lifecycle_does_not_log_bearer_values() {
     .await
     .expect("other test session should be created");
     assert_eq!(
-        SessionService::invalidate_others(
-            runner.context(),
-            &session_token,
-            ADMIN_USER_ID,
-        )
-        .await
-        .expect("other test session should be invalidated"),
+        SessionService::invalidate_others(runner.context(), &session_token, user_id,)
+            .await
+            .expect("other test session should be invalidated"),
         1,
     );
     let renewed_session_token = SessionService::renew(
         runner.context(),
         RenewSession {
             old_session_token: session_token.clone(),
-            user_id: ADMIN_USER_ID,
+            user_id,
             ip_address: common::IP_ADDRESS,
             user_agent: "session-token-logging-test-renewed".to_owned(),
         },
@@ -127,7 +145,7 @@ async fn session_lifecycle_does_not_log_bearer_values() {
     let restricted_session_token = SessionService::create(
         runner.context(),
         CreateSession {
-            user_id: ADMIN_USER_ID,
+            user_id,
             ip_address: common::IP_ADDRESS,
             user_agent: "session-token-logging-test-mfa".to_owned(),
             restricted: true,

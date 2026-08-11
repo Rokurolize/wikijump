@@ -12,8 +12,21 @@
   } from "$lib/generated-page-styles"
   import {
     buildWikidotDiscussButtonHtml,
-    isWikidotFragmentPage
+    isWikidotFragmentPage,
+    printWikidotPage
   } from "$lib/wikidot/wikidot-page-actions"
+  import {
+    updateWikidotRateWidget,
+    wikidotLegacyActions
+  } from "$lib/wikidot/wikidot-legacy-actions"
+  import {
+    requestLegacyRate,
+    requestLegacyRateCancel,
+    requestLegacySetTags
+  } from "$lib/wikidot/wikidot-legacy-action-request"
+  import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
+  import { requestMembershipJoin } from "$lib/wikidot/wikidot-membership-action-request"
+  import { toggleWikidotEditSections } from "$lib/wikidot/wikidot-edit-sections"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
   import { resolveWikidotHashMagicPagePane } from "$lib/wikidot/wikidot-hash-magic"
   import { onMount } from "svelte"
@@ -38,6 +51,13 @@
   let revision = $state<Optional<PageRevisionModelFiltered>>(undefined)
   let pagePaneState = $state<PagePane>(PagePane.None)
   let EditorPane = $state<typeof import("./EditorPane.svelte").default>()
+  let EditSectionPane = $state<typeof import("./EditSectionPane.svelte").default>()
+  let editSection = $state<{
+    index: number
+    level: number
+    start: number
+    end: number
+  }>()
   let wikidotPageActions = $derived(data.wikidot_page_actions)
   let wikidotPageWatch = $derived(data.wikidot_page_watch)
   let dataFormEditing = $derived(!!data.options?.edit && !!data.data_form)
@@ -146,10 +166,151 @@
     EditorPane ??= (await import("./EditorPane.svelte")).default
   }
 
+  async function ensureEditSectionPane() {
+    EditSectionPane ??= (await import("./EditSectionPane.svelte")).default
+  }
+
   function activatePagePane(pane: PagePane) {
     showSource = false
+    editSection = undefined
     pagePaneState = pane
   }
+
+  function closeEditSection() {
+    editSection = undefined
+  }
+
+  function toggleEditSections() {
+    const pageContent = document.querySelector<HTMLElement>("#page-content")
+    if (!pageContent || showRevision) return
+
+    const visible = toggleWikidotEditSections(pageContent, data.wikitext, (section) => {
+      showSource = false
+      pagePaneState = PagePane.None
+      editSection = section
+      void ensureEditSectionPane()
+    })
+    if (!visible) closeEditSection()
+  }
+
+  const legacyRequestRuntime = { fetch, deserialize }
+
+  function currentRateRegistry() {
+    const registry = data.rate_actions
+    return registry &&
+      data.page &&
+      data.page_revision &&
+      registry.site_id === data.site.site_id &&
+      registry.page_id === data.page.page_id &&
+      registry.revision_id === data.page_revision.revision_id
+      ? registry
+      : null
+  }
+
+  async function setLegacyTags(actionIndex: number, actionFingerprint: string) {
+    if (!data.page || !data.page_revision || showRevision) {
+      throw new Error("This set-tags action is not available for the displayed revision.")
+    }
+    await requestLegacySetTags(legacyRequestRuntime, {
+      pageId: data.page.page_id,
+      lastRevisionId: data.page_revision.revision_id,
+      actionIndex,
+      actionFingerprint
+    })
+    window.location.reload()
+  }
+
+  async function rateFromLegacyWidget(
+    actionIndex: number,
+    actionFingerprint: string,
+    _value: number,
+    element: HTMLElement
+  ) {
+    const registry = currentRateRegistry()
+    if (!registry) throw new Error("This page cannot be rated.")
+    const score = await requestLegacyRate(legacyRequestRuntime, {
+      pageId: registry.page_id,
+      lastRevisionId: registry.revision_id,
+      actionIndex,
+      actionFingerprint
+    })
+    updateWikidotRateWidget(element, score?.score)
+  }
+
+  async function cancelLegacyRating(
+    actionIndex: number,
+    actionFingerprint: string,
+    element: HTMLElement
+  ) {
+    const registry = currentRateRegistry()
+    if (!registry) throw new Error("This page cannot be rated.")
+    const score = await requestLegacyRateCancel(legacyRequestRuntime, {
+      pageId: registry.page_id,
+      lastRevisionId: registry.revision_id,
+      actionIndex,
+      actionFingerprint
+    })
+    updateWikidotRateWidget(element, score?.score)
+  }
+
+  const legacyActionRuntime = {
+    edit: navigateEdit,
+    history: () => activatePagePane(PagePane.History),
+    source: () => {
+      showSource = true
+      pagePaneState = PagePane.None
+    },
+    print: printWikidotPage,
+    setTags: setLegacyTags,
+    rate: rateFromLegacyWidget,
+    cancelRate: cancelLegacyRating,
+    error: (error: unknown) => {
+      errorPopupState.current = {
+        state: true,
+        message: error instanceof Error ? error.message : "Legacy page action failed.",
+        data: null
+      }
+    }
+  }
+
+  function joinFromLegacyControl(
+    pageId: number,
+    revisionId: number,
+    actionIndex: number,
+    actionFingerprint: string
+  ) {
+    if (
+      !data.page ||
+      !data.page_revision ||
+      showRevision ||
+      data.page.page_id !== pageId ||
+      data.page_revision.revision_id !== revisionId
+    ) {
+      throw new Error("This Join action is not available for the displayed revision.")
+    }
+    return requestMembershipJoin(legacyRequestRuntime, {
+      pageId,
+      lastRevisionId: revisionId,
+      actionIndex,
+      actionFingerprint
+    })
+  }
+
+  const membershipActionRuntime = {
+    join: joinFromLegacyControl,
+    reload: () => window.location.reload(),
+    error: legacyActionRuntime.error
+  }
+
+  let legacyActionParameters = $derived({
+    actions: showRevision ? [] : (data.legacy_actions ?? []),
+    rateActions: showRevision ? [] : (currentRateRegistry()?.actions ?? []),
+    runtime: legacyActionRuntime
+  })
+  let membershipActionParameters = $derived({
+    actions: showRevision ? [] : (data.membership_actions ?? []),
+    runtime: membershipActionRuntime
+  })
 
   onMount(() => {
     if (pageLayoutContext.current !== Layout.WIKIDOT || data.options?.edit) return
@@ -191,6 +352,7 @@
 <PageHead
   {compiledBodyStylesHead}
   fontPreloadHrefs={pageFontPreloadHrefs}
+  metaTags={showRevision ? [] : (data.meta_tags ?? [])}
   siteName={data.site.name}
   title={data.page_revision?.title}
 />
@@ -227,7 +389,13 @@
       <textarea class="page-source" readonly={true}>{data.wikitext}</textarea>
     </div>
   {:else}
-    <div id="page-content" class:hidden={dataFormEditing} use:wikidotTabviews>
+    <div
+      id="page-content"
+      class:hidden={dataFormEditing}
+      use:wikidotLegacyActions={legacyActionParameters}
+      use:wikidotMembershipActions={membershipActionParameters}
+      use:wikidotTabviews
+    >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}
     </div>
   {/if}
@@ -315,7 +483,13 @@
         {/if}
         {#if wikidotPageActions}
           <!-- svelte-ignore a11y_invalid_attribute -->
-          <a id="tags-button" class="btn btn-default" href="javascript:;" type="button">
+          <a
+            id="tags-button"
+            class="btn btn-default"
+            href="javascript:;"
+            onclick={() => activatePagePane(PagePane.Tags)}
+            type="button"
+          >
             {wikidotPageActions.tags}
           </a>
           {#if wikidotPageActions.showDiscuss}
@@ -344,7 +518,13 @@
         </a>
         {#if wikidotPageActions}
           <!-- svelte-ignore a11y_invalid_attribute -->
-          <a id="print-button" class="btn btn-default" href="javascript:;" type="button">
+          <a
+            id="print-button"
+            class="btn btn-default"
+            href="javascript:;"
+            onclick={() => printWikidotPage()}
+            type="button"
+          >
             {wikidotPageActions.print}
           </a>
           <!-- svelte-ignore a11y_invalid_attribute -->
@@ -352,6 +532,7 @@
             id="site-tools-button"
             class="btn btn-default"
             href="javascript:;"
+            onclick={() => activatePagePane(PagePane.SiteTools)}
             type="button"
           >
             {wikidotPageActions.siteTools}
@@ -374,6 +555,56 @@
 
     {#if showPageOptions}
       <div id="page-options-bottom-2" class="page-options-bottom form-actions">
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="edit-append-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.Append)}
+          type="button"
+        >
+          {wikidotPageActions?.append ?? "Append"}
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="edit-sections-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={toggleEditSections}
+          type="button"
+        >
+          Edit Sections
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="edit-meta-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.EditMeta)}
+          type="button"
+        >
+          Edit Meta
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="watchers-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.Watchers)}
+          type="button"
+        >
+          Watchers
+        </a>
+        <!-- svelte-ignore a11y_invalid_attribute -->
+        <a
+          id="backlinks-button"
+          class="btn btn-default"
+          href="javascript:;"
+          onclick={() => activatePagePane(PagePane.Backlinks)}
+          type="button"
+        >
+          {wikidotPageActions?.backlinks ?? "Backlinks"}
+        </a>
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
           id="view-source-button"
@@ -440,8 +671,11 @@
       </div>
     {/if}
 
-    <div id="action-area" class:hidden={!showSource && pagePaneState === PagePane.None}>
-      {#if showSource || pagePaneState !== PagePane.None}
+    <div
+      id="action-area"
+      class:hidden={!showSource && pagePaneState === PagePane.None && !editSection}
+    >
+      {#if showSource || pagePaneState !== PagePane.None || editSection}
         <!-- svelte-ignore a11y_invalid_attribute -->
         <a
           class="action-area-close btn btn-danger"
@@ -449,11 +683,22 @@
           onclick={() => {
             showSource = false
             pagePaneState = PagePane.None
+            closeEditSection()
           }}
           type="button"
         >
           {data.internationalization?.close}
         </a>
+      {/if}
+
+      {#if editSection}
+        {#if EditSectionPane}
+          {#key editSection.index}
+            <EditSectionPane {...props} close={closeEditSection} section={editSection} />
+          {/key}
+        {:else}
+          <p class="pane-loading" aria-live="polite">Loading…</p>
+        {/if}
       {/if}
 
       <PagePaneContent

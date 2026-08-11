@@ -289,6 +289,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 preferred_domain: Maybe::Set(site.preferred_domain),
                 ..Default::default()
             },
+            None,
             SYSTEM_USER_ID,
             SEED_IP_ADDRESS,
         )

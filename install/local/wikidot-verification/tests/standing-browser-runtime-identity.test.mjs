@@ -138,6 +138,66 @@ test("runtime observation binds the actual candidate caddy image, labels, and lo
   });
 });
 
+test("runtime observation binds a required private service endpoint to the sealed Compose service", async () => {
+  const { candidate, inspect } = preparedFixture();
+  inspect.HostConfig.PortBindings["2747/tcp"] = [
+    { HostIp: "127.0.0.1", HostPort: "32747" },
+  ];
+  inspect.NetworkSettings.Ports["2747/tcp"] = [
+    { HostIp: "127.0.0.1", HostPort: "32747" },
+  ];
+  const effective = effectiveRuntimeServicesSha256([inspect]);
+  candidate.candidate.config.effective_runtime_services_sha256 = effective;
+  inspect.Config.Labels["com.rokurolize.wikijump.runtime_config_sha256"] =
+    effective;
+  const requiredServiceBindings = [
+    {
+      role: "caddy",
+      container_port: "2747/tcp",
+      host_address: "127.0.0.1",
+      host_port: 32747,
+    },
+  ];
+  const observation = await observeCandidateRuntimeIdentity({
+    identity: candidate,
+    identitySha256: hash("9"),
+    requiredServiceBindings,
+    listContainers: async () => ["fixture-caddy"],
+    inspectContainer: async () => inspect,
+    now: () => "2026-07-20T00:00:00.000Z",
+  });
+  const validated = validateCandidateRuntimeObservation(observation, candidate, {
+    identitySha256: hash("9"),
+    requiredServiceBindings,
+  });
+  assert.deepEqual(validated.services[0].required_bindings, [
+    {
+      container_port: "2747/tcp",
+      host_address: "127.0.0.1",
+      host_port: 32747,
+    },
+  ]);
+  const substituted = structuredClone(observation);
+  substituted.services[0].required_bindings[0].host_port += 1;
+  assert.throws(
+    () => validateCandidateRuntimeObservation(substituted, candidate, { identitySha256: hash("9"), requiredServiceBindings }),
+    /required service bindings do not match/u,
+  );
+
+  const publicBinding = structuredClone(inspect);
+  publicBinding.NetworkSettings.Ports["2747/tcp"][0].HostIp = "0.0.0.0";
+  await assert.rejects(
+    observeCandidateRuntimeIdentity({
+      identity: candidate,
+      identitySha256: hash("9"),
+      requiredServiceBindings,
+      listContainers: async () => ["fixture-caddy"],
+      inspectContainer: async () => publicBinding,
+    }),
+    /required service publication does not exactly bind/u,
+  );
+});
+
 test("effective runtime identity ignores Compose's derived hash and lifecycle labels", () => {
   const { inspect } = preparedFixture();
   inspect.Config.Labels["com.docker.compose.config-hash"] = hash("2");
@@ -150,7 +210,7 @@ test("effective runtime identity ignores Compose's derived hash and lifecycle la
   assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
 });
 
-test("effective runtime identity preserves order-sensitive Docker arrays", () => {
+test("effective runtime identity normalizes Docker-reordered environment and inspect mounts", () => {
   const cases = [
     [
       "environment",
@@ -159,6 +219,33 @@ test("effective runtime identity preserves order-sensitive Docker arrays", () =>
         return () => inspect.Config.Env.reverse();
       },
     ],
+    [
+      "inspect mounts",
+      (inspect) => {
+        inspect.Mounts = [
+          { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
+          { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
+        ];
+        return () => inspect.Mounts.reverse();
+      },
+    ],
+  ];
+
+  for (const [name, prepare] of cases) {
+    const { inspect } = preparedFixture();
+    const reverse = prepare(inspect);
+    const before = effectiveRuntimeServicesSha256([inspect]);
+    reverse();
+    assert.equal(
+      effectiveRuntimeServicesSha256([inspect]),
+      before,
+      `${name} order is not a runtime configuration change`,
+    );
+  }
+});
+
+test("effective runtime identity preserves order-sensitive Docker arrays", () => {
+  const cases = [
     [
       "binds",
       (inspect) => {
@@ -174,16 +261,6 @@ test("effective runtime identity preserves order-sensitive Docker arrays", () =>
           { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
         ];
         return () => inspect.HostConfig.Mounts.reverse();
-      },
-    ],
-    [
-      "inspect mounts",
-      (inspect) => {
-        inspect.Mounts = [
-          { Type: "volume", Name: "volume-b", Source: "/b", Destination: "/b" },
-          { Type: "volume", Name: "volume-a", Source: "/a", Destination: "/a" },
-        ];
-        return () => inspect.Mounts.reverse();
       },
     ],
     [

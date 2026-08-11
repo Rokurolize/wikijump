@@ -8,8 +8,7 @@ process.send({ type: "ready" });
 
 function reply(message) {
   process.send(message, (error) => {
-    if (error) process.exitCode = 1;
-    process.disconnect();
+    if (error) process.exit(1);
   });
 }
 

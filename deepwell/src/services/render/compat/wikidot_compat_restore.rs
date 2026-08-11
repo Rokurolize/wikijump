@@ -20,9 +20,7 @@
 
 use super::super::service::{
     RenderService, WIKIDOT_COMPAT_STYLE_BLOCK_REGEX, WIKIDOT_EMAIL_SPAN_REGEX,
-    WIKIDOT_EMBED_PARAGRAPH_REGEX, WIKIDOT_RENDERED_MAILFORM_DEFAULT_REGEX,
-    WIKIDOT_RENDERED_MAILFORM_FIELD_REGEX, WIKIDOT_RENDERED_MAILFORM_MAX_LENGTH_REGEX,
-    WIKIDOT_RENDERED_MAILFORM_REGEX, WIKIDOT_TABVIEW_INIT_SCRIPT,
+    WIKIDOT_EMBED_PARAGRAPH_REGEX, WIKIDOT_TABVIEW_INIT_SCRIPT,
     WIKIDOT_TABVIEW_PANEL_ID_REGEX, WIKIDOT_TABVIEW_SCRIPT, WIKIDOT_TABVIEW_SCRIPT_URL,
     WIKIJUMP_CODE_BLOCK_OPEN_REGEX, WIKIJUMP_CODE_BLOCK_PANEL_REGEX,
     WIKIJUMP_FOOTNOTE_DATA_ID_REGEX, WIKIJUMP_FOOTNOTE_MARKER_REGEX,
@@ -31,7 +29,7 @@ use super::super::service::{
     WIKIJUMP_TAB_BUTTON_LIST_REGEX, WIKIJUMP_TAB_BUTTON_REGEX,
     WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX, WIKIJUMP_TAB_PANEL_REGEX,
     decode_wikidot_email_html_entities, escape_list_pages_html_attr,
-    escape_list_pages_html_text, rendered_wikidot_mailform_attribute,
+    escape_list_pages_html_text,
 };
 use super::footnote_dom::{
     enclose_list_pages_footnote_footer, restore_wikidot_footnote_list_dom,
@@ -114,9 +112,6 @@ impl RenderService {
                 &html,
                 wikidot_tabview_ids,
             );
-        }
-        if WIKIDOT_RENDERED_MAILFORM_REGEX.is_match(&html) {
-            html = Self::restore_wikidot_mailform_compatibility(&html);
         }
         if html.contains("[[div") || html.contains("[[/div") {
             html = Self::restore_residual_wikidot_div_paragraph_markers(&html);
@@ -354,50 +349,6 @@ OZONE.dom.onDomReady(function(){{
             })
             .into_owned();
         restore_wikidot_footnote_list_dom(&html)
-    }
-
-    pub(in crate::services::render) fn restore_wikidot_mailform_compatibility(
-        html: &str,
-    ) -> String {
-        WIKIDOT_RENDERED_MAILFORM_REGEX
-            .replace_all(html, |captures: &regex::Captures<'_>| {
-                let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-                let body = captures.name("body").map_or("", |mtch| mtch.as_str());
-                let name = WIKIDOT_RENDERED_MAILFORM_FIELD_REGEX
-                    .captures(body)
-                    .and_then(|captures| captures.name("name"))
-                    .map_or("field", |mtch| mtch.as_str().trim());
-                let default = WIKIDOT_RENDERED_MAILFORM_DEFAULT_REGEX
-                    .captures(body)
-                    .and_then(|captures| captures.name("default"))
-                    .map_or("", |mtch| mtch.as_str().trim());
-                let max_length = WIKIDOT_RENDERED_MAILFORM_MAX_LENGTH_REGEX
-                    .captures(body)
-                    .and_then(|captures| captures.name("max"))
-                    .map_or("256", |mtch| mtch.as_str().trim());
-                let button =
-                    rendered_wikidot_mailform_attribute(head, "button").unwrap_or_default();
-
-                format!(
-                    concat!(
-                        r#"<div class="mailform-box">"#,
-                        r#"<form class="form" action="javascript:;">"#,
-                        r#"<table>"#,
-                        r#"<tr><td>"#,
-                        r#"<input class="text" type="text" name="{name}" value="{default}" maxlength="{max_length}" size="30">"#,
-                        r#"</td><td><div class="field-error-message"></div></td></tr>"#,
-                        r#"<tr><td colspan="2"><div class="buttons"><input type="submit" value="{button}"></div></td></tr>"#,
-                        r#"</table>"#,
-                        r#"</form>"#,
-                        r#"</div>"#,
-                    ),
-                    name = name,
-                    default = default,
-                    max_length = max_length,
-                    button = button,
-                )
-            })
-            .into_owned()
     }
 
     pub(in crate::services::render) fn restore_wikidot_inline_math_compatibility(

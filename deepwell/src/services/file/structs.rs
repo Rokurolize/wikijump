@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use crate::services::blob::ContentTypeDescriptor;
 use crate::services::file_revision::{
     CreateFileRevisionOutput, CreateFirstFileRevisionOutput,
 };
@@ -102,6 +103,14 @@ pub struct GetPageFiles {
     pub site_id: i64,
     pub page_id: i64,
     pub deleted: Maybe<bool>,
+}
+
+#[derive(Debug, Clone)]
+pub struct VisibleFileRow {
+    pub file_id: i64,
+    pub name: String,
+    pub size: i64,
+    pub content_type: ContentTypeDescriptor,
 }
 
 #[derive(Deserialize, Debug, Clone)]

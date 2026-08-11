@@ -68,6 +68,8 @@ pub struct GetForumGroups {
     pub site_id: i64,
     #[serde(default)]
     pub include_deleted: bool,
+    #[serde(default)]
+    pub visible_groups_only: bool,
 }
 
 #[derive(Deserialize, Debug, Copy, Clone)]
@@ -144,6 +146,8 @@ pub struct GetForumStructure {
     pub site_id: i64,
     #[serde(default)]
     pub include_deleted: bool,
+    #[serde(default)]
+    pub visible_groups_only: bool,
 }
 
 #[inline]

@@ -271,6 +271,7 @@ impl ForumService {
         GetForumGroups {
             site_id,
             include_deleted,
+            visible_groups_only,
         }: GetForumGroups,
     ) -> Result<Vec<ForumGroupModel>> {
         let txn = ctx.transaction();
@@ -281,7 +282,11 @@ impl ForumService {
                     .add_option(Self::deleted_condition(
                         include_deleted,
                         forum_group::Column::DeletedAt,
-                    )),
+                    ))
+                    .add_option(
+                        visible_groups_only
+                            .then(|| forum_group::Column::Visible.eq(true)),
+                    ),
             )
             .order_by_asc(forum_group::Column::SortIndex)
             .all(txn)
@@ -666,6 +671,7 @@ impl ForumService {
         GetForumStructure {
             site_id,
             include_deleted,
+            visible_groups_only,
         }: GetForumStructure,
     ) -> Result<Vec<ForumGroupStructure>> {
         let make_error = || {
@@ -675,26 +681,37 @@ impl ForumService {
             )
         };
 
-        let (groups_result, categories_result) = join!(
-            Self::list_groups(
-                ctx,
-                GetForumGroups {
-                    site_id,
-                    include_deleted,
-                },
-            ),
-            Self::list_categories(
-                ctx,
-                GetForumCategories {
-                    site_id,
-                    forum_group_id: None,
-                    include_deleted,
-                },
-            ),
-        );
-
-        let (groups, categories) =
-            raise_multiple!(groups_result, categories_result; make_error);
+        let groups = Self::list_groups(
+            ctx,
+            GetForumGroups {
+                site_id,
+                include_deleted,
+                visible_groups_only,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+        if groups.is_empty() {
+            return Ok(Vec::new());
+        }
+        let group_ids = groups
+            .iter()
+            .map(|group| group.forum_group_id)
+            .collect::<Vec<_>>();
+        let categories = ForumCategory::find()
+            .filter(
+                Condition::all()
+                    .add(forum_category::Column::SiteId.eq(site_id))
+                    .add(forum_category::Column::ForumGroupId.is_in(group_ids))
+                    .add_option(Self::deleted_condition(
+                        include_deleted,
+                        forum_category::Column::DeletedAt,
+                    )),
+            )
+            .order_by_asc(forum_category::Column::SortIndex)
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
         let mut grouped_categories: BTreeMap<i64, Vec<ForumCategoryModel>> =
             BTreeMap::new();
 

@@ -40,9 +40,13 @@ use std::sync::LazyLock;
 
 /// The most Backlinks rows one module render will load.
 pub(super) const MAX_BACKLINKS_MODULE_ROWS: usize = 500;
+const BACKLINKS_MODULE_QUERY_LIMIT: usize = MAX_BACKLINKS_MODULE_ROWS + 1;
 
 pub(super) static BACKLINKS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+Backlinks(?P<head>(?:\s+[^\]]*)?)\]\]").unwrap()
+    Regex::new(
+        r"(?im)^(?P<module>\[\[module[\t ]+Backlinks(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\])[\t ]*\r?$",
+    )
+    .unwrap()
 });
 
 #[derive(Debug, FromQueryResult)]
@@ -58,9 +62,7 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
         return "\n<div class=\"backlinks-module-box\">\n</div>\n".to_owned();
     }
 
-    let mut output = String::from(
-        "\n<div class=\"backlinks-module-box\" data-wikijump-compat-backlinks=\"1\"><ul>",
-    );
+    let mut output = String::from("\n<div class=\"backlinks-module-box\"><ul>");
 
     for page in pages {
         output.push_str(r#"<li><a href="/"#);
@@ -72,6 +74,10 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
 
     output.push_str("</ul></div>\n");
     output
+}
+
+fn backlinks_scan_exceeded(row_count: usize) -> bool {
+    row_count > MAX_BACKLINKS_MODULE_ROWS
 }
 
 impl RenderService {
@@ -98,17 +104,25 @@ impl RenderService {
 
         for captures in BACKLINKS_MODULE_REGEX.captures_iter(&wikitext) {
             let mtch = captures.get(0).unwrap();
+            let module = captures
+                .name("module")
+                .expect("a Backlinks capture always has a module invocation");
             expanded.push_str(&wikitext[cursor..mtch.start()]);
 
-            if Self::is_inside_wikidot_literal_region(&wikitext, mtch.start()) {
+            if Self::is_inside_wikidot_literal_region(&wikitext, module.start()) {
                 expanded.push_str(mtch.as_str());
                 cursor = mtch.end();
                 continue;
             }
 
-            let pages =
+            let Some(pages) =
                 Self::load_backlinks_module_pages(ctx, current_site_id, current_page_id)
-                    .await?;
+                    .await?
+            else {
+                expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            };
             expanded.push_str(
                 &compat_html.push_block_html(render_backlinks_module_box(&pages)),
             );
@@ -123,7 +137,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         current_page_id: i64,
-    ) -> Result<Vec<BacklinksModulePage>> {
+    ) -> Result<Option<Vec<BacklinksModulePage>>> {
         let make_error = || {
             Error::new(
                 format!(
@@ -146,7 +160,7 @@ impl RenderService {
                    AND p.site_id = {current_site_id} \
                    AND p.deleted_at IS NULL \
                  ORDER BY lower(pr.title), p.slug \
-                 LIMIT {MAX_BACKLINKS_MODULE_ROWS}",
+                 LIMIT {BACKLINKS_MODULE_QUERY_LIMIT}",
             ),
         );
 
@@ -154,6 +168,9 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if backlinks_scan_exceeded(rows.len()) {
+            return Ok(None);
+        }
 
         let mut viewable = Vec::with_capacity(rows.len());
         for row in rows {
@@ -178,19 +195,24 @@ impl RenderService {
             }
         }
 
-        Ok(viewable)
+        Ok(Some(viewable))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{BACKLINKS_MODULE_REGEX, render_backlinks_module_box};
+    use super::{
+        BACKLINKS_MODULE_REGEX, MAX_BACKLINKS_MODULE_ROWS, backlinks_scan_exceeded,
+        render_backlinks_module_box,
+    };
 
     #[test]
     fn backlinks_name_must_end_before_arguments() {
         assert!(BACKLINKS_MODULE_REGEX.is_match("[[module Backlinks]]"));
         assert!(BACKLINKS_MODULE_REGEX.is_match(r#"[[module backlinks foo="bar"]]"#));
         assert!(!BACKLINKS_MODULE_REGEX.is_match("[[module BacklinksExtra]]"));
+        assert!(!BACKLINKS_MODULE_REGEX.is_match("start-[[module Backlinks]]-middle"));
+        assert!(!BACKLINKS_MODULE_REGEX.is_match(" [[module Backlinks]]"));
     }
 
     #[test]
@@ -199,5 +221,11 @@ mod tests {
             render_backlinks_module_box(&[]),
             "\n<div class=\"backlinks-module-box\">\n</div>\n",
         );
+    }
+
+    #[test]
+    fn backlinks_requires_a_complete_bounded_scan_before_acl_filtering() {
+        assert!(!backlinks_scan_exceeded(MAX_BACKLINKS_MODULE_ROWS));
+        assert!(backlinks_scan_exceeded(MAX_BACKLINKS_MODULE_ROWS + 1));
     }
 }

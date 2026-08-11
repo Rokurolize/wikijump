@@ -1,0 +1,99 @@
+{
+  "schema": "wikidot.live.data-form.output-css-hostile-theme.v1",
+  "status": "blocked",
+  "observed_at": "2026-08-10T09:25:20.119664+00:00",
+  "site": "sandbox-for-codex",
+  "surface_ids": [
+    "data-forms-output-style",
+    "data-forms-css-styling"
+  ],
+  "actor_labels": {
+    "mutation": "account-a",
+    "saved_page_read": "anonymous"
+  },
+  "credential_material": "none",
+  "public_interfaces": [
+    "edit/PageEditModule",
+    "WikiPageAction savePage",
+    "wikidot.py public page source read",
+    "anonymous saved-page HTTP GET",
+    "wikidot.py public page deletion and absence readback"
+  ],
+  "hostile_css": {
+    "source": ".normal { color: green; }\n.critical { color: red; font-weight: bold; }\n.form-table { border-collapse: separate; }\n.form-row { background: transparent; }\n.form-label { font-style: normal; }\n.form-value { letter-spacing: normal; }\n.field-priority { text-decoration: none; }\ninput[type=\"text\"] { width: 100%; }\nspan { outline: 0; }\ndiv { outline: 0; }",
+    "sha256": "a77c139837f3e59d93a3f6fa1454a288a0b6f0f41a837e62902742d0be20f921"
+  },
+  "fixtures": [],
+  "fixture_attempts": [
+    {
+      "fixture_id": "output-style",
+      "template": "fw18-output-style-1786353897-2243695-c4f5:_template",
+      "target": "fw18-output-style-1786353897-2243695-c4f5:target",
+      "setup_progress": {
+        "template_published": true,
+        "page_edit_module_requested": true,
+        "data_form_table_observed": false,
+        "invalid_create_attempted": false,
+        "valid_create_attempted": false,
+        "target_page_created": false
+      },
+      "terminal_result": "blocked-before-data-form-submission"
+    },
+    {
+      "fixture_id": "css-structure",
+      "setup_progress": {
+        "template_published": false,
+        "page_edit_module_requested": false,
+        "data_form_table_observed": false,
+        "invalid_create_attempted": false,
+        "valid_create_attempted": false,
+        "target_page_created": false
+      },
+      "terminal_result": "not-started-after-first-fixture-blocker"
+    }
+  ],
+  "promoted_rules": [],
+  "server_dom_claims": [],
+  "browser_computed_claims": [],
+  "attempted_public_routes": [
+    "wikidot.py WikiPageAction publication of the run-owned cleanup preflight and output-style template",
+    "edit/PageEditModule for the run-owned output-style target",
+    "wikidot.py public page deletion and authenticated absence readback for all run-owned names"
+  ],
+  "cleanup_preflight": {
+    "fullname": "fw18-cleanup-preflight-1786353897-2243695-c4f5",
+    "created": true,
+    "deleted": true,
+    "absence_verified": true
+  },
+  "cleanup": {
+    "verified": true,
+    "remaining_pages": [],
+    "recovery_readback": [
+      {
+        "fullname": "fw18-cleanup-preflight-1786353897-2243695-c4f5",
+        "found_during_recovery": false,
+        "deleted_during_recovery": false,
+        "absence_verified": true
+      },
+      {
+        "fullname": "fw18-output-style-1786353897-2243695-c4f5:_template",
+        "found_during_recovery": false,
+        "deleted_during_recovery": false,
+        "absence_verified": true
+      },
+      {
+        "fullname": "fw18-output-style-1786353897-2243695-c4f5:target",
+        "found_during_recovery": false,
+        "deleted_during_recovery": false,
+        "absence_verified": true
+      }
+    ]
+  },
+  "blocked_reason": "The first run-owned output-style template published successfully, but edit/PageEditModule did not expose table.form-table for its target; the lane stopped before invalid or valid data-form submission.",
+  "missing_authority": "A verified nonbrowser PageEditModule shape that exposes the documented data-form create table for the hostile-theme template.",
+  "evidence_identity": {
+    "cases_sha256": "6591d138e3f86ea373aa9b775cad64036ed9dac0e7b798017204c989bdf0b0c1",
+    "capture_script_sha256": "49a49473a42ffee77ff4285ee9afb0148020191a074b9af7c8a492d683907b10"
+  }
+}

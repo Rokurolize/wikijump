@@ -15,10 +15,11 @@ use super::compat::text_fragments::CompatTextFragments;
 use super::diagnostics::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, StageGuard,
 };
+use super::file_modules::expand_file_modules;
 use super::list_pages::{CountPagesExpansionOptions, ListPagesRuntimeDisplay};
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{
-    wikidot_module_argument, wikidot_module_arguments,
+    WikidotModuleArgumentValueKind, wikidot_module_argument, wikidot_module_arguments,
     wikidot_module_arguments_ignoring_bare_flags,
 };
 use super::native_list_context::collect_unproven_scope_ranges;
@@ -27,18 +28,23 @@ use super::new_page_module::{
     new_page_template_names, render_new_page_module,
 };
 use super::percent_encoding::percent_encode_path_segment;
+use super::rate_actions::RateActionRegistry;
 use super::rate_module::{
     render_read_only_rate_module, render_read_only_star_rate_module,
 };
 use super::runtime_page_queries::find_viewable_list_pages_rows_with_batch_floor;
+use super::search_feed::expand_search_feed_modules;
 use super::service::{
     MAX_LISTPAGES_RENDER_SCAN_ROWS, PAGECALENDAR_MODULE_REGEX, RATE_MODULE_REGEX,
     RATEDPAGES_MODULE_REGEX, REGISTRY_MODULE_REGEX, RenderService, TAGCLOUD_MODULE_REGEX,
     escape_list_pages_html_attr, escape_list_pages_html_text, render_clone_module,
-    render_members_module_placeholder,
 };
+use super::site_changes::expand_site_changes_modules;
+use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
+use super::user_directory::render_members_module;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
+use crate::services::membership::{JoinModuleState, MembershipPolicy, MembershipService};
 use crate::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DateSelector,
     FoundPageFields, IncludedCategories, OrderBySelector, OrderProperty,
@@ -73,6 +79,7 @@ const LISTUSERS_UNSUPPORTED_USERS_ERROR: &str =
 const LISTDRAFTS_EMPTY_HTML: &str = r#"<div class="list-drafts-box">
             </div>"#;
 const SIMPLETODO_MISSING_ID_ERROR: &str = "The SimpleTodo module must have an id.";
+const REDIRECT_MISSING_DESTINATION_HTML: &str = r#"<div class="error-block">No redirection destination specified. Please use the destination="page-name" or destination="url" attribute.</div>"#;
 const SENDINVITATIONS_DISABLED_ERROR_HTML: &str = r#"<div class="error-block">Inviting users has been disabled due to severe abuse. Admins can still send email invitations via <a href="/_admin">site admin dashboard</a>.</div>"#;
 const ANONYMOUS_NOTIFICATIONS_UNSUBSCRIBE_INVALID_TOKEN_HTML: &str =
     r#"<div class="error-block">Invalid indentification token.</div>"#;
@@ -142,10 +149,32 @@ const MEMBERSHIP_BY_PASSWORD_MEMBER_HTML: &str = concat!(
     r#"<div class="error-block">"#,
     "\n\t\t\tYou can not apply.<br/>\n\t\t\t\t\t\t\t\t\t\tIt seems you already are a member of this site.\t\t\t\t\t\t\t\t</div>\n\t\n</div>",
 );
+const MEMBERSHIP_BY_PASSWORD_DISABLED_HTML: &str = concat!(
+    r#"<div id="membership-by-password-box">"#,
+    "\n\t\t\t",
+    r#"<div class="error-block">"#,
+    "\n\t\t\tYou can not apply.<br/>\n\t\t\tMembership via password is not enabled for this site.\n\t\t</div>\n\t\n</div>",
+);
+const MEMBERSHIP_APPLY_ANONYMOUS_HTML: &str = concat!(
+    r#"<div id="membership-apply-box">"#,
+    "\n\t<p>You need to have a Wikidot.com account and be signed to apply for membership.</p>",
+    r#"<table style="margin: 1em auto"><tr>"#,
+    r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
+    r#"<a href="javascript:;" onclick="WIKIDOT.page.listeners.loginClick(event)">Sign in</a>"#,
+    "</div><p>if you already have a Wikidot.com account</p></td>",
+    r#"<td style="padding: 1em; font-size: 140%">or</td>"#,
+    r#"<td style="text-align: center; padding: 1em"><div style="font-size: 180%; font-weight: bold;">"#,
+    r#"<a href="javascript:;" onclick="WIKIREQUEST.createAccountSkipCongrats=true; WIKIDOT.page.listeners.createAccount(event)">Create a new account</a>"#,
+    "</div><p>it is worth it and is free</p></td></tr></table>\n</div>",
+);
 
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
         .expect("ListUsers module expression is valid")
+});
+static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("Members module expression is valid")
 });
 static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListDrafts(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
@@ -171,6 +200,10 @@ static MEMBERSHIPBYPASSWORD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .expect("MembershipByPassword module expression is valid")
 });
+static MEMBERSHIPAPPLY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+MembershipApply\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("MembershipApply module expression is valid")
+});
 static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Ad\b(?:[^\]"]+|"[^"]*")*\]\]"#)
         .expect("Ad module expression is valid")
@@ -178,10 +211,6 @@ static AD_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 static ADSENSEUNIT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+AdSenseUnit\b(?:[^\]"]+|"[^"]*")*\]\]"#)
         .expect("AdSenseUnit module expression is valid")
-});
-static FEATUREDSITE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)\[\[module\s+FeaturedSite\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
-        .expect("FeaturedSite module expression is valid")
 });
 static RUNTIME_MODULE_RESIDUAL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -412,10 +441,10 @@ async fn resolve_list_users_viewer(
 }
 
 fn render_join_module(head: &str) -> String {
-    let button = wikidot_module_argument(head, "button")
+    let button = wikidot_join_argument(head, "button")
         .filter(|value| !value.trim().is_empty())
         .unwrap_or("Join");
-    let class = wikidot_module_argument(head, "class")
+    let class = wikidot_join_argument(head, "class")
         .filter(|value| !value.trim().is_empty())
         .unwrap_or("join-box");
     format!(
@@ -429,75 +458,32 @@ fn render_join_module(head: &str) -> String {
     )
 }
 
-fn render_featured_site_module(
-    site_id: i64,
-    slug: &str,
-    name: &str,
-    tagline: &str,
-) -> String {
-    let slug = escape_list_pages_html_attr(slug);
-    let name_attr = escape_list_pages_html_attr(name);
-    let name_text = escape_list_pages_html_text(name);
-    let tagline = (!tagline.trim().is_empty()).then(|| {
-        format!(
-            concat!(
-                "\n\t\t \t\t\t<div class=\"tagline\">\n",
-                "\t\t \t\t\t\t{}\n",
-                "\t\t \t\t\t</div>",
-            ),
-            escape_list_pages_html_text(tagline),
-        )
-    });
-    format!(
-        concat!(
-            "<div class=\"featured-site-box\">\n",
-            "\t<div class=\"container\">\n",
-            "\t\t<a  href=\"http://{slug}.wikidot.com\"><img id=\"featured-site-image-{site_id}\" ",
-            "src=\"http://thumbnails.wdfiles.com/thumbnail/site/{slug}.wikidot.com/160.jpg\" ",
-            "alt=\"{name_attr} wiki\"/></a>\n",
-            "\t</div>\n",
-            "\t<div class=\"hovertip-container\" id=\"special9387424\" style=\"display: none\">\n",
-            "\t\t<div id=\"featured-site-image-{site_id}-hovertip1\" class=\"featured-site-hovertip\">\n",
-            "\t\t\t<img src=\"http://thumbnails.wdfiles.com/thumbnail/site/{slug}.wikidot.com/160.jpg\" ",
-            "alt=\"{name_attr} wiki\" class=\"thumbnail\"/>\n",
-            "\t\t\t<div class=\"description\">\n",
-            "\t\t\t \t<div class=\"name\">\n",
-            "\t\t\t \t\t{name_text}\n",
-            "\t\t \t\t</div>{tagline}\n",
-            "\t\t \t\t<hr/>\n",
-            "\t\t \t\t<div class=\"stats\">\n",
-            "\t\t \t\t\tContributions last month: 0\n",
-            "\t\t \t\t\t<br/>\n",
-            "\t\t \t\t\tContributors: 1\n",
-            "\t\t \t\t</div>\n",
-            "\t\t\t</div>\n",
-            "\t\t</div>\n",
-            "\t</div>\n",
-            "</div>\n",
-            "<script type=\"text/javascript\">\n",
-            "\t\n",
-            "//<![CDATA[\n",
-            "\tOZONE.dom.onDomReady(function(){{\n",
-            "\t\tvar els = YAHOO.util.Dom.getElementsByClassName('featured-site-hovertip', 'div', 'special9387424');\n",
-            "\t\tfor(var i=0; i<els.length; i++){{\n",
-            "\t\t\tels[i].id = els[i].id.replace(/1$/, '');\n",
-            "\t\t}}\n",
-            "\t\tvar els = YAHOO.util.Dom.getElementsByClassName('thumbnail', 'img', 'special9387424');\n",
-            "\t\tfor(var i=0; i<els.length; i++){{\n",
-            "\t\t\tels[i].alt = '';\n",
-            "\t\t}}\n",
-            "\t\tOZONE.dialog.hovertip.dominit(\"special9387424\", {{delay: 100, noCursorHelp: true}});\n",
-            "\t}}, \"dummy-ondomready-block\");\n",
-            "//]]>\n",
-            "\t\n",
-            "</script>",
-        ),
-        slug = slug,
-        site_id = site_id,
-        name_attr = name_attr,
-        name_text = name_text,
-        tagline = tagline.unwrap_or_default(),
-    )
+fn wikidot_join_argument<'a>(head: &'a str, name: &str) -> Option<&'a str> {
+    wikidot_module_arguments(head)?
+        .into_iter()
+        .rev()
+        .find(|argument| {
+            argument.key.eq_ignore_ascii_case(name)
+                && argument.op == "="
+                && argument.value_kind == WikidotModuleArgumentValueKind::DoubleQuoted
+        })
+        .map(|argument| argument.value)
+}
+
+pub(crate) fn join_module_action_count(wikitext: &str) -> usize {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    REGISTRY_MODULE_REGEX
+        .captures_iter(wikitext)
+        .filter(|captures| {
+            let matched = captures
+                .get(0)
+                .expect("a registry module capture always has a complete match");
+            !literal_regions.contains(matched.start())
+                && captures
+                    .name("name")
+                    .is_some_and(|name| name.as_str().eq_ignore_ascii_case("Join"))
+        })
+        .count()
 }
 
 fn render_simpletodo_module(head: &str, index: usize) -> String {
@@ -1399,7 +1385,11 @@ impl RenderService {
                 .expect("a residual module capture always has a name")
                 .as_str();
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-            let replacement = if is_literal_runtime_module_residual(name) {
+            let replacement = if name.eq_ignore_ascii_case("Redirect")
+                && head.trim().is_empty()
+            {
+                compat_html.push_block_html(REDIRECT_MISSING_DESTINATION_HTML.to_owned())
+            } else if is_literal_runtime_module_residual(name) {
                 compat_text.push_escaped_html_text(matched.as_str())
             } else if head.trim().is_empty() {
                 compat_html.push_block_html(render_unavailable_page_module(name))
@@ -1425,9 +1415,10 @@ impl RenderService {
     ) -> String {
         // NewPage is expanded by the runtime-backed pass above. Keeping it
         // out of this context-free fallback is what lets that pass preserve
-        // over-budget or otherwise unsupported modules literally.
+        // over-budget or otherwise unsupported modules literally. Members
+        // has its own site-scoped directory pass and is not in this registry.
         Self::expand_registry_modules_matching(wikitext, settings, compat_html, |name| {
-            !name.eq_ignore_ascii_case("NewPage")
+            !name.eq_ignore_ascii_case("NewPage") && !name.eq_ignore_ascii_case("Join")
         })
     }
 
@@ -1462,12 +1453,7 @@ impl RenderService {
             }
             output.push_str(&wikitext[cursor..matched.start()]);
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-            let rendered = if name.eq_ignore_ascii_case("Members") {
-                let group = wikidot_module_argument(head, "group")
-                    .unwrap_or("members")
-                    .trim();
-                render_members_module_placeholder(group)
-            } else if name.eq_ignore_ascii_case("NewPage") {
+            let rendered = if name.eq_ignore_ascii_case("NewPage") {
                 render_new_page_module(head, NewPageTemplateRendering::None)
             } else if name.eq_ignore_ascii_case("Clone") {
                 render_clone_module(head)
@@ -1488,21 +1474,6 @@ impl RenderService {
         }
         output.push_str(&wikitext[cursor..]);
         output
-    }
-
-    #[cfg(test)]
-    pub(super) fn expand_members_modules(
-        wikitext: String,
-        settings: &WikitextSettings,
-    ) -> String {
-        let mut fragments = CompatHtmlFragments::new(&wikitext);
-        let protected = Self::expand_registry_modules_matching(
-            wikitext,
-            settings,
-            &mut fragments,
-            |name| name.eq_ignore_ascii_case("Members"),
-        );
-        fragments.restore(&protected)
     }
 
     #[cfg(test)]
@@ -1593,6 +1564,136 @@ impl RenderService {
             |name| name.eq_ignore_ascii_case("Join"),
         );
         fragments.restore(&protected)
+    }
+
+    async fn expand_join_modules_for_view(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax {
+            return Ok(wikitext);
+        }
+        let Some(site_id) = current_site_id else {
+            return Ok(wikitext);
+        };
+        let actor_state =
+            MembershipService::actor_state(ctx, site_id, viewer_user_id).await?;
+        let show =
+            MembershipService::join_module_state(actor_state) == JoinModuleState::Show;
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in REGISTRY_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a registry module capture always has a complete match");
+            let is_join = captures
+                .name("name")
+                .is_some_and(|name| name.as_str().eq_ignore_ascii_case("Join"));
+            if !is_join || literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            if show {
+                let head = captures.name("head").map_or("", |head| head.as_str());
+                output.push_str(&compat_html.push_block_html(render_join_module(head)));
+            }
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
+    }
+
+    fn expand_membership_apply_modules(
+        wikitext: String,
+        settings: &WikitextSettings,
+        viewer_user_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || viewer_user_id.is_some()
+            || !MEMBERSHIPAPPLY_MODULE_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in MEMBERSHIPAPPLY_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a MembershipApply capture always has a complete match");
+            if literal_regions.contains(matched.start())
+                || captures
+                    .name("head")
+                    .is_some_and(|head| !head.as_str().trim().is_empty())
+            {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(
+                &compat_html.push_block_html(MEMBERSHIP_APPLY_ANONYMOUS_HTML.to_owned()),
+            );
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
+    async fn expand_members_modules_with_directory(
+        ctx: &ServiceContext<'_>,
+        wikitext: String,
+        settings: &WikitextSettings,
+        current_site_id: Option<i64>,
+        compat_html: &mut CompatHtmlFragments,
+    ) -> Result<String> {
+        if !settings.enable_page_syntax || !MEMBERS_MODULE_REGEX.is_match(&wikitext) {
+            return Ok(wikitext);
+        }
+        let Some(site_id) = current_site_id else {
+            return Ok(wikitext);
+        };
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        let mut module_index = 0;
+        for captures in MEMBERS_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("a Members capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            module_index += 1;
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let Some(rendered) =
+                render_members_module(ctx, site_id, head, module_index).await?
+            else {
+                continue;
+            };
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(&compat_html.push_block_html(rendered));
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        Ok(output)
     }
 
     async fn expand_list_users_modules(
@@ -1784,14 +1885,17 @@ impl RenderService {
             if literal_regions.contains(matched.start()) {
                 continue;
             }
-            let head = captures.name("head").map_or("", |head| head.as_str());
-            if !head.trim().is_empty() {
-                continue;
-            }
             let name = captures
                 .name("name")
                 .expect("a static account module capture always has a name")
                 .as_str();
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            let opaque_token_surface = name
+                .eq_ignore_ascii_case("AnonymousNotificationsUnsubscribe")
+                || name.eq_ignore_ascii_case("MembershipEmailInvitation");
+            if !head.trim().is_empty() && !opaque_token_surface {
+                continue;
+            }
             output.push_str(&wikitext[cursor..matched.start()]);
             let rendered = Self::render_static_account_module(name);
             if rendered.is_empty() && name.eq_ignore_ascii_case("Watchers") {
@@ -1820,11 +1924,15 @@ impl RenderService {
         current_site_id: Option<i64>,
         viewer_user_id: Option<i64>,
     ) -> Result<Option<&'static str>> {
-        let Some(viewer_user_id) = viewer_user_id else {
-            return Ok(Some(MEMBERSHIP_BY_PASSWORD_ANONYMOUS_HTML));
-        };
         let Some(current_site_id) = current_site_id else {
             return Ok(None);
+        };
+        let site = SiteService::get(ctx, Reference::Id(current_site_id)).await?;
+        if MembershipService::policy(&site) == MembershipPolicy::Closed {
+            return Ok(Some(MEMBERSHIP_BY_PASSWORD_DISABLED_HTML));
+        }
+        let Some(viewer_user_id) = viewer_user_id else {
+            return Ok(Some(MEMBERSHIP_BY_PASSWORD_ANONYMOUS_HTML));
         };
         let membership = RelationService::get_optional_site_member(
             ctx,
@@ -1928,53 +2036,6 @@ impl RenderService {
         output
     }
 
-    async fn expand_featured_site_modules(
-        ctx: &ServiceContext<'_>,
-        wikitext: String,
-        settings: &WikitextSettings,
-        current_site_id: Option<i64>,
-        compat_html: &mut CompatHtmlFragments,
-    ) -> Result<String> {
-        if !settings.enable_page_syntax || !FEATUREDSITE_MODULE_REGEX.is_match(&wikitext)
-        {
-            return Ok(wikitext);
-        }
-        let Some(current_site_id) = current_site_id else {
-            return Ok(wikitext);
-        };
-        let site = SiteService::get(ctx, Reference::Id(current_site_id)).await?;
-        let rendered = render_featured_site_module(
-            site.site_id,
-            &site.slug,
-            &site.name,
-            &site.tagline,
-        );
-        let literal_regions =
-            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-        let mut output = String::with_capacity(wikitext.len());
-        let mut cursor = 0;
-        for captures in FEATUREDSITE_MODULE_REGEX.captures_iter(&wikitext) {
-            let matched = captures
-                .get(0)
-                .expect("a FeaturedSite capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
-                continue;
-            }
-            let head = captures.name("head").map_or("", |head| head.as_str());
-            if !head.trim().is_empty() {
-                continue;
-            }
-            output.push_str(&wikitext[cursor..matched.start()]);
-            output.push_str(&compat_html.push_block_html(rendered.clone()));
-            cursor = matched.end();
-        }
-        if cursor == 0 {
-            return Ok(wikitext);
-        }
-        output.push_str(&wikitext[cursor..]);
-        Ok(output)
-    }
-
     pub(super) async fn expand_secondary_runtime_modules(
         ctx: &ServiceContext<'_>,
         mut wikitext: String,
@@ -2004,6 +2065,31 @@ impl RenderService {
             .await
             .or_raise(make_error)?
         };
+        wikitext = Self::expand_join_modules_for_view(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_membership_apply_modules(
+            wikitext,
+            settings,
+            options.viewer_user_id,
+            compat_html,
+        );
+        wikitext = Self::expand_members_modules_with_directory(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_list_users_modules(
             ctx,
             wikitext,
@@ -2014,9 +2100,64 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_list_drafts_modules(wikitext, settings, compat_html);
+        wikitext = expand_site_changes_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_forum_mini_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = Self::expand_forum_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.current_page_id,
+            options.viewer_user_id,
+            options.url,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext = expand_file_modules(
+            ctx,
+            wikitext,
+            page_info,
+            settings,
+            options.current_site_id,
+            options.current_page_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
+        wikitext =
+            expand_search_feed_modules(wikitext, settings, options.url, compat_html);
         wikitext = Self::expand_simpletodo_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_send_invitations_modules(wikitext, settings, compat_html);
         wikitext = Self::expand_static_account_modules(wikitext, settings, compat_html);
+        wikitext = expand_site_utility_modules(
+            ctx,
+            wikitext,
+            settings,
+            options.current_site_id,
+            options.viewer_user_id,
+            compat_html,
+        )
+        .await
+        .or_raise(make_error)?;
         wikitext = Self::expand_membership_by_password_modules(
             ctx,
             wikitext,
@@ -2028,15 +2169,6 @@ impl RenderService {
         .await
         .or_raise(make_error)?;
         wikitext = Self::expand_ad_modules(wikitext, settings, compat_html);
-        wikitext = Self::expand_featured_site_modules(
-            ctx,
-            wikitext,
-            settings,
-            options.current_site_id,
-            compat_html,
-        )
-        .await
-        .or_raise(make_error)?;
         if PAGECALENDAR_MODULE_REGEX.is_match(&wikitext) {
             wikitext = {
                 let _stage =
@@ -2111,7 +2243,10 @@ impl RenderService {
             let matched = captures
                 .get(0)
                 .expect("a RatedPages capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
+            let module = captures
+                .name("module")
+                .expect("a RatedPages capture always has a module invocation");
+            if literal_regions.contains(module.start()) {
                 continue;
             }
             let head = captures.name("head").map_or("", |head| head.as_str());

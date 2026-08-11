@@ -8,6 +8,6 @@ export async function authGetSession(sessionToken: string | undefined): Promise<
   ip_address: string
   user_agent: string
   restricted: boolean
-}> {
+} | null> {
   return client.request("session_get", [sessionToken ?? ""])
 }

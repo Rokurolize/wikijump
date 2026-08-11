@@ -28,12 +28,13 @@ color-backtrace = "0.7"
 cuid2 = "0.1"
 data-encoding = "2"
 dotenvy = "0.15"
+diff = "0.1"
 exn = "0.3"
 femme = "2"
 filemagic = "0.13"
 fluent = "0.17"
 fluent-syntax = "0"
-ftml = { git = "https://github.com/Rokurolize/ftml", rev = "902e72a2ff261b7af42402734b2f8b659e6a294a" }
+ftml = { git = "https://github.com/Rokurolize/ftml", rev = "62ebba4efda1f10e82363c23c925061fbe939e49" }
 futures = { version = "0.3", features = ["async-await"], default-features = false }
 hex = { version = "0.4", features = ["serde"] }
 hostname = "0.4"
@@ -45,6 +46,7 @@ log = "0.4"
 notify = { version = "8", optional = true }
 paste = "1"
 rand = "0.10"
+quick-xml = "0.38"
 redis = { version = "1", features = ["aio", "connection-manager", "tokio-comp", "tokio-rustls-comp"] }
 ref-map = "0.2"
 regex = "1"

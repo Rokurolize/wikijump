@@ -66,6 +66,7 @@ pub mod all {
     pub use super::page::*;
     pub use super::page_attribution::*;
     pub use super::page_lock::*;
+    pub use super::page_meta_tag::*;
     pub use super::page_revision::*;
     pub use super::parent::*;
     pub use super::role::*;
@@ -100,6 +101,7 @@ pub mod misc;
 pub mod page;
 pub mod page_attribution;
 pub mod page_lock;
+pub mod page_meta_tag;
 pub mod page_revision;
 pub mod parent;
 pub mod role;

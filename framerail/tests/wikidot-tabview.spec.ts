@@ -1,13 +1,47 @@
 import { expect, test } from "@playwright/test"
 
+const headers = {
+  "X-Wikijump-Site-Id": "6000005",
+  "X-Wikijump-Site-Slug": "scp-wiki"
+}
+
+test("Wikidot-compatible tabviews are complete at the initial no-script paint", async ({
+  browser
+}) => {
+  const context = await browser.newContext({
+    extraHTTPHeaders: headers,
+    javaScriptEnabled: false
+  })
+  const page = await context.newPage()
+  try {
+    await page.goto(
+      `http://localhost:${process.env.PLAYWRIGHT_APP_PORT ?? "4173"}/wikidot-tabview`,
+      { waitUntil: "domcontentloaded" }
+    )
+
+    const tabview = page.locator("#page-content > .yui-navset")
+    await expect(tabview).toHaveAttribute("id", /^wiki-tabview-[0-9a-f]{32}$/u)
+    await expect(tabview).toHaveClass(/\byui-navset-top\b/u)
+    await expect(tabview.locator(".yui-nav > li").nth(0)).toHaveAttribute(
+      "title",
+      "active"
+    )
+    await expect(tabview.locator(".yui-nav a em")).toHaveText(["First", "Second"])
+    const panels = tabview.locator(".yui-content > div")
+    await expect(panels.nth(0)).toHaveAttribute("id", "wiki-tab-0-0")
+    await expect(panels.nth(1)).toHaveAttribute("id", "wiki-tab-0-1")
+    await expect(panels.nth(0)).toHaveCSS("display", "block")
+    await expect(panels.nth(1)).toHaveCSS("display", "none")
+  } finally {
+    await context.close()
+  }
+})
+
 test("Wikidot-compatible tabviews switch panels without inline script execution", async ({
   page
 }) => {
   const consoleErrors: string[] = []
-  await page.setExtraHTTPHeaders({
-    "X-Wikijump-Site-Id": "6000005",
-    "X-Wikijump-Site-Slug": "scp-wiki"
-  })
+  await page.setExtraHTTPHeaders(headers)
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text())
   })
@@ -29,16 +63,39 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
 
   const tabs = page.locator(".yui-navset > .yui-nav > li")
   const panels = page.locator(".yui-navset > .yui-content > div")
+  await expect(page.locator(".yui-navset > .yui-nav a em")).toHaveText([
+    "First",
+    "Second"
+  ])
   await expect(tabs.nth(0)).toHaveClass(/selected/)
+  await expect(tabs.nth(0)).toHaveAttribute("title", "active")
   await expect(panels.nth(0)).toBeVisible()
   await expect(panels.nth(1)).toBeHidden()
 
-  await tabs.nth(1).locator("a").click()
+  const firstLink = tabs.nth(0).locator("a")
+  const secondLink = tabs.nth(1).locator("a")
+  await firstLink.focus()
+  await page.keyboard.press("ArrowRight")
+  await expect(firstLink).toBeFocused()
+  await expect(tabs.nth(0)).toHaveClass(/selected/)
 
-  await expect(tabs.nth(0)).not.toHaveClass(/selected/)
+  await secondLink.focus()
+  await page.keyboard.press("Enter")
+  await expect(secondLink).toBeFocused()
   await expect(tabs.nth(1)).toHaveClass(/selected/)
-  await expect(panels.nth(0)).toBeHidden()
-  await expect(panels.nth(1)).toBeVisible()
+  await expect(tabs.nth(1)).toHaveAttribute("title", "active")
+  await expect(tabs.nth(0)).not.toHaveAttribute("title", "active")
+
+  await firstLink.focus()
+  await page.keyboard.press("Space")
+  await expect(tabs.nth(1)).toHaveClass(/selected/)
+
+  await firstLink.click()
+
+  await expect(tabs.nth(0)).toHaveClass(/selected/)
+  await expect(tabs.nth(1)).not.toHaveClass(/selected/)
+  await expect(panels.nth(0)).toBeVisible()
+  await expect(panels.nth(1)).toBeHidden()
   expect(
     consoleErrors.filter(
       (message) =>

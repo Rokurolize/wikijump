@@ -23,8 +23,9 @@ use crate::hash::slice_to_blob_hash;
 use crate::services::MutationAuthorization;
 use crate::services::blob::{
     BlobMetadata, CancelBlobUpload, GetBlobOutput, HardDelete, HardDeleteOutput,
-    StartBlobUpload, StartBlobUploadOutput,
+    PendingBlobOwner, StartBlobUpload, StartBlobUploadOutput, StartBlobUploadScope,
 };
+use crate::types::Action;
 use crate::types::Bytes;
 
 /// Temporary endpoint to get any blob by hash.
@@ -78,13 +79,7 @@ pub async fn blob_cancel(
     BlobService::cancel_upload(ctx, user_id, &pending_blob_id)
         .await
         .or_raise(|| {
-            Error::new(
-                format!(
-                    "failed to cancel a pending blob upload with ID {}",
-                    pending_blob_id,
-                ),
-                ErrorType::Blob,
-            )
+            Error::new("failed to cancel a pending blob upload", ErrorType::Blob)
         })
 }
 
@@ -101,7 +96,52 @@ pub async fn blob_upload(
         "start a blob upload",
     )?;
 
-    BlobService::start_upload(ctx, input)
+    let owner = match input.scope {
+        StartBlobUploadScope::Unscoped => PendingBlobOwner::Unscoped,
+        StartBlobUploadScope::Page => {
+            let site_id = ctx.request().site_id().or_raise(|| {
+                Error::new(
+                    "page upload requires a trusted site request context",
+                    ErrorType::PermissionDenied,
+                )
+            })?;
+            let page_reference = ctx.request().page_reference().or_raise(|| {
+                Error::new(
+                    "page upload requires a trusted page request context",
+                    ErrorType::PermissionDenied,
+                )
+            })?;
+            let page = PageService::get(ctx, site_id, page_reference.clone())
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        "failed to resolve the page upload request context",
+                        ErrorType::Blob,
+                    )
+                })?;
+            if !PageService::check_user_permission(ctx, Action::Edit)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        "failed to check page upload permission",
+                        ErrorType::Permission,
+                    )
+                })?
+            {
+                return Err(Error::new(
+                    "user does not have permission to upload to this page",
+                    ErrorType::PermissionDenied,
+                )
+                .into());
+            }
+            PendingBlobOwner::Page {
+                site_id,
+                page_id: page.page_id,
+            }
+        }
+    };
+
+    BlobService::start_upload(ctx, input.user_id, input.blob_size, owner)
         .await
         .or_raise(|| Error::new("failed to start a blob upload", ErrorType::Blob))
 }

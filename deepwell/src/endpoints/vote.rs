@@ -19,16 +19,19 @@
  */
 
 use super::prelude::*;
+use crate::models::page::Model as PageModel;
 use crate::models::page_vote::Model as PageVoteModel;
 use crate::services::MutationAuthorization;
+use crate::services::page::GetPageScoreOutput;
 use crate::services::relation::{GetSiteMember, RelationService};
+use crate::services::render::LegacyActionDescriptor;
 use crate::services::settings::{
     PageRatingPermission, PageRatingSettings, PageRatingType, PageRatingVisibility,
 };
 use crate::services::vote::{
     CountVoteHistory, CreateVote, GetVote, GetVoteHistory, VoteAction, VoteValue,
 };
-use crate::types::{Action, Permission, Reference, Resource};
+use crate::types::{Action, PageId, Permission, Reference, RerenderDepth, Resource};
 
 #[derive(Deserialize)]
 struct SetVoteInput {
@@ -39,6 +42,14 @@ struct SetVoteInput {
 #[derive(Deserialize)]
 struct RemoveVoteInput {
     page_id: i64,
+}
+
+#[derive(Deserialize)]
+struct WikidotLegacyRateInput {
+    page_id: i64,
+    last_revision_id: i64,
+    action_index: usize,
+    action_fingerprint: String,
 }
 
 async fn page_rating_settings(
@@ -59,7 +70,7 @@ async fn ensure_actor_can_rate(
     ctx: &ServiceContext<'_>,
     submitted_page_id: i64,
     value: Option<i16>,
-) -> Result<(GetVote, PageRatingSettings)> {
+) -> Result<(PageModel, GetVote, PageRatingSettings)> {
     let site_id = ctx.request().site_id().or_raise(|| {
         Error::new(
             "vote mutation requires a site request context",
@@ -72,16 +83,22 @@ async fn ensure_actor_can_rate(
             ErrorType::PermissionDenied,
         )
     })?;
-    let page = PageService::get(ctx, site_id, page_reference.clone())
+    let route_page = PageService::get(ctx, site_id, page_reference.clone())
         .await
         .or_raise(|| Error::new("failed to resolve vote target", ErrorType::PageVote))?;
-    if page.page_id != submitted_page_id {
+    if route_page.page_id != submitted_page_id {
         return Err(Error::new(
             "vote target does not match the route page",
             ErrorType::PermissionDenied,
         )
         .into());
     }
+    let page =
+        PageService::get_direct_optional_for_update(ctx, route_page.page_id, false)
+            .await?
+            .ok_or_raise(|| {
+                Error::new("vote target is not available", ErrorType::PermissionDenied)
+            })?;
 
     let actor_user_id = MutationAuthorization::require_permission(
         ctx,
@@ -104,6 +121,13 @@ async fn ensure_actor_can_rate(
     if !settings.enabled {
         return Err(Error::new(
             "page rating is disabled for this category",
+            ErrorType::PermissionDenied,
+        )
+        .into());
+    }
+    if PageLockService::active_lock_exists(ctx, page.page_id).await? {
+        return Err(Error::new(
+            "page rating is unavailable while the page is locked",
             ErrorType::PermissionDenied,
         )
         .into());
@@ -134,9 +158,11 @@ async fn ensure_actor_can_rate(
         )
         .into());
     }
+    let page_id = page.page_id;
     Ok((
+        page,
         GetVote {
-            page_id: page.page_id,
+            page_id,
             user_id: actor_user_id,
         },
         settings,
@@ -200,7 +226,7 @@ pub async fn vote_set(
     params: Params<'static>,
 ) -> Result<Option<PageVoteModel>> {
     let SetVoteInput { page_id, value } = parse!(params, PageVote);
-    let (input, settings) = ensure_actor_can_rate(ctx, page_id, Some(value)).await?;
+    let (_, input, settings) = ensure_actor_can_rate(ctx, page_id, Some(value)).await?;
     let GetVote { page_id, user_id } = input;
 
     info!("Casting vote cast by {} on page {}", user_id, page_id,);
@@ -231,7 +257,7 @@ pub async fn vote_remove(
     params: Params<'static>,
 ) -> Result<PageVoteModel> {
     let RemoveVoteInput { page_id } = parse!(params, PageVote);
-    let (input, settings) = ensure_actor_can_rate(ctx, page_id, None).await?;
+    let (_, input, settings) = ensure_actor_can_rate(ctx, page_id, None).await?;
     let GetVote { page_id, user_id } = input;
 
     info!("Removing vote cast by {} on page {}", user_id, page_id,);
@@ -247,6 +273,96 @@ pub async fn vote_remove(
                 ErrorType::PageVote,
             )
         })
+}
+
+/// Execute one renderer-issued Rate descriptor against the exact current
+/// route page and revision. The submitted index and fingerprint select a
+/// closed server registry; no client vote value is accepted.
+pub async fn wikidot_legacy_rate(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<GetPageScoreOutput> {
+    let input: WikidotLegacyRateInput = parse!(params, PageVote);
+    let (page, vote_key, settings) =
+        ensure_actor_can_rate(ctx, input.page_id, None).await?;
+    if page.latest_revision_id != Some(input.last_revision_id) {
+        return Err(Error::new(
+            "Rate action does not match the current page revision",
+            ErrorType::NotLatestRevisionId,
+        )
+        .into());
+    }
+    let revision = PageRevisionService::get_latest(ctx, page.site_id, page.page_id)
+        .await
+        .or_raise(|| Error::new("failed to load Rate source", ErrorType::PageVote))?;
+    if revision.revision_id != input.last_revision_id {
+        return Err(Error::new(
+            "Rate action does not match the current page revision",
+            ErrorType::NotLatestRevisionId,
+        )
+        .into());
+    }
+    let source = TextService::get(ctx, &revision.wikitext_hash)
+        .await
+        .or_raise(|| Error::new("failed to load Rate source", ErrorType::PageVote))?;
+    let registry = RenderService::rate_action_registry_from_wikidot_source(
+        &source,
+        settings.rating_type,
+    );
+    let descriptor = registry
+        .resolve(input.action_index, &input.action_fingerprint)
+        .cloned()
+        .ok_or_raise(|| {
+            Error::new(
+                "Rate action does not match the current page revision",
+                ErrorType::PermissionDenied,
+            )
+        })?;
+
+    let rating_system = settings.rating_type.vote_store_key();
+    let changed = match descriptor {
+        LegacyActionDescriptor::Rate(value) => VoteService::add(
+            ctx,
+            CreateVote {
+                page_id: vote_key.page_id,
+                user_id: vote_key.user_id,
+                value,
+            },
+            rating_system,
+        )
+        .await?
+        .is_some(),
+        LegacyActionDescriptor::CancelRate => {
+            if VoteService::get_optional(ctx, vote_key, rating_system)
+                .await?
+                .is_some()
+            {
+                VoteService::remove(ctx, vote_key, rating_system).await?;
+                true
+            } else {
+                false
+            }
+        }
+        _ => {
+            return Err(Error::new(
+                "unsupported Rate action descriptor",
+                ErrorType::PermissionDenied,
+            )
+            .into());
+        }
+    };
+    if changed {
+        ctx.defer_public_content_cache_invalidate_site(page.site_id)?;
+        ctx.defer_rerender_page(
+            PageId::from_page_model(&page),
+            RerenderDepth::default(),
+        )?;
+    }
+    let score = ScoreService::score(ctx, page.page_id).await?;
+    Ok(GetPageScoreOutput {
+        page_id: page.page_id,
+        score,
+    })
 }
 
 pub async fn vote_action(

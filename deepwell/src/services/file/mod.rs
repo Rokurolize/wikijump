@@ -25,5 +25,5 @@ pub use self::service::FileService;
 pub use self::structs::{
     CreateFile, CreateFileOutput, DeleteFile, DeleteFileOutput, EditFile, EditFileBody,
     EditFileOutput, GetFile, GetFileDetails, GetFileOutput, GetPageFiles, MoveFile,
-    MoveFileOutput, RestoreFile, RestoreFileOutput, RollbackFile,
+    MoveFileOutput, RestoreFile, RestoreFileOutput, RollbackFile, VisibleFileRow,
 };

@@ -180,10 +180,62 @@ test("documentation is cheap and unknown paths fail closed", () => {
   const docs = classifyChanges(["README.md", "AGENTS.md", "docs/development.md"])
   for (const group of GROUPS) assert.equal(docs[group], false, group)
 
-  for (const file of ["new-service/config.toml", "unexpected-root.json", "install/new-tier/config.toml"]) {
+  for (const file of [
+    "new-service/config.toml",
+    "unexpected-root.json",
+    "install/new-tier/config.toml",
+    "scripts/data/wikidot-unknown-output.json"
+  ]) {
     const selected = classifyChanges([file])
     for (const group of GROUPS) assert.equal(selected[group], true, `${file}: ${group}`)
   }
+})
+
+test("Wikidot verification inputs select only the dedicated workflow", () => {
+  for (const file of [
+    "install/local/wikidot-verification/artifacts/example.json",
+    "install/local/wikidot-verification/scripts/run-generic-runtime-differential.mjs",
+    "install/local/wikidot-verification/src/generic-runtime-differential.mjs",
+    "install/local/wikidot-verification/tests/generic-runtime-differential.test.mjs",
+    "install/local/wikidot-verification/package.json",
+    "install/standing/tests/verify-promotion-precondition.test.mjs",
+    "scripts/data/wikidot-implementation-ledger.json",
+    "scripts/data/wikidot-live-observations.json",
+    "scripts/generate-wikidot-specifications.mjs",
+    "scripts/initialize-wikidot-implementation-ledger.mjs",
+    "scripts/lib/wikidot-implementation-ledger.mjs",
+    "docs/wikidot-specifications/catalog.json"
+  ]) {
+    const selected = classifyChanges([file])
+    for (const group of GROUPS) assert.equal(selected[group], false, `${file}: ${group}`)
+    assert.equal(selected.verification, true, `${file}: verification`)
+  }
+
+  const workflowSelected = classifyChanges([".github/workflows/wikidot-verification.yaml"])
+  assert.equal(workflowSelected.verification, true)
+  assert.equal(workflowSelected.workflow, true)
+  for (const group of ["deepwell", "wws", "framerail", "locales"]) {
+    assert.equal(workflowSelected[group], false, group)
+  }
+
+  const source = workflow("wikidot-verification.yaml")
+  const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
+  for (const pathFilter of [
+    "'install/local/wikidot-verification/**'",
+    "'install/standing/**'",
+    "'scripts/data/wikidot-implementation-ledger.json'",
+    "'scripts/data/wikidot-live-observations.json'",
+    "'scripts/generate-wikidot-specifications.mjs'",
+    "'scripts/initialize-wikidot-implementation-ledger.mjs'",
+    "'scripts/lib/wikidot-implementation-ledger.mjs'",
+    "'docs/wikidot-specifications/**'",
+    "'.github/workflows/wikidot-verification.yaml'"
+  ]) assert.ok(hasYamlLine(trigger, `- ${pathFilter}`), pathFilter)
+
+  const concurrency = source.slice(source.indexOf("concurrency:\n"), source.indexOf("\njobs:\n"))
+  assert.match(concurrency, /format\('wikidot-verification-pr-\{0\}', github\.event\.pull_request\.number\)/)
+  assert.match(concurrency, /format\('wikidot-verification-run-\{0\}', github\.run_id\)/)
+  assert.match(concurrency, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/)
 })
 
 test("Deepwell validation stays fast and service-free", () => {
@@ -205,6 +257,55 @@ test("Deepwell validation stays fast and service-free", () => {
   )
   assert.doesNotMatch(gate.join("\n"), /CI \/ draft gate/)
   assert.doesNotMatch(source, /deepwell_(?:draft|candidate)|tarpaulin|coverage\/cobertura/)
+})
+
+test("draft CI stays lightweight while candidate CI adds compiled checks", () => {
+  const source = workflow("ci-gate.yaml")
+  const wws = jobBlock(source, "wws")
+  const wwsDraft = stepBlock(wws, "Validate draft")
+  const wwsCandidate = stepBlock(wws, "Validate candidate")
+  const framerail = jobBlock(source, "framerail")
+  const framerailDraft = stepBlock(framerail, "Validate draft")
+  const framerailCandidate = stepBlock(framerail, "Build candidate")
+  const locales = jobBlock(source, "locales")
+  const localesDraft = stepBlock(locales, "Validate draft")
+  const localesCandidate = stepBlock(locales, "Validate candidate")
+
+  for (const command of ["cargo machete wws", "cargo fmt --all -- --check"]) {
+    assert.ok(wwsDraft.join("\n").includes(command), command)
+  }
+  assert.doesNotMatch(wwsDraft.join("\n"), /cargo (?:clippy|test)|node --test/)
+  assert.equal(
+    yamlScalar(wwsCandidate, 8, "if"),
+    "${{ needs.classify.outputs.candidate == 'true' }}"
+  )
+  for (const command of [
+    "cargo clippy --locked --tests --no-deps",
+    "cargo test --locked --all-features -- --nocapture --test-threads 1",
+    "node --test tests/resize-iframe.test.mjs"
+  ]) assert.ok(wwsCandidate.join("\n").includes(command), command)
+
+  for (const command of [
+    "pnpm --dir framerail lint",
+    "pnpm --dir framerail test:unit"
+  ]) assert.ok(framerailDraft.join("\n").includes(command), command)
+  assert.doesNotMatch(framerailDraft.join("\n"), /pnpm --dir framerail build/)
+  assert.equal(
+    yamlScalar(framerailCandidate, 8, "if"),
+    "${{ needs.classify.outputs.candidate == 'true' }}"
+  )
+  assert.match(framerailCandidate.join("\n"), /pnpm --dir framerail build/)
+
+  assert.match(localesDraft.join("\n"), /cargo fmt --all -- --check/)
+  assert.doesNotMatch(localesDraft.join("\n"), /cargo (?:clippy|run)/)
+  assert.equal(
+    yamlScalar(localesCandidate, 8, "if"),
+    "${{ needs.classify.outputs.candidate == 'true' }}"
+  )
+  for (const command of [
+    "cargo clippy --locked --tests --no-deps",
+    "cargo run --locked"
+  ]) assert.ok(localesCandidate.join("\n").includes(command), command)
 })
 
 test("optional Browser CI contains only browser validation", () => {

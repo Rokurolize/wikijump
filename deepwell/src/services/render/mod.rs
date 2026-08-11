@@ -25,6 +25,13 @@ mod child_pages;
 mod compat;
 mod corpus;
 mod diagnostics;
+mod file_modules;
+mod forum_comments;
+mod forum_front;
+mod forum_mini;
+mod forum_modules;
+mod forum_read_routes;
+mod forum_visibility;
 mod ftml_page_existence;
 mod ftml_user_info;
 mod generator;
@@ -35,10 +42,12 @@ mod include_comment_branches;
 mod include_missing;
 mod include_variable_iftags;
 mod include_variables;
+mod legacy_actions;
 mod link_modules;
 #[allow(dead_code)]
 mod list_pages;
 mod literal_regions;
+mod membership_actions;
 mod metacomponent;
 mod module_arguments;
 mod native_list_context;
@@ -49,6 +58,7 @@ mod page_tree;
 mod pages;
 mod pages_by_tag;
 mod percent_encoding;
+mod rate_actions;
 mod rate_module;
 mod render_budget;
 mod render_dependency;
@@ -57,9 +67,13 @@ mod replay;
 mod runtime;
 mod runtime_modules;
 mod runtime_page_queries;
+mod search_feed;
 mod service;
+mod site_changes;
+mod site_utility_modules;
 mod structs;
 mod url_arguments;
+mod user_directory;
 mod wikidot_hosts;
 
 pub(crate) use self::authorized_page_selector::AuthorizedPageSelector;
@@ -72,7 +86,18 @@ pub(crate) use self::diagnostics::{
     CorpusRenderStage, CorpusRenderTrace, CorpusRenderTraceSnapshot, StageGuard,
     is_corpus_render_timing,
 };
+pub use self::forum_read_routes::{
+    WikidotForumModuleRequest, WikidotForumModuleResponse,
+};
+pub(crate) use self::generator::DEEPWELL_RENDERER_EPOCH;
+pub use self::legacy_actions::{
+    LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
+};
 pub(crate) use self::literal_regions::LiteralRegionIndex;
+pub use self::membership_actions::MembershipActionRegistry;
+pub use self::rate_actions::{
+    RateActionRegistry, RateBrowserAction, RateBrowserActionRegistry,
+};
 pub use self::render_dependency::{
     RenderDependencyClass, RenderDependencyClasses, classify_render_dependencies,
 };
@@ -83,6 +108,11 @@ pub use self::service::RenderService;
 pub(crate) use self::service::{
     CorpusReplayExpandedWikitext, CorpusReplayPreparationStage,
 };
+pub(crate) use self::site_changes::SiteChangesLoad;
+pub use self::site_changes::{
+    WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
+    WikidotSiteChangesModuleResponse,
+};
 pub use self::structs::{
     RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
     WikidotListPagesFeedOutput,
@@ -91,3 +121,4 @@ pub use self::url_arguments::{
     UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
     wikitext_requires_runtime_render,
 };
+pub use self::user_directory::WikidotMembersListModuleResponse;

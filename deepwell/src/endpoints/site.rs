@@ -21,6 +21,7 @@
 use super::prelude::*;
 use crate::models::site::Model as SiteModel;
 use crate::services::MutationAuthorization;
+use crate::services::SettingsService;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
     CreateSite, CreateSiteOutput, GetSite, GetSiteOutput, UpdateSite,
@@ -60,6 +61,7 @@ pub async fn site_get(
             let (aliases, domains) = raise_multiple!(aliases, domains; make_error);
 
             Ok(Some(GetSiteOutput {
+                settings: SettingsService::site_settings(&site),
                 site,
                 aliases,
                 domains,
@@ -76,6 +78,7 @@ pub async fn site_update(
         site,
         body,
         user_id: _submitted_user_id,
+        expected_settings_revision,
         ip_address,
     } = parse!(params, Site);
 
@@ -123,7 +126,14 @@ pub async fn site_update(
         .into());
     }
 
-    SiteService::update(ctx, Reference::Id(site_id), body, actor_user_id, ip_address)
-        .await
-        .or_raise(|| Error::new("failed to update site data", ErrorType::Site))
+    SiteService::update(
+        ctx,
+        Reference::Id(site_id),
+        body,
+        Some(expected_settings_revision),
+        actor_user_id,
+        ip_address,
+    )
+    .await
+    .or_raise(|| Error::new("failed to update site data", ErrorType::Site))
 }

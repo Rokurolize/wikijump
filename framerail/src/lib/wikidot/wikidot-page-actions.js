@@ -19,6 +19,8 @@ const escapeHtml = (value) =>
  * @property {string} print
  * @property {string} siteTools
  * @property {string} options
+ * @property {string} append
+ * @property {string} backlinks
  */
 
 /**
@@ -29,6 +31,9 @@ export const isWikidotFragmentPage = (tags) => tags?.includes("fragment") ?? fal
 
 export const buildWikidotDiscussButtonHtml = (label) =>
   `<a href="javascript:;" class="btn btn-default" id="discuss-button" onclick="WIKIDOT.page.listeners.createPageDiscussion(event)">${escapeHtml(label)}</a>`
+
+/** @param {{ print: () => unknown }} [browser] */
+export const printWikidotPage = (browser = window) => browser.print()
 
 /**
  * @param {string | null | undefined} sourceSite
@@ -87,7 +92,9 @@ export const buildWikidotPageActionLabels = ({
         files: "ファイル",
         print: "印刷",
         siteTools: "サイトツール",
-        options: "オプション"
+        options: "オプション",
+        append: "追加",
+        backlinks: "バックリンク"
       }
     : {
         edit: "Edit",
@@ -98,7 +105,9 @@ export const buildWikidotPageActionLabels = ({
         files: "Files",
         print: "Print",
         siteTools: "Site tools",
-        options: "Options"
+        options: "Options",
+        append: "Append",
+        backlinks: "Backlinks"
       }
 
   return {
@@ -118,7 +127,9 @@ export const buildWikidotPageActionLabels = ({
     files: labels.files,
     print: labels.print,
     siteTools: labels.siteTools,
-    options: labels.options
+    options: labels.options,
+    append: labels.append,
+    backlinks: labels.backlinks
   }
 }
 

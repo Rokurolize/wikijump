@@ -30,14 +30,23 @@ test('planDirectAttachmentMaterialization validates bytes and deduplicates by S3
     {
       fullname: 'scp-173',
       attachments: [
-        writeAttachment(root, 'shared-a.png', sharedBytes),
-        writeAttachment(root, 'unique.png', uniqueBytes),
+        {
+          ...writeAttachment(root, 'shared-a.png', sharedBytes),
+          content_type_description: 'PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced',
+        },
+        {
+          ...writeAttachment(root, 'unique.png', uniqueBytes),
+          content_type_description: 'JPEG image data, EXIF standard',
+        },
       ],
     },
     {
       fullname: 'scp-174',
       attachments: [
-        writeAttachment(root, 'shared-b.png', sharedBytes),
+        {
+          ...writeAttachment(root, 'shared-b.png', sharedBytes),
+          content_type_description: 'PNG image data, legacy capture detail',
+        },
       ],
     },
   ];
@@ -49,8 +58,24 @@ test('planDirectAttachmentMaterialization validates bytes and deduplicates by S3
   assert.equal(plan.attachments[0].s3_key_hex, attachmentS3KeyHex(sharedBytes));
   assert.equal(plan.attachments[2].s3_key_hex, plan.attachments[0].s3_key_hex);
   assert.equal(plan.attachments[2].duplicate, true);
+  assert.equal(plan.attachments[0].content_type_label, 'PNG image data');
+  assert.equal(plan.attachments[2].content_type_description, 'PNG image data, legacy capture detail');
+  assert.equal(plan.attachments[1].content_type_label, 'JPEG image data');
+  assert.equal(plan.attachments[0].replace_existing_descriptor, true);
   assert.equal(plan.blobs[0].first_file_path, rows[0].attachments[0].file_path);
   assert.equal(plan.blobs[0].mime, null);
+});
+
+test('planDirectAttachmentMaterialization fails closed on an absent content descriptor', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-attachment-direct-'));
+  const attachment = writeAttachment(root, 'unknown.bin', Buffer.from([1, 2, 3]));
+
+  assert.throws(
+    () => planDirectAttachmentMaterialization(
+      [{ fullname: 'scp-173', attachments: [attachment] }],
+    ),
+    /provenance-backed content descriptor/,
+  );
 });
 
 test('planDirectAttachmentMaterialization rejects stale sha256 metadata', () => {

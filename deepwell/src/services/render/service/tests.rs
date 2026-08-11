@@ -52,7 +52,6 @@ use super::super::list_pages::{
     unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 use super::super::literal_regions::ListPagesSourceProjection;
-use super::super::module_arguments::wikidot_module_argument;
 use super::super::new_page_module::{NewPageTemplateRendering, render_new_page_module};
 use super::super::render_options::RenderLifecycle;
 use super::super::runtime_page_queries::{
@@ -77,10 +76,10 @@ use super::{
     WIKIDOT_INLINE_HTML_SENTINEL_PREFIX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
     WikidotCompatLinkTitleMap, extract_css_modules as extract_css_modules_with_registry,
     find_balanced_ul_end, has_include_opening_candidate, include_error,
-    native_list_page_link_default_label, parse_wikidot_compat_color_descriptor,
-    protect_forwarded_attachment_variables, render_clone_module,
-    render_list_pages_numbered_rows_with_titles, render_list_pages_table_rows,
-    render_members_module_placeholder, render_native_list_inline_wikidot_spans,
+    members_compat_html_fixture, native_list_page_link_default_label,
+    parse_wikidot_compat_color_descriptor, protect_forwarded_attachment_variables,
+    render_clone_module, render_list_pages_numbered_rows_with_titles,
+    render_list_pages_table_rows, render_native_list_inline_wikidot_spans,
     render_native_list_page_link, wikidot_no_such_include_replacement,
 };
 use crate::config::Config;
@@ -121,6 +120,7 @@ fn dropping_prepared_wikitext_without_restoration_is_rejected() {
         super::ExpandedRenderWikitext {
             wikitext: source.to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(source),
             wikidot_compat_text: CompatTextFragments::new(source),
@@ -394,6 +394,7 @@ fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> Strin
             wikidot_compat_text: CompatTextFragments::new(wikitext),
             wikitext: wikitext.to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -2227,26 +2228,8 @@ fn renders_japanese_wikidot_read_only_rate_module_labels() {
 }
 
 #[test]
-fn renders_wikidot_members_module_placeholder() {
-    let head = r#" group="moderators" order="joined""#;
-    assert_eq!(wikidot_module_argument(head, "group"), Some("moderators"));
-
-    let rendered = RenderService::expand_members_modules(
-        "[[module Members group=\"moderators\"]]".to_owned(),
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-
-    assert!(rendered.contains(
-        r#"<div id="ml-607935" data-wikijump-compat-members="1" data-group="moderators">"#
-    ));
-    assert!(rendered.contains(r#"<span class="printuser avatarhover">"#));
-    assert!(rendered.contains("membership/MembersListModule"));
-    assert!(!rendered.contains("[[module Members"));
-}
-
-#[test]
 fn protects_wikidot_members_module_html_before_parsing() {
-    let mut wikitext = render_members_module_placeholder("moderators");
+    let mut wikitext = members_compat_html_fixture("moderators");
     let fragments = RenderService::protect_generated_wikidot_compat_html(
         &mut wikitext,
         &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
@@ -2273,7 +2256,7 @@ fn wikidot_compatibility_fallback_restores_generated_members_html_as_block() {
             "[[/div]]\n",
             "after\n",
         ),
-        render_members_module_placeholder("moderators"),
+        members_compat_html_fixture("moderators"),
     );
 
     let rendered = render_wikidot_fallback_after_generated_compat_restore(&source);
@@ -2396,28 +2379,6 @@ fn renders_wikidot_join_module_anonymous_dom() {
 }
 
 #[test]
-fn family_specific_registry_module_helper_preserves_skipped_prefixes_once() {
-    let source = concat!(
-        "prefix [[module Clone]] between ",
-        "[[module NewPage]] after ",
-        "[[module Members]] suffix",
-    );
-    let rendered = RenderService::expand_members_modules(
-        source.to_owned(),
-        &WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot),
-    );
-
-    assert_eq!(rendered.matches("prefix ").count(), 1);
-    assert_eq!(rendered.matches(" between ").count(), 1);
-    assert_eq!(rendered.matches(" after ").count(), 1);
-    assert!(rendered.contains("[[module Clone]]"));
-    assert!(rendered.contains("[[module NewPage]]"));
-    assert!(rendered.contains("membership/MembersListModule"));
-    assert!(!rendered.contains("[[module Members]]"));
-    assert!(!rendered.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
-}
-
-#[test]
 fn clone_html_is_registered_only_by_its_runtime_producer() {
     let source = "[[module Clone button=\"Clone <now>\"]]";
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
@@ -2446,7 +2407,8 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
         "[[module MembershipEmailInvitation]] ",
         "[[module NewPageExtra]] ",
         "[[module Joinery]] ",
-        "[[module Members]]",
+        "[[module CloneExtra]] ",
+        "[[module Clone]]",
     );
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut fragments = CompatHtmlFragments::new(source);
@@ -2461,43 +2423,34 @@ fn registry_module_expansion_does_not_match_name_prefixes() {
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
         1,
-        "only the exact Members module should be expanded:\n{protected}",
+        "only the exact Clone module should be expanded:\n{protected}",
     );
     assert!(protected.contains("[[module MembershipByPassword]]"));
     assert!(protected.contains("[[module MembershipEmailInvitation]]"));
     assert!(protected.contains("[[module NewPageExtra]]"));
     assert!(protected.contains("[[module Joinery]]"));
+    assert!(protected.contains("[[module CloneExtra]]"));
 
     let restored = fragments.restore(&protected);
-    assert!(restored.contains("membership/MembersListModule"));
-    assert!(!restored.contains("[[module Members]]"));
+    assert!(restored.contains(r#"data-wikijump-compat-clone="1""#));
+    assert!(!restored.contains("[[module Clone]]"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 }
 
 #[test]
 fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences() {
-    let modules = concat!(
-        "[[module Members]] ",
-        "[[module NewPage]] ",
-        "[[module Clone]]",
-    );
+    let modules = "[[module Clone]]";
     let source = format!(
         concat!(
             "@@{modules}@@\n",
             "[[code]]\n{modules}\n[[/code]]\n",
             "[[raw]]\n{modules}\n[[/raw]]\n",
             "[!-- {modules} --]\n",
-            "[[div data-module=\"[[module Members]]\"]]members[[/div]]\n",
-            "[[div data-module=\"[[module NewPage]]\"]]new page[[/div]]\n",
             "[[div data-module=\"[[module Clone]]\"]]clone[[/div]]\n",
-            "<div data-module=\"[[module Members]]\">members</div>\n",
-            "<div data-module=\"[[module NewPage]]\">new page</div>\n",
             "<div data-module=\"[[module Clone]]\">clone</div>\n",
             "<pre>{modules}</pre>\n",
             "<!-- {modules} -->\n",
-            "[[module Clone button=\"clone-first\"]]",
-            "[[module Members group=\"moderators\"]]",
-            "[[module NewPage button=\"new-last\"]]\n",
+            "[[module Clone button=\"clone-first\"]]\n",
         ),
         modules = modules
     );
@@ -2513,21 +2466,12 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
         protected
             .matches(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX)
             .count(),
-        2,
+        1,
     );
-    for module in [
-        "[[module Members]]",
-        "[[module NewPage]]",
-        "[[module Clone]]",
-    ] {
-        assert_eq!(protected.matches(module).count(), 8, "{module}");
-    }
+    assert_eq!(protected.matches("[[module Clone]]").count(), 8);
 
     let restored = fragments.restore(&protected);
-    let clone = restored.find("clone-first").unwrap();
-    let members = restored.find("membership/MembersListModule").unwrap();
-    let new_page = restored.find("new-last").unwrap();
-    assert!(clone < members && members < new_page);
+    assert!(restored.contains("clone-first"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 
     let mut output =
@@ -2543,7 +2487,7 @@ fn registry_module_expansion_ignores_literal_attribute_and_comment_occurrences()
 
 #[test]
 fn registry_module_expansion_does_not_reclassify_a_later_literal_candidate() {
-    let source = r#"[[module Members group="@@"]][[module NewPage]]@@"#;
+    let source = r#"[[module Clone button="@@"]][[module NewPage]]@@"#;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let mut fragments = CompatHtmlFragments::new(source);
     let protected = RenderService::expand_registry_modules_with_registry(
@@ -2561,7 +2505,7 @@ fn registry_module_expansion_does_not_reclassify_a_later_literal_candidate() {
     assert!(protected.contains("[[module NewPage]]@@"));
 
     let restored = fragments.restore(&protected);
-    assert!(restored.contains("membership/MembersListModule"));
+    assert!(restored.contains(r#"<a class="button""#));
     assert!(restored.contains("[[module NewPage]]@@"));
     assert!(!restored.contains(WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX));
 }
@@ -2856,9 +2800,8 @@ fn compat_html_restoration_ignores_authored_legacy_sentinel_text() {
 
 #[test]
 fn members_group_cannot_close_its_generated_script() {
-    let rendered = render_members_module_placeholder(
-        "</script><img src=x onerror='alert(1)'>&\u{2028}",
-    );
+    let rendered =
+        members_compat_html_fixture("</script><img src=x onerror='alert(1)'>&\u{2028}");
 
     assert_eq!(rendered.matches("</script>").count(), 1);
     assert!(!rendered.contains("</script><img"));
@@ -4078,6 +4021,7 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -4725,6 +4669,7 @@ fn render_list_pages_title_variables_through_outer_pipeline(
         super::ExpandedRenderWikitext {
             wikitext: substituted,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             wikidot_compat_html: compat_html,
             wikidot_compat_text: compat_text,
             url_offset_list_pages_content_bytes: 0,
@@ -7762,7 +7707,6 @@ fn renders_wikidot_no_match_error_for_an_unsupported_embed_payload() {
         ("embed", ""),
         ("embedaudio", r#"<div id="probe">PAYLOAD</div>"#),
         ("embedaudio", ""),
-        ("embedvideo", r#"<div id="probe">PAYLOAD</div>"#),
     ] {
         let mut wikitext = format!("[[{block}]]\n{payload}\n[[/{block}]]");
 
@@ -7776,6 +7720,67 @@ fn renders_wikidot_no_match_error_for_an_unsupported_embed_payload() {
         );
         assert!(!wikitext.contains(payload) || payload.is_empty());
     }
+
+    let typed_source = concat!(
+        "[[embedvideo]]\n",
+        r#"<iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ"></iframe>"#,
+        "\n[[/embedvideo]]",
+    );
+    let mut typed_wikitext = typed_source.to_owned();
+    assert!(RenderService::protect_wikidot_embed_iframes(&mut typed_wikitext).is_empty());
+    assert_eq!(typed_wikitext, typed_source);
+}
+
+#[test]
+fn typed_embedvideo_markers_must_match_requirements_exactly_once() {
+    let source = concat!(
+        "[[embedvideo]]\n",
+        r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>"#,
+        "\n[[/embedvideo]]",
+    );
+    let page_info = fallback_test_page_info("embedvideo", "EmbedVideo");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let tokenization = ftml::tokenize(source);
+    let (tree, errors) = ftml::parse(&tokenization, &page_info, &settings).into();
+    assert!(errors.is_empty(), "{errors:#?}");
+    let output = HtmlRender.render(&tree, &page_info, &settings);
+    let id = output
+        .resource_requirements
+        .iter()
+        .find_map(|requirement| requirement.embed_video_requirement())
+        .expect("typed embedvideo requirement")
+        .id()
+        .to_owned();
+    let marker = format!(r#"<div class="wj-embed-video" id="{id}"></div>"#);
+    assert_eq!(output.body, marker);
+
+    let mut authored_text = output.clone();
+    authored_text.resource_requirements.clear();
+    authored_text.body =
+        "<p>The text wj-embed-video names no typed marker.</p>".to_owned();
+    assert!(RenderService::resolve_wikidot_embed_video_requirements(
+        &mut authored_text
+    ));
+
+    let mut missing = output.clone();
+    missing.body.clear();
+    assert!(!RenderService::resolve_wikidot_embed_video_requirements(
+        &mut missing
+    ));
+
+    let mut duplicate = output.clone();
+    duplicate.body.push_str(&marker);
+    assert!(!RenderService::resolve_wikidot_embed_video_requirements(
+        &mut duplicate
+    ));
+
+    let mut foreign = output;
+    foreign.body.push_str(
+        r#"<div class="wj-embed-video" id="wj-embed-video-ffffffffffffffffffffffffffffffff"></div>"#,
+    );
+    assert!(!RenderService::resolve_wikidot_embed_video_requirements(
+        &mut foreign
+    ));
 }
 
 #[test]
@@ -10172,6 +10177,7 @@ fn render_native_list_page_for_regression(
             wikidot_compat_text: CompatTextFragments::new(source),
             wikitext: source.to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -11462,6 +11468,7 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
             )
             .to_owned(),
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text: CompatTextFragments::new(""),
@@ -11478,36 +11485,6 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
     let (_, errors) = ftml::parse(&tokens, &page_info, &settings).into();
     assert!(errors.is_empty(), "{errors:#?}");
     inner.protection.restore(|_| ());
-}
-
-#[test]
-fn restores_rendered_wikidot_mailform_blocks_after_render() {
-    let html = concat!(
-        r#"<div class="fakeprot">"#,
-        r#"<p>[[module MailForm to=&quot;dummy&quot; button=&quot;Go&quot;]]</p>"#,
-        "<ol><li>name</li><ul>",
-        "<li>title: ID</li>",
-        "<li>default: Site:8192 Director Y.Gineri</li>",
-        "<li>type: text</li>",
-        "<li>rules:</li><ul><li>required: true</li><li>maxLength:10</li></ul>",
-        "</ul></ol>",
-        r#"<p>[[/module]]</p>"#,
-        "</div>",
-    );
-
-    let restored = RenderService::restore_wikidot_mailform_compatibility(html);
-
-    assert!(restored.contains(r#"<div class="mailform-box">"#));
-    assert!(restored.contains(r#"<form class="form" action="javascript:;">"#));
-    assert!(restored.contains(
-        r#"<input class="text" type="text" name="name" value="Site:8192 Director Y.Gineri" maxlength="10" size="30">"#,
-    ));
-    assert!(restored.contains(r#"<div class="field-error-message"></div>"#));
-    assert!(
-        restored
-            .contains(r#"<div class="buttons"><input type="submit" value="Go"></div>"#)
-    );
-    assert!(!restored.contains("[[module MailForm"));
 }
 
 #[test]
@@ -12075,6 +12052,7 @@ fn prepares_wikidot_unicode_iftags_component_with_cross_closed_collapsible() {
             wikidot_compat_text: CompatTextFragments::new(&source),
             wikitext: source,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
         },
         &page_info,
@@ -12270,6 +12248,7 @@ fn repeated_render_preparation_preserves_nested_iftags_for_ftml() {
         super::ExpandedRenderWikitext {
             wikitext,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text,
@@ -12321,6 +12300,7 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
         super::ExpandedRenderWikitext {
             wikitext,
             included_pages: Vec::new(),
+            expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text,
@@ -12364,6 +12344,12 @@ fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
         favicon_source: None,
         ios_icon_source: None,
         windows_tile_source: None,
+        settings_revision: 0,
+        welcome_page: "system:welcome".to_owned(),
+        google_analytics_enabled: false,
+        google_analytics_profile: None,
+        show_top_toolbar: false,
+        show_bottom_toolbar: false,
         layout: None,
         license: License::CcBySa30,
         forum_max_nest_level: 10,

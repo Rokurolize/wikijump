@@ -8,25 +8,28 @@ import { pages } from "./data.js"
  * }} input
  */
 export const handlePageCreateRpc = ({ rpcRequest, request }) => {
+  const pageEditKeys = [
+    "alt_title",
+    "ip_address",
+    "layout",
+    "revision_comments",
+    "site_id",
+    "slug",
+    "tags",
+    "title",
+    "user_id",
+    "wikitext"
+  ]
+  const xmlRpcKeys = pageEditKeys.filter((key) => key !== "tags")
   if (
     rpcRequest.method !== "page_create" ||
-    !hasExactKeys(rpcRequest.params, [
-      "alt_title",
-      "ip_address",
-      "layout",
-      "revision_comments",
-      "site_id",
-      "slug",
-      "tags",
-      "title",
-      "user_id",
-      "wikitext"
-    ]) ||
+    (!hasExactKeys(rpcRequest.params, pageEditKeys) &&
+      !hasExactKeys(rpcRequest.params, xmlRpcKeys)) ||
     rpcRequest.params.site_id !== 6000005 ||
     request.headers["x-deepwell-session-token"] !== "fixture-session-token" ||
     request.headers["x-deepwell-site-id"] !== "6000005" ||
     typeof rpcRequest.params.slug !== "string" ||
-    !Array.isArray(rpcRequest.params.tags)
+    (rpcRequest.params.tags !== undefined && !Array.isArray(rpcRequest.params.tags))
   ) {
     return undefined
   }
@@ -36,7 +39,13 @@ export const handlePageCreateRpc = ({ rpcRequest, request }) => {
     headers: requestContextHeaders(request),
     params: rpcRequest.params
   })
-  const slug = rpcRequest.params.slug
+  const requestedSlug = rpcRequest.params.slug
+  const slug =
+    requestedSlug === "autonumber-requested"
+      ? "104"
+      : requestedSlug === "data-form-create-flow:example"
+        ? "data-form-create-flow:104"
+        : requestedSlug
   const revisionId = counters.nextRevisionId++
   pages[slug] = {
     page_id: counters.nextPageId++,
@@ -49,7 +58,7 @@ export const handlePageCreateRpc = ({ rpcRequest, request }) => {
     creator_user_id: rpcRequest.params.user_id,
     title: rpcRequest.params.title,
     slug,
-    tags: rpcRequest.params.tags,
+    tags: rpcRequest.params.tags ?? [],
     rating: 0,
     wikitext: rpcRequest.params.wikitext,
     compiled_body_html: `<p>${rpcRequest.params.wikitext}</p>`

@@ -29,7 +29,10 @@ function activateTab(link: HTMLAnchorElement): boolean {
   }
 
   for (const [index, tabItem] of items.entries()) {
-    tabItem.classList.toggle("selected", index === selectedIndex)
+    const selected = index === selectedIndex
+    tabItem.classList.toggle("selected", selected)
+    if (selected) tabItem.setAttribute("title", "active")
+    else tabItem.removeAttribute("title")
   }
 
   for (const [index, panel] of panels.entries()) {

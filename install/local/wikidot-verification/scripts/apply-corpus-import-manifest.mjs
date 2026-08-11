@@ -16,6 +16,7 @@ import { planDirectAttachmentMaterialization } from '../src/corpus-attachment-di
 import {
   commitDirectCorpusAttachmentStaging,
   materializeCorpusRowAttachments,
+  rerenderDirectCorpusAttachmentPages,
   summarizeCorpusAttachmentUpload,
   uploadDirectCorpusAttachmentBlobs,
 } from '../src/corpus-import-attachments.mjs';
@@ -116,7 +117,7 @@ function parseBooleanString(value, label) {
 export function usage() {
   return `Usage: apply-corpus-import-manifest.mjs --manifest <manifest.jsonl> [--apply-migration] [--slug <slug>...] [--adopt-existing] [--replace-existing] [--assume-empty-db-import] [--skip-existing-done] [--skip-rerender] [--attachments-only-existing] [--skip-attachments] [--create-mode rpc|db] [--attachment-create-mode rpc|direct] [--attachment-s3-endpoint <url>] [--attachment-s3-bucket <bucket>] [--attachment-s3-access-key-id <key>] [--attachment-s3-region <region>] [--attachment-s3-path-style true|false] [--rerender-after-db-create] [--db-url <postgres-url>] [--text-hash-command <cmd>] [--text-hash-batch-command <cmd>] [--attachment-user-id <id>] [--presign-host-alias files=127.0.0.1] [--dry-run]
 
-Imports current corpus snapshot pages into a local Wikijump mirror. This is an operator-only local tool: it uses Deepwell JSON-RPC for page create/rerender and corpus-backed file attachment materialization, and direct Postgres SQL for corpus snapshot metadata, timestamps, and tags. Set --db-url or DEEPWELL_VERIFY_DB_URL to use a persistent Postgres client instead of docker exec psql. Non-dry-run --assume-empty-db-import is disabled until its site-level empty-page guard and DB shell writes are atomic; dry-run accepts the flag for planning without probing or changing the target. RPC attachment materialization requires DEEPWELL_SESSION_TOKEN so Deepwell file_create has an authenticated request context. Direct attachment materialization requires --db-url plus --attachment-user-id or a non-default --user-id, and uploads blobs with non-secret S3 config from --attachment-s3-* options and all S3 config from S3_CUSTOM_ENDPOINT, S3_FILES_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_REGION_NAME, and S3_PATH_STYLE. Secrets are accepted only through environment variables so they do not enter process arguments. Pass --attachment-user-id, or --user-id if page and attachment attribution should be the same authenticated user. Use --attachments-only-existing to materialize attachments for already-imported pages without replacing page source snapshots. Use --skip-attachments to defer attachment materialization without requiring a session token. Use --presign-host-alias only when Deepwell returns a Docker-internal file-service host that the local operator process cannot resolve.`;
+Imports current corpus snapshot pages into a local Wikijump mirror. This is an operator-only local tool: it uses Deepwell JSON-RPC for page create/rerender and corpus-backed file attachment materialization, and direct Postgres SQL for corpus snapshot metadata, timestamps, and tags. Set --db-url or DEEPWELL_VERIFY_DB_URL to use a persistent Postgres client instead of docker exec psql. Non-dry-run --assume-empty-db-import is disabled until its site-level empty-page guard and DB shell writes are atomic; dry-run accepts the flag for planning without probing or changing the target. Corpus rows with attachments require --attachment-create-mode direct so their provenance descriptor commits atomically with the file revision; RPC attachment mode is rejected because file_create can expose a host-derived descriptor before a later correction. Direct attachment materialization requires --db-url plus --attachment-user-id or a non-default --user-id, and uploads blobs with non-secret S3 config from --attachment-s3-* options and all S3 config from S3_CUSTOM_ENDPOINT, S3_FILES_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_REGION_NAME, and S3_PATH_STYLE. Secrets are accepted only through environment variables so they do not enter process arguments. Pass --attachment-user-id, or --user-id if page and attachment attribution should be the same authenticated user. Use --attachments-only-existing to materialize attachments for already-imported pages without replacing page source snapshots. Use --skip-attachments to defer attachment materialization. Use --presign-host-alias only when Deepwell returns a Docker-internal file-service host that the local operator process cannot resolve.`;
 }
 
 export function parseArgs(argv) {
@@ -1497,6 +1498,12 @@ export async function main(argv) {
     const manifestText = timePhaseSync(phaseTimingsMs, 'read_manifest', () => fs.readFileSync(args.manifest, 'utf8'));
     const allRows = timePhaseSync(phaseTimingsMs, 'parse_manifest', () => parseRows(manifestText));
     const selectedRows = timePhaseSync(phaseTimingsMs, 'filter_rows', () => filterRows(args, allRows));
+    const rpcAttachmentRow = !args.skipAttachments && args.attachmentCreateMode === 'rpc'
+      ? selectedRows.find((row) => Array.isArray(row.attachments) && row.attachments.length > 0)
+      : undefined;
+    if (rpcAttachmentRow !== undefined) {
+      throw new Error(`${rpcAttachmentRow.fullname}: corpus attachments require --attachment-create-mode direct so provenance descriptors commit atomically with file revisions; RPC mode can expose a host-derived descriptor before correction`);
+    }
     const completeInventory = selectedRows.length === allRows.length && args.limit === null && args.slug.length === 0 && args.slugFile === null;
     const directAttachmentPlan = timePhaseSync(phaseTimingsMs, 'plan_direct_attachments', () => (
       args.attachmentCreateMode === 'direct' ? planDirectAttachmentMaterialization(selectedRows) : null
@@ -1566,11 +1573,11 @@ export async function main(argv) {
         });
       }
       if (directAttachmentPlan !== null) {
-        let attachmentStaging = { summary: { total: 0, insert: 0, skip_existing: 0, fail_closed: 0 }, rows: [] };
+        let attachmentStaging = { summary: { total: 0, insert: 0, backfill_descriptor: 0, replace_descriptor: 0, skip_existing: 0, fail_closed: 0 }, rows: [] };
         if (directAttachmentUpload.failed === 0) {
           attachmentStaging = await timePhase(phaseTimingsMs, 'commit_direct_attachment_staging', () => commitDirectCorpusAttachmentStaging(args, sqlExecutor, directAttachmentPlan));
           summary.attachments_uploaded += attachmentStaging.summary.insert;
-          summary.attachments_skipped_existing += attachmentStaging.summary.skip_existing;
+          summary.attachments_skipped_existing += attachmentStaging.summary.skip_existing + attachmentStaging.summary.backfill_descriptor + attachmentStaging.summary.replace_descriptor;
         }
         summary.attachment_direct_staging = attachmentStaging.summary;
         console.log(JSON.stringify({
@@ -1579,6 +1586,18 @@ export async function main(argv) {
           attachment_direct_staging: summary.attachment_direct_staging,
         }));
         if (directAttachmentUpload.failed > 0 || attachmentStaging.summary.fail_closed > 0) summary.failed += 1;
+        if (directAttachmentUpload.failed === 0 && attachmentStaging.summary.fail_closed === 0) {
+          Object.assign(summary, await timePhase(
+            phaseTimingsMs,
+            'rerender_direct_attachment_pages',
+            () => rerenderDirectCorpusAttachmentPages({
+              skipRerender: args.skipRerender,
+              stagingRows: attachmentStaging.rows,
+              getPage: (fullname) => getPage(args, fullname),
+              rerenderPage: (pageId, categoryId) => rerenderPage(args, pageId, categoryId),
+            }),
+          ));
+        }
       }
       Object.assign(summary, await timePhase(phaseTimingsMs, 'upsert_parent_links', () => upsertParentLinks(args, sqlExecutor, selectedRows)));
       Object.assign(summary, await timePhase(phaseTimingsMs, 'rerender_parent_link_pages', () => rerenderParentLinkPages(args, sqlExecutor, selectedRows)));

@@ -34,6 +34,7 @@ pub use self::service::{
     PRESIGN_DIRECTORY,
 };
 pub use self::structs::{
-    BlobMetadata, CancelBlobUpload, FinalizeBlobUploadOutput, GetBlobOutput, HardDelete,
-    HardDeleteOutput, StartBlobUpload, StartBlobUploadOutput,
+    BlobMetadata, CancelBlobUpload, ContentTypeDescriptor, FinalizeBlobUploadOutput,
+    GetBlobOutput, HardDelete, HardDeleteOutput, PendingBlobOwner, StartBlobUpload,
+    StartBlobUploadOutput, StartBlobUploadScope,
 };

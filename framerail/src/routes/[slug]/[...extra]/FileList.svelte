@@ -67,7 +67,7 @@
 {#if fileMap.size > 0}
   <div class="file-list">
     <div class="file-list-header">
-      <div class="file-attribute name">
+      <div class="file-attribute file-name">
         {data.internationalization?.["wiki-page-file.name"]}
       </div>
       <div class="file-attribute created-at">
@@ -88,7 +88,7 @@
     </div>
     {#each [...fileMap].sort((a, b) => b[0] - a[0]) as [id, file] (id)}
       <div class="file-row" data-id={id}>
-        <div class="file-attribute name">
+        <div class="file-attribute file-name">
           <a
             href={`//${data.site_file_domain}/-/file/${data.page?.slug}/${file.name}`}
             rel="external"

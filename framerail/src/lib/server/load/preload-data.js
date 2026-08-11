@@ -4,9 +4,11 @@
  * unless they are deliberately added here.
  *
  * @template Site
+ * @template SiteSettings
  * @template UserSession
  * @param {{
  *   site: Site
+ *   site_settings: SiteSettings
  *   site_file_domain: string
  *   license_name: string
  *   license_url: string
@@ -18,6 +20,7 @@
  */
 export const buildPublicPreloadData = (response, userSession, locales) => ({
   site: response.site,
+  site_settings: response.site_settings,
   site_file_domain: response.site_file_domain,
   license_name: response.license_name,
   license_url: response.license_url,

@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 61,
+    "observation_count": 71,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1523,7 +1523,10 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809",
+        "forum-q1034-comments-attributes-anonymous-20260809"
+      ]
     },
     {
       "id": "module-countpages",
@@ -1741,7 +1744,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "search-feed-current-unavailable-boundaries-20260809"
+      ]
     },
     {
       "id": "module-files",
@@ -1839,7 +1844,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-forumnewthread",
@@ -1887,7 +1894,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-forumthread",
@@ -1911,7 +1920,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-frontforum",
@@ -1935,7 +1946,10 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809",
+        "forum-q1034-frontforum-scalar-boundaries-20260810"
+      ]
     },
     {
       "id": "module-frontspecialmini",
@@ -2207,7 +2221,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "members-list-amc-pagination-20260809"
+      ]
     },
     {
       "id": "module-membershipapply",
@@ -2307,7 +2323,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-mini-current-preview-and-workbench-20260809"
+      ]
     },
     {
       "id": "module-minirecentposts",
@@ -2331,7 +2349,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-mini-current-preview-and-workbench-20260809"
+      ]
     },
     {
       "id": "module-minirecentthreads",
@@ -2355,7 +2375,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-mini-current-preview-and-workbench-20260809"
+      ]
     },
     {
       "id": "module-navibar",
@@ -2718,7 +2740,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-route-core-20260809"
+      ]
     },
     {
       "id": "module-recentthreads",
@@ -2742,7 +2766,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "forum-q1034-readonly-surfaces-20260809"
+      ]
     },
     {
       "id": "module-redirect",
@@ -2792,7 +2818,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "search-feed-current-unavailable-boundaries-20260809"
+      ]
     },
     {
       "id": "module-searchall",
@@ -2816,7 +2844,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "searchall-form-routes-current-unavailable-20260809"
+      ]
     },
     {
       "id": "module-searchusers",
@@ -2918,7 +2948,9 @@
         "Framerail HTTP/browser boundary when the module is interactive or URL-driven"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "sitechanges-readonly-ajax-contract-20260810"
+      ]
     },
     {
       "id": "module-sitegrid",
@@ -5011,7 +5043,9 @@
         "Rendered HTML/DOM at the saved-page boundary for context-dependent forms"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "image-head-ascii-whitespace-boundary-20260810"
+      ]
     },
     {
       "id": "syntax-include",

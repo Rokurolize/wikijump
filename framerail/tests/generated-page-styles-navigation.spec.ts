@@ -18,8 +18,8 @@ const generatedCssClones = (page: import("@playwright/test").Page) =>
 type NavigationAnimationFrame = {
   generatedClones: number
   href: string
-  markedStyles: number
   pageTitleDisplay: string | null
+  preloadedStyles: number
   sideBarDisplay: string | null
   themeStylesheetsReady: boolean
 }
@@ -82,9 +82,7 @@ test("Wikidot page links do not present the destination before its CSS", async (
   )
   expect(pageErrors).toEqual([])
   await expect(page.locator("#skrollr-body")).toHaveAttribute("data-sveltekit-reload", "")
-  await expect(
-    page.locator('head [data-wikidot-style-frame="wikidot-style-frame"]')
-  ).toHaveCount(1)
+  await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(1)
   expect(await generatedCss(page)).toEqual([".generated-style-a { color: red; }"])
   const presentedFrames: PresentedFrame[] = []
   let markFirstPresentedFrame!: () => void
@@ -104,15 +102,17 @@ test("Wikidot page links do not present the destination before its CSS", async (
                 "head style[data-wikidot-generated-css-clone]"
               ).length,
               href: location.pathname,
-              markedStyles: document.querySelectorAll(
-                'head [data-wikidot-style-frame="wikidot-style-frame"]'
+              preloadedStyles: document.querySelectorAll(
+                "head [data-wikidot-style-preloaded]"
               ).length,
               pageTitleDisplay: pageTitle ? getComputedStyle(pageTitle).display : null,
               sideBarDisplay: sideBar ? getComputedStyle(sideBar).display : null,
               themeStylesheetsReady: Array.from(
                 document.querySelectorAll('head link[rel="stylesheet"]')
               )
-                .filter((stylesheet) => stylesheet.hasAttribute("data-wikidot-style-frame"))
+                .filter((stylesheet) =>
+                  stylesheet.hasAttribute("data-wikidot-style-preloaded")
+                )
                 .every((stylesheet) => stylesheet.sheet !== null)
             };
           })()`,
@@ -154,9 +154,7 @@ test("Wikidot page links do not present the destination before its CSS", async (
   releaseThemeResponse()
   await Promise.all([click, navigation])
   expect(onlyOldDocumentFramesDuringThemeDelay).toBe(true)
-  await expect(
-    page.locator('head [data-wikidot-style-frame="wikidot-style-frame"]')
-  ).toHaveCount(2)
+  await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(2)
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
@@ -176,8 +174,8 @@ test("Wikidot page links do not present the destination before its CSS", async (
   for (const frame of destinationFrames) {
     expect(frame).toMatchObject({
       generatedClones: 0,
-      markedStyles: 2,
       pageTitleDisplay: "none",
+      preloadedStyles: 2,
       sideBarDisplay: "none",
       themeStylesheetsReady: true
     })

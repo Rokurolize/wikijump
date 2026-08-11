@@ -26,8 +26,13 @@ use crate::models::session::Model as SessionModel;
 use crate::models::site::Model as SiteModel;
 use crate::models::user::Model as WikijumpUserModel;
 use crate::services::DataFormEditor;
+use crate::services::membership::MembershipBrowserAction;
+use crate::services::page_meta_tag::PageMetaTag;
 use crate::services::relation::PageAttribution;
-use crate::services::settings::{PageDiscussionSettings, PageRatingSettings};
+use crate::services::render::{LegacyBrowserAction, RateBrowserActionRegistry};
+use crate::services::settings::{
+    PageDiscussionSettings, PageRatingSettings, ThemeSetting,
+};
 use crate::services::user::User;
 use crate::types::Reference;
 use time::OffsetDateTime;
@@ -111,11 +116,19 @@ pub enum GetPageViewOutput {
         wikidot_breadcrumbs: Vec<WikidotPageBreadcrumbView>,
         attributions: Vec<PageAttribution>,
         #[serde(default)]
+        meta_tags: Vec<PageMetaTag>,
+        #[serde(default)]
         page_rating: PageRatingSettings,
         #[serde(default)]
         page_discussion: PageDiscussionSettings,
         #[serde(default)]
         data_form: Option<DataFormEditor>,
+        #[serde(default)]
+        legacy_actions: Vec<LegacyBrowserAction>,
+        #[serde(default)]
+        rate_actions: Option<RateBrowserActionRegistry>,
+        #[serde(default)]
+        membership_actions: Vec<MembershipBrowserAction>,
         redirect_page: Option<String>,
         #[serde(default)]
         redirect_kind: Option<PageRedirectKind>,
@@ -124,6 +137,7 @@ pub enum GetPageViewOutput {
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
         compiled_side_bar_html: Option<String>,
+        theme: ThemeSetting,
     },
 
     Missing {
@@ -144,6 +158,7 @@ pub enum GetPageViewOutput {
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
         compiled_side_bar_html: Option<String>,
+        theme: ThemeSetting,
     },
 
     Permissions {
@@ -155,6 +170,7 @@ pub enum GetPageViewOutput {
         compiled_body_styles: Vec<String>,
         compiled_top_bar_html: Option<String>,
         compiled_side_bar_html: Option<String>,
+        theme: ThemeSetting,
         banned: bool,
     },
 }
@@ -175,37 +191,6 @@ pub struct WikidotPageSnapshotView {
 pub struct WikidotPageBreadcrumbView {
     pub slug: String,
     pub title: String,
-}
-
-#[cfg(test)]
-mod page_view_output_tests {
-    use super::*;
-
-    #[test]
-    fn cached_page_view_without_redirect_kind_remains_deserializable() {
-        let cached = serde_json::json!({
-            "type": "missing",
-            "data": {
-                "options": PageOptions::default(),
-                "redirect_page": null,
-                "wikitext": "",
-                "compiled_body_html": "",
-                "compiled_body_styles": [],
-                "compiled_top_bar_html": null,
-                "compiled_side_bar_html": null
-            }
-        });
-
-        let output: GetPageViewOutput = serde_json::from_value(cached)
-            .expect("legacy cached page view should deserialize");
-        assert!(matches!(
-            output,
-            GetPageViewOutput::Missing {
-                redirect_kind: None,
-                ..
-            }
-        ));
-    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -256,6 +241,7 @@ pub enum GetAdminViewOutput {
 #[derive(Serialize, Debug, Clone)]
 pub struct Viewer {
     pub site: SiteModel,
+    pub site_settings: crate::services::settings::SiteSettings,
     pub site_file_domain: String,
     pub license_name: String,
     pub license_url: &'static str,

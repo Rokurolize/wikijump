@@ -27,6 +27,20 @@ use time::OffsetDateTime;
 pub struct StartBlobUpload {
     pub user_id: i64,
     pub blob_size: u64,
+    pub scope: StartBlobUploadScope,
+}
+
+#[derive(Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StartBlobUploadScope {
+    Unscoped,
+    Page,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum PendingBlobOwner {
+    Unscoped,
+    Page { site_id: i64, page_id: i64 },
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -49,7 +63,20 @@ pub struct FinalizeBlobUploadOutput {
     pub s3_hash: BlobHash,
     pub mime: String,
     pub size: i64,
+    pub content_type: ContentTypeDescriptor,
     pub created: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ContentTypeDescriptor {
+    pub label: String,
+    pub description: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ContentAnalysis {
+    pub mime: String,
+    pub content_type: ContentTypeDescriptor,
 }
 
 #[derive(Deserialize, Debug, Clone)]

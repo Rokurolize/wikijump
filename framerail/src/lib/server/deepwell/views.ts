@@ -10,11 +10,14 @@ import type {
   PageRevisionModel,
   SessionModel,
   SiteModel,
+  SiteSettings,
+  ThemeSetting,
   UserModel
 } from "$lib/types"
 
 export interface Viewer {
   site: SiteModel
+  site_settings: SiteSettings
   site_file_domain: string
   license_name: string
   license_url: string
@@ -56,6 +59,7 @@ export interface ClientUserSession {
 
 export interface PreloadData {
   site: Viewer["site"]
+  site_settings: Viewer["site_settings"]
   site_file_domain: Viewer["site_file_domain"]
   license_name: Viewer["license_name"]
   license_url: Viewer["license_url"]
@@ -81,6 +85,40 @@ interface PageViewDataBase {
   compiled_body_styles: string[]
   compiled_top_bar_html: Optional<string>
   compiled_side_bar_html: Optional<string>
+  theme: ThemeSetting
+}
+
+export interface PageMetaTagView {
+  name: string
+  content: string
+  all_pages: boolean
+}
+
+export type LegacyBrowserAction =
+  | { type: "edit" }
+  | { type: "history" }
+  | { type: "source" }
+  | { type: "print" }
+  | { type: "set-tags"; index: number; fingerprint: string }
+
+export type RateBrowserAction =
+  | { type: "rate"; index: number; fingerprint: string; value: -1 | 1 | 2 | 3 | 4 | 5 }
+  | { type: "rate-cancel"; index: number; fingerprint: string }
+
+export interface RateBrowserActionRegistry {
+  site_id: number
+  page_id: number
+  revision_id: number
+  current_value: Nullable<number>
+  actions: RateBrowserAction[]
+}
+
+export type MembershipBrowserAction = {
+  type: "join"
+  page_id: number
+  revision_id: number
+  index: number
+  fingerprint: string
 }
 
 interface PageViewFound {
@@ -94,6 +132,10 @@ interface PageViewFound {
     page_rating: PageRatingSettings
     page_discussion: PageDiscussionSettings
     data_form: Nullable<DataFormEditor>
+    legacy_actions: LegacyBrowserAction[]
+    rate_actions: Nullable<RateBrowserActionRegistry>
+    membership_actions: MembershipBrowserAction[]
+    meta_tags: PageMetaTagView[]
   }
 }
 
@@ -117,6 +159,7 @@ export interface DataFormFieldDefinition {
   field_type: Nullable<string>
   values: DataFormValueDefinition[]
   default_value: Nullable<string>
+  configured_value: Nullable<string>
   width: number
   height: number
   match_pattern: Nullable<string>

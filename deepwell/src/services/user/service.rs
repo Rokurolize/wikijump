@@ -48,6 +48,7 @@ use sea_orm::{
 use serde_json::Value as JsonValue;
 use std::borrow::Cow;
 use std::cmp;
+use std::collections::{BTreeMap, BTreeSet};
 use std::net::IpAddr;
 
 /// Notes that this user account does not have a password set.
@@ -60,6 +61,54 @@ const VERIFIED_EMAIL_UNIQUE_INDEX: &str = "user_verified_email_active_unique_idx
 pub struct UserService;
 
 impl UserService {
+    pub async fn get_public_identities(
+        ctx: &ServiceContext<'_>,
+        user_ids: &BTreeSet<i64>,
+    ) -> Result<BTreeMap<i64, ftml::data::UserInfo<'static>>> {
+        if user_ids.is_empty() {
+            return Ok(BTreeMap::new());
+        }
+
+        let txn = ctx.transaction();
+        let make_error =
+            || Error::new("failed to get public user identities", ErrorType::User);
+        let wikijump_users = WikijumpUser::find()
+            .filter(user::Column::UserId.is_in(user_ids.iter().copied()))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        let wikijump_user_ids = wikijump_users
+            .iter()
+            .map(|user| user.user_id)
+            .collect::<BTreeSet<_>>();
+        let mut identities = wikijump_users
+            .into_iter()
+            .filter_map(|user| User::Wikijump(user).into_public_identity())
+            .map(|identity| (identity.user_id, identity))
+            .collect::<BTreeMap<_, _>>();
+
+        let wikidot_ids = user_ids
+            .iter()
+            .filter(|user_id| !wikijump_user_ids.contains(user_id))
+            .filter_map(|user_id| i32::try_from(*user_id).ok())
+            .collect::<BTreeSet<_>>();
+        if wikidot_ids.is_empty() {
+            return Ok(identities);
+        }
+        let wikidot_users = WikidotUser::find()
+            .filter(wikidot_user::Column::UserId.is_in(wikidot_ids))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        identities.extend(
+            wikidot_users
+                .into_iter()
+                .filter_map(|user| User::Wikidot(user).into_public_identity())
+                .map(|identity| (identity.user_id, identity)),
+        );
+        Ok(identities)
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         input: CreateUser,
@@ -953,9 +1002,13 @@ impl UserService {
                 Some(uploaded_blob_id) => {
                     let config = ctx.config();
                     let FinalizeBlobUploadOutput { s3_hash, size, .. } =
-                        BlobService::finish_upload(ctx, user.user_id, &uploaded_blob_id)
-                            .await
-                            .or_raise(make_error)?;
+                        BlobService::finish_unscoped_upload(
+                            ctx,
+                            user.user_id,
+                            &uploaded_blob_id,
+                        )
+                        .await
+                        .or_raise(make_error)?;
 
                     if size > config.maximum_avatar_size {
                         error!(

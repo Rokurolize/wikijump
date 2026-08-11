@@ -49,7 +49,7 @@ const BUCKET_REQUEST_TIMEOUT: Duration = Duration::from_millis(500);
 pub use crate::runtime::ServerState;
 
 pub async fn build_server_state(config: Config, secrets: Secrets) -> Result<ServerState> {
-    build_server_state_inner(config, secrets, true).await
+    build_server_state_inner(config, secrets, true, None).await
 }
 
 /// Build state for a bounded runtime action that must not consume background jobs.
@@ -62,7 +62,20 @@ pub async fn build_server_state_without_workers(
     config: Config,
     secrets: Secrets,
 ) -> Result<ServerState> {
-    build_server_state_inner(config, secrets, false).await
+    build_server_state_inner(config, secrets, false, None).await
+}
+
+/// Build workerless state with a task-owned Redis job queue.
+///
+/// This is an integration-test boundary for transaction and worker behavior.
+/// Production state always uses the fixed runtime namespace.
+#[doc(hidden)]
+pub async fn build_server_state_without_workers_with_job_queue_namespace(
+    config: Config,
+    secrets: Secrets,
+    job_queue_namespace: &str,
+) -> Result<ServerState> {
+    build_server_state_inner(config, secrets, false, Some(job_queue_namespace)).await
 }
 
 async fn build_server_state_inner(
@@ -79,6 +92,7 @@ async fn build_server_state_inner(
         mailcheck_api_key,
     }: Secrets,
     start_workers: bool,
+    job_queue_namespace: Option<&str>,
 ) -> Result<ServerState> {
     let make_error =
         || Error::new("failed to build server state", ErrorType::ServerSetup);
@@ -90,7 +104,11 @@ async fn build_server_state_inner(
         .or_raise(make_error)?;
 
     info!("Connecting to Redis");
-    let (redis, rsmq) = redis_db::connect(&redis_url).await.or_raise(make_error)?;
+    let (redis, rsmq) = match job_queue_namespace {
+        Some(namespace) => redis_db::connect_with_namespace(&redis_url, namespace).await,
+        None => redis_db::connect(&redis_url).await,
+    }
+    .or_raise(make_error)?;
 
     // Load localization data
     info!("Loading localization data");
@@ -334,6 +352,9 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("article_view", article_view);
     register!("article_view_cache_metadata", article_view_cache_metadata);
     register!("page_view", page_view);
+    register!("page_backlinks_view", page_backlinks_view);
+    register!("site_tools_orphaned_pages", site_tools_orphaned_pages);
+    register!("site_tools_wanted_pages", site_tools_wanted_pages);
     register!("user_view", user_view);
     register!("admin_view", admin_view);
 
@@ -392,6 +413,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("member_set", membership_set);
     register!("member_get", membership_get);
     register!("member_remove", membership_remove);
+    register!("membership_join", membership_join);
 
     // Category
     register!("category_get", category_get);
@@ -403,6 +425,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_create", page_create);
     register!("page_get", page_get);
     register!("page_view_permission", page_view_permission);
+    register!("page_watchers", page_watchers);
+    register!("page_who_rated", page_who_rated);
+    register!("page_meta_tags", page_meta_tags);
+    register!("page_meta_tag_set", page_meta_tag_set);
+    register!("page_meta_tag_delete", page_meta_tag_delete);
     register!("page_get_direct", page_get_direct);
     register!("page_get_deleted", page_get_deleted);
     register!("page_get_score", page_get_score);
@@ -411,11 +438,15 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_select", page_select);
     register!("wikidot_list_pages_feed", wikidot_list_pages_feed);
     register!("wikidot_list_pages_module", wikidot_list_pages_module);
+    register!("wikidot_site_changes_module", wikidot_site_changes_module);
+    register!("wikidot_forum_module", wikidot_forum_module);
+    register!("wikidot_members_list_module", wikidot_members_list_module);
     register!(
         "wikidot_page_discussion_create",
         wikidot_page_discussion_create
     );
     register!("wikidot_page_preview", wikidot_page_preview);
+    register!("wikidot_legacy_set_tags", wikidot_legacy_set_tags);
     register!("page_edit", page_edit);
     register!("page_edit_permission", page_edit_permission);
     register!("page_delete", page_delete);
@@ -438,7 +469,9 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     // Page revisions
     register!("page_revision_create", page_revision_edit);
     register!("page_revision_get", page_revision_get);
+    register!("page_revision_get_by_id", page_revision_get_by_id);
     register!("page_revision_count", page_revision_count);
+    register!("page_revision_diff", page_revision_diff);
     register!("page_revision_range", page_revision_range);
 
     // Page links
@@ -528,6 +561,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("vote_action", vote_action);
     register!("vote_list", vote_list_get);
     register!("vote_list_count", vote_list_count);
+    register!("wikidot_legacy_rate", wikidot_legacy_rate);
 
     // Wikidot data import
     register!("import_wikidot_user", import_wikidot_user);

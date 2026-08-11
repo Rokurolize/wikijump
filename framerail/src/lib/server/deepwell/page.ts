@@ -8,7 +8,8 @@ import type {
   Optional,
   PageRevisionType,
   PageVoteModel,
-  ParseError
+  ParseError,
+  UserInfo
 } from "$lib/types"
 import type { RequestContext } from "../request-context"
 
@@ -144,10 +145,205 @@ export async function pageViewPermission(
   )
 }
 
+export interface PageBacklinkView {
+  slug: string
+  title: string
+}
+
+export async function pageBacklinksView(
+  siteId: number,
+  page: number | string,
+  requestContext: RequestContext = {}
+): Promise<PageBacklinkView[]> {
+  return client.request(
+    "page_backlinks_view",
+    {
+      site_id: siteId,
+      page
+    },
+    requestContext
+  )
+}
+
+export interface SiteToolsPageView {
+  slug: string
+  title: string
+}
+
+export interface SiteToolsWantedPageView {
+  slug: string
+  sources: SiteToolsPageView[]
+}
+
+export async function siteToolsOrphanedPages(
+  siteId: number,
+  requestContext: RequestContext = {}
+): Promise<SiteToolsPageView[]> {
+  return client.request("site_tools_orphaned_pages", { site_id: siteId }, requestContext)
+}
+
+export async function siteToolsWantedPages(
+  siteId: number,
+  requestContext: RequestContext = {}
+): Promise<SiteToolsWantedPageView[]> {
+  return client.request("site_tools_wanted_pages", { site_id: siteId }, requestContext)
+}
+
+export async function pageWatchers(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<UserInfo[]> {
+  return client.request(
+    "page_watchers",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
+export interface PageWhoRatedVote {
+  user: UserInfo
+  value: number
+}
+
+export async function pageWhoRated(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<PageWhoRatedVote[]> {
+  return client.request(
+    "page_who_rated",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
+export interface PageMetaTag {
+  name: string
+  content: string
+  all_pages: boolean
+}
+
+export async function pageMetaTags(
+  siteId: number,
+  pageId: number,
+  requestContext: RequestContext = {}
+): Promise<PageMetaTag[]> {
+  return client.request(
+    "page_meta_tags",
+    {
+      site_id: siteId,
+      page_id: pageId
+    },
+    requestContext
+  )
+}
+
+export async function pageMetaTagSet(
+  siteId: number,
+  pageId: number,
+  name: string,
+  content: string,
+  allPages: boolean,
+  requestContext: RequestContext = {}
+): Promise<void> {
+  return client.request(
+    "page_meta_tag_set",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      name,
+      content,
+      all_pages: allPages
+    },
+    requestContext
+  )
+}
+
+export async function pageMetaTagDelete(
+  siteId: number,
+  pageId: number,
+  name: string,
+  allPages: boolean,
+  requestContext: RequestContext = {}
+): Promise<void> {
+  return client.request(
+    "page_meta_tag_delete",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      name,
+      all_pages: allPages
+    },
+    requestContext
+  )
+}
+
+export interface WikidotSiteChangesModuleInput {
+  pageId?: string
+  page: string
+  perpage: string
+  categoryId?: string
+  options: string
+}
+
+export interface WikidotSiteChangesModuleOutput {
+  status: string
+  body: string
+}
+
+export async function wikidotSiteChangesModule(
+  siteId: number,
+  input: WikidotSiteChangesModuleInput,
+  requestContext: RequestContext = {}
+): Promise<WikidotSiteChangesModuleOutput> {
+  return client.request(
+    "wikidot_site_changes_module",
+    {
+      site_id: siteId,
+      page: input.page,
+      perpage: input.perpage,
+      options: input.options,
+      ...(input.pageId === undefined ? {} : { page_id: input.pageId }),
+      ...(input.categoryId === undefined ? {} : { category_id: input.categoryId })
+    },
+    requestContext
+  )
+}
+
 export async function pageEditPermission(
   requestContext: RequestContext = {}
 ): Promise<{ can_edit: boolean }> {
   return client.request("page_edit_permission", {}, requestContext)
+}
+
+export async function wikidotLegacySetTags(
+  pageId: number,
+  lastRevisionId: number,
+  actionIndex: number,
+  actionFingerprint: string,
+  userId: number,
+  ipAddress: string,
+  requestContext: RequestContext
+): Promise<Optional<CreatePageRevisionOutput>> {
+  return client.request(
+    "wikidot_legacy_set_tags",
+    {
+      page_id: pageId,
+      last_revision_id: lastRevisionId,
+      action_index: actionIndex,
+      action_fingerprint: actionFingerprint,
+      user_id: userId,
+      ip_address: ipAddress
+    },
+    requestContext
+  )
 }
 
 export interface WikidotPageDiscussionOutput {
@@ -174,20 +370,21 @@ export async function wikidotPageDiscussionCreate(
 export interface PageRevisionModelFiltered {
   revision_id: number
   revision_type: PageRevisionType
-  created_at: number
-  updated_at: Nullable<number>
+  created_at: string
+  updated_at: Nullable<string>
   from_wikidot: boolean
   revision_number: number
   page_id: number
   site_id: number
   user_id: number
+  author: Nullable<UserInfo>
   changes: string[]
   wikitext: Nullable<string>
   compiled_body_html: Nullable<string>
   compiled_body_styles: Nullable<string[]>
   compiled_top_bar_html: Nullable<string>
   compiled_side_bar_html: Nullable<string>
-  compiled_at: number
+  compiled_at: string
   compiled_generator: string
   comments: Nullable<string>
   hidden: string[]
@@ -287,6 +484,61 @@ export async function pageRevision(
   )
 }
 
+export async function pageRevisionById(
+  siteId: number,
+  revisionId: number,
+  compiledHtml: boolean,
+  wikitext: boolean,
+  requestContext: RequestContext = {}
+): Promise<Nullable<PageRevisionModelFiltered>> {
+  return client.request(
+    "page_revision_get_by_id",
+    {
+      site_id: siteId,
+      revision_id: revisionId,
+      details: {
+        compiled_html: compiledHtml,
+        wikitext
+      }
+    },
+    requestContext
+  )
+}
+
+export type PageRevisionDiffLineKind = "added" | "removed" | "unchanged"
+
+export interface PageRevisionDiffLine {
+  kind: PageRevisionDiffLineKind
+  text: string
+}
+
+export interface PageRevisionDiffOutput {
+  site_id: number
+  page_id: number
+  from_revision_number: number
+  to_revision_number: number
+  lines: PageRevisionDiffLine[]
+}
+
+export async function pageRevisionDiff(
+  siteId: number,
+  pageId: number,
+  fromRevisionNumber: number,
+  toRevisionNumber: number,
+  requestContext: RequestContext = {}
+): Promise<Nullable<PageRevisionDiffOutput>> {
+  return client.request(
+    "page_revision_diff",
+    {
+      site_id: siteId,
+      page_id: pageId,
+      from_revision_number: fromRevisionNumber,
+      to_revision_number: toRevisionNumber
+    },
+    requestContext
+  )
+}
+
 /* ----- Page Rollback ----- */
 export interface PageRollbackInput {
   siteId: number
@@ -368,6 +620,26 @@ export async function pageVoteRemove(
   requestContext: RequestContext
 ): Promise<PageVoteModel> {
   return client.request("vote_remove", { page_id: pageId }, requestContext)
+}
+
+/* ----- Renderer-bound Wikidot Rate action ----- */
+export async function wikidotLegacyRate(
+  pageId: number,
+  lastRevisionId: number,
+  actionIndex: number,
+  actionFingerprint: string,
+  requestContext: RequestContext
+): Promise<PageScore> {
+  return client.request(
+    "wikidot_legacy_rate",
+    {
+      page_id: pageId,
+      last_revision_id: lastRevisionId,
+      action_index: actionIndex,
+      action_fingerprint: actionFingerprint
+    },
+    requestContext
+  )
 }
 
 /* ----- Page Rerender ----- */

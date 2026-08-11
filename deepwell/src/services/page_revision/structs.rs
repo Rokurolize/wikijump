@@ -20,6 +20,7 @@
 
 use crate::types::Maybe;
 use crate::types::{FetchDirection, PageDetails, PageId, PageRevisionType};
+use ftml::data::UserInfo;
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
 use std::num::NonZeroI32;
@@ -104,6 +105,37 @@ pub struct GetPageRevision {
     pub revision_number: i32,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct GetPageRevisionDiff {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub from_revision_number: i32,
+    pub to_revision_number: i32,
+}
+
+#[derive(Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PageRevisionDiffLineKind {
+    Added,
+    Removed,
+    Unchanged,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageRevisionDiffLine {
+    pub kind: PageRevisionDiffLineKind,
+    pub text: String,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageRevisionDiffOutput {
+    pub site_id: i64,
+    pub page_id: i64,
+    pub from_revision_number: i32,
+    pub to_revision_number: i32,
+    pub lines: Vec<PageRevisionDiffLine>,
+}
+
 #[derive(Debug, Clone)]
 pub struct CountPageRevisions {
     pub site_id: i64,
@@ -117,6 +149,21 @@ pub struct GetPageRevisionDetails {
 
     #[serde(default)]
     pub details: PageDetails,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct GetPageRevisionByIdDetails {
+    pub site_id: i64,
+    pub revision_id: i64,
+
+    #[serde(default)]
+    pub details: PageDetails,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PageRevisionCoordinate {
+    pub page_id: i64,
+    pub revision_number: i32,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -186,6 +233,7 @@ pub struct PageRevisionModelFiltered {
     pub page_id: i64,
     pub site_id: i64,
     pub user_id: i64,
+    pub author: Option<UserInfo<'static>>,
     pub changes: Vec<String>,
     pub wikitext: Option<String>,
     pub compiled_body_html: Option<String>,

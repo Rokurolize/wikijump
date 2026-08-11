@@ -1,0 +1,254 @@
+{
+  "schema": "wikidot.live.data-form.file-field.v1",
+  "captured_at_utc": "2026-08-10T09:22:31.004780+00:00",
+  "site": "sandbox-for-codex",
+  "surface_ids": [
+    "catalog-feature:data-forms-file-field"
+  ],
+  "status": "blocked",
+  "actor_labels": {
+    "mutation": "account-a",
+    "public_read": "anonymous"
+  },
+  "public_interfaces": [
+    "wikidot.py public page publish and source verification",
+    "edit/PageEditModule generated create form",
+    "wikidot.py public page existence and attachment inventory reads",
+    "wikidot.py public page deletion and absence verification"
+  ],
+  "attempted_public_routes": [
+    "authenticated run-owned category template publish",
+    "authenticated edit/PageEditModule create-form preflight",
+    "authenticated target-page existence and attachment-inventory preflight",
+    "authenticated run-owned template deletion and absence readback"
+  ],
+  "mutation_performed": true,
+  "membership_or_site_setting_mutation_performed": false,
+  "promoted_rules": [],
+  "blocked_reason": "The live form exposed a file control, but no cleanup-safe authenticated multipart upload operation was available through the repository-pinned public client, so upload behavior was not inferred.",
+  "missing_authority": "An exact public multipart submission operation and exact public attachment cleanup operation usable through wikidot.py without copying session credentials outside its connector.",
+  "runs": [
+    {
+      "run_id": "default-category",
+      "status": "blocked",
+      "category_mode": "default",
+      "fixture_identity": {
+        "template": "fw16-file-default-1786353710-2218322-df47:_template",
+        "target": "fw16-file-default-1786353710-2218322-df47:target",
+        "explicit_category": null
+      },
+      "upload": {
+        "filename": "default-category-payload-1786353710-2218322-df47.txt",
+        "byte_length": 36,
+        "sha256": "0a7d19e7f1ff29d5f2b7094f0820894a5d273266d2124c79841d686a9f0859d1",
+        "submitted": false
+      },
+      "phases": {
+        "create_form": {
+          "status": "observed",
+          "field_control": {
+            "tag": "input",
+            "type": "hidden",
+            "name": "field-document",
+            "classes": [
+              "dataform-file-value"
+            ],
+            "accept": null,
+            "multiple": false
+          },
+          "sanitized_form_metadata": {
+            "tag": "form",
+            "id": "edit-page-form",
+            "classes": [
+              "form-horizontal",
+              "data-form"
+            ],
+            "method": null,
+            "enctype": null,
+            "action": null
+          },
+          "standalone_upload_route_exposed": false
+        },
+        "create_submission": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "create_saved_source": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "create_storage": {
+          "status": "preflight_only",
+          "target_page_present": false,
+          "target_page_attachments": [],
+          "storage_page_fullname": null,
+          "storage_page_attachments": [],
+          "reason": "no upload occurred because the cleanup-safe multipart route was not established"
+        },
+        "create_display": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_form": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_submission": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_saved_source": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_storage": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_display": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "reload": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "cleanup": {
+          "status": "verified",
+          "template_deleted": true,
+          "template_absent": true,
+          "target_absent": true,
+          "upload_submitted": false,
+          "storage_page_created": false,
+          "errors": []
+        }
+      }
+    },
+    {
+      "run_id": "explicit-category",
+      "status": "blocked",
+      "category_mode": "explicit",
+      "fixture_identity": {
+        "template": "fw16-file-explicit-1786353710-2218322-df47:_template",
+        "target": "fw16-file-explicit-1786353710-2218322-df47:target",
+        "explicit_category": "fw16-alt-1786353710-2218322-df47"
+      },
+      "upload": {
+        "filename": "explicit-category-payload-1786353710-2218322-df47.txt",
+        "byte_length": 43,
+        "sha256": "0fe26ce25a2ab387a642fe6b8b96a35ccf0d6b24ddbe25641b6016542f76e22e",
+        "submitted": false
+      },
+      "phases": {
+        "create_form": {
+          "status": "observed",
+          "field_control": {
+            "tag": "input",
+            "type": "hidden",
+            "name": "field-document",
+            "classes": [
+              "dataform-file-value"
+            ],
+            "accept": null,
+            "multiple": false
+          },
+          "sanitized_form_metadata": {
+            "tag": "form",
+            "id": "edit-page-form",
+            "classes": [
+              "form-horizontal",
+              "data-form"
+            ],
+            "method": null,
+            "enctype": null,
+            "action": null
+          },
+          "standalone_upload_route_exposed": false
+        },
+        "create_submission": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "create_saved_source": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "create_storage": {
+          "status": "preflight_only",
+          "target_page_present": false,
+          "target_page_attachments": [],
+          "storage_page_fullname": null,
+          "storage_page_attachments": [],
+          "reason": "no upload occurred because the cleanup-safe multipart route was not established"
+        },
+        "create_display": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_form": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_submission": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_saved_source": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_storage": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "edit_display": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "reload": {
+          "status": "not_attempted",
+          "reason": "safe authenticated multipart upload and attachment cleanup operations were not established through the repository-pinned public client"
+        },
+        "cleanup": {
+          "status": "verified",
+          "template_deleted": true,
+          "template_absent": true,
+          "target_absent": true,
+          "upload_submitted": false,
+          "storage_page_created": false,
+          "errors": []
+        }
+      }
+    }
+  ],
+  "cleanup": {
+    "verified": true,
+    "remaining_run_owned_objects": [],
+    "templates_created": 2,
+    "uploads_submitted": 0,
+    "storage_pages_created": 0
+  },
+  "credentials_exposed": false,
+  "redactions": [
+    "account credentials",
+    "session identifiers",
+    "PageEditModule operational lock material",
+    "hidden form fields"
+  ],
+  "remaining_gaps": [
+    "file upload submission and saved-source representation",
+    "default and explicit separate storage-page category selection",
+    "saved-page link DOM",
+    "edit replacement and old-file retention semantics",
+    "duplicate filename and filename normalization behavior",
+    "validation failures and permission behavior",
+    "ListPages behavior, image treatment, and Gallery exclusion",
+    "browser-visible upload intervals"
+  ],
+  "evidence_identity": {
+    "cases_path": "install/local/wikidot-verification/fixtures/data-form-file-field/cases.json",
+    "cases_sha256": "35033552ff708978d29cf61f81a1c38423641a184a06e8387b7b494b4281c27e",
+    "capture_script_path": "/home/roku/wjlab/worktrees/open87-pr2/fw16-data-form-file-ec7888bf/install/local/wikidot-verification/scripts/capture-data-form-file-field.mjs",
+    "capture_script_sha256": "23e68874fcfe6b9ecc8a995e58efe1a01bc7e900ba3cd7acc75f2989bf0e3663"
+  }
+}

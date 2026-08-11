@@ -2,9 +2,12 @@
   import { goto } from "$app/navigation"
   import { resolve } from "$app/paths"
   import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { pageMutationDestinationSlug } from "$lib/page-mutation-destination"
   import {
     buildWikidotDataFormState,
-    serializeWikidotDataFormSource
+    getWikidotDataFormFieldPresentation,
+    serializeWikidotDataFormSource,
+    wikidotDataFormFieldNames
   } from "$lib/wikidot/wikidot-data-form.js"
   import WikidotDataFormMatchWorker from "$lib/wikidot/wikidot-data-form-match.worker.ts?worker"
   import { superForm } from "sveltekit-superforms"
@@ -62,6 +65,7 @@
   const fieldGroups = $derived.by(() => {
     const groups: DataFormDefinition["fields"][] = []
     for (const field of definition.fields) {
+      if (field.field_type === "hidden") continue
       if (field.field_type === "select" && field.values.length === 0) continue
       if ((field.join ?? false) && groups.length > 0) {
         groups[groups.length - 1].push(field)
@@ -263,7 +267,20 @@
       onResult: async ({ result, cancel }) => {
         if (result.type === "success" && result.data) {
           cancel()
-          goto(resolve(`/${slug}`, {}), { noScroll: true })
+          const destinationSlug = pageMutationDestinationSlug({
+            creating,
+            requestedSlug: slug,
+            responseSlug: result.data.res?.slug
+          })
+          if (!destinationSlug) {
+            errorPopupState.current = {
+              state: true,
+              message: "Page creation did not return its assigned slug.",
+              data: {}
+            }
+            return
+          }
+          goto(resolve(`/${destinationSlug}`, {}), { noScroll: true })
         }
         if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -309,7 +326,7 @@
   <input
     name="form-fields"
     type="hidden"
-    value={definition.fields.map((field) => field.name).join(",")}
+    value={wikidotDataFormFieldNames(definition).join(",")}
   />
   <input name="form-file-still-uploading" type="hidden" value="0" />
 
@@ -375,7 +392,22 @@
               class:form-error={validationErrors.has(field.name)}
               >{field.before
                 ? `${field.before} `
-                : " "}{#if field.field_type === "checkbox"}
+                : " "}{#if field.field_type === "static"}
+                {field.configured_value ?? ""}
+              {:else if field.field_type === "password" || field.field_type === "url"}
+                {@const presentation = getWikidotDataFormFieldPresentation(field)}
+                <input
+                  name={`field-${field.name}`}
+                  class={presentation.className ?? ""}
+                  onkeypress={(event) => {
+                    if (event.key === "Enter") event.preventDefault()
+                  }}
+                  placeholder={field.hint || undefined}
+                  size={field.width}
+                  type={presentation.inputType ?? "text"}
+                  bind:value={values[field.name]}
+                />
+              {:else if field.field_type === "checkbox"}
                 {#if values[field.name] === "1"}
                   <input
                     name={`field-${field.name}`}

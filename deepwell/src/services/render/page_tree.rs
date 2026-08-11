@@ -25,14 +25,15 @@ use std::num::NonZeroU32;
 use std::sync::LazyLock;
 
 use regex::Regex;
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 
 use super::AuthorizedPageSelector;
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{module_arguments_are_complete, wikidot_module_arguments};
 use super::service::{
-    RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
+    MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService, escape_list_pages_html_attr,
+    escape_list_pages_html_text,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
@@ -41,8 +42,11 @@ use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::services::ServiceContext;
 use ftml::settings::WikitextSettings;
 
-static PAGE_TREE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?is)\[\[module\s+PageTree(?P<head>(?:\s+[^\]]*)?)\]\]").unwrap()
+pub(super) static PAGE_TREE_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?im)^(?P<module>\[\[module[\t ]+PageTree(?P<head>(?:[\t ]+[^\]\r\n]*)?)\]\])[\t ]*\r?$",
+    )
+    .unwrap()
 });
 
 #[derive(Debug)]
@@ -57,6 +61,15 @@ struct PageTree {
     page_ids_by_slug: HashMap<String, i64>,
     child_ids_by_parent: HashMap<i64, Vec<i64>>,
 }
+
+#[derive(Debug)]
+enum PageTreeLoad {
+    Complete(PageTree),
+    Saturated,
+}
+
+const MAX_PAGE_TREE_ROWS: usize = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
+const PAGE_TREE_QUERY_LIMIT: u64 = MAX_PAGE_TREE_ROWS as u64 + 1;
 
 #[derive(Debug, PartialEq, Eq)]
 struct PageTreeArguments<'a> {
@@ -208,6 +221,7 @@ impl RenderService {
             wikitext,
             settings,
             current_site_id,
+            viewer_user_id,
             compat_html,
         )
         .await?;
@@ -241,7 +255,11 @@ impl RenderService {
             return Ok(wikitext);
         };
 
-        let tree = Self::load_page_tree(ctx, current_site_id, viewer_user_id).await?;
+        let tree =
+            match Self::load_page_tree(ctx, current_site_id, viewer_user_id).await? {
+                PageTreeLoad::Complete(tree) => tree,
+                PageTreeLoad::Saturated => return Ok(wikitext),
+            };
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
@@ -251,7 +269,10 @@ impl RenderService {
             let matched = captures
                 .get(0)
                 .expect("a PageTree capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
+            let module = captures
+                .name("module")
+                .expect("a PageTree capture always has a module invocation");
+            if literal_regions.contains(module.start()) {
                 continue;
             }
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
@@ -288,16 +309,20 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         viewer_user_id: Option<i64>,
-    ) -> Result<PageTree> {
+    ) -> Result<PageTreeLoad> {
         let make_error =
             || Error::new("failed to render PageTree module", ErrorType::Render);
         let txn = ctx.transaction();
         let pages = Page::find()
             .filter(page::Column::SiteId.eq(current_site_id))
             .filter(page::Column::DeletedAt.is_null())
+            .limit(PAGE_TREE_QUERY_LIMIT)
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if pages.len() > MAX_PAGE_TREE_ROWS {
+            return Ok(PageTreeLoad::Saturated);
+        }
         let mut authorized_selector = AuthorizedPageSelector::new(ctx, viewer_user_id);
         let pages = authorized_selector.filter_models(pages).await?;
         let revision_ids = pages
@@ -339,9 +364,13 @@ impl RenderService {
             .filter(page_parent::Column::ChildPageId.is_in(page_ids))
             .order_by_asc(page_parent::Column::CreatedAt)
             .order_by_asc(page_parent::Column::ChildPageId)
+            .limit(PAGE_TREE_QUERY_LIMIT)
             .all(txn)
             .await
             .or_raise(make_error)?;
+        if relationships.len() > MAX_PAGE_TREE_ROWS {
+            return Ok(PageTreeLoad::Saturated);
+        }
         let mut child_ids_by_parent = HashMap::<i64, Vec<i64>>::new();
         for relationship in relationships {
             child_ids_by_parent
@@ -350,11 +379,11 @@ impl RenderService {
                 .push(relationship.child_page_id);
         }
 
-        Ok(PageTree {
+        Ok(PageTreeLoad::Complete(PageTree {
             nodes,
             page_ids_by_slug,
             child_ids_by_parent,
-        })
+        }))
     }
 }
 
@@ -363,8 +392,8 @@ mod tests {
     use std::num::NonZeroU32;
 
     use super::{
-        PageTree, PageTreeArguments, PageTreeNode, parse_page_tree_arguments,
-        render_page_tree, root_is_supported,
+        PAGE_TREE_MODULE_REGEX, PageTree, PageTreeArguments, PageTreeNode,
+        parse_page_tree_arguments, render_page_tree, root_is_supported,
     };
     use std::collections::HashMap;
 
@@ -429,6 +458,13 @@ mod tests {
             );
         }
         assert_eq!(parse_page_tree_arguments(r#" root="x" garbage"#), None);
+    }
+
+    #[test]
+    fn page_tree_recognition_requires_an_own_line_invocation() {
+        assert!(PAGE_TREE_MODULE_REGEX.is_match("[[module PageTree]]"));
+        assert!(!PAGE_TREE_MODULE_REGEX.is_match("start-[[module PageTree]]-middle"));
+        assert!(!PAGE_TREE_MODULE_REGEX.is_match(" [[module PageTree]]"));
     }
 
     #[test]

@@ -255,6 +255,9 @@ test(
     const results = children.map((child) => nextMessage(child));
     for (const child of children) child.send({ type: "go" });
     const replies = await Promise.all(results);
+    for (const child of children) {
+      if (child.connected) child.disconnect();
+    }
     const errors = replies.filter((reply) => reply.type === "error");
     assert.deepEqual(errors, [], JSON.stringify(errors, null, 2));
     assert.equal(

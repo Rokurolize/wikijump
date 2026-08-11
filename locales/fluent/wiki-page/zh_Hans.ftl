@@ -16,6 +16,14 @@ wiki-page-view-source = 检视源代码
 
 wiki-page-revision-history = 页面修订历史
 
+wiki-page-revision-diff = 比较修订版本
+  .from = 起始版本
+  .to = 目标版本
+  .compare = 比较
+  .swap = 交换
+  .loading = 正在加载比较…
+  .no-changes = 没有差异。
+
 wiki-page-revision-number = 版本编号
 
 wiki-page-revision-created-at = 編輯時間

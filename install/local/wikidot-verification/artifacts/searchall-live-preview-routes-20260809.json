@@ -1,0 +1,124 @@
+{
+  "schema": "wikijump_searchall_live_preview_routes.v1",
+  "captured_at": "2026-08-09T03:34:20+00:00",
+  "preview_provenance": {
+    "site": "sandbox-for-codex",
+    "module": "edit/PagePreviewModule",
+    "authenticated": false,
+    "mutated": false,
+    "cases_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/searchall-live-cases.jsonl",
+    "cases_sha256": "f796ebe9a7883a22a20a636172e56b6adc242cebd0552aaf5b96b95956eb8e0c",
+    "references_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/searchall-live-reference.jsonl",
+    "references_sha256": "0c1dce48bdbe6a42963110cdbe32bb0b4b46732ed5dee62768d8a856ec5acfc0"
+  },
+  "route_provenance": {
+    "site": "www",
+    "site_domain": "www.wikidot.com",
+    "authenticated": false,
+    "mutated": false,
+    "transport": "HTTPS GET"
+  },
+  "browser_provenance": {
+    "site": "sandbox-for-codex",
+    "authenticated": false,
+    "chrome": "Chrome/150.0.7871.187",
+    "artifact_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/searchall-browser-routes-20260809.json",
+    "artifact_sha256": "081c773808d420a6e33f9ec1436921a10b7e98cb6392ff5a091a09bf9d621c8b",
+    "run_owned_holder_deleted": true
+  },
+  "form_raw_html": "\n\n<div class=\"search-box\">\n\n\t<div class=\"query-area\">\n\t\t<form action=\"dummy\" id=\"search-form-all\">\n\t\t\t<div>\n\t\t\t\t<input class=\"text\" type=\"text\" size=\"30\" name=\"query\" id=\"search-form-all-input\" value=\"\"/>\n\t\t\t\t<input class=\"button\" type=\"submit\" value=\"Search\"/>\n\t\t\t</div>\n\t\t\t<div style=\"margin-top:5px;\">\n\t\t\t\t<input id=\"search-all-pf\" class=\"radio\" type=\"radio\" name=\"area\" value=\"pf\" checked=\"checked\"/><label for=\"search-all-pf\">pages and forums</label>\n\t\t\t\t<input id=\"search-all-p\" class=\"radio\" type=\"radio\" name=\"area\" value=\"p\" /><label for=\"search-all-p\">pages only</label>\n\t\t\t\t<input id=\"search-all-f\" class=\"radio\" type=\"radio\" name=\"area\" value=\"f\" /><label for=\"search-all-f\">forums only</label>\n\t\t\t</div>\n\t\t\t\n\t\t\t\n\t\t</form>\n\t</div>\n\n\t\n\t\t\n\t\t\n\t\n\t<div class=\"search-results\">\n\n    \t    \t\t    \t\n\t</div>\n\n\t\n</div>",
+  "form_raw_html_sha256": "92f839e928d64b5ac93f2f6d9b77c7c8b6371c92e03ed440c0f1b9da6a80c8a3",
+  "cases": [
+    {
+      "case_id": "searchall-bare",
+      "source": "[[module SearchAll]]",
+      "result": "form"
+    },
+    {
+      "case_id": "searchall-uppercase-name",
+      "source": "[[module SEARCHALL]]",
+      "result": "form"
+    },
+    {
+      "case_id": "searchall-unknown-argument",
+      "source": "[[module SearchAll unknown=\"x\"]]",
+      "result": "form"
+    },
+    {
+      "case_id": "searchall-single-quoted-argument",
+      "source": "[[module SearchAll unknown='x']]",
+      "result": "form"
+    },
+    {
+      "case_id": "searchall-inline",
+      "source": "before [[module SearchAll]] after",
+      "raw_html": "\n\n<p>before [[module SearchAll]] after</p>\n",
+      "raw_html_sha256": "629027bdf4dbfc430dfa5e63c6d6941ff4652010258812461ec25868a4193b7b"
+    },
+    {
+      "case_id": "searchall-literal",
+      "source": "@@[[module SearchAll]]@@",
+      "raw_html": "\n\n<p><span style=\"white-space: pre-wrap;\">[[module&#32;SearchAll]]</span></p>\n",
+      "raw_html_sha256": "b65d0682d4397036cb62cd2c8b97570d40f88594838549083ef941fe4e7ac3ca"
+    },
+    {
+      "case_id": "searchall-route-pf-query",
+      "path": "/search:all/a/pf/q/wikidot",
+      "http_status": 200,
+      "raw_html": "\n\n<div class=\"error-block\">Couldnt connect to host, ElasticSearch down?</div>",
+      "raw_html_sha256": "98f1c32925196110d14ea3bc18f508a0343546670a62b6bf55819d5da5a2d0d2"
+    },
+    {
+      "case_id": "searchall-route-p-query",
+      "path": "/search:all/a/p/q/wikidot",
+      "http_status": 200,
+      "raw_html_sha256": "98f1c32925196110d14ea3bc18f508a0343546670a62b6bf55819d5da5a2d0d2"
+    },
+    {
+      "case_id": "searchall-route-f-query",
+      "path": "/search:all/a/f/q/wikidot",
+      "http_status": 200,
+      "raw_html_sha256": "98f1c32925196110d14ea3bc18f508a0343546670a62b6bf55819d5da5a2d0d2"
+    },
+    {
+      "case_id": "searchall-route-unknown-area-query",
+      "path": "/search:all/a/x/q/wikidot",
+      "http_status": 200,
+      "raw_html_sha256": "98f1c32925196110d14ea3bc18f508a0343546670a62b6bf55819d5da5a2d0d2"
+    },
+    {
+      "case_id": "searchall-route-query-without-area",
+      "path": "/search:all/q/wikidot",
+      "http_status": 200,
+      "raw_html_sha256": "98f1c32925196110d14ea3bc18f508a0343546670a62b6bf55819d5da5a2d0d2"
+    },
+    {
+      "case_id": "searchall-route-empty-query",
+      "path": "/search:all/a/pf/q/",
+      "http_status": 200,
+      "raw_html_sha256": "92f839e928d64b5ac93f2f6d9b77c7c8b6371c92e03ed440c0f1b9da6a80c8a3"
+    },
+    {
+      "case_id": "searchall-browser-pf-spaced-query",
+      "area": "pf",
+      "query": "  a/b? c  ",
+      "path": "/search:all/a/pf/q/%20%20a%2Fb%3F%20c%20%20"
+    },
+    {
+      "case_id": "searchall-browser-p-query",
+      "area": "p",
+      "query": "probe",
+      "path": "/search:all/a/p/q/probe"
+    },
+    {
+      "case_id": "searchall-browser-f-query",
+      "area": "f",
+      "query": "probe",
+      "path": "/search:all/a/f/q/probe"
+    }
+  ],
+  "blockers": [
+    "Current live Wikidot reports ElasticSearch down for non-empty SearchAll queries, so successful result DOM, ranking, pagination, highlighting, and visibility filtering remain unobservable.",
+    "The behavior sandbox has no search:all holder page, so its submitted route produces the ordinary missing-page response and is used only as navigation evidence."
+  ]
+}

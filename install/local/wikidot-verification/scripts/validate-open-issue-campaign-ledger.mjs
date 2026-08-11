@@ -13,6 +13,7 @@ const openPath = args.includes("--open-issues") ? value("--open-issues") : null;
 const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"));
 const gitHash = /^[0-9a-f]{40}$/;
 const sha256 = /^[0-9a-f]{64}$/;
+const terminalStatuses = new Set(["passed", "closed", "superseded"]);
 const caseFields = {
   unit: "unit_cases",
   integration: "integration_cases",
@@ -57,7 +58,7 @@ for (const entry of ledger.entries) {
 }
 const tracking = ledger.entries.find((entry) => entry.number === 1089);
 if (!tracking) throw new Error("tracking issue #1089 missing");
-if (tracking.status === "passed" && ledger.entries.some((entry) => entry.number !== 1089 && !["passed", "closed", "superseded"].includes(entry.status))) {
+if (tracking.status === "passed" && ledger.entries.some((entry) => entry.number !== 1089 && !terminalStatuses.has(entry.status))) {
   throw new Error("tracking issue passed before all child issues became terminal");
 }
 for (const [batch, descriptor] of Object.entries(ledger.batches)) {
@@ -67,7 +68,11 @@ for (const [batch, descriptor] of Object.entries(ledger.batches)) {
 if (openPath) {
   const open = JSON.parse(await fs.readFile(openPath, "utf8"));
   const openNumbers = new Set(open.map((entry) => entry.number));
-  const ledgerNumbers = new Set(numbers);
+  const ledgerNumbers = new Set(
+    ledger.entries
+      .filter((entry) => !terminalStatuses.has(entry.status))
+      .map((entry) => entry.number),
+  );
   const missing = [...openNumbers].filter((number) => !ledgerNumbers.has(number));
   const extra = [...ledgerNumbers].filter((number) => !openNumbers.has(number));
   if (missing.length || extra.length) throw new Error(`open issue mismatch missing=${missing} extra=${extra}`);

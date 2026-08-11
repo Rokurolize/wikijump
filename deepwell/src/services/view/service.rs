@@ -51,19 +51,27 @@ use crate::services::data_form::{
     load_data_form_definitions, parse_observed_wikidot_data_form_values,
     render_wikidot_data_form_table_with_wiki_html,
 };
+use crate::services::membership::{
+    JoinActorState, MembershipBrowserAction, MembershipPolicy, MembershipService,
+};
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::relation::{
-    GetPageAttributions, GetSiteBan, PageAttribution, RelationService,
+    GetPageAttributions, GetSiteBan, GetSiteMember, PageAttribution, RelationService,
 };
-use crate::services::render::{RenderOutput, RenderService};
-use crate::services::settings::{NavigationPageHtml, SettingsService};
+use crate::services::render::{
+    LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
+};
+use crate::services::settings::{
+    NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
+};
 use crate::services::user::User;
 use crate::services::view::ViewType;
+use crate::services::vote::GetVote;
 use crate::services::{
     BlueprintPageService, CategoryService, DataFormEditor, DomainService,
-    PageRevisionService, PageService, SessionService, SiteService, TextService,
-    UserService,
+    PageLockService, PageMetaTagService, PageRevisionService, PageService,
+    SessionService, SiteService, TextService, UserService, VoteService,
 };
 use crate::types::Reference;
 use crate::types::{Action, PageId, PageOrder, Permission, RerenderDepth, Resource};
@@ -78,6 +86,90 @@ use std::collections::BTreeMap;
 use time::OffsetDateTime;
 use unic_langid::LanguageIdentifier;
 use wikidot_normalize::normalize;
+
+async fn rate_browser_actions_for_page(
+    ctx: &ServiceContext<'_>,
+    page: &PageModel,
+    page_revision: &PageRevisionModel,
+    wikitext: &str,
+    compiled_body_html: &str,
+    page_rating: PageRatingSettings,
+    viewer_user_id: Option<i64>,
+) -> Result<Option<crate::services::render::RateBrowserActionRegistry>> {
+    if !page_rating.enabled {
+        return Ok(None);
+    }
+    let Some(user_id) = viewer_user_id else {
+        return Ok(None);
+    };
+    let registry = RenderService::rate_action_registry_from_wikidot_source(
+        wikitext,
+        page_rating.rating_type,
+    );
+    if registry.is_empty()
+        || PageLockService::active_lock_exists(ctx, page.page_id).await?
+    {
+        return Ok(None);
+    }
+    if page_rating.permission == PageRatingPermission::Members
+        && RelationService::get_optional_site_member(
+            ctx,
+            GetSiteMember {
+                site_id: page.site_id,
+                user_id,
+            },
+        )
+        .await?
+        .is_none()
+    {
+        return Ok(None);
+    }
+
+    let current_value = VoteService::get_optional(
+        ctx,
+        GetVote {
+            page_id: page.page_id,
+            user_id,
+        },
+        page_rating.rating_type.vote_store_key(),
+    )
+    .await?
+    .map(|vote| vote.value);
+    Ok(registry.browser_registry_for_wikidot_html(
+        compiled_body_html,
+        page.site_id,
+        page.page_id,
+        page_revision.revision_id,
+        current_value,
+    ))
+}
+
+async fn membership_browser_actions_for_page(
+    ctx: &ServiceContext<'_>,
+    page: &PageModel,
+    page_revision: &PageRevisionModel,
+    wikitext: &str,
+    compiled_body_html: &str,
+    viewer_user_id: Option<i64>,
+) -> Result<Vec<MembershipBrowserAction>> {
+    let Some(user_id) = viewer_user_id else {
+        return Ok(Vec::new());
+    };
+    let site = SiteService::get(ctx, Reference::Id(page.site_id)).await?;
+    if MembershipService::policy(&site) != MembershipPolicy::Open
+        || MembershipService::actor_state(ctx, page.site_id, Some(user_id)).await?
+            != JoinActorState::Eligible
+    {
+        return Ok(Vec::new());
+    }
+
+    Ok(MembershipActionRegistry::from_wikidot_source(wikitext)
+        .browser_actions_for_saved_wikidot_html(
+            compiled_body_html,
+            page.page_id,
+            page_revision.revision_id,
+        ))
+}
 
 fn wikidot_redirect_module_allowed(
     page: &PageModel,
@@ -99,14 +191,18 @@ async fn render_wikidot_data_form_wiki_values(
     tokio::time::timeout(ctx.config().render_timeout, async {
         let mut rendered = BTreeMap::new();
         for field in &data_form.definition.fields {
-            if field.field_type.as_deref() != Some("wiki") {
+            if !matches!(field.field_type.as_deref(), Some("wiki" | "static")) {
                 continue;
             }
-            let source = data_form
-                .values
-                .get(&field.name)
-                .cloned()
-                .unwrap_or_default();
+            let source = if field.field_type.as_deref() == Some("static") {
+                field.configured_value.clone().unwrap_or_default()
+            } else {
+                data_form
+                    .values
+                    .get(&field.name)
+                    .cloned()
+                    .unwrap_or_default()
+            };
             let output = RenderService::render_wikidot_fragment_for_page(
                 ctx, source, page_info, page_id,
             )
@@ -948,6 +1044,9 @@ impl ViewService {
             (None, None)
         };
 
+        let theme = SettingsService::get_theme(ctx, site_id, category_id)
+            .await
+            .or_raise(make_error)?;
         let output = match page_status {
             PageStatus::Found {
                 page,
@@ -956,10 +1055,33 @@ impl ViewService {
                 wikidot_breadcrumbs,
                 attributions,
             } => {
+                let legacy_actions = LegacyActionRegistry::from_wikidot_source(&wikitext)
+                    .browser_actions_for_wikidot_html(&compiled_body_html);
+                let membership_actions = membership_browser_actions_for_page(
+                    ctx,
+                    &page,
+                    &page_revision,
+                    &wikitext,
+                    &compiled_body_html,
+                    user_session.as_ref().map(|session| session.user.user_id),
+                )
+                .await
+                .or_raise(make_error)?;
                 let page_rating = SettingsService::get_page_rating_settings(
                     ctx,
                     page.site_id,
                     page.page_category_id,
+                )
+                .await
+                .or_raise(make_error)?;
+                let rate_actions = rate_browser_actions_for_page(
+                    ctx,
+                    &page,
+                    &page_revision,
+                    &wikitext,
+                    &compiled_body_html,
+                    page_rating,
+                    user_session.as_ref().map(|session| session.user.user_id),
                 )
                 .await
                 .or_raise(make_error)?;
@@ -970,6 +1092,10 @@ impl ViewService {
                 )
                 .await
                 .or_raise(make_error)?;
+                let meta_tags =
+                    PageMetaTagService::effective(ctx, page.site_id, page.page_id)
+                        .await
+                        .or_raise(make_error)?;
                 GetPageViewOutput::Found {
                     options,
                     page,
@@ -977,9 +1103,13 @@ impl ViewService {
                     wikidot_snapshot,
                     wikidot_breadcrumbs,
                     attributions,
+                    meta_tags,
                     page_rating,
                     page_discussion,
                     data_form,
+                    legacy_actions,
+                    rate_actions,
+                    membership_actions,
                     redirect_page,
                     redirect_kind,
                     wikitext,
@@ -987,6 +1117,7 @@ impl ViewService {
                     compiled_body_styles,
                     compiled_top_bar_html,
                     compiled_side_bar_html,
+                    theme,
                 }
             }
             PageStatus::Missing => GetPageViewOutput::Missing {
@@ -1002,6 +1133,7 @@ impl ViewService {
                 compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
+                theme,
             },
             PageStatus::Private => GetPageViewOutput::Permissions {
                 options,
@@ -1011,6 +1143,7 @@ impl ViewService {
                 compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
+                theme,
                 banned: false,
             },
             PageStatus::Banned => GetPageViewOutput::Permissions {
@@ -1021,6 +1154,7 @@ impl ViewService {
                 compiled_body_styles,
                 compiled_top_bar_html,
                 compiled_side_bar_html,
+                theme,
                 banned: true,
             },
         };
@@ -1090,6 +1224,7 @@ impl ViewService {
             source_fullname: String,
             title_shown: Option<String>,
             page_category_id: Option<i64>,
+            incomplete: bool,
         }
 
         let txn = ctx.transaction();
@@ -1098,8 +1233,13 @@ impl ViewService {
             format!(
                 r#"
 WITH RECURSIVE
-breadcrumb_chain(depth, page_id, source_site, source_fullname, title_shown, parent_fullname) AS (
-  SELECT 0, page_id, source_site, source_fullname, title_shown, parent_fullname
+breadcrumb_chain(
+  depth, page_id, source_site, source_fullname, title_shown,
+  parent_fullname, visited_page_ids, cycle_detected
+) AS (
+  SELECT
+    0, page_id, source_site, source_fullname, title_shown,
+    parent_fullname, ARRAY[page_id], false
   FROM wikidot_page_snapshot
   WHERE page_id = {page_id}
   UNION ALL
@@ -1109,18 +1249,25 @@ breadcrumb_chain(depth, page_id, source_site, source_fullname, title_shown, pare
     parent.source_site,
     parent.source_fullname,
     parent.title_shown,
-    parent.parent_fullname
+    parent.parent_fullname,
+    breadcrumb_chain.visited_page_ids || parent.page_id,
+    parent.page_id = ANY(breadcrumb_chain.visited_page_ids)
   FROM breadcrumb_chain
   JOIN wikidot_page_snapshot parent
     ON parent.source_site = breadcrumb_chain.source_site
    AND parent.source_fullname = breadcrumb_chain.parent_fullname
   WHERE breadcrumb_chain.parent_fullname IS NOT NULL
     AND breadcrumb_chain.depth < 12
+    AND NOT breadcrumb_chain.cycle_detected
 )
 SELECT
   breadcrumb_chain.source_fullname,
   breadcrumb_chain.title_shown,
-  page.page_category_id
+  page.page_category_id,
+  breadcrumb_chain.cycle_detected OR (
+    breadcrumb_chain.depth = 12
+    AND breadcrumb_chain.parent_fullname IS NOT NULL
+  ) AS incomplete
 FROM breadcrumb_chain
 LEFT JOIN page
   ON page.page_id = breadcrumb_chain.page_id
@@ -1140,11 +1287,16 @@ ORDER BY breadcrumb_chain.depth ASC
                 )
             })?;
 
+        if rows.iter().any(|row| row.incomplete) {
+            return Ok(Vec::new());
+        }
+
         let mut breadcrumbs = Vec::new();
         for WikidotBreadcrumbRow {
             source_fullname,
             title_shown,
             page_category_id,
+            incomplete: _,
         } in rows
         {
             let Some(page_category_id) = page_category_id else {
@@ -1485,10 +1637,12 @@ ORDER BY breadcrumb_chain.depth ASC
         let site_file_domain = DomainService::get_files(config, &site.slug);
         let license_name = site.license.translate(ctx.localization(), &locales)?;
         let license_url = site.license.url();
+        let site_settings = SettingsService::site_settings(&site);
 
         // Return
         Ok(Viewer {
             site,
+            site_settings,
             site_file_domain,
             license_name,
             license_url,

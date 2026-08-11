@@ -254,7 +254,6 @@ pub enum ErrorType {
 
     // 5200
     BlobNotUploaded,
-    BlobWrongUser,
     BlobTooBig,
     BlobSizeMismatch {
         expected: usize,
@@ -537,7 +536,6 @@ impl ErrorType {
 
             // 5200 - Blob
             ErrorType::BlobNotUploaded => 5200,
-            ErrorType::BlobWrongUser => 5201,
             ErrorType::BlobTooBig => 5202,
             ErrorType::BlobSizeMismatch { .. } => 5204,
             ErrorType::BlobBlacklisted(_) => 5205,
@@ -812,7 +810,6 @@ impl ErrorType {
 
             // 5200
             ErrorType::BlobNotUploaded => "Blob not uploaded",
-            ErrorType::BlobWrongUser => "Cannot use blob uploaded by different user",
             ErrorType::BlobTooBig => "Uploaded blob is too big for this operation",
             ErrorType::BlobSizeMismatch { .. } => {
                 "Uploaded blob does not match expected length"
@@ -1194,7 +1191,6 @@ mod tests {
             ),
             (ErrorType::FilterNotDeleted, 5102),
             (ErrorType::BlobNotUploaded, 5200),
-            (ErrorType::BlobWrongUser, 5201),
             (ErrorType::BlobTooBig, 5202),
             (
                 ErrorType::BlobSizeMismatch {

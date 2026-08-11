@@ -33,10 +33,44 @@ use sea_orm::{
     QueryOrder, QuerySelect, Set,
 };
 
+const MAX_CURRENT_PAGE_VOTES: usize = 16_384;
+const CURRENT_PAGE_VOTE_QUERY_LIMIT: u64 = MAX_CURRENT_PAGE_VOTES as u64 + 1;
+
 #[derive(Debug)]
 pub struct VoteService;
 
 impl VoteService {
+    pub async fn get_current_page_votes(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        rating_system: &str,
+    ) -> Result<Vec<PageVoteModel>> {
+        let votes = Self::get_history(
+            ctx,
+            GetVoteHistory {
+                kind: VoteHistoryKind::Page(page_id),
+                start_id: 0,
+                deleted: Some(false),
+                disabled: Some(false),
+                limit: CURRENT_PAGE_VOTE_QUERY_LIMIT,
+            },
+            Some(rating_system),
+        )
+        .await?;
+
+        if votes.len() > MAX_CURRENT_PAGE_VOTES {
+            return Err(Error::new(
+                format!(
+                    "current vote list for page ID {page_id} exceeded its safe bound"
+                ),
+                ErrorType::PageVote,
+            )
+            .into());
+        }
+
+        Ok(votes)
+    }
+
     /// Creates a vote with the given value.
     ///
     /// # Returns

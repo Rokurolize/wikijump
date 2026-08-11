@@ -1,0 +1,52 @@
+{
+  "schema": "wikijump_forum_q1034_pagination_live.v1",
+  "captured_at": "2026-08-09T12:57:13.563306+00:00",
+  "provenance": {
+    "actor": "anonymous",
+    "mutated": false,
+    "site": "scp-wiki",
+    "wikidot_py_version": "4.4.1",
+    "wikidot_py_commit": "4bacf55c551bd2f6155bb0abdfc0ca59e3d073a1",
+    "external_manifest_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/manifest.json",
+    "external_manifest_sha256": "fbb3ed48518950fa37b3df2f30677872322a1e9dfcfc29b2cbf7cf226bb84667",
+    "external_sums_path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/SHA256SUMS",
+    "external_sums_sha256": "5495db3d6d01675ed4ff66ad502e4599bab81d27ed78eb3dd18c1912c0796c40"
+  },
+  "cases": [
+    {
+      "case_id": "scp-category-1113520-page-1",
+      "request": {"moduleName": "forum/ForumViewCategoryModule", "c": 1113520, "p": 1},
+      "status": "ok",
+      "thread_row_count": 20,
+      "body_sha256": "5910330cc219f216925076a661019a8f624aada45629606c9f3b4bdde579a247"
+    },
+    {
+      "case_id": "scp-category-1113520-page-2",
+      "request": {"moduleName": "forum/ForumViewCategoryModule", "c": 1113520, "p": 2},
+      "status": "ok",
+      "thread_row_count": 20,
+      "body_sha256": "d43aa71385e23b7670ff9aba13afda2fa2d58e5ae93b647bb32cbb62bd37ef50"
+    },
+    {
+      "case_id": "scp-category-1113520-page-11",
+      "request": {"moduleName": "forum/ForumViewCategoryModule", "c": 1113520, "p": 11},
+      "status": "ok",
+      "thread_row_count": 1,
+      "body_sha256": "e97127cf83883f3938cafa65182549174762b0a470d6ae4f875eda902a198d7c"
+    },
+    {
+      "case_id": "scp-category-1113520-page-12",
+      "request": {"moduleName": "forum/ForumViewCategoryModule", "c": 1113520, "p": 12},
+      "status": "ok",
+      "thread_row_count": 0,
+      "body_sha256": "4a7207b4d90c8009570ee284fd9fd8f77a6193b26f0b85d7df22d5ee46a0134a"
+    }
+  ],
+  "observed_contract": [
+    "ForumViewCategoryModule uses 20 thread rows per page on the observed populated category.",
+    "The category response renders duplicate top and bottom pagers on full pages, one pager on the last partial page, and an out-of-range pager with no thread rows.",
+    "Page 1 links 1, 2, 3, ..., 10, 11 and next page 2; page 2 links previous page 1, 1, 2, 3, 4, ..., 10, 11, and next page 3.",
+    "Page 11 links previous page 10, 1, 2, ..., 9, 10, 11; page 12 deliberately says page 12 of 11, links previous page 11, 1, 2, ..., 10, 11, 12, and next page 13 without clamping.",
+    "Every observed pager href uses /forum/c-1113520/p/<page>."
+  ]
+}

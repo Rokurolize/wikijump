@@ -163,6 +163,80 @@ test("settled page geometry is not reused as DOMContentLoaded geometry", () => {
   );
 });
 
+test("ordered first-divergence diagnostics do not change parity thresholds", () => {
+  const contract = {
+    geometry_selectors: ["#main-content"],
+    first_paint_geometry_selectors: [],
+    presence_probes: [],
+    first_paint_custom_properties: {},
+    first_divergence_trace: {
+      root_selector: "#page-content",
+      max_elements: 10_000,
+    },
+  };
+  const trace = (fontSize) => ({
+    root_selector: "#page-content",
+    element_count: 1,
+    captured_count: 1,
+    truncated: false,
+    incomplete_image_count: 0,
+    elements: [
+      {
+        path: "p[1]",
+        tag: "p",
+        id: null,
+        classes: [],
+        direct_text_sha256: "same",
+        rect: { x: 0, y: 0, width: 100, height: 20 },
+        style: { "font-size": fontSize },
+      },
+    ],
+  });
+  const local = capture({
+    first_paint: {
+      document: {
+        geometry: {},
+        presence_probes: [],
+        custom_properties: {},
+        first_divergence_trace: trace("18px"),
+      },
+    },
+    document: {
+      presence_probes: [],
+      first_divergence_trace: trace("18px"),
+    },
+  });
+  const live = capture({
+    input_url: "https://scp-wiki.wikidot.com/scp-9506",
+    final_url: "https://scp-wiki.wikidot.com/scp-9506",
+    first_paint: {
+      document: {
+        geometry: {},
+        presence_probes: [],
+        custom_properties: {},
+        first_divergence_trace: trace("16px"),
+      },
+    },
+    document: {
+      presence_probes: [],
+      first_divergence_trace: trace("16px"),
+    },
+  });
+  const result = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], contract);
+  assert.equal(result.status, "pass");
+  assert.equal(
+    result.domcontentloaded_immediate_first_divergent_element.kind,
+    "style_divergence",
+  );
+  assert.equal(result.settled_first_divergent_element.kind, "style_divergence");
+  assert.equal(
+    result.anomalies.some((anomaly) =>
+      anomaly.code.includes("first_divergent_element"),
+    ),
+    false,
+  );
+});
+
 test("page-chrome skeleton deletion is a blocking parity regression", () => {
   const contract = {
     geometry_selectors: ["#main-content"],

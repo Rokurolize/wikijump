@@ -15,6 +15,8 @@ import {
   startRpcServer,
 } from "./support/xmlrpc-pilot-local-comparison-fixture.mjs";
 
+const rpcToken = "0".repeat(64);
+
 test("verified XML-RPC pilot rows compare exactly, retain tombstones, and replay idempotently", async (t) => {
   const fixture = await sealPilot(t);
   const pages = new Map(
@@ -35,6 +37,7 @@ test("verified XML-RPC pilot rows compare exactly, retain tombstones, and replay
   const first = await runXmlrpcPilotLocalComparison({
     outputDir,
     pilotRoot: fixture.pilotRoot,
+    rpcToken,
     rpcUrl: rpc.rpcUrl,
     runtimeIdentityPath: fixture.runtimeIdentityPath,
     sourceExpectation: fixture.sourceExpectation,
@@ -74,6 +77,7 @@ test("verified XML-RPC pilot rows compare exactly, retain tombstones, and replay
   const second = await runXmlrpcPilotLocalComparison({
     outputDir,
     pilotRoot: fixture.pilotRoot,
+    rpcToken,
     rpcUrl: rpc.rpcUrl,
     runtimeIdentityPath: fixture.runtimeIdentityPath,
     sourceExpectation: fixture.sourceExpectation,
@@ -99,6 +103,7 @@ test("source, HTML, metadata, and missing-page differences form deterministic mi
   const result = await runXmlrpcPilotLocalComparison({
     outputDir: comparisonOutputDir(fixture, "mismatch-output"),
     pilotRoot: fixture.pilotRoot,
+    rpcToken,
     rpcUrl: rpc.rpcUrl,
     runtimeIdentityPath: fixture.runtimeIdentityPath,
     sourceExpectation: fixture.sourceExpectation,
@@ -123,6 +128,7 @@ test("a local RPC error produces a sealed error verdict while deleted pilot rows
   const result = await runXmlrpcPilotLocalComparison({
     outputDir: comparisonOutputDir(fixture, "error-output"),
     pilotRoot: fixture.pilotRoot,
+    rpcToken,
     rpcUrl: rpc.rpcUrl,
     runtimeIdentityPath: fixture.runtimeIdentityPath,
     sourceExpectation: fixture.sourceExpectation,

@@ -22,7 +22,7 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID};
 use deepwell::error::prelude::*;
 use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUserModel};
 use deepwell::models::{known_user, wikidot_user};
@@ -130,6 +130,82 @@ async fn regular_account_password_policy_rejects_short_create_passwords() {
         }),
     );
     assert_ne!(updated.password, before_password);
+}
+
+#[tokio::test]
+async fn display_locale_preferences_round_trip_only_for_the_session_actor() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let user = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Display Locale Settings User",
+            "email": "display-locale-settings@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(user.user_id),
+        ..Default::default()
+    });
+    let updated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "locales": ["ja-JP", "en"],
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(updated.locales, ["ja-JP", "en"]);
+    let persisted = run_endpoint!(runner, user_get, json!({"user": user.user_id}))
+        .expect("display locale settings user should remain readable")
+        .user
+        .unwrap_wikijump()
+        .expect("display locale settings belong to a Wikijump user");
+    assert_eq!(persisted.locales, ["ja-JP", "en"]);
+
+    let invalid = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "locales": [],
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(invalid, ErrorType::User);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+    let denied = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": user.user_id,
+            "locales": ["ko"],
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    let unchanged = run_endpoint!(runner, user_get, json!({"user": user.user_id}))
+        .expect("display locale settings user should remain readable")
+        .user
+        .unwrap_wikijump()
+        .expect("display locale settings belong to a Wikijump user");
+    assert_eq!(unchanged.locales, ["ja-JP", "en"]);
 }
 
 #[tokio::test]

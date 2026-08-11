@@ -67,6 +67,28 @@ test("vote mutation RPCs derive actor and site from request context", async () =
   }
 })
 
+test("legacy Rate actions submit only a revision-bound server registry selector", async () => {
+  const actionSource = await readFile(pageActionsSourceUrl, "utf8")
+  const action = exportedFunction(
+    actionSource,
+    "wikidotLegacyRateAction",
+    "wikidotLegacySetTagsAction"
+  )
+  assert.match(action, /session: "required"/u)
+  assert.match(action, /context\.requestContext/u)
+  assert.doesNotMatch(action, /\bvalue\b|userId|siteId|score|voteCount/u)
+
+  const rpcSource = await readFile(pageRpcSourceUrl, "utf8")
+  const rpc = exportedFunction(rpcSource, "wikidotLegacyRate", "pageRerender")
+  assert.match(rpc, /"wikidot_legacy_rate"/u)
+  assert.match(rpc, /page_id: pageId/u)
+  assert.match(rpc, /last_revision_id: lastRevisionId/u)
+  assert.match(rpc, /action_index: actionIndex/u)
+  assert.match(rpc, /action_fingerprint: actionFingerprint/u)
+  assert.match(rpc, /requestContext/u)
+  assert.doesNotMatch(rpc, /\bvalue\b|userId|siteId|score|voteCount/u)
+})
+
 test("page score RPCs derive the target from request context", async () => {
   const source = await readFile(pageRpcSourceUrl, "utf8")
   const start = source.indexOf("export async function pageScore(")
@@ -110,4 +132,48 @@ test("page score pane sends no client-selected target", async () => {
 
   assert.match(body, /method: "POST"/u)
   assert.doesNotMatch(body, /siteId|pageId|body:/u)
+})
+
+test("Wikidot WhoRated pane uses the exact AMC pageId contract", async () => {
+  const source = await readFile(votePaneSourceUrl, "utf8")
+  const start = source.indexOf("async function getWikidotWhoRated")
+  const end = source.indexOf("\n  async function getVoteList", start)
+  assert.notEqual(start, -1)
+  assert.notEqual(end, -1)
+  const body = source.slice(start, end)
+
+  assert.match(body, /fetch\("\/ajax-module-connector\.php"/u)
+  assert.match(body, /moduleName: "pagerate\/WhoRatedPageModule"/u)
+  assert.match(body, /pageId: String\(pageId\)/u)
+  assert.doesNotMatch(body, /siteId|userId|vote_id|page_vote_id/u)
+})
+
+test("set-tags resolves the actor and alterations behind the trusted route", async () => {
+  const actionSource = await readFile(pageActionsSourceUrl, "utf8")
+  const actionStart = actionSource.indexOf(
+    "export async function wikidotLegacySetTagsAction("
+  )
+  const actionEnd = actionSource.length
+  assert.notEqual(actionStart, -1)
+  const action = actionSource.slice(actionStart, actionEnd)
+  assert.match(action, /session: "required"/u)
+  assert.match(action, /context\.sessionUserId/u)
+  assert.match(action, /getClientAddress\(\)/u)
+  assert.doesNotMatch(action, /submittedSiteId|tags|alterations/u)
+
+  const rpcSource = await readFile(pageRpcSourceUrl, "utf8")
+  const rpcStart = rpcSource.indexOf("export async function wikidotLegacySetTags(")
+  const rpcEnd = rpcSource.indexOf(
+    "\nexport interface WikidotPageDiscussionOutput",
+    rpcStart
+  )
+  assert.notEqual(rpcStart, -1)
+  assert.notEqual(rpcEnd, -1)
+  const rpc = rpcSource.slice(rpcStart, rpcEnd)
+  assert.match(rpc, /"wikidot_legacy_set_tags"/u)
+  assert.match(rpc, /action_index: actionIndex/u)
+  assert.match(rpc, /action_fingerprint: actionFingerprint/u)
+  assert.match(rpc, /last_revision_id: lastRevisionId/u)
+  assert.match(rpc, /requestContext/u)
+  assert.doesNotMatch(rpc, /\btags\s*:|alterations|site_id/u)
 })

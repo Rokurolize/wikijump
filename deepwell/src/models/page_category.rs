@@ -34,6 +34,16 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub rating_type: Option<String>,
     pub per_page_discussion: Option<bool>,
+    pub settings_revision: i64,
+    #[sea_orm(column_type = "Text")]
+    pub theme_kind: String,
+    pub theme_builtin_id: Option<i64>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub theme_external_url: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub theme_custom_css: Option<String>,
+    pub autonumber_enabled: bool,
+    pub autonumber_next: i64,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

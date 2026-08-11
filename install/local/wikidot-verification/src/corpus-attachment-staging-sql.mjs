@@ -28,6 +28,14 @@ function assertAttachment(attachment, index) {
   if (attachment.mime !== undefined && attachment.mime !== null && (typeof attachment.mime !== 'string' || attachment.mime.length === 0)) {
     throw new Error(`attachments[${index}].mime must be a non-empty string when set`);
   }
+  for (const field of ['content_type_label', 'content_type_description']) {
+    if (typeof attachment[field] !== 'string' || attachment[field].length === 0 || /[\r\n\0]/u.test(attachment[field])) {
+      throw new Error(`attachments[${index}].${field} must be a non-empty single-line string`);
+    }
+  }
+  if (typeof attachment.replace_existing_descriptor !== 'boolean') {
+    throw new Error(`attachments[${index}].replace_existing_descriptor must be a boolean`);
+  }
 }
 
 function sqlString(value) {
@@ -45,15 +53,16 @@ function sqlBigint(value) {
 function plannedAttachmentValues(attachments, revisionComments) {
   if (attachments.length === 0) {
     return `SELECT NULL::integer AS row_index, NULL::text AS fullname, NULL::text AS filename, NULL::text AS sha256,
-    NULL::bigint AS size, NULL::bytea AS s3_hash, NULL::text AS mime, NULL::text AS revision_comments
+    NULL::bigint AS size, NULL::bytea AS s3_hash, NULL::text AS mime, NULL::text AS revision_comments,
+    NULL::text AS content_type_label, NULL::text AS content_type_description, NULL::boolean AS replace_existing_descriptor
   WHERE false`;
   }
 
-  const rows = attachments.map((attachment, index) => `(${index}::integer, ${sqlString(attachment.fullname)}::text, ${sqlString(attachment.filename)}::text, ${sqlString(attachment.sha256)}::text, ${sqlBigint(attachment.size)}, decode(${sqlString(attachment.s3_key_hex)}, 'hex'), ${sqlNullableString(attachment.mime)}, ${sqlString(revisionComments)}::text)`);
+  const rows = attachments.map((attachment, index) => `(${index}::integer, ${sqlString(attachment.fullname)}::text, ${sqlString(attachment.filename)}::text, ${sqlString(attachment.sha256)}::text, ${sqlBigint(attachment.size)}, decode(${sqlString(attachment.s3_key_hex)}, 'hex'), ${sqlNullableString(attachment.mime)}, ${sqlString(revisionComments)}::text, ${sqlString(attachment.content_type_label)}::text, ${sqlString(attachment.content_type_description)}::text, ${attachment.replace_existing_descriptor}::boolean)`);
   return `SELECT *
   FROM (VALUES
     ${rows.join(',\n    ')}
-  ) AS v(row_index, fullname, filename, sha256, size, s3_hash, mime, revision_comments)`;
+  ) AS v(row_index, fullname, filename, sha256, size, s3_hash, mime, revision_comments, content_type_label, content_type_description, replace_existing_descriptor)`;
 }
 
 export function buildAttachmentStagingSql({
@@ -62,6 +71,7 @@ export function buildAttachmentStagingSql({
   actorUserId,
   revisionComments = DEFAULT_REVISION_COMMENTS,
   commit = false,
+  requireExisting = false,
 }) {
   assertSafeInteger(siteId, 'siteId');
   assertSafeInteger(actorUserId, 'actorUserId');
@@ -73,6 +83,9 @@ export function buildAttachmentStagingSql({
   }
   if (typeof commit !== 'boolean') {
     throw new Error('commit must be a boolean');
+  }
+  if (typeof requireExisting !== 'boolean') {
+    throw new Error('requireExisting must be a boolean');
   }
   attachments.forEach(assertAttachment);
 
@@ -104,7 +117,7 @@ active_file_matches AS (
   GROUP BY pm.row_index
 ),
 latest_file_revisions AS (
-  SELECT DISTINCT ON (fr.file_id) fr.file_id, fr.revision_id, fr.revision_number, fr.s3_hash, fr.size
+  SELECT DISTINCT ON (fr.file_id) fr.file_id, fr.revision_id, fr.revision_number, fr.s3_hash, fr.size, fr.content_type_label, fr.content_type_description
   FROM file_revision fr
   JOIN active_file_matches af
     ON af.file_id = fr.file_id
@@ -119,18 +132,25 @@ classified AS (
     pm.size,
     pm.s3_hash,
     COALESCE(pm.mime, 'application/octet-stream') AS mime,
+    pm.content_type_label,
+    pm.content_type_description,
+    pm.replace_existing_descriptor,
     pm.revision_comments,
     pm.page_id,
     af.file_id,
+    lfr.revision_id AS existing_revision_id,
+    lfr.revision_number AS existing_revision_number,
     CASE
       WHEN pm.page_id IS NULL THEN 'fail_closed'
       WHEN bb.s3_hash IS NOT NULL THEN 'fail_closed'
       WHEN COALESCE(pnc.planned_name_count, 1) > 1 THEN 'fail_closed'
       WHEN af.active_file_count > 1 THEN 'fail_closed'
       WHEN af.active_file_count = 1 AND lfr.file_id IS NULL THEN 'fail_closed'
-      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash THEN 'skip_existing'
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND lfr.content_type_label IS NULL AND lfr.content_type_description IS NULL THEN 'backfill_descriptor'
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND lfr.content_type_label = pm.content_type_label AND lfr.content_type_description = pm.content_type_description THEN 'skip_existing'
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND pm.replace_existing_descriptor THEN 'replace_descriptor'
       WHEN af.active_file_count = 1 THEN 'fail_closed'
-      ELSE 'insert'
+      ${requireExisting ? "WHEN af.active_file_count = 0 THEN 'fail_closed'" : "ELSE 'insert'"}
     END AS action,
     CASE
       WHEN pm.page_id IS NULL THEN 'missing_page'
@@ -138,12 +158,16 @@ classified AS (
       WHEN COALESCE(pnc.planned_name_count, 1) > 1 THEN 'duplicate_planned_name'
       WHEN af.active_file_count > 1 THEN 'active_name_conflict'
       WHEN af.active_file_count = 1 AND lfr.file_id IS NULL THEN 'existing_missing_revision'
-      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash THEN NULL
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND lfr.content_type_label IS NULL AND lfr.content_type_description IS NULL THEN NULL
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND lfr.content_type_label = pm.content_type_label AND lfr.content_type_description = pm.content_type_description THEN NULL
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND pm.replace_existing_descriptor THEN NULL
       WHEN af.active_file_count = 1 THEN 'existing_mismatch'
-      ELSE NULL
+      ${requireExisting ? "WHEN af.active_file_count = 0 THEN 'missing_existing_file'" : 'ELSE NULL'}
     END AS reason,
     CASE
-      WHEN pm.page_id IS NOT NULL AND bb.s3_hash IS NULL AND af.active_file_count = 0 THEN 0
+      ${requireExisting ? '' : 'WHEN pm.page_id IS NOT NULL AND bb.s3_hash IS NULL AND af.active_file_count = 0 THEN 0'}
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND lfr.content_type_label IS NULL AND lfr.content_type_description IS NULL THEN lfr.revision_number
+      WHEN af.active_file_count = 1 AND lfr.size = pm.size AND lfr.s3_hash = pm.s3_hash AND pm.replace_existing_descriptor THEN lfr.revision_number
       ELSE NULL
     END AS revision_number
   FROM page_match pm
@@ -158,7 +182,7 @@ classified AS (
     ON bb.s3_hash = pm.s3_hash
 ),
 staged_file_rows AS (
-  SELECT row_index, ${sqlBigint(siteId)} AS site_id, page_id, filename AS name, false AS from_wikidot
+  SELECT row_index, ${sqlBigint(siteId)} AS site_id, page_id, filename AS name, true AS from_wikidot
   FROM classified
   WHERE action = 'insert'
 ),
@@ -174,13 +198,45 @@ staged_first_revisions AS (
     s3_hash,
     mime,
     size,
+    content_type_label,
+    content_type_description,
     ARRAY['page', 'name', 'blob', 'mime']::text[] AS changes,
     revision_comments AS comments,
     ARRAY[]::text[] AS hidden
   FROM classified
   WHERE action = 'insert'
+),
+staged_descriptor_backfills AS (
+  SELECT row_index, existing_revision_id AS revision_id, existing_revision_number AS revision_number, content_type_label, content_type_description
+  FROM classified
+  WHERE action = 'backfill_descriptor'
+),
+staged_descriptor_replacements AS (
+  SELECT row_index, existing_revision_id AS revision_id, existing_revision_number AS revision_number, content_type_label, content_type_description
+  FROM classified
+  WHERE action = 'replace_descriptor'
 )
-${commit ? `, inserted_files AS (
+${commit ? `, updated_descriptor_revisions AS (
+  UPDATE file_revision fr
+  SET content_type_label = sdb.content_type_label,
+      content_type_description = sdb.content_type_description
+  FROM staged_descriptor_backfills sdb
+  WHERE fr.revision_id = sdb.revision_id
+    AND fr.content_type_label IS NULL
+    AND fr.content_type_description IS NULL
+  RETURNING fr.revision_id, fr.file_id, fr.page_id, fr.revision_number
+), updated_descriptor_replacements AS (
+  UPDATE file_revision fr
+  SET content_type_label = sdr.content_type_label,
+      content_type_description = sdr.content_type_description
+  FROM staged_descriptor_replacements sdr
+  WHERE fr.revision_id = sdr.revision_id
+    AND (
+      fr.content_type_label IS DISTINCT FROM sdr.content_type_label
+      OR fr.content_type_description IS DISTINCT FROM sdr.content_type_description
+  )
+  RETURNING fr.revision_id, fr.file_id, fr.page_id, fr.revision_number
+), inserted_files AS (
   INSERT INTO file (site_id, page_id, name, from_wikidot)
   SELECT site_id, page_id, name, from_wikidot
   FROM staged_file_rows
@@ -207,6 +263,8 @@ inserted_first_revisions AS (
     s3_hash,
     mime,
     size,
+    content_type_label,
+    content_type_description,
     changes,
     comments,
     hidden
@@ -222,6 +280,8 @@ inserted_first_revisions AS (
     sfrv.s3_hash,
     sfrv.mime,
     sfrv.size,
+    sfrv.content_type_label,
+    sfrv.content_type_description,
     sfrv.changes,
     sfrv.comments,
     sfrv.hidden
@@ -239,14 +299,22 @@ SELECT json_build_object(
   'reason', c.reason,
   'page_id', c.page_id,
   'file_id', ${commit ? 'COALESCE(inserted_file_rows.file_id, c.file_id)' : 'c.file_id'},
-  'revision_number', ${commit ? 'inserted_first_revisions.revision_number' : 'sfrv.revision_number'}
+  'revision_number', ${commit ? 'COALESCE(inserted_first_revisions.revision_number, updated_descriptor_revisions.revision_number, updated_descriptor_replacements.revision_number)' : 'COALESCE(sfrv.revision_number, sdb.revision_number, sdr.revision_number)'}
 )::text AS result
 FROM classified c
 LEFT JOIN staged_file_rows sfr
   ON sfr.row_index = c.row_index
 LEFT JOIN staged_first_revisions sfrv
   ON sfrv.row_index = c.row_index
-${commit ? `LEFT JOIN inserted_file_rows
+LEFT JOIN staged_descriptor_backfills sdb
+  ON sdb.row_index = c.row_index
+LEFT JOIN staged_descriptor_replacements sdr
+  ON sdr.row_index = c.row_index
+${commit ? `LEFT JOIN updated_descriptor_revisions
+  ON updated_descriptor_revisions.revision_id = sdb.revision_id
+LEFT JOIN updated_descriptor_replacements
+  ON updated_descriptor_replacements.revision_id = sdr.revision_id
+LEFT JOIN inserted_file_rows
   ON inserted_file_rows.row_index = c.row_index
 LEFT JOIN inserted_first_revisions
   ON inserted_first_revisions.file_id = inserted_file_rows.file_id` : ''}
@@ -262,7 +330,7 @@ function parseNullableInteger(value, label, lineNumber) {
 }
 
 export function parseAttachmentStagingResults(output) {
-  const summary = { total: 0, insert: 0, skip_existing: 0, fail_closed: 0 };
+  const summary = { total: 0, insert: 0, backfill_descriptor: 0, replace_descriptor: 0, skip_existing: 0, fail_closed: 0 };
   const rows = [];
   const lines = output.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean);
 
@@ -275,7 +343,7 @@ export function parseAttachmentStagingResults(output) {
       throw new Error(`line ${lineNumber}: expected JSON staging row: ${error.message}`);
     }
     const { row_index: rowIndex, fullname, filename, action, reason, page_id: pageId, file_id: fileId, revision_number: revisionNumber } = row;
-    if (!['insert', 'skip_existing', 'fail_closed'].includes(action)) {
+    if (!['insert', 'backfill_descriptor', 'replace_descriptor', 'skip_existing', 'fail_closed'].includes(action)) {
       throw new Error(`line ${lineNumber}: unknown action ${action}`);
     }
 

@@ -8,6 +8,11 @@ import test from "node:test";
 const script = new URL("../scripts/validate-open-issue-campaign-ledger.mjs", import.meta.url).pathname;
 const canonical = new URL("../artifacts/open-issue-campaign-20260809.json", import.meta.url).pathname;
 const run = (ledger) => spawnSync(process.execPath, [script, "--ledger", ledger], {encoding:"utf8"});
+const runWithOpenIssues = (ledger, openIssues) => spawnSync(
+  process.execPath,
+  [script, "--ledger", ledger, "--open-issues", openIssues],
+  {encoding:"utf8"},
+);
 
 test("canonical open-issue campaign ledger is structurally complete", () => {
   const result = run(canonical);
@@ -70,4 +75,41 @@ test("passed issues cover every declared case kind", async () => {
   const result = run(file);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /required integration case/);
+});
+
+test("open issue reconciliation compares only nonterminal ledger rows", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
+  const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));
+  ledger.entries.find((entry) => entry.number === 1038).status = "closed";
+  const ledgerFile = path.join(temporary, "ledger.json");
+  const openFile = path.join(temporary, "open.json");
+  await fs.writeFile(ledgerFile, JSON.stringify(ledger));
+  await fs.writeFile(
+    openFile,
+    JSON.stringify(
+      ledger.entries
+        .filter((entry) => !["passed", "closed", "superseded"].includes(entry.status))
+        .map(({number}) => ({number})),
+    ),
+  );
+
+  const result = runWithOpenIssues(ledgerFile, openFile);
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test("open issue reconciliation rejects a terminal row reported as open", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
+  const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));
+  ledger.entries.find((entry) => entry.number === 1038).status = "closed";
+  const ledgerFile = path.join(temporary, "ledger.json");
+  const openFile = path.join(temporary, "open.json");
+  await fs.writeFile(ledgerFile, JSON.stringify(ledger));
+  await fs.writeFile(
+    openFile,
+    JSON.stringify(ledger.entries.map(({number}) => ({number}))),
+  );
+
+  const result = runWithOpenIssues(ledgerFile, openFile);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /open issue mismatch/);
 });

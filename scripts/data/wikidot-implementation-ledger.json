@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-06",
-  "catalog_sha256": "5af7164f21add6d7c178acf81dbeee9d65bb468f6ac16bcef8a2c21a16d40124",
+  "updated_at": "2026-08-10",
+  "catalog_sha256": "69f10ebc44bd4e927ee60d715f7c4a272ef23b7242c60a6fb817e8910ee9d1ce",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -1148,13 +1148,15 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-categories": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, category service, and page-view interface",
-        "RenderService Categories module rendering for hidden-category filtering and generated toggler DOM"
+        "RenderService Categories module rendering for hidden-category filtering and generated toggler DOM",
+        "Deepwell page_view request-time rendering with actor-scoped category inventory"
       ],
       "tests": [
         "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
+        "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor",
         "deepwell/src/services/render/categories.rs::tests::categories_name_must_end_before_arguments",
         "deepwell/src/services/render/categories.rs::tests::include_hidden_matches_live_exact_quoted_argument",
         "deepwell/src/services/render/categories.rs::tests::default_category_is_visible_even_when_hidden_categories_are_not",
@@ -1166,6 +1168,7 @@
         "deepwell/src/services/render/categories.rs",
         "deepwell/src/services/render/page_tree.rs",
         "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/render/url_arguments.rs",
         "deepwell/tests/page.rs"
       ],
       "documentation_evidence": [
@@ -1175,7 +1178,10 @@
         "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
         "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
       ],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "The frozen live evidence establishes initial toggler DOM but not the click request, response rows, count text, collapse label, loading, focus, or failure contract. Browser expand/list behavior remains unimplemented rather than inferred.",
+        "Category create/delete/rename, page moves, templates, many-category bounds, cache convergence, and served-browser actor isolation remain unproved."
+      ]
     },
     "module-childpages": {
       "status": "implemented",
@@ -1222,15 +1228,53 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-comments": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering",
+        "Deepwell public saved page_view rendering",
+        "Deepwell public wikidot_forum_module page-discussion read interface",
+        "Framerail public POST /ajax-module-connector.php"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact no-context shell, mixed-case module name, escaped title, reverse class, forwards default, invalid scalar, and source-owner behavior"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_comments_list_resolves_only_visible_page_discussions",
+          "scope": "public saved-page title, hide, forwards and reverse shells, permission-filtered first-page embedding, fail-closed invalid attributes, page-to-discussion resolution, exact response metadata, indistinguishable hidden states, and read-only side effects"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed page comments reads without adding mutation authority",
+          "scope": "exact pageId with omitted, forwards, or reverse order, threadId and jsInclude wire envelope, and fail-closed unobserved order"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/forum_comments.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/forum.ts"
+      ],
       "documentation_evidence": [
         "specifications/module/module-comments.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments",
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-forward",
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-reverse",
+        "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-missing-page",
+        "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The actor-dependent hideForm=true and hideForm=yes behavior remains unobserved and unimplemented.",
+        "Later comment pages, non-anonymous actor states, forms, mutations, and browser interaction remain unobserved or unimplemented."
+      ]
     },
     "module-countpages": {
       "status": "implemented",
@@ -1352,15 +1396,36 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-feed": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/render/search_feed.rs",
+          "name": "distinguishes_feed_source_recognition_from_missing_source; leaves_search_and_feed_literal_inside_literal_regions",
+          "scope": "unit matrix for exact src spelling, quote kind, empty value, inaccessible-source error, and literal ownership"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+          "scope": "public preview matrix and saved-page lifecycle for the frozen missing and inaccessible Feed states"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/search_feed.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-feed.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Successful remote RSS or Atom acquisition, limit and offset behavior, custom templates, variables, sanitization, caching, redirect policy, response budgets, and browser lifecycle remain to be observed and implemented through a safe adapter."
+      ]
     },
     "module-files": {
       "status": "pending",
@@ -1406,59 +1471,209 @@
       ]
     },
     "module-forumcategory": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Anonymous live Wikidot Ajax Module Connector and served forum route",
+        "Deepwell public wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php and GET /forum/c-<id>/<name|p/page>"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-category output and source-owner behavior"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "category summary, permission-before-count thread table, exact 20-row pages, duplicate and single pager placement, later-page routes, and no_category wire status"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "exact ForumViewCategoryModule dispatch parameters and response metadata"
+        },
+        {
+          "path": "framerail/tests/forum-routes.test.js",
+          "name": "the observed category pager suffix reaches the exact AMC page",
+          "scope": "served p/<page> route maps to the exact observed category Ajax parameters"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/forum-routes.js",
+        "framerail/src/routes/forum/c-[category=id]/[...name]/+page.server.ts"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumcategory.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumcategory",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The exact observed page 1, 2, 11, and 12 pager DOM is implemented. Browser replacement and transitions, full actor behavior, and mutation controls remain unimplemented or unverified."
+      ]
     },
     "module-forumnewthread": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering",
+        "Deepwell public saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-category output and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/runtime_modules.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumnewthread.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumnewthread"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Authenticated new-thread form states, validation, CSRF, permissions, mutations, and browser interaction remain unimplemented."
+      ]
     },
     "module-forumstart": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Anonymous live Wikidot Ajax Module Connector and served forum route",
+        "Deepwell public wikidot_page_preview and wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php and GET /forum/start[/hidden/show]"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "visible and empty groups/categories, exact table DOM, escaping, ordering, counts, latest post, hidden groups, and private page discussions"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "ForumStartModule hidden parameter and Wikidot Ajax response metadata"
+        },
+        {
+          "path": "framerail/tests/forum-routes.test.js",
+          "name": "forum route loads use the exact sealed read-only module requests",
+          "scope": "served visible and hidden ForumStart routes use exact read-only parameters"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/forum-routes.js",
+        "framerail/src/routes/forum/start/[...extra]/+page.server.ts"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumstart.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumstart",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Authenticated actor behavior, imported-user avatar settling, browser navigation and intermediate states, and refresh after mutations remain unverified."
+      ]
     },
     "module-forumthread": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Anonymous live Wikidot Ajax Module Connector and served forum route",
+        "Deepwell public wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php and GET /forum/t-<id>/<name>"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-thread output and source-owner behavior"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "permission-filtered complete thread envelope, first post page, edited metadata, compiled bodies, inert jsInclude order, and no_thread wire status"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "ForumViewThreadModule and ForumViewThreadPostsModule dispatch parameters and response metadata"
+        },
+        {
+          "path": "framerail/tests/forum-routes.test.js",
+          "name": "forum route loads use the exact sealed read-only module requests",
+          "scope": "served thread route uses the complete ThreadModule body and grants no remote script loader authority"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/forum-routes.js",
+        "framerail/src/routes/forum/t-[thread=id]/[...name]/+page.server.ts"
+      ],
       "documentation_evidence": [
         "specifications/module/module-forumthread.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-forumthread",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Post pages beyond the observed first page, nested-reply presentation, full actor visibility, mutation authority behind observed controls, and browser interaction remain unimplemented or unverified. Remote jsInclude values remain inert metadata."
+      ]
     },
     "module-frontforum": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_modules_match_live_missing_context_and_owner_boundaries",
+          "scope": "exact missing-category output, unobserved-argument fail-closed behavior, and source ownership"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "default item DOM, multiple-category global selection, offset defaults and boundaries, per-item category links, permission-before-offset-and-limit, comments count, malformed category error, and saved-page rendering"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_front.rs",
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_visibility.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-frontforum.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809",
+        "live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Custom-body variables, feed output and head metadata, fixRelativeLinks, full actor visibility, deletion, mutation authority, and browser behavior remain unimplemented or unverified."
+      ]
     },
     "module-frontspecialmini": {
       "status": "pending",
@@ -1505,7 +1720,7 @@
         "install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Deepwell currently has no persisted page-draft model corresponding to Wikidot page edit drafts. The implemented compatibility surface recognizes ListDrafts and renders the live empty wrapper for no-draft state, but non-empty draft enumeration and pageType exists/notexists filtering remain blocked until page draft state exists or imported Wikidot draft provenance is made available."
+        "Deepwell currently has no persisted page-draft model corresponding to Wikidot page edit drafts. The implemented compatibility surface recognizes ListDrafts and renders the live empty wrapper for the full observed argument and standalone-closing-marker matrix, but non-empty draft enumeration and pageType exists/notexists filtering remain blocked until page draft state exists or imported Wikidot draft provenance is made available."
       ]
     },
     "module-listpages": {
@@ -1814,15 +2029,57 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-members": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/module/module-members.md"
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous and authenticated live Wikidot membership/MembersListModule responses",
+        "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Deepwell public wikidot_members_list_module read interface",
+        "Framerail public POST /ajax-module-connector.php"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "members_module_queries_only_visible_site_members_and_roles",
+          "scope": "site-scoped initial 50-row Members page, active identities, role intersection, ordering, and fail-closed source arguments"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "members_list_ajax_paginates_only_filtered_site_identities",
+          "scope": "public SQL-backed 100-row Ajax pages, page 0 alias, identity existence filtering before count and pagination, exact empty actor states, private-site denial, pager, malformed parameter rejection, and request-site binding"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches only the observed MembersListModule read shape",
+          "scope": "exact Members Ajax dispatch and successful or fail-closed Wikidot response envelope"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "fails closed before Deepwell for unobserved MembersListModule shapes",
+          "scope": "unknown, missing, duplicate, malformed, and unobserved parameter rejection at the public HTTP seam"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/api.rs",
+        "deepwell/src/endpoints/page.rs",
+        "deepwell/src/services/render/user_directory.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/membership.ts",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
+      ],
+      "documentation_evidence": [
+        "specifications/module/module-members.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-members",
+        "live-observations.json::members-list-amc-pagination-20260809",
+        "install/local/wikidot-verification/artifacts/members-list-amc-live-20260810.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Populated Watchers and WhoInvited results remain unobserved and unimplemented.",
+        "Admin and moderator Ajax groups, other order values, broader role and privacy states, mutations, cache invalidation, and browser transitions remain unobserved or unimplemented.",
+        "The exact candidate still requires central Rust execution and runtime validation before the observed Members Ajax slice can be marked verified."
+      ]
     },
     "module-membershipapply": {
       "status": "pending",
@@ -1885,37 +2142,91 @@
       ]
     },
     "module-miniactivethreads": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved public page oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "scope": "public preview and saved-page active ordering, limit, visibility, empty, and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-miniactivethreads.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The anonymous behavior sandbox currently has no active rows. A populated public page and documentation establish the current read-model slice, but controlled live time-window boundaries, tie-breaking, full actor visibility, and mutation-driven refresh remain unobserved."
+      ]
     },
     "module-minirecentposts": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved public page oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "scope": "public preview and saved-page post ordering, routes, author identity, escaping, limit, visibility, root exclusion, and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-minirecentposts.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Plain-text excerpts, routes, identities, counts, and root exclusion are covered. Rich-markup excerpt reduction, no-title text, exact truncation, tie-breaking, full actor visibility, and mutation-driven refresh remain unobserved."
+      ]
     },
     "module-minirecentthreads": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved public page oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
+          "scope": "public preview and saved-page recent ordering, routes, counts, limit, visibility, refresh, and source-owner behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_mini.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-minirecentthreads.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/forum-mini-live-preview-and-workbench-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Public recent ordering, routes, counts, limits, and saved-page runtime refresh are covered. Timestamp tie-breaking, full actor visibility, deleted-state transitions, and mutation-driven refresh remain incompletely observed."
+      ]
     },
     "module-navibar": {
       "status": "blocked",
@@ -2177,10 +2488,12 @@
       "status": "implemented",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, page-parent table, and page-view interface",
+        "Deepwell public saved page_view rendering for viewer-authorized PageTree rows and fail-closed resource saturation",
         "RenderService PageTree module rendering for parent hierarchy traversal, explicit roots, showRoot, depth, and attribute parsing"
       ],
       "tests": [
         "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+        "deepwell/tests/page.rs::page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
         "deepwell/src/services/render/page_tree.rs::tests::arguments_match_live_case_sensitive_semantics",
         "deepwell/src/services/render/page_tree.rs::tests::live_dom_depth_and_cycle_boundaries_are_preserved",
         "deepwell/src/services/render/page_tree.rs::tests::url_and_cross_site_root_forms_fail_closed"
@@ -2299,26 +2612,72 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-recentposts": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Anonymous live Wikidot Ajax Module Connector",
+        "Deepwell public saved-page page_view and wikidot_forum_module rendering",
+        "Framerail POST /ajax-module-connector.php"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "scope": "exact container and post DOM, visible category options, compiled content, ordering, 20-row pagination, hidden groups, and private page discussions"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "dispatches the sealed read-only forum modules with Wikidot metadata",
+          "scope": "ForumRecentPostsListModule first-page and categoryId dispatch, later-page fail-closed behavior, and Wikidot response metadata"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "framerail/src/lib/server/ajax-module-connector.js"
+      ],
       "documentation_evidence": [
         "specifications/module/module-recentposts.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentposts",
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The Ajax read model is limited to the observed first page. Later pages, beyond-candidate pagination, a dedicated recent-posts route, full actor behavior, exact middle and final pager geometry, signatures, post actions, browser transitions, and mutation-driven refresh remain unimplemented or unverified."
+      ]
     },
     "module-recentthreads": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "recent_threads_matches_live_placeholder_and_owner_boundaries",
+          "scope": "exact later. placeholder, observed arguments and case, typed body ownership, inline and raw owners, unrelated closer, and lookalike boundaries"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/service.rs",
+        "docs/ftml-boundary-deviations/forum-runtime-module-disposition.md"
+      ],
       "documentation_evidence": [
         "specifications/module/module-recentthreads.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-recentthreads",
+        "live-observations.json::forum-q1034-readonly-surfaces-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The observed contract is a site-independent placeholder rather than a populated thread read model. Browser verification and any future Wikidot behavior change remain unverified; the raw closer-free Deepwell fallback should be removed once FTML types those heads."
+      ]
     },
     "module-redirect": {
       "status": "implemented",
@@ -2358,26 +2717,85 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-search": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Framerail top-bar search route"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/render/search_feed.rs",
+          "name": "renders_the_live_search_unavailable_contract; leaves_search_and_feed_literal_inside_literal_regions",
+          "scope": "unit matrix for current unavailable output, permissive observed module heads, and literal ownership"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+          "scope": "public preview matrix and saved-page lifecycle for the frozen Search unavailable state"
+        },
+        {
+          "path": "framerail/tests/wikidot-search.test.js; framerail/tests/wikidot-chrome.spec.ts",
+          "name": "top search path encoding and browser submission",
+          "scope": "exact search:site route, untrimmed query encoding, and browser navigation"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/search_feed.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "framerail/src/lib/wikidot/wikidot-search.js",
+        "framerail/src/routes/+layout.svelte"
+      ],
       "documentation_evidence": [
         "specifications/module/module-search.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/search-feed-live-preview-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Current live Search is unavailable, so result selection, private-page filtering, forum scope, ranking, pagination, highlighting, and successful-result DOM remain unobservable and unimplemented."
+      ]
     },
     "module-searchall": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule and saved search:all route oracle",
+        "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Framerail rendered-module submit and browser navigation boundary"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "searchall_module_matches_live_form_and_unavailable_route_contract",
+          "scope": "public preview grammar and ownership matrix plus saved-page empty and non-empty query routes"
+        },
+        {
+          "path": "framerail/tests/wikidot-search.test.js",
+          "name": "Wikidot SearchAll preserves its area and path-encodes the submitted query; Wikidot SearchAll submit listener navigates rendered module forms",
+          "scope": "pf, p, and f path generation, untrimmed encoding, and delegated form submission"
+        },
+        {
+          "path": "framerail/tests/wikidot-chrome.spec.ts",
+          "name": "SearchAll module submits the selected live area route",
+          "scope": "browser DOM defaults, interaction, and navigation"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/search_feed.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "framerail/src/lib/wikidot/wikidot-search.js",
+        "framerail/src/routes/+layout.svelte"
+      ],
       "documentation_evidence": [
         "specifications/module/module-searchall.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/searchall-live-preview-routes-20260809.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Current live SearchAll reports ElasticSearch down for non-empty queries, so successful global result DOM, ranking, pagination, highlighting, and permission filtering remain unobservable and unimplemented."
+      ]
     },
     "module-searchusers": {
       "status": "implemented",
@@ -2442,15 +2860,47 @@
       ]
     },
     "module-sitechanges": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Live anonymous Wikidot edit/PagePreviewModule capture for the standalone default module form, category selector, initial revision rows, flags, dates, users, comments, and pager DOM",
+        "Deepwell wikidot_page_preview and request-time page_view rendering against the real revision, category, user, and permission services",
+        "Deepwell wikidot_site_changes_module read endpoint with request-context actor and host-page visibility enforcement",
+        "Framerail POST /ajax-module-connector.php for the exact changes/SiteChangesListModule read form"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+        "deepwell/tests/page.rs::sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_accepts_only_the_evidenced_standalone_default_shape",
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_options_accept_only_the_observed_read_filters",
+        "deepwell/src/services/render/url_arguments.rs::tests::actor_sensitive_page_graph_modules_require_runtime_rendering",
+        "framerail/tests/ajax-module-connector.test.js::dispatches the sealed SiteChanges read matrix with Wikidot metadata",
+        "framerail/tests/ajax-module-connector.test.js::fails closed for unobserved SiteChanges shapes before Deepwell"
+      ],
+      "implementation_files": [
+        "deepwell/src/api.rs",
+        "deepwell/src/endpoints/page.rs",
+        "deepwell/src/services/render/site_changes.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/tests/page.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/page.ts",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
+      ],
       "documentation_evidence": [
         "specifications/module/module-sitechanges.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl::module-own-line-sitechanges",
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_SITECHANGES_AMC_20260810"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The observed read-only Ajax slice implements pages 1 through 3, an out-of-range empty result, source and files filters, empty options, and a missing category at the exact perpage 20 boundary. Other per-page values and option shapes fail closed because live evidence does not establish them.",
+        "Stored file revisions now participate in the observed files read filter with the F flag. Exact file revision numbering and generated comments, parent metadata changes, page delete and restore rows, mutation convergence, and browser intermediate states remain unimplemented or unproved.",
+        "The captured Ajax response establishes the replacement body and metadata but not loading, failure, history, focus, keyboard, or temporal browser behavior.",
+        "The permission-first query renders only authorized rows and hidden rows never determine an exposed count or pager. If the bounded raw scan saturates before the requested visible window is established, the Ajax endpoint returns not_ok and the initial snapshot remains unexpanded rather than exposing partial rows; large-site completeness beyond that local safety bound remains unproved."
+      ]
     },
     "module-sitegrid": {
       "status": "pending",
@@ -3401,15 +3851,34 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "syntax-images": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/wiki-syntax/syntax-images.md"
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering",
+        "Deepwell public saved page_view rendering"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        {
+          "path": "deepwell/tests/media.rs",
+          "name": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page",
+          "scope": "exact ten-case f=image and =image ASCII-space, tab, NBSP, and lookalike ownership boundary through public preview and saved page view"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/Cargo.toml",
+        "deepwell/Cargo.lock"
+      ],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-images.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "live-observations.json::image-head-ascii-whitespace-boundary-20260810",
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_IMAGE_WHITESPACE_BOUNDARY_20260810"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The live ten-case matrix seals only horizontal separator and exact-head ownership. Remaining width, size, quote, alignment-token, local-file, geometry, and network behavior stays separately actionable."
+      ]
     },
     "syntax-include": {
       "status": "pending",

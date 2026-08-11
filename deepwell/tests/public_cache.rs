@@ -131,14 +131,29 @@ async fn public_content_cache_invalidation_publishes_incremented_fence() {
         .await
         .expect("failed to increment public content cache fence");
 
-    let message =
-        tokio::time::timeout(Duration::from_secs(2), pubsub.on_message().next())
-            .await
-            .expect("timed out waiting for public content invalidation")
-            .expect("pub/sub stream ended unexpectedly");
-    let payload: String = message
-        .get_payload()
-        .expect("failed to read public content invalidation payload");
+    let payload = tokio::time::timeout(Duration::from_secs(2), async {
+        loop {
+            let message = pubsub
+                .on_message()
+                .next()
+                .await
+                .expect("pub/sub stream ended unexpectedly");
+            let payload: String = message
+                .get_payload()
+                .expect("failed to read public content invalidation payload");
+            let own_site = serde_json::from_str::<serde_json::Value>(&payload)
+                .ok()
+                .and_then(|value| {
+                    value.get("site_id").and_then(|site_id| site_id.as_i64())
+                })
+                == Some(site_id);
+            if own_site {
+                break payload;
+            }
+        }
+    })
+    .await
+    .expect("timed out waiting for public content invalidation");
 
     assert_eq!(
         payload,

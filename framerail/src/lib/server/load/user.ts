@@ -5,7 +5,11 @@ import { authGetSession } from "$lib/server/auth/get-session"
 import { getFileByHash } from "$lib/server/deepwell/file"
 import { translate } from "$lib/server/deepwell/translate"
 import { userEdit, userView } from "$lib/server/deepwell/user"
-import { failForActionError, failForMissingSession } from "$lib/server/load/action-error"
+import {
+  failForActionError,
+  failForMissingSession,
+  requireActionSession
+} from "$lib/server/load/action-error"
 import { getRequestContext } from "$lib/server/request-context"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { error, redirect } from "@sveltejs/kit"
@@ -193,7 +197,7 @@ export async function userEditAction({
   const ipAddress = getClientAddress()
 
   try {
-    const session = await authGetSession(sessionToken)
+    const session = requireActionSession(await authGetSession(sessionToken))
     const {
       name,
       realName,
@@ -209,7 +213,7 @@ export async function userEditAction({
     } = form.data
 
     const res = await userEdit(
-      session?.user_id,
+      session.user_id,
       ipAddress,
       {
         name,

@@ -67,6 +67,7 @@ test('buildCorpusImportManifest includes validated per-page corpus attachments',
     filename: 'pixel.png',
     bytes,
     originalUrl: 'https://scp-wiki.wikidot.com/local--files/scp-173/pixel.png',
+    mimeDescription: 'PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced',
   });
 
   const rows = buildCorpusImportManifest({
@@ -87,6 +88,7 @@ test('buildCorpusImportManifest includes validated per-page corpus attachments',
     sha256: cryptoSha256(bytes),
     size: 4,
     mime: 'image/png',
+    content_type_description: 'PNG image data, 1 x 1, 8-bit/color RGBA, non-interlaced',
     file_path: path.join(root, 'en', 'pages', 'scp-173', 'files', 'pixel.png'),
     corpus_path: 'en/pages/scp-173/files/pixel.png',
     metadata_path: path.join(root, 'en', 'pages', 'scp-173', 'files.json'),
@@ -112,6 +114,7 @@ test('buildCorpusImportManifest reads files/_state.json capture-state attachment
         'pata-logo.png': {
           download_url: 'http://scp-wiki.wdfiles.com/local--files/theme%3Apataphysics/pata-logo.png',
           mime_type: 'image/png',
+          mime_description: 'PNG image data, 600 x 100, 8-bit/color RGBA, non-interlaced',
           sha256: `sha256:${cryptoSha256(bytes)}`,
           size: bytes.length,
           uploaded_at: '2020-01-01T00:00:00+00:00',
@@ -136,10 +139,47 @@ test('buildCorpusImportManifest reads files/_state.json capture-state attachment
     sha256: cryptoSha256(bytes),
     size: bytes.length,
     mime: 'image/png',
+    content_type_description: 'PNG image data, 600 x 100, 8-bit/color RGBA, non-interlaced',
     file_path: path.join(filesDir, 'pata-logo.png'),
     corpus_path: 'en/pages/theme:pataphysics/files/pata-logo.png',
     metadata_path: path.join(filesDir, '_state.json'),
   });
+});
+
+test('buildCorpusImportManifest uses the byte-matched canonical file snapshot descriptor', () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'corpus-manifest-'));
+  const entityId = '16161616-1616-4161-8161-161616161616';
+  const bytes = Buffer.from([9, 8, 7, 6]);
+  writePage(root, 'en', 'scp-173', { entityId });
+  writePageAttachment(root, 'en', 'scp-173', {
+    filename: 'pixel.png',
+    bytes,
+    originalUrl: 'https://scp-wiki.wikidot.com/local--files/scp-173/pixel.png',
+  });
+  const snapshotDir = path.join(root, 'en', 'by-uuid', entityId, 'files', 'capture-pixel.png', 'snapshots');
+  fs.mkdirSync(snapshotDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(snapshotDir, 'snapshot.json'),
+    `${JSON.stringify({
+      filename: 'pixel.png',
+      bytes_sha256: `sha256:${cryptoSha256(bytes)}`,
+      metadata: {
+        mime_description: 'PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced',
+      },
+    }, null, 2)}\n`,
+  );
+
+  const rows = buildCorpusImportManifest({
+    corpusRoot: root,
+    branch: 'en',
+    sourceSite: 'scp-wiki',
+    sourceBranch: 'en',
+  });
+
+  assert.equal(
+    rows[0].attachments[0].content_type_description,
+    'PNG image data, 1 x 1, 8-bit/color RGB, non-interlaced',
+  );
 });
 
 test('files.json takes precedence over files/_state.json when both exist', () => {

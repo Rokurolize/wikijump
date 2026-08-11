@@ -22,7 +22,9 @@ use super::structs::{
     CountPageRevisions, CreateFirstPageRevision, CreateFirstPageRevisionOutput,
     CreatePageRevision, CreatePageRevisionBody, CreatePageRevisionOutput,
     CreateResurrectionPageRevision, CreateTombstonePageRevision, FirstRevisionFollowups,
-    GetPageRevision, GetPageRevisionRange, RerenderType, UpdatePageRevision,
+    GetPageRevision, GetPageRevisionDiff, GetPageRevisionRange, PageRevisionCoordinate,
+    PageRevisionDiffLine, PageRevisionDiffLineKind, PageRevisionDiffOutput, RerenderType,
+    UpdatePageRevision,
 };
 use super::tasks::PageRevisionTasks;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
@@ -60,6 +62,9 @@ use sea_query::{Order, Query, SimpleExpr};
 use std::collections::BTreeMap;
 use std::num::NonZeroI32;
 use std::sync::LazyLock;
+
+const MAX_REVISION_DIFF_LINES: usize = 20_000;
+const MAX_REVISION_DIFF_CELLS: usize = 4_000_000;
 
 /// The changes for the first revision.
 /// The first revision is always considered to have changed everything.
@@ -1758,6 +1763,100 @@ impl PageRevisionService {
         Ok(revision)
     }
 
+    pub async fn get_coordinate_by_id(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        revision_id: i64,
+    ) -> Result<Option<PageRevisionCoordinate>> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to resolve page revision ID {} on site ID {}",
+                    revision_id, site_id,
+                ),
+                ErrorType::PageRevision,
+            )
+        };
+
+        let coordinate = PageRevision::find()
+            .select_only()
+            .column(page_revision::Column::PageId)
+            .column(page_revision::Column::RevisionNumber)
+            .filter(
+                Condition::all()
+                    .add(page_revision::Column::SiteId.eq(site_id))
+                    .add(page_revision::Column::RevisionId.eq(revision_id)),
+            )
+            .into_tuple::<(i64, i32)>()
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+
+        Ok(
+            coordinate.map(|(page_id, revision_number)| PageRevisionCoordinate {
+                page_id,
+                revision_number,
+            }),
+        )
+    }
+
+    pub async fn get_diff(
+        ctx: &ServiceContext<'_>,
+        GetPageRevisionDiff {
+            site_id,
+            page_id,
+            from_revision_number,
+            to_revision_number,
+        }: GetPageRevisionDiff,
+    ) -> Result<Option<PageRevisionDiffOutput>> {
+        let (from_revision, to_revision) = try_join!(
+            Self::get_optional(
+                ctx,
+                GetPageRevision {
+                    site_id,
+                    page_id,
+                    revision_number: from_revision_number,
+                },
+            ),
+            Self::get_optional(
+                ctx,
+                GetPageRevision {
+                    site_id,
+                    page_id,
+                    revision_number: to_revision_number,
+                },
+            ),
+        )?;
+        let (Some(from_revision), Some(to_revision)) = (from_revision, to_revision)
+        else {
+            return Ok(None);
+        };
+        if [
+            from_revision.hidden.as_slice(),
+            to_revision.hidden.as_slice(),
+        ]
+        .into_iter()
+        .flatten()
+        .any(|field| field == "wikitext")
+        {
+            return Ok(None);
+        }
+
+        let (from_wikitext, to_wikitext) = try_join!(
+            TextService::get(ctx, &from_revision.wikitext_hash),
+            TextService::get(ctx, &to_revision.wikitext_hash),
+        )?;
+        let lines = build_revision_diff(&from_wikitext, &to_wikitext)?;
+
+        Ok(Some(PageRevisionDiffOutput {
+            site_id,
+            page_id,
+            from_revision_number,
+            to_revision_number,
+            lines,
+        }))
+    }
+
     #[inline]
     pub async fn get(
         ctx: &ServiceContext<'_>,
@@ -1903,6 +2002,39 @@ impl PageRevisionService {
 
         Ok(revisions)
     }
+}
+
+fn build_revision_diff(from: &str, to: &str) -> Result<Vec<PageRevisionDiffLine>> {
+    let from_lines = from.lines().count() + usize::from(from.ends_with('\n'));
+    let to_lines = to.lines().count() + usize::from(to.ends_with('\n'));
+    let cells = from_lines.checked_mul(to_lines);
+    if from_lines > MAX_REVISION_DIFF_LINES
+        || to_lines > MAX_REVISION_DIFF_LINES
+        || cells.is_none_or(|cells| cells > MAX_REVISION_DIFF_CELLS)
+    {
+        bail!(Error::new(
+            "revision diff exceeds the bounded line budget",
+            ErrorType::BadRequest,
+        ));
+    }
+
+    Ok(diff::lines(from, to)
+        .into_iter()
+        .map(|line| match line {
+            diff::Result::Left(text) => PageRevisionDiffLine {
+                kind: PageRevisionDiffLineKind::Removed,
+                text: text.to_owned(),
+            },
+            diff::Result::Right(text) => PageRevisionDiffLine {
+                kind: PageRevisionDiffLineKind::Added,
+                text: text.to_owned(),
+            },
+            diff::Result::Both(text, _) => PageRevisionDiffLine {
+                kind: PageRevisionDiffLineKind::Unchanged,
+                text: text.to_owned(),
+            },
+        })
+        .collect())
 }
 
 #[derive(Debug, Copy, Clone)]
