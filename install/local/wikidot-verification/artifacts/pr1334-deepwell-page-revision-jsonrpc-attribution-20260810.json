@@ -640,12 +640,12 @@
         {
           "function": "page_view_permission_endpoint_hides_missing_and_private_pages",
           "line_range": {
-            "end": 1650,
-            "start": 1588
+            "end": 1657,
+            "start": 1595
           },
           "path": "deepwell/tests/permission.rs",
           "seam": "deepwell_endpoint_integration_test",
-          "sha256": "22f6887fe8cf4cc8668e173fed8ce650d321025ba3aba3ed03bdccd3da4c9549"
+          "sha256": "8c10af0ef95617e93168960bb6f868d9b1f5d850fccbfb8a5b7005783051507f"
         }
       ]
     },
@@ -688,12 +688,12 @@
         {
           "function": "check_permission_endpoint",
           "line_range": {
-            "end": 1425,
-            "start": 1350
+            "end": 1432,
+            "start": 1357
           },
           "path": "deepwell/tests/permission.rs",
           "seam": "deepwell_endpoint_integration_test",
-          "sha256": "22f6887fe8cf4cc8668e173fed8ce650d321025ba3aba3ed03bdccd3da4c9549"
+          "sha256": "8c10af0ef95617e93168960bb6f868d9b1f5d850fccbfb8a5b7005783051507f"
         }
       ]
     },
@@ -756,12 +756,12 @@
         {
           "function": "page_revision_visibility_requires_actual_page_category_edit_permission",
           "line_range": {
-            "end": 1492,
-            "start": 1428
+            "end": 1499,
+            "start": 1435
           },
           "path": "deepwell/tests/permission.rs",
           "seam": "deepwell_endpoint_integration_test",
-          "sha256": "22f6887fe8cf4cc8668e173fed8ce650d321025ba3aba3ed03bdccd3da4c9549"
+          "sha256": "8c10af0ef95617e93168960bb6f868d9b1f5d850fccbfb8a5b7005783051507f"
         }
       ]
     },
@@ -804,12 +804,12 @@
         {
           "function": "page_revision_visibility_rejects_a_revision_from_another_page",
           "line_range": {
-            "end": 1585,
-            "start": 1495
+            "end": 1592,
+            "start": 1502
           },
           "path": "deepwell/tests/permission.rs",
           "seam": "deepwell_endpoint_integration_test",
-          "sha256": "22f6887fe8cf4cc8668e173fed8ce650d321025ba3aba3ed03bdccd3da4c9549"
+          "sha256": "8c10af0ef95617e93168960bb6f868d9b1f5d850fccbfb8a5b7005783051507f"
         }
       ]
     },
@@ -1029,7 +1029,7 @@
     },
     {
       "path": "deepwell/tests/permission.rs",
-      "sha256": "22f6887fe8cf4cc8668e173fed8ce650d321025ba3aba3ed03bdccd3da4c9549"
+      "sha256": "8c10af0ef95617e93168960bb6f868d9b1f5d850fccbfb8a5b7005783051507f"
     },
     {
       "path": "deepwell/tests/role.rs",
