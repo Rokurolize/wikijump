@@ -6,6 +6,15 @@ const AUTHENTICATED_HEADERS = {
   cookie: "wikijump_token=fixture-session-token"
 }
 const STALE_MESSAGE = "Site settings changed since this form was loaded"
+const INITIAL_GENERAL_SETTINGS = {
+  appendedInput: "scp-wiki",
+  "sm-general-name": "SCP Foundation",
+  "sm-general-subtitle": "Secure, Contain, Protect",
+  "sm-general-language": "en",
+  "site-description-field": "Fixture site",
+  "sm-general-start": "main",
+  "sm-general-welcome": "main"
+}
 const STALE_FAILURE = JSON.stringify({
   type: "failure",
   status: 500,
@@ -22,6 +31,31 @@ test("site settings hydrate without a reactive update loop", async ({ page }) =>
   const staleActions: string[] = []
   page.on("pageerror", (error) => pageErrors.push(error.message))
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.addInitScript(() => {
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        const controlIds = [
+          "appendedInput",
+          "sm-general-name",
+          "sm-general-subtitle",
+          "sm-general-language",
+          "site-description-field",
+          "sm-general-start",
+          "sm-general-welcome"
+        ]
+        const values = Object.fromEntries(
+          controlIds.map((id) => {
+            const control = document.getElementById(id) as
+              HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null
+            return [id, control?.value ?? null]
+          })
+        )
+        document.documentElement.dataset.initialGeneralSettings = JSON.stringify(values)
+      },
+      { once: true }
+    )
+  })
   await page.route(/\/_admin\?\/(analytics|site)$/u, async (route) => {
     staleActions.push(new URL(route.request().url()).search.slice(2))
     await route.fulfill({
@@ -33,6 +67,10 @@ test("site settings hydrate without a reactive update loop", async ({ page }) =>
 
   const response = await page.goto("/_admin")
   expect(response?.status()).toBe(200)
+  const initialGeneralSettings = await page.evaluate(() =>
+    JSON.parse(document.documentElement.dataset.initialGeneralSettings ?? "null")
+  )
+  expect(initialGeneralSettings).toEqual(INITIAL_GENERAL_SETTINGS)
   await expect(page.locator("#sm-ganalytics-form")).toBeVisible()
   await expect(page.locator("#sm-appearance-cats")).toHaveValue("100")
   await expect(page.locator("#sm-autonumerate-add-catname1")).toHaveValue("100")

@@ -111,7 +111,20 @@ export async function loadAdminPage(
 
   const internationalization = await translate(locales, translateKeys)
 
-  const adminForm = await superValidate(request, valibot(adminSchema))
+  const adminForm = await superValidate(
+    {
+      name: parentData.site.name,
+      slug: parentData.site.slug,
+      tagline: parentData.site.tagline,
+      description: parentData.site.description,
+      defaultPage: parentData.site.default_page,
+      welcomePage: parentData.site.welcome_page,
+      locale: parentData.site.locale,
+      expectedSettingsRevision: parentData.site.settings_revision,
+      siteId: parentData.site.site_id
+    },
+    valibot(adminSchema)
+  )
   const navigationForm = await superValidate(request, valibot(navigationSchema))
   const licenseForm = await superValidate(request, valibot(licenseSchema))
   const templateForm = await superValidate(request, valibot(templateSchema))
