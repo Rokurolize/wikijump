@@ -72,6 +72,59 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
   };
 }
 
+export async function installCandidateFilePortRoute(context, localOrigins) {
+  if (!Array.isArray(localOrigins) || localOrigins.length !== 2) {
+    throw new Error(
+      "candidate local origins must contain exactly page and file origins",
+    );
+  }
+  const origins = localOrigins.map((origin) => new URL(origin));
+  const page = origins.find((origin) =>
+    origin.hostname.endsWith(".wikijump.localhost"),
+  );
+  const files = origins.find((origin) =>
+    origin.hostname.endsWith(".wjfiles.localhost"),
+  );
+  if (!page || !files) {
+    throw new Error(
+      "candidate local origins must contain page and file origins",
+    );
+  }
+  const pageSite = page.hostname.slice(0, -".wikijump.localhost".length);
+  const filesSite = files.hostname.slice(0, -".wjfiles.localhost".length);
+  if (!pageSite || pageSite !== filesSite) {
+    throw new Error(
+      "candidate page and file origins must use the same site slug",
+    );
+  }
+  if (
+    page.protocol !== "https:" ||
+    files.protocol !== "https:" ||
+    !page.port ||
+    page.port === "443" ||
+    files.port !== page.port
+  ) {
+    throw new Error(
+      "candidate page and file origins must use the same explicit non-443 port",
+    );
+  }
+  const canonicalFilesOrigin = `https://${files.hostname}`;
+  await context.route(`${canonicalFilesOrigin}/**`, async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.origin !== canonicalFilesOrigin) {
+      await route.continue();
+      return;
+    }
+    requestUrl.port = files.port;
+    const response = await route.fetch({
+      url: requestUrl.href,
+      maxRedirects: 0,
+    });
+    await route.fulfill({ response });
+  });
+  return true;
+}
+
 export function parityBrowserThrottleConfig({
   args,
   runId,
@@ -83,15 +136,24 @@ export function parityBrowserThrottleConfig({
 }) {
   let credentials = "none";
   if (credentialPolicy !== "none") {
-    const value = requirePlainObject(credentialPolicy, "browser credential policy");
+    const value = requirePlainObject(
+      credentialPolicy,
+      "browser credential policy",
+    );
     if (
       value.mode !== "private-actor-storage-states" ||
       !Number.isSafeInteger(value.storage_state_count) ||
       value.storage_state_count < 1 ||
       JSON.stringify(Object.keys(value).sort()) !==
-        JSON.stringify(["mode", "private_input_identity_sha256", "storage_state_count"])
+        JSON.stringify([
+          "mode",
+          "private_input_identity_sha256",
+          "storage_state_count",
+        ])
     ) {
-      throw new Error("browser credential policy must bind a private actor storage-state count");
+      throw new Error(
+        "browser credential policy must bind a private actor storage-state count",
+      );
     }
     credentials = {
       mode: value.mode,
@@ -117,7 +179,8 @@ export function parityBrowserThrottleConfig({
     candidate_endpoint: candidate ?? null,
     public_request_policy:
       "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
-    public_origin_policy: "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, and /v-- static assets on a CloudFront host) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+    public_origin_policy:
+      "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, and /v-- static assets on a CloudFront host) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
     credentials,
@@ -251,6 +314,9 @@ export async function launchParityBrowser({
       exemptOrigins: local ? controls.localOrigins : [],
       publicOriginPredicate: isWikidotCapturePublicOrigin,
     });
+    if (local) {
+      await installCandidateFilePortRoute(context, controls.localOrigins);
+    }
     return {
       browser,
       context,
@@ -268,7 +334,10 @@ export async function launchParityBrowser({
     try {
       await closeParityBrowserResources(context, browser);
     } catch (cleanupError) {
-      throw new AggregateError([error, cleanupError], "browser initialization and cleanup both failed");
+      throw new AggregateError(
+        [error, cleanupError],
+        "browser initialization and cleanup both failed",
+      );
     }
     throw error;
   }
@@ -281,6 +350,9 @@ export async function closeParityBrowserResources(context, browser) {
   }
   await browser.close().catch((error) => failures.push(error));
   if (failures.length > 0) {
-    throw new AggregateError(failures, "parity browser resources failed to close");
+    throw new AggregateError(
+      failures,
+      "parity browser resources failed to close",
+    );
   }
 }
