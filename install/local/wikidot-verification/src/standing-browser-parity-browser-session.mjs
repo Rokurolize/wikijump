@@ -116,7 +116,10 @@ export async function installCandidateFilePortRoute(context, localOrigins) {
       return;
     }
     requestUrl.port = files.port;
-    const response = await route.fetch({ url: requestUrl.href });
+    const response = await route.fetch({
+      url: requestUrl.href,
+      maxRedirects: 0,
+    });
     await route.fulfill({ response });
   });
   return true;

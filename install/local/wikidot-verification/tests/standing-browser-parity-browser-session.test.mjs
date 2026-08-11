@@ -39,10 +39,10 @@ test("candidate file routing maps only the exact canonical file authority to its
       fulfillment = options;
     },
   });
-  assert.equal(
-    fetchOptions.url,
-    "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-9506/NFSI.png?download=true",
-  );
+  assert.deepEqual(fetchOptions, {
+    url: "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-9506/NFSI.png?download=true",
+    maxRedirects: 0,
+  });
   assert.deepEqual(fulfillment, { response });
 });
 
