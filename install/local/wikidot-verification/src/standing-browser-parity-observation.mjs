@@ -519,6 +519,7 @@ export async function captureBrowserParityObservation({
   viewport,
   timeoutMs,
   settleMs,
+  requestGateAttribution = null,
   onPhase = null,
   navigate = null,
 }) {
@@ -528,16 +529,27 @@ export async function captureBrowserParityObservation({
   if (navigate !== null && typeof navigate !== "function") {
     throw new Error("browser observation navigation callback must be a function");
   }
+  if (
+    requestGateAttribution !== null &&
+    typeof requestGateAttribution?.classifyRequestFailure !== "function"
+  ) {
+    throw new Error("browser request-gate attribution is malformed");
+  }
   const page = suppliedPage ?? (await context.newPage());
   const ownsPage = suppliedPage === null;
   const failures = [];
+  const requestGateAborts = [];
   const onRequestFailed = (request) => {
-    failures.push({
-      kind: "request_failed",
+    const attribution =
+      requestGateAttribution?.classifyRequestFailure(request) ?? null;
+    const event = {
+      kind: attribution === null ? "request_failed" : "request_gate_abort",
       url: request.url(),
       resource_type: request.resourceType(),
       error: request.failure()?.errorText ?? "request failed",
-    });
+      ...(attribution ?? {}),
+    };
+    (attribution === null ? failures : requestGateAborts).push(event);
   };
   const onResponse = (response) => {
     if (response.status() >= 400) {
@@ -601,6 +613,9 @@ export async function captureBrowserParityObservation({
     failures.sort((left, right) =>
       failureKey(left).localeCompare(failureKey(right)),
     );
+    requestGateAborts.sort((left, right) =>
+      failureKey(left).localeCompare(failureKey(right)),
+    );
     return {
       schema: STANDING_BROWSER_CAPTURE_SCHEMA,
       captured_at: capturedAt,
@@ -611,6 +626,7 @@ export async function captureBrowserParityObservation({
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
       failures,
+      request_gate_aborts: requestGateAborts,
       first_paint: {
         document: firstDocument,
         screenshot: await capturedScreenshot(firstPath, false),
@@ -644,6 +660,9 @@ export async function captureBrowserParityObservation({
     failures.sort((left, right) =>
       failureKey(left).localeCompare(failureKey(right)),
     );
+    requestGateAborts.sort((left, right) =>
+      failureKey(left).localeCompare(failureKey(right)),
+    );
     return {
       schema: STANDING_BROWSER_CAPTURE_SCHEMA,
       captured_at: capturedAt,
@@ -654,6 +673,7 @@ export async function captureBrowserParityObservation({
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
       failures,
+      request_gate_aborts: requestGateAborts,
       first_paint:
         firstDocument || (await capturedScreenshot(firstPath, false))
           ? {

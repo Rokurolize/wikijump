@@ -246,7 +246,7 @@ export async function launchParityBrowser({
       proxy: { server: controls.proxy.url, bypass: "<-loopback>" },
       ...(storageState === null ? {} : { storageState }),
     });
-    await installBrowserRequestGate(context, {
+    const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
       publicOriginPredicate: isWikidotCapturePublicOrigin,
@@ -254,6 +254,7 @@ export async function launchParityBrowser({
     return {
       browser,
       context,
+      requestGateAttribution,
       environment: {
         engine: "chromium",
         version: await browser.version(),

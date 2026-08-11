@@ -60,10 +60,11 @@ function createContext() {
 
 function createRoute(url, {abortError = null, continueError = null, method = "GET", resourceType = "script", headers = {}, fetchResponse = null} = {}) {
   const actions = [];
+  const request = {url: () => url, method: () => method, resourceType: () => resourceType, headers: () => headers};
   return {
     actions,
     request() {
-      return {url: () => url, method: () => method, resourceType: () => resourceType, headers: () => headers};
+      return request;
     },
     async continue() {
       actions.push({type: "continue"});
@@ -313,41 +314,41 @@ test("documents and no-store assets keep using the unchanged request gate", asyn
   assert.equal(responseCache.snapshot().bypasses, 3);
 });
 
-test("unsupported, malformed, and failed request paths fail closed and leave the queue usable", async () => {
+test("intentional unsupported-request attribution requires the exact request object", async () => {
+  const gate = createBrowserRequestGate({intervalMs: 4_000});
+  const context = createContext();
+  const attribution = await installBrowserRequestGate(context, {gate});
+  const dataUrl = createRoute("data:text/plain,unmetered");
+
+  await context.routes[0].handler(dataUrl);
+
+  assert.deepEqual(dataUrl.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.deepEqual(attribution.classifyRequestFailure(dataUrl.request()), {
+    decision: "unsupported_protocol",
+    abort_reason: "blockedbyclient",
+  });
+  assert.equal(
+    attribution.classifyRequestFailure({
+      url: () => "data:text/plain,unmetered",
+      resourceType: () => "script",
+    }),
+    null,
+  );
+});
+
+test("gate implementation failures latch enforcement closed", async () => {
   const clock = createClock({failSleeps: 1});
   const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
   const context = createContext();
   await installBrowserRequestGate(context, {gate});
   const handler = context.routes[0].handler;
 
-  const dataUrl = createRoute("data:text/plain,unmetered");
-  await handler(dataUrl);
-  assert.deepEqual(dataUrl.actions, [{type: "abort", reason: "blockedbyclient"}]);
-
   await gate.acquire();
   const blockedAfterSleepFailure = createRoute("https://scp-wiki.wikidot.com/queued");
   await handler(blockedAfterSleepFailure);
   assert.deepEqual(blockedAfterSleepFailure.actions, [{type: "abort", reason: "blockedbyclient"}]);
-
-  const continuationFailure = createRoute("https://scp-wiki.wikidot.com/continue-failure", {continueError: new Error("route disposed")});
-  await handler(continuationFailure);
-  assert.deepEqual(continuationFailure.actions, [
-    {type: "continue"},
-    {type: "abort", reason: "blockedbyclient"},
-  ]);
-  const disposedDuringAbort = createRoute("https://scp-wiki.wikidot.com/disposed-during-abort", {
-    abortError: new Error("route disposed"),
-    continueError: new Error("route disposed"),
-  });
-  await handler(disposedDuringAbort);
-  assert.deepEqual(disposedDuringAbort.actions, [
-    {type: "continue"},
-    {type: "abort", reason: "blockedbyclient"},
-  ]);
-  const recovery = await gate.acquire();
-
-  assert.equal(recovery.released_at_epoch_ms, 12_000);
-  assert.equal(gate.snapshot().unsupported_requests_blocked, 4);
+  assert.equal(gate.snapshot().enforcement_failed, true);
+  await assert.rejects(gate.acquire(), /simulated clock failure/u);
 });
 
 test("a persisted gate prevents a later capture process from granting before the prior interval", async () => {

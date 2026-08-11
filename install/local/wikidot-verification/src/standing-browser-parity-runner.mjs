@@ -13,8 +13,10 @@ import {
   DEFAULT_THRESHOLDS,
   STANDING_BROWSER_CAPTURE_SCHEMA,
   STANDING_BROWSER_PARITY_SCHEMA,
+  assertRequestGateAbortAccounting,
   compareCaptures,
   validateLiveCompletionPolicy,
+  validateRequestGateAborts,
   validateThresholds,
 } from "./standing-browser-parity-contract.mjs";
 import {
@@ -215,6 +217,7 @@ async function captureSet({ browser, pairs, label, args }) {
         viewport: args.viewport,
         timeoutMs: args.timeoutMs,
         settleMs: args.settleMs,
+        requestGateAttribution: browser.requestGateAttribution,
       }),
     );
   }
@@ -237,6 +240,10 @@ function validateCandidateCapture(capture, pair) {
   if (capture.navigation_status !== 200 || capture.capture_error) {
     throw new Error(`candidate capture is incomplete for ${pair.local_url}`);
   }
+  validateRequestGateAborts(
+    capture.request_gate_aborts,
+    `candidate request-gate aborts for ${pair.local_url}`,
+  );
   if (
     capture.input_url !== pair.local_url ||
     capture.final_url !== pair.local_url
@@ -439,6 +446,7 @@ async function sealCandidateParity({
 }) {
   assertCandidateIdentityFresh(candidateIdentity.value);
   const { pairs, liveReference, captures } = capture;
+  assertRequestGateAbortAccounting(captures, finalGateSnapshot);
   const records = captures.map((local, index) => {
     const referenceRecord = liveReference.records[index];
     return {

@@ -4,12 +4,14 @@ import path from "node:path";
 import {
   STANDING_BROWSER_CAPTURE_SCHEMA,
   STANDING_BROWSER_LIVE_REFERENCE_SCHEMA,
+  assertRequestGateAbortAccounting,
   canaryContractForPair,
   currentCanaryContractSummary,
   evaluateFirstPaintCustomProperties,
   evaluatePresenceProbes,
   isExternalFailure,
   policyAllowsFailure,
+  validateRequestGateAborts,
   validateLiveCompletionPolicy,
   validateThresholds,
 } from "./standing-browser-parity-contract.mjs";
@@ -143,6 +145,10 @@ async function validateLiveCapture(capture, pair, root, policy) {
   if (value.navigation_status !== 200 || value.capture_error) {
     throw new Error(`live reference is incomplete for ${pair.live_url}`);
   }
+  validateRequestGateAborts(
+    value.request_gate_aborts,
+    `live request-gate aborts for ${pair.live_url}`,
+  );
   if (
     value.first_paint?.document?.phase !==
     "domcontentloaded_immediate_observation"
@@ -332,6 +338,13 @@ export function buildLiveReferenceLedger({
   if (new Set(liveUrls).size !== liveUrls.length) {
     throw new Error("live reference contains duplicate canary URLs");
   }
+  const checkedRequestGate = validateRequestGate(requestGate, {
+    minimumPublicRequests: normalizedRecords.length,
+  });
+  assertRequestGateAbortAccounting(
+    normalizedRecords.map((record) => record.live),
+    checkedRequestGate,
+  );
   return {
     schema: STANDING_BROWSER_LIVE_REFERENCE_SCHEMA,
     status: "sealed",
@@ -350,9 +363,7 @@ export function buildLiveReferenceLedger({
       version: checkedBrowser.version,
       executable_sha256: checkedBrowser.executable_sha256,
     },
-    request_gate: validateRequestGate(requestGate, {
-      minimumPublicRequests: normalizedRecords.length,
-    }),
+    request_gate: checkedRequestGate,
     records: normalizedRecords,
   };
 }
@@ -385,11 +396,15 @@ export async function loadSealedLiveReference({
     throw new Error("live reference is not sealed");
   }
   requireNonEmptyString(reference.generated_at, "live reference generated_at");
-  validateRequestGate(reference.request_gate, {
+  const checkedRequestGate = validateRequestGate(reference.request_gate, {
     minimumPublicRequests: Array.isArray(reference.records)
       ? reference.records.length
       : 0,
   });
+  assertRequestGateAbortAccounting(
+    (reference.records ?? []).map((record) => record?.live),
+    checkedRequestGate,
+  );
   const checkedPolicy = validateLiveCompletionPolicy(policy);
   const checkedPolicySha256 = requireSha256(
     policySha256,

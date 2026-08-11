@@ -57,6 +57,7 @@ function requestGate() {
     interval_ms: 4_000,
     enforcement_failed: false,
     public_requests: 1,
+    unsupported_requests_blocked: 0,
     config_sha256: "a".repeat(64),
   };
 }
@@ -111,6 +112,7 @@ function capture(pair, artifacts, overrides = {}) {
     final_url: pair.live_url,
     navigation_status: 200,
     failures: [],
+    request_gate_aborts: [],
     broken_images: [],
     first_paint: {
       document: {
@@ -138,6 +140,48 @@ function capture(pair, artifacts, overrides = {}) {
     ...overrides,
   };
 }
+
+test("live-reference sealing rejects an unrecognized request-gate attribution", async (context) => {
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "standing-browser-live-reference-"),
+  );
+  context.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const pair = {
+    local_url: "https://scp-wiki.wikijump.localhost:18443/scp-9506",
+    live_url: "https://scp-wiki.wikidot.com/scp-9506",
+  };
+  const artifacts = await screenshotArtifacts(directory);
+  const live = capture(pair, artifacts, {
+    request_gate_aborts: [
+      {
+        kind: "request_gate_abort",
+        url: "https://cdn.example.test/blocked.js",
+        resource_type: "script",
+        error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+        decision: "guessed_from_error_text",
+        abort_reason: "blockedbyclient",
+      },
+    ],
+  });
+
+  assert.throws(
+    () =>
+      buildLiveReferenceLedger({
+        records: [{ input: pair, live }],
+        viewport,
+        thresholds,
+        policy: policy(),
+        policySha256: "a".repeat(64),
+        browserEnvironment: {
+          engine: "chromium",
+          version: "fixture",
+          executable_sha256: "b".repeat(64),
+        },
+        requestGate: { ...requestGate(), unsupported_requests_blocked: 1 },
+      }),
+    /request-gate abort decision/u,
+  );
+});
 
 async function writeReference(directory, pair, live, rawPolicy = policy()) {
   const policyFile = path.join(directory, "completion-policy.json");
