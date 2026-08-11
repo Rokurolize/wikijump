@@ -38,14 +38,18 @@
   }
 
   $effect(() => {
-    $form.siteId = data.site.site_id
-    $form.enabled = true
-    if (
-      data.categories.length > 0 &&
-      !data.categories.some((category) => category.category_id === $form.categoryId)
-    ) {
-      loadCategory(data.categories[0].category_id)
-    }
+    const siteId = data.site.site_id
+    const categories = data.categories
+    untrack(() => {
+      $form.siteId = siteId
+      $form.enabled = true
+      if (
+        categories.length > 0 &&
+        !categories.some((category) => category.category_id === $form.categoryId)
+      ) {
+        loadCategory(categories[0].category_id)
+      }
+    })
   })
 </script>
 
