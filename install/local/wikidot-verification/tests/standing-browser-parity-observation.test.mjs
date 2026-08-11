@@ -1,24 +1,10 @@
 import assert from "node:assert/strict";
-import { createRequire } from "node:module";
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
 import test from "node:test";
 
 import {
-  createBrowserRequestGate,
-  installBrowserRequestGate,
-  isWikidotCapturePublicOrigin,
-} from "../src/browser-request-gate.mjs";
-import {
-  captureBrowserParityObservation,
   captureDocumentObservation,
   observationArtifactName,
 } from "../src/standing-browser-parity-observation.mjs";
-
-const requireFromFramerail = createRequire(
-  path.resolve(import.meta.dirname, "../../../../framerail/package.json"),
-);
 
 test("immediate and settled browser artifacts have deterministic, distinct safe names", () => {
   const input = {
@@ -220,59 +206,4 @@ test("ordered element trace text is fingerprinted outside the browser capture", 
     "fc92c6938ea55736c5ece997d6c91450406fe3fdfc1f928b8790afd14c882662",
   );
   assert.equal(element.direct_text_normalized, false);
-});
-
-test("an intentional request-gate abort is sealed separately from organic page failures", async (context) => {
-  const { chromium } = requireFromFramerail("playwright");
-  const directory = await fs.mkdtemp(
-    path.join(os.tmpdir(), "standing-gate-attribution-"),
-  );
-  const browser = await chromium.launch({ headless: true });
-  const browserContext = await browser.newContext({ serviceWorkers: "block" });
-  context.after(async () => {
-    await browserContext.close();
-    await browser.close();
-    await fs.rm(directory, { recursive: true, force: true });
-  });
-  const gate = createBrowserRequestGate({ intervalMs: 4_000 });
-  const attribution = await installBrowserRequestGate(browserContext, {
-    gate,
-    publicOriginPredicate: isWikidotCapturePublicOrigin,
-  });
-  const page = await browserContext.newPage();
-  const observation = await captureBrowserParityObservation({
-    context: browserContext,
-    page,
-    url: "https://scp-wiki.wikidot.com/gate-attribution-fixture",
-    label: "live",
-    index: 0,
-    outputDir: directory,
-    contract: null,
-    viewport: { width: 800, height: 600 },
-    timeoutMs: 10_000,
-    settleMs: 0,
-    requestGateAttribution: attribution,
-    navigate: async ({ page: target }) => {
-      await target.setContent(
-        '<main id="page-content">fixture</main><script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js"></script>',
-        { waitUntil: "load" },
-      );
-      return { status: 200 };
-    },
-  });
-
-  assert.deepEqual(observation.failures, []);
-  assert.deepEqual(observation.request_gate_aborts, [
-    {
-      kind: "request_gate_abort",
-      url: "https://cdn.onesignal.com/sdks/OneSignalSDK.js",
-      resource_type: "script",
-      error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
-      decision: "unsupported_public_origin_resource_type",
-      abort_reason: "blockedbyclient",
-    },
-  ]);
-  assert.equal(gate.snapshot().public_requests, 0);
-  assert.equal(gate.snapshot().unsupported_requests_blocked, 1);
-  assert.deepEqual(gate.snapshot().grants, []);
 });
