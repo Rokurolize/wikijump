@@ -2,14 +2,14 @@
   "acquisition_status": "blocked",
   "authority_sources": [
     {
-      "path": "/home/roku/.codex/skills/wikidot-py-operations/SKILL.md",
+      "path": "install/local/wikidot-verification/authority/wikidot-py-operations-a2b0551d.md",
       "role": "pinned operation authority; does not define a Clone action",
       "sha256": "a2b0551daa5d5464d7802ab88226a6607576bc7d72a5542122e18bcf9ab63524"
     },
     {
       "path": "docs/development/open43-blocked-evidence-routing.json",
       "role": "sealed routing record for the run-owned mutation requirement",
-      "sha256": "0a9e14d57d8b99e92cd5e4a92e4115735c41f1da9aea9aa4b3c258ce62df8798"
+      "sha256": "5916b62d4be68960b5a01864fb86ff1fe728ae1d01ca52e395a792d90cbbfb30"
     },
     {
       "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
@@ -165,7 +165,7 @@
     "title": "Open43 A1038 Clone action authority preflight"
   },
   "fixture_path": "install/local/wikidot-verification/fixtures/open43-a1038-clone-action.json",
-  "fixture_sha256": "5951b6285917a4425eafb6d4ff4f9560101cbab8b7c7f148be9d3a4f39dffcfe",
+  "fixture_sha256": "102fc8cdad61abc3860012f080c709de803678dc02b845811f8d6e0b42c19c40",
   "integration_base": "43471ea5a4759e3cf855bf3a3ec5456d0901ce01",
   "local_observations": 0,
   "mutation_seam": null,

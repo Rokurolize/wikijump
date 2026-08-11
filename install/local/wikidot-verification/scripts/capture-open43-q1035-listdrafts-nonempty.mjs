@@ -3,9 +3,11 @@ import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
+import {visibleText as parsedVisibleText} from "../src/syntax-differential.mjs";
+
 const ORIGIN = "http://sandbox-for-codex.wikidot.com";
 const LOGIN_URL = "https://www.wikidot.com/default--flow/login__LoginPopupScreen";
-const EDIT_MODULE_JS = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/edit/PageEditModule.js";
+const EDIT_MODULE_JS = "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/edit/PageEditModule.js";
 const TOKEN = "123456";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const defaultCases = path.resolve(here, "../fixtures/open43-q1035-listdrafts-nonempty/cases.json");
@@ -51,7 +53,7 @@ function selectedListDraftsDom(body, interfaceName = "PagePreviewModule") {
     rows.push({
       hierarchy: ["div.list-drafts-item", "p", "a"],
       href: decodeHtml(match[1]),
-      text: decodeHtml(match[2].replace(/<[^>]*>/gu, "")).trim(),
+      text: parsedVisibleText(match[2]).trim(),
     });
   }
   return {

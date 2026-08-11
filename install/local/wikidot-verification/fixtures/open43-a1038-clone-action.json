@@ -32,7 +32,7 @@
   },
   "authority_sources": [
     {
-      "path": "/home/roku/.codex/skills/wikidot-py-operations/SKILL.md",
+      "path": "install/local/wikidot-verification/authority/wikidot-py-operations-a2b0551d.md",
       "sha256": "a2b0551daa5d5464d7802ab88226a6607576bc7d72a5542122e18bcf9ab63524",
       "role": "pinned operation authority; does not define a Clone action"
     },

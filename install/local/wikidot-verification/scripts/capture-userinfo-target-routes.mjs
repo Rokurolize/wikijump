@@ -6,6 +6,8 @@ import path from "node:path";
 import process from "node:process";
 import {fileURLToPath} from "node:url";
 
+import {visibleText as parsedVisibleText} from "../src/syntax-differential.mjs";
+
 const scriptPath = fileURLToPath(import.meta.url);
 const verifierRoot = path.resolve(path.dirname(scriptPath), "..");
 const defaultCasesPath = path.join(verifierRoot, "fixtures/userinfo-target-routes/cases.json");
@@ -35,15 +37,15 @@ function decodeHtml(value) {
     .replace(/&#(\d+);/gu, (_, digits) => String.fromCodePoint(Number(digits)))
     .replace(/&#x([0-9a-f]+);/giu, (_, digits) => String.fromCodePoint(Number.parseInt(digits, 16)))
     .replace(/&nbsp;|&#160;/giu, " ")
-    .replace(/&amp;/giu, "&")
     .replace(/&quot;/giu, '"')
     .replace(/&#39;|&apos;/giu, "'")
     .replace(/&lt;/giu, "<")
-    .replace(/&gt;/giu, ">");
+    .replace(/&gt;/giu, ">")
+    .replace(/&amp;/giu, "&");
 }
 
 function visibleText(value) {
-  return decodeHtml(value.replace(/<script\b[\s\S]*?<\/script>/giu, " ").replace(/<style\b[\s\S]*?<\/style>/giu, " ").replace(/<[^>]*>/gu, " "))
+  return parsedVisibleText(value)
     .replace(/\s+/gu, " ")
     .trim();
 }

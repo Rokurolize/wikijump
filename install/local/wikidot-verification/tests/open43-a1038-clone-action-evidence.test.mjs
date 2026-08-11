@@ -105,6 +105,7 @@ test("A1038 Clone action evidence is fail-closed and authority-bound", () => {
   assert.deepEqual(artifact.surface_ids, surfaces);
   assert.equal(artifact.integration_base, base);
   assert.equal(artifact.fixture_sha256, sha256File(fixturePath));
+  assert.deepEqual(artifact.authority_sources, fixture.authority_sources);
   assert.deepEqual(artifact.dependency, fixture.dependency);
   assert.deepEqual(artifact.endpoint_identity, fixture.read_only_preview_seam);
   assert.equal(artifact.mutation_seam_status, "blocked");

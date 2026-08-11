@@ -45,6 +45,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
+      - name: Checkout pinned FTML authority
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: Rokurolize/ftml
+          ref: 62ebba4efda1f10e82363c23c925061fbe939e49
+          path: .verification-ftml
+          persist-credentials: false
+
+      - name: Bind pinned FTML authority
+        run: |
+          echo '/.verification-ftml/' >> .git/info/exclude
+          echo "WIKIJUMP_FTML_CHECKOUT=$GITHUB_WORKSPACE/.verification-ftml" >> "$GITHUB_ENV"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:

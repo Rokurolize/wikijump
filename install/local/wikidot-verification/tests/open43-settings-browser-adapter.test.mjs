@@ -229,13 +229,17 @@ test("the settings adapter keeps a disabled document across a public mutation be
   assert.ok(pair.client_transition_capture);
 });
 
-test("the settings adapter captures the visible analytics stale-error identity", async () => {
+test("the settings adapter captures the serialized analytics action status and visible stale-error identity", async () => {
   let dialogVisible = false;
-  const responses = [500, 200].map((status) => ({
+  const responses = [500, 200].map((actionStatus) => ({
     request: () => ({ method: () => "POST" }),
     url: () => "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/analytics",
-    status: () => status,
-    json: async () => ({ type: "failure", status, data: stringifyDevalue({ code: 4000, message: REVISION_CONFLICT_MESSAGE }) }),
+    status: () => 200,
+    json: async () => ({
+      type: actionStatus === 500 ? "failure" : "success",
+      status: actionStatus,
+      data: stringifyDevalue(actionStatus === 500 ? { code: 4000, message: REVISION_CONFLICT_MESSAGE } : {}),
+    }),
   }));
   const page = {
     async goto() {},
@@ -265,20 +269,24 @@ test("the settings adapter captures the visible analytics stale-error identity",
 test("the settings adapter exercises stale error and success through the public general form", async () => {
   const events = [];
   const responses = [
-    ["POST", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/site", 500, 10],
-    ["POST", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/site", 200, 11],
-    ["GET", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin/__data.json?x-sveltekit-invalidated=1", 200, null],
-    ["POST", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/site", 200, 12],
-    ["GET", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin/__data.json?x-sveltekit-invalidated=1", 200, null],
-  ].map(([method, url, status, revision]) => ({
+    ["POST", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/site", 200, 500, 10],
+    ["POST", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/site", 200, 200, 11],
+    ["GET", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin/__data.json?x-sveltekit-invalidated=1", 200, null, null],
+    ["POST", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin?/site", 200, 200, 12],
+    ["GET", "https://scpaiueouiuiuiui.wikijump.localhost:18443/_admin/__data.json?x-sveltekit-invalidated=1", 200, null, null],
+  ].map(([method, url, transportStatus, actionStatus, revision]) => ({
     request: () => ({
       method: () => method,
       headers: () => ({ "content-type": "application/x-www-form-urlencoded" }),
       postDataBuffer: () => method === "POST" ? Buffer.from(new URLSearchParams({ __superform_json: stringifyDevalue({ expectedSettingsRevision: revision }) }).toString()) : null,
     }),
     url: () => url,
-    status: () => status,
-    json: async () => ({ type: "failure", status, data: stringifyDevalue({ code: 4000, message: REVISION_CONFLICT_MESSAGE }) }),
+    status: () => transportStatus,
+    json: async () => ({
+      type: actionStatus === 500 ? "failure" : "success",
+      status: actionStatus,
+      data: stringifyDevalue(actionStatus === 500 ? { code: 4000, message: REVISION_CONFLICT_MESSAGE } : {}),
+    }),
   }));
   let dialogVisible = false;
   const page = {

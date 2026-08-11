@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { homedir } from 'node:os';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
+
+import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-reference-control-source-attribution-20260810.json';
 const artifactPath = new URL('../artifacts/pr1334-ftml-reference-control-source-attribution-20260810.json', import.meta.url);
@@ -19,7 +20,7 @@ try {
 const fixturePath = new URL('../fixtures/pr1334-ftml-reference-control-source-attribution.json', import.meta.url);
 const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
-const ftml = path.join(homedir(), '.cargo/git/checkouts/ftml-a724b9bc9f2959c8/62ebba4');
+const ftml = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_git_tree });
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 async function verifyWitness(root, witness) {

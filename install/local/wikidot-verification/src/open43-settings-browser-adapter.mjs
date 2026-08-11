@@ -20,12 +20,21 @@ async function submittedSettingsRevision(response) {
   return payload.expectedSettingsRevision;
 }
 
-async function visibleFailureIdentity(response, page) {
+async function serializedActionResult(response, expectedType) {
   const result = await response.json();
+  const status = result?.type === "error" ? response.status() : result?.status;
+  if (result?.type !== expectedType || !Number.isSafeInteger(status) || status < 100 || status > 599) {
+    throw new Error(`settings action did not return one serialized ${expectedType} result`);
+  }
+  return { result, status };
+}
+
+async function visibleFailureIdentity(response, page) {
+  const { result, status } = await serializedActionResult(response, "failure");
   const data = typeof result?.data === "string" ? parseDevalue(result.data) : null;
   const message = (await page.locator("#modal-title").innerText()).trim();
-  if (result?.type !== "failure" || !Number.isSafeInteger(data?.code) || message.length === 0) throw new Error("settings action failure identity is missing");
-  return { code: data.code, message_sha256: sha256Value(message) };
+  if (!Number.isSafeInteger(data?.code) || message.length === 0) throw new Error("settings action failure identity is missing");
+  return { status, code: data.code, message_sha256: sha256Value(message) };
 }
 
 function browserSemanticSnapshot() {
@@ -275,7 +284,8 @@ export class Open43SettingsBrowserAdapter {
       const successResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/analytics"), { timeout: CAPTURE_TIMEOUT_MS });
       await page.locator("#sm-ganalytics-save").click();
       const success = await successResponse;
-      return { stale_status: stale.status(), error_visible: errorVisible, error_code: errorIdentity.code, error_message_sha256: errorIdentity.message_sha256, success_status: success.status(), saved_profile: profile };
+      const successResult = await serializedActionResult(success, "success");
+      return { stale_status: errorIdentity.status, error_visible: errorVisible, error_code: errorIdentity.code, error_message_sha256: errorIdentity.message_sha256, success_status: successResult.status, saved_profile: profile };
     } finally {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
@@ -324,6 +334,7 @@ export class Open43SettingsBrowserAdapter {
       await page.locator("#sm-general-save").click();
       const [success, invalidation] = await Promise.all([successResponse, invalidationResponse]);
       const successSubmittedRevision = await submittedSettingsRevision(success);
+      const successResult = await serializedActionResult(success, "success");
       const invalidationCompletion = await waitForBrowserParitySettledResources(page, CAPTURE_TIMEOUT_MS);
       await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const confirmationResponse = page.waitForResponse(
@@ -337,7 +348,8 @@ export class Open43SettingsBrowserAdapter {
       await page.locator("#sm-general-save").click();
       const confirmation = await confirmationResponse;
       const confirmationSubmittedRevision = await submittedSettingsRevision(confirmation);
-      if (confirmation.status() !== 200) throw new Error("general admin invalidation did not refresh the public form revision");
+      const confirmationResult = await serializedActionResult(confirmation, "success");
+      if (confirmationResult.status !== 200) throw new Error("general admin invalidation did not refresh the public form revision");
       const confirmationInvalidation = await confirmationInvalidationResponse;
       if (confirmationInvalidation === null) throw new Error("general admin confirmation invalidation was not observed");
       const confirmationCompletion = await waitForBrowserParitySettledResources(page, CAPTURE_TIMEOUT_MS);
@@ -345,14 +357,14 @@ export class Open43SettingsBrowserAdapter {
       const successDom = await page.evaluate(() => globalThis.__open43SemanticSnapshot());
       return {
         form_action: formAction,
-        stale_status: stale.status(),
+        stale_status: staleErrorIdentity.status,
         stale_error_visible: staleErrorVisible,
         stale_error_code: staleErrorIdentity.code,
         stale_error_message_sha256: staleErrorIdentity.message_sha256,
-        success_status: success.status(),
+        success_status: successResult.status,
         invalidation_status: invalidation.status(),
         invalidation_resource_completion: invalidationCompletion.status,
-        fresh_revision_confirmation_status: confirmation.status(),
+        fresh_revision_confirmation_status: confirmationResult.status,
         confirmation_invalidation_status: confirmationInvalidation.status(),
         confirmation_resource_completion: confirmationCompletion.status,
         stale_submitted_revision: staleSubmittedRevision,

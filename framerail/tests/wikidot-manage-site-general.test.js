@@ -23,7 +23,7 @@ test("ManageSiteGeneral renders the exact captured administrator read model", ()
   )
   assert.match(body, /<form id="sm-general-form" class="form-horizontal">/u)
   assert.match(body, /<div class="btn btn-primary" id="sm-general-save">/u)
-  assert.doesNotMatch(body, /<script|<button|<form[^>]+(?:action|method)=/u)
+  assert.doesNotMatch(body, /<script|<button|<form[^>]+(?:action|method)=/iu)
 })
 
 test("ManageSiteGeneral escapes every site-owned value", () => {
@@ -37,7 +37,7 @@ test("ManageSiteGeneral escapes every site-owned value", () => {
     welcome_page: 'welcome"><script>'
   })
 
-  assert.doesNotMatch(body, /<script>|<img src=x>/u)
+  assert.doesNotMatch(body, /<script>|<img src=x>/iu)
   assert.match(body, /value="bad&quot;&gt;&lt;script&gt;alert\(1\)&lt;\/script&gt;"/u)
   assert.match(body, /value="name&quot;&gt;&lt;img src=x&gt;"/u)
   assert.match(body, /value="tag&lt;&amp;&quot;"/u)

@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 
+import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
+
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-embed-conditional-source-attribution-20260810.json';
 const artifactPath = new URL(`../artifacts/${artifactRelative.split('/').at(-1)}`, import.meta.url);
 let artifact;
@@ -17,7 +19,7 @@ try {
 const fixturePath = new URL('../fixtures/pr1334-ftml-embed-conditional-source-attribution.json', import.meta.url);
 const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
 const repositoryRoot = new URL('../../../../', import.meta.url);
-const ftmlRoot = join(process.env.HOME, '.cargo/git/checkouts/ftml-a724b9bc9f2959c8/62ebba4');
+const ftmlRoot = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_tree });
 const hex64 = /^[0-9a-f]{64}$/;
 
 async function sha256(path) {

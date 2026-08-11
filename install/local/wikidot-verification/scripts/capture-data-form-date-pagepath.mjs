@@ -3,6 +3,8 @@ import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
+import {visibleText as parsedVisibleText} from "../src/syntax-differential.mjs";
+
 const ORIGIN = "http://sandbox-for-codex.wikidot.com";
 const LOGIN_URL = "https://www.wikidot.com/default--flow/login__LoginPopupScreen";
 const TOKEN = "123456";
@@ -47,7 +49,7 @@ function visibleText(html) {
   const content = html.match(/<div id="page-content"[^>]*>([\s\S]*?)<div class="page-tags"/u)?.[1]
     ?? html.match(/<div id="page-content"[^>]*>([\s\S]*?)<div class="page-info-break"/u)?.[1]
     ?? "";
-  return decodeHtml(content.replace(/<(?:script|style)\b[^>]*>[\s\S]*?<\/(?:script|style)>/giu, "").replace(/<\/(?:p|tr|td|div|h[1-6])>/giu, "\n").replace(/<br\s*\/?>/giu, "\n"))
+  return parsedVisibleText(content)
     .replace(/[ \t]+\n/gu, "\n")
     .replace(/\n{3,}/gu, "\n\n")
     .trim();
