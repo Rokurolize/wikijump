@@ -28,6 +28,8 @@ export const DEFAULT_PARITY_BROWSER_ROOT = path.resolve(
   "framerail",
 );
 const THROTTLE_CONFIG_SCHEMA = "wikijump.standing_browser_throttle_config.v1";
+const MAX_CANDIDATE_FILE_REDIRECTS = 10;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 function requirePlaywright(browserRoot) {
   const requireFromRoot = createRequire(path.join(browserRoot, "package.json"));
@@ -116,10 +118,34 @@ export async function installCandidateFilePortRoute(context, localOrigins) {
       return;
     }
     requestUrl.port = files.port;
-    const response = await route.fetch({
-      url: requestUrl.href,
-      maxRedirects: 0,
-    });
+    let response;
+    for (let redirects = 0; ; redirects += 1) {
+      response = await route.fetch({
+        url: requestUrl.href,
+        maxRedirects: 0,
+      });
+      if (
+        route.request().method?.() !== "GET" ||
+        !REDIRECT_STATUSES.has(response.status())
+      ) {
+        break;
+      }
+      const location = response.headers().location;
+      if (!location) break;
+      const redirectUrl = new URL(location, requestUrl);
+      if (
+        redirectUrl.username ||
+        redirectUrl.password ||
+        !new Set([canonicalFilesOrigin, files.origin]).has(redirectUrl.origin)
+      ) {
+        break;
+      }
+      if (redirects >= MAX_CANDIDATE_FILE_REDIRECTS) {
+        throw new Error("candidate file redirect limit exceeded");
+      }
+      redirectUrl.port = files.port;
+      requestUrl.href = redirectUrl.href;
+    }
     await route.fulfill({ response });
   });
   return true;

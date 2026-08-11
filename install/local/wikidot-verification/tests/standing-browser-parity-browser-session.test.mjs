@@ -46,6 +46,96 @@ test("candidate file routing maps only the exact canonical file authority to its
   assert.deepEqual(fulfillment, { response });
 });
 
+test("candidate file routing follows only same-authority redirects on the sealed port", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  await installCandidateFilePortRoute(context, [
+    "https://scp-wiki.wikijump.localhost:18449",
+    "https://scp-wiki.wjfiles.localhost:18449",
+  ]);
+
+  const fetches = [];
+  const finalResponse = { status: () => 200, headers: () => ({}) };
+  const responses = [
+    {
+      status: () => 301,
+      headers: () => ({ location: "/-/file/scp-9506/NFSI.png" }),
+    },
+    finalResponse,
+  ];
+  let fulfillment;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--files/scp-9506/NFSI.png",
+      };
+    },
+    async fetch(options) {
+      fetches.push(options);
+      return responses.shift();
+    },
+    async fulfill(options) {
+      fulfillment = options;
+    },
+  });
+
+  assert.deepEqual(fetches, [
+    {
+      url: "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-9506/NFSI.png",
+      maxRedirects: 0,
+    },
+    {
+      url: "https://scp-wiki.wjfiles.localhost:18449/-/file/scp-9506/NFSI.png",
+      maxRedirects: 0,
+    },
+  ]);
+  assert.deepEqual(fulfillment, { response: finalResponse });
+});
+
+test("candidate file routing returns public redirects to Chromium for gate enforcement", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  await installCandidateFilePortRoute(context, [
+    "https://scp-wiki.wikijump.localhost:18449",
+    "https://scp-wiki.wjfiles.localhost:18449",
+  ]);
+
+  const redirect = {
+    status: () => 302,
+    headers: () => ({ location: "https://cdn.example.invalid/asset.png" }),
+  };
+  let fetchCount = 0;
+  let fulfillment;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        url: () => "https://scp-wiki.wjfiles.localhost/local--files/a.png",
+      };
+    },
+    async fetch() {
+      fetchCount += 1;
+      return redirect;
+    },
+    async fulfill(options) {
+      fulfillment = options;
+    },
+  });
+
+  assert.equal(fetchCount, 1);
+  assert.deepEqual(fulfillment, { response: redirect });
+});
+
 test("candidate file routing refuses malformed or ambiguous local origin declarations", async () => {
   const context = {
     async route() {
