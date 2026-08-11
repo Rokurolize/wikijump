@@ -210,13 +210,20 @@ test("effective runtime identity ignores Compose's derived hash and lifecycle la
   assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
 });
 
-test("effective runtime identity normalizes Docker-reordered environment and inspect mounts", () => {
+test("effective runtime identity normalizes Docker-reordered environment and mounts", () => {
   const cases = [
     [
       "environment",
       (inspect) => {
         inspect.Config.Env = ["SECOND=2", "FIRST=1"];
         return () => inspect.Config.Env.reverse();
+      },
+    ],
+    [
+      "binds",
+      (inspect) => {
+        inspect.HostConfig.Binds = ["volume-b:/b:rw", "volume-a:/a:ro"];
+        return () => inspect.HostConfig.Binds.reverse();
       },
     ],
     [
@@ -246,13 +253,6 @@ test("effective runtime identity normalizes Docker-reordered environment and ins
 
 test("effective runtime identity preserves order-sensitive Docker arrays", () => {
   const cases = [
-    [
-      "binds",
-      (inspect) => {
-        inspect.HostConfig.Binds = ["volume-b:/b:rw", "volume-a:/a:ro"];
-        return () => inspect.HostConfig.Binds.reverse();
-      },
-    ],
     [
       "host mounts",
       (inspect) => {
