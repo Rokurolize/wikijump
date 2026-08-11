@@ -221,7 +221,7 @@ export async function startCaptureEgressProxy({
     client.on("data", resetTunnelTimeout);
     resetTunnelTimeout();
     client.on("error", closeTunnel);
-    client.on("close", () => upstream?.destroy());
+    client.on("close", closeTunnel);
     try {
       const { hostname, port } = parseAuthority(request.url, 443);
       const address = await resolvePinned(hostname, port, {

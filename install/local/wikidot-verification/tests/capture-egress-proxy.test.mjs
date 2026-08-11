@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
+import {execFile} from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
 import path from "node:path";
 import { createRequire } from "node:module";
 import test from "node:test";
-import { fileURLToPath } from "node:url";
+import {promisify} from "node:util";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
   guardedPipeline,
@@ -18,6 +20,7 @@ const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../../..",
 );
+const execFileAsync = promisify(execFile);
 
 test("guarded pipeline reports a synchronous closed-stream failure instead of throwing", () => {
   const failure = new Error("destination already closed");
@@ -340,6 +343,37 @@ test("closing the proxy tears down an active CONNECT tunnel", async () => {
     socket.destroy();
     await new Promise((resolve) => upstream.close(resolve));
   }
+});
+
+test("closing a CONNECT tunnel permits bounded process exit", async () => {
+  const moduleUrl = pathToFileURL(path.join(repoRoot, "install/local/wikidot-verification/src/capture-egress-proxy.mjs")).href;
+  const script = `
+    import net from "node:net";
+    import {startCaptureEgressProxy} from ${JSON.stringify(moduleUrl)};
+    const upstream = net.createServer((socket) => socket.on("error", () => {}));
+    await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+    const upstreamPort = upstream.address().port;
+    const proxy = await startCaptureEgressProxy({
+      allowedLocalOrigins: [\`https://fixture.test:\${upstreamPort}\`],
+      lookup: async () => [{address: "127.0.0.1"}],
+      requestTimeoutMs: 60_000,
+    });
+    const proxyUrl = new URL(proxy.url);
+    const socket = net.connect(Number(proxyUrl.port), proxyUrl.hostname, () =>
+      socket.write(\`CONNECT fixture.test:\${upstreamPort} HTTP/1.1\\r\\nHost: fixture.test\\r\\n\\r\\n\`),
+    );
+    socket.on("error", () => {});
+    await new Promise((resolve, reject) => {
+      socket.once("data", resolve);
+      socket.once("error", reject);
+    });
+    await proxy.close();
+    socket.destroy();
+    await new Promise((resolve) => upstream.close(resolve));
+  `;
+  await execFileAsync(process.execPath, ["--input-type=module", "--eval", script], {
+    timeout: 2_000,
+  });
 });
 
 test("an early CONNECT reset during DNS resolution does not crash the proxy or dial upstream", async () => {

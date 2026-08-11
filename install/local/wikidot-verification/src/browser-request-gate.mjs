@@ -166,6 +166,11 @@ export function isWikidotCapturePublicOrigin(value, resourceType, method) {
       isWikidotResourceHost(hostname) ||
       (WIKIDOT_STATIC_CDN_RE.test(hostname) && url.pathname.startsWith("/v--")) ||
       (url.protocol === "https:" &&
+        hostname === "api.crom.avn.sh" &&
+        method === "GET" &&
+        resourceType === "xhr" &&
+        url.pathname === "/graphql") ||
+      (url.protocol === "https:" &&
         hostname === "interwiki.scpwiki.com" &&
         method === "GET" &&
         WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType));

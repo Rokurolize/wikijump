@@ -162,6 +162,9 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   const interwikiRuntime = createRoute("https://interwiki.scpwiki.com/interwiki.js", {resourceType: "script"});
   const resizeRuntime = createRoute("https://interwiki.scpwiki.com/resizeIframe.js", {resourceType: "script"});
   const unknownInterwikiScript = createRoute("https://interwiki.scpwiki.com/other.js", {resourceType: "script"});
+  const interwikiData = createRoute("https://api.crom.avn.sh/graphql?query=InterwikiQuery", {resourceType: "xhr"});
+  const interwikiDataPost = createRoute("https://api.crom.avn.sh/graphql", {method: "POST", resourceType: "xhr"});
+  const unknownInterwikiData = createRoute("https://api.crom.avn.sh/other", {resourceType: "xhr"});
 
   await handler(ad);
   await handler(css);
@@ -172,13 +175,16 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   await handler(interwikiRuntime);
   await handler(resizeRuntime);
   await handler(unknownInterwikiScript);
+  await handler(interwikiData);
+  await handler(interwikiDataPost);
+  await handler(unknownInterwikiData);
 
   assert.deepEqual(ad.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.deepEqual(css.actions, [{type: "continue"}]);
   assert.deepEqual(page.actions, [{type: "continue"}]);
-  assert.equal(gate.snapshot().public_requests, 5);
-  assert.deepEqual(gate.snapshot().blocked_hosts, {"api.rlcdn.com": 1, "interwiki.scpwiki.com": 3});
-  assert.deepEqual(gate.snapshot().blocked_hosts_by_fixture, {"syntax-collapsible": {"api.rlcdn.com": 1, "interwiki.scpwiki.com": 3}});
+  assert.equal(gate.snapshot().public_requests, 6);
+  assert.deepEqual(gate.snapshot().blocked_hosts, {"api.crom.avn.sh": 2, "api.rlcdn.com": 1, "interwiki.scpwiki.com": 3});
+  assert.deepEqual(gate.snapshot().blocked_hosts_by_fixture, {"syntax-collapsible": {"api.crom.avn.sh": 2, "api.rlcdn.com": 1, "interwiki.scpwiki.com": 3}});
   assert.equal(isWikidotCapturePublicOrigin("https://css.wikidot.com"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://wikidot.com"), true);
   assert.equal(isWikidotCapturePublicOrigin("http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/WIKIDOT.combined.js"), true);
@@ -188,6 +194,9 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   assert.deepEqual(interwikiRuntime.actions, [{type: "continue"}]);
   assert.deepEqual(resizeRuntime.actions, [{type: "continue"}]);
   assert.deepEqual(unknownInterwikiScript.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.deepEqual(interwikiData.actions, [{type: "continue"}]);
+  assert.deepEqual(interwikiDataPost.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.deepEqual(unknownInterwikiData.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/styleFrame.html?priority=1", "document", "GET"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwikiFrame.html?lang=en", "document", "GET"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/styleFrame.html", "script", "GET"), false);
@@ -197,6 +206,9 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/other.js", "script", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/other.html", "document", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("http://interwiki.scpwiki.com/styleFrame.html", "document", "GET"), false);
+  assert.equal(isWikidotCapturePublicOrigin("https://api.crom.avn.sh/graphql?query=InterwikiQuery", "xhr", "GET"), true);
+  assert.equal(isWikidotCapturePublicOrigin("https://api.crom.avn.sh/graphql", "xhr", "POST"), false);
+  assert.equal(isWikidotCapturePublicOrigin("https://api.crom.avn.sh/other", "xhr", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://example.com"), false);
 });
 
