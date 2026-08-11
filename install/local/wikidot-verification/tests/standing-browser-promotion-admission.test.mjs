@@ -228,6 +228,7 @@ function liveCapture(pair, canary, artifacts) {
     final_url: pair.live_url,
     navigation_status: 200,
     failures: [],
+    request_gate_aborts: [],
     broken_images: [],
     first_paint: {
       document: {

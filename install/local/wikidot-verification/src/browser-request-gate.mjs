@@ -488,12 +488,21 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
   if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.store !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
   if (publicOriginPredicate !== null && typeof publicOriginPredicate !== "function") throw new Error("browser request-gate public origin predicate is malformed");
   const exempt = normalizedOrigins(exemptOrigins);
+  const attributedAborts = new WeakMap();
+  const abortWithAttribution = async (route, decision) => {
+    const request = route.request();
+    attributedAborts.set(request, Object.freeze({
+      decision,
+      abort_reason: "blockedbyclient",
+    }));
+    if (!(await abortRoute(route))) attributedAborts.delete(request);
+  };
   await context.route("**/*", async (route) => {
     try {
       const url = new URL(route.request().url());
       if (!new Set(["http:", "https:"]).has(url.protocol)) {
         gate.recordUnsupportedRequestBlocked();
-        await abortRoute(route);
+        await abortWithAttribution(route, "unsupported_protocol");
         return;
       }
       if (exempt.has(url.origin)) {
@@ -507,12 +516,15 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         !isCaptureDependencyResourceType(route.request().resourceType())
       ) {
         gate.recordUnsupportedRequestBlocked(url.hostname);
-        await abortRoute(route);
+        await abortWithAttribution(
+          route,
+          "unsupported_public_origin_resource_type",
+        );
         return;
       }
       await servePublicRoute(route, {gate, responseCache});
-    } catch {
-      gate.recordUnsupportedRequestBlocked();
+    } catch (error) {
+      gate.failClosed(error);
       await abortRoute(route);
     }
   });
@@ -538,7 +550,13 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
     gate.recordWebSocketBlocked();
     // Do not call connectToServer: Playwright keeps this as an in-page mock and no unmetered socket reaches the network.
   });
-  return {exempt_origins: [...exempt].sort(), response_cache: responseCache};
+  return {
+    exempt_origins: [...exempt].sort(),
+    response_cache: responseCache,
+    classifyRequestFailure(request) {
+      return attributedAborts.get(request) ?? null;
+    },
+  };
 }
 
 function processStartTicksFromStat(text) {

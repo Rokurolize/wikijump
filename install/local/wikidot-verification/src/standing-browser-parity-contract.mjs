@@ -75,6 +75,84 @@ function failureKey(failure) {
   ]);
 }
 
+function requestGateAbortKey(abort) {
+  return JSON.stringify([
+    abort?.kind ?? null,
+    abort?.url ?? null,
+    abort?.resource_type ?? null,
+    abort?.decision ?? null,
+    abort?.abort_reason ?? null,
+  ]);
+}
+
+const REQUEST_GATE_ABORT_DECISIONS = new Set([
+  "unsupported_protocol",
+  "unsupported_public_origin_resource_type",
+]);
+
+export function validateRequestGateAborts(value, label = "request-gate aborts") {
+  if (!Array.isArray(value)) throw new Error(`${label} must be an array`);
+  return value.map((entry, index) => {
+    const name = `${label}[${index}]`;
+    const abort = requirePlainObject(entry, name);
+    const expectedKeys = [
+      "abort_reason",
+      "decision",
+      "error",
+      "kind",
+      "resource_type",
+      "url",
+    ];
+    if (
+      JSON.stringify(Object.keys(abort).sort()) !== JSON.stringify(expectedKeys)
+    ) {
+      throw new Error(`${name} has unsupported fields`);
+    }
+    if (abort.kind !== "request_gate_abort") {
+      throw new Error(`${name}.kind must be request_gate_abort`);
+    }
+    const decision = requireNonEmptyString(abort.decision, `${name}.decision`);
+    if (!REQUEST_GATE_ABORT_DECISIONS.has(decision)) {
+      throw new Error(`${name} has an unsupported request-gate abort decision`);
+    }
+    if (abort.abort_reason !== "blockedbyclient") {
+      throw new Error(`${name}.abort_reason must be blockedbyclient`);
+    }
+    return {
+      kind: "request_gate_abort",
+      url: normalizedUrl(abort.url, `${name}.url`).href,
+      resource_type: requireNonEmptyString(
+        abort.resource_type,
+        `${name}.resource_type`,
+      ),
+      error: requireNonEmptyString(abort.error, `${name}.error`),
+      decision,
+      abort_reason: "blockedbyclient",
+    };
+  });
+}
+
+export function assertRequestGateAbortAccounting(captures, requestGate) {
+  const observed = captures.reduce(
+    (total, capture, index) =>
+      total +
+      validateRequestGateAborts(
+        capture?.request_gate_aborts,
+        `captures[${index}].request_gate_aborts`,
+      ).length,
+    0,
+  );
+  if (
+    !Number.isInteger(requestGate?.unsupported_requests_blocked) ||
+    requestGate.unsupported_requests_blocked !== observed
+  ) {
+    throw new Error(
+      "request-gate abort observations do not match the gate blocked-request count",
+    );
+  }
+  return observed;
+}
+
 export function isExternalFailure(failure, capture) {
   let parsed;
   try {
@@ -651,6 +729,26 @@ export function compareCaptures(
   const liveOnlyFailures = (live.failures ?? []).filter(
     (failure) => !localFailureKeys.has(failureKey(failure)),
   );
+  const liveGateAbortKeys = new Set(
+    (live.request_gate_aborts ?? []).map(requestGateAbortKey),
+  );
+  const classifiedRequestGateAborts = (
+    local.request_gate_aborts ?? []
+  ).map((abort) => {
+    const classification = liveGateAbortKeys.has(requestGateAbortKey(abort))
+      ? "parity_matched"
+      : "local_only";
+    if (classification === "local_only") {
+      anomalies.push({ code: "local_only_request_gate_abort", detail: abort });
+    }
+    return { ...abort, classification };
+  });
+  const localGateAbortKeys = new Set(
+    (local.request_gate_aborts ?? []).map(requestGateAbortKey),
+  );
+  const liveOnlyRequestGateAborts = (
+    live.request_gate_aborts ?? []
+  ).filter((abort) => !localGateAbortKeys.has(requestGateAbortKey(abort)));
   if (local.navigation_status !== 200) {
     anomalies.push({
       code: "local_main_response_not_200",
@@ -821,6 +919,8 @@ export function compareCaptures(
     status: anomalies.length === 0 ? "pass" : "fail",
     classified_failures: classifiedFailures,
     live_only_failures: liveOnlyFailures,
+    classified_request_gate_aborts: classifiedRequestGateAborts,
+    live_only_request_gate_aborts: liveOnlyRequestGateAborts,
     classified_broken_images: classifiedBrokenImages,
     live_only_broken_images: liveOnlyBrokenImages,
     geometry: settledGeometry.geometry,
