@@ -170,6 +170,7 @@ impl PageLockService {
             ip_address,
             AuditEvent::PageLockRemove {
                 user_id,
+                site_id,
                 page_id: page_lock.page_id,
                 page_lock_id: page_lock.page_lock_id,
                 lock_type: page_lock.lock_type,

@@ -194,6 +194,7 @@ pub enum AuditEvent<'a> {
     },
     PageLockRemove {
         user_id: i64,
+        site_id: i64,
         page_id: i64,
         page_lock_id: i64,
         lock_type: PageLockType,
@@ -735,6 +736,7 @@ impl<'a> AuditEvent<'a> {
             },
             AuditEvent::PageLockRemove {
                 user_id,
+                site_id,
                 page_id,
                 page_lock_id,
                 lock_type,
@@ -742,7 +744,7 @@ impl<'a> AuditEvent<'a> {
                 event_type: "page_lock.remove",
                 ip_address,
                 user_id: Some(user_id),
-                site_id: None,
+                site_id: Some(site_id),
                 page_id: Some(page_id),
                 extra_id_1: Some(page_lock_id),
                 extra_id_2: None,
@@ -1363,11 +1365,13 @@ mod tests {
 
         let raw = extract(AuditEvent::PageLockRemove {
             user_id: 62,
+            site_id: 59,
             page_id: 63,
             page_lock_id: 64,
             lock_type: PageLockType::Wikidot,
         });
         assert_event_type(&raw, "page_lock.remove");
+        assert_eq!(raw.site_id, Some(59));
         assert_eq!(raw.page_id, Some(63));
         assert_eq!(raw.extra_id_1, Some(64));
         assert_eq!(raw.extra_string_1.as_deref(), Some("wikidot"));

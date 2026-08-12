@@ -26,3 +26,5 @@ This file will document all event types, describe their data, and explain when t
 | `page.rollback`       | `user_id`, `site_id`, `page_id`   | Revision ID   | Category ID   |                   |                   | Revision number   | "Revision number" is the revision the page is being rolled back to. |
 | `page.undo`           | `user_id`, `site_id`, `page_id`   | Revision ID   | Category ID   |                   |                   | Revision number   | "Revision number" is the revision's changes being undone. **This operation is not implemented yet.** |
 | `page_layout.update`  | `user_id`, `site_id`, `page_id`   |               |               | Layout value      |                   |                   | "Layout value" is the `ftml::Layout::value()` string. The layout value can be `NULL`. |
+| `page_lock.create`    | `user_id`, `site_id`, `page_id`   | Lock ID       |               | Lock type         |                   |                   |       |
+| `page_lock.remove`    | `user_id`, `site_id`, `page_id`   | Lock ID       |               | Lock type         |                   |                   |       |
