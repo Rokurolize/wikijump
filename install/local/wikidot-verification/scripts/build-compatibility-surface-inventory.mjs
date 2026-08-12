@@ -807,28 +807,390 @@ async function discoverPageActionSurfaces(root) {
   })
 }
 
-async function discoverWwsRoutes(root) {
-  const registryPath = "wws/src/route.rs"
-  const sourceText = (await readText(root, registryPath)).split("#[cfg(test)]", 1)[0]
-  const declarations = [...sourceText.matchAll(/\.route\s*\(\s*"([^"]+)"\s*,\s*(any|get|post|put|patch|delete|head|options)\s*\(\s*([A-Za-z_][A-Za-z0-9_:]*)\s*\)\s*,?\s*\)/gu)]
-  const declarationCount = sourceText.match(/\.route\s*\(/gu)?.length ?? 0
-  if (declarations.length !== declarationCount) {
+const WWS_DIRECT_METHODS = new Map([
+  ["get", "GET"],
+  ["post", "POST"],
+  ["put", "PUT"],
+  ["patch", "PATCH"],
+  ["delete", "DELETE"],
+  ["head", "HEAD"],
+  ["options", "OPTIONS"]
+])
+const WWS_METHOD_FILTERS = new Set([
+  "CONNECT",
+  "DELETE",
+  "GET",
+  "HEAD",
+  "OPTIONS",
+  "PATCH",
+  "POST",
+  "PUT",
+  "TRACE"
+])
+const RUST_DELIMITER_PAIRS = new Map([["(", ")"], ["[", "]"], ["{", "}"]])
+
+function scanRustTokens(sourceText, reference) {
+  const tokens = []
+  let index = 0
+  while (index < sourceText.length) {
+    const character = sourceText[index]
+    if (/\s/u.test(character)) {
+      index += 1
+      continue
+    }
+    if (sourceText.startsWith("//", index)) {
+      const newline = sourceText.indexOf("\n", index + 2)
+      index = newline < 0 ? sourceText.length : newline + 1
+      continue
+    }
+    if (sourceText.startsWith("/*", index)) {
+      let depth = 1
+      let cursor = index + 2
+      while (cursor < sourceText.length && depth > 0) {
+        if (sourceText.startsWith("/*", cursor)) {
+          depth += 1
+          cursor += 2
+        } else if (sourceText.startsWith("*/", cursor)) {
+          depth -= 1
+          cursor += 2
+        } else {
+          cursor += 1
+        }
+      }
+      if (depth !== 0) throw new Error(`${reference} contains an unterminated block comment`)
+      index = cursor
+      continue
+    }
+
+    const rawString = /^(?:b|c)?r(#+)?"/u.exec(sourceText.slice(index))
+    if (rawString) {
+      const hashes = rawString[1] ?? ""
+      const contentStart = index + rawString[0].length
+      const terminator = `"${hashes}`
+      const end = sourceText.indexOf(terminator, contentStart)
+      if (end < 0) throw new Error(`${reference} contains an unterminated raw string`)
+      tokens.push({
+        kind: "string",
+        value: sourceText.slice(contentStart, end)
+      })
+      index = end + terminator.length
+      continue
+    }
+
+    const stringPrefixLength = (character === "b" || character === "c") && sourceText[index + 1] === '"' ? 1 : 0
+    if (character === '"' || stringPrefixLength === 1) {
+      const quote = index + stringPrefixLength
+      let cursor = quote + 1
+      let escaped = false
+      while (cursor < sourceText.length) {
+        const current = sourceText[cursor]
+        if (escaped) escaped = false
+        else if (current === "\\") escaped = true
+        else if (current === '"') break
+        cursor += 1
+      }
+      if (cursor >= sourceText.length) throw new Error(`${reference} contains an unterminated string`)
+      tokens.push({
+        kind: "string",
+        value: sourceText.slice(quote + 1, cursor)
+      })
+      index = cursor + 1
+      continue
+    }
+
+    if (character === "'") {
+      let cursor = index + 1
+      if (sourceText[cursor] === "\\") {
+        cursor += 1
+        if (sourceText[cursor] === "u" && sourceText[cursor + 1] === "{") {
+          const unicodeClose = sourceText.indexOf("}", cursor + 2)
+          cursor = unicodeClose < 0 ? sourceText.length : unicodeClose + 1
+        } else if (sourceText[cursor] === "x") {
+          cursor += 3
+        } else {
+          cursor += 1
+        }
+      } else {
+        const codePoint = sourceText.codePointAt(cursor)
+        if (codePoint !== undefined) cursor += String.fromCodePoint(codePoint).length
+      }
+      if (sourceText[cursor] === "'") {
+        tokens.push({ kind: "character", value: "" })
+        index = cursor + 1
+      } else {
+        tokens.push({ kind: "punctuation", value: character })
+        index += 1
+      }
+      continue
+    }
+
+    const identifier = /^[A-Za-z_][A-Za-z0-9_]*/u.exec(sourceText.slice(index))
+    if (identifier) {
+      tokens.push({
+        kind: "identifier",
+        value: identifier[0]
+      })
+      index += identifier[0].length
+      continue
+    }
+    tokens.push({ kind: "punctuation", value: character })
+    index += 1
+  }
+  return tokens
+}
+
+function productionRustTokens(tokens) {
+  const testAttribute = ["#", "[", "cfg", "(", "test", ")", "]"]
+  for (let index = 0; index <= tokens.length - testAttribute.length; index += 1) {
+    if (testAttribute.every((value, offset) => tokens[index + offset].value === value)) {
+      return tokens.slice(0, index)
+    }
+  }
+  return tokens
+}
+
+function matchingRustDelimiter(tokens, openIndex, reference) {
+  const expectedClose = RUST_DELIMITER_PAIRS.get(tokens[openIndex]?.value)
+  if (!expectedClose) throw new Error(`${reference} contains an unsupported route declaration`)
+  const stack = [expectedClose]
+  for (let index = openIndex + 1; index < tokens.length; index += 1) {
+    const value = tokens[index].value
+    const close = RUST_DELIMITER_PAIRS.get(value)
+    if (close) stack.push(close)
+    else if ([")", "]", "}"].includes(value)) {
+      if (value !== stack.at(-1)) {
+        throw new Error(`${reference} contains an unbalanced route declaration`)
+      }
+      stack.pop()
+      if (stack.length === 0) return index
+    }
+  }
+  throw new Error(`${reference} contains an unterminated route declaration`)
+}
+
+function splitRustArguments(tokens, reference) {
+  const argumentsList = []
+  let start = 0
+  const stack = []
+  for (let index = 0; index < tokens.length; index += 1) {
+    const value = tokens[index].value
+    const close = RUST_DELIMITER_PAIRS.get(value)
+    if (close) stack.push(close)
+    else if ([")", "]", "}"].includes(value)) {
+      if (value !== stack.at(-1)) {
+        throw new Error(`${reference} contains an unbalanced route declaration`)
+      }
+      stack.pop()
+    } else if (value === "," && stack.length === 0) {
+      argumentsList.push(tokens.slice(start, index))
+      start = index + 1
+    }
+  }
+  if (stack.length !== 0) throw new Error(`${reference} contains an unbalanced route declaration`)
+  argumentsList.push(tokens.slice(start))
+  if (argumentsList.at(-1).length === 0) argumentsList.pop()
+  return argumentsList
+}
+
+function rustPath(tokens) {
+  if (tokens.length === 0 || tokens[0].kind !== "identifier") return null
+  let value = tokens[0].value
+  for (let index = 1; index < tokens.length; index += 3) {
+    if (
+      tokens[index]?.value !== ":" ||
+      tokens[index + 1]?.value !== ":" ||
+      tokens[index + 2]?.kind !== "identifier"
+    ) {
+      return null
+    }
+    value += `::${tokens[index + 2].value}`
+  }
+  return value
+}
+
+function parseWwsMethodFilter(tokens) {
+  if (
+    tokens[0]?.value !== "MethodFilter" ||
+    tokens[1]?.value !== ":" ||
+    tokens[2]?.value !== ":" ||
+    !WWS_METHOD_FILTERS.has(tokens[3]?.value)
+  ) {
+    return null
+  }
+  const methods = [tokens[3].value]
+  let index = 4
+  while (index < tokens.length) {
+    if (tokens[index]?.value !== "." || tokens[index + 1]?.value !== "or" || tokens[index + 2]?.value !== "(") {
+      return null
+    }
+    const close = matchingRustDelimiter(tokens, index + 2, "WWS MethodFilter")
+    const nested = parseWwsMethodFilter(tokens.slice(index + 3, close))
+    if (!nested) return null
+    methods.push(...nested)
+    index = close + 1
+  }
+  return [...new Set(methods)]
+}
+
+function parseWwsCall(tokens) {
+  if (tokens[0]?.kind !== "identifier" || tokens[1]?.value !== "(") return null
+  const close = matchingRustDelimiter(tokens, 1, "WWS endpoint")
+  return {
+    name: tokens[0].value,
+    argumentsList: splitRustArguments(tokens.slice(2, close), "WWS endpoint"),
+    tail: tokens.slice(close + 1)
+  }
+}
+
+function wwsReference(registryPath, declaration, method, implicitHead = false) {
+  const className = declaration.className ?? method
+  return `${registryPath}#${className.toLowerCase()}:${declaration.routePath}:${declaration.handler}${implicitHead ? ":implicit-head" : ""}`
+}
+
+function parseWwsEndpoint(tokens, routePath, registryPath) {
+  const call = parseWwsCall(tokens)
+  if (!call) throw new Error(`${registryPath} contains an unsupported route declaration`)
+  const handler = call.argumentsList.length === 1 ? rustPath(call.argumentsList[0]) : null
+  if (call.name === "any" && handler && call.tail.length === 0) {
+    return { routePath, all: { routePath, handler, className: "ANY" }, fixed: [], fallback: null }
+  }
+  const directMethod = WWS_DIRECT_METHODS.get(call.name)
+  if (directMethod && handler && call.tail.length === 0) {
+    return {
+      routePath,
+      all: null,
+      fixed: [{ method: directMethod, routePath, handler, className: directMethod }],
+      fallback: null
+    }
+  }
+  if (call.name !== "on" || call.argumentsList.length !== 2) {
     throw new Error(`${registryPath} contains an unsupported route declaration`)
   }
-  if (declarations.length === 0) throw new Error(`${registryPath} declares no WWS routes`)
-  return declarations.flatMap(([, routePath, matcher, handler]) => {
-    const methods = matcher === "get" ? ["GET", "HEAD"] : [matcher.toUpperCase()]
-    return methods.map((method) =>
-      surface({
-        surfaceId: `wws-route:${method}:${routePath}`,
-        kind: "wws_route",
-        publicOwner: "wws",
-        publicReference: [
-          `${registryPath}#${matcher}:${routePath}:${handler}${method === "HEAD" ? ":implicit-head" : ""}`
-        ]
+  const methods = parseWwsMethodFilter(call.argumentsList[0])
+  const onHandler = rustPath(call.argumentsList[1])
+  if (!methods || !onHandler) {
+    throw new Error(`${registryPath} contains an unsupported route declaration`)
+  }
+  const fallbackCall = parseWwsCall(call.tail.slice(1))
+  const hasFallbackPrefix = call.tail[0]?.value === "."
+  const fallbackHandler = fallbackCall?.argumentsList.length === 1
+    ? rustPath(fallbackCall.argumentsList[0])
+    : null
+  if (
+    !hasFallbackPrefix ||
+    fallbackCall?.name !== "fallback" ||
+    !fallbackHandler ||
+    fallbackCall.tail.length !== 0
+  ) {
+    throw new Error(`${registryPath} contains an unsupported route declaration`)
+  }
+  return {
+    routePath,
+    all: null,
+    fixed: methods.map((method) => ({
+      method,
+      routePath,
+      handler: onHandler,
+      className: `ON-${methods.join("+")}`
+    })),
+    fallback: { routePath, handler: fallbackHandler, className: "FALLBACK" }
+  }
+}
+
+function extractWwsRouteDeclarations(tokens, registryPath) {
+  const declarations = []
+  for (let index = 0; index < tokens.length; index += 1) {
+    if (tokens[index].value !== "." || tokens[index + 1]?.value !== "route") continue
+    if (tokens[index + 2]?.value !== "(") {
+      throw new Error(`${registryPath} contains an unsupported route declaration`)
+    }
+    const close = matchingRustDelimiter(tokens, index + 2, registryPath)
+    const argumentsList = splitRustArguments(tokens.slice(index + 3, close), registryPath)
+    if (
+      argumentsList.length !== 2 ||
+      argumentsList[0].length !== 1 ||
+      argumentsList[0][0].kind !== "string" ||
+      argumentsList[0][0].value.includes("\\")
+    ) {
+      throw new Error(`${registryPath} contains an unsupported route declaration`)
+    }
+    const routePath = argumentsList[0][0].value
+    declarations.push(parseWwsEndpoint(argumentsList[1], routePath, registryPath))
+    index = close
+  }
+  return declarations
+}
+
+function aggregateWwsDispatch(declarations, registryPath) {
+  const routes = new Map()
+  for (const declaration of declarations) {
+    const route = routes.get(declaration.routePath) ?? {
+      fixed: new Map(),
+      all: [],
+      fallback: []
+    }
+    for (const fixed of declaration.fixed) {
+      if (route.fixed.has(fixed.method)) {
+        throw new Error(`${registryPath} contains a duplicate ${fixed.method} route for ${declaration.routePath}`)
+      }
+      route.fixed.set(fixed.method, fixed)
+    }
+    if (declaration.all) route.all.push(declaration.all)
+    if (declaration.fallback) route.fallback.push(declaration.fallback)
+    routes.set(declaration.routePath, route)
+  }
+
+  const records = []
+  for (const [routePath, route] of routes) {
+    if (route.fixed.size === 0 && route.fallback.length === 0) {
+      if (route.all.length !== 1) {
+        throw new Error(`${registryPath} contains duplicate all-method routes for ${routePath}`)
+      }
+      const declaration = route.all[0]
+      records.push({ method: "ANY", routePath, reference: wwsReference(registryPath, declaration, "ANY") })
+      continue
+    }
+    const unmatched = [...route.all, ...route.fallback]
+    if (unmatched.length > 1) {
+      throw new Error(`${registryPath} contains duplicate unmatched-method routes for ${routePath}`)
+    }
+    for (const [method, declaration] of route.fixed) {
+      records.push({ method, routePath, reference: wwsReference(registryPath, declaration, method) })
+    }
+    if (route.fixed.has("GET") && !route.fixed.has("HEAD")) {
+      const declaration = route.fixed.get("GET")
+      records.push({
+        method: "HEAD",
+        routePath,
+        reference: wwsReference(registryPath, declaration, "HEAD", true)
       })
-    )
-  })
+    }
+    if (unmatched.length === 1) {
+      const declaration = unmatched[0]
+      records.push({
+        method: "FALLBACK",
+        routePath,
+        reference: wwsReference(registryPath, declaration, "FALLBACK")
+      })
+    }
+  }
+  return records
+}
+
+async function discoverWwsRoutes(root) {
+  const registryPath = "wws/src/route.rs"
+  const sourceText = await readText(root, registryPath)
+  const tokens = productionRustTokens(scanRustTokens(sourceText, registryPath))
+  const declarations = extractWwsRouteDeclarations(tokens, registryPath)
+  if (declarations.length === 0) throw new Error(`${registryPath} declares no WWS routes`)
+  return aggregateWwsDispatch(declarations, registryPath).map(({ method, routePath, reference }) =>
+    surface({
+      surfaceId: `wws-route:${method}:${routePath}`,
+      kind: "wws_route",
+      publicOwner: "wws",
+      publicReference: [reference]
+    })
+  )
 }
 
 function auditTests(row) {

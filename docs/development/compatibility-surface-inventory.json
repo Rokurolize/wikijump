@@ -22,10 +22,10 @@
     ]
   },
   "counts": {
-    "total": 914,
+    "total": 919,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 161,
+      "deepwell_jsonrpc_method": 163,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 26,
       "framerail_route": 28,
@@ -34,7 +34,7 @@
       "open43_audit_case": 285,
       "page_action": 25,
       "wikidot_py_amc_module_shape": 22,
-      "wws_route": 41
+      "wws_route": 44
     }
   },
   "surfaces": [
@@ -223,7 +223,12 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC files.get_meta still returns metadata above the local files.get_one read limit",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC files.get_one allows the local 6 MB boundary using a tiny synthetic payload",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC files.get_one rechecks the local read limit after fetching content",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC files.get_one rejects metadata above the local 6 MB read limit before requesting content"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -232,8 +237,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -889,21 +896,24 @@
         "issues": [],
         "cases": [],
         "tests": [
-          "deepwell/src/services/data_form.rs#checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "deepwell/src/services/data_form.rs#checkbox_and_wiki_fields_follow_live_control_and_storage_contracts",
+          "deepwell/src/services/data_form.rs#checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
           "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract",
-          "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts#checkbox/wiki source serialization and public create/edit browser flow"
+          "framerail/tests/data-form-create-flow.spec.ts#data-form checkbox and wiki controls match live DOM and storage",
+          "framerail/tests/wikidot-data-form.test.js#checkbox and wiki state and source match live Wikidot"
         ]
       },
       "evidence": {
         "status": "available",
         "references": [
           "docs/wikidot-specifications/specifications/data-forms/data-forms-checkbox-field.md",
-          "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+          "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json (SHA-256 8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0; cases: checkbox-control-default-storage-display-and-restoration, direct-and-listpages-wiki-checkbox-variables)",
+          "live-observations.json::data-form-checkbox-control-storage-and-variable-contract"
         ]
       },
       "source": {
-        "status": "implemented",
+        "status": "in_progress",
         "references": [
           "deepwell/src/services/data_form.rs",
           "deepwell/src/services/page_query/structs.rs",
@@ -2936,26 +2946,24 @@
         "issues": [],
         "cases": [],
         "tests": [
-          "deepwell/src/services/render/backlinks.rs::tests::backlinks_name_must_end_before_arguments",
-          "deepwell/src/services/render/backlinks.rs::tests::empty_backlinks_box_matches_live_wikidot",
-          "deepwell/tests/page.rs::backlinks_module_ignores_arguments_like_live_wikidot",
-          "deepwell/tests/page.rs::backlinks_module_renders_current_page_incoming_links"
+          "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
         ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/live-observations.json",
           "docs/wikidot-specifications/specifications/module/module-backlinks.md",
           "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json",
           "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks"
         ]
       },
       "source": {
-        "status": "implemented",
+        "status": "in_progress",
         "references": [
           "deepwell/src/services/render/backlinks.rs",
-          "deepwell/src/services/render/service.rs",
-          "deepwell/tests/page.rs"
+          "deepwell/src/services/render/service.rs"
         ]
       },
       "candidate": {
@@ -3173,7 +3181,9 @@
         "cases": [],
         "tests": [
           "deepwell/src/services/render/service/tests.rs",
-          "deepwell/tests/page.rs"
+          "deepwell/tests/page.rs",
+          "deepwell/tests/page.rs#restore_rerender_failure_rolls_back_resurrection_identity_and_revision",
+          "deepwell/tests/page.rs#restored_countpages_page_stores_and_serves_its_current_self_count; restored_page_uses_destination_template_countpages_after_explicit_restore; restored_literal_and_unsupported_countpages_shapes_stay_inert"
         ]
       },
       "evidence": {
@@ -3188,9 +3198,18 @@
       "source": {
         "status": "implemented",
         "references": [
+          "deepwell/src/services/page/service.rs",
+          "deepwell/src/services/page_revision/service.rs",
+          "deepwell/src/services/render/count_pages_recognition.rs",
           "deepwell/src/services/render/list_pages/rendering.rs",
+          "deepwell/src/services/render/list_pages/rendering_support.rs",
           "deepwell/src/services/render/list_pages/scanner.rs",
-          "deepwell/src/services/render/list_pages/substitution.rs"
+          "deepwell/src/services/render/list_pages/substitution.rs",
+          "deepwell/src/services/render/list_pages/substitution/selectors.rs",
+          "deepwell/src/services/render/mod.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/article_cache.rs"
         ]
       },
       "candidate": {
@@ -3943,6 +3962,7 @@
           "deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance; listpages_imported_editor_identity_uses_structured_corpus_provenance; listpages_imported_commenter_identity_uses_structured_corpus_provenance; wikidot_listpages_feed_uses_imported_creator_identity_provenance",
           "deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal; listpages_aggregate_generated_output_budget_preserves_overflowing_module; listpages_following_paragraph_boundary_counts_toward_generated_output_budget; listpages_module_count_over_the_render_budget_remains_literal; listpages_module_source_over_the_render_budget_remains_literal; listpages_current_page_content_shares_the_module_work_budget",
           "deepwell/tests/page.rs#listpages_template_parser_functions_run_after_row_variable_substitution",
+          "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
           "deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
           "framerail/tests/list-pages-feed.test.ts",
           "framerail/tests/list-pages-navigation.spec.ts",
@@ -4001,6 +4021,7 @@
           "deepwell/src/services/page_query",
           "deepwell/src/services/render/list_pages",
           "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/render/render_dependency.rs",
           "deepwell/src/services/render/runtime_page_queries.rs",
           "deepwell/src/services/render/url_arguments.rs",
           "deepwell/src/services/view/module_arguments.rs",
@@ -4191,6 +4212,8 @@
         "issues": [],
         "cases": [],
         "tests": [
+          "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries",
+          "deepwell/tests/members_freshness.rs#saved_members_pages_refresh_after_membership_changes_without_mutating_revision_html",
           "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
           "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles",
           "framerail/tests/ajax-module-connector.test.js#dispatches only the observed MembersListModule read shape",
@@ -4212,7 +4235,12 @@
         "references": [
           "deepwell/src/api.rs",
           "deepwell/src/endpoints/page.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs",
           "deepwell/src/services/render/user_directory.rs",
+          "deepwell/src/services/view/article_cache.rs",
+          "deepwell/tests/members_freshness.rs",
           "framerail/src/lib/server/ajax-module-connector.js",
           "framerail/src/lib/server/deepwell/membership.ts",
           "framerail/src/routes/ajax-module-connector.php/+server.ts"
@@ -4536,7 +4564,9 @@
           "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_documented_hidden_fields",
           "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_placeholder",
           "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_uses_live_argument_quirks",
+          "deepwell/src/services/render/url_arguments.rs::tests::only_executable_template_backed_newpage_modules_require_runtime_rendering",
           "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
+          "deepwell/tests/page.rs::saved_newpage_views_resolve_templates_from_current_anonymous_state",
           "framerail/tests/ajax-module-connector.test.js::NewPage template autosave creates an empty page and ignores parent",
           "framerail/tests/ajax-module-connector.test.js::allows NewPage edit routing without page creation permission",
           "framerail/tests/ajax-module-connector.test.js::dispatches NewPage autosave modes through the injected create callback",
@@ -4571,6 +4601,7 @@
           "deepwell/src/services/render/new_page_module.rs",
           "deepwell/src/services/render/runtime_modules.rs",
           "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs",
           "framerail/src/lib/server/ajax-module-connector.js",
           "framerail/src/lib/server/deepwell/page.ts",
           "framerail/src/lib/wikidot/wikidot-new-page-helper.js",
@@ -4688,7 +4719,9 @@
           "deepwell/src/services/render/link_modules.rs::tests::orphaned_pages_box_matches_live_wikidot_rows",
           "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_query_module_is_query_dependent",
           "deepwell/src/services/render/url_arguments.rs::tests::link_listing_modules_require_runtime_rendering",
-          "deepwell/tests/page.rs::orphanedpages_module_lists_pages_without_incoming_internal_links"
+          "deepwell/tests/page.rs::orphanedpages_module_lists_pages_without_incoming_internal_links",
+          "deepwell/tests/page.rs::orphanedpages_module_refreshes_after_linker_soft_delete",
+          "deepwell/tests/page.rs::site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules"
         ]
       },
       "evidence": {
@@ -4707,6 +4740,8 @@
           "deepwell/src/services/render/render_dependency.rs",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/module_render.rs",
+          "deepwell/src/services/view/site_tools.rs",
           "deepwell/tests/page.rs"
         ]
       },
@@ -4996,7 +5031,9 @@
           "deepwell/src/services/render/service/tests.rs#renders_wikidot_read_only_rate_module_with_downvote",
           "deepwell/src/services/render/service/tests.rs#wikidot_compatibility_fallback_centers_read_only_rate_module",
           "deepwell/tests/page.rs#page_render_emits_wikidot_rate_widget_structure",
-          "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables"
+          "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
+          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
+          "deepwell/tests/vote.rs#registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count"
         ]
       },
       "evidence": {
@@ -5010,10 +5047,12 @@
       "source": {
         "status": "implemented",
         "references": [
+          "deepwell/src/endpoints/vote.rs",
           "deepwell/src/services/render/runtime_modules.rs",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/render/service/tests.rs",
-          "deepwell/tests/page.rs"
+          "deepwell/tests/page.rs",
+          "deepwell/tests/vote.rs"
         ]
       },
       "candidate": {
@@ -5569,6 +5608,8 @@
         "issues": [],
         "cases": [],
         "tests": [
+          "deepwell/tests/page.rs::saved_tagcloud_page_view_follows_independent_tag_mutations",
+          "deepwell/tests/page.rs::tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags",
           "deepwell/tests/page.rs::tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
           "deepwell/tests/page.rs::tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
         ]
@@ -5583,13 +5624,15 @@
         ]
       },
       "source": {
-        "status": "implemented",
+        "status": "blocked",
         "references": [
           "deepwell/src/services/render/list_pages/mod.rs",
           "deepwell/src/services/render/list_pages/presentation.rs",
           "deepwell/src/services/render/runtime_modules.rs",
           "deepwell/src/services/render/service.rs",
-          "deepwell/src/services/render/service/tests.rs"
+          "deepwell/src/services/render/service/tests.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/article_cache.rs"
         ]
       },
       "candidate": {
@@ -6061,17 +6104,26 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
+          "framerail/tests/wikidot-page-tags.test.js"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/site-structure/page-tags.md"
+          "docs/wikidot-specifications/specifications/site-structure/page-tags.md",
+          "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
+          "live-observations.json::found-page-tag-wrapper-dom-20260727"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "framerail/src/lib/wikidot/wikidot-page-tags.js",
+          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -6971,16 +7023,20 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/list_pages.rs#listpages_respects_corpus_literal_context_ownership"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/wiki-syntax/syntax-comments.md"
+          "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/specifications/wiki-syntax/syntax-comments.md",
+          "live-observations.json::listpages-literal-context-ownership"
         ]
       },
       "source": {
-        "status": "pending",
+        "status": "in_progress",
         "references": []
       },
       "candidate": {
@@ -7609,17 +7665,25 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/pr1334-ftml-inline-core-syntax-source-attribution.test.mjs#source, public-test, fixture, and catalog evidence reconcile without hidden gaps",
+          "install/local/wikidot-verification/tests/pr1334-ftml-lexical-text-source-attribution.test.mjs#exact identities, denominator, inventory preconditions, and non-claim statuses"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/pr1334-ftml-inline-core-syntax-source-attribution-20260810.json (SHA-256 84c6938b305fb6fd0cebfb2c8459df221a8d163911e3a4e31059ae02574abbcd)",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json (SHA-256 436918d4ac62c4977cd8bacc9ab564129dfc7e2b5bcb92cf18f41a9cf39dca45)",
           "docs/wikidot-specifications/specifications/wiki-syntax/syntax-literal-text.md"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "deepwell/Cargo.lock",
+          "deepwell/Cargo.toml"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -11198,6 +11262,39 @@
       }
     },
     {
+      "surface_id": "deepwell-jsonrpc:page_lifecycle_identity",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:page_lifecycle_identity"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
       "surface_id": "deepwell-jsonrpc:page_lock_create",
       "kind": "deepwell_jsonrpc_method",
       "public_owner": "deepwell",
@@ -11995,6 +12092,39 @@
       "public_owner": "deepwell",
       "public_reference": [
         "deepwell/src/api.rs#register:parent_get_all"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:parent_get_direct_metadata",
+      "kind": "deepwell_jsonrpc_method",
+      "public_owner": "deepwell",
+      "public_reference": [
+        "deepwell/src/api.rs#register:parent_get_direct_metadata"
       ],
       "existing_refs": {
         "issues": [],
@@ -15086,11 +15216,11 @@
       }
     },
     {
-      "surface_id": "framerail-route:/feed/pages/{*extra}",
+      "surface_id": "framerail-route:/feed/pages/{argument}/{*extra}",
       "kind": "framerail_route",
       "public_owner": "framerail",
       "public_reference": [
-        "framerail/src/routes/feed/pages/[...extra]/+server.ts#methods:GET"
+        "framerail/src/routes/feed/pages/[argument]/[...extra]/+server.ts#methods:GET"
       ],
       "existing_refs": {
         "issues": [],
@@ -31924,138 +32054,6 @@
       }
     },
     {
-      "surface_id": "wws-route:ANY:/-/basic-error/{error_code}",
-      "kind": "wws_route",
-      "public_owner": "wws",
-      "public_reference": [
-        "wws/src/route.rs#any:/-/basic-error/{error_code}:handle_invalid_method"
-      ],
-      "existing_refs": {
-        "issues": [],
-        "cases": [],
-        "tests": []
-      },
-      "evidence": {
-        "status": "missing",
-        "references": []
-      },
-      "source": {
-        "status": "implemented",
-        "references": []
-      },
-      "candidate": {
-        "status": "pending",
-        "references": []
-      },
-      "standing": {
-        "status": "pending",
-        "references": []
-      },
-      "closure": {
-        "status": "open",
-        "references": []
-      }
-    },
-    {
-      "surface_id": "wws-route:ANY:/-/code/{page_slug}/{index}",
-      "kind": "wws_route",
-      "public_owner": "wws",
-      "public_reference": [
-        "wws/src/route.rs#any:/-/code/{page_slug}/{index}:handle_invalid_method"
-      ],
-      "existing_refs": {
-        "issues": [],
-        "cases": [],
-        "tests": []
-      },
-      "evidence": {
-        "status": "missing",
-        "references": []
-      },
-      "source": {
-        "status": "implemented",
-        "references": []
-      },
-      "candidate": {
-        "status": "pending",
-        "references": []
-      },
-      "standing": {
-        "status": "pending",
-        "references": []
-      },
-      "closure": {
-        "status": "open",
-        "references": []
-      }
-    },
-    {
-      "surface_id": "wws-route:ANY:/-/download/{page_slug}/{filename}",
-      "kind": "wws_route",
-      "public_owner": "wws",
-      "public_reference": [
-        "wws/src/route.rs#any:/-/download/{page_slug}/{filename}:handle_invalid_method"
-      ],
-      "existing_refs": {
-        "issues": [],
-        "cases": [],
-        "tests": []
-      },
-      "evidence": {
-        "status": "missing",
-        "references": []
-      },
-      "source": {
-        "status": "implemented",
-        "references": []
-      },
-      "candidate": {
-        "status": "pending",
-        "references": []
-      },
-      "standing": {
-        "status": "pending",
-        "references": []
-      },
-      "closure": {
-        "status": "open",
-        "references": []
-      }
-    },
-    {
-      "surface_id": "wws-route:ANY:/-/file/{page_slug}/{filename}",
-      "kind": "wws_route",
-      "public_owner": "wws",
-      "public_reference": [
-        "wws/src/route.rs#any:/-/file/{page_slug}/{filename}:handle_invalid_method"
-      ],
-      "existing_refs": {
-        "issues": [],
-        "cases": [],
-        "tests": []
-      },
-      "evidence": {
-        "status": "missing",
-        "references": []
-      },
-      "source": {
-        "status": "implemented",
-        "references": []
-      },
-      "candidate": {
-        "status": "pending",
-        "references": []
-      },
-      "standing": {
-        "status": "pending",
-        "references": []
-      },
-      "closure": {
-        "status": "open",
-        "references": []
-      }
-    },
-    {
       "surface_id": "wws-route:ANY:/-/files/{page_slug}/{filename}",
       "kind": "wws_route",
       "public_owner": "wws",
@@ -32094,39 +32092,6 @@
       "public_owner": "wws",
       "public_reference": [
         "wws/src/route.rs#any:/-/health-check:handle_health_check"
-      ],
-      "existing_refs": {
-        "issues": [],
-        "cases": [],
-        "tests": []
-      },
-      "evidence": {
-        "status": "missing",
-        "references": []
-      },
-      "source": {
-        "status": "implemented",
-        "references": []
-      },
-      "candidate": {
-        "status": "pending",
-        "references": []
-      },
-      "standing": {
-        "status": "pending",
-        "references": []
-      },
-      "closure": {
-        "status": "open",
-        "references": []
-      }
-    },
-    {
-      "surface_id": "wws-route:ANY:/-/html/{page_slug}/{id}",
-      "kind": "wws_route",
-      "public_owner": "wws",
-      "public_reference": [
-        "wws/src/route.rs#any:/-/html/{page_slug}/{id}:handle_invalid_method"
       ],
       "existing_refs": {
         "issues": [],
@@ -32390,7 +32355,7 @@
       "kind": "wws_route",
       "public_owner": "wws",
       "public_reference": [
-        "wws/src/route.rs#any:/local--files/{page_slug}/{filename}:handle_file_redirect"
+        "wws/src/route.rs#any:/local--files/{page_slug}/{filename}:handle_local_file"
       ],
       "existing_refs": {
         "issues": [],
@@ -32452,7 +32417,205 @@
       }
     },
     {
-      "surface_id": "wws-route:ANY:/local--resized-images/{page_slug}/{filename}/{variant}",
+      "surface_id": "wws-route:FALLBACK:/-/basic-error/{error_code}",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#any:/-/basic-error/{error_code}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:FALLBACK:/-/code/{page_slug}/{index}",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#any:/-/code/{page_slug}/{index}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:FALLBACK:/-/download/{page_slug}/{filename}",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#any:/-/download/{page_slug}/{filename}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:FALLBACK:/-/file/{page_slug}/{filename}",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#any:/-/file/{page_slug}/{filename}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:FALLBACK:/-/html/{page_slug}/{id}",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#any:/-/html/{page_slug}/{id}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:FALLBACK:/{page_slug}/code",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#fallback:/{page_slug}/code:redirect_to_main"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:FALLBACK:/local--resized-images/{page_slug}/{filename}/{variant}",
       "kind": "wws_route",
       "public_owner": "wws",
       "public_reference": [
@@ -32622,6 +32785,39 @@
       "public_owner": "wws",
       "public_reference": [
         "wws/src/route.rs#get:/-/html/{page_slug}/{id}:handle_html_block"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:GET:/{page_slug}/code",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#on-get:/{page_slug}/code:handle_default_code_redirect"
       ],
       "existing_refs": {
         "issues": [],
@@ -33018,6 +33214,39 @@
       "public_owner": "wws",
       "public_reference": [
         "wws/src/route.rs#get:/-/html/{page_slug}/{id}:handle_html_block:implicit-head"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      }
+    },
+    {
+      "surface_id": "wws-route:HEAD:/{page_slug}/code",
+      "kind": "wws_route",
+      "public_owner": "wws",
+      "public_reference": [
+        "wws/src/route.rs#on-get:/{page_slug}/code:handle_default_code_redirect:implicit-head"
       ],
       "existing_refs": {
         "issues": [],

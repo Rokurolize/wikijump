@@ -333,6 +333,231 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.equal(await fs.readFile(outputPath, "utf8"), firstOutput)
 })
 
+test("CLI discovers GET, implicit HEAD, and FALLBACK for the production composite route", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-composite-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn build_router() {
+  Router::new().route(
+    "/{page_slug}/code",
+    on(MethodFilter::GET, handle_default_code_redirect)
+      .fallback(redirect_to_main),
+  )
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ kind }) => kind === "wws_route")
+      .map(({ surface_id }) => surface_id),
+    [
+      "wws-route:FALLBACK:/{page_slug}/code",
+      "wws-route:GET:/{page_slug}/code",
+      "wws-route:HEAD:/{page_slug}/code"
+    ]
+  )
+  const firstOutput = await fs.readFile(outputPath, "utf8")
+  const secondResult = runCli(root, outputPath)
+  assert.equal(secondResult.status, 0, secondResult.stderr)
+  assert.equal(await fs.readFile(outputPath, "utf8"), firstOutput)
+})
+
+test("CLI aggregates same-path GET and any handlers into effective dispatch slots", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-aggregate-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn build_router() {
+  Router::new()
+    .route("/-/file/{page_slug}/{filename}", get(handle_file_fetch))
+    .route("/-/file/{page_slug}/{filename}", any(handle_invalid_method))
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ kind }) => kind === "wws_route")
+      .map(({ surface_id }) => surface_id),
+    [
+      "wws-route:FALLBACK:/-/file/{page_slug}/{filename}",
+      "wws-route:GET:/-/file/{page_slug}/{filename}",
+      "wws-route:HEAD:/-/file/{page_slug}/{filename}"
+    ]
+  )
+})
+
+test("CLI preserves standalone any as one ANY dispatch surface", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-any-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn build_router() {
+  Router::new().route("/-/health-check", any(handle_health_check))
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ kind }) => kind === "wws_route")
+      .map(({ surface_id }) => surface_id),
+    ["wws-route:ANY:/-/health-check"]
+  )
+})
+
+test("CLI accepts a closed MethodFilter or-chain with a route-local fallback", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-filter-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn build_router() {
+  Router::new().route(
+    "/filtered",
+    on(MethodFilter::GET.or(MethodFilter::HEAD).or(MethodFilter::OPTIONS), handle_filtered)
+      .fallback(handle_unmatched),
+  )
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ kind }) => kind === "wws_route")
+      .map(({ surface_id }) => surface_id),
+    [
+      "wws-route:FALLBACK:/filtered",
+      "wws-route:GET:/filtered",
+      "wws-route:HEAD:/filtered",
+      "wws-route:OPTIONS:/filtered"
+    ]
+  )
+})
+
+test("CLI lets an explicit HEAD handler override GET's implicit HEAD surface", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-head-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn build_router() {
+  Router::new()
+    .route("/resource", get(handle_get))
+    .route("/resource", head(handle_head))
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const routes = inventory.surfaces.filter(({ kind }) => kind === "wws_route")
+  assert.deepEqual(routes.map(({ surface_id }) => surface_id), [
+    "wws-route:GET:/resource",
+    "wws-route:HEAD:/resource"
+  ])
+  assert.deepEqual(
+    routes.find(({ surface_id }) => surface_id === "wws-route:HEAD:/resource").public_reference,
+    ["wws/src/route.rs#head:/resource:handle_head"]
+  )
+})
+
+test("CLI ignores route-like text in Rust comments, strings, and test-only source", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-lexical-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `fn identity<'a>(value: &'a str) -> &'a str { value }
+pub fn build_router() {
+  let quote = '"';
+  // .route("/comment", get(comment_handler))
+  let example = ".route(\\"/string\\", any(string_handler))";
+  let raw = r#".route("/raw-string", get(raw_handler))"#;
+  /* .route("/block-comment", get(block_handler)) */
+  Router::new().route("/production", any(handle_production))
+}
+
+#[cfg(test)]
+mod tests {
+  fn fixture() { Router::new().route("/test-only", get(test_handler)); }
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ kind }) => kind === "wws_route")
+      .map(({ surface_id }) => surface_id),
+    ["wws-route:ANY:/production"]
+  )
+})
+
+test("CLI fails closed for unknown, service, dynamic, and malformed WWS route shapes", async () => {
+  const cases = [
+    ["unknown filter", 'on(MethodFilter::COPY, handler).fallback(unmatched)'],
+    ["service endpoint", "service(handler)"],
+    ["unknown chain", "get(handler).layer(layer)"],
+    ["dynamic path", null],
+    ["malformed route", null]
+  ]
+  for (const [name, endpoint] of cases) {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-closed-"))
+    await writeRepositoryFixture(root)
+    const declaration = name === "dynamic path"
+      ? ".route(route_path, get(handler))"
+      : name === "malformed route"
+        ? '.route("/malformed", get(handler)'
+        : `.route("/closed", ${endpoint})`
+    await writeText(
+      root,
+      "wws/src/route.rs",
+      `pub fn build_router() { Router::new()${declaration} }
+`
+    )
+    const outputPath = path.join(root, "inventory.json")
+
+    const result = runCli(root, outputPath)
+
+    assert.equal(result.status, 1, `${name}: ${result.stderr}`)
+    assert.match(result.stderr, /wws\/src\/route\.rs contains (?:an unsupported|an unbalanced|an unterminated) route declaration/u)
+    await assert.rejects(fs.access(outputPath))
+  }
+})
+
 test("CLI rejects a duplicate discovered surface", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-duplicate-"))
   await writeRepositoryFixture(root)
