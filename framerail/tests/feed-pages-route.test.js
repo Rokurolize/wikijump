@@ -145,3 +145,59 @@ test("selector feed paths remain XML feeds", async () => {
     client.request = rejectingClientRequest
   }
 })
+
+test("populated feed items retain the multiline content CDATA envelope", async () => {
+  const bodyHtml = "<p>body ]]> & text</p>"
+  const createdByHtml = '<span class="printuser">A & B</span>'
+  const rejectingClientRequest = client.request
+  client.request = async (method, ...args) => {
+    if (method === "wikidot_list_pages_feed") {
+      return {
+        items: [
+          {
+            slug: "news:item",
+            title: "Item",
+            created_at: "2026-07-22T23:23:22Z",
+            body_html: bodyHtml,
+            created_by_html: createdByHtml
+          }
+        ]
+      }
+    }
+    return rejectingClientRequest(method, ...args)
+  }
+
+  try {
+    const feedResponse = await fetch(`${baseUrl}/feed/pages/category/news`, {
+      headers: siteHeaders
+    })
+    const feedBody = await feedResponse.text()
+    const expectedEnvelope = [
+      "\t\t\t\t\t\t\t\t\t\t\t\t<content:encoded>",
+      "\t\t\t\t\t<![CDATA[",
+      "\t\t\t\t\t\t <p>body ]]]]><![CDATA[> & text</p>",
+      '<p>by <span class="printuser">A & B</span></p> ',
+      "\t\t\t\t \t]]>",
+      "\t\t\t\t</content:encoded>"
+    ].join("\n")
+
+    assert.ok(feedBody.includes(expectedEnvelope))
+
+    const encodedElement = /<content:encoded>([\s\S]*?)<\/content:encoded>/u.exec(
+      feedBody
+    )?.[1]
+    assert.ok(encodedElement)
+    const parsedContent = Array.from(
+      encodedElement.matchAll(/<!\[CDATA\[([\s\S]*?)\]\]>/gu),
+      (match) => match[1]
+    ).join("")
+    const prefix = "\n\t\t\t\t\t\t "
+    const suffix = " \n\t\t\t\t \t"
+    assert.equal(
+      parsedContent.slice(prefix.length, -suffix.length),
+      '<p>body ]]> & text</p>\n<p>by <span class="printuser">A & B</span></p>'
+    )
+  } finally {
+    client.request = rejectingClientRequest
+  }
+})
