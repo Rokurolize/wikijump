@@ -34,7 +34,7 @@ use super::list_pages::{
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::page_tree::PAGE_TREE_MODULE_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
-use super::pages_by_tag::PAGES_BY_TAG_MODULE_REGEX;
+use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
 use super::service::RATEDPAGES_MODULE_REGEX;
 use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
 use crate::services::page_query::OrderProperty;
@@ -200,7 +200,7 @@ static LIST_PAGES_MODULE_REGEX: LazyLock<Regex> =
 /// produced before arguments were routed at all.
 pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
-        || PAGES_BY_TAG_MODULE_REGEX.is_match(wikitext)
+        || wikitext_has_supported_pages_by_tag_module(wikitext)
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
         || LIST_PAGES_URL_SELECTOR_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
@@ -211,11 +211,12 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
 
 /// Whether a page view must render from source even without URL arguments.
 ///
-/// `Pages` is a live site index. Its first page changes when pages are created,
-/// renamed, deleted, or become visible, so stored revision HTML cannot answer
-/// even the bare request.
+/// `Pages` is a live site index, and `PagesByTag` is a live tag/category query.
+/// Their results change when pages or their query-relevant state changes, so
+/// stored revision HTML cannot answer even the bare request.
 pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
+        || wikitext_has_supported_pages_by_tag_module(wikitext)
         || wikitext_has_executable_list_pages_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || BACKLINKS_MODULE_REGEX.is_match(wikitext)
@@ -236,6 +237,15 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
         || wikitext_has_random_list_pages_module(wikitext)
+}
+
+fn wikitext_has_supported_pages_by_tag_module(wikitext: &str) -> bool {
+    PAGES_BY_TAG_MODULE_REGEX
+        .captures_iter(wikitext)
+        .any(|captures| {
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            parse_pages_by_tag_arguments(head).is_some()
+        })
 }
 
 fn wikitext_has_executable_list_pages_module(wikitext: &str) -> bool {
@@ -273,6 +283,20 @@ mod tests {
     #[test]
     fn a_pages_by_tag_module_reads_url_arguments() {
         assert!(wikitext_reads_url_arguments("[[module PagesByTag]]"));
+        assert!(!wikitext_reads_url_arguments(
+            r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
+        ));
+    }
+
+    #[test]
+    fn a_pages_by_tag_module_always_requires_runtime_rendering() {
+        assert!(wikitext_requires_runtime_render(
+            r#"[[module PagesByTag tag="alpha" category="news"]]"#,
+        ));
+        assert!(wikitext_requires_runtime_render("[[module PagesByTag]]"));
+        assert!(!wikitext_requires_runtime_render(
+            r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
+        ));
     }
 
     #[test]

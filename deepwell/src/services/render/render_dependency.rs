@@ -23,6 +23,8 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
+use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderDependencyClass {
     RevisionLocal,
@@ -124,6 +126,10 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     }
 
     for captures in MODULE_MARKER_REGEX.captures_iter(source) {
+        let module_start = captures
+            .get(0)
+            .expect("module marker captures the full match")
+            .start();
         let Some(name) = captures
             .name("tail")
             .and_then(|tail| safely_parsed_module_name(tail.as_str()))
@@ -133,6 +139,15 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         };
 
         let name = name.to_ascii_lowercase();
+        if name == "pagesbytag" {
+            if supported_pages_by_tag_module_at(source, module_start) {
+                classes.insert(RenderDependencyClass::QueryDependent);
+                classes.insert(RenderDependencyClass::RequestDependent);
+            } else {
+                classes.insert(RenderDependencyClass::UnsupportedUnverified);
+            }
+            continue;
+        }
         if name == "pages" {
             classes.insert(RenderDependencyClass::QueryDependent);
             classes.insert(RenderDependencyClass::RequestDependent);
@@ -156,6 +171,19 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     }
 
     classes
+}
+
+fn supported_pages_by_tag_module_at(source: &str, module_start: usize) -> bool {
+    PAGES_BY_TAG_MODULE_REGEX
+        .captures_at(source, module_start)
+        .is_some_and(|captures| {
+            captures
+                .get(0)
+                .is_some_and(|module| module.start() == module_start)
+                && captures.name("head").is_some_and(|head| {
+                    parse_pages_by_tag_arguments(head.as_str()).is_some()
+                })
+        })
 }
 
 fn safely_parsed_module_name(tail: &str) -> Option<&str> {
@@ -267,6 +295,37 @@ mod tests {
         assert!(classes.contains(RenderDependencyClass::QueryDependent));
         assert!(classes.contains(RenderDependencyClass::RequestDependent));
         assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+    }
+
+    #[test]
+    fn pages_by_tag_is_query_and_conservatively_request_dependent() {
+        let classes = classify_render_dependencies(
+            r#"[[module PagesByTag tag="alpha" category="news"]]"#,
+        );
+
+        assert!(classes.contains(RenderDependencyClass::QueryDependent));
+        assert!(classes.contains(RenderDependencyClass::RequestDependent));
+        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+        assert!(!classes.contains(RenderDependencyClass::UnsupportedUnverified));
+    }
+
+    #[test]
+    fn unsupported_pages_by_tag_head_is_unsupported_without_query_dependencies() {
+        for source in [
+            r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
+            r#"[[module PagesByTag tag="alpha"]"#,
+            r#"[[module PagesByTag tag="alpha""#,
+        ] {
+            let classes = classify_render_dependencies(source);
+
+            assert!(
+                classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+            assert!(!classes.contains(RenderDependencyClass::QueryDependent));
+            assert!(!classes.contains(RenderDependencyClass::RequestDependent));
+            assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+        }
     }
 
     #[test]

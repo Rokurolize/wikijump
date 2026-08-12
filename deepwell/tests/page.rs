@@ -2264,7 +2264,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v8")
+            .ends_with("; deepwell-render/v9")
     );
 }
 
@@ -2444,11 +2444,11 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v8:"),
+        current_key.starts_with("deepwell:article-view:page:v9:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
-        "deepwell:article-view:page:v8:",
+        "deepwell:article-view:page:v9:",
         "deepwell:article-view:page:v7:",
         1,
     );
@@ -15222,6 +15222,265 @@ async fn pages_by_tag_module_renders_tagged_pages_ordered_by_title() {
         aardvark < mango && mango < zulu,
         "rows must follow case-insensitive title order: {html}",
     );
+}
+
+#[tokio::test]
+async fn pages_by_tag_saved_page_views_follow_current_tagged_page_state() {
+    async fn load_public_view(
+        runner: &TestRunner,
+        site_id: i64,
+        holder_slug: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": holder_slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found PagesByTag page view, got {other:?}"),
+        }
+    }
+
+    fn assert_only_alpha(html: &str, alpha_slug: &str, beta_slug: &str) {
+        let expected =
+            format!(r#"<a href="/{alpha_slug}">Alpha Current PagesByTag Match</a>"#,);
+        assert!(
+            html.contains(&expected),
+            "the current matching alpha row should be selected:\n{html}",
+        );
+        assert!(
+            !html.contains(beta_slug) && html.matches("pages-list-item").count() == 1,
+            "nonmatching pages must not change the selected row:\n{html}",
+        );
+    }
+
+    fn assert_empty(html: &str, alpha_slug: &str, beta_slug: &str) {
+        assert!(
+            !html.contains(alpha_slug)
+                && !html.contains(beta_slug)
+                && !html.contains("pages-list-item"),
+            "the current selector should have no matching rows:\n{html}",
+        );
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "fixture-pbt-current-tag";
+    let other_tag = "fixture-pbt-current-other-tag";
+    let category = "fixture-pbt-current";
+    let holder_slug = "fixture-pbt-current-holder";
+    let alpha_slug = "fixture-pbt-current:alpha";
+    let beta_slug = "fixture-pbt-current:beta";
+
+    let beta_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        beta_slug,
+        "Beta Nonmatching PagesByTag Page",
+        "Beta body.",
+    )
+    .await;
+    let mut beta_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        beta_slug,
+        beta_revision,
+        &[other_tag],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        holder_slug,
+        "Fixture Current PagesByTag Holder",
+        &format!(r#"[[module PagesByTag tag="{tag}" category="{category}"]]"#),
+    )
+    .await;
+    let initial = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&initial, alpha_slug, beta_slug);
+    let stored_before_matching_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("PagesByTag holder should have stored compiled details")
+    .compiled_body_html
+    .expect("PagesByTag holder should have stored compiled HTML");
+    assert_empty(&stored_before_matching_page, alpha_slug, beta_slug);
+
+    let alpha_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        alpha_slug,
+        "Alpha Current PagesByTag Match",
+        "Alpha body.",
+    )
+    .await;
+    let mut alpha_revision =
+        set_listpages_test_tags(&mut runner, site_id, alpha_slug, alpha_revision, &[tag])
+            .await;
+    let alpha = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": alpha_slug}),
+    )
+    .expect("matching PagesByTag page should exist");
+    let beta = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": beta_slug}),
+    )
+    .expect("nonmatching PagesByTag page should exist");
+
+    let stored_after_matching_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("PagesByTag holder should retain stored compiled details")
+    .compiled_body_html
+    .expect("PagesByTag holder should retain stored compiled HTML");
+    assert_eq!(
+        stored_after_matching_page, stored_before_matching_page,
+        "matching page mutations must not rewrite the holder's save-time compilation",
+    );
+    assert_empty(&stored_after_matching_page, alpha_slug, beta_slug);
+
+    let after_alpha = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_alpha, alpha_slug, beta_slug);
+
+    beta_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        beta_slug,
+        beta_revision,
+        &[other_tag, "fixture-pbt-current-mutated"],
+    )
+    .await;
+    let after_nonmatching_tag_edit =
+        load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_nonmatching_tag_edit, alpha_slug, beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(beta.page_id),
+    );
+    let moved_beta_slug = "fixture-pbt-current-other:beta";
+    run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": beta.page_id,
+            "new_slug": moved_beta_slug,
+            "last_revision_id": beta_revision,
+            "revision_comments": "move nonmatching PagesByTag fixture page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let after_nonmatching_move = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_nonmatching_move, alpha_slug, moved_beta_slug);
+
+    alpha_revision =
+        set_listpages_test_tags(&mut runner, site_id, alpha_slug, alpha_revision, &[])
+            .await;
+    let after_tag_removal = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&after_tag_removal, alpha_slug, moved_beta_slug);
+
+    alpha_revision =
+        set_listpages_test_tags(&mut runner, site_id, alpha_slug, alpha_revision, &[tag])
+            .await;
+    let after_tag_restore = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_tag_restore, alpha_slug, moved_beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(alpha.page_id),
+    );
+    let moved_alpha_slug = "fixture-pbt-current-other:alpha";
+    let moved_alpha = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": alpha.page_id,
+            "new_slug": moved_alpha_slug,
+            "last_revision_id": alpha_revision,
+            "revision_comments": "move matching PagesByTag fixture out of category",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    alpha_revision = moved_alpha.revision_id;
+    let after_matching_move = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&after_matching_move, moved_alpha_slug, moved_beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(alpha.page_id),
+    );
+    let restored_alpha = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": alpha.page_id,
+            "new_slug": alpha_slug,
+            "last_revision_id": alpha_revision,
+            "revision_comments": "restore matching PagesByTag fixture category",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    alpha_revision = restored_alpha.revision_id;
+    let after_category_restore = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_category_restore, alpha_slug, moved_beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(alpha.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": alpha.page_id,
+            "last_revision_id": alpha_revision,
+            "revision_comments": "delete matching PagesByTag fixture page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let after_delete = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&after_delete, alpha_slug, moved_beta_slug);
 }
 
 /// A tag matching nothing still renders the heading and an empty list, while
