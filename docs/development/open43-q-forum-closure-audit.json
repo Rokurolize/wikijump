@@ -113,6 +113,27 @@
       "multi_all_missing_evidence_sha256": "05eaebfa3f62a6067cf75b12a7932262318730485f80e8d7622e7c0903e08506",
       "multi_malformed_evidence_sha256": "55b9f18f883b03ec0b549b8234a860a0f4c7aafa2aad42ccb124d73eeb9f246b",
       "audited_at": "2026-08-10"
+    },
+    {
+      "scope": "layout-forum read-only route page-content HTTP seam",
+      "integration_base": "48440434dc39e0c880273d48ec58b70a6f8614da",
+      "integration_base_tree": "ac465e6e67123364e3af3c21dbfdc5f35fdc4cbc",
+      "branch": "agent/forum-page-content-v23-20260813",
+      "source_commit": "0c7b4a7231f713c1d7b6fdfcec2671ff53d38dc6",
+      "source_tree": "a2c23783a0baa8b4dde40236f22f3cc7b94f1e48",
+      "implementation_ledger_sha256": "42b79a4b3e6018ed9101072812021522b2f6f7e06a2fdd5311a89cd09b0dc71f",
+      "catalog_sha256": "7bd9065391dc836a0ddfef20ef5e4f31c3aff321cd6fee29c2a003a512946b29",
+      "test_command": "pnpm --dir framerail exec node --test tests/forum-page-content-public-boundary.test.js tests/forum-routes.test.js",
+      "test_result": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "retained_observation_id": "forum-q1034-readonly-route-core-20260809",
+      "retained_artifact_path": "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
+      "retained_artifact_sha256": "0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4",
+      "claim_boundary": "The local public HTTP seam covers exactly one div#page-content enclosing populated ForumStart, empty category, and missing-thread error bodies. It does not establish byte-exact whole-layout, browser lifecycle, fallback /forum, mutation, or new-thread behavior.",
+      "audited_at": "2026-08-13"
     }
   ],
   "method": {
