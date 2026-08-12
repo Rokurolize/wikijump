@@ -166,6 +166,21 @@ async fn user_view_resolves_only_active_imported_slugs_without_changing_local_lo
         );
     }
 
+    let deleted_imported_id = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": 700_012,
+            "locales": ["en"],
+        }),
+    );
+    assert!(
+        matches!(deleted_imported_id, GetUserViewOutput::UserMissing),
+        "deleted imported numeric ID must stay missing"
+    );
+
     let local = run_endpoint!(
         runner,
         user_view,

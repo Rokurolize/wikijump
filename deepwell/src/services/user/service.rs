@@ -684,6 +684,7 @@ impl UserService {
 
                 // Could be a valid ID
                 Some(id) => WikidotUser::find_by_id(id)
+                    .filter(wikidot_user::Column::IsDeleted.eq(false))
                     .one(txn)
                     .await
                     .or_raise(make_error)?,
