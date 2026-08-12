@@ -11067,6 +11067,10 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
             r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
             category.forum_category_id,
         );
+        let expected = format!(
+            "<p>{}</p>",
+            source.replace('"', "&quot;").replace('\'', "&#39;")
+        );
         let preview = run_endpoint!(
             runner,
             wikidot_page_preview,
@@ -11077,7 +11081,7 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
             }),
         )
         .body;
-        if !preview.contains(&source) || preview.contains("front-forum-box") {
+        if preview != expected || preview.contains("front-forum-box") {
             failures.push(format!(
                 "preview literal suffix {suffix:?} was not preserved exactly: {preview}"
             ));
@@ -11169,13 +11173,17 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
             r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
             category.forum_category_id,
         );
+        let expected = format!(
+            "<p>{}</p>",
+            source.replace('"', "&quot;").replace('\'', "&#39;")
+        );
         let saved = saved_body(
             &runner,
             site_id,
             &format!("fixture-frontforum-literal-feed-argument-{index}"),
         )
         .await;
-        if !saved.contains(&source) || saved.contains("front-forum-box") {
+        if saved != expected || saved.contains("front-forum-box") {
             failures.push(format!(
                 "page_view literal suffix {suffix:?} was not preserved exactly: {saved}"
             ));
