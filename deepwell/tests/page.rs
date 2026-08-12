@@ -2371,6 +2371,73 @@ async fn public_page_view_top_bar(
 }
 
 #[tokio::test]
+async fn page_create_refreshes_dynamic_navigation_after_recording_latest_revision() {
+    const NAV_SLUG: &str = "nav:page-create-dynamic-navigation-fixture";
+    const PAGE_SLUG: &str = "page-create-dynamic-navigation-fresh-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+        .expect("editable local authoring site should exist");
+    let site_id = site.site.site_id;
+    create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        NAV_SLUG,
+        "Page creation dynamic navigation fixture",
+        "[[module ListPages tags=\"+fresh\" separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "top_bar_page": NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Page creation dynamic navigation target body",
+            "title": "Page creation dynamic navigation target",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "tags": ["fresh"],
+            "layout": "wikidot",
+            "revision_comments": "create dynamic navigation target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let top_bar = public_page_view_top_bar(&mut runner, site_id, PAGE_SLUG, true)
+        .await
+        .expect("configured dynamic top bar should be compiled");
+    assert!(
+        top_bar.contains("NAV=page-create-dynamic-navigation-fresh-target"),
+        "the created page's stored top bar must include its exact slug after latest_revision_id is recorded:\n{top_bar}",
+    );
+}
+
+#[tokio::test]
 async fn deleted_site_navigation_is_absent_from_found_and_missing_page_views() {
     const NAV_SLUG: &str = "nav:deleted-site-navigation-fixture";
     const PAGE_SLUG: &str = "deleted-site-navigation-article";

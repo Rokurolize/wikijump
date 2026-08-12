@@ -40,6 +40,7 @@ use crate::services::render::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput, StageGuard,
 };
 use crate::services::score::ScoreValue;
+use crate::services::settings::NavigationPageWikitext;
 use crate::services::{
     BlueprintPageService, LinkService, OutdateService, ParentService, RenderService,
     ScoreService, SettingsService, SiteService, TextService,
@@ -349,11 +350,15 @@ fn first_revision_followups(
     slug: String,
     wikitext: &str,
     template_wikitext: Option<&str>,
+    top_bar_page_wikitext: Option<&str>,
+    side_bar_page_wikitext: Option<&str>,
 ) -> FirstRevisionFollowups {
     FirstRevisionFollowups {
         slug,
         rerender_after_latest_revision: needs_latest_revision_for_render(wikitext)
-            || template_wikitext.is_some_and(needs_latest_revision_for_render),
+            || template_wikitext.is_some_and(needs_latest_revision_for_render)
+            || top_bar_page_wikitext.is_some_and(needs_latest_revision_for_render)
+            || side_bar_page_wikitext.is_some_and(needs_latest_revision_for_render),
     }
 }
 
@@ -633,10 +638,18 @@ impl PageRevisionService {
         )
         .await
         .or_raise(make_error)?;
+        let NavigationPageWikitext {
+            top_bar_page_wikitext,
+            side_bar_page_wikitext,
+        } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
+            .await
+            .or_raise(make_error)?;
         let followups = first_revision_followups(
             slug.clone(),
             &wikitext,
             template_wikitext.as_deref(),
+            top_bar_page_wikitext.as_deref(),
+            side_bar_page_wikitext.as_deref(),
         );
 
         // If the page creation doesn't specify a preferred layout,
@@ -2194,7 +2207,8 @@ fn test_replace_hash_opt() {
 
 #[test]
 fn first_revision_followups_keep_static_pages_single_pass() {
-    let followups = first_revision_followups(str!("guide"), "ordinary page text", None);
+    let followups =
+        first_revision_followups(str!("guide"), "ordinary page text", None, None, None);
 
     assert_eq!(followups.slug, "guide");
     assert!(!followups.rerender_after_latest_revision);
@@ -2203,14 +2217,16 @@ fn first_revision_followups_keep_static_pages_single_pass() {
 #[test]
 fn first_revision_followups_detect_runtime_content_in_page_or_template() {
     let page_followups =
-        first_revision_followups(str!("guide"), "[[module ListPages]]", None);
+        first_revision_followups(str!("guide"), "[[module ListPages]]", None, None, None);
     let template_followups = first_revision_followups(
         str!("guide"),
         "ordinary page text",
         Some("[[include component:license]]"),
+        None,
+        None,
     );
     let pages_followups =
-        first_revision_followups(str!("guide"), "[[module Pages]]", None);
+        first_revision_followups(str!("guide"), "[[module Pages]]", None, None, None);
 
     assert!(page_followups.rerender_after_latest_revision);
     assert!(template_followups.rerender_after_latest_revision);
