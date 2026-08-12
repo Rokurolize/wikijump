@@ -211,6 +211,8 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        ctx.defer_public_content_cache_invalidate_site(site_id)
+            .or_raise(make_error)?;
         OutdateService::outdate(ctx, page_id, RerenderDepth::default())
             .await
             .or_raise(make_error)?;
@@ -298,6 +300,8 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        ctx.defer_public_content_cache_invalidate_site(site_id)
+            .or_raise(make_error)?;
         OutdateService::outdate(ctx, page_id, RerenderDepth::default())
             .await
             .or_raise(make_error)?;
@@ -399,6 +403,8 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        ctx.defer_public_content_cache_invalidate_site(site_id)
+            .or_raise(make_error)?;
         OutdateService::outdate(ctx, page_id, RerenderDepth::default())
             .await
             .or_raise(make_error)?;
@@ -514,6 +520,8 @@ impl FileRevisionService {
 
         let FileRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
+        ctx.defer_public_content_cache_invalidate_site(site_id)
+            .or_raise(make_error)?;
         OutdateService::outdate(ctx, new_page_id, RerenderDepth::default())
             .await
             .or_raise(make_error)?;
