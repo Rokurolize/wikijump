@@ -71,8 +71,8 @@ use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
 use deepwell::services::relation::{
-    CreatePageWatch, CreateSiteMember, RemovePageWatch, SiteMemberAccepted,
-    SiteMemberData,
+    CreatePageWatch, CreateSiteMember, PageAttribution, PageAttributionKind,
+    RemovePageWatch, SiteMemberAccepted, SiteMemberData,
 };
 use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
@@ -204,6 +204,102 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+async fn import_cacheable_page_attribution_fixture(
+    runner: &mut TestRunner,
+    site_id: i64,
+    label: &str,
+) -> (i64, String) {
+    let run_id = cuid();
+    let page_id = rand::random_range(1_700_000_000_i64..1_799_999_999_i64);
+    let revision_id = rand::random_range(1_800_000_000_i64..1_899_999_999_i64);
+    let slug = format!("page-attribution-cache-{label}-{run_id}");
+
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(slug.clone())),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page,
+        json!({
+            "page_id": page_id,
+            "site_id": site_id,
+            "created_at": "1970-01-01T00:00:00Z",
+            "slug": slug,
+            "locked": false,
+            "discussion_thread_id": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page_revision,
+        json!({
+            "revision_id": revision_id,
+            "revision_type": "create",
+            "created_at": time::OffsetDateTime::UNIX_EPOCH,
+            "updated_at": null,
+            "revision_number": 0,
+            "page_id": page_id,
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "wikitext": format!("Imported attribution cache {label} fixture."),
+            "comments": format!("import page attribution cache {label} fixture"),
+            "title": format!("Page attribution cache {label} fixture"),
+            "slug": slug,
+            "tags": [],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("import post-commit actions should complete before cache assertions");
+
+    (page_id, slug)
+}
+
+struct CachedAttributionArticle {
+    attributions: Vec<PageAttribution>,
+    cache_key: String,
+    fence: String,
+}
+
+async fn load_cached_attribution_article(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> CachedAttributionArticle {
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    match run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetArticleViewOutput {
+            page: GetPageViewOutput::Found { attributions, .. },
+            article_page_cache_key: Some(cache_key),
+            public_content_cache_fence: Some(fence),
+            ..
+        } => CachedAttributionArticle {
+            attributions,
+            cache_key,
+            fence,
+        },
+        other => panic!("expected a cacheable imported article, got {other:?}"),
+    }
 }
 
 async fn set_page_rating_policy(
@@ -2861,6 +2957,158 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
         !side_bar.contains("All wikis") && !side_bar.contains(r#"href="/&#35;&#35;""#),
         "page_view reused stale navigation or rewrote the href:\n{side_bar}",
     );
+}
+
+#[tokio::test]
+async fn page_attribution_update_refreshes_cached_anonymous_article_view() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let (page_id, slug) =
+        import_cacheable_page_attribution_fixture(&mut runner, site.site_id, "update")
+            .await;
+    let before = load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert!(before.attributions.is_empty());
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_update,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "updated_by": ADMIN_USER_ID,
+            "attributions": [{
+                "user_id": SAMPLE_USER_ID,
+                "metadata": {
+                    "attribution_type": "author",
+                    "attribution_date": "2026-08-13",
+                },
+            }],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("page attribution update post-commit actions should complete");
+
+    let after = load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert_ne!(after.fence, before.fence);
+    assert_ne!(after.cache_key, before.cache_key);
+    assert_eq!(after.attributions.len(), 1);
+    assert_eq!(after.attributions[0].user_id, SAMPLE_USER_ID);
+    assert_eq!(
+        after.attributions[0].metadata.attribution_type,
+        PageAttributionKind::Author,
+    );
+    assert_eq!(
+        after.attributions[0].metadata.attribution_date,
+        time::Date::from_calendar_date(2026, time::Month::August, 13)
+            .expect("fixture attribution date should be valid"),
+    );
+}
+
+#[tokio::test]
+async fn page_attribution_delete_refreshes_cached_article_only_when_rows_are_cleared() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let (page_id, slug) =
+        import_cacheable_page_attribution_fixture(&mut runner, site.site_id, "delete")
+            .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_update,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "updated_by": ADMIN_USER_ID,
+            "attributions": [{
+                "user_id": SAMPLE_USER_ID,
+                "metadata": {
+                    "attribution_type": "author",
+                    "attribution_date": "2026-08-13",
+                },
+            }],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("attribution setup post-commit actions should complete");
+
+    let before = load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert_eq!(before.attributions.len(), 1);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_delete,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "removed_by": ADMIN_USER_ID,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("effective attribution delete post-commit actions should complete");
+
+    let after_delete =
+        load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert!(after_delete.attributions.is_empty());
+    assert_ne!(after_delete.fence, before.fence);
+    assert_ne!(after_delete.cache_key, before.cache_key);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_delete,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "removed_by": ADMIN_USER_ID,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("repeated attribution delete post-commit drain should succeed");
+
+    let after_repeated_delete =
+        load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert!(after_repeated_delete.attributions.is_empty());
+    assert_eq!(after_repeated_delete.fence, after_delete.fence);
+    assert_eq!(after_repeated_delete.cache_key, after_delete.cache_key);
 }
 
 #[tokio::test]

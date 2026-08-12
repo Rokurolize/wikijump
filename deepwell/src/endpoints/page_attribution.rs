@@ -70,9 +70,10 @@ pub async fn page_attribution_update(
     params: Params<'static>,
 ) -> Result<Vec<PageAttribution>> {
     let input: SetPageAttributions<'_> = parse!(params, PageAttribution);
+    let site_id = input.site_id;
     require_page_attribution_permission(
         ctx,
-        input.site_id,
+        site_id,
         input.page.clone(),
         input.updated_by,
         "update page attributions",
@@ -87,14 +88,16 @@ pub async fn page_attribution_update(
         input.updated_by,
     );
 
-    RelationService::set_page_attributions(ctx, input)
+    let attributions = RelationService::set_page_attributions(ctx, input)
         .await
         .or_raise(|| {
             Error::new(
                 "failed to update page attributions",
                 ErrorType::PageAttribution,
             )
-        })
+        })?;
+    ctx.defer_public_content_cache_invalidate_site(site_id)?;
+    Ok(attributions)
 }
 
 pub async fn page_attribution_delete(
@@ -102,9 +105,10 @@ pub async fn page_attribution_delete(
     params: Params<'static>,
 ) -> Result<()> {
     let input: ClearPageAttributions<'_> = parse!(params, PageAttribution);
+    let site_id = input.site_id;
     require_page_attribution_permission(
         ctx,
-        input.site_id,
+        site_id,
         input.page.clone(),
         input.removed_by,
         "delete page attributions",
@@ -116,12 +120,16 @@ pub async fn page_attribution_delete(
         input.page, input.site_id, input.removed_by,
     );
 
-    RelationService::clear_page_attributions(ctx, input)
+    let rows_affected = RelationService::clear_page_attributions(ctx, input)
         .await
         .or_raise(|| {
             Error::new(
                 "failed to delete page attributions",
                 ErrorType::PageAttribution,
             )
-        })
+        })?;
+    if rows_affected > 0 {
+        ctx.defer_public_content_cache_invalidate_site(site_id)?;
+    }
+    Ok(())
 }
