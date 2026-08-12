@@ -3,9 +3,18 @@ import test from "node:test";
 
 import { main as runParityCli, usage as parityCliUsage } from "../scripts/run-standing-browser-parity.mjs";
 import { closeParityBrowserResources } from "../src/standing-browser-parity-browser-session.mjs";
-import { parseStandingBrowserParityArgs } from "../src/standing-browser-parity-runner.mjs";
+import {
+  isCandidateParityMode,
+  parseStandingBrowserParityArgs,
+} from "../src/standing-browser-parity-runner.mjs";
 
 const policy = "/tmp/standing-policy.json";
+
+test("candidate diagnostic mode receives the same local browser topology as official candidate mode", () => {
+  assert.equal(isCandidateParityMode("candidate"), true);
+  assert.equal(isCandidateParityMode("candidate-diagnostic"), true);
+  assert.equal(isCandidateParityMode("live-reference"), false);
+});
 
 test("standing parity CLI exposes result and help without opening a browser", async () => {
   const output = [];

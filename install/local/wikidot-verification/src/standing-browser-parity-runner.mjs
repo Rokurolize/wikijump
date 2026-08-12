@@ -60,6 +60,11 @@ import {
 const SOURCE_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_LIVE_ORIGIN = "https://scp-wiki.wikidot.com";
 const REFERENCE_LOCAL_ORIGIN = "https://scp-wiki.wikijump.localhost:18443";
+const CANDIDATE_PARITY_MODES = new Set(["candidate", "candidate-diagnostic"]);
+
+export function isCandidateParityMode(mode) {
+  return CANDIDATE_PARITY_MODES.has(mode);
+}
 
 function nextArgument(argv, index, flag) {
   const value = argv[index + 1];
@@ -165,7 +170,7 @@ export function parseStandingBrowserParityArgs(argv) {
       "--live-completion-policy is required before any browser request",
     );
   }
-  if (new Set(["candidate", "candidate-diagnostic"]).has(args.mode)) {
+  if (isCandidateParityMode(args.mode)) {
     for (const [flag, value] of [
       ["--candidate-identity", args.candidateIdentity],
       ["--live-reference-ledger", args.liveReferenceLedger],
@@ -415,6 +420,7 @@ async function collectCandidateParity({
   policy,
   candidateIdentity,
   browser,
+  requireCompleteCaptures = true,
 }) {
   assertCandidateIdentityFresh(candidateIdentity.value);
   const pairs = defaultCanaryPairs({
@@ -432,8 +438,10 @@ async function collectCandidateParity({
     policyFilePath: policy.filePath,
   });
   const captures = await captureSet({ browser, pairs, label: "local", args });
-  for (const [index, capture] of captures.entries()) {
-    validateCandidateCapture(capture, pairs[index]);
+  if (requireCompleteCaptures) {
+    for (const [index, capture] of captures.entries()) {
+      validateCandidateCapture(capture, pairs[index]);
+    }
   }
   return { pairs, liveReference, captures };
 }
@@ -574,12 +582,44 @@ async function sealCandidateDiagnostic({
   executionIdentity,
   capture,
 }) {
-  const {ledger} = await buildCandidateParityLedger({
-    args,
-    candidateIdentity,
-    finalGateSnapshot,
-    capture,
+  assertRequestGateAbortAccounting(capture.captures, finalGateSnapshot);
+  const captureValidation = capture.captures.map((local, index) => {
+    try {
+      validateCandidateCapture(local, capture.pairs[index]);
+      return null;
+    } catch (error) {
+      return error?.message ?? String(error);
+    }
   });
+  const capturesComplete = captureValidation.every((error) => error === null);
+  const ledger = capturesComplete
+    ? (await buildCandidateParityLedger({
+        args,
+        candidateIdentity,
+        finalGateSnapshot,
+        capture,
+      })).ledger
+    : {
+        schema: STANDING_BROWSER_PARITY_SCHEMA,
+        status: "fail",
+        generated_at: new Date().toISOString(),
+        capture_phase: "domcontentloaded_immediate_observation",
+        viewport: args.viewport,
+        candidate_identity_sha256: candidateIdentity.sha256,
+        live_reference_sha256: capture.liveReference.sha256,
+        local_capture_config_sha256: finalGateSnapshot.config_sha256,
+        request_gate: finalGateSnapshot,
+        records: capture.captures.map((local, index) => ({
+          input: capture.pairs[index],
+          capture: local,
+          validation_error: captureValidation[index],
+        })),
+        summary: {
+          pairs_total: capture.captures.length,
+          pairs_failed: captureValidation.filter((error) => error !== null).length,
+          pairs_passed: captureValidation.filter((error) => error === null).length,
+        },
+      };
   const diagnosticLedger = {
     ...ledger,
     schema: "wikijump.standing_browser_parity_diagnostic.v1",
@@ -615,7 +655,7 @@ async function sealCandidateDiagnostic({
 export async function runStandingBrowserParity(args) {
   const policy = await readPolicy(args.liveCompletionPolicy);
   const candidateIdentity =
-    new Set(["candidate", "candidate-diagnostic"]).has(args.mode)
+    isCandidateParityMode(args.mode)
       ? await readCandidateIdentity(args.candidateIdentity)
       : null;
   if (candidateIdentity) assertCandidateIdentityFresh(candidateIdentity.value);
@@ -651,7 +691,7 @@ export async function runStandingBrowserParity(args) {
       browserRoot: args.browserRoot,
       browserExecutable: args.browserExecutable,
       controls,
-      local: args.mode === "candidate",
+      local: isCandidateParityMode(args.mode),
       viewport: args.viewport,
     });
     browserEnvironment = browser.environment;
@@ -663,6 +703,7 @@ export async function runStandingBrowserParity(args) {
             policy,
             candidateIdentity,
             browser,
+            requireCompleteCaptures: args.mode !== "candidate-diagnostic",
           });
   } catch (error) {
     operationFailure = error;
