@@ -28,7 +28,7 @@ import {
 
 interface MethodDefinition {
   help: string
-  signatures: string[][]
+  signatures: XmlRpcValue[]
 }
 
 interface XmlRpcDispatchOptions {
@@ -52,7 +52,7 @@ const METHOD_DEFINITIONS: Record<string, MethodDefinition> = {
   },
   "system.multicall": {
     help: "Execute multiple XML-RPC calls and return per-call results or faults.",
-    signatures: [["array", "array"]]
+    signatures: [{ returnType: "void", parameters: ["struct"] }]
   },
   "categories.select": {
     help: "Select categories from a Wikidot-compatible site.",

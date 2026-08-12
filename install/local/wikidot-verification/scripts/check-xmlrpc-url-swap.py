@@ -122,6 +122,14 @@ def check_system_methods(
                 f"{method_name} signature is {actual_signature!r}, expected {expected_signature!r}"
             )
 
+    multicall_signature = proxy.system.methodSignature("system.multicall")
+    expected_multicall_signature = [{"returnType": "void", "parameters": ["struct"]}]
+    if multicall_signature != expected_multicall_signature:
+        raise ConformanceError(
+            f"system.multicall signature is {multicall_signature!r}, "
+            f"expected {expected_multicall_signature!r}"
+        )
+
     multicall = xmlrpc.client.MultiCall(proxy)
     multicall.system.methodHelp("pages.select")
     multicall.system.methodSignature("pages.select")
