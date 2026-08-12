@@ -29,7 +29,6 @@ use crate::services::user::{
 };
 use crate::types::{AliasType, Reference, UserType};
 use sea_orm::EntityTrait;
-use std::net::{IpAddr, Ipv4Addr};
 
 pub async fn user_create(
     ctx: &ServiceContext<'_>,
@@ -212,7 +211,7 @@ pub async fn user_delete(
         ctx,
         Reference::Id(target.user_id),
         deleting_user_id,
-        ip_address.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED)),
+        ip_address,
     )
     .await
     .or_raise(|| Error::new("failed to delete user", ErrorType::User))

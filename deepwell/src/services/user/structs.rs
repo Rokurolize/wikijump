@@ -263,9 +263,18 @@ pub struct GetUser<'a> {
 #[derive(Deserialize, Debug, Clone)]
 pub struct DeleteUser<'a> {
     pub user: Reference<'a>,
+    pub ip_address: IpAddr,
+}
 
-    #[serde(default)]
-    pub ip_address: Option<IpAddr>,
+#[test]
+fn delete_user_requires_request_ip() {
+    let error = serde_json::from_str::<DeleteUser<'_>>(r#"{"user": 123}"#)
+        .expect_err("user deletion without a request IP must be rejected");
+
+    assert!(
+        error.to_string().contains("missing field `ip_address`"),
+        "unexpected deserialization error: {error}",
+    );
 }
 
 #[derive(Serialize, Debug, Clone)]

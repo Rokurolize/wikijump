@@ -868,7 +868,14 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
         user_id: Some(other.user_id),
         ..Default::default()
     });
-    let error = run_endpoint_err!(runner, user_delete, json!({"user": target.user_id}),);
+    let error = run_endpoint_err!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
     assert_contains_error!(error, ErrorType::PermissionDenied);
 
     runner.set_request_context(RequestContext {
@@ -919,7 +926,14 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
         user_id: Some(target.user_id),
         ..Default::default()
     });
-    let deleted = run_endpoint!(runner, user_delete, json!({"user": target.user_id}),);
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
     assert_eq!(deleted.user_id, target.user_id);
     assert!(deleted.deleted_at.is_some());
 }

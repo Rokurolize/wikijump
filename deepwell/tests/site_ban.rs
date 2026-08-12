@@ -655,7 +655,14 @@ async fn authorized_manager_can_remove_ban_after_target_is_tombstoned() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
-    let deleted = run_endpoint!(runner, user_delete, json!({"user": target.user_id}),);
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
     assert!(deleted.deleted_at.is_some());
 
     runner.set_request_context(request_actor(Some(UNKNOWN_USER_ID)));
