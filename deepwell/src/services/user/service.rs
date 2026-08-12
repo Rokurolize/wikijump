@@ -1000,29 +1000,14 @@ impl UserService {
             let s3_hash = match uploaded_blob_id {
                 None => None,
                 Some(uploaded_blob_id) => {
-                    let config = ctx.config();
-                    let FinalizeBlobUploadOutput { s3_hash, size, .. } =
-                        BlobService::finish_unscoped_upload(
+                    let FinalizeBlobUploadOutput { s3_hash, .. } =
+                        BlobService::finish_avatar_upload(
                             ctx,
                             user.user_id,
                             &uploaded_blob_id,
                         )
                         .await
                         .or_raise(make_error)?;
-
-                    if size > config.maximum_avatar_size {
-                        error!(
-                            "Uploaded avatar size is too big {} > {}",
-                            size, config.maximum_avatar_size,
-                        );
-                        bail!(Error::new(
-                            format!(
-                                "failed to update user, avatar size is too big ({} > {} bytes)",
-                                size, config.maximum_avatar_size,
-                            ),
-                            ErrorType::BlobTooBig,
-                        ));
-                    }
 
                     Some(s3_hash.to_vec())
                 }

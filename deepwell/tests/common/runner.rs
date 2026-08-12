@@ -35,8 +35,11 @@ pub struct TestRunnerRequestContext {
 
 impl TestRunnerRequestContext {
     pub async fn new() -> Self {
+        Self::new_with_config(Config::integration_testing()).await
+    }
+
+    pub async fn new_with_config(config: Config) -> Self {
         let secrets = Secrets::load();
-        let config = Config::integration_testing();
 
         let state = build_server_state_without_workers(config, secrets)
             .await
@@ -89,6 +92,11 @@ self_cell!(
 impl TestRunner {
     pub async fn setup() -> Self {
         let request_ctx = TestRunnerRequestContext::new().await;
+        Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
+    }
+
+    pub async fn setup_with_config(config: Config) -> Self {
+        let request_ctx = TestRunnerRequestContext::new_with_config(config).await;
         Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
     }
 

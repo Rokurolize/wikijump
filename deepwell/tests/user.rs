@@ -22,18 +22,127 @@
 mod common;
 
 use self::common::TestRunner;
+use cuid2::cuid;
+use deepwell::config::Config;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID};
 use deepwell::error::prelude::*;
+use deepwell::hash::{blob_hash_to_hex, sha512_hash};
+use deepwell::models::blob_pending::{self, Entity as BlobPending};
 use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUserModel};
 use deepwell::models::{known_user, wikidot_user};
-use deepwell::services::RequestContext;
 use deepwell::services::import::ImportUserOutput;
 use deepwell::services::user::UserService;
+use deepwell::services::{BlobService, RequestContext};
 use deepwell::types::Reference;
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use serde_json::json;
 use time::macros::{date, datetime};
 use time::{Date, Month, OffsetDateTime};
+
+#[tokio::test]
+async fn oversized_avatar_rejection_does_not_promote_blob_or_change_target() {
+    const AVATAR_DATA: &[u8] = b"\xf0\x0d";
+
+    let mut config = Config::integration_testing();
+    config.maximum_avatar_size = 1;
+    config.maximum_blob_size = 2;
+    let mut runner = TestRunner::setup_with_config(config).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+
+    let target_before =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should exist")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should be a Wikijump user");
+
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let avatar_hash = sha512_hash(AVATAR_DATA);
+    assert!(
+        BlobService::get_optional(runner.context(), &avatar_hash)
+            .await
+            .expect("avatar fixture permanent lookup should succeed")
+            .is_none(),
+        "avatar fixture hash must not already exist"
+    );
+    let upload = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, AVATAR_DATA)
+        .await
+        .expect("avatar fixture upload should succeed");
+    assert_eq!(upload.status_code(), 200);
+    let created_at = OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(SAMPLE_USER_ID),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + time::Duration::minutes(5)),
+        expected_length: Set(2),
+        s3_path: Set(s3_path.clone()),
+        s3_hash: Set(None),
+        presign_url: Set("not-used-in-test".to_owned()),
+        site_id: Set(None),
+        page_id: Set(None),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
+    }
+    .insert(&runner.state().database)
+    .await
+    .expect("avatar pending blob fixture should be inserted");
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": SAMPLE_USER_ID,
+            "avatar_uploaded_blob_id": pending_blob_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let target_after =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should remain readable")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should remain a Wikijump user");
+    let permanent_after_rejection =
+        BlobService::get_optional(runner.context(), &avatar_hash)
+            .await
+            .expect("rejected avatar permanent lookup should succeed");
+
+    BlobPending::delete_by_id(&pending_blob_id)
+        .exec(&runner.state().database)
+        .await
+        .expect("avatar pending blob fixture cleanup should succeed");
+    runner
+        .state()
+        .s3_files_bucket
+        .delete_object(&s3_path)
+        .await
+        .expect("avatar temporary fixture cleanup should succeed");
+    if permanent_after_rejection.is_some() {
+        // The hash was absent before this fixture ran, so an unexpected object here
+        // was created by this request and is safe for the RED-run cleanup to remove.
+        runner
+            .state()
+            .s3_files_bucket
+            .delete_object(blob_hash_to_hex(&avatar_hash))
+            .await
+            .expect("unexpected promoted avatar fixture cleanup should succeed");
+    }
+
+    assert_contains_error!(error, ErrorType::BlobTooBig);
+    assert_eq!(target_after.avatar_s3_hash, target_before.avatar_s3_hash);
+    assert!(
+        permanent_after_rejection.is_none(),
+        "rejected avatar bytes must not reach permanent content-addressed storage"
+    );
+}
 
 #[tokio::test]
 async fn regular_account_password_policy_rejects_short_create_passwords() {
