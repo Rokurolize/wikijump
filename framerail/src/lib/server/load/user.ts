@@ -69,7 +69,11 @@ export async function loadUser(
 
   const viewData: {
     user?: Partial<UserModel & { avatar: string }>
-  } = response.data ?? {}
+  } =
+    response.data === undefined
+      ? {}
+      : // This legacy /-/user view retains its existing local-account model.
+        { user: response.data.user as UserModel }
 
   if (errorStatus !== null && response.type === "user_missing") {
     translateKeys = {
@@ -81,13 +85,12 @@ export async function loadUser(
     const isViewingAnotherUser =
       parentData.user_session?.user?.user_id !== response.data.user.user_id
 
-    viewData.user = sanitizeUserData(response.data.user, isViewingAnotherUser)
+    const user = response.data.user as UserModel
+    viewData.user = sanitizeUserData(user, isViewingAnotherUser)
 
     // Get user avatar image
-    if (response.data.user.avatar_s3_hash !== null) {
-      const avatar = await getFileByHash(
-        new Uint8Array(response.data.user.avatar_s3_hash)
-      )
+    if (user.avatar_s3_hash !== null) {
+      const avatar = await getFileByHash(new Uint8Array(user.avatar_s3_hash))
       const dataurl = `data:${avatar.type};base64,${Buffer.from(
         await avatar.arrayBuffer()
       ).toString("base64")}`

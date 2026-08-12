@@ -130,6 +130,26 @@ export interface UserModel {
   user_page: Nullable<string>
 }
 
+// deepwell src/models/wikidot_user.rs plus services/user/structs.rs discriminator
+export interface WikidotUserModel {
+  user_id: number
+  user_type: "wikidot"
+  created_at: string
+  fetched_at: string
+  is_deleted: boolean
+  name: Nullable<string>
+  slug: Nullable<string>
+  avatar_s3_hash: Nullable<number[]>
+  real_name: Nullable<string>
+  gender: Nullable<string>
+  birthday: Nullable<string>
+  location: Nullable<string>
+  biography: Nullable<string>
+  website: Nullable<string>
+  karma: number
+  is_pro: boolean
+}
+
 // deepwell src/models/page.rs
 export interface PageModel {
   page_id: number

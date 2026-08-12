@@ -693,7 +693,7 @@ impl UserService {
                 .filter(
                     Condition::all()
                         .add(wikidot_user::Column::Slug.eq(slug.as_ref()))
-                        .add(wikidot_user::Column::IsDeleted.eq(true)),
+                        .add(wikidot_user::Column::IsDeleted.eq(false)),
                 )
                 .one(txn)
                 .await

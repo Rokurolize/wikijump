@@ -33,6 +33,7 @@ use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUser
 use deepwell::models::{known_user, wikidot_user};
 use deepwell::services::import::ImportUserOutput;
 use deepwell::services::user::UserService;
+use deepwell::services::view::GetUserViewOutput;
 use deepwell::services::{BlobService, RequestContext};
 use deepwell::types::Reference;
 use sea_orm::{
@@ -41,6 +42,146 @@ use sea_orm::{
 use serde_json::json;
 use time::macros::{date, datetime};
 use time::{Date, Month, OffsetDateTime};
+
+async fn insert_wikidot_user(
+    runner: &TestRunner,
+    user_id: i32,
+    name: &str,
+    slug: &str,
+    is_deleted: bool,
+    karma: i16,
+    is_pro: bool,
+) {
+    known_user::ActiveModel {
+        user_id: Set(i64::from(user_id)),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("known_user fixture should insert");
+
+    wikidot_user::ActiveModel {
+        user_id: Set(user_id),
+        created_at: Set(datetime!(2008-07-19 21:26:10 UTC)),
+        fetched_at: Set(datetime!(2026-08-13 00:00:00 UTC)),
+        is_deleted: Set(is_deleted),
+        name: Set(Some(name.to_owned())),
+        slug: Set(Some(slug.to_owned())),
+        avatar_s3_hash: Set(None),
+        real_name: Set(None),
+        gender: Set(None),
+        birthday: Set(None),
+        location: Set(None),
+        biography: Set(None),
+        website: Set(None),
+        karma: Set(karma),
+        is_pro: Set(is_pro),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("wikidot_user fixture should insert");
+}
+
+#[tokio::test]
+async fn user_view_resolves_only_active_imported_slugs_without_changing_local_lookup() {
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("test site should exist")
+        .site
+        .site_id;
+
+    insert_wikidot_user(
+        &runner,
+        700_011,
+        "Imported Profile",
+        "imported-profile",
+        false,
+        3,
+        false,
+    )
+    .await;
+    insert_wikidot_user(
+        &runner,
+        700_012,
+        "Deleted Imported Profile",
+        "deleted-imported-profile",
+        true,
+        0,
+        false,
+    )
+    .await;
+
+    let imported = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": "imported-profile",
+            "locales": ["en"],
+        }),
+    );
+    let imported = serde_json::to_value(imported)
+        .expect("imported user view response should serialize");
+    assert_eq!(
+        imported,
+        json!({
+            "type": "user_found",
+            "data": {
+                "user": {
+                    "user_id": 700_011,
+                    "user_type": "wikidot",
+                    "created_at": "2008-07-19T21:26:10Z",
+                    "fetched_at": "2026-08-13T00:00:00Z",
+                    "is_deleted": false,
+                    "name": "Imported Profile",
+                    "slug": "imported-profile",
+                    "avatar_s3_hash": null,
+                    "real_name": null,
+                    "gender": null,
+                    "birthday": null,
+                    "location": null,
+                    "biography": null,
+                    "website": null,
+                    "karma": 3,
+                    "is_pro": false,
+                }
+            }
+        })
+    );
+
+    for target in ["deleted-imported-profile", "missing-imported-profile"] {
+        let output = run_endpoint!(
+            runner,
+            user_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "user": target,
+                "locales": ["en"],
+            }),
+        );
+        assert!(
+            matches!(output, GetUserViewOutput::UserMissing),
+            "{target} must stay missing"
+        );
+    }
+
+    let local = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": "user",
+            "locales": ["en"],
+        }),
+    );
+    let GetUserViewOutput::UserFound { user } = local else {
+        panic!("seeded local user should remain found");
+    };
+    assert!(user.is_wikijump());
+    assert_eq!(user.user_id(), SAMPLE_USER_ID);
+}
 
 #[tokio::test]
 async fn oversized_avatar_rejection_does_not_promote_blob_or_change_target() {
