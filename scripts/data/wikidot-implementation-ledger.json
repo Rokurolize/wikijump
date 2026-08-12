@@ -1371,12 +1371,13 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "restore_rerender_failure_rolls_back_resurrection_identity_and_revision",
-          "scope": "P8 Deepwell failure-atomicity coverage injects a transaction-local compiled-body update failure after resurrection insertion and identity publication, then verifies the original deleted page remains and the explicit destination remains absent through page_get and page_view; this regression does not claim live-Wikidot temporal evidence"
+          "scope": "P8 Deepwell failure-atomicity coverage injects a transaction-local compiled-body update failure after resurrection insertion and identity publication; page_get_deleted verifies the original source remains deleted, while page_get and anonymous page_view verify the explicit destination remains absent; this regression does not claim live-Wikidot temporal evidence"
         }
       ],
       "implementation_files": [
         "deepwell/src/services/page/service.rs",
         "deepwell/src/services/page_revision/service.rs",
+        "deepwell/src/services/render/mod.rs",
         "deepwell/src/services/render/count_pages_recognition.rs",
         "deepwell/src/services/render/list_pages/rendering.rs",
         "deepwell/src/services/render/list_pages/rendering_support.rs",
