@@ -14,7 +14,6 @@ import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
   failForActionError,
   pageActionBaseSchema,
-  pageMutationBaseSchema,
   readActionJson
 } from "$lib/server/load/page/page-action-shared"
 import { executePageAction } from "$lib/server/load/page/page-action-execution"
@@ -27,7 +26,9 @@ import type { RequestEvent } from "@sveltejs/kit"
 
 export async function pageParentSetAction(event: RequestEvent) {
   const { request } = event
-  const form = await superValidate(request, valibot(pageParentSchema))
+  const form = await superValidate(request, valibot(pageParentSetSchema), {
+    strict: true
+  })
   if (!form.valid) {
     return fail(400, { form })
   }
@@ -52,9 +53,12 @@ export async function pageParentSetAction(event: RequestEvent) {
   }
 }
 
-export const pageParentSchema = object({
-  ...pageMutationBaseSchema,
-  parents: string(),
+export const pageParentFormSchema = object({
+  parents: string()
+})
+
+const pageParentSetSchema = object({
+  ...pageActionBaseSchema,
   addParents: optional(array(string())),
   removeParents: optional(array(string()))
 })
