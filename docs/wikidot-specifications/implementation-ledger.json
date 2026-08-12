@@ -2496,10 +2496,12 @@
       "status": "implemented",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, link graph, permissions, and page-view interface",
-        "Render dependency and runtime-render source classification for site-level link graph modules"
+        "Render dependency and runtime-render source classification for site-level link graph modules",
+        "Deepwell registered page_create, page_delete, and site_tools_orphaned_pages endpoints for the local soft-deletion lifecycle; this seam is a local consistency regression rather than live Wikidot evidence"
       ],
       "tests": [
         "deepwell/tests/page.rs::orphanedpages_module_lists_pages_without_incoming_internal_links",
+        "deepwell/tests/page.rs::site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
         "deepwell/src/services/render/link_modules.rs::tests::orphaned_pages_box_matches_live_wikidot_rows",
         "deepwell/src/services/render/url_arguments.rs::tests::link_listing_modules_require_runtime_rendering",
         "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_query_module_is_query_dependent"
@@ -2510,6 +2512,7 @@
         "deepwell/src/services/render/mod.rs",
         "deepwell/src/services/render/url_arguments.rs",
         "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/view/site_tools.rs",
         "deepwell/tests/page.rs"
       ],
       "documentation_evidence": [

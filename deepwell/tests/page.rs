@@ -17912,6 +17912,139 @@ async fn site_tools_orphaned_pages_filters_before_exposing_ordered_rows() {
 }
 
 #[tokio::test]
+async fn site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules() {
+    const DELETED_TARGET_SLUG: &str =
+        "fixture-site-tools-orphaned-lifecycle-deleted-target";
+    const ACTIVE_TARGET_SLUG: &str =
+        "fixture-site-tools-orphaned-lifecycle-active-target";
+    const SELF_LINK_SLUG: &str = "fixture-site-tools-orphaned-lifecycle-self-link";
+    const INCLUDE_TARGET_SLUG: &str =
+        "fixture-site-tools-orphaned-lifecycle-include-target";
+    const DELETED_LINKER_SLUG: &str = "site-tools-orphaned-lifecycle-deleted-linker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, wikitext) in [
+        (
+            DELETED_TARGET_SLUG,
+            "Deleted Linker Target",
+            "target linked only from a page that will be deleted",
+        ),
+        (
+            ACTIVE_TARGET_SLUG,
+            "Active Linker Target",
+            "target linked from a live page",
+        ),
+        (
+            SELF_LINK_SLUG,
+            "Self Link Target",
+            &format!("[[[{SELF_LINK_SLUG}]]]"),
+        ),
+        (
+            INCLUDE_TARGET_SLUG,
+            "Include-only Target",
+            "target included but not linked",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, wikitext).await;
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DELETED_LINKER_SLUG)),
+    );
+    let deleted_linker = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[[{DELETED_TARGET_SLUG}]]]"),
+            "title": "Deleted OrphanedPages Linker",
+            "alt_title": null,
+            "slug": DELETED_LINKER_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deleted OrphanedPages linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-orphaned-lifecycle-active-linker",
+        "Active OrphanedPages Linker",
+        &format!("[[[{ACTIVE_TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-orphaned-lifecycle-include-source",
+        "OrphanedPages Include Source",
+        &format!("[[include {INCLUDE_TARGET_SLUG}]]"),
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let orphan_slugs = |rows: &[deepwell::services::view::SiteToolsPageView]| {
+        rows.iter()
+            .map(|row| row.slug.clone())
+            .collect::<BTreeSet<_>>()
+    };
+    let before_delete = run_endpoint!(
+        runner,
+        site_tools_orphaned_pages,
+        json!({"site_id": site_id}),
+    );
+    let before_delete = orphan_slugs(&before_delete);
+    assert!(!before_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!before_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(before_delete.contains(SELF_LINK_SLUG));
+    assert!(before_delete.contains(INCLUDE_TARGET_SLUG));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(deleted_linker.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_linker.page_id,
+            "last_revision_id": deleted_linker.revision_id,
+            "revision_comments": "delete OrphanedPages linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let after_delete = run_endpoint!(
+        runner,
+        site_tools_orphaned_pages,
+        json!({"site_id": site_id}),
+    );
+    let after_delete = orphan_slugs(&after_delete);
+    assert!(after_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!after_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(after_delete.contains(SELF_LINK_SLUG));
+    assert!(after_delete.contains(INCLUDE_TARGET_SLUG));
+}
+
+#[tokio::test]
 async fn site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets() {
     const PREFIX: &str = "fixture-site-tools-wanted-missing-";
     const PRIVATE_CATEGORY: &str = "fixture-site-tools-wanted-private";
