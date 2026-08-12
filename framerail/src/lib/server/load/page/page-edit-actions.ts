@@ -6,6 +6,7 @@ import {
   pageMove,
   pageParentUpdate
 } from "$lib/server/deepwell/page"
+import { pageView } from "$lib/server/deepwell/views"
 import {
   failForActionError,
   pageMutationBaseSchema
@@ -14,6 +15,10 @@ import {
   requirePageMutationUserId,
   resolvePageActionRequestContext
 } from "$lib/server/load/page/page-action-context"
+import {
+  getPreloadBackendLocales,
+  getPreloadRequestLocales
+} from "$lib/server/load/preload"
 import { DeleteOptions, Layout } from "$lib/types"
 import { fail, superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
@@ -22,6 +27,7 @@ import {
   nullable,
   object,
   optional,
+  strictObject,
   string,
   variant,
   enum as vEnum
@@ -214,12 +220,60 @@ export const layoutSchema = object({
 
 export async function pageMoveAction(event: RequestEvent) {
   const { request, params, getClientAddress } = event
-  const form = await superValidate(request, valibot(pageMoveSchema))
+  const requestData = await request.formData()
+  const isNativeForm =
+    request.headers.get("content-type")?.split(";", 1)[0].trim() ===
+      "application/x-www-form-urlencoded" && !requestData.has("__superform_json")
+  const { slug } = params
+
+  if (isNativeForm) {
+    const form = await superValidate(
+      Object.fromEntries(requestData),
+      valibot(pageMoveNativeSchema)
+    )
+    if (!form.valid) {
+      return fail(400, { form })
+    }
+    const ipAddress = getClientAddress()
+
+    try {
+      const context = await resolvePageActionRequestContext(event, {
+        session: "required"
+      })
+      const requestLocales = getPreloadRequestLocales(request)
+      const backendLocales = getPreloadBackendLocales(requestLocales)
+      const view = await pageView(
+        context.siteId,
+        backendLocales,
+        { slug: params.slug, extra: params.extra },
+        context.sessionToken
+      )
+      if (view.type !== "found") throw new Error("Page not found.")
+
+      const res = await pageMove(
+        {
+          siteId: context.siteId,
+          pageId: view.data.page.page_id,
+          userId: context.sessionUserId,
+          userIpAddr: ipAddress,
+          slug,
+          lastRevisionId: view.data.page_revision.revision_id,
+          newSlug: form.data["new-slug"],
+          revisionComments: form.data.comments
+        },
+        context.requestContext
+      )
+      return { form, res }
+    } catch (error) {
+      return failForActionError(error, { form })
+    }
+  }
+
+  const form = await superValidate(requestData, valibot(pageMoveSchema))
   if (!form.valid) {
     return fail(400, { form })
   }
   const ipAddress = getClientAddress()
-  const { slug } = params
 
   try {
     const { siteId, pageId, lastRevisionId, newSlug, comments } = form.data
@@ -249,5 +303,10 @@ export async function pageMoveAction(event: RequestEvent) {
 export const pageMoveSchema = object({
   ...pageMutationBaseSchema,
   newSlug: string(),
+  comments: string()
+})
+
+const pageMoveNativeSchema = strictObject({
+  "new-slug": string(),
   comments: string()
 })
