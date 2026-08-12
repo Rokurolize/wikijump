@@ -736,7 +736,7 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-tags": {
-      "status": "pending",
+      "status": "blocked",
       "confirmed_public_seams": [
         "Framerail generated data-form create flow for NewPage-provided tags"
       ],
@@ -758,7 +758,8 @@
         "install/local/wikidot-verification/artifacts/data-form-newpage-metadata-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "NewPage-provided non-empty tags are now proven to make data-form creation fail closed, but the documented limitation on deriving tags from form field values and its workaround remain unimplemented."
+        "The evidenced NewPage non-empty-tags behavior is implemented and covered through the confirmed browser seam: Wikidot shows its generic processing error and performs no page-create mutation.",
+        "The frozen source only states that tags cannot currently be derived from data-form field values and links to an external forum workaround; it contains no executable workaround contract. The retained live artifact does not exercise that workaround, empty tags, malformed encodings, permission variants, or edit-time metadata changes. Implementing any of those shapes without new behavioral evidence would invent compatibility semantics."
       ]
     },
     "data-forms-text-field": {
