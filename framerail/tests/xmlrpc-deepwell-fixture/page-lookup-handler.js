@@ -40,6 +40,42 @@ export const handlePageLookupRpc = ({ rpcRequest, request }) => {
       typeof pageReference === "number" ? pageById(pageReference) : pages[pageReference]
     result = page !== undefined && page !== null && page.slug !== "private-page"
   } else if (
+    rpcRequest.method === "page_edit_permission" &&
+    hasExactKeys(rpcRequest.params, []) &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    typeof request.headers["x-deepwell-page"] === "string" &&
+    pages[request.headers["x-deepwell-page"]]
+  ) {
+    result = { can_edit: true }
+  } else if (
+    rpcRequest.method === "page_lifecycle_identity" &&
+    hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    typeof rpcRequest.params.page === "string" &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
+    request.headers["x-deepwell-site-id"] === "6000005" &&
+    request.headers["x-deepwell-page"] === rpcRequest.params.page
+  ) {
+    pageReadRequests.pageLifecycleIdentity.push({
+      headers: {
+        page: request.headers["x-deepwell-page"],
+        sessionToken: request.headers["x-deepwell-session-token"],
+        siteId: request.headers["x-deepwell-site-id"]
+      },
+      params: rpcRequest.params
+    })
+    const page = pages[rpcRequest.params.page]
+    result =
+      page && page.slug !== "private-page"
+        ? {
+            created_by:
+              page.creator_display_name ?? displayNameForUserId(page.creator_user_id),
+            updated_by:
+              page.updater_display_name ?? displayNameForUserId(page.revision_user_id)
+          }
+        : null
+  } else if (
     rpcRequest.method === "page_get" &&
     hasExactKeys(rpcRequest.params, ["details", "page", "site_id"]) &&
     rpcRequest.params.site_id === 6000005 &&
@@ -106,4 +142,10 @@ export const handlePageLookupRpc = ({ rpcRequest, request }) => {
   }
 
   return { result }
+}
+
+const displayNameForUserId = (userId) => {
+  if (userId === 123) return "Rokurokubi"
+  if (userId === 456) return "Fixture Updater"
+  return null
 }

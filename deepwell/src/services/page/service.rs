@@ -20,8 +20,8 @@
 
 use super::structs::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageBody,
-    EditPageOutput, MovePage, MovePageOutput, RestorePage, RestorePageOutput,
-    RollbackPage, SetPageLayout,
+    EditPageOutput, MovePage, MovePageOutput, PageLifecycleIdentity, RestorePage,
+    RestorePageOutput, RollbackPage, SetPageLayout,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page, Model as PageModel};
@@ -48,8 +48,9 @@ use paste::paste;
 use ref_map::OptionRefMap;
 use sea_orm::ActiveValue;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
-    QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
+    FromQueryResult, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, Set,
+    Statement, Value,
 };
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
@@ -58,6 +59,105 @@ use wikidot_normalize::normalize;
 pub struct PageService;
 
 impl PageService {
+    /// Resolve display-name-only page lifecycle identities.
+    ///
+    /// Imported revisions use the authoritative names retained by the corpus
+    /// snapshot. Native revisions use the current public display name of their
+    /// revision actor. Each lifecycle endpoint follows its own provenance, so
+    /// a locally edited imported page keeps its snapshot creator while naming
+    /// the local updater.
+    pub async fn get_lifecycle_identity(
+        ctx: &ServiceContext<'_>,
+        page: &PageModel,
+    ) -> Result<PageLifecycleIdentity> {
+        #[derive(FromQueryResult)]
+        struct LifecycleIdentityRow {
+            created_by: Option<String>,
+            updated_by: Option<String>,
+        }
+
+        let make_error =
+            || Error::new("failed to resolve page lifecycle identity", ErrorType::Page);
+        let txn = ctx.transaction();
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            r#"
+SELECT
+    CASE
+        WHEN creator_revision.from_wikidot THEN
+            NULLIF(BTRIM(snapshot.created_by_name), '')
+        WHEN creator_user.user_id IS NOT NULL THEN
+            CASE WHEN creator_user.deleted_at IS NULL
+                 THEN NULLIF(BTRIM(creator_user.name), '')
+                 ELSE NULL
+            END
+        WHEN creator_wikidot_user.user_id IS NOT NULL THEN
+            CASE WHEN creator_wikidot_user.is_deleted = FALSE
+                 THEN NULLIF(BTRIM(creator_wikidot_user.name), '')
+                 ELSE NULL
+            END
+        ELSE NULL
+    END AS created_by,
+    CASE
+        WHEN current_revision.from_wikidot THEN
+            NULLIF(BTRIM(snapshot.updated_by_name), '')
+        WHEN updater_user.user_id IS NOT NULL THEN
+            CASE WHEN updater_user.deleted_at IS NULL
+                 THEN NULLIF(BTRIM(updater_user.name), '')
+                 ELSE NULL
+            END
+        WHEN updater_wikidot_user.user_id IS NOT NULL THEN
+            CASE WHEN updater_wikidot_user.is_deleted = FALSE
+                 THEN NULLIF(BTRIM(updater_wikidot_user.name), '')
+                 ELSE NULL
+            END
+        ELSE NULL
+    END AS updated_by
+FROM page
+LEFT JOIN LATERAL (
+    SELECT revision.from_wikidot, revision.user_id
+    FROM page_revision revision
+    WHERE revision.site_id = page.site_id
+      AND revision.page_id = page.page_id
+    ORDER BY revision.revision_number ASC, revision.revision_id ASC
+    LIMIT 1
+) creator_revision ON TRUE
+LEFT JOIN page_revision current_revision
+  ON current_revision.revision_id = page.latest_revision_id
+ AND current_revision.site_id = page.site_id
+ AND current_revision.page_id = page.page_id
+LEFT JOIN wikidot_page_snapshot snapshot ON snapshot.page_id = page.page_id
+LEFT JOIN "user" creator_user
+  ON creator_user.user_id = creator_revision.user_id
+LEFT JOIN wikidot_user creator_wikidot_user
+  ON creator_wikidot_user.user_id::bigint = creator_revision.user_id
+LEFT JOIN "user" updater_user
+  ON updater_user.user_id = current_revision.user_id
+LEFT JOIN wikidot_user updater_wikidot_user
+  ON updater_wikidot_user.user_id::bigint = current_revision.user_id
+WHERE page.site_id = $1
+  AND page.page_id = $2
+  AND page.deleted_at IS NULL
+"#,
+            [Value::from(page.site_id), Value::from(page.page_id)],
+        );
+
+        let row = LifecycleIdentityRow::find_by_statement(statement)
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+        Ok(match row {
+            Some(row) => PageLifecycleIdentity {
+                created_by: row.created_by,
+                updated_by: row.updated_by,
+            },
+            None => PageLifecycleIdentity {
+                created_by: None,
+                updated_by: None,
+            },
+        })
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         CreatePage {

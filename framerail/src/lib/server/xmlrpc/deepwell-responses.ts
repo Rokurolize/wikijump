@@ -68,6 +68,11 @@ export interface DeepwellPageView {
   }
 }
 
+export interface DeepwellPageLifecycleIdentity {
+  created_by: string | null
+  updated_by: string | null
+}
+
 export interface DeepwellForumPost {
   id: number
   fullname: string
@@ -131,6 +136,18 @@ export function isDeepwellPageView(value: unknown): value is DeepwellPageView {
       (isXmlRpcStruct(value.data) &&
         isXmlRpcStruct(value.data.page) &&
         typeof value.data.page.slug === "string"))
+  )
+}
+
+export function isDeepwellPageLifecycleIdentity(
+  value: unknown
+): value is DeepwellPageLifecycleIdentity {
+  return (
+    isXmlRpcStruct(value) &&
+    (value.created_by === null ||
+      (typeof value.created_by === "string" && value.created_by.trim().length > 0)) &&
+    (value.updated_by === null ||
+      (typeof value.updated_by === "string" && value.updated_by.trim().length > 0))
   )
 }
 

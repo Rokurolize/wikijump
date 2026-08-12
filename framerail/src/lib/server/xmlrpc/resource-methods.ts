@@ -21,7 +21,7 @@ import {
   isDeepwellFile,
   isDeepwellForumPostSummary,
   isDeepwellPage,
-  isDeepwellPageRevision,
+  isDeepwellPageLifecycleIdentity,
   isDeepwellPageView,
   type DeepwellDirectParentMetadata,
   type DeepwellFile,
@@ -176,13 +176,13 @@ export async function getPagesMeta(
       continue
     }
 
-    const [parentPage, creatorUserId] = await Promise.all([
+    const [parentPage, lifecycleIdentity] = await Promise.all([
       getDeepwellDirectParentMetadata(siteId, page.slug, principal),
-      getDeepwellPageCreatorUserId(siteId, page)
+      getDeepwellPageLifecycleIdentity(siteId, page.slug, principal)
     ])
     entries.push([
       page.slug,
-      buildXmlRpcPageMeta(page, parentPage?.slug ?? null, creatorUserId)
+      buildXmlRpcPageMeta(page, parentPage?.slug ?? null, lifecycleIdentity)
     ])
   }
 
@@ -254,6 +254,37 @@ export async function savePageOne(
     requestIp
   )
 
+  const willCreateRevision =
+    !page ||
+    content !== null ||
+    title !== null ||
+    tags !== null ||
+    (renameAs !== null && renameAs !== currentPageReference)
+  let responseLifecycleIdentity: ResolvedPageLifecycleIdentity
+  if (page) {
+    const existingLifecycleIdentity = await preflightExistingPageLifecycleIdentity(
+      siteId,
+      page.slug,
+      requestIp,
+      writeContext
+    )
+    responseLifecycleIdentity = willCreateRevision
+      ? {
+          created_by: existingLifecycleIdentity.created_by,
+          updated_by: await getDeepwellUserDisplayName(writeContext.userId, writeContext)
+        }
+      : existingLifecycleIdentity
+  } else {
+    const actorDisplayName = await getDeepwellUserDisplayName(
+      writeContext.userId,
+      writeContext
+    )
+    responseLifecycleIdentity = {
+      created_by: actorDisplayName,
+      updated_by: actorDisplayName
+    }
+  }
+
   const createdPage = !page
   if (!page) {
     await requestDeepwell(
@@ -324,7 +355,14 @@ export async function savePageOne(
     finalPageReference = renameAs
   }
 
-  return buildXmlRpcPage(site, siteId, finalPageReference, requestIp, writeContext)
+  return buildXmlRpcPage(
+    site,
+    siteId,
+    finalPageReference,
+    requestIp,
+    writeContext,
+    responseLifecycleIdentity
+  )
 }
 
 export async function selectFiles(call: XmlRpcCall): Promise<string[]> {
@@ -655,7 +693,8 @@ async function buildXmlRpcPage(
   siteId: number,
   pageReference: string,
   requestIp: string,
-  principal?: Pick<XmlRpcWriteContext, "sessionToken" | "userId">
+  principal?: Pick<XmlRpcWriteContext, "sessionToken" | "userId">,
+  lifecycleIdentity?: ResolvedPageLifecycleIdentity
 ): Promise<Record<string, XmlRpcValue>> {
   const pageMetadata = await getDeepwellPage(siteId, pageReference, false)
   if (!pageMetadata) {
@@ -669,9 +708,10 @@ async function buildXmlRpcPage(
   }
 
   const page = await requireDeepwellPage(siteId, pageMetadata.slug, true)
-  const [parentPage, creatorUserId, postSummary] = await Promise.all([
+  const [parentPage, resolvedLifecycleIdentity, postSummary] = await Promise.all([
     getDeepwellDirectParentMetadata(siteId, page.slug, resolvedPrincipal),
-    getDeepwellPageCreatorUserId(siteId, page),
+    lifecycleIdentity ??
+      getDeepwellPageLifecycleIdentity(siteId, page.slug, resolvedPrincipal),
     getDeepwellForumPostSummary(siteId, page.slug)
   ])
   const parentFullname = parentPage?.slug ?? null
@@ -689,7 +729,12 @@ async function buildXmlRpcPage(
   )
 
   return {
-    ...buildXmlRpcPageDetails(page, parentFullname, creatorUserId, postSummary),
+    ...buildXmlRpcPageDetails(
+      page,
+      parentFullname,
+      resolvedLifecycleIdentity,
+      postSummary
+    ),
     parent_title: parentTitle,
     children: children.length,
     content: page.wikitext ?? "",
@@ -909,45 +954,102 @@ async function replaceDeepwellParents(
   )
 }
 
-async function getDeepwellPageCreatorUserId(
+type ResolvedPageLifecycleIdentity = {
+  created_by: string
+  updated_by: string
+}
+
+async function getDeepwellPageLifecycleIdentity(
   siteId: number,
-  page: DeepwellPage
-): Promise<number> {
-  if (typeof page.page_id !== "number" || !Number.isInteger(page.page_id)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_get")
+  page: string,
+  principal: Pick<XmlRpcWriteContext, "sessionToken">
+): Promise<ResolvedPageLifecycleIdentity> {
+  let identity: unknown
+  try {
+    identity = await requestDeepwell(
+      "page_lifecycle_identity",
+      { site_id: siteId, page },
+      { sessionToken: principal.sessionToken, siteId, page }
+    )
+  } catch {
+    throw pageLifecycleIdentityUnavailable()
+  }
+  if (
+    !isDeepwellPageLifecycleIdentity(identity) ||
+    identity.created_by === null ||
+    identity.updated_by === null
+  ) {
+    throw pageLifecycleIdentityUnavailable()
   }
 
-  const firstRevision = await requestDeepwell("page_revision_get", {
-    site_id: siteId,
-    page_id: page.page_id,
-    revision_number: 0,
-    details: {
-      wikitext: false,
-      compiled_html: false
-    }
-  })
-  if (!isDeepwellPageRevision(firstRevision)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_revision_get")
+  return identity
+}
+
+async function preflightExistingPageLifecycleIdentity(
+  siteId: number,
+  page: string,
+  requestIp: string,
+  principal: Pick<XmlRpcWriteContext, "sessionToken" | "userId">
+): Promise<ResolvedPageLifecycleIdentity> {
+  const editPermission = await requestDeepwell(
+    "page_edit_permission",
+    {},
+    { sessionToken: principal.sessionToken, siteId, page }
+  )
+  if (!isXmlRpcStruct(editPermission) || typeof editPermission.can_edit !== "boolean") {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_edit_permission")
+  }
+  if (!editPermission.can_edit) {
+    throw new XmlRpcFault(403, "XML-RPC user is not allowed to edit this page", 403)
+  }
+  if (!(await canXmlRpcViewPage(siteId, page, requestIp, principal))) {
+    throw new XmlRpcFault(403, "XML-RPC user is not allowed to view this page", 403)
+  }
+  return getDeepwellPageLifecycleIdentity(siteId, page, principal)
+}
+
+async function getDeepwellUserDisplayName(
+  userId: number,
+  principal: Pick<XmlRpcWriteContext, "sessionToken">
+): Promise<string> {
+  let user: unknown
+  try {
+    user = await requestDeepwell(
+      "user_get",
+      { user: userId },
+      { sessionToken: principal.sessionToken }
+    )
+  } catch {
+    throw pageLifecycleIdentityUnavailable()
+  }
+  if (
+    !isXmlRpcStruct(user) ||
+    user.user_id !== userId ||
+    typeof user.name !== "string" ||
+    user.name.trim().length === 0
+  ) {
+    throw pageLifecycleIdentityUnavailable()
   }
 
-  return firstRevision.user_id
+  return user.name.trim()
+}
+
+function pageLifecycleIdentityUnavailable(): XmlRpcFault {
+  return new XmlRpcFault(-32603, "Page lifecycle identity unavailable")
 }
 
 function buildXmlRpcPageMeta(
   page: DeepwellPage,
   parentFullname: string | null,
-  creatorUserId: number
+  lifecycleIdentity: ResolvedPageLifecycleIdentity
 ): Record<string, XmlRpcValue> {
-  const creatorId = String(creatorUserId)
-  const updaterId = String(page.revision_user_id)
-
   return {
     fullname: page.slug,
     title: page.title,
     created_at: page.page_created_at,
-    created_by: creatorId,
+    created_by: lifecycleIdentity.created_by,
     updated_at: page.page_updated_at ?? page.revision_created_at ?? page.page_created_at,
-    updated_by: updaterId,
+    updated_by: lifecycleIdentity.updated_by,
     parent_fullname: parentFullname,
     tags: page.tags,
     rating: Math.round(page.rating),
@@ -958,11 +1060,11 @@ function buildXmlRpcPageMeta(
 function buildXmlRpcPageDetails(
   page: DeepwellPage,
   parentFullname: string | null,
-  creatorUserId: number,
+  lifecycleIdentity: ResolvedPageLifecycleIdentity,
   postSummary: DeepwellForumPostSummary
 ): Record<string, XmlRpcValue> {
   return {
-    ...buildXmlRpcPageMeta(page, parentFullname, creatorUserId),
+    ...buildXmlRpcPageMeta(page, parentFullname, lifecycleIdentity),
     comments: postSummary.comments,
     commented_at: postSummary.commented_at,
     commented_by: postSummary.commented_by

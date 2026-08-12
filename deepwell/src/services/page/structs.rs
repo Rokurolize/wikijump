@@ -130,6 +130,16 @@ pub struct GetPageOutput {
     pub layout: Layout,
 }
 
+/// Public display names for the people at the two page lifecycle endpoints.
+///
+/// An unavailable identity remains null. In particular, this projection never
+/// substitutes an internal user ID or account slug for a display name.
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageLifecycleIdentity {
+    pub created_by: Option<String>,
+    pub updated_by: Option<String>,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct GetDeletedPageOutput {
     pub page_id: i64,

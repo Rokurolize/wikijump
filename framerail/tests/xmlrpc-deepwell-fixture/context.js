@@ -33,6 +33,7 @@ export const fixtureState = {
     forumPostPageSummary: [],
     pageGet: [],
     pageGetDirect: [],
+    pageLifecycleIdentity: [],
     pageRevisionGet: [],
     pageView: [],
     pageViewPermission: [],

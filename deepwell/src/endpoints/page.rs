@@ -29,8 +29,8 @@ use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
     GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage, MovePageOutput,
-    PageEditPermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
-    SetPageLayout,
+    PageEditPermissionOutput, PageLifecycleIdentity, RestorePage, RestorePageOutput,
+    RollbackPage, SetPageLayout,
 };
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
@@ -702,6 +702,54 @@ pub async fn page_view_permission(
             ErrorType::Permission,
         )
     })
+}
+
+/// Return display-name-only lifecycle identities for a viewable page.
+///
+/// Missing and hidden pages share the same null result. Identity resolution
+/// happens only after the normal page-view permission check, and unavailable
+/// identities remain null inside the projection rather than falling back to
+/// internal IDs or slugs.
+pub async fn page_lifecycle_identity(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageLifecycleIdentity>> {
+    let GetPageReference {
+        site_id,
+        page: reference,
+    } = parse!(params, Page);
+    let make_error =
+        || Error::new("failed to resolve page lifecycle identity", ErrorType::Page);
+
+    let Some(page) = PageService::get_optional(ctx, site_id, reference)
+        .await
+        .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
+    if !can_view {
+        return Ok(None);
+    }
+
+    PageService::get_lifecycle_identity(ctx, &page)
+        .await
+        .map(Some)
+        .or_raise(make_error)
 }
 
 pub async fn page_watchers(

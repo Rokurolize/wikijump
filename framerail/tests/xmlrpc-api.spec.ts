@@ -964,8 +964,12 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   expect(metaBody).toContain(
     "<name>parent_fullname</name><value><string>scp-173-parent</string></value>"
   )
-  expect(metaBody).toContain("<name>created_by</name><value><string>123</string></value>")
-  expect(metaBody).toContain("<name>updated_by</name><value><string>456</string></value>")
+  expect(metaBody).toContain(
+    "<name>created_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(metaBody).toContain(
+    "<name>updated_by</name><value><string>Fixture Updater</string></value>"
+  )
   expect(metaBody).toContain("<name>tags</name><value><array><data>")
   expect(metaBody).toContain("<name>rating</name><value><int>173</int></value>")
   expect(metaBody).toContain("<name>revisions</name><value><int>3</int></value>")
@@ -998,8 +1002,12 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   expect(oneBody).toContain(
     "<name>fullname</name><value><string>scp-173</string></value>"
   )
-  expect(oneBody).toContain("<name>created_by</name><value><string>123</string></value>")
-  expect(oneBody).toContain("<name>updated_by</name><value><string>456</string></value>")
+  expect(oneBody).toContain(
+    "<name>created_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(oneBody).toContain(
+    "<name>updated_by</name><value><string>Fixture Updater</string></value>"
+  )
   expect(oneBody).toContain("<name>content</name><value><string>")
   expect(oneBody).toContain("**Item #:** SCP-173")
   expect(oneBody).toContain("<name>html</name><value><string>")
@@ -1085,20 +1093,25 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
       }
     ],
     pageGetDirect: [],
-    pageRevisionGet: [
+    pageLifecycleIdentity: [
       {
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000173,
-        revision_number: 0,
-        site_id: 6000005
+        headers: {
+          page: "scp-173",
+          sessionToken: "fixture-session-token",
+          siteId: "6000005"
+        },
+        params: { page: "scp-173", site_id: 6000005 }
       },
       {
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000173,
-        revision_number: 0,
-        site_id: 6000005
+        headers: {
+          page: "scp-173",
+          sessionToken: "fixture-session-token",
+          siteId: "6000005"
+        },
+        params: { page: "scp-173", site_id: 6000005 }
       }
     ],
+    pageRevisionGet: [],
     pageSelect: [
       {
         headers: { sessionToken: "fixture-session-token" },
@@ -1483,6 +1496,15 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
     "<name>parent_fullname</name><value><string>main</string></value>"
   )
   expect(createBody).toContain("<value><string>xmlrpc-save</string></value>")
+  expect(createBody).toContain(
+    "<name>created_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(createBody).toContain(
+    "<name>updated_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(createBody).not.toMatch(
+    /<name>(?:created_by|updated_by)<\/name><value><string>\d+<\/string>/u
+  )
 
   const updateResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesSaveOneRequest({
@@ -1508,6 +1530,9 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
   expect(updateBody).toContain("<name>parent_fullname</name><value><nil /></value>")
   expect(updateBody).toContain("<value><string>xmlrpc-save-updated</string></value>")
   expect(updateBody).not.toContain("<value><string>xmlrpc-save</string></value>")
+  expect(updateBody).not.toMatch(
+    /<name>(?:created_by|updated_by)<\/name><value><string>\d+<\/string>/u
+  )
 
   const renameResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesSaveOneRequest({
@@ -1538,6 +1563,9 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
     "<name>parent_fullname</name><value><string>main</string></value>"
   )
   expect(renameBody).toContain("<value><string>xmlrpc-save-renamed</string></value>")
+  expect(renameBody).not.toMatch(
+    /<name>(?:created_by|updated_by)<\/name><value><string>\d+<\/string>/u
+  )
 
   const writeRequests = await request.get(`${fixtureUrl}/last-page-write-requests`)
   expect(writeRequests.status()).toBe(200)

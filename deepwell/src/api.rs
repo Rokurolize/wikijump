@@ -436,6 +436,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("page_create", page_create);
     register!("page_get", page_get);
     register!("page_view_permission", page_view_permission);
+    register!("page_lifecycle_identity", page_lifecycle_identity);
     register!("page_watchers", page_watchers);
     register!("page_who_rated", page_who_rated);
     register!("page_meta_tags", page_meta_tags);
