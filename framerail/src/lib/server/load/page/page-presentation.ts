@@ -21,6 +21,7 @@ interface PageTranslationContext {
 interface WikidotPagePresentationContext {
   hasSession: boolean
   siteLocale: string
+  now?: number
 }
 
 const basePageTranslateKeys = (
@@ -154,9 +155,9 @@ export const buildPageTranslateKeys = (
 
 export const buildWikidotPagePresentation = (
   response: PageView,
-  { hasSession, siteLocale }: WikidotPagePresentationContext
+  { hasSession, siteLocale, now = Date.now() }: WikidotPagePresentationContext
 ) => {
-  if (response.type !== "found" || !response.data.page.from_wikidot) {
+  if (response.type !== "found") {
     return {
       wikidot_page_info: null,
       wikidot_page_actions: null,
@@ -165,14 +166,31 @@ export const buildWikidotPagePresentation = (
   }
 
   const snapshot = response.data.wikidot_snapshot
+  const imported = response.data.page.from_wikidot
+  const revision = imported
+    ? snapshot?.source_revision_count
+    : response.data.page_revision.revision_number
+  const updatedAt = imported
+    ? snapshot?.source_updated_at
+    : (response.data.page.updated_at ?? response.data.page.created_at)
   const wikidotPageInfo =
-    snapshot?.source_revision_count !== undefined && snapshot.source_updated_at
+    revision !== undefined && updatedAt
       ? buildWikidotPageInfoText({
-          revision: snapshot.source_revision_count,
-          updatedAt: snapshot.source_updated_at,
+          revision,
+          updatedAt,
+          now,
           locale: siteLocale
         })
       : null
+
+  if (!imported) {
+    return {
+      wikidot_page_info: wikidotPageInfo,
+      wikidot_page_actions: null,
+      wikidot_page_watch: null
+    }
+  }
+
   const { showRate, showDiscuss } = wikidotPageActionVisibility({
     sourceSite: snapshot?.source_site,
     ratingEnabled: response.data.page_rating.enabled,
