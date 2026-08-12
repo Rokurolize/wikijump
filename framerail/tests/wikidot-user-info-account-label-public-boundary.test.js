@@ -158,3 +158,20 @@ test("UserInfo keeps an imported Pro profile without inventing an account-type l
   assert.match(body, /The Administrator/u)
   assert.doesNotMatch(body, /Account type:|<dd>pro<\/dd>/u)
 })
+
+test("UserInfo omits unobserved imported karma labels", async () => {
+  for (const karma of [1, 2, 4, 5]) {
+    const user = { ...importedTargets[0], karma }
+    const data = await loadWikidotUserInfo({
+      siteId: 7,
+      locales: ["en"],
+      target: user.slug,
+      userView: async () => ({ type: "user_found", data: { user } })
+    })
+    const body = render(userInfoPage, { props: { data } }).body
+
+    assert.equal(data.view, "user_found")
+    assert.equal("karmaLevel" in data.user, false)
+    assert.doesNotMatch(body, /Karma level:/u)
+  }
+})

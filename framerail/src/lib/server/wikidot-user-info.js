@@ -1,41 +1,11 @@
 export const WIKIDOT_USER_INFO_MISSING = "User does not exist."
 
 /**
- * @typedef {{
- *   user_id: number
- *   user_type: "regular" | "system" | "site" | "bot"
- *   created_at: string
- *   name: string
- *   slug: string
- *   avatar_s3_hash: number[] | null
- * }} LocalUserViewUser
+ * @typedef {import("./deepwell/user").UserViewResult} UserViewResult
  *
+ * @typedef {import("./deepwell/user").UserViewUser} UserViewUser
  *
- * @typedef {{
- *   user_id: number
- *   user_type: "wikidot"
- *   created_at: string
- *   fetched_at: string
- *   is_deleted: boolean
- *   name: string | null
- *   slug: string | null
- *   avatar_s3_hash: number[] | null
- *   real_name: string | null
- *   gender: string | null
- *   birthday: string | null
- *   location: string | null
- *   biography: string | null
- *   website: string | null
- *   karma: number
- *   is_pro: boolean
- * }} ImportedUserViewUser
- *
- *
- * @typedef {LocalUserViewUser | ImportedUserViewUser} UserViewUser
- *
- * @typedef {{ type: "user_found"; data: { user: UserViewUser } }
- *   | { type: "user_missing" }} UserViewResult
- *
+ * @typedef {import("$lib/types").UserType} UserType
  *
  * @typedef {(
  *   siteId: number,
@@ -51,8 +21,8 @@ export const WIKIDOT_USER_INFO_MISSING = "User does not exist."
  *   userId: number
  *   name: string
  *   slug: string
- *   accountType?: "regular" | "system" | "site" | "bot" | "free"
- *   karmaLevel?: "none" | "low" | "medium" | "high" | "very high" | "guru"
+ *   accountType?: UserType | "free"
+ *   karmaLevel?: "none" | "high"
  *   createdAt: string
  *   avatar?: string
  * }} PublicUser
@@ -77,10 +47,6 @@ const PRIVATE_MESSAGE_CONTROL = Object.freeze({
   redacted: true
 })
 
-const KARMA_LABELS = Object.freeze(
-  /** @type {const} */ (["none", "low", "medium", "high", "very high", "guru"])
-)
-
 /**
  * @param {UserViewUser} user
  * @param {LoadAvatar | undefined} loadAvatar
@@ -97,7 +63,13 @@ const projectPublicUser = async (user, loadAvatar) => {
       : undefined
 
   const imported = user.user_type === "wikidot"
-  const karmaLevel = imported ? KARMA_LABELS[user.karma] : undefined
+  const karmaLevel = imported
+    ? user.karma === 0
+      ? "none"
+      : user.karma === 3
+        ? "high"
+        : undefined
+    : undefined
 
   return {
     userId: user.user_id,

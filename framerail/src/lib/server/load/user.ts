@@ -34,6 +34,8 @@ export async function loadUser(
   const locales = parentData.locales
 
   const response = await userView(siteId, locales, sessionToken, username)
+  const unsupportedImportedUser =
+    response.type === "user_found" && response.data.user.user_type === "wikidot"
 
   let translateKeys: TranslateKeys = {
     ...defaults.translateKeys,
@@ -47,6 +49,7 @@ export async function loadUser(
 
   switch (response.type) {
     case "user_found":
+      if (unsupportedImportedUser) errorStatus = 404
       break
     case "user_missing":
       errorStatus = 404
@@ -69,23 +72,26 @@ export async function loadUser(
 
   const viewData: {
     user?: Partial<UserModel & { avatar: string }>
-  } =
-    response.data === undefined
-      ? {}
-      : // This legacy /-/user view retains its existing local-account model.
-        { user: response.data.user as UserModel }
+  } = {}
 
-  if (errorStatus !== null && response.type === "user_missing") {
+  if (
+    (errorStatus !== null && response.type === "user_missing") ||
+    unsupportedImportedUser
+  ) {
     translateKeys = {
       ...translateKeys,
       "user-not-exist": {},
       "user-not-logged-in": {}
     }
-  } else if (errorStatus === null && response.type === "user_found") {
+  } else if (
+    errorStatus === null &&
+    response.type === "user_found" &&
+    response.data.user.user_type !== "wikidot"
+  ) {
     const isViewingAnotherUser =
       parentData.user_session?.user?.user_id !== response.data.user.user_id
 
-    const user = response.data.user as UserModel
+    const user = response.data.user
     viewData.user = sanitizeUserData(user, isViewingAnotherUser)
 
     // Get user avatar image
@@ -127,7 +133,7 @@ export async function loadUser(
   const pageData = {
     ...parentData,
     ...viewData,
-    view: response.type,
+    view: unsupportedImportedUser ? "user_missing" : response.type,
     internationalization
   }
 

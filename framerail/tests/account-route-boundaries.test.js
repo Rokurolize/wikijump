@@ -123,6 +123,53 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
 })
 
+test("legacy user slug route fails closed for imported profiles", async () => {
+  client.request = async (method) => {
+    if (method === "translate") return {}
+    if (method === "user_view") {
+      return {
+        type: "user_found",
+        data: {
+          user: {
+            user_id: 169306,
+            user_type: "wikidot",
+            created_at: "2008-07-19T21:26:10Z",
+            fetched_at: "2026-08-13T00:00:00Z",
+            is_deleted: false,
+            name: "The Administrator",
+            slug: "the-administrator",
+            avatar_s3_hash: null,
+            real_name: null,
+            gender: null,
+            birthday: null,
+            location: null,
+            biography: null,
+            website: null,
+            karma: 3,
+            is_pro: false
+          }
+        }
+      }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  await assert.rejects(
+    routes.userSlug.load({
+      params: { slug: "the-administrator" },
+      request: pageRequest("/-/user/the-administrator"),
+      cookies: { get: () => undefined },
+      parent: async () => parentData
+    }),
+    (error) => {
+      assert.equal(error.status, 404)
+      assert.equal(error.body.view, "user_missing")
+      assert.equal("user" in error.body, false)
+      return true
+    }
+  )
+})
+
 test("logout and user-edit route actions bind mutations to the server session", async () => {
   const calls = []
   client.request = async (method, params, context) => {
