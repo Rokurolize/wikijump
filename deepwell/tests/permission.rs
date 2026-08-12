@@ -1473,6 +1473,7 @@ async fn page_revision_visibility_requires_actual_page_category_edit_permission(
             "page_id": page.page_id,
             "revision_id": page.revision_id,
             "user_id": f.user_a,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["unknown"],
         }),
     );
@@ -1492,6 +1493,7 @@ async fn page_revision_visibility_requires_actual_page_category_edit_permission(
             "page_id": page.page_id,
             "revision_id": page.revision_id,
             "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["unknown"],
         }),
     );
@@ -1532,6 +1534,7 @@ async fn page_revision_visibility_requires_actual_page_category_edit_permission(
             "page_id": page.page_id,
             "revision_id": page.revision_id,
             "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["comments"],
         }),
     );
@@ -1604,6 +1607,7 @@ async fn page_revision_visibility_rejects_a_revision_from_another_page() {
             "page_id": page_a.page_id,
             "revision_id": page_b.revision_id,
             "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["comments"],
         }),
     );

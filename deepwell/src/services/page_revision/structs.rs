@@ -23,6 +23,7 @@ use crate::types::{FetchDirection, PageDetails, PageId, PageRevisionType};
 use ftml::data::UserInfo;
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
+use std::net::IpAddr;
 use std::num::NonZeroI32;
 use time::OffsetDateTime;
 
@@ -172,6 +173,7 @@ pub struct UpdatePageRevision {
     pub page_id: i64,
     pub revision_id: i64,
     pub user_id: i64,
+    pub ip_address: IpAddr,
     pub hidden: Vec<String>,
 }
 

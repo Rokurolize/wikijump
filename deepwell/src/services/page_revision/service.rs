@@ -34,6 +34,7 @@ use crate::models::page_revision::{
 };
 use crate::models::text::{self, Entity as Text};
 use crate::services::ServiceContext;
+use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::page_query::parse_static_wikidot_data_form_values;
 use crate::services::render::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput, StageGuard,
@@ -1358,6 +1359,7 @@ impl PageRevisionService {
             page_id,
             revision_id,
             user_id,
+            ip_address,
             hidden,
         }: UpdatePageRevision,
     ) -> Result<()> {
@@ -1405,8 +1407,9 @@ impl PageRevisionService {
             ));
         }
 
-        // TODO: record revision edit in audit log
-        let _ = user_id;
+        if revision.hidden.as_slice() == hidden.as_slice() {
+            return Ok(());
+        }
 
         // Update the revision
 
@@ -1416,6 +1419,19 @@ impl PageRevisionService {
 
         // Update and return
         model.update(txn).await.or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::PageRevisionVisibilityUpdate {
+                user_id,
+                site_id,
+                page_id,
+                revision_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
         Ok(())
     }
 

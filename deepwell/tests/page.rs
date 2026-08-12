@@ -573,6 +573,7 @@ async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
             "page_id": created.page_id,
             "revision_id": created.revision_id,
             "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["wikitext"],
         }),
     );
@@ -655,6 +656,7 @@ async fn page_revision_visibility_accepts_only_known_fields_and_fails_closed() {
             "page_id": created.page_id,
             "revision_id": created.revision_id,
             "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": hidden,
             "details": {"wikitext": true, "compiled_html": true},
         }),
@@ -701,6 +703,7 @@ async fn page_revision_visibility_accepts_only_known_fields_and_fails_closed() {
             "page_id": created.page_id,
             "revision_id": created.revision_id,
             "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["comments", "Comments"],
         }),
     );
@@ -721,6 +724,7 @@ async fn page_revision_visibility_accepts_only_known_fields_and_fails_closed() {
             "page_id": created.page_id,
             "revision_id": created.revision_id,
             "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["unknown"],
         }),
     );
@@ -732,6 +736,180 @@ async fn page_revision_visibility_accepts_only_known_fields_and_fails_closed() {
         .expect("the revision should still exist");
     assert_eq!(stored.hidden, hidden_before_rejection);
     assert_eq!(stored.updated_at, updated_at_before_rejection);
+}
+
+#[tokio::test]
+async fn page_revision_visibility_changes_are_audited_once_with_attribution() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-visibility-audit";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "revision body",
+            "title": "Revision visibility audit",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "comments to moderate",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let update = json!({
+        "site_id": site.site_id,
+        "page_id": created.page_id,
+        "revision_id": created.revision_id,
+        "user_id": ADMIN_USER_ID,
+        "ip_address": common::IP_ADDRESS,
+        "hidden": ["comments"],
+    });
+    let revision = run_endpoint!(runner, page_revision_edit, update.clone());
+    assert_eq!(revision.hidden, vec![String::from("comments")]);
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("the page revision visibility audit lookup should succeed");
+    assert_eq!(events.len(), 1, "the changed visibility must be audited");
+    let event = &events[0];
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(created.page_id));
+    assert_eq!(event.extra_id_1, Some(created.revision_id));
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the updated revision lookup should succeed")
+        .expect("the updated revision should exist");
+    let updated_at = stored.updated_at;
+
+    run_endpoint!(runner, page_revision_edit, update);
+
+    let event_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the page revision visibility audit count should succeed");
+    assert_eq!(event_count, 1, "an unchanged hidden set is a true no-op");
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the no-op revision lookup should succeed")
+        .expect("the no-op revision should still exist");
+    assert_eq!(
+        stored.updated_at, updated_at,
+        "a no-op must not rewrite the row"
+    );
+}
+
+#[tokio::test]
+async fn page_revision_visibility_update_and_audit_roll_back_atomically() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-visibility-audit-rollback";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "revision body",
+            "title": "Revision visibility audit rollback",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "comments to moderate",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("the visibility update savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(created.page_id)),
+            ..Default::default()
+        });
+    deepwell::endpoints::all::page_revision_edit(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["comments"],
+        })),
+    )
+    .await
+    .expect("the transactional visibility update should succeed");
+
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .count(&transaction)
+        .await
+        .expect("the transactional visibility audit count should succeed");
+    assert_eq!(audit_count, 1);
+    transaction
+        .rollback()
+        .await
+        .expect("the visibility update savepoint should roll back");
+
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the rolled-back revision lookup should succeed")
+        .expect("the rolled-back revision should still exist");
+    assert!(
+        stored.hidden.is_empty(),
+        "the revision update must roll back"
+    );
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the rolled-back visibility audit count should succeed");
+    assert_eq!(
+        audit_count, 0,
+        "the audit event must roll back with the update"
+    );
 }
 
 #[tokio::test]
@@ -838,6 +1016,7 @@ async fn latest_page_revision_still_cannot_hide_wikitext() {
             "page_id": created.page_id,
             "revision_id": created.revision_id,
             "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["wikitext"],
         }),
     );

@@ -95,6 +95,12 @@ pub enum AuditEvent<'a> {
         page_id: i64,
         revision_id: Option<i64>,
     },
+    PageRevisionVisibilityUpdate {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        revision_id: i64,
+    },
     PageMove {
         user_id: i64,
         site_id: i64,
@@ -412,6 +418,23 @@ impl<'a> AuditEvent<'a> {
                 site_id: Some(site_id),
                 page_id: Some(page_id),
                 extra_id_1: revision_id,
+                extra_id_2: None,
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::PageRevisionVisibilityUpdate {
+                user_id,
+                site_id,
+                page_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "page_revision.update_visibility",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(revision_id),
                 extra_id_2: None,
                 extra_string_1: None,
                 extra_string_2: None,
@@ -1111,6 +1134,18 @@ mod tests {
         });
         assert_event_type(&raw, "page.edit");
         assert_eq!(raw.extra_id_1, None);
+
+        let raw = extract(AuditEvent::PageRevisionVisibilityUpdate {
+            user_id: 31,
+            site_id: 32,
+            page_id: 33,
+            revision_id: 34,
+        });
+        assert_event_type(&raw, "page_revision.update_visibility");
+        assert_eq!(raw.user_id, Some(31));
+        assert_eq!(raw.site_id, Some(32));
+        assert_eq!(raw.page_id, Some(33));
+        assert_eq!(raw.extra_id_1, Some(34));
 
         let raw = extract(AuditEvent::PageMove {
             user_id: 9,
