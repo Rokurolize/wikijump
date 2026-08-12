@@ -101,6 +101,38 @@ export const pages = {
     wikitext: "Private page body marker.",
     compiled_body_html: "<p>Private page body marker.</p>"
   },
+  "public-child-private-parent": {
+    page_id: 3000197,
+    revision_id: 9000197,
+    page_created_at: "2026-07-02T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-02T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Public Child",
+    slug: "public-child-private-parent",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Public child body marker.",
+    compiled_body_html: "<p>Public child body marker.</p>"
+  },
+  "ambiguous-parent-child": {
+    page_id: 3000196,
+    revision_id: 9000196,
+    page_created_at: "2026-07-03T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-03T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Ambiguous Parent Child",
+    slug: "ambiguous-parent-child",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Ambiguous parent child body marker.",
+    compiled_body_html: "<p>Ambiguous parent child body marker.</p>"
+  },
   "xmlrpc-post-page": {
     page_id: 3000300,
     revision_id: 9000300,
@@ -507,9 +539,11 @@ export const forumPostsByPage = {
   ]
 }
 
-/** @type {Record<string, string>} */
+/** @type {Record<string, string | string[]>} */
 export const parentBySlug = {
-  "scp-173": "scp-173-parent"
+  "scp-173": "scp-173-parent",
+  "public-child-private-parent": "private-page",
+  "ambiguous-parent-child": ["main", "scp-173-parent"]
 }
 
 /**

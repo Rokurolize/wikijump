@@ -168,15 +168,16 @@ export async function getPagesMeta(
     return {}
   }
 
+  const principal = await getXmlRpcWritePrincipal(requestIp)
   const entries: [string, XmlRpcValue][] = []
   for (const pageReference of pages) {
     const page = await getDeepwellPage(siteId, pageReference, false)
-    if (!page || !(await canXmlRpcViewPage(siteId, page.slug, requestIp))) {
+    if (!page || !(await canXmlRpcViewPage(siteId, page.slug, requestIp, principal))) {
       continue
     }
 
     const [parentPage, creatorUserId, postSummary] = await Promise.all([
-      getDeepwellDirectParentPage(siteId, page.slug),
+      getDeepwellDirectParentPage(siteId, page.slug, principal),
       getDeepwellPageCreatorUserId(siteId, page),
       getDeepwellForumPostSummary(siteId, page.slug)
     ])
@@ -666,7 +667,7 @@ async function buildXmlRpcPage(
 
   const page = await requireDeepwellPage(siteId, pageMetadata.slug, true)
   const [parentPage, creatorUserId, postSummary] = await Promise.all([
-    getDeepwellDirectParentPage(siteId, page.slug),
+    getDeepwellDirectParentPage(siteId, page.slug, resolvedPrincipal),
     getDeepwellPageCreatorUserId(siteId, page),
     getDeepwellForumPostSummary(siteId, page.slug)
   ])
@@ -819,7 +820,8 @@ async function getDeepwellFile(
 
 async function getDeepwellDirectParentPage(
   siteId: number,
-  page: string
+  page: string,
+  principal: Pick<XmlRpcWriteContext, "sessionToken">
 ): Promise<DeepwellPage | null> {
   const relationships = expectDeepwellParentRelationships(
     await requestDeepwell("parent_relationships_get", {
@@ -829,8 +831,23 @@ async function getDeepwellDirectParentPage(
     }),
     "parent_relationships_get"
   )
-  const parentPageId = relationships[0]?.parent_page_id
-  if (parentPageId === undefined) {
+  if (relationships.length !== 1) {
+    return null
+  }
+  const parentPageId = relationships[0].parent_page_id
+
+  const canViewParent = await requestDeepwell(
+    "page_view_permission",
+    {
+      site_id: siteId,
+      page: parentPageId
+    },
+    { sessionToken: principal.sessionToken }
+  )
+  if (typeof canViewParent !== "boolean") {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_view_permission")
+  }
+  if (!canViewParent) {
     return null
   }
 

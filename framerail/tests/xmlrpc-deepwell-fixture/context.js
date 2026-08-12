@@ -35,6 +35,7 @@ export const fixtureState = {
     pageGetDirect: [],
     pageRevisionGet: [],
     pageView: [],
+    pageViewPermission: [],
     pageSelect: [],
     parentRelationshipsGet: [],
     siteGet: [],

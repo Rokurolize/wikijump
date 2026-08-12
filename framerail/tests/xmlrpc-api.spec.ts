@@ -1130,6 +1130,16 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         }
       }
     ],
+    pageViewPermission: [
+      {
+        headers: { sessionToken: "fixture-session-token" },
+        params: { page: 3000172, site_id: 6000005 }
+      },
+      {
+        headers: { sessionToken: "fixture-session-token" },
+        params: { page: 3000172, site_id: 6000005 }
+      }
+    ],
     parentRelationshipsGet: [
       {
         page: "scp-173",
@@ -1198,6 +1208,108 @@ test("XML-RPC endpoint enforces page view ACLs for page reads", async ({ request
       (entry: { page: string }) => entry.page === "private-page"
     )
   ).toBe(false)
+})
+
+test("XML-RPC page reads omit parent metadata when the parent is not viewable", async ({
+  request
+}) => {
+  const page = "public-child-private-parent"
+  const metaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaForPagesRequest([page]),
+    headers: xmlRpcHeaders
+  })
+  expect(metaResponse.status()).toBe(200)
+
+  const metaBody = await metaResponse.text()
+  expect(metaBody).toContain(`<name>${page}</name>`)
+  expect(metaBody).toContain(
+    "<name>fullname</name><value><string>public-child-private-parent</string></value>"
+  )
+  expect(metaBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(metaBody).not.toContain("<string>private-page</string>")
+
+  const oneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(oneResponse.status()).toBe(200)
+
+  const oneBody = await oneResponse.text()
+  expect(oneBody).toContain("Public child body marker.")
+  expect(oneBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(oneBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(oneBody).not.toContain("<string>private-page</string>")
+  expect(oneBody).not.toContain("Private Page")
+
+  const saveResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({ page, saveMode: "update" }),
+    headers: xmlRpcHeaders
+  })
+  expect(saveResponse.status()).toBe(200)
+
+  const saveBody = await saveResponse.text()
+  expect(saveBody).toContain("Public child body marker.")
+  expect(saveBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(saveBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(saveBody).not.toContain("<string>private-page</string>")
+  expect(saveBody).not.toContain("Private Page")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(deepwellRequests.status()).toBe(200)
+  const readRequests = await deepwellRequests.json()
+  expect(readRequests.pageViewPermission).toEqual([
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page: 3000199, site_id: 6000005 }
+    },
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page: 3000199, site_id: 6000005 }
+    },
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page: 3000199, site_id: 6000005 }
+    }
+  ])
+  expect(
+    readRequests.pageGetDirect.some(
+      (entry: { page_id: number }) => entry.page_id === 3000199
+    )
+  ).toBe(false)
+})
+
+test("XML-RPC page reads omit ambiguous parent metadata", async ({ request }) => {
+  const page = "ambiguous-parent-child"
+  const metaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaForPagesRequest([page]),
+    headers: xmlRpcHeaders
+  })
+  expect(metaResponse.status()).toBe(200)
+
+  const metaBody = await metaResponse.text()
+  expect(metaBody).toContain(`<name>${page}</name>`)
+  expect(metaBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(metaBody).not.toContain("<string>main</string>")
+  expect(metaBody).not.toContain("<string>scp-173-parent</string>")
+
+  const oneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(oneResponse.status()).toBe(200)
+
+  const oneBody = await oneResponse.text()
+  expect(oneBody).toContain("Ambiguous parent child body marker.")
+  expect(oneBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(oneBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(oneBody).not.toContain("<string>main</string>")
+  expect(oneBody).not.toContain("SCP Foundation")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(deepwellRequests.status()).toBe(200)
+  const readRequests = await deepwellRequests.json()
+  expect(readRequests.pageViewPermission).toEqual([])
+  expect(readRequests.pageGetDirect).toEqual([])
 })
 
 test("XML-RPC page HTML omits generated CSS that browser views place in head", async ({

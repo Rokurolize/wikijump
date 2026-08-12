@@ -14,13 +14,21 @@ export const handlePageRelationshipRpc = ({ rpcRequest }) => {
     rpcRequest.params.relationship_type === "parents"
   ) {
     pageReadRequests.parentRelationshipsGet.push(rpcRequest.params)
-    const parentSlug = parentBySlug[rpcRequest.params.page]
-    const child = pages[rpcRequest.params.page]
-    const parent = parentSlug ? pages[parentSlug] : null
-    result =
-      child && parent
-        ? [{ child_page_id: child.page_id, parent_page_id: parent.page_id }]
+    const parentReference = parentBySlug[rpcRequest.params.page]
+    const parentSlugs = Array.isArray(parentReference)
+      ? parentReference
+      : parentReference
+        ? [parentReference]
         : []
+    const child = pages[rpcRequest.params.page]
+    result = child
+      ? parentSlugs.flatMap((parentSlug) => {
+          const parent = pages[parentSlug]
+          return parent
+            ? [{ child_page_id: child.page_id, parent_page_id: parent.page_id }]
+            : []
+        })
+      : []
   } else if (
     rpcRequest.method === "forum_post_page_summary" &&
     hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&
