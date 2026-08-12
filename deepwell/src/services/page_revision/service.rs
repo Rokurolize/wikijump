@@ -36,9 +36,9 @@ use crate::models::text::{self, Entity as Text};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::page_query::parse_static_wikidot_data_form_values;
+use crate::services::render::render_dependency::wikitext_needs_latest_revision_for_render;
 use crate::services::render::{
-    CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput,
-    StageGuard, wikitext_needs_latest_revision_for_render,
+    CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput, StageGuard,
 };
 use crate::services::score::ScoreValue;
 use crate::services::settings::NavigationPageWikitext;
@@ -338,10 +338,6 @@ impl PageRevisionDraft {
     }
 }
 
-fn needs_latest_revision_for_render(wikitext: &str) -> bool {
-    wikitext_needs_latest_revision_for_render(wikitext)
-}
-
 fn first_revision_followups(
     slug: String,
     wikitext: &str,
@@ -351,10 +347,14 @@ fn first_revision_followups(
 ) -> FirstRevisionFollowups {
     FirstRevisionFollowups {
         slug,
-        rerender_after_latest_revision: needs_latest_revision_for_render(wikitext)
-            || template_wikitext.is_some_and(needs_latest_revision_for_render)
-            || top_bar_page_wikitext.is_some_and(needs_latest_revision_for_render)
-            || side_bar_page_wikitext.is_some_and(needs_latest_revision_for_render),
+        rerender_after_latest_revision: wikitext_needs_latest_revision_for_render(
+            wikitext,
+        ) || template_wikitext
+            .is_some_and(wikitext_needs_latest_revision_for_render)
+            || top_bar_page_wikitext
+                .is_some_and(wikitext_needs_latest_revision_for_render)
+            || side_bar_page_wikitext
+                .is_some_and(wikitext_needs_latest_revision_for_render),
     }
 }
 
@@ -2245,6 +2245,8 @@ fn first_revision_followups_ignore_literal_and_invalid_runtime_markers() {
         "[[module TagCloud mode=\"2d\" mode=\"3d\"]]",
         "[[code]]\n[[include component:license]]\n[[/code]]",
         "[[include]]",
+        "[[include component:license",
+        ">[[include component:license]]",
     ] {
         let followups = first_revision_followups(str!("guide"), source, None, None, None);
         assert!(

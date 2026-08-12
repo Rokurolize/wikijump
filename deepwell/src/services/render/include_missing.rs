@@ -1,6 +1,7 @@
 //! Live-compatible output for missing Wikidot include targets.
 
 use super::compat::text_fragments::CompatTextFragments;
+use super::include_attachment_owners::wikidot_include_directive_ranges;
 use super::literal_regions::LiteralRegionIndex;
 use crate::error::prelude::{Error, ErrorType, ExnError, Result};
 use ftml::data::PageRef;
@@ -20,7 +21,7 @@ static EMPTY_SITE_INCLUDE_TARGET_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[\[include[ \t]+::(?P<page>[^:\]\s]+)[ \t]*\]\]").unwrap()
 });
 static INCLUDE_TARGET_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    RegexBuilder::new(r"^(?:[ \t]*>)*\[\[\s*include\s+(?P<target>[^\s|\]]+)")
+    RegexBuilder::new(r"^[ \t]*(?P<opening>\[\[\s*include\s+(?P<target>[^\s|\]]+))")
         .case_insensitive(true)
         .multi_line(true)
         .build()
@@ -56,10 +57,18 @@ pub(super) fn collect_include_display_pages(
     wikitext: &str,
 ) -> HashMap<PageRef, VecDeque<String>> {
     let literal_regions = LiteralRegionIndex::new_wikidot_syntax(wikitext);
+    let directive_starts = wikidot_include_directive_ranges(wikitext)
+        .into_iter()
+        .map(|range| range.start)
+        .collect::<std::collections::HashSet<_>>();
     let mut pages = HashMap::<PageRef, VecDeque<String>>::new();
     for captures in INCLUDE_TARGET_REGEX.captures_iter(wikitext) {
-        let matched = captures.get(0).expect("include capture has a full match");
-        if literal_regions.contains(matched.start()) {
+        let opening = captures
+            .name("opening")
+            .expect("include capture has an opening");
+        if !directive_starts.contains(&opening.start())
+            || literal_regions.contains(opening.start())
+        {
             continue;
         }
         let target = &captures["target"];
@@ -277,6 +286,23 @@ mod tests {
             Some("deleted:protected:component:magic"),
         );
         assert_eq!(canonical.page(), "deleted-protected-component:magic");
+    }
+
+    #[test]
+    fn include_display_pages_require_an_executable_ftml_directive_boundary() {
+        for source in [
+            "[[include component:license",
+            ">[[include component:license]]",
+            "[[code]]\n[[include component:license]]\n[[/code]]",
+        ] {
+            assert!(
+                collect_include_display_pages(source).is_empty(),
+                "inert include source must not be collected: {source}",
+            );
+        }
+        assert!(
+            !collect_include_display_pages("[[include component:license]]").is_empty()
+        );
     }
 
     #[test]

@@ -2331,12 +2331,12 @@ async fn rerender_navigation_fixture_page(runner: &mut TestRunner, page: &GetPag
     );
 }
 
-async fn public_page_view_top_bar(
+async fn public_page_view_navigation(
     runner: &mut TestRunner,
     site_id: i64,
     slug: &'static str,
     found: bool,
-) -> Option<String> {
+) -> (Option<String>, Option<String>, Option<bool>) {
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         ..Default::default()
@@ -2356,85 +2356,149 @@ async fn public_page_view_top_bar(
             true,
             GetPageViewOutput::Found {
                 compiled_top_bar_html,
+                compiled_side_bar_html,
+                page_revision,
                 ..
             },
-        )
-        | (
+        ) => (
+            compiled_top_bar_html,
+            compiled_side_bar_html,
+            Some(page_revision.updated_at.is_some()),
+        ),
+        (
             false,
             GetPageViewOutput::Missing {
                 compiled_top_bar_html,
+                compiled_side_bar_html,
                 ..
             },
-        ) => compiled_top_bar_html,
+        ) => (compiled_top_bar_html, compiled_side_bar_html, None),
         (_, other) => panic!("unexpected public page view for {slug}: {other:?}"),
     }
 }
 
-#[tokio::test]
-async fn page_create_refreshes_dynamic_navigation_after_recording_latest_revision() {
-    const NAV_SLUG: &str = "nav:page-create-dynamic-navigation-fixture";
-    const PAGE_SLUG: &str = "page-create-dynamic-navigation-fresh-target";
-
-    let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
-        .expect("editable local authoring site should exist");
-    let site_id = site.site.site_id;
-    create_navigation_fixture_page(
-        &mut runner,
-        site_id,
-        NAV_SLUG,
-        "Page creation dynamic navigation fixture",
-        "[[module\tListPages \t tags=\"+fresh\"\t separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
-    )
-    .await;
-
-    runner.set_request_context(RequestContext {
-        user_id: Some(ADMIN_USER_ID),
-        site_id: Some(site_id),
-        ..Default::default()
-    });
-    run_endpoint!(
-        runner,
-        site_update,
-        json!({
-            "site": site_id,
-            "user_id": ADMIN_USER_ID,
-            "expected_settings_revision": site.settings.revision,
-            "top_bar_page": NAV_SLUG,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-
-    set_mutation_request_context(
-        &mut runner,
-        ADMIN_USER_ID,
-        site_id,
-        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
-    );
-    run_endpoint!(
-        runner,
-        page_create,
-        json!({
-            "site_id": site_id,
-            "wikitext": "Page creation dynamic navigation target body",
-            "title": "Page creation dynamic navigation target",
-            "alt_title": null,
-            "slug": PAGE_SLUG,
-            "tags": ["fresh"],
-            "layout": "wikidot",
-            "revision_comments": "create dynamic navigation target",
-            "user_id": ADMIN_USER_ID,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-
-    let top_bar = public_page_view_top_bar(&mut runner, site_id, PAGE_SLUG, true)
+async fn public_page_view_top_bar(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &'static str,
+    found: bool,
+) -> Option<String> {
+    public_page_view_navigation(runner, site_id, slug, found)
         .await
-        .expect("configured dynamic top bar should be compiled");
-    assert!(
-        top_bar.contains("NAV=page-create-dynamic-navigation-fresh-target"),
-        "the created page's stored top bar must include its exact slug after latest_revision_id is recorded:\n{top_bar}",
-    );
+        .0
+}
+
+#[tokio::test]
+async fn page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision()
+ {
+    for (case, nav_source, rerender_expected) in [
+        (
+            "mixed-whitespace",
+            "[[module\tListPages \t tags=\"+fresh\"\t separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
+            true,
+        ),
+        (
+            "code-literal",
+            "[[code]]\n[[module ListPages tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]\n[[/code]]",
+            false,
+        ),
+        (
+            "invalid-name",
+            "[[module ListPagesExtra tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]",
+            false,
+        ),
+    ] {
+        let mut runner = TestRunner::setup().await;
+        let site_id =
+            run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+                .expect("editable local authoring site should exist")
+                .site
+                .site_id;
+        let top_slug =
+            Box::leak(format!("nav:create-freshness-top-{case}").into_boxed_str());
+        let side_slug =
+            Box::leak(format!("nav:create-freshness-side-{case}").into_boxed_str());
+        let page_slug =
+            Box::leak(format!("create-freshness-{case}:target").into_boxed_str());
+        let top_title =
+            Box::leak(format!("Page create freshness top {case}").into_boxed_str());
+        let side_title =
+            Box::leak(format!("Page create freshness side {case}").into_boxed_str());
+        create_navigation_fixture_page(
+            &mut runner,
+            site_id,
+            top_slug,
+            top_title,
+            nav_source,
+        )
+        .await;
+        create_navigation_fixture_page(
+            &mut runner,
+            site_id,
+            side_slug,
+            side_title,
+            nav_source,
+        )
+        .await;
+        let site = run_endpoint!(runner, site_get, json!({"site": site_id}),)
+            .expect("editable local authoring site should still exist");
+        runner.set_request_context(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        run_endpoint!(
+            runner,
+            site_update,
+            json!({
+                "site": site_id,
+                "user_id": ADMIN_USER_ID,
+                "expected_settings_revision": site.settings.revision,
+                "top_bar_page": top_slug,
+                "side_bar_page": side_slug,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Borrowed(page_slug)),
+        );
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "Page creation navigation freshness target body",
+                "title": format!("Page creation navigation freshness target {case}"),
+                "alt_title": null,
+                "slug": page_slug,
+                "tags": ["fresh"],
+                "layout": "wikidot",
+                "revision_comments": format!("create navigation freshness target {case}"),
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+
+        let (top_bar, side_bar, timing) =
+            public_page_view_navigation(&mut runner, site_id, page_slug, true).await;
+        let top_bar = top_bar.expect("configured top bar should be compiled");
+        let side_bar = side_bar.expect("configured side bar should be compiled");
+        assert_eq!(
+            timing.expect("found view has revision lifecycle state"),
+            rerender_expected,
+            "{case}",
+        );
+        for (position, navigation) in [("top", top_bar), ("side", side_bar)] {
+            assert_eq!(
+                navigation.contains(&format!("NAV={page_slug}")),
+                rerender_expected,
+                "{case} {position} navigation must reflect whether its module executes",
+            );
+        }
+    }
 }
 
 #[tokio::test]

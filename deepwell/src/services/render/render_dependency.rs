@@ -24,8 +24,13 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use super::count_pages_recognition::recognize_count_pages_modules;
+use super::count_pages_recognition::wikitext_has_executable_count_pages_module;
+use super::include_missing::wikitext_has_executable_include;
+use super::list_pages::wikitext_has_executable_list_pages_module;
 use super::literal_regions::LiteralRegionIndex;
+use super::pages::wikitext_has_executable_pages_module;
 use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
+use super::runtime_modules::wikitext_has_executable_tag_cloud_module;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderDependencyClass {
@@ -211,6 +216,14 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     }
 
     classes
+}
+
+pub(crate) fn wikitext_needs_latest_revision_for_render(wikitext: &str) -> bool {
+    wikitext_has_executable_list_pages_module(wikitext)
+        || wikitext_has_executable_count_pages_module(wikitext)
+        || wikitext_has_executable_pages_module(wikitext)
+        || wikitext_has_executable_tag_cloud_module(wikitext)
+        || wikitext_has_executable_include(wikitext)
 }
 
 fn supported_pages_by_tag_module_at(source: &str, module_start: usize) -> bool {

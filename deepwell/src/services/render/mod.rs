@@ -62,7 +62,7 @@ mod percent_encoding;
 mod rate_actions;
 mod rate_module;
 mod render_budget;
-mod render_dependency;
+pub(crate) mod render_dependency;
 mod render_options;
 mod replay;
 mod runtime;
@@ -118,7 +118,6 @@ pub use self::structs::{
     RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
     WikidotListPagesFeedOutput,
 };
-pub(crate) use self::url_arguments::wikitext_needs_latest_revision_for_render;
 pub use self::url_arguments::{
     UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
     wikitext_requires_runtime_render,

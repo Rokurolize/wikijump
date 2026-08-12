@@ -27,16 +27,15 @@
 use super::backlinks::BACKLINKS_MODULE_REGEX;
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
 use super::count_pages_recognition::wikitext_has_executable_count_pages_module;
-use super::include_missing::wikitext_has_executable_include;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
-    parse_list_pages_arguments,
-    scanner::{find_list_pages_module_matches, list_pages_runtime_head_can_execute},
+    parse_list_pages_arguments, scanner::find_list_pages_module_matches,
+    wikitext_has_executable_list_pages_module,
 };
 use super::literal_regions::LiteralRegionIndex;
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::page_tree::PAGE_TREE_MODULE_REGEX;
-use super::pages::{PAGES_MODULE_REGEX, wikitext_has_executable_pages_module};
+use super::pages::PAGES_MODULE_REGEX;
 use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
 use super::runtime_modules::wikitext_has_executable_tag_cloud_module;
 use super::service::RATEDPAGES_MODULE_REGEX;
@@ -223,6 +222,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || wikitext_has_supported_pages_by_tag_module(wikitext)
         || wikitext_has_executable_list_pages_module(wikitext)
         || wikitext_has_executable_count_pages_module(wikitext)
+        || wikitext_has_executable_tag_cloud_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || BACKLINKS_MODULE_REGEX.is_match(wikitext)
         || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
@@ -244,14 +244,6 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || wikitext_has_random_list_pages_module(wikitext)
 }
 
-pub(crate) fn wikitext_needs_latest_revision_for_render(wikitext: &str) -> bool {
-    wikitext_has_executable_list_pages_module(wikitext)
-        || wikitext_has_executable_count_pages_module(wikitext)
-        || wikitext_has_executable_pages_module(wikitext)
-        || wikitext_has_executable_tag_cloud_module(wikitext)
-        || wikitext_has_executable_include(wikitext)
-}
-
 fn wikitext_has_supported_pages_by_tag_module(wikitext: &str) -> bool {
     if !PAGES_BY_TAG_MODULE_REGEX.is_match(wikitext) {
         return false;
@@ -266,14 +258,6 @@ fn wikitext_has_supported_pages_by_tag_module(wikitext: &str) -> bool {
             let head = captures.name("head").map_or("", |head| head.as_str());
             !literal_regions.contains(module.start())
                 && parse_pages_by_tag_arguments(head).is_some()
-        })
-}
-
-fn wikitext_has_executable_list_pages_module(wikitext: &str) -> bool {
-    find_list_pages_module_matches(wikitext)
-        .iter()
-        .any(|module| {
-            !module.preserve_original && list_pages_runtime_head_can_execute(module.head)
         })
 }
 
@@ -300,6 +284,17 @@ mod tests {
         UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
         wikitext_requires_runtime_render,
     };
+
+    #[test]
+    fn executable_tag_cloud_requires_runtime_rendering() {
+        assert!(wikitext_requires_runtime_render("[[module TagCloud]]"));
+        assert!(!wikitext_requires_runtime_render(
+            "[[module TagCloud mode=\"3d\"]]"
+        ));
+        assert!(!wikitext_requires_runtime_render(
+            "[[code]]\n[[module TagCloud]]\n[[/code]]"
+        ));
+    }
 
     #[test]
     fn a_pages_by_tag_module_reads_url_arguments() {

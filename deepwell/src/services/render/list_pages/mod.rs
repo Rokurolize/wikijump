@@ -87,6 +87,15 @@ pub(super) use self::delayed::{
     seal_protected_list_pages_delayed_output, seal_zero_row_list_pages_wrapper,
     wrap_pending_list_pages_delayed_output,
 };
+
+pub(super) fn wikitext_has_executable_list_pages_module(wikitext: &str) -> bool {
+    scanner::find_list_pages_module_matches(wikitext)
+        .iter()
+        .any(|module| {
+            !module.preserve_original
+                && scanner::list_pages_runtime_head_can_execute(module.head)
+        })
+}
 pub(super) use self::first_image::{
     list_pages_body_uses_first_image, load_list_pages_first_images,
     resolve_list_pages_first_image,

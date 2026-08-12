@@ -1828,6 +1828,7 @@
         "Deepwell public saved-page, preview, and AJAX ListPages render/query interfaces",
         "Framerail public HTTP ListPages feed and page routes",
         "Served-page Playwright browser navigation boundary",
+        "Deepwell public page_create to anonymous page_view lifecycle boundary for executable top- and side-navigation ListPages",
         "FTML public parser/layout interface for syntax-owned discrepancies only"
       ],
       "tests": [
@@ -1838,6 +1839,11 @@
         {
           "path": "deepwell/tests/page.rs",
           "scope": "public saved-page, preview, URL, pagination, query, permission, CountPages-in-body limitation, and rendering integration tests"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
+          "scope": "public page_create to anonymous page_view matrix verifies executable mixed-whitespace ListPages refreshes top and side navigation after the first revision is attached, while code-owned and invalid module names keep the registered revision in its initial-render lifecycle state"
         },
         {
           "path": "framerail/tests/list-pages-feed.test.ts",
@@ -1917,6 +1923,7 @@
       "implementation_files": [
         "deepwell/src/services/page_query",
         "deepwell/src/services/render/list_pages",
+        "deepwell/src/services/render/render_dependency.rs",
         "deepwell/src/services/render/runtime_page_queries.rs",
         "deepwell/src/services/render/url_arguments.rs",
         "deepwell/src/services/view/module_arguments.rs",
@@ -4210,7 +4217,8 @@
           "live:data-form-wiki-control-rendering-and-variable-contract",
           "artifact:install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
           "test:deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
-          "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot"
+          "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "test:deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision"
         ],
         "observation_gaps": []
       },
@@ -4280,7 +4288,8 @@
           "test:deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal",
           "test:deepwell/tests/page.rs#listpages_aggregate_generated_output_budget_preserves_overflowing_module",
           "test:deepwell/tests/page.rs#listpages_module_count_over_the_render_budget_remains_literal",
-          "test:deepwell/tests/page.rs#listpages_module_source_over_the_render_budget_remains_literal"
+          "test:deepwell/tests/page.rs#listpages_module_source_over_the_render_budget_remains_literal",
+          "test:deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision"
         ],
         "observation_gaps": []
       }
