@@ -89,6 +89,47 @@ macro_rules! conditional_future {
 #[derive(Debug)]
 pub struct PageRevisionService;
 
+#[derive(Debug, Default)]
+pub(crate) struct ParsedPageRevisionHiddenFields {
+    pub(crate) wikitext: bool,
+    pub(crate) compiled: bool,
+    pub(crate) comments: bool,
+    pub(crate) title: bool,
+    pub(crate) alt_title: bool,
+    pub(crate) slug: bool,
+    pub(crate) tags: bool,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum PageRevisionHiddenField {
+    Wikitext,
+    Compiled,
+    Comments,
+    Title,
+    AltTitle,
+    Slug,
+    Tags,
+}
+
+impl PageRevisionHiddenField {
+    fn parse(field: &str) -> Result<Self> {
+        match field {
+            "wikitext" => Ok(Self::Wikitext),
+            "compiled" => Ok(Self::Compiled),
+            "comments" => Ok(Self::Comments),
+            "title" => Ok(Self::Title),
+            "alt_title" => Ok(Self::AltTitle),
+            "slug" => Ok(Self::Slug),
+            "tags" => Ok(Self::Tags),
+            _ => Err(Error::new(
+                format!("unknown hidden page revision field: {field}"),
+                ErrorType::PageRevision,
+            )
+            .into()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct PersistedPageRevision {
     pub(crate) output: CreatePageRevisionOutput,
@@ -385,6 +426,26 @@ async fn apply_revision_outdating(
 }
 
 impl PageRevisionService {
+    pub(crate) fn parse_hidden_fields(
+        hidden: &[String],
+    ) -> Result<ParsedPageRevisionHiddenFields> {
+        let mut parsed = ParsedPageRevisionHiddenFields::default();
+
+        for field in hidden {
+            match PageRevisionHiddenField::parse(field)? {
+                PageRevisionHiddenField::Wikitext => parsed.wikitext = true,
+                PageRevisionHiddenField::Compiled => parsed.compiled = true,
+                PageRevisionHiddenField::Comments => parsed.comments = true,
+                PageRevisionHiddenField::Title => parsed.title = true,
+                PageRevisionHiddenField::AltTitle => parsed.alt_title = true,
+                PageRevisionHiddenField::Slug => parsed.slug = true,
+                PageRevisionHiddenField::Tags => parsed.tags = true,
+            }
+        }
+
+        Ok(parsed)
+    }
+
     /// Creates a new revision on an existing page.
     ///
     /// For the given page, look at the changes to make. If there are none,
@@ -1302,19 +1363,6 @@ impl PageRevisionService {
     ) -> Result<()> {
         let txn = ctx.transaction();
 
-        // Unfortunately, we cannot do .contains() on Vec<String> because
-        // it wans to compare with &String, not &str.
-        #[inline]
-        fn contains(items: &[String], query: &str) -> bool {
-            for item in items {
-                if item == query {
-                    return true;
-                }
-            }
-
-            false
-        }
-
         let make_error = || {
             Error::new(
                 format!(
@@ -1348,7 +1396,9 @@ impl PageRevisionService {
             bail!(make_error());
         };
 
-        if revision_id == latest.revision_id && contains(&hidden, "wikitext") {
+        let parsed_hidden = Self::parse_hidden_fields(&hidden)?;
+
+        if revision_id == latest.revision_id && parsed_hidden.wikitext {
             bail!(Error::new(
                 "cannot hide latest page revision",
                 ErrorType::CannotHideLatestRevision

@@ -593,6 +593,277 @@ async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
 }
 
 #[tokio::test]
+async fn page_revision_visibility_accepts_only_known_fields_and_fails_closed() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-hidden-fields";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    let site_id = site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "first revision body",
+            "title": "First revision title",
+            "alt_title": "First revision alternate title",
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "first revision comments",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "create a newer revision",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision body",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("a newer revision should be created");
+
+    let hidden = [
+        "wikitext",
+        "compiled",
+        "comments",
+        "title",
+        "alt_title",
+        "slug",
+        "tags",
+    ];
+    let revision = run_endpoint!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "hidden": hidden,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    );
+    assert_eq!(revision.hidden, hidden.map(str::to_owned));
+    assert!(revision.wikitext.is_none());
+    assert!(revision.compiled_body_html.is_none());
+    assert!(revision.compiled_body_styles.is_none());
+    assert!(revision.compiled_top_bar_html.is_none());
+    assert!(revision.compiled_side_bar_html.is_none());
+    assert!(revision.comments.is_none());
+    assert!(revision.title.is_none());
+    assert!(revision.alt_title.is_none());
+    assert!(revision.slug.is_none());
+    assert!(revision.tags.is_none());
+
+    let persisted = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    )
+    .expect("the moderated revision should remain readable");
+    assert_eq!(persisted.hidden, hidden.map(str::to_owned));
+    assert!(persisted.wikitext.is_none());
+    assert!(persisted.compiled_body_html.is_none());
+
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup should succeed")
+        .expect("the revision should exist");
+    let hidden_before_rejection = stored.hidden.clone();
+    let updated_at_before_rejection = stored.updated_at;
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "hidden": ["comments", "Comments"],
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageRevision);
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup after rejection should succeed")
+        .expect("the revision should still exist");
+    assert_eq!(stored.hidden, hidden_before_rejection);
+    assert_eq!(stored.updated_at, updated_at_before_rejection);
+
+    let wrong_site = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id + 1,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "hidden": ["unknown"],
+        }),
+    );
+    assert_contains_error!(wrong_site, ErrorType::PageRevision);
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup after wrong-site rejection should succeed")
+        .expect("the revision should still exist");
+    assert_eq!(stored.hidden, hidden_before_rejection);
+    assert_eq!(stored.updated_at, updated_at_before_rejection);
+}
+
+#[tokio::test]
+async fn page_revision_reads_reject_legacy_unknown_hidden_fields_without_panicking() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-legacy-hidden-field";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "legacy malformed revision",
+            "title": "Legacy malformed revision",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "legacy malformed revision",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let revision = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup should succeed")
+        .expect("the revision should exist");
+    let mut revision = revision.into_active_model();
+    revision.hidden = Set(vec!["legacy_unknown".to_owned()]);
+    revision
+        .update(runner.context().transaction())
+        .await
+        .expect("the malformed legacy fixture should be constructed");
+
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageRevision);
+}
+
+#[tokio::test]
+async fn latest_page_revision_still_cannot_hide_wikitext() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-latest-revision-wikitext";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "latest revision source remains visible",
+            "title": "Latest revision source",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "latest revision source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let before = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true},
+        }),
+    )
+    .expect("the latest revision should initially be readable");
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "hidden": ["wikitext"],
+        }),
+    );
+    assert_contains_error!(error, ErrorType::CannotHideLatestRevision);
+    assert_eq!(ErrorType::CannotHideLatestRevision.code(), 4302);
+
+    let revision = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true},
+        }),
+    )
+    .expect("the latest revision should remain readable");
+    assert!(revision.hidden.is_empty());
+    assert_eq!(revision.updated_at, before.updated_at);
+    assert_eq!(
+        revision.wikitext.as_deref(),
+        Some("latest revision source remains visible")
+    );
+}
+
+#[tokio::test]
 async fn normal_page_create_allocates_category_numbers_without_consuming_conflicts() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))

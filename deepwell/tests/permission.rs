@@ -1473,10 +1473,50 @@ async fn page_revision_visibility_requires_actual_page_category_edit_permission(
             "page_id": page.page_id,
             "revision_id": page.revision_id,
             "user_id": f.user_a,
-            "hidden": ["comments"],
+            "hidden": ["unknown"],
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    let spoofed = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page.page_id,
+            "revision_id": page.revision_id,
+            "user_id": f.user_b,
+            "hidden": ["unknown"],
+        }),
+    );
+    assert_contains_error!(spoofed, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    let unchanged = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page.page_id,
+            "revision_number": 0,
+        }),
+    )
+    .expect("the denied revision should remain readable");
+    assert!(
+        unchanged.hidden.is_empty(),
+        "denied and spoofed callers must not update revision visibility",
+    );
 
     runner.set_request_context(RequestContext {
         user_id: Some(f.user_b),
