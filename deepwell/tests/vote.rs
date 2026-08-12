@@ -16,19 +16,23 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::prelude::*;
+use deepwell::services::RequestContext;
+use deepwell::services::job::{JOB_QUEUE_NAME, Job};
 use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::view::GetPageViewOutput;
-use deepwell::services::{PageService, RequestContext};
-use deepwell::types::{PageId, Reference, RerenderDepth};
+use deepwell::types::{Reference, RerenderDepth};
+use rsmq_async::RsmqConnection;
 use serde_json::json;
+
+static RATE_QUEUE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 async fn create_registered_rate_page(
     runner: &mut TestRunner,
     category: &str,
     rating_type: &str,
     source: &str,
-) -> (i64, String, i64) {
+) -> (i64, String, i64, i64) {
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
@@ -73,26 +77,86 @@ async fn create_registered_rate_page(
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": page_category.category_id,
+            "page_id": page.page_id,
+        }),
+    );
     runner
         .context()
         .run_post_commit_actions()
         .await
         .expect("fixture setup post-commit work should succeed");
-    (site_id, slug, page.page_id)
+    clear_job_queue(runner).await;
+    (site_id, slug, page_category.category_id, page.page_id)
 }
 
-async fn rerender_rate_page(runner: &TestRunner, site_id: i64, page_id: i64) {
-    let page = PageService::get(runner.context(), site_id, Reference::Id(page_id))
+async fn clear_job_queue(runner: &TestRunner) {
+    let mut queue = runner.context().rsmq();
+    while let Some(message) = queue
+        .receive_message::<Vec<u8>>(JOB_QUEUE_NAME, None)
         .await
-        .expect("Rate fixture page should remain available");
-    PageRevisionService::rerender(
-        runner.context(),
-        PageId::from_page_model(&page),
-        RerenderDepth::default(),
-        RerenderType::Full,
-    )
-    .await
-    .expect("the deferred Rate rerender should succeed");
+        .expect("Rate test queue should be readable")
+    {
+        queue
+            .delete_message(JOB_QUEUE_NAME, &message.id)
+            .await
+            .expect("Rate setup job should be removed");
+    }
+}
+
+async fn consume_rate_rerender(
+    runner: &TestRunner,
+    site_id: i64,
+    category_id: i64,
+    page_id: i64,
+) {
+    let mut queue = runner.context().rsmq();
+    let message = queue
+        .receive_message::<Vec<u8>>(JOB_QUEUE_NAME, None)
+        .await
+        .expect("Rate rerender queue should be readable")
+        .expect("vote mutation should queue its target rerender");
+    let job: Job = serde_json::from_slice(&message.message)
+        .expect("queued Rate rerender should decode");
+    let Job::RerenderPage { id, depth, r#type } = job else {
+        panic!("expected Rate target rerender, got {job:?}");
+    };
+    assert_eq!(id.site_id, site_id);
+    assert_eq!(id.category_id, category_id);
+    assert_eq!(id.page_id, page_id);
+    assert_eq!(depth, RerenderDepth::default());
+    assert_eq!(r#type, RerenderType::Full);
+    queue
+        .delete_message(JOB_QUEUE_NAME, &message.id)
+        .await
+        .expect("consumed Rate rerender should be removed");
+
+    PageRevisionService::rerender(runner.context(), id, depth, r#type)
+        .await
+        .expect("the consumed Rate rerender should execute");
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("Rate rerender post-commit work should succeed");
+}
+
+async fn assert_no_queued_rate_rerender(runner: &TestRunner) {
+    assert!(
+        runner
+            .context()
+            .rsmq()
+            .receive_message::<Vec<u8>>(JOB_QUEUE_NAME, None)
+            .await
+            .expect("Rate no-op queue should be readable")
+            .is_none(),
+        "idempotent vote mutation must not queue a rerender",
+    );
 }
 
 async fn saved_rate_html(runner: &TestRunner, site_id: i64, slug: &str) -> String {
@@ -117,20 +181,15 @@ async fn saved_rate_html(runner: &TestRunner, site_id: i64, slug: &str) -> Strin
 async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
     const CATEGORY: &str = "fixture-vote-refresh-points";
 
+    let _queue_guard = RATE_QUEUE_LOCK.lock().await;
     let mut runner = TestRunner::setup().await;
-    let (site_id, slug, page_id) = create_registered_rate_page(
+    let (site_id, slug, category_id, page_id) = create_registered_rate_page(
         &mut runner,
         CATEGORY,
         "plus_minus",
         "[[module Rate]]",
     )
     .await;
-    rerender_rate_page(&runner, site_id, page_id).await;
-    runner
-        .context()
-        .run_post_commit_actions()
-        .await
-        .expect("initial Rate rerender post-commit work should succeed");
     assert!(
         saved_rate_html(&runner, site_id, &slug)
             .await
@@ -154,18 +213,97 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
             .expect("invalidated public cache fence should be readable"),
         before,
     );
-    rerender_rate_page(&runner, site_id, page_id).await;
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     assert!(
         saved_rate_html(&runner, site_id, &slug)
             .await
             .contains(r#"<span class="number prw54353">+1</span>"#)
     );
 
+    let before_disable = PublicContentCache::cache_fence(runner.context(), site_id)
+        .await
+        .expect("public cache fence should be readable before vote moderation");
+    let disabled = run_endpoint!(
+        runner,
+        vote_action,
+        json!({
+            "page_id": page_id,
+            "user_id": ADMIN_USER_ID,
+            "enable": false,
+            "acting_user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert!(disabled.disabled_at.is_some());
     runner
         .context()
         .run_post_commit_actions()
         .await
-        .expect("point set rerender post-commit work should succeed");
+        .expect("vote disable post-commit work should succeed");
+    assert_ne!(
+        PublicContentCache::cache_fence(runner.context(), site_id)
+            .await
+            .expect("public cache fence should be readable after vote disable"),
+        before_disable,
+    );
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
+    assert!(
+        saved_rate_html(&runner, site_id, &slug)
+            .await
+            .contains(r#"<span class="number prw54353">0</span>"#)
+    );
+
+    let before_repeated_disable =
+        PublicContentCache::cache_fence(runner.context(), site_id)
+            .await
+            .expect("public cache fence should be readable before repeated disable");
+    let still_disabled = run_endpoint!(
+        runner,
+        vote_action,
+        json!({
+            "page_id": page_id,
+            "user_id": ADMIN_USER_ID,
+            "enable": false,
+            "acting_user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert_eq!(still_disabled.disabled_at, disabled.disabled_at);
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("repeated vote disable should have no post-commit error");
+    assert_eq!(
+        PublicContentCache::cache_fence(runner.context(), site_id)
+            .await
+            .expect("public cache fence should be readable after repeated disable"),
+        before_repeated_disable,
+        "repeated vote disable must not falsely invalidate public content",
+    );
+    assert_no_queued_rate_rerender(&runner).await;
+
+    let enabled = run_endpoint!(
+        runner,
+        vote_action,
+        json!({
+            "page_id": page_id,
+            "user_id": ADMIN_USER_ID,
+            "enable": true,
+            "acting_user_id": ADMIN_USER_ID,
+        }),
+    );
+    assert!(enabled.disabled_at.is_none());
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("vote enable post-commit work should succeed");
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
+    assert!(
+        saved_rate_html(&runner, site_id, &slug)
+            .await
+            .contains(r#"<span class="number prw54353">+1</span>"#)
+    );
+
     let changed =
         run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": -1}),)
             .expect("changed point vote should be stored");
@@ -175,18 +313,13 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
         .run_post_commit_actions()
         .await
         .expect("changed point vote post-commit work should succeed");
-    rerender_rate_page(&runner, site_id, page_id).await;
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     assert!(
         saved_rate_html(&runner, site_id, &slug)
             .await
             .contains(r#"<span class="number prw54353">-1</span>"#)
     );
 
-    runner
-        .context()
-        .run_post_commit_actions()
-        .await
-        .expect("point change rerender post-commit work should succeed");
     let before_same_value = PublicContentCache::cache_fence(runner.context(), site_id)
         .await
         .expect("public cache fence should be readable before idempotent set");
@@ -207,6 +340,7 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
         before_same_value,
         "same-value point vote must not falsely invalidate public content",
     );
+    assert_no_queued_rate_rerender(&runner).await;
 
     let before_remove = PublicContentCache::cache_fence(runner.context(), site_id)
         .await
@@ -224,7 +358,7 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
             .expect("public cache fence should be readable after point removal"),
         before_remove,
     );
-    rerender_rate_page(&runner, site_id, page_id).await;
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     assert!(
         saved_rate_html(&runner, site_id, &slug)
             .await
@@ -241,15 +375,10 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         "[[/module]]",
     );
 
+    let _queue_guard = RATE_QUEUE_LOCK.lock().await;
     let mut runner = TestRunner::setup().await;
-    let (site_id, slug, page_id) =
+    let (site_id, slug, category_id, page_id) =
         create_registered_rate_page(&mut runner, CATEGORY, "stars", SOURCE).await;
-    rerender_rate_page(&runner, site_id, page_id).await;
-    runner
-        .context()
-        .run_post_commit_actions()
-        .await
-        .expect("initial star Rate rerender post-commit work should succeed");
     let initial = saved_rate_html(&runner, site_id, &slug).await;
     assert!(initial.contains(r#"class="page-rate-widget-start" data-rating="0""#));
     assert!(
@@ -276,7 +405,7 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
             .expect("public cache fence should be readable after first star vote"),
         before_create,
     );
-    rerender_rate_page(&runner, site_id, page_id).await;
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     let first = saved_rate_html(&runner, site_id, &slug).await;
     assert!(first.contains(r#"class="page-rate-widget-start" data-rating="4""#));
     assert!(
@@ -285,11 +414,6 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         )
     );
 
-    runner
-        .context()
-        .run_post_commit_actions()
-        .await
-        .expect("first star rerender post-commit work should succeed");
     let changed =
         run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": 2}),)
             .expect("changed star vote should be stored");
@@ -299,7 +423,7 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         .run_post_commit_actions()
         .await
         .expect("changed star vote post-commit work should succeed");
-    rerender_rate_page(&runner, site_id, page_id).await;
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     let changed_html = saved_rate_html(&runner, site_id, &slug).await;
     assert!(changed_html.contains(r#"class="page-rate-widget-start" data-rating="2""#));
     assert!(
@@ -308,11 +432,6 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         )
     );
 
-    runner
-        .context()
-        .run_post_commit_actions()
-        .await
-        .expect("changed star rerender post-commit work should succeed");
     let before_same_value = PublicContentCache::cache_fence(runner.context(), site_id)
         .await
         .expect("public cache fence should be readable before idempotent star set");
@@ -333,6 +452,7 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         before_same_value,
         "same-value star vote must not falsely invalidate public content",
     );
+    assert_no_queued_rate_rerender(&runner).await;
 
     let before_remove = PublicContentCache::cache_fence(runner.context(), site_id)
         .await
@@ -350,7 +470,7 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
             .expect("public cache fence should be readable after star removal"),
         before_remove,
     );
-    rerender_rate_page(&runner, site_id, page_id).await;
+    consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     let removed_html = saved_rate_html(&runner, site_id, &slug).await;
     assert!(removed_html.contains(r#"class="page-rate-widget-start" data-rating="0""#));
     assert!(
