@@ -24,11 +24,12 @@ use crate::models::user::Model as UserModel;
 use crate::models::wikidot_user::Entity as WikidotUser;
 use crate::services::MutationAuthorization;
 use crate::services::user::{
-    ActivateUserFromWikidot, CreateUser, CreateUserOutput, GetUser, GetUserOutput,
-    UpdateUser, User,
+    ActivateUserFromWikidot, CreateUser, CreateUserOutput, DeleteUser, GetUser,
+    GetUserOutput, UpdateUser, User,
 };
 use crate::types::{AliasType, Reference, UserType};
 use sea_orm::EntityTrait;
+use std::net::{IpAddr, Ipv4Addr};
 
 pub async fn user_create(
     ctx: &ServiceContext<'_>,
@@ -193,20 +194,28 @@ pub async fn user_delete(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<UserModel> {
-    let GetUser { user: reference } = parse!(params, User);
+    let DeleteUser {
+        user: reference,
+        ip_address,
+    } = parse!(params, User);
     let target = UserService::get_real(ctx, reference)
         .await
         .or_raise(|| Error::new("failed to authorize user deletion", ErrorType::User))?;
-    MutationAuthorization::require_self_or_platform_staff(
+    let deleting_user_id = MutationAuthorization::require_self_or_platform_staff(
         ctx,
         target.user_id,
         "delete this user",
     )?;
 
     info!("Deleting user ID {}", target.user_id);
-    UserService::delete(ctx, Reference::Id(target.user_id))
-        .await
-        .or_raise(|| Error::new("failed to delete user", ErrorType::User))
+    UserService::delete(
+        ctx,
+        Reference::Id(target.user_id),
+        deleting_user_id,
+        ip_address.unwrap_or(IpAddr::V4(Ipv4Addr::UNSPECIFIED)),
+    )
+    .await
+    .or_raise(|| Error::new("failed to delete user", ErrorType::User))
 }
 
 pub async fn user_add_name_change(

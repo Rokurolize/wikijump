@@ -24,6 +24,6 @@ mod structs;
 
 pub use self::service::UserService;
 pub use self::structs::{
-    ActivateUserFromWikidot, CreateUser, CreateUserOutput, GetUser, GetUserOutput,
-    UpdateUser, UpdateUserBody, User, UserStub,
+    ActivateUserFromWikidot, CreateUser, CreateUserOutput, DeleteUser, GetUser,
+    GetUserOutput, UpdateUser, UpdateUserBody, User, UserStub,
 };

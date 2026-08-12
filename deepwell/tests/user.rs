@@ -27,6 +27,7 @@ use deepwell::config::Config;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID};
 use deepwell::error::prelude::*;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
+use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::blob_pending::{self, Entity as BlobPending};
 use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUserModel};
 use deepwell::models::{known_user, wikidot_user};
@@ -34,7 +35,9 @@ use deepwell::services::import::ImportUserOutput;
 use deepwell::services::user::UserService;
 use deepwell::services::{BlobService, RequestContext};
 use deepwell::types::Reference;
-use sea_orm::{ActiveModelTrait, EntityTrait, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, Set,
+};
 use serde_json::json;
 use time::macros::{date, datetime};
 use time::{Date, Month, OffsetDateTime};
@@ -919,6 +922,181 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
     let deleted = run_endpoint!(runner, user_delete, json!({"user": target.user_id}),);
     assert_eq!(deleted.user_id, target.user_id);
     assert!(deleted.deleted_at.is_some());
+}
+
+#[tokio::test]
+async fn user_delete_audits_the_authenticated_actor_target_and_request_ip_once() {
+    let mut runner = TestRunner::setup().await;
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Delete Audit Target",
+            "email": "delete-audit-target@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(deleted.deleted_at.is_some());
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(target.user_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("user deletion audit lookup should succeed");
+    assert_eq!(events.len(), 1);
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.extra_id_1, Some(target.user_id));
+    assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+    assert_eq!(event.site_id, None);
+    assert_eq!(event.page_id, None);
+    assert_eq!(event.extra_id_2, None);
+    assert_eq!(event.extra_string_1, None);
+    assert_eq!(event.extra_string_2, None);
+    assert_eq!(event.extra_number, None);
+
+    run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let event_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(target.user_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("user deletion audit count should succeed");
+    assert_eq!(
+        event_count, 1,
+        "an already-deleted user must not be audited"
+    );
+}
+
+#[tokio::test]
+async fn user_delete_denial_and_missing_target_do_not_emit_audit_events() {
+    let mut runner = TestRunner::setup().await;
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Denied Delete Audit Target",
+            "email": "denied-delete-audit-target@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    let denied_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(target.user_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("denied user deletion audit count should succeed");
+    assert_eq!(denied_count, 0);
+
+    const MISSING_USER_ID: i64 = 8_765_432_109;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let error = run_endpoint_err!(
+        runner,
+        user_delete,
+        json!({
+            "user": MISSING_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::User);
+    let missing_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(MISSING_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("failed user deletion audit count should succeed");
+    assert_eq!(missing_count, 0);
+}
+
+#[tokio::test]
+async fn user_delete_and_its_audit_event_roll_back_together() {
+    let mut runner = TestRunner::setup().await;
+    let baseline_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(SAMPLE_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("baseline user deletion audit count should succeed");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(deleted.deleted_at.is_some());
+    let in_transaction_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(SAMPLE_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("in-transaction user deletion audit count should succeed");
+    assert_eq!(in_transaction_count, baseline_count + 1);
+    runner.teardown().await;
+
+    let runner = TestRunner::setup().await;
+    let user = run_endpoint!(runner, user_get, json!({"user": SAMPLE_USER_ID}),)
+        .expect("rolled-back user should remain present")
+        .user
+        .unwrap_wikijump()
+        .expect("sample user should remain a Wikijump user");
+    assert!(user.deleted_at.is_none());
+    let rolled_back_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(SAMPLE_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("rolled-back user deletion audit count should succeed");
+    assert_eq!(rolled_back_count, baseline_count);
 }
 
 #[tokio::test]

@@ -52,6 +52,10 @@ pub enum AuditEvent<'a> {
         user_id: i64,
         operation: UpdateMfaOperation,
     },
+    UserDelete {
+        user_id: i64,
+        deleting_user_id: i64,
+    },
     SiteCreate {
         site_id: i64,
     },
@@ -287,6 +291,21 @@ impl<'a> AuditEvent<'a> {
                 extra_id_1: None,
                 extra_id_2: None,
                 extra_string_1: Some(cow!(operation.value())),
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::UserDelete {
+                user_id,
+                deleting_user_id,
+            } => RawAuditEvent {
+                event_type: "user.delete",
+                ip_address,
+                user_id: Some(deleting_user_id),
+                site_id: None,
+                page_id: None,
+                extra_id_1: Some(user_id),
+                extra_id_2: None,
+                extra_string_1: None,
                 extra_string_2: None,
                 extra_number: None,
             },
@@ -1030,6 +1049,14 @@ mod tests {
         assert_eq!(previous["slug"], "old-user");
         assert_eq!(changed["email"], "new@example.com");
         assert_eq!(changed["password"], true);
+
+        let raw = extract(AuditEvent::UserDelete {
+            user_id: 12,
+            deleting_user_id: 13,
+        });
+        assert_event_type(&raw, "user.delete");
+        assert_eq!(raw.user_id, Some(13));
+        assert_eq!(raw.extra_id_1, Some(12));
 
         for (operation, expected) in [
             (UpdateMfaOperation::Setup, "setup"),

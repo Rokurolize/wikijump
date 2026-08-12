@@ -260,6 +260,14 @@ pub struct GetUser<'a> {
     pub user: Reference<'a>,
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct DeleteUser<'a> {
+    pub user: Reference<'a>,
+
+    #[serde(default)]
+    pub ip_address: Option<IpAddr>,
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct GetUserOutput {
     #[serde(flatten)]

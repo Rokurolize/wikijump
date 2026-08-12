@@ -41,6 +41,7 @@ use crate::types::{Maybe, Reference};
 use crate::utils::now;
 use crate::utils::regex_replace_in_place;
 use paste::paste;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DbErr, EntityTrait, NotSet,
     QueryFilter, Set, SqlErr,
@@ -1323,6 +1324,8 @@ impl UserService {
     pub async fn delete(
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
+        deleting_user_id: i64,
+        ip_address: IpAddr,
     ) -> Result<WikijumpUserModel> {
         let txn = ctx.transaction();
 
@@ -1349,16 +1352,48 @@ impl UserService {
             .await
             .or_raise(make_error)?;
 
-        // Set deletion flag
-        let model = user::ActiveModel {
-            user_id: Set(user.user_id),
-            deleted_at: Set(Some(now())),
-            ..Default::default()
-        };
+        // Atomically claim the active-to-deleted transition. A concurrent or
+        // repeated request observes zero affected rows and must not audit it.
+        let deletion = WikijumpUser::update_many()
+            .col_expr(user::Column::DeletedAt, Expr::value(Some(now())))
+            .filter(
+                Condition::all()
+                    .add(user::Column::UserId.eq(user.user_id))
+                    .add(user::Column::DeletedAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
 
-        // Update and return
-        let user = model.update(txn).await.or_raise(make_error)?;
-        Ok(user)
+        match deletion.rows_affected {
+            0 => {}
+            1 => {
+                AuditService::log(
+                    ctx,
+                    ip_address,
+                    AuditEvent::UserDelete {
+                        user_id: user.user_id,
+                        deleting_user_id,
+                    },
+                )
+                .await
+                .or_raise(make_error)?;
+            }
+            rows_affected => {
+                return Err(Error::new(
+                    format!(
+                        "user deletion updated {rows_affected} rows for user ID {}",
+                        user.user_id,
+                    ),
+                    ErrorType::User,
+                )
+                .into());
+            }
+        }
+
+        Self::get_real(ctx, Reference::Id(user.user_id))
+            .await
+            .or_raise(make_error)
     }
 
     async fn run_name_filter(
