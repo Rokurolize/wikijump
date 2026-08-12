@@ -3175,26 +3175,51 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-userinfo": {
-      "status": "blocked",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Deepwell wikidot_page_preview public API for page-source rendering",
-        "Deepwell page_view public API for saved anonymous page rendering"
+        "Deepwell page_view public API for saved anonymous page rendering",
+        "Deepwell user_view public endpoint backed by the integration database for active, deleted, missing, and local user slug resolution",
+        "Framerail GET /user:info/<target> server projection and SSR boundary",
+        "Framerail GET /-/user/<slug> route boundary for fail-closed imported identities"
       ],
       "tests": [
-        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+        "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics",
+        "deepwell/tests/user.rs::user_view_resolves_only_active_imported_slugs_without_changing_local_lookup",
+        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo calls the typed user view with the route target and no session",
+        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target 0 stays HTTP 200 with the exact missing body data",
+        "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target -1 stays HTTP 200 with the exact missing body data",
+        "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo projects imported free accounts and the observed none/high karma labels",
+        "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo keeps an imported Pro profile without inventing an account-type label",
+        "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo omits unobserved imported karma labels",
+        "framerail/tests/account-route-boundaries.test.js#legacy user slug route fails closed for imported profiles"
       ],
       "implementation_files": [
         "deepwell/src/services/render/runtime_modules.rs",
-        "deepwell/src/services/render/service.rs"
+        "deepwell/src/services/render/service.rs",
+        "deepwell/src/services/user/service.rs",
+        "deepwell/src/services/user/structs.rs",
+        "deepwell/src/services/view/service.rs",
+        "deepwell/src/services/view/structs.rs",
+        "framerail/src/lib/server/deepwell/user.ts",
+        "framerail/src/lib/server/load/user.ts",
+        "framerail/src/lib/server/wikidot-user-info.js",
+        "framerail/src/lib/types.ts",
+        "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
+        "framerail/src/routes/user[x+3a]info/[target]/+page.svelte"
       ],
       "documentation_evidence": [
         "specifications/module/module-userinfo.md"
       ],
       "live_oracle_evidence": [
-        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+        "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
+        "install/local/wikidot-verification/artifacts/userinfo-target-routes-live-20260810.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "No-target UserInfo rendering is implemented and covered. Target-user lookup, URL/user-id resolution, rendered user profile fields, permissions, and popup/action behavior remain blocked pending live evidence and a compatible user-info rendering model."
+        "No-target UserInfo rendering is implemented and covered. The public target route now covers imported slug lookup, actor-invariant profile projection, free-account presentation, observed none/high karma labels, and numeric 0/-1 missing envelopes.",
+        "The retained target-route evidence does not prove that a UserInfo module parameter binds a target; it observes only GET /user:info/<target> path binding.",
+        "Pro account-type presentation remains unobserved, so imported Pro profiles deliberately omit that label. Karma levels other than the observed none and high deliberately omit their labels.",
+        "Broader URL and user-ID resolution, imported profile fields beyond the bounded projection, permissions, tabs, popup behavior, contacts, flagging, private-message actions, browser interaction, and temporal behavior remain unimplemented or unverified."
       ]
     },
     "module-wantedpages": {
