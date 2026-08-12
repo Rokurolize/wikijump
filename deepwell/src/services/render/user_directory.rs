@@ -32,8 +32,7 @@ use crate::services::relation::relation_type_condition;
 use crate::types::{Action, Permission, RelationObjectType, RelationType, Resource};
 use crate::utils::now;
 
-pub(super) const MEMBERS_PAGE_SIZE: usize = 50;
-const MEMBERS_AJAX_PAGE_SIZE: usize = 100;
+pub(super) const MEMBERS_PAGE_SIZE: usize = 100;
 
 #[derive(Clone, Debug, Serialize)]
 pub struct WikidotMembersListModuleResponse {
@@ -303,10 +302,13 @@ async fn load_directory_rows(
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
-    let mut joined_at = memberships
-        .into_iter()
-        .map(|membership| (membership.from_id, membership.created_at))
-        .collect::<BTreeMap<_, _>>();
+    let mut joined_at = BTreeMap::<i64, time::OffsetDateTime>::new();
+    for membership in memberships {
+        joined_at
+            .entry(membership.from_id)
+            .and_modify(|earliest| *earliest = (*earliest).min(membership.created_at))
+            .or_insert(membership.created_at);
+    }
 
     if let Some(role_name) = group.role_name() {
         let role_ids = Role::find()
@@ -369,7 +371,7 @@ async fn load_members_ajax_page(
     site_id: i64,
     page: u32,
 ) -> Result<(Vec<DirectoryRow>, usize)> {
-    let offset = i64::from(page - 1) * MEMBERS_AJAX_PAGE_SIZE as i64;
+    let offset = i64::from(page - 1) * MEMBERS_PAGE_SIZE as i64;
     let candidates =
         MembersAjaxCandidate::find_by_statement(Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
@@ -402,7 +404,7 @@ async fn load_members_ajax_page(
             ),
             [
                 Value::from(site_id),
-                Value::from(MEMBERS_AJAX_PAGE_SIZE as i64),
+                Value::from(MEMBERS_PAGE_SIZE as i64),
                 Value::from(offset),
             ],
         ))
@@ -448,7 +450,7 @@ async fn load_members_ajax_page(
         )
         .into());
     }
-    Ok((rows, total_count.div_ceil(MEMBERS_AJAX_PAGE_SIZE)))
+    Ok((rows, total_count.div_ceil(MEMBERS_PAGE_SIZE)))
 }
 
 async fn load_directory_identities(
@@ -528,6 +530,12 @@ fn render_directory(
 ) -> String {
     let container_id = format!("ml-{module_index}");
     let function_name = format!("updateMemberList{module_index}");
+    let supports_continuation = arguments
+        == (MembersArguments {
+            group: MembersGroup::Members,
+            order: MembersOrder::Joined,
+            show_since: true,
+        });
     let avatar_timestamp = now().unix_timestamp();
     let mut output = format!("<div id=\"{container_id}\">\n\t\t<table>");
     for row in rows {
@@ -552,10 +560,12 @@ fn render_directory(
         }
         output.push_str("\n\t\t\t</tr>");
     }
-    write!(
-        output,
-        concat!(
-            "\n\t\t</table>\n\t<script type=\"text/javascript\">\n",
+    output.push_str("\n\t\t</table>");
+    if supports_continuation {
+        write!(
+            output,
+            concat!(
+                "\n\t<script type=\"text/javascript\">\n",
             "\t\tfunction {function_name}(pageNo) {{\n",
             "\t\t\tvar p = {{}};\n",
             "\t\t\tp.group     = '{group}';\n",
@@ -566,16 +576,17 @@ fn render_directory(
             "\t\t\t\tif (!WIKIDOT.utils.handleError(r)) {{return;}}\n",
             "\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);\n",
             "\t\t\t}});\n",
-            "\t\t}}\n\t</script>",
-        ),
-        function_name = function_name,
-        container_id = container_id,
-        group = arguments.group.wikidot_value(),
-        order = arguments.order.wikidot_value(),
-    )
-    .expect("writing the member directory script to a String cannot fail");
-    if total_pages > 1 {
-        render_pager(&mut output, &function_name, total_pages);
+                "\t\t}}\n\t</script>",
+            ),
+            function_name = function_name,
+            container_id = container_id,
+            group = arguments.group.wikidot_value(),
+            order = arguments.order.wikidot_value(),
+        )
+        .expect("writing the member directory script to a String cannot fail");
+        if total_pages > 1 {
+            render_pager(&mut output, &function_name, total_pages);
+        }
     }
     output.push_str("\n</div>");
     output

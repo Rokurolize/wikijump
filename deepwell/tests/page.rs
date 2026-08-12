@@ -6979,6 +6979,228 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
 }
 
 #[tokio::test]
+async fn members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary() {
+    const FIXTURE_USER_ID: i64 = 19_103_500;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "DELETE FROM relation WHERE dest_type = 'site' AND dest_id = $1 ",
+                "AND from_type = 'user' AND relation_type IN ('member', 'site-member')",
+            ),
+            [Value::from(site_id)],
+        ))
+        .await
+        .expect("existing member-directory fixtures should be cleared");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO known_user (user_id) ",
+                "SELECT $1 + fixture.n::BIGINT FROM generate_series(0, 100) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("SSR member known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") SELECT $1 + fixture.n::BIGINT, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00', NOW(), fixture.n > 50, ",
+                "'SSR Member ' || lpad(fixture.n::TEXT, 3, '0'), ",
+                "'ssr-member-' || lpad(fixture.n::TEXT, 3, '0'), 2, FALSE ",
+                "FROM generate_series(0, 100) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("SSR member identity fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") SELECT 'member', 'site', $2, 'user', $1 + fixture.n::BIGINT, ",
+                "'{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + fixture.n * INTERVAL '1 second' ",
+                "FROM generate_series(0, 100) AS fixture(n)",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("SSR member relation fixtures should be inserted");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Members SSR cardinality",
+            "wikitext": "[[module Members]]",
+        }),
+    );
+    assert_eq!(
+        preview.body.matches("<tr>").count(),
+        51,
+        "a 51-member default directory should fit on one supported 100-row page:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("SSR Member 050")
+            && !preview.body.contains("class=\"pager\""),
+        "the 51st member must render without a continuation target:\n{}",
+        preview.body,
+    );
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "UPDATE wikidot_user SET is_deleted = FALSE ",
+                "WHERE user_id BETWEEN $1 + 51 AND $1 + 100",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("continuation identity fixtures should become eligible");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") VALUES ('site-member', 'site', $2, 'user', $1, '{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:03:20+00')",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("duplicate legacy member relation should be inserted");
+
+    const PAGE_SLUG: &str = "fixture-members-ssr-cardinality";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Members SSR cardinality",
+        concat!(
+            "DEFAULT_START\n",
+            "[[module Members]]\n",
+            "DEFAULT_END\n",
+            "NONDEFAULT_START\n",
+            "[[module Members order=\"nameDesc\"]]\n",
+            "NONDEFAULT_END",
+        ),
+    )
+    .await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved Members cardinality fixture, got {other:?}"),
+    };
+    let default = html
+        .split_once("DEFAULT_START")
+        .and_then(|(_, tail)| tail.split_once("DEFAULT_END"))
+        .map(|(default, _)| default)
+        .expect("default directory should remain between authored markers");
+    let nondefault = html
+        .split_once("NONDEFAULT_START")
+        .and_then(|(_, tail)| tail.split_once("NONDEFAULT_END"))
+        .map(|(nondefault, _)| nondefault)
+        .expect("non-default directory should remain between authored markers");
+
+    assert_eq!(
+        default.matches("<tr>").count(),
+        100,
+        "the default saved-page slice must match the public AMC cardinality:\n{default}",
+    );
+    for index in 0..100 {
+        assert!(
+            default.contains(&format!("SSR Member {index:03}")),
+            "SSR page 1 must contain consecutive distinct member {index:03} despite a duplicate relation:\n{default}",
+        );
+    }
+    assert!(
+        default.contains("SSR Member 099")
+            && !default.contains("SSR Member 100")
+            && default.contains(r#"<span class="pager-no">page 1 of 2</span>"#)
+            && default.contains("updateMemberList1(2)")
+            && default.contains("membership/MembersListModule"),
+        "the 101st default member must remain behind the supported page-2 continuation:\n{default}",
+    );
+    assert_eq!(
+        nondefault.matches("<tr>").count(),
+        100,
+        "the documented non-default order may render its evidenced first slice:\n{nondefault}",
+    );
+    assert!(
+        nondefault.find("SSR Member 100") < nondefault.find("SSR Member 099")
+            && !nondefault.contains("SSR Member 000")
+            && !nondefault.contains("class=\"pager\"")
+            && !nondefault.contains("updateMemberList")
+            && !nondefault.contains("membership/MembersListModule"),
+        "a non-default first slice must not advertise an AMC continuation Framerail rejects:\n{nondefault}",
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let continuation = run_endpoint!(
+        runner,
+        wikidot_members_list_module,
+        json!({
+            "site_id": site_id,
+            "parameters": {"group": "", "order": "joined", "page": "2"},
+        }),
+    );
+    assert_eq!(continuation.status, "ok");
+    assert_eq!(continuation.body.matches("<tr>").count(), 1);
+    assert!(
+        continuation.body.contains("SSR Member 100")
+            && !continuation.body.contains("SSR Member 099"),
+        "the supported continuation must begin exactly after the 100-row SSR slice:\n{}",
+        continuation.body,
+    );
+}
+
+#[tokio::test]
 async fn members_module_queries_only_visible_site_members_and_roles() {
     const ALPHA_USER_ID: i64 = 19_103_200;
     const ZETA_USER_ID: i64 = 19_103_201;
@@ -7144,15 +7366,15 @@ async fn members_module_queries_only_visible_site_members_and_roles() {
             html.contains(r#"id="ml-1""#)
                 && html.contains(r#"id="ml-2""#)
                 && moderators.contains("Alpha Member")
-                && !moderators.contains("Zeta Member")
-                && moderators.contains("p.group     = 'moderators'"),
+                && !moderators.contains("Zeta Member"),
             "module IDs must be unique and moderator rows must come from this site's active role assignments:\n{html}",
         );
         assert!(
-            members.contains("p.group     = ''")
-                && members.contains("p.order     = 'nameDesc'")
-                && members.contains("membership/MembersListModule"),
-            "member directory must retain Wikidot's read-only paging contract:\n{members}",
+            !members.contains("updateMemberList")
+                && !members.contains("membership/MembersListModule")
+                && !moderators.contains("updateMemberList")
+                && !moderators.contains("membership/MembersListModule"),
+            "non-default order and group directories must not advertise an unsupported continuation:\n{html}",
         );
         assert!(
             !html.contains("ml-607935")
