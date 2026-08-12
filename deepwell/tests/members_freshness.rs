@@ -232,70 +232,83 @@ async fn saved_members_pages_refresh_after_membership_changes_without_mutating_r
 }
 
 #[tokio::test]
-async fn imported_members_source_is_ineligible_for_anonymous_article_cache_metadata() {
+async fn imported_members_sources_preserve_runtime_cache_boundaries() {
     let run_id = cuid();
-    let page_id = rand::random_range(1_700_000_000_i64..1_800_000_000_i64);
-    let revision_id = rand::random_range(1_800_000_000_i64..1_900_000_000_i64);
-    let slug = format!("members-import-cache-{run_id}:holder");
+    let page_id_base = rand::random_range(1_700_000_000_i64..1_799_999_997_i64);
+    let revision_id_base = rand::random_range(1_800_000_000_i64..1_899_999_997_i64);
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
         .expect("the seeded test site should exist")
         .site;
-    runner.set_request_context(RequestContext {
-        user_id: Some(ADMIN_USER_ID),
-        site_id: Some(site.site_id),
-        ..Default::default()
-    });
-    run_endpoint!(
-        runner,
-        import_wikidot_page,
-        json!({
-            "page_id": page_id,
-            "site_id": site.site_id,
-            "created_at": "1970-01-01T00:00:00Z",
-            "slug": slug,
-            "locked": false,
-            "discussion_thread_id": null,
-            "ip_address": common::IP_ADDRESS,
-        }),
-    );
-    run_endpoint!(
-        runner,
-        import_wikidot_page_revision,
-        json!({
-            "revision_id": revision_id,
-            "revision_type": "create",
-            "created_at": time::OffsetDateTime::UNIX_EPOCH,
-            "updated_at": null,
-            "revision_number": 0,
-            "page_id": page_id,
-            "site_id": site.site_id,
-            "user_id": ADMIN_USER_ID,
-            "wikitext": "[[module Members]]",
-            "comments": "import executable Members cache fixture",
-            "title": "Imported Members cache fixture",
-            "slug": slug,
-            "tags": [],
-        }),
-    );
+    for (offset, (label, source, expects_cache_key)) in [
+        ("executable", "[[module Members]]", false),
+        ("literal", "[[code]]\n[[module Members]]\n[[/code]]", true),
+        ("invalid", "[[module Members group=\"owners\"]]", true),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let offset = i64::try_from(offset).expect("three cache fixtures fit i64");
+        let page_id = page_id_base + offset;
+        let revision_id = revision_id_base + offset;
+        let slug = format!("members-import-cache-{run_id}:{label}");
+        runner.set_request_context(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            ..Default::default()
+        });
+        run_endpoint!(
+            runner,
+            import_wikidot_page,
+            json!({
+                "page_id": page_id,
+                "site_id": site.site_id,
+                "created_at": "1970-01-01T00:00:00Z",
+                "slug": slug,
+                "locked": false,
+                "discussion_thread_id": null,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        run_endpoint!(
+            runner,
+            import_wikidot_page_revision,
+            json!({
+                "revision_id": revision_id,
+                "revision_type": "create",
+                "created_at": time::OffsetDateTime::UNIX_EPOCH,
+                "updated_at": null,
+                "revision_number": 0,
+                "page_id": page_id,
+                "site_id": site.site_id,
+                "user_id": ADMIN_USER_ID,
+                "wikitext": source,
+                "comments": format!("import {label} Members cache fixture"),
+                "title": format!("Imported {label} Members cache fixture"),
+                "slug": slug,
+                "tags": [],
+            }),
+        );
 
-    runner.set_request_context(RequestContext {
-        site_id: Some(site.site_id),
-        ..Default::default()
-    });
-    let metadata = run_endpoint!(
-        runner,
-        article_view_cache_metadata,
-        json!({
-            "site_id": site.site_id,
-            "session_token": null,
-            "route": {"slug": slug, "extra": ""},
-            "locales": ["en-US", "en"],
-        }),
-    );
-    assert_eq!(
-        metadata.article_page_cache_key, None,
-        "executable Members must deny imported anonymous article caching",
-    );
+        runner.set_request_context(RequestContext {
+            site_id: Some(site.site_id),
+            ..Default::default()
+        });
+        let metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site.site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert_eq!(
+            metadata.article_page_cache_key.is_some(),
+            expects_cache_key,
+            "{label} Members imported cache eligibility must follow runtime executability",
+        );
+    }
 }

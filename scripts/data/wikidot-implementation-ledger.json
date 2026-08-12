@@ -2140,6 +2140,8 @@
       "confirmed_public_seams": [
         "Anonymous and authenticated live Wikidot membership/MembersListModule responses",
         "Deepwell public wikidot_page_preview and saved page_view rendering",
+        "Deepwell public saved-page page_get and page_view freshness interfaces",
+        "Deepwell public article_view_cache_metadata interface for imported pages",
         "Deepwell public wikidot_members_list_module read interface",
         "Framerail public POST /ajax-module-connector.php"
       ],
@@ -2155,6 +2157,16 @@
           "scope": "public SQL-backed 100-row Ajax pages, page 0 alias, identity existence filtering before count and pagination, exact empty actor states, private-site denial, pager, malformed parameter rejection, and request-site binding"
         },
         {
+          "path": "deepwell/tests/members_freshness.rs",
+          "name": "saved_members_pages_refresh_after_membership_changes_without_mutating_revision_html",
+          "scope": "public page_create, page_get, membership_set, user_create, auth_login, and page_view seams prove direct and category-template-composed saved pages render current membership to anonymous and authenticated viewers without mutating stored revision HTML, while code, pre, and invalid-group forms do not execute"
+        },
+        {
+          "path": "deepwell/tests/members_freshness.rs",
+          "name": "imported_members_sources_preserve_runtime_cache_boundaries",
+          "scope": "public import_wikidot_page, import_wikidot_page_revision, and article_view_cache_metadata seams prove executable Members is ineligible for imported anonymous article caching while code-literal and invalid-group forms retain cache keys"
+        },
+        {
           "path": "framerail/tests/ajax-module-connector.test.js",
           "name": "dispatches only the observed MembersListModule read shape",
           "scope": "exact Members Ajax dispatch and successful or fail-closed Wikidot response envelope"
@@ -2168,7 +2180,12 @@
       "implementation_files": [
         "deepwell/src/api.rs",
         "deepwell/src/endpoints/page.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
         "deepwell/src/services/render/user_directory.rs",
+        "deepwell/src/services/view/article_cache.rs",
+        "deepwell/tests/members_freshness.rs",
         "framerail/src/lib/server/ajax-module-connector.js",
         "framerail/src/lib/server/deepwell/membership.ts",
         "framerail/src/routes/ajax-module-connector.php/+server.ts"
@@ -2184,8 +2201,8 @@
       ],
       "unresolved_ambiguities_or_blockers": [
         "Populated Watchers and WhoInvited results remain unobserved and unimplemented.",
-        "Admin and moderator Ajax groups, other order values, broader role and privacy states, mutations, cache invalidation, and browser transitions remain unobserved or unimplemented.",
-        "The exact candidate still requires central Rust execution and runtime validation before the observed Members Ajax slice can be marked verified."
+        "Admin and moderator Ajax groups, other order values, broader role and privacy states, and browser transitions remain unobserved or unimplemented.",
+        "Local registered-RPC coverage proves membership-set freshness and imported cache eligibility boundaries, but live Wikidot membership mutation, cache invalidation timing, and browser transition parity remain unobserved; the feature therefore remains in progress."
       ]
     },
     "module-membershipapply": {
