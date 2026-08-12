@@ -141,7 +141,38 @@ test("candidate diagnostic capture requires the same sealed inputs but remains a
     "/tmp/reference.json",
     "--live-reference-sha256",
     "b".repeat(64),
+    "--candidate-refresh-receipt",
+    "/tmp/refresh.json",
+    "--candidate-refresh-sha256",
+    "c".repeat(64),
   ]);
   assert.equal(args.mode, "candidate-diagnostic");
   assert.equal(args.liveReferenceSha256, "b".repeat(64));
+  assert.equal(args.candidateRefreshSha256, "c".repeat(64));
+});
+
+test("official candidate mode refuses diagnostic refresh evidence", () => {
+  assert.throws(
+    () => parseStandingBrowserParityArgs([
+      "node",
+      "runner",
+      "--mode",
+      "candidate",
+      "--output-dir",
+      "/tmp/standing-candidate",
+      "--live-completion-policy",
+      policy,
+      "--candidate-identity",
+      "/tmp/candidate.json",
+      "--live-reference-ledger",
+      "/tmp/reference.json",
+      "--live-reference-sha256",
+      "a".repeat(64),
+      "--candidate-refresh-receipt",
+      "/tmp/refresh.json",
+      "--candidate-refresh-sha256",
+      "b".repeat(64),
+    ]),
+    /only in candidate-diagnostic mode/u,
+  );
 });

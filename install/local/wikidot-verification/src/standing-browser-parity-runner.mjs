@@ -151,6 +151,12 @@ export function parseStandingBrowserParityArgs(argv) {
     } else if (flag === "--candidate-identity") {
       args.candidateIdentity = path.resolve(nextArgument(argv, index, flag));
       index += 1;
+    } else if (flag === "--candidate-refresh-receipt") {
+      args.candidateRefreshReceipt = path.resolve(nextArgument(argv, index, flag));
+      index += 1;
+    } else if (flag === "--candidate-refresh-sha256") {
+      args.candidateRefreshSha256 = nextArgument(argv, index, flag);
+      index += 1;
     } else if (flag === "--live-reference-ledger") {
       args.liveReferenceLedger = path.resolve(nextArgument(argv, index, flag));
       index += 1;
@@ -180,6 +186,15 @@ export function parseStandingBrowserParityArgs(argv) {
     }
     requireSha256(args.liveReferenceSha256, "--live-reference-sha256");
   }
+  if (args.candidateRefreshReceipt || args.candidateRefreshSha256) {
+    if (args.mode !== "candidate-diagnostic") {
+      throw new Error("candidate refresh evidence is accepted only in candidate-diagnostic mode");
+    }
+    if (!args.candidateRefreshReceipt || !args.candidateRefreshSha256) {
+      throw new Error("candidate refresh receipt and SHA-256 must be supplied together");
+    }
+    requireSha256(args.candidateRefreshSha256, "--candidate-refresh-sha256");
+  }
   if (
     args.mode === "live-reference" &&
     args.liveOrigin !== DEFAULT_LIVE_ORIGIN
@@ -207,6 +222,33 @@ async function readCandidateIdentity(filePath) {
     sha256: await sha256File(filePath),
     filePath,
   };
+}
+
+async function readCandidateRefresh(args, candidateIdentity) {
+  if (!args.candidateRefreshReceipt) return null;
+  const value = await readJsonObject(
+    args.candidateRefreshReceipt,
+    "candidate diagnostic refresh receipt",
+  );
+  const observedSha256 = await sha256File(args.candidateRefreshReceipt);
+  if (observedSha256 !== args.candidateRefreshSha256) {
+    throw new Error("candidate diagnostic refresh receipt SHA-256 does not match");
+  }
+  if (
+    value.schema !== "wikijump.diagnostic_candidate_page_refresh.v1"
+    || value.status !== "pass"
+    || value.classification !== "diagnostic_non_promotional"
+    || value.candidate_identity?.sha256 !== candidateIdentity.sha256
+    || !Array.isArray(value.pages)
+    || value.pages.length !== 6
+  ) {
+    throw new Error("candidate diagnostic refresh receipt is invalid");
+  }
+  return Object.freeze({
+    path: args.candidateRefreshReceipt,
+    sha256: observedSha256,
+    value,
+  });
 }
 
 async function captureSet({ browser, pairs, label, args }) {
@@ -580,6 +622,7 @@ async function sealCandidateDiagnostic({
   finalGateSnapshot,
   runtimeIdentity,
   executionIdentity,
+  candidateRefresh,
   capture,
 }) {
   assertRequestGateAbortAccounting(capture.captures, finalGateSnapshot);
@@ -639,6 +682,7 @@ async function sealCandidateDiagnostic({
     browser_environment: browserEnvironment,
     runtime_identity: runtimeIdentity,
     execution_identity: executionIdentity,
+    candidate_refresh: candidateRefresh,
     parity: diagnosticLedger,
   };
   const ledgerSeal = await sealJsonNoReplace(
@@ -664,6 +708,9 @@ export async function runStandingBrowserParity(args) {
     : args.mode === "candidate-diagnostic"
       ? await collectCandidateDiagnosticExecutionIdentity()
       : null;
+  const candidateRefresh = args.mode === "candidate-diagnostic"
+    ? await readCandidateRefresh(args, candidateIdentity)
+    : null;
   await createPrivateEmptyDirectory(args.outputDir);
   let controls = null;
   let browser = null;
@@ -754,6 +801,7 @@ export async function runStandingBrowserParity(args) {
             finalGateSnapshot,
             runtimeIdentity: runtimeIdentityAfter,
             executionIdentity,
+            candidateRefresh,
             capture,
           })
         : await sealCandidateParity({
