@@ -202,7 +202,7 @@ function diagnosticRefreshReceipt() {
     ["theme:basalt", 3000000020, 100000005],
   ];
   return {
-    schema: "wikijump.diagnostic_candidate_page_refresh.v2",
+    schema: "wikijump.diagnostic_candidate_page_refresh.v3",
     status: "pass",
     classification: "diagnostic_non_promotional",
     controller: {path: "/controller.mjs", sha256: "f".repeat(64)},
@@ -217,12 +217,19 @@ function diagnosticRefreshReceipt() {
     rendered_artifact_authority: {
       ftml_sha: `${"62ebba4e"}${"0".repeat(32)}`,
       compiled_generator: "ftml v1.42.0+roku.20260630.1; deepwell-render/v8",
+      render_behavior: {
+        operation: "authenticated_page_rerender_full",
+        denominator: "exact_six_pages",
+        dependent_outdating: "organic_enabled",
+        corpus_finalizer_pass1: "not_run",
+        corpus_finalizer_pass2: "not_run",
+      },
     },
     pages: targets.map(([slug, pageId, categoryId]) => ({
         slug,
         before: renderedArtifact({page_id: pageId, category_id: categoryId}),
         after: renderedArtifact({page_id: pageId, category_id: categoryId, compiled_body_html_sha256: "e".repeat(64)}),
-        finalization_state: "page_rerender_endpoint_complete",
+        finalization_state: "bounded_authenticated_page_rerender_complete",
       })),
     mutations: targets.map(([slug, pageId, categoryId]) => ({
       slug,
@@ -256,7 +263,7 @@ test("candidate diagnostic refresh binds complete rendered artifact identities",
     /page set is invalid/u,
   );
   const legacy = structuredClone(receipt);
-  legacy.schema = "wikijump.diagnostic_candidate_page_refresh.v1";
+  legacy.schema = "wikijump.diagnostic_candidate_page_refresh.v2";
   assert.throws(
     () => validateCandidateRefreshReceipt(legacy, candidateIdentity),
     /receipt is invalid/u,
@@ -285,5 +292,11 @@ test("candidate diagnostic refresh binds complete rendered artifact identities",
   assert.throws(
     () => validateCandidateRefreshReceipt(incompleteMutationLedger, candidateIdentity),
     /mutation ledger is invalid/u,
+  );
+  const inventedPassTwo = structuredClone(receipt);
+  inventedPassTwo.rendered_artifact_authority.render_behavior.corpus_finalizer_pass2 = "complete";
+  assert.throws(
+    () => validateCandidateRefreshReceipt(inventedPassTwo, candidateIdentity),
+    /receipt is invalid/u,
   );
 });

@@ -229,7 +229,7 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
   const expectedFtmlSha = candidateIdentity?.value?.candidate?.ftml_sha;
   const expectedGenerator = value?.rendered_artifact_authority?.compiled_generator;
   if (
-    value?.schema !== "wikijump.diagnostic_candidate_page_refresh.v2"
+    value?.schema !== "wikijump.diagnostic_candidate_page_refresh.v3"
     || value.status !== "pass"
     || value.classification !== "diagnostic_non_promotional"
     || value.candidate_identity?.sha256 !== candidateIdentity?.sha256
@@ -240,6 +240,13 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
     || !/^[0-9a-f]{40}$/u.test(expectedFtmlSha ?? "")
     || typeof expectedGenerator !== "string"
     || !expectedGenerator.endsWith("; deepwell-render/v8")
+    || value.rendered_artifact_authority?.render_behavior?.operation
+      !== "authenticated_page_rerender_full"
+    || value.rendered_artifact_authority?.render_behavior?.denominator !== "exact_six_pages"
+    || value.rendered_artifact_authority?.render_behavior?.dependent_outdating
+      !== "organic_enabled"
+    || value.rendered_artifact_authority?.render_behavior?.corpus_finalizer_pass1 !== "not_run"
+    || value.rendered_artifact_authority?.render_behavior?.corpus_finalizer_pass2 !== "not_run"
     || !Array.isArray(pages)
     || pages.length !== 6
   ) {
@@ -277,7 +284,7 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
   for (const page of pages) {
     const expectedPage = expectedPages.get(page?.slug);
     if (!expectedPage
-      || page.finalization_state !== "page_rerender_endpoint_complete") {
+      || page.finalization_state !== "bounded_authenticated_page_rerender_complete") {
       throw new Error("candidate diagnostic refresh receipt page set is invalid");
     }
     expectedPages.delete(page.slug);
