@@ -816,6 +816,7 @@ WHERE page.site_id = $1
             page_id: Set(page_id),
             page_category_id: Set(category.category_id),
             latest_revision_id: Set(Some(output.revision_id)),
+            slug: Set(slug.clone()),
             deleted_at: Set(None),
             ..Default::default()
         };

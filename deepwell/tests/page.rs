@@ -26540,7 +26540,7 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         site_id,
         Reference::Id(explicit_page.page_id),
     );
-    let _restored = run_endpoint!(
+    let restored = run_endpoint!(
         runner,
         page_restore,
         json!({
@@ -26551,6 +26551,56 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
             "user_id": ADMIN_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
+    );
+    let restored =
+        serde_json::to_value(restored).expect("explicit restore output should serialize");
+    assert_eq!(restored["slug"], EXPLICIT_DESTINATION_SLUG);
+    assert_eq!(restored["revision_number"], 2);
+    assert_eq!(restored["parser_errors"], json!([]));
+    let restored_revision_id = restored["revision_id"]
+        .as_i64()
+        .expect("explicit restore output should include a revision ID");
+
+    let destination_category = CategoryService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed(DESTINATION_CATEGORY)),
+    )
+    .await
+    .expect("explicit restore destination category should exist");
+    let restored_page = PageService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed(EXPLICIT_DESTINATION_SLUG)),
+    )
+    .await
+    .expect("explicit restore destination slug should resolve");
+    assert_eq!(restored_page.page_id, explicit_page.page_id);
+    assert_eq!(restored_page.slug, EXPLICIT_DESTINATION_SLUG);
+    assert_eq!(
+        restored_page.page_category_id,
+        destination_category.category_id
+    );
+    assert_eq!(restored_page.latest_revision_id, Some(restored_revision_id));
+
+    let restored_revision =
+        PageRevisionService::get_latest(runner.context(), site_id, explicit_page.page_id)
+            .await
+            .expect("explicit restore revision should be latest");
+    assert_eq!(restored_revision.revision_id, restored_revision_id);
+    assert_eq!(restored_revision.revision_type, PageRevisionType::Undelete);
+    assert_eq!(restored_revision.slug, EXPLICIT_DESTINATION_SLUG);
+
+    assert!(
+        PageService::get_optional(
+            runner.context(),
+            site_id,
+            Reference::Slug(Cow::Borrowed(EXPLICIT_PAGE_SLUG)),
+        )
+        .await
+        .expect("old explicit restore slug lookup should succeed")
+        .is_none(),
+        "old explicit restore slug must no longer resolve",
     );
 }
 
