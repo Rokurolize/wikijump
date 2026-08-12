@@ -249,17 +249,22 @@
           <span>{wikidotSiteTagline}</span>
         </h2>
       {/if}
-      <div id="search-top-box">
-        <form id="search-top-box-form" action="dummy" onsubmit={submitWikidotSearch}>
+      <div id="search-top-box" class="form-search">
+        <form
+          id="search-top-box-form"
+          class="input-append"
+          action="dummy"
+          onsubmit={submitWikidotSearch}
+        >
           <input
             id="search-top-box-input"
             name="query"
-            class="text empty"
+            class="text empty search-query"
             onfocus={clearWikidotSearchPrompt}
             size="15"
             type="text"
             value="Search this site"
-          /><input name="search" class="button" type="submit" value="Search" />
+          /><input name="search" class="button btn" type="submit" value="Search" />
         </form>
       </div>
       {#if useSandboxWikidotChrome && wikidotSessionUserName}
