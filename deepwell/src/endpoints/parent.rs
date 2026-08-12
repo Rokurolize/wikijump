@@ -54,11 +54,14 @@ pub async fn parent_relationships_get(
 
 /// Resolve the one direct parent visible to the current request actor.
 ///
-/// Relationship selection, authorization, and the deliberately narrow
-/// metadata projection all run inside the JSON-RPC request transaction. A
-/// missing or hidden child, or a missing, ambiguous, deleted, cross-site, or
-/// hidden parent, is represented by the same null result so callers cannot use
-/// this method as a visibility oracle.
+/// The registered JSON-RPC method starts a repeatable-read transaction before
+/// resolving its request context, so session lookup, relationship selection,
+/// visibility checks, and the deliberately narrow metadata projection observe
+/// one coherent database snapshot. This does not claim that authorization
+/// cannot change before the response is delivered. A missing or hidden child,
+/// or a missing, ambiguous, deleted, cross-site, or hidden parent, is represented
+/// by the same null result so callers cannot use this method as a visibility
+/// oracle.
 pub async fn parent_get_direct_metadata(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,

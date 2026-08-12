@@ -39,7 +39,7 @@ use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerConfig, ServerHandle};
 use reqwest::Client as ReqwestClient;
 use s3::bucket::Bucket;
-use sea_orm::TransactionTrait;
+use sea_orm::{IsolationLevel, TransactionTrait};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
@@ -230,7 +230,7 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     let mut module = RpcModule::new(app_state);
 
     macro_rules! register {
-        ($name:expr, $method:ident $(,)?) => {{
+        (@with_isolation $name:expr, $method:ident, $isolation:expr) => {{
             // Register async method.
             //
             // Contains a wrapper around each to set up state, convert error types,
@@ -251,11 +251,16 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                 // commit its durable attempt counter before returning an error.
                 let db_state = Arc::clone(&state);
                 async move {
-                    let txn = db_state
-                    .database
-                    .begin()
-                    .await
-                    .or_raise(|| Error::new(
+                    let txn_result = match $isolation {
+                        Some(isolation_level) => {
+                            db_state
+                                .database
+                                .begin_with_config(Some(isolation_level), None)
+                                .await
+                        }
+                        None => db_state.database.begin().await,
+                    };
+                    let txn = txn_result.or_raise(|| Error::new(
                         format!("method '{}' failed to begin transaction", $name),
                         ErrorType::Request,
                     ))?;
@@ -326,6 +331,12 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
                 format!("failed to register JSONRPC method '{}'", $name),
                 ErrorType::ServerSetup,
             ))?;
+        }};
+        ($name:expr, $method:ident $(,)?) => {{
+            register!(@with_isolation $name, $method, None);
+        }};
+        ($name:expr, $method:ident, isolation = $isolation:expr $(,)?) => {{
+            register!(@with_isolation $name, $method, Some($isolation));
         }};
     }
 
@@ -486,7 +497,11 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     register!("parent_get", parent_get);
     register!("parent_remove", parent_remove);
     register!("parent_relationships_get", parent_relationships_get);
-    register!("parent_get_direct_metadata", parent_get_direct_metadata);
+    register!(
+        "parent_get_direct_metadata",
+        parent_get_direct_metadata,
+        isolation = IsolationLevel::RepeatableRead,
+    );
     register!("parent_get_all", parent_get_all);
     register!("parent_update", parent_update);
 
@@ -603,4 +618,56 @@ async fn build_request(
         site_id: headers.site_id,
         page_reference: headers.page_ref.clone(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    const API_SOURCE: &str = include_str!("api.rs");
+
+    fn registration_for(method: &str) -> &str {
+        let production_source = API_SOURCE
+            .split_once("#[cfg(test)]")
+            .expect("API source should contain this test module")
+            .0;
+        let method_position = production_source
+            .find(&format!("\"{method}\""))
+            .unwrap_or_else(|| panic!("JSON-RPC method {method} should be registered"));
+        let registration_start = production_source[..method_position]
+            .rfind("register!(")
+            .expect("method name should occur in a registration");
+        let registration_end = production_source[method_position..]
+            .find(");")
+            .map(|offset| method_position + offset + 2)
+            .expect("registration should have a closing delimiter");
+
+        &production_source[registration_start..registration_end]
+    }
+
+    #[test]
+    fn registered_rpc_methods_select_transaction_isolation() {
+        let production_source = API_SOURCE
+            .split_once("#[cfg(test)]")
+            .expect("API source should contain this test module")
+            .0;
+        assert!(
+            production_source.contains(".begin_with_config(Some(isolation_level), None)"),
+            "an explicit isolation option must configure the transaction before request reads",
+        );
+        assert!(
+            production_source.contains("None => db_state.database.begin().await"),
+            "the default registration path must retain plain transaction begin",
+        );
+        assert!(
+            registration_for("parent_get_direct_metadata")
+                .contains("isolation = IsolationLevel::RepeatableRead"),
+            "direct parent metadata must use one repeatable-read snapshot",
+        );
+
+        for method in ["echo", "page_get", "parent_set"] {
+            assert!(
+                !registration_for(method).contains("isolation ="),
+                "ordinary method {method} must retain the default transaction",
+            );
+        }
+    }
 }
