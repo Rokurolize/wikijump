@@ -11012,10 +11012,9 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
         r#"feed="""#,
         r#"feed="../bad""#,
     ];
+    let literal_suffixes = ["feed='readonlyfeed'", "feedTitle='Read only feed'"];
     let rejected_suffixes = [
         r#"Feed="readonlyfeed""#,
-        "feed='readonlyfeed'",
-        "feedTitle='Read only feed'",
         r#"feedName="readonlyfeed""#,
         r#"feed="one" feed="two""#,
         r#"feedTitle="one" feedTitle="two""#,
@@ -11063,6 +11062,27 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
             ));
         }
     }
+    for (index, suffix) in literal_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("FrontForum literal feed argument preview {index}"),
+                "wikitext": source,
+            }),
+        )
+        .body;
+        if !preview.contains(&source) || preview.contains("front-forum-box") {
+            failures.push(format!(
+                "preview literal suffix {suffix:?} was not preserved exactly: {preview}"
+            ));
+        }
+    }
 
     create_listpages_test_page(
         &mut runner,
@@ -11100,6 +11120,20 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
         )
         .await;
     }
+    for (index, suffix) in literal_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &format!("fixture-frontforum-literal-feed-argument-{index}"),
+            &format!("FrontForum Literal Feed Argument {index}"),
+            &source,
+        )
+        .await;
+    }
     runner.set_request_context(RequestContext::default());
 
     let ordinary_saved =
@@ -11127,6 +11161,23 @@ async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
         if !saved.contains("No such module") || saved.contains("front-forum-box") {
             failures.push(format!(
                 "page_view rejected suffix {suffix:?} did not fail closed: {saved}"
+            ));
+        }
+    }
+    for (index, suffix) in literal_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let saved = saved_body(
+            &runner,
+            site_id,
+            &format!("fixture-frontforum-literal-feed-argument-{index}"),
+        )
+        .await;
+        if !saved.contains(&source) || saved.contains("front-forum-box") {
+            failures.push(format!(
+                "page_view literal suffix {suffix:?} was not preserved exactly: {saved}"
             ));
         }
     }
