@@ -45,6 +45,19 @@ const MULTIPART_BOUNDARY_RANDOM_LENGTH: usize = 16;
 /// Beyond this, the multipart request is rejected with 416 (Range Not Satisfiable)
 const MAX_MULTIPART_BYTES: u64 = 8 * 1024 * 1024; // 8 MiB
 
+/// Wikidot's terminal response for a missing file URL.
+const WIKIDOT_MISSING_FILE_HTML: &str = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n";
+
+fn wikidot_missing_file_response() -> Response {
+    build_or_500(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+            .header(header::CONTENT_LENGTH, WIKIDOT_MISSING_FILE_HTML.len())
+            .body(Body::from(WIKIDOT_MISSING_FILE_HTML)),
+    )
+}
+
 fn range_not_satisfiable(file_size: u64) -> Response {
     build_or_500(
         Response::builder()
@@ -273,6 +286,12 @@ pub async fn handle_file_fetch(
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
         {
             Ok(info) => info,
+            Err(response)
+                if method == Method::GET
+                    && response.status() == StatusCode::NOT_FOUND =>
+            {
+                return wikidot_missing_file_response();
+            }
             Err(response) => return response,
         };
 
@@ -389,7 +408,9 @@ mod tests {
     use super::*;
     use crate::config::Secrets;
     use crate::state::build_server_state;
+    use axum::Router;
     use axum::body;
+    use axum::body::Bytes;
     use axum::http::StatusCode;
     use axum::http::header::{
         ACCEPT_RANGES, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
@@ -397,11 +418,80 @@ mod tests {
     };
     use s3::creds::Credentials;
     use s3::region::Region;
+    use serde_json::{Value, json};
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::sync::{Arc, Mutex};
     use std::thread::{self, JoinHandle};
     use std::time::Duration;
+    use tokio::net::TcpListener as TokioTcpListener;
+
+    const WIKIDOT_MISSING_FILE_HTML: &[u8] = b"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n";
+
+    async fn file_handler_rpc(body: Bytes) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let method = request["method"].as_str().unwrap();
+        let id = request["id"].clone();
+        let result = match method {
+            "page_get" if request["params"]["page"] == "absent-page" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
+            "page_get" if request["params"]["page"] == "backend-error" => json!({
+                "jsonrpc": "2.0",
+                "error": {"code": -32603, "message": "backend failure"},
+                "id": id
+            }),
+            "page_get" => json!({
+                "jsonrpc": "2.0",
+                "result": {"page_id": 123},
+                "id": id
+            }),
+            "file_get" if request["params"]["file"] == "missing.txt" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
+            "file_get" if request["params"]["file"] == "denied.txt" => json!({
+                "jsonrpc": "2.0",
+                "error": {"code": 3106, "message": "permission denied"},
+                "id": id
+            }),
+            "file_get" if request["params"]["file"] == "present.txt" => json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 7,
+                    "revision_id": 17,
+                    "mime": "application/x-test",
+                    "size": 6,
+                    "s3_hash": "public-hash"
+                },
+                "id": id
+            }),
+            "basic_error_missing_page_slug" | "basic_error_missing_file_name" => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "result": {"title": "not found", "body": "not found"},
+                    "id": id
+                })
+            }
+            "basic_error_page_fetch" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "fetch", "body": "backend failure"},
+                "id": id
+            }),
+            other => panic!("unexpected JSON-RPC method: {other}"),
+        };
+
+        ([("content-type", "application/json")], result.to_string()).into_response()
+    }
+
+    async fn spawn_file_handler_rpc() -> (String, tokio::task::JoinHandle<()>) {
+        let app = Router::new().route("/", axum::routing::post(file_handler_rpc));
+        let listener = TokioTcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (format!("http://{address}"), task)
+    }
 
     struct S3Server {
         endpoint: String,
@@ -489,10 +579,17 @@ mod tests {
     }
 
     async fn test_state_with_endpoint(endpoint: &str) -> ServerState {
+        test_state_with_endpoints("http://127.0.0.1:2747", endpoint).await
+    }
+
+    async fn test_state_with_endpoints(
+        deepwell_endpoint: &str,
+        s3_endpoint: &str,
+    ) -> ServerState {
         let mut state = build_server_state(
             false,
             Secrets {
-                deepwell_url: str!("http://127.0.0.1:2747"),
+                deepwell_url: deepwell_endpoint.to_owned(),
                 deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64))
                     .unwrap(),
                 redis_url: str!("redis://127.0.0.1/"),
@@ -500,7 +597,7 @@ mod tests {
                 s3_tblocks_bucket: str!("text-blocks"),
                 s3_region: Region::Custom {
                     region: str!("test"),
-                    endpoint: endpoint.to_string(),
+                    endpoint: s3_endpoint.to_string(),
                 },
                 s3_credentials: Credentials::new(
                     Some("access-key"),
@@ -531,6 +628,126 @@ mod tests {
             .unwrap();
         *state.s3_files_bucket = files_bucket;
         *state.s3_tblocks_bucket = tblocks_bucket;
+    }
+
+    #[tokio::test]
+    async fn file_get_hides_missing_and_inaccessible_resources_with_wikidot_shell() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, "http://127.0.0.1:9000").await;
+
+        for (page_slug, filename) in [
+            ("existing-page", "missing.txt"),
+            ("absent-page", "missing.txt"),
+            ("existing-page", "denied.txt"),
+        ] {
+            let mut headers = HeaderMap::new();
+            headers.insert(crate::handler::HEADER_SITE_ID, "10".parse().unwrap());
+            let response = handle_file_fetch(
+                State(Arc::clone(&state)),
+                Method::GET,
+                Path((page_slug.to_owned(), filename.to_owned())),
+                headers,
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(
+                response.headers().get(CONTENT_TYPE).unwrap(),
+                "text/html; charset=utf-8",
+            );
+            assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "404");
+            let response_body = body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap();
+            assert_eq!(&response_body[..], WIKIDOT_MISSING_FILE_HTML);
+        }
+
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_get_preserves_public_file_bytes_mime_and_etag() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+        let mut headers = HeaderMap::new();
+        headers.insert(crate::handler::HEADER_SITE_ID, "10".parse().unwrap());
+
+        let response = handle_file_fetch(
+            State(state),
+            Method::GET,
+            Path(("existing-page".to_owned(), "present.txt".to_owned())),
+            headers,
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(CONTENT_TYPE).unwrap(),
+            "application/x-test",
+        );
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        let response_body = body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(&response_body[..], b"abcdef");
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn missing_file_soft_response_is_limited_to_get_file_fetch() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, "http://127.0.0.1:9000").await;
+
+        for response in [
+            handle_file_fetch(
+                State(Arc::clone(&state)),
+                Method::HEAD,
+                Path(("existing-page".to_owned(), "missing.txt".to_owned())),
+                site_headers(),
+            )
+            .await,
+            handle_file_download(
+                State(Arc::clone(&state)),
+                Method::GET,
+                Path(("existing-page".to_owned(), "missing.txt".to_owned())),
+                site_headers(),
+            )
+            .await,
+        ] {
+            assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        }
+
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_get_preserves_deepwell_failure_status() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, "http://127.0.0.1:9000").await;
+
+        let response = handle_file_fetch(
+            State(state),
+            Method::GET,
+            Path(("backend-error".to_owned(), "missing.txt".to_owned())),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        deepwell_server.abort();
+    }
+
+    fn site_headers() -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(crate::handler::HEADER_SITE_ID, "10".parse().unwrap());
+        headers
     }
 
     #[tokio::test]
