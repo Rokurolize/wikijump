@@ -56,6 +56,11 @@ export interface DeepwellForumPostSummary {
   commented_by: string | null
 }
 
+export interface DeepwellDirectParentMetadata {
+  slug: string
+  title: string
+}
+
 export interface DeepwellPageView {
   type: string
   data?: {
@@ -72,10 +77,6 @@ export interface DeepwellForumPost {
   html: string
   created_by: string
   created_at: string
-}
-
-export interface DeepwellParentRelationship {
-  parent_page_id: number
 }
 
 export function expectDeepwellCategories(
@@ -184,6 +185,16 @@ export function isDeepwellForumPostSummary(
   )
 }
 
+export function isDeepwellDirectParentMetadata(
+  value: unknown
+): value is DeepwellDirectParentMetadata {
+  return (
+    isXmlRpcStruct(value) &&
+    typeof value.slug === "string" &&
+    typeof value.title === "string"
+  )
+}
+
 export function isDeepwellForumPost(value: unknown): value is DeepwellForumPost {
   return (
     isXmlRpcStruct(value) &&
@@ -224,16 +235,4 @@ export function expectDeepwellForumPosts(
   method: string
 ): DeepwellForumPost[] {
   return expectArray(value, method, isDeepwellForumPost)
-}
-
-export function expectDeepwellParentRelationships(
-  value: unknown,
-  method: string
-): DeepwellParentRelationship[] {
-  return expectArray(
-    value,
-    method,
-    (relationship): relationship is DeepwellParentRelationship =>
-      isXmlRpcStruct(relationship) && isInteger(relationship.parent_page_id)
-  )
 }

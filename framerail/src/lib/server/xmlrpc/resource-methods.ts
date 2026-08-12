@@ -15,14 +15,15 @@ import {
   expectDeepwellCategories,
   expectDeepwellFiles,
   expectDeepwellForumPosts,
-  expectDeepwellParentRelationships,
   expectDeepwellStringArray,
   isDeepwellBlobUpload,
+  isDeepwellDirectParentMetadata,
   isDeepwellFile,
   isDeepwellForumPostSummary,
   isDeepwellPage,
   isDeepwellPageRevision,
   isDeepwellPageView,
+  type DeepwellDirectParentMetadata,
   type DeepwellFile,
   type DeepwellForumPostSummary,
   type DeepwellPage
@@ -176,7 +177,7 @@ export async function getPagesMeta(
     }
 
     const [parentPage, creatorUserId] = await Promise.all([
-      getDeepwellDirectParentPage(siteId, page.slug, principal),
+      getDeepwellDirectParentMetadata(siteId, page.slug, principal),
       getDeepwellPageCreatorUserId(siteId, page)
     ])
     entries.push([
@@ -669,7 +670,7 @@ async function buildXmlRpcPage(
 
   const page = await requireDeepwellPage(siteId, pageMetadata.slug, true)
   const [parentPage, creatorUserId, postSummary] = await Promise.all([
-    getDeepwellDirectParentPage(siteId, page.slug, resolvedPrincipal),
+    getDeepwellDirectParentMetadata(siteId, page.slug, resolvedPrincipal),
     getDeepwellPageCreatorUserId(siteId, page),
     getDeepwellForumPostSummary(siteId, page.slug)
   ])
@@ -820,56 +821,29 @@ async function getDeepwellFile(
   return deepwellFile
 }
 
-async function getDeepwellDirectParentPage(
+async function getDeepwellDirectParentMetadata(
   siteId: number,
   page: string,
   principal: Pick<XmlRpcWriteContext, "sessionToken">
-): Promise<DeepwellPage | null> {
-  const relationships = expectDeepwellParentRelationships(
-    await requestDeepwell("parent_relationships_get", {
-      site_id: siteId,
-      page,
-      relationship_type: "parents"
-    }),
-    "parent_relationships_get"
-  )
-  if (relationships.length !== 1) {
-    return null
-  }
-  const parentPageId = relationships[0].parent_page_id
-
-  const canViewParent = await requestDeepwell(
-    "page_view_permission",
+): Promise<DeepwellDirectParentMetadata | null> {
+  const metadata = await requestDeepwell(
+    "parent_get_direct_metadata",
     {
       site_id: siteId,
-      page: parentPageId
+      page
     },
     { sessionToken: principal.sessionToken }
   )
-  if (typeof canViewParent !== "boolean") {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_view_permission")
-  }
-  if (!canViewParent) {
+  if (metadata === null) {
     return null
   }
-
-  const parentPage = await requestDeepwell("page_get_direct", {
-    site_id: siteId,
-    page_id: parentPageId,
-    allow_deleted: false,
-    details: {
-      wikitext: false,
-      compiled_html: false
-    }
-  })
-  if (parentPage === null) {
-    return null
+  if (!isDeepwellDirectParentMetadata(metadata)) {
+    throw new XmlRpcFault(
+      -32603,
+      "Malformed Deepwell response: parent_get_direct_metadata"
+    )
   }
-  if (!isDeepwellPage(parentPage, false)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_get_direct")
-  }
-
-  return parentPage
+  return metadata
 }
 
 async function getDeepwellForumPostSummary(

@@ -1,12 +1,37 @@
 import { fixtureState, hasExactKeys } from "./context.js"
 import { forumPostsByPage, pages, parentBySlug } from "./data.js"
 
-/** @param {{ rpcRequest: any }} input */
-export const handlePageRelationshipRpc = ({ rpcRequest }) => {
+/**
+ * @param {{
+ *   rpcRequest: any
+ *   request: import("node:http").IncomingMessage
+ * }} input
+ */
+export const handlePageRelationshipRpc = ({ rpcRequest, request }) => {
   const { pageReadRequests } = fixtureState
   let result
 
   if (
+    rpcRequest.method === "parent_get_direct_metadata" &&
+    hasExactKeys(rpcRequest.params, ["page", "site_id"]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    typeof rpcRequest.params.page === "string" &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token"
+  ) {
+    pageReadRequests.parentDirectMetadata.push({
+      headers: {
+        sessionToken: request.headers["x-deepwell-session-token"]
+      },
+      params: rpcRequest.params
+    })
+    const parentReference = parentBySlug[rpcRequest.params.page]
+    if (typeof parentReference !== "string" || parentReference === "private-page") {
+      result = null
+    } else {
+      const parent = pages[parentReference]
+      result = parent ? { slug: parent.slug, title: parent.title } : null
+    }
+  } else if (
     rpcRequest.method === "parent_relationships_get" &&
     hasExactKeys(rpcRequest.params, ["page", "relationship_type", "site_id"]) &&
     rpcRequest.params.site_id === 6000005 &&

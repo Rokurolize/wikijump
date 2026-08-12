@@ -76,6 +76,12 @@ pub struct GetParentRelationships<'a> {
     pub relationship_type: ParentalRelationshipType,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct DirectParentMetadata {
+    pub slug: String,
+    pub title: String,
+}
+
 #[derive(Serialize, Debug, Copy, Clone)]
 pub struct RemoveParentOutput {
     pub was_deleted: bool,

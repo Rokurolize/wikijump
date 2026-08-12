@@ -1084,20 +1084,7 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         site_id: 6000005
       }
     ],
-    pageGetDirect: [
-      {
-        allow_deleted: false,
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000172,
-        site_id: 6000005
-      },
-      {
-        allow_deleted: false,
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000172,
-        site_id: 6000005
-      }
-    ],
+    pageGetDirect: [],
     pageRevisionGet: [
       {
         details: { compiled_html: false, wikitext: false },
@@ -1146,28 +1133,18 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         }
       }
     ],
-    pageViewPermission: [
+    pageViewPermission: [],
+    parentDirectMetadata: [
       {
         headers: { sessionToken: "fixture-session-token" },
-        params: { page: 3000172, site_id: 6000005 }
+        params: { page: "scp-173", site_id: 6000005 }
       },
       {
         headers: { sessionToken: "fixture-session-token" },
-        params: { page: 3000172, site_id: 6000005 }
+        params: { page: "scp-173", site_id: 6000005 }
       }
     ],
-    parentRelationshipsGet: [
-      {
-        page: "scp-173",
-        relationship_type: "parents",
-        site_id: 6000005
-      },
-      {
-        page: "scp-173",
-        relationship_type: "parents",
-        site_id: 6000005
-      }
-    ],
+    parentRelationshipsGet: [],
     siteGet: [
       { site: "scp-wiki" },
       { site: "scp-wiki" },
@@ -1273,25 +1250,23 @@ test("XML-RPC page reads omit parent metadata when the parent is not viewable", 
   const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   const readRequests = await deepwellRequests.json()
-  expect(readRequests.pageViewPermission).toEqual([
+  expect(readRequests.parentDirectMetadata).toEqual([
     {
       headers: { sessionToken: "fixture-session-token" },
-      params: { page: 3000199, site_id: 6000005 }
+      params: { page, site_id: 6000005 }
     },
     {
       headers: { sessionToken: "fixture-session-token" },
-      params: { page: 3000199, site_id: 6000005 }
+      params: { page, site_id: 6000005 }
     },
     {
       headers: { sessionToken: "fixture-session-token" },
-      params: { page: 3000199, site_id: 6000005 }
+      params: { page, site_id: 6000005 }
     }
   ])
-  expect(
-    readRequests.pageGetDirect.some(
-      (entry: { page_id: number }) => entry.page_id === 3000199
-    )
-  ).toBe(false)
+  expect(readRequests.parentRelationshipsGet).toEqual([])
+  expect(readRequests.pageViewPermission).toEqual([])
+  expect(readRequests.pageGetDirect).toEqual([])
 })
 
 test("XML-RPC page reads omit ambiguous parent metadata", async ({ request }) => {
@@ -1324,6 +1299,17 @@ test("XML-RPC page reads omit ambiguous parent metadata", async ({ request }) =>
   const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   const readRequests = await deepwellRequests.json()
+  expect(readRequests.parentDirectMetadata).toEqual([
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    },
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    }
+  ])
+  expect(readRequests.parentRelationshipsGet).toEqual([])
   expect(readRequests.pageViewPermission).toEqual([])
   expect(readRequests.pageGetDirect).toEqual([])
 })
