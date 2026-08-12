@@ -197,6 +197,7 @@ function diagnosticRefreshReceipt() {
     schema: "wikijump.diagnostic_candidate_page_refresh.v2",
     status: "pass",
     classification: "diagnostic_non_promotional",
+    controller: {path: "/controller.mjs", sha256: "f".repeat(64)},
     candidate_identity: {sha256: "d".repeat(64)},
     rendered_artifact_authority: {
       ftml_sha: `${"62ebba4e"}${"0".repeat(32)}`,

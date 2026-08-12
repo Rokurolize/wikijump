@@ -233,6 +233,9 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
     || value.status !== "pass"
     || value.classification !== "diagnostic_non_promotional"
     || value.candidate_identity?.sha256 !== candidateIdentity?.sha256
+    || typeof value.controller?.path !== "string"
+    || !value.controller.path.startsWith("/")
+    || !/^[0-9a-f]{64}$/u.test(value.controller?.sha256 ?? "")
     || value.rendered_artifact_authority?.ftml_sha !== expectedFtmlSha
     || !/^[0-9a-f]{40}$/u.test(expectedFtmlSha ?? "")
     || typeof expectedGenerator !== "string"
@@ -293,6 +296,9 @@ async function readCandidateRefresh(args, candidateIdentity) {
     throw new Error("candidate diagnostic refresh receipt SHA-256 does not match");
   }
   validateCandidateRefreshReceipt(value, candidateIdentity);
+  if (await sha256File(value.controller.path) !== value.controller.sha256) {
+    throw new Error("candidate diagnostic refresh controller SHA-256 does not match");
+  }
   return Object.freeze({
     path: args.candidateRefreshReceipt,
     sha256: observedSha256,
