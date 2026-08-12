@@ -149,6 +149,22 @@ async fn user_view_resolves_only_active_imported_slugs_without_changing_local_lo
         })
     );
 
+    let imported_by_id = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": 700_011,
+            "locales": ["en"],
+        }),
+    );
+    let GetUserViewOutput::UserFound { user } = imported_by_id else {
+        panic!("active imported numeric ID should remain found");
+    };
+    assert!(user.is_wikidot());
+    assert_eq!(user.user_id(), 700_011);
+
     for target in ["deleted-imported-profile", "missing-imported-profile"] {
         let output = run_endpoint!(
             runner,
@@ -193,6 +209,22 @@ async fn user_view_resolves_only_active_imported_slugs_without_changing_local_lo
     );
     let GetUserViewOutput::UserFound { user } = local else {
         panic!("seeded local user should remain found");
+    };
+    assert!(user.is_wikijump());
+    assert_eq!(user.user_id(), SAMPLE_USER_ID);
+
+    let local_by_id = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": SAMPLE_USER_ID,
+            "locales": ["en"],
+        }),
+    );
+    let GetUserViewOutput::UserFound { user } = local_by_id else {
+        panic!("seeded local numeric ID should remain found");
     };
     assert!(user.is_wikijump());
     assert_eq!(user.user_id(), SAMPLE_USER_ID);
