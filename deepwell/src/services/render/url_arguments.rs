@@ -27,6 +27,7 @@
 use super::backlinks::BACKLINKS_MODULE_REGEX;
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
 use super::count_pages_recognition::wikitext_has_executable_count_pages_module;
+use super::include_missing::wikitext_has_executable_include;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
     parse_list_pages_arguments,
@@ -35,8 +36,9 @@ use super::list_pages::{
 use super::literal_regions::LiteralRegionIndex;
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::page_tree::PAGE_TREE_MODULE_REGEX;
-use super::pages::PAGES_MODULE_REGEX;
+use super::pages::{PAGES_MODULE_REGEX, wikitext_has_executable_pages_module};
 use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
+use super::runtime_modules::wikitext_has_executable_tag_cloud_module;
 use super::service::RATEDPAGES_MODULE_REGEX;
 use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
 use crate::services::page_query::OrderProperty;
@@ -240,6 +242,14 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
         || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
         || wikitext_has_random_list_pages_module(wikitext)
+}
+
+pub(crate) fn wikitext_needs_latest_revision_for_render(wikitext: &str) -> bool {
+    wikitext_has_executable_list_pages_module(wikitext)
+        || wikitext_has_executable_count_pages_module(wikitext)
+        || wikitext_has_executable_pages_module(wikitext)
+        || wikitext_has_executable_tag_cloud_module(wikitext)
+        || wikitext_has_executable_include(wikitext)
 }
 
 fn wikitext_has_supported_pages_by_tag_module(wikitext: &str) -> bool {

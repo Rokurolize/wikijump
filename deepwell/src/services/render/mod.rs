@@ -118,6 +118,7 @@ pub use self::structs::{
     RenderOutput, RenderPageOutput, WikidotListPagesFeedInput, WikidotListPagesFeedItem,
     WikidotListPagesFeedOutput,
 };
+pub(crate) use self::url_arguments::wikitext_needs_latest_revision_for_render;
 pub use self::url_arguments::{
     UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
     wikitext_requires_runtime_render,

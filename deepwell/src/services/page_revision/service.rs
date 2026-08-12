@@ -37,7 +37,8 @@ use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::page_query::parse_static_wikidot_data_form_values;
 use crate::services::render::{
-    CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput, StageGuard,
+    CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput,
+    StageGuard, wikitext_needs_latest_revision_for_render,
 };
 use crate::services::score::ScoreValue;
 use crate::services::settings::NavigationPageWikitext;
@@ -338,12 +339,7 @@ impl PageRevisionDraft {
 }
 
 fn needs_latest_revision_for_render(wikitext: &str) -> bool {
-    let lower = wikitext.to_ascii_lowercase();
-    lower.contains("[[module countpages")
-        || lower.contains("[[module listpages")
-        || lower.contains("[[module pages")
-        || lower.contains("[[module tagcloud")
-        || lower.contains("[[include")
+    wikitext_needs_latest_revision_for_render(wikitext)
 }
 
 fn first_revision_followups(
@@ -2216,8 +2212,13 @@ fn first_revision_followups_keep_static_pages_single_pass() {
 
 #[test]
 fn first_revision_followups_detect_runtime_content_in_page_or_template() {
-    let page_followups =
-        first_revision_followups(str!("guide"), "[[module ListPages]]", None, None, None);
+    let page_followups = first_revision_followups(
+        str!("guide"),
+        "[[module\tListPages \t tags=\"+fresh\"]]",
+        None,
+        None,
+        None,
+    );
     let template_followups = first_revision_followups(
         str!("guide"),
         "ordinary page text",
@@ -2231,4 +2232,24 @@ fn first_revision_followups_detect_runtime_content_in_page_or_template() {
     assert!(page_followups.rerender_after_latest_revision);
     assert!(template_followups.rerender_after_latest_revision);
     assert!(pages_followups.rerender_after_latest_revision);
+}
+
+#[test]
+fn first_revision_followups_ignore_literal_and_invalid_runtime_markers() {
+    for source in [
+        "[[code]]\n[[module ListPages tags=\"+fresh\"]]%%fullname%%[[/module]]\n[[/code]]",
+        "@@[[module ListPages tags=\"+fresh\"]]%%fullname%%[[/module]]@@",
+        "[[module ListPagesExtra tags=\"+fresh\"]]%%fullname%%[[/module]]",
+        "[[code]]\n[[module CountPages tags=\"+fresh\"]]%%total%%[[/module]]\n[[/code]]",
+        "[[code]]\n[[module Pages]]\n[[/code]]",
+        "[[module TagCloud mode=\"2d\" mode=\"3d\"]]",
+        "[[code]]\n[[include component:license]]\n[[/code]]",
+        "[[include]]",
+    ] {
+        let followups = first_revision_followups(str!("guide"), source, None, None, None);
+        assert!(
+            !followups.rerender_after_latest_revision,
+            "inert source must not schedule a second first-revision render: {source}",
+        );
+    }
 }

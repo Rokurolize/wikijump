@@ -2384,7 +2384,7 @@ async fn page_create_refreshes_dynamic_navigation_after_recording_latest_revisio
         site_id,
         NAV_SLUG,
         "Page creation dynamic navigation fixture",
-        "[[module ListPages tags=\"+fresh\" separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
+        "[[module\tListPages \t tags=\"+fresh\"\t separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
     )
     .await;
 

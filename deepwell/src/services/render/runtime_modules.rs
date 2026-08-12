@@ -1138,6 +1138,22 @@ fn parse_tag_cloud_arguments(head: &str) -> Option<TagCloudArguments> {
     Some(arguments)
 }
 
+pub(super) fn wikitext_has_executable_tag_cloud_module(wikitext: &str) -> bool {
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    TAGCLOUD_MODULE_REGEX
+        .captures_iter(wikitext)
+        .any(|captures| {
+            let module = captures
+                .get(0)
+                .expect("a TagCloud capture always has a complete match");
+            !literal_regions.contains(module.start())
+                && parse_tag_cloud_arguments(
+                    captures.name("head").map_or("", |head| head.as_str()),
+                )
+                .is_some_and(|arguments| !arguments.mode_3d)
+        })
+}
+
 fn parse_tag_cloud_size(value: &str) -> Option<TagCloudSize> {
     let trimmed = value.trim();
     let unit_start = trimmed

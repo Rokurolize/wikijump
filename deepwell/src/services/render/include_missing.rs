@@ -84,6 +84,10 @@ pub(super) fn collect_include_display_pages(
     pages
 }
 
+pub(super) fn wikitext_has_executable_include(wikitext: &str) -> bool {
+    !collect_include_display_pages(wikitext).is_empty()
+}
+
 pub(super) fn collect_missing_include_replacements(
     includes: &[IncludeRef<'_>],
     fetched_pages: &[Option<String>],
