@@ -157,6 +157,7 @@ impl ArticlePageCache {
                 page_id: row.page_id,
                 latest_revision_id,
                 page_updated_at,
+                public_content_cache_fence: &public_content_cache_fence,
                 permission_fence: &permission_fence,
                 template_source_hash: template_source_hash.as_deref(),
                 compiled_body_html_hash: row.compiled_body_html_hash.as_deref(),
@@ -232,6 +233,7 @@ struct ArticlePageCacheKeyParts<'a> {
     page_id: i64,
     latest_revision_id: i64,
     page_updated_at: i128,
+    public_content_cache_fence: &'a str,
     permission_fence: &'a str,
     template_source_hash: Option<&'a [u8]>,
     compiled_body_html_hash: Option<&'a [u8]>,
@@ -251,11 +253,12 @@ fn format_article_page_cache_key(parts: ArticlePageCacheKeyParts<'_>) -> String 
     let template_hash = optional_hash_hex(parts.template_source_hash);
 
     format!(
-        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:v{DEEPWELL_RENDERER_EPOCH}:site={}:page={}:rev={}:updated={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
+        "{ARTICLE_VIEW_PAGE_CACHE_PREFIX}:v{DEEPWELL_RENDERER_EPOCH}:site={}:page={}:rev={}:updated={}:public={}:permission={}:template={}:body={}:styles={}:top={}:side={}:slug={}:extra={}:locales={}",
         parts.site_id,
         parts.page_id,
         parts.latest_revision_id,
         parts.page_updated_at,
+        parts.public_content_cache_fence,
         parts.permission_fence,
         template_hash,
         body_hash,
@@ -311,6 +314,7 @@ mod tests {
             page_id: 11,
             latest_revision_id: 13,
             page_updated_at: 17,
+            public_content_cache_fence: "29",
             permission_fence: "site=19,user=23",
             template_source_hash: Some(&[0x89, 0xab]),
             compiled_body_html_hash: Some(&[0x01, 0x23]),
@@ -324,7 +328,7 @@ mod tests {
 
         assert_eq!(
             key,
-            "deepwell:article-view:page:v8:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
+            "deepwell:article-view:page:v8:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=89ab:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61",
         );
     }
 
@@ -336,6 +340,7 @@ mod tests {
                 page_id: 11,
                 latest_revision_id: 13,
                 page_updated_at: 17,
+                public_content_cache_fence: "29",
                 permission_fence: "site=19,user=23",
                 template_source_hash,
                 compiled_body_html_hash: Some(&[0x01, 0x23]),
@@ -350,6 +355,35 @@ mod tests {
 
         assert_ne!(key(Some(&[0x01])), key(Some(&[0x02])));
         assert_ne!(key(Some(&[0x01])), key(None));
+    }
+
+    #[test]
+    fn eligible_article_cache_key_changes_with_public_content_cache_fence() {
+        let key = |public_content_cache_fence| {
+            format_article_page_cache_key_if_source_eligible(
+                Some("Cache-safe imported article."),
+                None,
+                ArticlePageCacheKeyParts {
+                    site_id: 7,
+                    page_id: 11,
+                    latest_revision_id: 13,
+                    page_updated_at: 17,
+                    public_content_cache_fence,
+                    permission_fence: "site=19,user=23",
+                    template_source_hash: None,
+                    compiled_body_html_hash: Some(&[0x01, 0x23]),
+                    compiled_body_styles_hash: Some(&[0x34]),
+                    compiled_top_bar_html_hash: Some(&[0x45]),
+                    compiled_side_bar_html_hash: Some(&[0x67]),
+                    route_slug: "category:article",
+                    page_extra: "",
+                    locales: "en",
+                },
+            )
+            .expect("static imported article source must remain cache-eligible")
+        };
+
+        assert_ne!(key("41"), key("42"));
     }
 
     #[test]
@@ -369,6 +403,7 @@ mod tests {
                     page_id: 11,
                     latest_revision_id: 13,
                     page_updated_at: 17,
+                    public_content_cache_fence: "29",
                     permission_fence: "site=19,user=23",
                     template_source_hash: None,
                     compiled_body_html_hash: Some(&[0x01, 0x23]),
@@ -384,7 +419,7 @@ mod tests {
             assert_eq!(
                 key.as_deref(),
                 Some(
-                    "deepwell:article-view:page:v8:site=7:page=11:rev=13:updated=17:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
+                    "deepwell:article-view:page:v8:site=7:page=11:rev=13:updated=17:public=29:permission=site=19,user=23:template=:body=0123:styles=34:top=45:side=67:slug=7374617274:extra=6e6f7265646972656374:locales=656e2c6a61"
                 ),
                 "{source}",
             );
@@ -398,6 +433,7 @@ mod tests {
             page_id: 11,
             latest_revision_id: 13,
             page_updated_at: 17,
+            public_content_cache_fence: "29",
             permission_fence: "site=19,user=23",
             template_source_hash: None,
             compiled_body_html_hash: None,
@@ -429,6 +465,7 @@ mod tests {
                 page_id: 11,
                 latest_revision_id: 13,
                 page_updated_at: 17,
+                public_content_cache_fence: "29",
                 permission_fence: "site=19,user=23",
                 template_source_hash: None,
                 compiled_body_html_hash: None,
@@ -459,6 +496,7 @@ mod tests {
             page_id: 11,
             latest_revision_id: 13,
             page_updated_at: 17,
+            public_content_cache_fence: "29",
             permission_fence: "site=19,user=23",
             template_source_hash: None,
             compiled_body_html_hash: None,
