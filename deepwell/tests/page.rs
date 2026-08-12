@@ -17923,8 +17923,8 @@ async fn site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link
     const DELETED_LINKER_SLUG: &str = "site-tools-orphaned-lifecycle-deleted-linker";
 
     let mut runner = TestRunner::setup().await;
-    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
-        .expect("seeded SCP Wiki site should exist");
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("editable local authoring site should exist");
     let site_id = site.site.site_id;
 
     for (slug, title, wikitext) in [
@@ -18526,6 +18526,160 @@ async fn orphanedpages_module_lists_pages_without_incoming_internal_links() {
             "OrphanedPages output should not contain {forbidden:?}:\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn orphanedpages_module_refreshes_after_linker_soft_delete() {
+    const HOLDER_SLUG: &str = "fixture-orphanedpages-lifecycle-holder";
+    const DELETED_TARGET_SLUG: &str = "fixture-orphanedpages-lifecycle-deleted-target";
+    const ACTIVE_TARGET_SLUG: &str = "fixture-orphanedpages-lifecycle-active-target";
+    const SELF_LINK_SLUG: &str = "fixture-orphanedpages-lifecycle-self-link";
+    const INCLUDE_TARGET_SLUG: &str = "fixture-orphanedpages-lifecycle-include-target";
+    const DELETED_LINKER_SLUG: &str = "orphanedpages-lifecycle-deleted-linker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("editable local authoring site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, wikitext) in [
+        (
+            DELETED_TARGET_SLUG,
+            "Deleted Module Linker Target",
+            "linked only from a page that will be deleted",
+        ),
+        (
+            ACTIVE_TARGET_SLUG,
+            "Active Module Linker Target",
+            "linked from a live page",
+        ),
+        (
+            SELF_LINK_SLUG,
+            "Self-linked Module Target",
+            &format!("[[[{SELF_LINK_SLUG}]]]"),
+        ),
+        (
+            INCLUDE_TARGET_SLUG,
+            "Include-only Module Target",
+            "included but not linked",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, wikitext).await;
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DELETED_LINKER_SLUG)),
+    );
+    let deleted_linker = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[[{DELETED_TARGET_SLUG}]]]"),
+            "title": "Deleted OrphanedPages Module Linker",
+            "alt_title": null,
+            "slug": DELETED_LINKER_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deleted OrphanedPages module linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "orphanedpages-lifecycle-active-linker",
+        "Active OrphanedPages Module Linker",
+        &format!("[[[{ACTIVE_TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "orphanedpages-lifecycle-include-source",
+        "OrphanedPages Module Include Source",
+        &format!("[[include {INCLUDE_TARGET_SLUG}]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "OrphanedPages Lifecycle Holder",
+        "[[module OrphanedPages]]",
+    )
+    .await;
+
+    let before_delete = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let before_delete = match before_delete {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found OrphanedPages view, got {other:?}"),
+    };
+    assert!(!before_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!before_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(before_delete.contains(SELF_LINK_SLUG));
+    assert!(before_delete.contains(INCLUDE_TARGET_SLUG));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(deleted_linker.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_linker.page_id,
+            "last_revision_id": deleted_linker.revision_id,
+            "revision_comments": "delete OrphanedPages module linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let stored_after_delete =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(
+        !stored_after_delete.contains(DELETED_TARGET_SLUG),
+        "the saved artifact predates the link-graph mutation"
+    );
+
+    let after_delete = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let after_delete = match after_delete {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found OrphanedPages view, got {other:?}"),
+    };
+    assert!(after_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!after_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(after_delete.contains(SELF_LINK_SLUG));
+    assert!(after_delete.contains(INCLUDE_TARGET_SLUG));
 }
 
 #[tokio::test]
