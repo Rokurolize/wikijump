@@ -1019,14 +1019,28 @@
     },
     "layout-forum": {
       "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "confirmed_public_seams": [
+        "Local SvelteKit public HTTP GET SSR through Vite middleware for the read-only ForumStart, category, and thread routes"
+      ],
+      "tests": [
+        {
+          "path": "framerail/tests/forum-page-content-public-boundary.test.js",
+          "name": "forum GET routes enclose populated empty and error bodies in one page-content root",
+          "scope": "GET /forum/start, /forum/c-8503559/open-topic, and /forum/t-18029831/deleted-thread return populated, empty, and error module bodies enclosed by exactly one div#page-content"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/lib/ForumModuleBody.svelte"
+      ],
       "documentation_evidence": [
         "specifications/layout/layout-forum.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "This slice establishes only the shared read-only forum route page-content shell. The documented inner forum structure, CSS, resources, interaction, geometry, intermediate states, mutation and new-thread routes, and fallback /forum route remain unclassified, so layout-forum stays pending."
+      ]
     },
     "layout-page": {
       "status": "pending",

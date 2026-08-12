@@ -6,4 +6,4 @@
   let { body }: Props = $props()
 </script>
 
-{@html body}
+<div id="page-content">{@html body}</div>
