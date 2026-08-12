@@ -2,18 +2,12 @@
   import { buildWikidotPageTagsHtml } from "$lib/wikidot/wikidot-page-tags"
 
   let {
-    currentTags,
-    revisionTags,
-    showRevision = false,
+    tags,
     hidden = false
   }: {
-    currentTags: string[]
-    revisionTags?: string[]
-    showRevision?: boolean
+    tags: string[]
     hidden?: boolean
   } = $props()
-
-  let tags = $derived(showRevision ? (revisionTags ?? []) : currentTags)
 </script>
 
 {#if tags.length}

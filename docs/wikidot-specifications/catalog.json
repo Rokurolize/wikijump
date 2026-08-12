@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 74,
+    "observation_count": 75,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -4539,7 +4539,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "found-page-tag-wrapper-dom-20260727"
+      ]
     },
     {
       "id": "site-identity",

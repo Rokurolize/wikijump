@@ -402,18 +402,10 @@
 
   {#if showRevision}
     {#if revision?.tags?.length}
-      <WikidotFoundPageTags
-        currentTags={data.page_revision?.tags ?? []}
-        hidden={dataFormEditing}
-        revisionTags={revision.tags}
-        {showRevision}
-      />
+      <WikidotFoundPageTags hidden={dataFormEditing} tags={revision.tags} />
     {/if}
   {:else if data.page_revision?.tags?.length}
-    <WikidotFoundPageTags
-      currentTags={data.page_revision.tags}
-      hidden={dataFormEditing}
-    />
+    <WikidotFoundPageTags hidden={dataFormEditing} tags={data.page_revision.tags} />
   {/if}
 
   {#if data.options?.edit}

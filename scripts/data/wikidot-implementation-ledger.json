@@ -1,11 +1,12 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-13",
-  "catalog_sha256": "0bb6711445c61bd18ad6238402bb4286529aca9f80c5a950bb058192165e7a23",
+  "catalog_sha256": "7bd9065391dc836a0ddfef20ef5e4f31c3aff321cd6fee29c2a003a512946b29",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
-      "module-listpages"
+      "module-listpages",
+      "page-tags"
     ],
     "note": "All catalog entries remain represented as required by IMPLEMENTATION_PROMPT.md. Campaign-scoped features must classify P1-P8 before a terminal implementation claim; unrelated catalog entries remain pending rather than being falsely marked complete."
   },
@@ -3736,15 +3737,36 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "page-tags": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Framerail Wikidot-layout found-page route SSR for current, tagless, and editing-hidden page-tag output",
+        "Framerail display-only found-page tag SSR after client-side revision selection"
+      ],
+      "tests": [
+        {
+          "path": "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
+          "scope": "public found-page route SSR covers ordered direct tag anchors, tagless omission, and editing-hidden state; the display-only component covers the direct-child shape after the parent selects revision tags"
+        },
+        {
+          "path": "framerail/tests/wikidot-page-tags.test.js",
+          "scope": "public tag-link HTML policy covers retained order, URLs, labels, and escaping"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/routes/[slug]/[...extra]/page.svelte",
+        "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
+        "framerail/src/lib/wikidot/wikidot-page-tags.js"
+      ],
       "documentation_evidence": [
         "specifications/site-structure/page-tags.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "live-observations.json::found-page-tag-wrapper-dom-20260727",
+        "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Only the found-page .page-tags wrapper, direct anchor children, retained order, tagless omission, and existing editing-hidden state are covered here. Tag mutation, client revision-selection lifecycle, broader P7 styling and interaction, permissions, URL encoding, temporal behavior, and the remaining P1-P6 and P8 properties remain unobserved or outside this slice."
+      ]
     },
     "site-identity": {
       "status": "pending",
@@ -4292,6 +4314,71 @@
           "test:deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision"
         ],
         "observation_gaps": []
+      }
+    },
+    "page-tags": {
+      "P1": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Page-tag input grammar and scalar interpretation are not established by the retained wrapper captures."
+        ]
+      },
+      "P2": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Parser-stage, nesting, and composition behavior are not established by the retained wrapper captures."
+        ]
+      },
+      "P3": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Tag mutation, persistence, import, and revision round trips are not established by this slice."
+        ]
+      },
+      "P4": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Actor, permission, visibility, and privacy behavior are not established by the anonymous wrapper captures."
+        ]
+      },
+      "P5": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Selection, counting, and broader ordering behavior beyond retained displayed tag order are not established by this slice."
+        ]
+      },
+      "P6": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "HTTP, API, Ajax, and navigation contracts are not established by this wrapper-only slice."
+        ]
+      },
+      "P7": {
+        "status": "blocked",
+        "evidence": [
+          "live:found-page-tag-wrapper-dom-20260727",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#tagless found-page route SSR omits page-tags",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#editing found-page route SSR preserves the hidden page-tags state",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#revision found-page tag SSR keeps parent-selected order and direct links"
+        ],
+        "observation_gaps": [
+          "The retained captures establish only the settled found-page wrapper shape. Broader CSS, resource, geometry, interaction, client revision-selection, and intermediate-state behavior remains unobserved."
+        ]
+      },
+      "P8": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Temporal behavior, failures, limits, and resource bounds are not established by the settled raw wrapper captures."
+        ]
       }
     }
   }
