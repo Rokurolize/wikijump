@@ -269,6 +269,19 @@ async fn serve_multi_range(
 
 // ------------ Public handlers ------------
 
+pub async fn handle_local_file(
+    state: State<ServerState>,
+    method: Method,
+    path: Path<(String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    if method == Method::GET {
+        handle_file_fetch(state, method, path, headers).await
+    } else {
+        super::handle_file_redirect(path).await.into_response()
+    }
+}
+
 pub async fn handle_file_fetch(
     State(state): State<ServerState>,
     method: Method,
