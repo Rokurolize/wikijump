@@ -389,13 +389,14 @@ export async function getFilesMeta(
   if (files.length > 10) {
     throw new XmlRpcFault(-32602, "files.get_meta files is limited to 10 entries")
   }
-  if (files.length === 0) {
-    return {}
-  }
 
   const siteId = await getDeepwellSiteId(site)
   const page = await requireDeepwellPage(siteId, pageReference, false)
   const pageId = requireDeepwellPageId(page)
+  if (files.length === 0) {
+    return {}
+  }
+
   const entries = await Promise.all(
     files.map(async (fileName): Promise<[string, XmlRpcValue] | null> => {
       const file = await getDeepwellFile(siteId, pageId, fileName, false)

@@ -372,7 +372,7 @@ function xmlRpcFilesSelectRequest(page: string): string {
 </methodCall>`
 }
 
-function xmlRpcFilesGetMetaRequest(page: string, files: string[]): string {
+function xmlRpcFilesGetMetaRequest(site: string, page: string, files: string[]): string {
   return `<?xml version="1.0"?>
 <methodCall>
   <methodName>files.get_meta</methodName>
@@ -380,7 +380,7 @@ function xmlRpcFilesGetMetaRequest(page: string, files: string[]): string {
     <param>
       <value>
         <struct>
-          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>site</name><value><string>${xmlEscape(site)}</string></value></member>
           <member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>
           <member><name>files</name><value><array><data>${files
             .map((file) => `<value><string>${xmlEscape(file)}</string></value>`)
@@ -1672,6 +1672,34 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
   })
 })
 
+test("XML-RPC files.get_meta validates resources before returning an empty struct", async ({
+  request
+}) => {
+  for (const [site, page] of [
+    ["missing-site", "scp-173"],
+    ["scp-wiki", "missing-page"]
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcFilesGetMetaRequest(site, page, []),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    expect(await response.text()).toContain("<fault>")
+  }
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetMetaRequest("scp-wiki", "scp-173", []),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<methodResponse><params><param>")
+  expect(body).toContain("<value><struct></struct></value>")
+  expect(body).not.toContain("<fault>")
+})
+
 test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
   const pageSlug = `fixture-xmlrpc-file-${randomUUID()}`
   const fileName = "B&W.txt"
@@ -1728,7 +1756,7 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   expect(await selectResponse.text()).toContain("<string>B&amp;W.txt</string>")
 
   const metaResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcFilesGetMetaRequest(pageSlug, [fileName]),
+    data: xmlRpcFilesGetMetaRequest("scp-wiki", pageSlug, [fileName]),
     headers: xmlRpcHeaders
   })
   expect(metaResponse.status()).toBe(200)
