@@ -45,6 +45,11 @@ pub async fn handle_code_redirect(
     Redirect::permanent(&destination)
 }
 
+pub async fn handle_default_code_redirect(Path(page_slug): Path<String>) -> Redirect {
+    let destination = format!("/-/code/{page_slug}/1");
+    Redirect::permanent(&destination)
+}
+
 pub async fn handle_html_redirect(
     Path((page_slug, id)): Path<(String, String)>,
 ) -> Redirect {
