@@ -34159,6 +34159,204 @@ async fn first_revision_rerenders_tagcloud() {
     );
 }
 
+#[tokio::test]
+async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
+    async fn load_public_view(runner: &TestRunner, site_id: i64, slug: &str) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found TagCloud page view, got {other:?}"),
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category = "fixture-tagcloud-freshness";
+    let holder_slug = "fixture-tagcloud-freshness:holder";
+    let duplicate_2d_slug = "fixture-tagcloud-freshness:duplicate-2d";
+    let target_slug = "fixture-tagcloud-freshness:target";
+    let link_target = "fixture-tagcloud-freshness:tags";
+    let tag = "fixture-tagcloud-freshness-current";
+
+    CategoryService::get_or_create(runner.context(), site_id, category)
+        .await
+        .expect("TagCloud freshness category should be created");
+    let target_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Fixture TagCloud Freshness Target",
+        "TagCloud freshness target.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        holder_slug,
+        "Fixture TagCloud Freshness Holder",
+        &format!("[[module TagCloud category=\"{category}\" target=\"{link_target}\"]]",),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        duplicate_2d_slug,
+        "Fixture TagCloud Freshness Last Attribute",
+        &format!(
+            "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"3d\" mode=\"2d\"]]",
+        ),
+    )
+    .await;
+    let inert_holders = [
+        (
+            "fixture-tagcloud-freshness:literal",
+            format!(
+                "[[code]]\n[[module TagCloud category=\"{category}\" target=\"{link_target}\"]]\n[[/code]]",
+            ),
+        ),
+        (
+            "fixture-tagcloud-freshness:3d",
+            format!(
+                "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"3d\"]]",
+            ),
+        ),
+        (
+            "fixture-tagcloud-freshness:duplicate-3d",
+            format!(
+                "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"2d\" mode=\"3d\"]]",
+            ),
+        ),
+        (
+            "fixture-tagcloud-freshness:parser-invalid",
+            format!(
+                "[[module TagCloud category=\"{category}\" target=\"{link_target}\" broken]]",
+            ),
+        ),
+    ];
+    for (slug, source) in &inert_holders {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            "Fixture Inert TagCloud Freshness Holder",
+            source,
+        )
+        .await;
+    }
+
+    let stored_before =
+        load_listpages_test_compiled_html(&runner, site_id, holder_slug).await;
+    let stored_duplicate_2d =
+        load_listpages_test_compiled_html(&runner, site_id, duplicate_2d_slug).await;
+    let mut stored_inert = Vec::new();
+    for (slug, _) in &inert_holders {
+        stored_inert.push((
+            *slug,
+            load_listpages_test_compiled_html(&runner, site_id, slug).await,
+        ));
+    }
+    assert!(!stored_before.contains(tag));
+    assert!(!stored_duplicate_2d.contains(tag));
+
+    for slug in std::iter::once(holder_slug)
+        .chain(std::iter::once(duplicate_2d_slug))
+        .chain(inert_holders.iter().map(|(slug, _)| *slug))
+    {
+        let holder = PageTable::find()
+            .filter(
+                sea_orm::Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::Slug.eq(slug)),
+            )
+            .one(runner.context().transaction())
+            .await
+            .expect("TagCloud cache fixture lookup should succeed")
+            .expect("TagCloud cache fixture should exist");
+        let mut holder = holder.into_active_model();
+        holder.from_wikidot = Set(true);
+        holder
+            .update(runner.context().transaction())
+            .await
+            .expect("TagCloud cache fixture should be marked imported");
+    }
+    for slug in [holder_slug, duplicate_2d_slug] {
+        let cache_metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert_eq!(
+            cache_metadata.article_page_cache_key, None,
+            "an imported executable TagCloud page must not cache tag-dependent HTML for {slug}",
+        );
+    }
+    for (slug, _) in &inert_holders {
+        let cache_metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert!(
+            cache_metadata.article_page_cache_key.is_some(),
+            "literal, effective 3d, and parser-invalid TagCloud shapes should remain cache-eligible for {slug}",
+        );
+    }
+
+    set_listpages_test_tags(&mut runner, site_id, target_slug, target_revision, &[tag])
+        .await;
+
+    let view_html = load_public_view(&runner, site_id, holder_slug).await;
+    assert!(
+        view_html.contains(&format!(
+            r#"<a class="tag" href="/{link_target}/tag/{tag}/category/{category}""#,
+        )),
+        "saved TagCloud view should use current category tags and its authored link target:\n{view_html}",
+    );
+    let duplicate_2d_html = load_public_view(&runner, site_id, duplicate_2d_slug).await;
+    assert!(
+        duplicate_2d_html.contains(&format!(
+            r#"<a class="tag" href="/{link_target}/tag/{tag}/category/{category}""#,
+        )),
+        "the last mode attribute should make this TagCloud executable:\n{duplicate_2d_html}",
+    );
+    for (slug, stored) in stored_inert {
+        assert_eq!(
+            load_public_view(&runner, site_id, slug).await,
+            stored,
+            "literal, effective 3d, and parser-invalid TagCloud shapes must not opt into runtime freshness for {slug}",
+        );
+    }
+
+    let stored_after =
+        load_listpages_test_compiled_html(&runner, site_id, holder_slug).await;
+    assert_eq!(
+        stored_after, stored_before,
+        "a TagCloud GET rerender must not rewrite the holder's stored compiled artifact",
+    );
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-29): `TagCloud` emits a
 /// `pages-tag-cloud-box` of tag anchors, filters by category, interpolates
 /// font/color styles over the displayed alphabetical tag slice, treats a
