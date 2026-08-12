@@ -227,6 +227,13 @@ export async function forumNestingAction({
   const form = await superValidate(request, valibot(forumNestingSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -238,12 +245,12 @@ export async function forumNestingAction({
 
   try {
     const res = await siteForumNestingUpdate(
-      form.data.siteId,
+      siteId,
       form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
       form.data.maxNestLevel,
-      { sessionToken, siteId: form.data.siteId }
+      { sessionToken, siteId }
     )
     return { form, res }
   } catch (error) {
