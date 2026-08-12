@@ -186,7 +186,7 @@ function renderedArtifact(overrides = {}) {
     source_sha256: "a".repeat(64),
     compiled_body_html_sha256: "b".repeat(64),
     compiled_body_styles_sha256: "c".repeat(64),
-    compiled_generator: "ftml [62ebba4e]; deepwell-render/v8",
+    compiled_generator: "ftml v1.42.0+roku.20260630.1; deepwell-render/v8",
     compiled_at: "2026-08-12T00:00:00.000Z",
     ...overrides,
   };
@@ -198,6 +198,10 @@ function diagnosticRefreshReceipt() {
     status: "pass",
     classification: "diagnostic_non_promotional",
     candidate_identity: {sha256: "d".repeat(64)},
+    rendered_artifact_authority: {
+      ftml_sha: `${"62ebba4e"}${"0".repeat(32)}`,
+      compiled_generator: "ftml v1.42.0+roku.20260630.1; deepwell-render/v8",
+    },
     pages: ["scp-9506", "scp-744", "scp-2117", "scp-5516", "scp-8980", "theme:basalt"]
       .map((slug, index) => ({
         slug,
@@ -235,7 +239,7 @@ test("candidate diagnostic refresh binds complete rendered artifact identities",
     /receipt is invalid/u,
   );
   const wrongRenderer = structuredClone(receipt);
-  wrongRenderer.pages[0].after.compiled_generator = "ftml [deadbeef]; deepwell-render/v8";
+  wrongRenderer.pages[0].after.compiled_generator = "ftml v0.0.0; deepwell-render/v8";
   assert.throws(
     () => validateCandidateRefreshReceipt(wrongRenderer, candidateIdentity),
     /renderer identity is invalid/u,

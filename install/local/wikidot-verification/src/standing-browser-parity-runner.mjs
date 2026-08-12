@@ -226,13 +226,17 @@ async function readCandidateIdentity(filePath) {
 
 export function validateCandidateRefreshReceipt(value, candidateIdentity) {
   const pages = value?.pages;
-  const expectedGeneratorRevision = candidateIdentity?.value?.candidate?.ftml_sha?.slice(0, 8);
+  const expectedFtmlSha = candidateIdentity?.value?.candidate?.ftml_sha;
+  const expectedGenerator = value?.rendered_artifact_authority?.compiled_generator;
   if (
     value?.schema !== "wikijump.diagnostic_candidate_page_refresh.v2"
     || value.status !== "pass"
     || value.classification !== "diagnostic_non_promotional"
     || value.candidate_identity?.sha256 !== candidateIdentity?.sha256
-    || !/^[0-9a-f]{8}$/u.test(expectedGeneratorRevision ?? "")
+    || value.rendered_artifact_authority?.ftml_sha !== expectedFtmlSha
+    || !/^[0-9a-f]{40}$/u.test(expectedFtmlSha ?? "")
+    || typeof expectedGenerator !== "string"
+    || !expectedGenerator.endsWith("; deepwell-render/v8")
     || !Array.isArray(pages)
     || pages.length !== 6
   ) {
@@ -267,7 +271,7 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
         throw new Error("candidate diagnostic refresh receipt changed source identity");
       }
     }
-    if (!after.compiled_generator.includes(`[${expectedGeneratorRevision}]`)
+    if (after.compiled_generator !== expectedGenerator
       || Date.parse(after.compiled_at) < Date.parse(before.compiled_at)) {
       throw new Error("candidate diagnostic refresh receipt renderer identity is invalid");
     }
