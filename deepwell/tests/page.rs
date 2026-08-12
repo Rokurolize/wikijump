@@ -37,7 +37,7 @@ use deepwell::models::forum_thread::Entity as ForumThreadTable;
 use deepwell::models::known_user;
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
-use deepwell::models::page_revision::Entity as PageRevisionTable;
+use deepwell::models::page_revision::{self, Entity as PageRevisionTable};
 use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
 use deepwell::models::text;
 use deepwell::models::text_block;
@@ -25322,6 +25322,39 @@ async fn page_mutations_require_page_permissions() {
         site_id,
         Reference::Id(page.page_id),
     );
+    let before_denied_delete =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+    let error = run_endpoint_err!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "blocked delete without delete action",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_denied_delete,
+        "delete permission denial must precede stale-revision checks and preserve state",
+    );
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::Delete],
+        "sample-deleter",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page delete permission cache should be invalidated");
     let _deleted = run_endpoint!(
         runner,
         page_delete,
@@ -25436,9 +25469,7 @@ async fn page_move_requires_destination_create_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
     const SOURCE_CATEGORY: &str = "fixture-page-move-source-private";
-    const DESTINATION_CATEGORY: &str = "fixture-page-move-destination-private";
     const PAGE_SLUG: &str = "fixture-page-move-source-private:target";
-    const BLOCKED_DESTINATION_SLUG: &str = "fixture-page-move-destination-private:target";
     const ALLOWED_DESTINATION_SLUG: &str = "fixture-page-move-source-private:moved";
 
     let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
@@ -25454,16 +25485,6 @@ async fn page_move_requires_destination_create_permission() {
         "sample-mutator",
     )
     .await;
-    make_page_mutation_test_category_for_user(
-        &runner,
-        site_id,
-        DESTINATION_CATEGORY,
-        ADMIN_USER_ID,
-        &[Action::View, Action::Create, Action::Edit],
-        "admin-mutator",
-    )
-    .await;
-
     set_mutation_request_context(
         &mut runner,
         SAMPLE_USER_ID,
@@ -25493,20 +25514,87 @@ async fn page_move_requires_destination_create_permission() {
         site_id,
         Reference::Id(page.page_id),
     );
+    let before_source_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
     let error = run_endpoint_err!(
         runner,
         page_move,
         json!({
             "site_id": site_id,
             "page": page.page_id,
-            "new_slug": BLOCKED_DESTINATION_SLUG,
+            "new_slug": ALLOWED_DESTINATION_SLUG,
             "last_revision_id": page.revision_id,
-            "revision_comments": "blocked cross-category move",
+            "revision_comments": "blocked same-category move without rename",
             "user_id": SAMPLE_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_source_denial,
+        "source rename denial must preserve page, revision, category, audit, and text-block state",
+    );
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        SOURCE_CATEGORY,
+        UNKNOWN_USER_ID,
+        &[Action::Rename],
+        "unknown-renamer",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page move permission cache should be invalidated");
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+
+    let before_destination_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+    let error = run_endpoint_err!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "new_slug": ALLOWED_DESTINATION_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "blocked same-category move without destination create",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_destination_denial,
+        "destination create denial must preserve page, revision, category, audit, and text-block state",
+    );
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        SOURCE_CATEGORY,
+        UNKNOWN_USER_ID,
+        &[Action::Create],
+        "unknown-creator",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page move destination permission cache should be invalidated");
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
 
     let moved = run_endpoint!(
         runner,
@@ -25517,7 +25605,7 @@ async fn page_move_requires_destination_create_permission() {
             "new_slug": ALLOWED_DESTINATION_SLUG,
             "last_revision_id": page.revision_id,
             "revision_comments": "authorized same-category move",
-            "user_id": SAMPLE_USER_ID,
+            "user_id": UNKNOWN_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -25620,7 +25708,7 @@ async fn page_get_score_requires_view_permission_and_site_ownership() {
 }
 
 #[tokio::test]
-async fn page_get_deleted_filters_pages_by_edit_permission() {
+async fn page_get_deleted_filters_pages_by_delete_permission() {
     const PRIVATE_CATEGORY: &str = "fixture-page-deleted-metadata-private";
     const PAGE_SLUG: &str = "fixture-page-deleted-metadata-private:target";
 
@@ -25634,8 +25722,17 @@ async fn page_get_deleted_filters_pages_by_edit_permission() {
         site_id,
         PRIVATE_CATEGORY,
         ADMIN_USER_ID,
-        &[Action::View, Action::Create, Action::Edit],
+        &[Action::View, Action::Create, Action::Edit, Action::Delete],
         "deleted-metadata-admin",
+    )
+    .await;
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::View, Action::Edit],
+        "deleted-metadata-editor",
     )
     .await;
 
@@ -25701,7 +25798,7 @@ async fn page_get_deleted_filters_pages_by_edit_permission() {
     );
     assert!(
         deleted_pages.is_empty(),
-        "deleted page metadata must not be returned without edit permission"
+        "deleted page metadata must not be returned with edit but without delete permission"
     );
 
     runner.set_request_context(RequestContext {
@@ -25731,6 +25828,7 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
     const EXPLICIT_PAGE_SLUG: &str = "fixture-page-restore-private:explicit";
     const EXPLICIT_DESTINATION_SLUG: &str =
         "fixture-page-restore-destination-private:explicit";
+    const CONFLICT_SLUG: &str = "fixture-page-restore-private:conflict";
 
     let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
         .expect("Seeded site not found");
@@ -25741,7 +25839,7 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         site_id,
         PRIVATE_CATEGORY,
         ADMIN_USER_ID,
-        &[Action::View, Action::Create, Action::Edit],
+        &[Action::View, Action::Create, Action::Edit, Action::Delete],
         "admin-mutator",
     )
     .await;
@@ -25750,8 +25848,17 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         site_id,
         PRIVATE_CATEGORY,
         SAMPLE_USER_ID,
-        &[Action::View, Action::Edit],
+        &[Action::View, Action::Edit, Action::Delete],
         "sample-editor",
+    )
+    .await;
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        UNKNOWN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit],
+        "unknown-editor-creator",
     )
     .await;
     make_page_mutation_test_category_for_user(
@@ -25789,6 +25896,28 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
 
     set_mutation_request_context(
         &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(CONFLICT_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "restore conflict target",
+            "title": "Restore Conflict Target",
+            "alt_title": null,
+            "slug": CONFLICT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create restore conflict target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
         SAMPLE_USER_ID,
         site_id,
         Reference::Id(page.page_id),
@@ -25806,6 +25935,42 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         }),
     );
 
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    let before_source_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+    let error = run_endpoint_err!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "slug": CONFLICT_SLUG,
+            "revision_comments": "blocked restore without delete action",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_source_denial,
+        "restore source denial must precede destination conflict checks and preserve state",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        SAMPLE_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    let before_destination_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+
     let error = run_endpoint_err!(
         runner,
         page_restore,
@@ -25818,6 +25983,11 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_destination_denial,
+        "restore destination denial must preserve page, revision, category, audit, and text-block state",
+    );
 
     set_mutation_request_context(
         &mut runner,
@@ -27576,6 +27746,52 @@ async fn make_page_mutation_test_category_for_user(
     )
     .await
     .expect("user should receive private mutation role");
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PageActionMutationSnapshot {
+    page: page::Model,
+    revision_count: u64,
+    categories: Vec<page_category::Model>,
+    audit_count: u64,
+    text_blocks: Vec<(text_block::Model, Vec<u8>)>,
+}
+
+async fn snapshot_page_action_mutation_state(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+) -> PageActionMutationSnapshot {
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("page-action snapshot page lookup should succeed")
+        .expect("page-action snapshot page should exist");
+    let revision_count = PageRevisionTable::find()
+        .filter(page_revision::Column::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("page-action snapshot revision count should be readable");
+    let categories = PageCategoryTable::find()
+        .filter(page_category::Column::SiteId.eq(site_id))
+        .order_by_asc(page_category::Column::CategoryId)
+        .all(runner.context().transaction())
+        .await
+        .expect("page-action snapshot categories should be readable");
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("page-action snapshot audit count should be readable");
+    let text_blocks = snapshot_page_text_blocks(runner, page_id).await;
+
+    PageActionMutationSnapshot {
+        page,
+        revision_count,
+        categories,
+        audit_count,
+        text_blocks,
+    }
 }
 
 async fn set_test_user_name(runner: &TestRunner, user_id: i64, name: &str) {
