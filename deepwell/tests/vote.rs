@@ -22,10 +22,33 @@ use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::view::GetPageViewOutput;
 use deepwell::types::{Reference, RerenderDepth};
+use redis::AsyncCommands;
 use rsmq_async::RsmqConnection;
 use serde_json::json;
+use std::env;
+use uuid::Uuid;
 
-static RATE_QUEUE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+async fn cleanup_job_queue_namespace(namespace: &str) {
+    let redis_url =
+        env::var("REDIS_URL").expect("REDIS_URL must be set for integration tests");
+    let client = redis::Client::open(redis_url)
+        .expect("failed to construct Rate test Redis client");
+    let mut connection = client
+        .get_multiplexed_async_connection()
+        .await
+        .expect("failed to connect for Rate queue cleanup");
+    let keys: Vec<String> = redis::cmd("KEYS")
+        .arg(format!("{namespace}:*"))
+        .query_async(&mut connection)
+        .await
+        .expect("failed to list Rate test queue keys");
+    if !keys.is_empty() {
+        let _: usize = connection
+            .del(keys)
+            .await
+            .expect("failed to delete Rate test queue keys");
+    }
+}
 
 async fn create_registered_rate_page(
     runner: &mut TestRunner,
@@ -181,8 +204,8 @@ async fn saved_rate_html(runner: &TestRunner, site_id: i64, slug: &str) -> Strin
 async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
     const CATEGORY: &str = "fixture-vote-refresh-points";
 
-    let _queue_guard = RATE_QUEUE_LOCK.lock().await;
-    let mut runner = TestRunner::setup().await;
+    let queue_namespace = format!("rsmq-rate-points-{}", Uuid::new_v4().simple());
+    let mut runner = TestRunner::setup_with_job_queue_namespace(&queue_namespace).await;
     let (site_id, slug, category_id, page_id) = create_registered_rate_page(
         &mut runner,
         CATEGORY,
@@ -281,6 +304,9 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
     );
     assert_no_queued_rate_rerender(&runner).await;
 
+    let before_enable = PublicContentCache::cache_fence(runner.context(), site_id)
+        .await
+        .expect("public cache fence should be readable before vote enable");
     let enabled = run_endpoint!(
         runner,
         vote_action,
@@ -297,6 +323,12 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
         .run_post_commit_actions()
         .await
         .expect("vote enable post-commit work should succeed");
+    assert_ne!(
+        PublicContentCache::cache_fence(runner.context(), site_id)
+            .await
+            .expect("public cache fence should be readable after vote enable"),
+        before_enable,
+    );
     consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     assert!(
         saved_rate_html(&runner, site_id, &slug)
@@ -304,6 +336,9 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
             .contains(r#"<span class="number prw54353">+1</span>"#)
     );
 
+    let before_change = PublicContentCache::cache_fence(runner.context(), site_id)
+        .await
+        .expect("public cache fence should be readable before point change");
     let changed =
         run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": -1}),)
             .expect("changed point vote should be stored");
@@ -313,6 +348,12 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
         .run_post_commit_actions()
         .await
         .expect("changed point vote post-commit work should succeed");
+    assert_ne!(
+        PublicContentCache::cache_fence(runner.context(), site_id)
+            .await
+            .expect("public cache fence should be readable after point change"),
+        before_change,
+    );
     consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     assert!(
         saved_rate_html(&runner, site_id, &slug)
@@ -364,6 +405,7 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
             .await
             .contains(r#"<span class="number prw54353">0</span>"#)
     );
+    cleanup_job_queue_namespace(&queue_namespace).await;
 }
 
 #[tokio::test]
@@ -375,8 +417,8 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         "[[/module]]",
     );
 
-    let _queue_guard = RATE_QUEUE_LOCK.lock().await;
-    let mut runner = TestRunner::setup().await;
+    let queue_namespace = format!("rsmq-rate-stars-{}", Uuid::new_v4().simple());
+    let mut runner = TestRunner::setup_with_job_queue_namespace(&queue_namespace).await;
     let (site_id, slug, category_id, page_id) =
         create_registered_rate_page(&mut runner, CATEGORY, "stars", SOURCE).await;
     let initial = saved_rate_html(&runner, site_id, &slug).await;
@@ -414,6 +456,9 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         )
     );
 
+    let before_change = PublicContentCache::cache_fence(runner.context(), site_id)
+        .await
+        .expect("public cache fence should be readable before star change");
     let changed =
         run_endpoint!(runner, vote_set, json!({"page_id": page_id, "value": 2}),)
             .expect("changed star vote should be stored");
@@ -423,6 +468,12 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         .run_post_commit_actions()
         .await
         .expect("changed star vote post-commit work should succeed");
+    assert_ne!(
+        PublicContentCache::cache_fence(runner.context(), site_id)
+            .await
+            .expect("public cache fence should be readable after star change"),
+        before_change,
+    );
     consume_rate_rerender(&runner, site_id, category_id, page_id).await;
     let changed_html = saved_rate_html(&runner, site_id, &slug).await;
     assert!(changed_html.contains(r#"class="page-rate-widget-start" data-rating="2""#));
@@ -478,6 +529,7 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
             r#"<span class="page-rate-widget-start-text-rating-votes">0</span>"#
         )
     );
+    cleanup_job_queue_namespace(&queue_namespace).await;
 }
 
 #[tokio::test]

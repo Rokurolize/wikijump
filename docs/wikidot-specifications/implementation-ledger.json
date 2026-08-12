@@ -2696,19 +2696,19 @@
         "Run-owned saved-page live Wikidot oracle with anonymous saved HTML and logged-in browser DOM captures for star widget behavior",
         "Run-owned saved-page live Wikidot oracle with anonymous saved HTML for plus/minus paired-body behavior",
         "Deepwell public saved-page page_get compiled HTML interface after page_rerender",
-        "Deepwell public registered vote_set, vote_remove, and staff vote_action lifecycle followed by local post-commit invalidation, exact queued target-rerender consumption, and saved page_view observation",
+        "Deepwell public registered vote_set, vote_remove, and staff vote_action lifecycle followed by local post-commit invalidation, task-owned exact queued target-rerender consumption, and saved page_view observation",
         "Deepwell renderer compatibility fallback for paired plus/minus Rate body consumption"
       ],
       "tests": [
         {
           "path": "deepwell/tests/vote.rs",
           "name": "registered_point_vote_lifecycle_refreshes_saved_rate_page",
-          "scope": "public fixture and mutation endpoints verify registered plus/minus set, change, same-value no-op, remove, and staff disable/repeated-disable/enable; each actual change invalidates local public content and queues the exact target full rerender consumed before saved page_view score observation, without claiming live Wikidot timing"
+          "scope": "public fixture and mutation endpoints verify registered plus/minus set, change, same-value no-op, remove, and staff disable/repeated-disable/enable; every actual change moves the local public-content fence and queues the exact target full rerender in a task-owned namespace consumed before saved page_view score observation, without claiming live Wikidot timing"
         },
         {
           "path": "deepwell/tests/vote.rs",
           "name": "registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count",
-          "scope": "public fixture and mutation endpoints verify registered star set, change, same-value no-op, and remove; each actual change invalidates local public content and queues the exact target full rerender consumed before saved page_view rating and vote-count observation, without claiming live Wikidot timing"
+          "scope": "public fixture and mutation endpoints verify registered star set, change, same-value no-op, and remove; every actual change moves the local public-content fence and queues the exact target full rerender in a task-owned namespace consumed before saved page_view rating and vote-count observation, without claiming live Wikidot timing"
         },
         {
           "path": "deepwell/tests/page.rs",
