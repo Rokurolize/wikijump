@@ -6,8 +6,6 @@
 
 <h1>UNTRANSLATED: Info page</h1>
 
-<textarea class="debug">{JSON.stringify(data, null, 2)}</textarea>
-
 <table class="platform-info">
   <tbody>
     <tr class="info-header">
