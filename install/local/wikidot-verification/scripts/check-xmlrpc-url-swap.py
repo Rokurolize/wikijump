@@ -158,11 +158,14 @@ def check_documented_methods(
         proxy,
         "posts.get",
         -32602,
-        {"site": "url-swap-fixture", "posts": [7000300]},
+        {"site": "url-swap-fixture", "posts": [True]},
     )
-    if posts_get_fault.faultString != "Argument posts should be a list of strings":
+    if (
+        posts_get_fault.faultString
+        != "Argument posts should be a list of strings or integers"
+    ):
         raise ConformanceError(
-            "posts.get returned the wrong fault text for an integer post ID"
+            "posts.get returned the wrong fault text for a Boolean post ID"
         )
 
     expect_fault(
