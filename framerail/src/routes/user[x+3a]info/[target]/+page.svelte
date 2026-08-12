@@ -26,7 +26,7 @@
           <dd><span class="odate">{data.user.createdAt}</span></dd>
 
           <dt>Account type:</dt>
-          <dd>{data.user.accountType}</dd>
+          <dd>{data.user.accountType === "regular" ? "free" : data.user.accountType}</dd>
         </dl>
       </div>
     </div>
