@@ -495,6 +495,10 @@ impl FileService {
         })
     }
 
+    fn restore_file_query(file_id: i64) -> sea_orm::Select<File> {
+        File::find_by_id(file_id).lock_exclusive()
+    }
+
     /// Restores a deleted file.
     ///
     /// This undeletes a file, moving it from the deleted sphere to the specified location.
@@ -513,8 +517,15 @@ impl FileService {
         }: RestoreFile<'_>,
     ) -> Result<RestoreFileOutput> {
         let txn = ctx.transaction();
-        let file = Self::get_direct(ctx, file_id, true)
+        // Serialize restores before checking deleted state or creating the
+        // resurrection revision. A concurrent restore waits here, then sees
+        // the committed active state and fails without creating a revision or
+        // audit event.
+        let file = Self::restore_file_query(file_id)
+            .one(txn)
             .await
+            .or_raise(|| Error::new("failed to restore file", ErrorType::File))?
+            .ok_or_raise(|| Error::new("file does not exist", ErrorType::FileNotFound))
             .or_raise(|| Error::new("failed to restore file", ErrorType::File))?;
 
         let make_error = || {
@@ -1200,4 +1211,20 @@ fn check_last_revision(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::{DbBackend, QueryTrait};
+
+    #[test]
+    fn restore_file_lookup_holds_an_exclusive_row_lock() {
+        let statement = FileService::restore_file_query(123)
+            .build(DbBackend::Postgres)
+            .to_string();
+
+        assert!(statement.contains(r#""file"."file_id" = 123"#));
+        assert!(statement.ends_with("FOR UPDATE"));
+    }
 }
