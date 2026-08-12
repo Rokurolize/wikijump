@@ -934,6 +934,12 @@ pub struct SiteFields<'a> {
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub preferred_domain: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub favicon_source: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub ios_icon_source: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub windows_tile_source: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub layout: Maybe<Option<Layout>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub forum_max_nest_level: Maybe<i16>,
@@ -1137,6 +1143,46 @@ mod tests {
         assert!(changed["side_bar_page"].is_null());
         assert_eq!(changed["template_page_id"], 24);
         assert_eq!(changed["license"], "cc-by-3.0");
+    }
+
+    #[test]
+    fn site_update_icon_fields_serialize_set_clear_and_unset_states() {
+        let raw = extract(AuditEvent::SiteUpdate {
+            site_id: 21,
+            user_id: 22,
+            previous_fields: SiteFields {
+                favicon_source: Maybe::Set(Some("/local--files/site/favicon.png")),
+                ios_icon_source: Maybe::Set(None),
+                ..Default::default()
+            },
+            changed_fields: SiteFields {
+                favicon_source: Maybe::Set(None),
+                windows_tile_source: Maybe::Set(Some(
+                    "/local--files/site/windows-tile.png",
+                )),
+                ..Default::default()
+            },
+        });
+
+        let previous: serde_json::Value =
+            serde_json::from_str(raw.extra_string_1.as_deref().unwrap()).unwrap();
+        let changed: serde_json::Value =
+            serde_json::from_str(raw.extra_string_2.as_deref().unwrap()).unwrap();
+
+        assert_eq!(
+            previous,
+            serde_json::json!({
+                "favicon_source": "/local--files/site/favicon.png",
+                "ios_icon_source": null,
+            }),
+        );
+        assert_eq!(
+            changed,
+            serde_json::json!({
+                "favicon_source": null,
+                "windows_tile_source": "/local--files/site/windows-tile.png",
+            }),
+        );
     }
 
     #[test]

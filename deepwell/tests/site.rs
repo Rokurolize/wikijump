@@ -26,9 +26,11 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::alias::{self, Entity as AliasTable};
+use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::site::Entity as SiteTable;
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
+use deepwell::services::ServiceContext;
 use deepwell::services::alias::{AliasService, CreateAlias};
 use deepwell::services::category::CategoryService;
 use deepwell::services::page::CreatePage;
@@ -43,7 +45,7 @@ use deepwell::types::{
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, PaginatorTrait,
-    QueryFilter, Set,
+    QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use serde_json::json;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -244,6 +246,161 @@ async fn site_update_allows_users_with_site_edit_permission() {
 
     assert_eq!(updated.site_id, site_id);
     assert_eq!(updated.name, "Authorized site rename");
+}
+
+#[tokio::test]
+async fn public_site_update_audits_icon_set_clear_and_unset_states() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let user_id = create_user(&runner, n, "icon-audit-editor").await;
+    grant_site_edit(&runner, site_id, user_id, n).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let favicon_source = "/local--files/site/favicon.png";
+    let ios_icon_source = "/local--files/site/ios-icon.png";
+    let windows_tile_source = "/local--files/site/windows-tile.png";
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "favicon_source": favicon_source,
+            "ios_icon_source": ios_icon_source,
+            "windows_tile_source": windows_tile_source,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 1,
+            "favicon_source": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let original_name = format!("Site update permission {n}");
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 2,
+            "name": "Icon audit name-only update",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.update"))
+        .filter(AuditLogColumn::SiteId.eq(site_id))
+        .order_by_asc(AuditLogColumn::EventId)
+        .all(runner.context().transaction())
+        .await
+        .expect("site update audit lookup should succeed");
+    assert_eq!(events.len(), 3);
+    for event in &events {
+        assert_eq!(event.user_id, Some(user_id));
+        assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+    }
+
+    let before_set: serde_json::Value =
+        serde_json::from_str(events[0].extra_string_1.as_deref().unwrap()).unwrap();
+    let changed_set: serde_json::Value =
+        serde_json::from_str(events[0].extra_string_2.as_deref().unwrap()).unwrap();
+    assert_eq!(
+        before_set,
+        json!({
+            "favicon_source": null,
+            "ios_icon_source": null,
+            "windows_tile_source": null,
+        }),
+    );
+    assert_eq!(
+        changed_set,
+        json!({
+            "favicon_source": favicon_source,
+            "ios_icon_source": ios_icon_source,
+            "windows_tile_source": windows_tile_source,
+        }),
+    );
+
+    let before_clear: serde_json::Value =
+        serde_json::from_str(events[1].extra_string_1.as_deref().unwrap()).unwrap();
+    let changed_clear: serde_json::Value =
+        serde_json::from_str(events[1].extra_string_2.as_deref().unwrap()).unwrap();
+    assert_eq!(before_clear, json!({"favicon_source": favicon_source}));
+    assert_eq!(changed_clear, json!({"favicon_source": null}));
+
+    let before_name: serde_json::Value =
+        serde_json::from_str(events[2].extra_string_1.as_deref().unwrap()).unwrap();
+    let changed_name: serde_json::Value =
+        serde_json::from_str(events[2].extra_string_2.as_deref().unwrap()).unwrap();
+    assert_eq!(before_name, json!({"name": original_name}));
+    assert_eq!(changed_name, json!({"name": "Icon audit name-only update"}));
+    for icon_key in ["favicon_source", "ios_icon_source", "windows_tile_source"] {
+        assert!(before_name.get(icon_key).is_none());
+        assert!(changed_name.get(icon_key).is_none());
+    }
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("site update audit savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(user_id),
+            ..Default::default()
+        });
+    deepwell::endpoints::all::site_update(
+        &ctx,
+        common::make_params(json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 3,
+            "ios_icon_source": null,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional site update should succeed");
+    let transactional_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.update"))
+        .filter(AuditLogColumn::SiteId.eq(site_id))
+        .count(&transaction)
+        .await
+        .expect("transactional site update audit count should succeed");
+    assert_eq!(transactional_count, 4);
+    transaction
+        .rollback()
+        .await
+        .expect("site update audit savepoint should roll back");
+
+    let stored = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("rolled-back site lookup should succeed")
+        .expect("rolled-back site should still exist");
+    assert_eq!(stored.settings_revision, 3);
+    assert_eq!(stored.ios_icon_source.as_deref(), Some(ios_icon_source));
+    let rolled_back_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.update"))
+        .filter(AuditLogColumn::SiteId.eq(site_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("rolled-back site update audit count should succeed");
+    assert_eq!(rolled_back_count, 3);
 }
 
 #[tokio::test]

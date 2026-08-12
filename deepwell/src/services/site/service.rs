@@ -431,6 +431,9 @@ impl SiteService {
             add_changed_field!(top_bar_page);
             add_changed_field!(side_bar_page);
             add_changed_field!(ref preferred_domain);
+            add_changed_field!(ref favicon_source);
+            add_changed_field!(ref ios_icon_source);
+            add_changed_field!(ref windows_tile_source);
 
             if let Maybe::Set(analytics) = &input.google_analytics {
                 previous_fields.google_analytics_enabled =
