@@ -6001,25 +6001,35 @@ fn localizes_matching_wikidot_local_file_urls() {
         r#"file</a>"#,
         r#"<img class="image crom-thumbnail" src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.com/local--files/scp-9506/NFSI.png">"#,
         r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
+        r#"<img src="//scp-wiki.wjfiles.com/local--resized-images/scp-9506/NFSI.png/small.jpg">"#,
         r#"<style>:root{--logo:url(http://scp-wiki.wikidot.com/local--files/scp-9506/NFSI.png)}</style>"#,
         r#"<style>.quoted{background:url('http://scp-wiki.wikidot.com/local--files/scp-9506/BG.png')}</style>"#,
         r#"<style>@import "https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1";</style>"#,
         r#"<style>@import url(https://scp-wiki.wdfiles.com/local--code/component:betterfootnotes/1)</style>"#,
+        r#"<style>.thumbnail{background:url(https://scp-wiki.wjfiles.com/local--resized-images/scp-9506/NFSI.png/small.jpg)}</style>"#,
         r#"</p>"#,
     );
 
     assert_eq!(
-        RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config,),
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            html,
+            Some(&site),
+            &config,
+            true,
+            &[],
+        ),
         concat!(
             r#"<p><img src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png?download=true#frag">"#,
             r#"<a href='https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NAME%20HERE.png'>"#,
             r#"file</a>"#,
             r#"<img class="image crom-thumbnail" src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png">"#,
             r#"<img src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
+            r#"<img src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--resized-images/scp-9506/NFSI.png/small.jpg">"#,
             r#"<style>:root{--logo:url(https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png)}</style>"#,
             r#"<style>.quoted{background:url('https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/BG.png')}</style>"#,
             r#"<style>@import "https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--code/theme%3Abasalt/1";</style>"#,
             r#"<style>@import url(https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--code/component:betterfootnotes/1)</style>"#,
+            r#"<style>.thumbnail{background:url(https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--resized-images/scp-9506/NFSI.png/small.jpg)}</style>"#,
             r#"</p>"#,
         ),
     );
@@ -6066,6 +6076,21 @@ fn localizes_when_site_slug_is_wikidot_slug() {
     assert_eq!(
         RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config,),
         r#"<img src="https://scp-wiki.wjfiles.com/local--files/scp-9506/NFSI.png">"#,
+    );
+}
+
+#[test]
+fn leaves_unowned_resized_image_urls_unchanged() {
+    let site = wikidot_site("scp-wiki", None);
+    let config = Config::integration_testing();
+    let html = concat!(
+        r#"<img src="https://example.com/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
+        r#"<img src="https://scp-wiki.wjfiles.com/not-local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
+    );
+
+    assert_eq!(
+        RenderService::localize_wikidot_local_file_urls(html, Some(&site), &config),
+        html,
     );
 }
 
@@ -11141,6 +11166,21 @@ fn alignment_html_marker_scan_preserves_mismatches_and_partial_prefixes() {
     assert!(restored.contains("<p>[[=]</p>"));
     assert!(restored.contains("<p>[[=]]</p"));
     assert!(restored.ends_with("suffix"));
+}
+
+#[test]
+fn closes_nested_unmatched_alignment_markers_in_stack_order() {
+    let html = "<p>[[=]]</p>outer<p>[[&gt;]]</p>inner";
+
+    let restored = RenderService::restore_residual_wikidot_alignment_html_markers(html);
+
+    assert_eq!(
+        restored,
+        concat!(
+            r#"<div style="text-align: center;">outer"#,
+            r#"<div style="text-align: right;">inner</div></div>"#,
+        ),
+    );
 }
 
 #[test]
