@@ -224,6 +224,60 @@ async function readCandidateIdentity(filePath) {
   };
 }
 
+export function validateCandidateRefreshReceipt(value, candidateIdentity) {
+  const pages = value?.pages;
+  const expectedGeneratorRevision = candidateIdentity?.value?.candidate?.ftml_sha?.slice(0, 8);
+  if (
+    value?.schema !== "wikijump.diagnostic_candidate_page_refresh.v2"
+    || value.status !== "pass"
+    || value.classification !== "diagnostic_non_promotional"
+    || value.candidate_identity?.sha256 !== candidateIdentity?.sha256
+    || !/^[0-9a-f]{8}$/u.test(expectedGeneratorRevision ?? "")
+    || !Array.isArray(pages)
+    || pages.length !== 6
+  ) {
+    throw new Error("candidate diagnostic refresh receipt is invalid");
+  }
+  const expectedSlugs = new Set([
+    "scp-9506", "scp-744", "scp-2117", "scp-5516", "scp-8980", "theme:basalt",
+  ]);
+  const shaPattern = /^[0-9a-f]{64}$/u;
+  for (const page of pages) {
+    if (!expectedSlugs.delete(page?.slug)
+      || page.finalization_state !== "page_rerender_endpoint_complete") {
+      throw new Error("candidate diagnostic refresh receipt page set is invalid");
+    }
+    const before = page.before;
+    const after = page.after;
+    for (const snapshot of [before, after]) {
+      if (!Number.isSafeInteger(snapshot?.page_id)
+        || !Number.isSafeInteger(snapshot?.category_id)
+        || !Number.isSafeInteger(snapshot?.revision_id)
+        || !shaPattern.test(snapshot?.source_sha256 ?? "")
+        || !shaPattern.test(snapshot?.compiled_body_html_sha256 ?? "")
+        || !shaPattern.test(snapshot?.compiled_body_styles_sha256 ?? "")
+        || typeof snapshot?.compiled_generator !== "string"
+        || snapshot.compiled_generator.length === 0
+        || Number.isNaN(Date.parse(snapshot?.compiled_at))) {
+        throw new Error("candidate diagnostic refresh receipt artifact identity is invalid");
+      }
+    }
+    for (const field of ["page_id", "category_id", "revision_id", "source_sha256"]) {
+      if (before[field] !== after[field]) {
+        throw new Error("candidate diagnostic refresh receipt changed source identity");
+      }
+    }
+    if (!after.compiled_generator.includes(`[${expectedGeneratorRevision}]`)
+      || Date.parse(after.compiled_at) < Date.parse(before.compiled_at)) {
+      throw new Error("candidate diagnostic refresh receipt renderer identity is invalid");
+    }
+  }
+  if (expectedSlugs.size !== 0) {
+    throw new Error("candidate diagnostic refresh receipt page set is incomplete");
+  }
+  return value;
+}
+
 async function readCandidateRefresh(args, candidateIdentity) {
   if (!args.candidateRefreshReceipt) return null;
   const value = await readJsonObject(
@@ -234,16 +288,7 @@ async function readCandidateRefresh(args, candidateIdentity) {
   if (observedSha256 !== args.candidateRefreshSha256) {
     throw new Error("candidate diagnostic refresh receipt SHA-256 does not match");
   }
-  if (
-    value.schema !== "wikijump.diagnostic_candidate_page_refresh.v1"
-    || value.status !== "pass"
-    || value.classification !== "diagnostic_non_promotional"
-    || value.candidate_identity?.sha256 !== candidateIdentity.sha256
-    || !Array.isArray(value.pages)
-    || value.pages.length !== 6
-  ) {
-    throw new Error("candidate diagnostic refresh receipt is invalid");
-  }
+  validateCandidateRefreshReceipt(value, candidateIdentity);
   return Object.freeze({
     path: args.candidateRefreshReceipt,
     sha256: observedSha256,
