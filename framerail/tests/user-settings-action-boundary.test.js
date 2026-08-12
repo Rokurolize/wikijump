@@ -58,6 +58,9 @@ test("user settings bind persistence to the server session actor", async () => {
     client.request = async (method, params, context) => {
       calls.push({ method, params, context })
       if (method === "session_get") {
+        if (params[0] === "stale-session") {
+          throw Object.assign(new Error("Session token is invalid"), { code: 3001 })
+        }
         return {
           session_token: "issue-1063-session",
           user_id: 41,
@@ -97,6 +100,18 @@ test("user settings bind persistence to the server session actor", async () => {
     )
     assert.equal(missingSession.status, 401)
     assert.equal(calls.length, 0)
+
+    const staleSession = await userDisplaySettingsAction(
+      requestEvent({ locales: "en-US", sessionToken: "stale-session" })
+    )
+    assert.equal(staleSession.status, 401)
+    assert.equal(staleSession.data.message, "Session token is invalid")
+    assert.equal(staleSession.data.code, 3001)
+    assert.deepEqual(
+      calls.map(({ method }) => method),
+      ["session_get"]
+    )
+    calls.length = 0
 
     const saved = await userDisplaySettingsAction(
       requestEvent({
