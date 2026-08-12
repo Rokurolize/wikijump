@@ -176,6 +176,13 @@ export async function siteIconsAction({
   const form = await superValidate(request, valibot(siteIconsSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -187,7 +194,7 @@ export async function siteIconsAction({
 
   try {
     const res = await siteIconsUpdate(
-      form.data.siteId,
+      siteId,
       form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
@@ -196,7 +203,7 @@ export async function siteIconsAction({
         iosIconSource: emptyToNull(form.data.iosIconSource),
         windowsTileSource: emptyToNull(form.data.windowsTileSource)
       },
-      { sessionToken, siteId: form.data.siteId }
+      { sessionToken, siteId }
     )
     return { form, res }
   } catch (error) {
@@ -276,6 +283,13 @@ export async function discussionAction({
   const form = await superValidate(request, valibot(discussionSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -287,12 +301,12 @@ export async function discussionAction({
 
   try {
     const res = await categoryDiscussionUpdate(
-      form.data.siteId,
+      siteId,
       form.data.categoryId,
       session.user_id,
       getClientAddress(),
       discussionUpdateValue(form.data),
-      { sessionToken, siteId: form.data.siteId }
+      { sessionToken, siteId }
     )
     return { form, res }
   } catch (error) {
@@ -388,6 +402,13 @@ export async function ratingAction({ request, getClientAddress, cookies }: Reque
   const form = await superValidate(request, valibot(ratingSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -397,8 +418,7 @@ export async function ratingAction({ request, getClientAddress, cookies }: Reque
     })
   }
 
-  const { siteId, categoryId, inherit, enabled, permission, visibility, ratingType } =
-    form.data
+  const { categoryId, inherit, enabled, permission, visibility, ratingType } = form.data
   try {
     const res = await categoryRatingUpdate(
       siteId,
