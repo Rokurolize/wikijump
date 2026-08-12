@@ -22,10 +22,12 @@ use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::view::GetPageViewOutput;
 use deepwell::types::{Reference, RerenderDepth};
+use futures::FutureExt;
 use redis::AsyncCommands;
 use rsmq_async::RsmqConnection;
 use serde_json::json;
 use std::env;
+use std::panic::{AssertUnwindSafe, resume_unwind};
 use uuid::Uuid;
 
 async fn cleanup_job_queue_namespace(namespace: &str) {
@@ -202,10 +204,26 @@ async fn saved_rate_html(runner: &TestRunner, site_id: i64, slug: &str) -> Strin
 
 #[tokio::test]
 async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
+    let queue_namespace = format!("rsmq-rate-points-{}", Uuid::new_v4().simple());
+    let verification =
+        AssertUnwindSafe(run_registered_point_vote_lifecycle(&queue_namespace))
+            .catch_unwind()
+            .await;
+    let cleanup = AssertUnwindSafe(cleanup_job_queue_namespace(&queue_namespace))
+        .catch_unwind()
+        .await;
+    if let Err(payload) = verification {
+        resume_unwind(payload);
+    }
+    if let Err(payload) = cleanup {
+        resume_unwind(payload);
+    }
+}
+
+async fn run_registered_point_vote_lifecycle(queue_namespace: &str) {
     const CATEGORY: &str = "fixture-vote-refresh-points";
 
-    let queue_namespace = format!("rsmq-rate-points-{}", Uuid::new_v4().simple());
-    let mut runner = TestRunner::setup_with_job_queue_namespace(&queue_namespace).await;
+    let mut runner = TestRunner::setup_with_job_queue_namespace(queue_namespace).await;
     let (site_id, slug, category_id, page_id) = create_registered_rate_page(
         &mut runner,
         CATEGORY,
@@ -405,11 +423,27 @@ async fn registered_point_vote_lifecycle_refreshes_saved_rate_page() {
             .await
             .contains(r#"<span class="number prw54353">0</span>"#)
     );
-    cleanup_job_queue_namespace(&queue_namespace).await;
 }
 
 #[tokio::test]
 async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
+    let queue_namespace = format!("rsmq-rate-stars-{}", Uuid::new_v4().simple());
+    let verification =
+        AssertUnwindSafe(run_registered_star_vote_lifecycle(&queue_namespace))
+            .catch_unwind()
+            .await;
+    let cleanup = AssertUnwindSafe(cleanup_job_queue_namespace(&queue_namespace))
+        .catch_unwind()
+        .await;
+    if let Err(payload) = verification {
+        resume_unwind(payload);
+    }
+    if let Err(payload) = cleanup {
+        resume_unwind(payload);
+    }
+}
+
+async fn run_registered_star_vote_lifecycle(queue_namespace: &str) {
     const CATEGORY: &str = "fixture-vote-refresh-stars";
     const SOURCE: &str = concat!(
         "[[module Rate]]\n",
@@ -417,8 +451,7 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
         "[[/module]]",
     );
 
-    let queue_namespace = format!("rsmq-rate-stars-{}", Uuid::new_v4().simple());
-    let mut runner = TestRunner::setup_with_job_queue_namespace(&queue_namespace).await;
+    let mut runner = TestRunner::setup_with_job_queue_namespace(queue_namespace).await;
     let (site_id, slug, category_id, page_id) =
         create_registered_rate_page(&mut runner, CATEGORY, "stars", SOURCE).await;
     let initial = saved_rate_html(&runner, site_id, &slug).await;
@@ -529,7 +562,6 @@ async fn registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count() {
             r#"<span class="page-rate-widget-start-text-rating-votes">0</span>"#
         )
     );
-    cleanup_job_queue_namespace(&queue_namespace).await;
 }
 
 #[tokio::test]
