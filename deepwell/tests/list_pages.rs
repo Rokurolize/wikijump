@@ -7059,6 +7059,9 @@ async fn listpages_respects_corpus_literal_context_ownership() {
         ("[!----", "---]", "COMMENT CLOSED AFTER THREE HYPHENS"),
         ("[!--", "----]", "COMMENT CLOSED AFTER FOUR HYPHENS"),
         ("[!--", "-----]", "COMMENT CLOSED AFTER FIVE HYPHENS"),
+        ("[!--", "------]", "COMMENT CLOSED AFTER SIX HYPHENS"),
+        ("[!--", "-------]", "COMMENT CLOSED AFTER SEVEN HYPHENS"),
+        ("[!--", "--------]", "COMMENT CLOSED AFTER EIGHT HYPHENS"),
     ] {
         let comment = format!(
             "{opener}\n\
@@ -7082,12 +7085,59 @@ async fn listpages_respects_corpus_literal_context_ownership() {
         .body;
         assert!(
             hidden.contains(visible_after_close)
+                && !hidden.contains("temporary hidden region")
                 && !hidden.contains("list-pages-box")
                 && !hidden.contains("TODO: module ListPages")
                 && !hidden.contains("[[module ListPages"),
             "the complete Wikidot comment must own the module-shaped text and close before trailing content:\n{hidden}",
         );
     }
+
+    let one_hyphen_non_closer = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Single-hyphen comment non-closer",
+        concat!(
+            "[!--\n",
+            "temporary hidden region\n",
+            "-]\n",
+            "ONE HYPHEN DOES NOT CLOSE\n",
+            "--]\n",
+            "CANONICAL CLOSER ENDS COMMENT",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("a single-hyphen pseudo-closer should remain inside the comment")
+    .html_output
+    .body;
+    assert!(
+        one_hyphen_non_closer.contains("CANONICAL CLOSER ENDS COMMENT")
+            && !one_hyphen_non_closer.contains("temporary hidden region")
+            && !one_hyphen_non_closer.contains("ONE HYPHEN DOES NOT CLOSE"),
+        "a single-hyphen pseudo-closer must not release comment-owned text before a valid closer:\n{one_hyphen_non_closer}",
+    );
+
+    let unclosed_comment = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unclosed comment ownership",
+        concat!(
+            "[!--\n",
+            "temporary hidden region\n",
+            "UNCLOSED COMMENT REACHES EOF",
+        )
+        .to_owned(),
+    )
+    .await
+    .expect("an unclosed comment should preserve ordinary source literally")
+    .html_output
+    .body;
+    assert!(
+        unclosed_comment.contains("temporary hidden region")
+            && unclosed_comment.contains("UNCLOSED COMMENT REACHES EOF"),
+        "an unclosed comment must preserve ordinary source literally through EOF:\n{unclosed_comment}",
+    );
 
     let unmatched_closers = RenderService::render_wikidot_page_preview(
         runner.context(),

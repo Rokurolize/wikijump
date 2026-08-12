@@ -3916,7 +3916,7 @@
         {
           "path": "deepwell/tests/list_pages.rs",
           "name": "listpages_respects_corpus_literal_context_ownership",
-          "scope": "public PagePreview rendering verifies hidden inner ListPages output and visible post-comment content for two- through five-hyphen closers, plus visible outside-comment three- and four-hyphen controls"
+          "scope": "public PagePreview rendering verifies hidden ordinary and ListPages-shaped inner content plus visible post-comment content for two- through eight-hyphen closers, a hidden one-hyphen non-closer before canonical closure, literal ordinary-source preservation through unclosed EOF, and visible outside-comment three- and four-hyphen controls"
         }
       ],
       "implementation_files": [],
@@ -3928,7 +3928,7 @@
         "live-observations.json::listpages-literal-context-ownership"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Only PagePreview comment ownership, two- through five-hyphen closer recognition, outside-comment three- and four-hyphen controls, inner-output elision, and visible post-comment content have an in-repository public regression seam. Saved-page persistence, reload, imported-source round trips, wider DOM and browser behavior, malformed or unclosed comments, and bounded-work behavior remain unobserved; syntax-comments therefore remains in progress rather than implemented."
+        "The P1 and P7 evidence-backed classifications are limited to the evidenced PagePreview valid-closer slice: two- through eight-hyphen closer recognition, outside-comment three- and four-hyphen controls, ordinary and ListPages-shaped inner-output elision, and visible post-comment content. The same public regression also records a one-hyphen non-closer before canonical closure and local literal ordinary-source preservation through unclosed EOF. Live unclosed-comment rendering parity, saved-page persistence, reload, imported-source round trips, wider DOM and browser behavior, and bounded-work behavior remain unobserved; syntax-comments therefore remains in progress rather than implemented."
       ]
     },
     "syntax-date": {
@@ -4649,7 +4649,7 @@
         "status": "unobserved",
         "evidence": [],
         "observation_gaps": [
-          "Malformed and unclosed comment behavior and bounded-work limits lack an in-repository public regression seam."
+          "Live unclosed-comment rendering parity, temporal behavior, and bounded-work limits for comment parsing remain unobserved."
         ]
       }
     }
