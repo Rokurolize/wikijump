@@ -391,7 +391,8 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module CountPages category=\"news\"]][[/module]]",
+            "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
+            "[[module CountPages]][[/module]]",
             "[[*user example]]",
             "[[[empty-label|]]]",
             "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
@@ -452,7 +453,9 @@ mod tests {
         );
 
         for source in [
+            "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",
@@ -554,7 +557,8 @@ mod tests {
         for source in [
             "Plain imported page text.\n\n[[div]]Static[[/div]]",
             "[[include component:license-box]]",
-            "[[module CountPages category=\"news\"]][[/module]]",
+            "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
+            "[[module CountPages]][[/module]]",
             "[[*user example]]",
             "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
         ] {
@@ -565,7 +569,9 @@ mod tests {
     #[test]
     fn article_page_cache_eligibility_denies_unsafe_or_unverified_sources() {
         for source in [
+            "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
             "[[module CountPages offset=\"@URL|1\"]][[/module]]",
+            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
             "[[module ListPages category=\"fragment\"]]%%content%%[[/module]]",
             "[[module ListPages order=\"random\"]]%%title%%[[/module]]",
             "Request value @URL|0",

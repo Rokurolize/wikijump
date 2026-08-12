@@ -999,14 +999,13 @@ impl RenderService {
         wikitext: String,
         page_info: &PageInfo<'_>,
         settings: &WikitextSettings,
-        options: CountPagesExpansionOptions<'_>,
+        options: CountPagesExpansionOptions,
         compat_text: &mut CompatTextFragments,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         let CountPagesExpansionOptions {
             current_site_id,
             current_page_id,
-            url,
         } = options;
         let Some(current_site_id) = current_site_id else {
             return Ok(wikitext);
@@ -1028,9 +1027,9 @@ impl RenderService {
         let page_context = ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_id,
-            // CountPages renders a total, not a page of rows, so a `/p/<n>`
-            // in the path does not change what it counts.
-            url,
+            // CountPages uses static selector fallbacks and never reads URL
+            // path arguments from the current request.
+            url: UrlArguments::default(),
         };
         let batched_required_tag_totals = Self::load_count_pages_required_tag_totals(
             ctx,
@@ -1079,7 +1078,7 @@ impl RenderService {
                 .regex_capture_close_is_reachable(mtch.start()..mtch.end());
             if !close_reachable {
                 if body_match.is_none()
-                    && Self::count_pages_unclosed_default_shell_head(head, url)
+                    && Self::count_pages_unclosed_default_shell_head(head)
                 {
                     expanded.push_str(
                         &compat_html.push_block_html(COUNTPAGES_DEFAULT_SHELL.to_owned()),
@@ -1109,7 +1108,9 @@ impl RenderService {
                 continue;
             }
 
-            let Some(arguments) = parse_list_pages_arguments_with_url(head, url) else {
+            let Some(arguments) =
+                parse_list_pages_arguments_with_url(head, UrlArguments::default())
+            else {
                 expanded.push_str(&compat_text.push_escaped_html_text(mtch.as_str()));
                 cursor = mtch.end();
                 continue;
@@ -1194,11 +1195,10 @@ impl RenderService {
     /// boundary is the explicit `category="*"` selector with no count bound
     /// or unsupported filter.  Other malformed CountPages text remains
     /// escaped instead of being guessed as executable markup.
-    fn count_pages_unclosed_default_shell_head(
-        head: &str,
-        url: UrlArguments<'_>,
-    ) -> bool {
-        let Some(arguments) = parse_list_pages_arguments_with_url(head, url) else {
+    fn count_pages_unclosed_default_shell_head(head: &str) -> bool {
+        let Some(arguments) =
+            parse_list_pages_arguments_with_url(head, UrlArguments::default())
+        else {
             return false;
         };
         arguments.category_selector_present

@@ -2057,7 +2057,6 @@ impl RenderService {
                 CountPagesExpansionOptions {
                     current_site_id: options.current_site_id,
                     current_page_id: options.current_page_id,
-                    url: options.url,
                 },
                 compat_text,
                 compat_html,

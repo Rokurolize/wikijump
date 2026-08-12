@@ -24,6 +24,7 @@ mod categories;
 mod child_pages;
 mod compat;
 mod corpus;
+mod count_pages_recognition;
 mod diagnostics;
 mod file_modules;
 mod forum_comments;

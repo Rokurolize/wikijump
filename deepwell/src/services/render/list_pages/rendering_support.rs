@@ -610,13 +610,9 @@ pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
 }
 
 /// The request a CountPages expansion is answering.
-pub(in crate::services::render) struct CountPagesExpansionOptions<'a> {
+pub(in crate::services::render) struct CountPagesExpansionOptions {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
-
-    /// The Wikidot URL path arguments this request carried; a `tags` selector
-    /// can name the tag as `@URL`, and `/p/<n>` picks the rendered page.
-    pub(in crate::services::render) url: UrlArguments<'a>,
 }
 
 impl RenderService {

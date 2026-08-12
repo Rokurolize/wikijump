@@ -23,6 +23,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
+use super::count_pages_recognition::recognize_count_pages_modules;
 use super::literal_regions::LiteralRegionIndex;
 use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
 
@@ -60,7 +61,6 @@ impl RenderDependencyClasses {
 
 const MODULE_QUERY_NAMES: &[&str] = &[
     "listpages",
-    "countpages",
     "backlinks",
     "tagcloud",
     "ratedpages",
@@ -100,8 +100,7 @@ static MODULE_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
         .expect("module regular expression should compile")
 });
 static REQUEST_MARKER_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)@URL(?:\|[^\s\]]*)?")
-        .expect("request marker regular expression should compile")
+    Regex::new(r"(?i)@URL").expect("request marker regular expression should compile")
 });
 static WIKIDOT_USER_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[\[\*user\b")
@@ -110,6 +109,13 @@ static WIKIDOT_USER_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 
 pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     let mut classes = RenderDependencyClasses::revision_local();
+    let count_pages_literal_regions = source
+        .to_ascii_lowercase()
+        .contains("countpages")
+        .then(|| LiteralRegionIndex::new_count_pages_syntax(source));
+    let count_pages_recognition = count_pages_literal_regions
+        .as_ref()
+        .map(|_| recognize_count_pages_modules(source));
     let pages_by_tag_literal_regions = PAGES_BY_TAG_MODULE_REGEX
         .is_match(source)
         .then(|| LiteralRegionIndex::new_wikidot_module_recognition(source));
@@ -121,7 +127,11 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         classes.insert(RenderDependencyClass::SourceDependent);
     }
 
-    if REQUEST_MARKER_REGEX.is_match(source) {
+    if REQUEST_MARKER_REGEX.find_iter(source).any(|marker| {
+        !count_pages_recognition.as_ref().is_some_and(|recognition| {
+            recognition.owns_static_fallback_marker(marker.start()..marker.end())
+        })
+    }) {
         classes.insert(RenderDependencyClass::RequestDependent);
     }
 
@@ -143,6 +153,26 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         };
 
         let name = name.to_ascii_lowercase();
+        if name == "countpages" {
+            if count_pages_literal_regions
+                .as_ref()
+                .is_some_and(|literal_regions| literal_regions.contains(module_start))
+                || count_pages_recognition
+                    .as_ref()
+                    .is_some_and(|recognition| recognition.is_literal_at(module_start))
+            {
+                continue;
+            }
+            if count_pages_recognition
+                .as_ref()
+                .is_some_and(|recognition| recognition.is_executable_at(module_start))
+            {
+                classes.insert(RenderDependencyClass::QueryDependent);
+            } else {
+                classes.insert(RenderDependencyClass::UnsupportedUnverified);
+            }
+            continue;
+        }
         if name == "pagesbytag" {
             if pages_by_tag_literal_regions
                 .as_ref()
@@ -279,6 +309,100 @@ mod tests {
     }
 
     #[test]
+    fn count_pages_dependencies_follow_executable_runtime_recognition() {
+        for source in [
+            "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]",
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(
+                classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::RequestDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+        }
+
+        for source in [
+            "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
+            "[[module CountPages]][[/module]]",
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(
+                classes.contains(RenderDependencyClass::RevisionLocal),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+        }
+
+        for source in [
+            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(
+                classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::RevisionLocal),
+                "{source}",
+            );
+        }
+        assert!(
+            classify_render_dependencies(
+                "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
+            )
+            .contains(RenderDependencyClass::RequestDependent),
+        );
+        assert!(
+            !classify_render_dependencies(
+                "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
+            )
+            .contains(RenderDependencyClass::RequestDependent),
+        );
+
+        let mixed = classify_render_dependencies(concat!(
+            "[[module CountPages category=\"news\"]]%%total%%[[/module]]\n",
+            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
+        ));
+        assert!(mixed.contains(RenderDependencyClass::QueryDependent));
+        assert!(mixed.contains(RenderDependencyClass::UnsupportedUnverified));
+        assert!(mixed.contains(RenderDependencyClass::RequestDependent));
+
+        for source in [
+            concat!(
+                "outside @URL|request\n",
+                "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]",
+            ),
+            concat!(
+                "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]\n",
+                "[[module ListPages tags=\"@URL|other\"]]%%title%%[[/module]]",
+            ),
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(classes.contains(RenderDependencyClass::RequestDependent));
+        }
+    }
+
+    #[test]
     fn render_dependency_wikidot_user_link_is_source_dependent() {
         let classes = classify_render_dependencies("[[*user example]]");
 
@@ -288,14 +412,55 @@ mod tests {
     }
 
     #[test]
-    fn render_dependency_url_marker_is_request_dependent() {
-        let classes = classify_render_dependencies(
+    fn count_pages_static_url_fallback_is_not_request_dependent() {
+        for source in [
             "[[module CountPages category=\"news\" offset=\"@URL|0\"]][[/module]]",
-        );
+            "[[module CountPages category=\"news\" tags=\"@URL |+fresh\"]][[/module]]",
+        ] {
+            let classes = classify_render_dependencies(source);
 
-        assert!(classes.contains(RenderDependencyClass::QueryDependent));
-        assert!(classes.contains(RenderDependencyClass::RequestDependent));
-        assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+            assert!(
+                classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::RequestDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::RevisionLocal),
+                "{source}",
+            );
+        }
+    }
+
+    #[test]
+    fn count_pages_only_owns_recognized_static_url_fallback_selectors() {
+        for source in [
+            concat!(
+                "[[module CountPages category=\"news\" tags=\"@URL|+fresh\" ",
+                "form=\"@URL|external\"]]%%total%%[[/module]]",
+            ),
+            concat!(
+                "[[module CountPages category=\"news\" ",
+                "tags=\"x@URL|+fresh\"]]%%total%%[[/module]]",
+            ),
+        ] {
+            let classes = classify_render_dependencies(source);
+
+            assert!(
+                classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                classes.contains(RenderDependencyClass::RequestDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+        }
     }
 
     #[test]

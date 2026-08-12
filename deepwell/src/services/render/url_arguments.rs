@@ -26,6 +26,7 @@
 
 use super::backlinks::BACKLINKS_MODULE_REGEX;
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
+use super::count_pages_recognition::wikitext_has_executable_count_pages_module;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
     parse_list_pages_arguments,
@@ -219,6 +220,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
         || wikitext_has_supported_pages_by_tag_module(wikitext)
         || wikitext_has_executable_list_pages_module(wikitext)
+        || wikitext_has_executable_count_pages_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || BACKLINKS_MODULE_REGEX.is_match(wikitext)
         || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
@@ -353,6 +355,27 @@ mod tests {
         assert!(wikitext_requires_runtime_render(
             r#"[[module MembershipByPassword]]"#
         ));
+    }
+
+    #[test]
+    fn executable_count_pages_requires_runtime_render_without_reading_url_arguments() {
+        for source in [
+            "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+
+        for source in [
+            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
+            "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
+            "[[module CountPages]][[/module]]",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
     }
 
     #[test]

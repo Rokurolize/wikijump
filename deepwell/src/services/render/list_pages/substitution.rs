@@ -43,9 +43,9 @@ pub(in crate::services::render) use self::selectors::{
     UrlSelector, is_dynamic_list_pages_value,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
-    list_pages_url_fallback, parse_list_pages_numeric_argument, resolve_url_selector,
-    split_list_pages_tag_values, static_list_pages_selector,
-    substitute_list_pages_current_data_form_variables,
+    list_pages_static_url_fallback_marker_range, list_pages_url_fallback,
+    parse_list_pages_numeric_argument, resolve_url_selector, split_list_pages_tag_values,
+    static_list_pages_selector, substitute_list_pages_current_data_form_variables,
 };
 
 use super::template::{
@@ -454,6 +454,46 @@ pub(in crate::services::render) fn parse_list_pages_arguments(
     head: &str,
 ) -> Option<ListPagesArguments> {
     parse_list_pages_arguments_with_url(head, UrlArguments::default())
+}
+
+/// Locate standalone static `@URL|fallback` values that the parser actually
+/// consumes.
+///
+/// Unknown and otherwise inert arguments are deliberately excluded: removing
+/// the fallback from one of those values leaves the canonical parsed result
+/// unchanged. The returned ranges are relative to `head` and cover only the
+/// recognized four-byte `@URL` token, not its fallback, surrounding argument,
+/// or module head.
+pub(in crate::services::render) fn list_pages_recognized_static_url_fallback_ranges(
+    head: &str,
+    parsed: &ListPagesArguments,
+) -> Vec<Range<usize>> {
+    wikidot_list_pages_arguments(head)
+        .into_iter()
+        .filter_map(|argument| {
+            let value = argument.value.trim();
+            let (selector, _) = value.split_once('|')?;
+            let relative_marker = list_pages_static_url_fallback_marker_range(value)?;
+
+            let value_start = value.as_ptr() as usize - head.as_ptr() as usize;
+            let value_range = value_start..value_start + value.len();
+            let marker_range =
+                value_start + relative_marker.start..value_start + relative_marker.end;
+            let mut without_fallback =
+                String::with_capacity(head.len() - (value.len() - selector.len()));
+            without_fallback.push_str(&head[..value_range.start]);
+            without_fallback.push_str(selector);
+            without_fallback.push_str(&head[value_range.end..]);
+
+            (parse_list_pages_arguments_with_url(
+                &without_fallback,
+                UrlArguments::default(),
+            )
+            .as_ref()
+                != Some(parsed))
+            .then_some(marker_range)
+        })
+        .collect()
 }
 
 pub(in crate::services::render) fn list_pages_static_parent_fullname(

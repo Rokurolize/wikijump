@@ -3098,6 +3098,118 @@ async fn article_cache_and_include_dependencies_use_exact_template_source() {
 }
 
 #[tokio::test]
+async fn imported_countpages_sources_are_excluded_from_article_view_cache_metadata() {
+    const DIRECT_SLUG: &str = "article-cache-countpages-direct:holder";
+    const WHITESPACE_FALLBACK_SLUG: &str =
+        "article-cache-countpages-whitespace-fallback:holder";
+    const TEMPLATE_SLUG: &str = "article-cache-countpages-template:_template";
+    const TEMPLATED_SLUG: &str = "article-cache-countpages-template:holder";
+    const LITERAL_SLUG: &str = "article-cache-countpages-literal:holder";
+    const EXECUTABLE_COUNT_PAGES: &str = "[[module CountPages category=\"article-cache-countpages-target\"]]%%total%%[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DIRECT_SLUG,
+        "Imported direct CountPages cache fixture",
+        EXECUTABLE_COUNT_PAGES,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        WHITESPACE_FALLBACK_SLUG,
+        "Imported whitespace fallback CountPages cache fixture",
+        "[[module CountPages category=\"article-cache-countpages-target\" tags=\"@URL |+fresh\"]]%%total%%[[/module]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_SLUG,
+        "Imported templated CountPages cache template",
+        &format!("{EXECUTABLE_COUNT_PAGES}\n%%content%%"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATED_SLUG,
+        "Imported templated CountPages cache fixture",
+        "cache-safe templated page body",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        LITERAL_SLUG,
+        "Imported literal CountPages cache fixture",
+        "[[code]]\n[[module CountPages category=\"article-cache-countpages-target\"]]%%total%%[[/module]]\n[[/code]]",
+    )
+    .await;
+
+    for slug in [
+        DIRECT_SLUG,
+        WHITESPACE_FALLBACK_SLUG,
+        TEMPLATED_SLUG,
+        LITERAL_SLUG,
+    ] {
+        let page = PageTable::find()
+            .filter(
+                sea_orm::Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::Slug.eq(slug)),
+            )
+            .one(runner.context().transaction())
+            .await
+            .expect("CountPages cache fixture lookup should succeed")
+            .expect("CountPages cache fixture should exist");
+        let mut page = page.into_active_model();
+        page.from_wikidot = Set(true);
+        page.update(runner.context().transaction())
+            .await
+            .expect("CountPages cache fixture should be marked imported");
+    }
+
+    for slug in [DIRECT_SLUG, WHITESPACE_FALLBACK_SLUG, TEMPLATED_SLUG] {
+        let metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert_eq!(
+            metadata.article_page_cache_key, None,
+            "executable CountPages must deny imported article caching for {slug}",
+        );
+    }
+
+    let literal_metadata = run_endpoint!(
+        runner,
+        article_view_cache_metadata,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": LITERAL_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        literal_metadata.article_page_cache_key.is_some(),
+        "literal CountPages text must remain eligible for imported article caching",
+    );
+}
+
+#[tokio::test]
 async fn imported_breadcrumbs_hide_private_and_deleted_ancestors() {
     const IMPORT_RUN_ID: i64 = 7_700_398;
     const PUBLIC_PARENT_SLUG: &str = "breadcrumb-public:visible-parent";
@@ -32213,6 +32325,268 @@ async fn countpages_substitutes_total_for_tagged_pages() {
             "CountPages fixture should not contain {forbidden:?}:\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn countpages_saved_page_views_follow_current_matching_page_state() {
+    async fn load_public_view(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+        extra: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": extra},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found CountPages page view, got {other:?}"),
+        }
+    }
+
+    fn assert_count(html: &str, marker: &str, expected: usize) {
+        assert!(
+            html.contains(&format!("{marker}={expected}")),
+            "CountPages view should contain {marker}={expected}:\n{html}",
+        );
+        assert!(
+            !html.contains(&format!("{marker}=%%total%%")),
+            "executable CountPages must substitute its total:\n{html}",
+        );
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category = "fixture-countpages-freshness";
+    let template_category = "fixture-countpages-freshness-template";
+    let tag = "fixture-countpages-freshness-match";
+    let direct_slug = "fixture-countpages-freshness:direct";
+    let template_slug = "fixture-countpages-freshness-template:_template";
+    let templated_slug = "fixture-countpages-freshness-template:templated";
+    let fallback_slug = "fixture-countpages-freshness:fallback";
+    let dynamic_slug = "fixture-countpages-freshness:dynamic";
+    let literal_slug = "fixture-countpages-freshness:literal";
+    let target_slug = "fixture-countpages-freshness:target";
+
+    CategoryService::get_or_create(runner.context(), site_id, category)
+        .await
+        .expect("CountPages freshness category should be created");
+    CategoryService::get_or_create(runner.context(), site_id, template_category)
+        .await
+        .expect("CountPages freshness template category should be created");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        direct_slug,
+        "Fixture CountPages Freshness Direct",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"+{tag}\" limit=\"20\"]]DIRECT_COUNT=%%total%%[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        template_slug,
+        "Fixture CountPages Freshness Template",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"+{tag}\" limit=\"20\"]]TEMPLATE_COUNT=%%total%%[[/module]]\n\n%%content%%",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        templated_slug,
+        "Fixture CountPages Freshness Templated",
+        "TEMPLATED_CONTENT",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        fallback_slug,
+        "Fixture CountPages Freshness URL Fallback",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"@URL|+{tag}\" limit=\"20\"]]FALLBACK_COUNT=%%total%%[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        dynamic_slug,
+        "Fixture CountPages Freshness Dynamic Literal",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"@URL\" limit=\"20\"]]DYNAMIC_COUNT=%%total%%[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        literal_slug,
+        "Fixture CountPages Freshness Literal",
+        &format!(
+            "[[code]]\n[[module CountPages category=\"{category}\" tags=\"+{tag}\" limit=\"20\"]]CODE_COUNT=%%total%%[[/module]]\n[[/code]]\n\n[[module CountPages]][[/module]]",
+        ),
+    )
+    .await;
+
+    let stored_direct =
+        load_listpages_test_compiled_html(&runner, site_id, direct_slug).await;
+    let stored_dynamic =
+        load_listpages_test_compiled_html(&runner, site_id, dynamic_slug).await;
+    let stored_literal =
+        load_listpages_test_compiled_html(&runner, site_id, literal_slug).await;
+    assert_count(&stored_direct, "DIRECT_COUNT", 0);
+    assert!(stored_dynamic.contains("DYNAMIC_COUNT=%%total%%"));
+    assert!(stored_literal.contains("CODE_COUNT=%%total%%"));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(target_slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "CountPages freshness matching target.",
+            "title": "Fixture CountPages Freshness Matching Target",
+            "alt_title": null,
+            "slug": target_slug,
+            "layout": "wikidot",
+            "tags": [tag],
+            "revision_comments": "create matching CountPages freshness target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("CountPages freshness target should exist");
+
+    for (slug, marker) in [
+        (direct_slug, "DIRECT_COUNT"),
+        (templated_slug, "TEMPLATE_COUNT"),
+        (fallback_slug, "FALLBACK_COUNT"),
+    ] {
+        let html = load_public_view(&runner, site_id, slug, "").await;
+        assert_count(&html, marker, 1);
+        if slug == templated_slug {
+            assert!(html.contains("TEMPLATED_CONTENT"));
+        }
+    }
+    assert_count(
+        &load_public_view(
+            &runner,
+            site_id,
+            fallback_slug,
+            "/tag/conflicting-route-tag",
+        )
+        .await,
+        "FALLBACK_COUNT",
+        1,
+    );
+
+    let dynamic_with_route =
+        load_public_view(&runner, site_id, dynamic_slug, &format!("/tag/{tag}")).await;
+    assert_eq!(
+        dynamic_with_route, stored_dynamic,
+        "bare tags=\"@URL\" must stay literal even when the route supplies a tag",
+    );
+    let literal_after_create = load_public_view(&runner, site_id, literal_slug, "").await;
+    assert_eq!(
+        literal_after_create, stored_literal,
+        "CountPages in code and a closed empty marker must not create runtime freshness",
+    );
+
+    let removed_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        target_slug,
+        created.revision_id,
+        &[],
+    )
+    .await;
+    for (slug, marker) in [
+        (direct_slug, "DIRECT_COUNT"),
+        (templated_slug, "TEMPLATE_COUNT"),
+        (fallback_slug, "FALLBACK_COUNT"),
+    ] {
+        assert_count(
+            &load_public_view(&runner, site_id, slug, "").await,
+            marker,
+            0,
+        );
+    }
+
+    let restored_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        target_slug,
+        removed_revision,
+        &[tag],
+    )
+    .await;
+    assert_count(
+        &load_public_view(&runner, site_id, direct_slug, "").await,
+        "DIRECT_COUNT",
+        1,
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(target.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": target.page_id,
+            "last_revision_id": restored_revision,
+            "revision_comments": "delete matching CountPages freshness target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    for (slug, marker) in [
+        (direct_slug, "DIRECT_COUNT"),
+        (templated_slug, "TEMPLATE_COUNT"),
+        (fallback_slug, "FALLBACK_COUNT"),
+    ] {
+        assert_count(
+            &load_public_view(&runner, site_id, slug, "").await,
+            marker,
+            0,
+        );
+    }
+
+    let stored_after_mutations =
+        load_listpages_test_compiled_html(&runner, site_id, direct_slug).await;
+    assert_eq!(
+        stored_after_mutations, stored_direct,
+        "matching page mutations must not rewrite the holder's save-time compilation",
+    );
 }
 
 /// Live capture (sandbox-for-codex, 2026-08-06): an unclosed CountPages

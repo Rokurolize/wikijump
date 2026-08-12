@@ -23,6 +23,7 @@ use crate::services::render::module_arguments::{
 };
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::ops::Range;
 
 use super::super::data_forms::{
     ListPagesDataFormDefinition, substitute_list_pages_form_data,
@@ -132,6 +133,14 @@ pub(in crate::services::render) fn list_pages_url_fallback(value: &str) -> Optio
             .is_some()
             .then_some(fallback)
     })
+}
+
+pub(in crate::services::render) fn list_pages_static_url_fallback_marker_range(
+    value: &str,
+) -> Option<Range<usize>> {
+    let (selector, _) = value.split_once('|')?;
+    let (start, end) = list_pages_url_token_range(selector)?;
+    Some(start..end)
 }
 
 pub(in crate::services::render) fn parse_list_pages_numeric_argument(
