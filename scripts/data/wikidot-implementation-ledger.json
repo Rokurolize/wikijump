@@ -2696,9 +2696,20 @@
         "Run-owned saved-page live Wikidot oracle with anonymous saved HTML and logged-in browser DOM captures for star widget behavior",
         "Run-owned saved-page live Wikidot oracle with anonymous saved HTML for plus/minus paired-body behavior",
         "Deepwell public saved-page page_get compiled HTML interface after page_rerender",
+        "Deepwell public registered vote_set and vote_remove lifecycle followed by local post-commit invalidation, target rerender, and saved page_view observation",
         "Deepwell renderer compatibility fallback for paired plus/minus Rate body consumption"
       ],
       "tests": [
+        {
+          "path": "deepwell/tests/vote.rs",
+          "name": "registered_point_vote_lifecycle_refreshes_saved_rate_page",
+          "scope": "public fixture and mutation endpoints verify registered plus/minus set, change, same-value no-op, and remove; local post-commit invalidation plus target rerender refreshes the saved page_view score without claiming live Wikidot timing"
+        },
+        {
+          "path": "deepwell/tests/vote.rs",
+          "name": "registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count",
+          "scope": "public fixture and mutation endpoints verify registered star set, change, same-value no-op, and remove; local post-commit invalidation plus target rerender refreshes the saved page_view rating and vote count without claiming live Wikidot timing"
+        },
         {
           "path": "deepwell/tests/page.rs",
           "name": "page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
@@ -2736,10 +2747,12 @@
         }
       ],
       "implementation_files": [
+        "deepwell/src/endpoints/vote.rs",
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/service.rs",
         "deepwell/src/services/render/service/tests.rs",
-        "deepwell/tests/page.rs"
+        "deepwell/tests/page.rs",
+        "deepwell/tests/vote.rs"
       ],
       "documentation_evidence": [
         "specifications/module/module-rate.md"
