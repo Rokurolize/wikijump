@@ -261,6 +261,19 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
     throw new Error("candidate diagnostic refresh authority is invalid");
   }
   const shaPattern = /^[0-9a-f]{64}$/u;
+  if (!Array.isArray(value.mutations) || value.mutations.length !== 6) {
+    throw new Error("candidate diagnostic refresh mutation ledger is invalid");
+  }
+  const mutationBySlug = new Map();
+  for (const mutation of value.mutations) {
+    if (mutation?.status !== "rendered_artifact_verified"
+      || mutationBySlug.has(mutation?.slug)
+      || !shaPattern.test(mutation?.compiled_body_html_sha256 ?? "")
+      || !shaPattern.test(mutation?.compiled_body_styles_sha256 ?? "")) {
+      throw new Error("candidate diagnostic refresh mutation ledger is invalid");
+    }
+    mutationBySlug.set(mutation.slug, mutation);
+  }
   for (const page of pages) {
     const expectedPage = expectedPages.get(page?.slug);
     if (!expectedPage
@@ -290,6 +303,13 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
     }
     if (after.page_id !== expectedPage.pageId || after.category_id !== expectedPage.categoryId) {
       throw new Error("candidate diagnostic refresh receipt target identity is invalid");
+    }
+    const mutation = mutationBySlug.get(page.slug);
+    if (mutation?.page_id !== expectedPage.pageId
+      || mutation.category_id !== expectedPage.categoryId
+      || mutation.compiled_body_html_sha256 !== after.compiled_body_html_sha256
+      || mutation.compiled_body_styles_sha256 !== after.compiled_body_styles_sha256) {
+      throw new Error("candidate diagnostic refresh mutation ledger differs from artifacts");
     }
     if (after.compiled_generator !== expectedGenerator
       || Date.parse(after.compiled_at) < Date.parse(before.compiled_at)) {

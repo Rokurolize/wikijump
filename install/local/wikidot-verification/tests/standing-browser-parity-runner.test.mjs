@@ -224,6 +224,14 @@ function diagnosticRefreshReceipt() {
         after: renderedArtifact({page_id: pageId, category_id: categoryId, compiled_body_html_sha256: "e".repeat(64)}),
         finalization_state: "page_rerender_endpoint_complete",
       })),
+    mutations: targets.map(([slug, pageId, categoryId]) => ({
+      slug,
+      page_id: pageId,
+      category_id: categoryId,
+      status: "rendered_artifact_verified",
+      compiled_body_html_sha256: "e".repeat(64),
+      compiled_body_styles_sha256: "c".repeat(64),
+    })),
   };
 }
 
@@ -271,5 +279,11 @@ test("candidate diagnostic refresh binds complete rendered artifact identities",
   assert.throws(
     () => validateCandidateRefreshReceipt(missingCleanup, candidateIdentity),
     /authority is invalid/u,
+  );
+  const incompleteMutationLedger = structuredClone(receipt);
+  incompleteMutationLedger.mutations[0].status = "page_rerender_endpoint_complete";
+  assert.throws(
+    () => validateCandidateRefreshReceipt(incompleteMutationLedger, candidateIdentity),
+    /mutation ledger is invalid/u,
   );
 });
