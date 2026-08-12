@@ -6,6 +6,8 @@ import {
   uniqueLocales
 } from "$lib/locales"
 
+import { deleteSessionCookie } from "$lib/server/auth/session-cookie"
+import { isInvalidSessionTokenError } from "$lib/server/deepwell/public-error.js"
 import { preloadView } from "$lib/server/deepwell/views"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { buildPublicPreloadData } from "$lib/server/load/preload-data.js"
@@ -66,11 +68,17 @@ export async function loadPreload(request: Request, cookies: Cookies) {
   const locales = getPreloadRequestLocales(request)
 
   // Includes fallback locale in case there is no Accept-Language header
-  const response = await preloadView(
-    siteId,
-    getPreloadBackendLocales(locales),
-    sessionToken
-  )
+  const backendLocales = getPreloadBackendLocales(locales)
+  let response: Viewer
+
+  try {
+    response = await preloadView(siteId, backendLocales, sessionToken)
+  } catch (error) {
+    if (!sessionToken || !isInvalidSessionTokenError(error)) throw error
+
+    deleteSessionCookie(cookies)
+    response = await preloadView(siteId, backendLocales, undefined)
+  }
 
   return finalizePreloadData(response, locales)
 }

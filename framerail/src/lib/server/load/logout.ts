@@ -2,9 +2,10 @@ import defaults from "$lib/defaults"
 
 import { parseAcceptLangHeader } from "$lib/locales"
 import { authLogout } from "$lib/server/auth/logout"
-import { DEEPWELL_SESSION_INVALID } from "$lib/server/deepwell/public-error.js"
+import { deleteSessionCookie } from "$lib/server/auth/session-cookie"
+import { isInvalidSessionTokenError } from "$lib/server/deepwell/public-error.js"
 import { translate } from "$lib/server/deepwell/translate"
-import { failForActionError, normalizeActionError } from "$lib/server/load/action-error"
+import { failForActionError } from "$lib/server/load/action-error"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { fail } from "@sveltejs/kit"
 
@@ -56,17 +57,12 @@ export async function logoutAction({ cookies, request }: RequestEvent) {
   try {
     await authLogout(sessionToken)
   } catch (error) {
-    if (normalizeActionError(error).code !== DEEPWELL_SESSION_INVALID) {
+    if (!isInvalidSessionTokenError(error)) {
       return failForActionError(error)
     }
   }
 
-  cookies.delete("wikijump_token", {
-    path: "/",
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax"
-  })
+  deleteSessionCookie(cookies)
 
   return { success: true }
 }
