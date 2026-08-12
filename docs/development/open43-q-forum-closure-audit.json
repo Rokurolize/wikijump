@@ -390,10 +390,9 @@
             "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests",
             "framerail/tests/forum-routes.test.js#unobserved forum suffixes terminate at the public 404 boundary",
             "framerail/tests/forum-routes.test.js#the public forum Svelte body boundary server-compiles",
-            "framerail/tests/forum-page-content-public-boundary.test.js#read-only forum bodies render inside exactly one page-content root",
             "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
           ],
-          "result": "The exact read-only Comments, ForumStart, category, thread, thread posts, and RecentPosts parameter sets reach wikidot_forum_module with the observed envelope. Served ForumStart, category name or p/<page>, and thread routes use the same complete read model; their shared SSR body boundary encloses forum-box, empty, and error-block bodies in exactly one div#page-content. Unobserved suffixes terminate at 404 before Deepwell. Remote jsInclude values remain inert metadata and are not emitted as script loaders. This route-shell slice does not establish byte-exact whole-layout parity or browser lifecycle behavior."
+          "result": "The exact read-only Comments, ForumStart, category, thread, thread posts, and RecentPosts parameter sets reach wikidot_forum_module with the observed envelope. Served ForumStart, category name or p/<page>, and thread routes use the same complete read model; unobserved suffixes terminate at 404 before Deepwell. Remote jsInclude values remain inert metadata and are not emitted as script loaders."
         },
         {
           "case_id": "Q1034_FORUM_LATER_PAGE_AND_PAGER_READ_MODEL",
