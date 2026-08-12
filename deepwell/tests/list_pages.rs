@@ -7054,40 +7054,53 @@ async fn listpages_respects_corpus_literal_context_ownership() {
         "page preview keeps HTML blocks literal, including nested ListPages syntax:\n{preview_html_block}",
     );
 
-    for comment in [
-        concat!(
-            "[!--\n",
-            "[[module ListPages rating=\">100\" order=\"rating desc\" ",
-            "separate=\"false\" limit=\"1000\" perPage=\"1000\"]]\n",
-            "%%title_linked%%:: rating: %%rating%%\n",
-            "[[/module]]\n\n",
-            "---]",
-        ),
-        concat!(
-            "[!----\n",
-            "temporary hidden region\n",
-            "[[module ListPages order=\"updated_at\" category=\"*\" ",
-            "perPage=\"200\" separate=\"false\"]]\n",
-            "%%title_linked%%\n",
-            "[[/module]]\n",
-            "---]",
-        ),
+    for (opener, closer, visible_after_close) in [
+        ("[!--", "--]", "COMMENT CLOSED AFTER TWO HYPHENS"),
+        ("[!----", "---]", "COMMENT CLOSED AFTER THREE HYPHENS"),
+        ("[!--", "----]", "COMMENT CLOSED AFTER FOUR HYPHENS"),
+        ("[!--", "-----]", "COMMENT CLOSED AFTER FIVE HYPHENS"),
     ] {
+        let comment = format!(
+            "{opener}\n\
+             temporary hidden region\n\
+             [[module ListPages order=\"updated_at\" category=\"*\" \
+             perPage=\"200\" separate=\"false\"]]\n\
+             %%title_linked%%\n\
+             [[/module]]\n\
+             {closer}\n\
+             {visible_after_close}",
+        );
         let hidden = RenderService::render_wikidot_page_preview(
             runner.context(),
             site_id,
             "Comment-owned ListPages",
-            comment.to_owned(),
+            comment,
         )
         .await
         .expect("a comment-owned ListPages example should remain hidden")
         .html_output
         .body;
         assert!(
-            !hidden.contains("list-pages-box")
+            hidden.contains(visible_after_close)
+                && !hidden.contains("list-pages-box")
                 && !hidden.contains("TODO: module ListPages")
                 && !hidden.contains("[[module ListPages"),
-            "the complete Wikidot comment must own the module-shaped text:\n{hidden}",
+            "the complete Wikidot comment must own the module-shaped text and close before trailing content:\n{hidden}",
         );
     }
+
+    let unmatched_closers = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unmatched comment closers",
+        "raw ---]\nraw ----]".to_owned(),
+    )
+    .await
+    .expect("comment-shaped closers outside a comment should remain visible")
+    .html_output
+    .body;
+    assert!(
+        unmatched_closers.contains("raw —-]") && unmatched_closers.contains("raw ——]"),
+        "outside a comment, three- and four-hyphen runs retain ordinary typography and a visible bracket:\n{unmatched_closers}",
+    );
 }

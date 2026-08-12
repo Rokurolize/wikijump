@@ -3916,7 +3916,7 @@
         {
           "path": "deepwell/tests/list_pages.rs",
           "name": "listpages_respects_corpus_literal_context_ownership",
-          "scope": "public PagePreview rendering verifies inline-monospace and complete-comment ownership of ListPages-shaped text"
+          "scope": "public PagePreview rendering verifies hidden inner ListPages output and visible post-comment content for two- through five-hyphen closers, plus visible outside-comment three- and four-hyphen controls"
         }
       ],
       "implementation_files": [],
@@ -3928,7 +3928,7 @@
         "live-observations.json::listpages-literal-context-ownership"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Only comment ownership of ListPages-shaped text and the observed comment-closing boundary have an in-repository public regression seam. Saved-page persistence, reload, and imported-source round trips remain unobserved, and malformed or unclosed comments plus bounded-work behavior lack an in-repository public regression seam; syntax-comments therefore remains in progress rather than implemented."
+        "Only PagePreview comment ownership, two- through five-hyphen closer recognition, outside-comment three- and four-hyphen controls, inner-output elision, and visible post-comment content have an in-repository public regression seam. Saved-page persistence, reload, imported-source round trips, wider DOM and browser behavior, malformed or unclosed comments, and bounded-work behavior remain unobserved; syntax-comments therefore remains in progress rather than implemented."
       ]
     },
     "syntax-date": {
@@ -4638,10 +4638,12 @@
         "rationale": "Comments define no HTTP, API, URL, Ajax, feed, or navigation contract."
       },
       "P7": {
-        "status": "not_applicable",
-        "evidence": [],
-        "observation_gaps": [],
-        "rationale": "A recognized comment emits no DOM, CSS, resource, interaction, or geometry surface."
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-literal-context-ownership",
+          "test:deepwell/tests/list_pages.rs#listpages_respects_corpus_literal_context_ownership"
+        ],
+        "observation_gaps": []
       },
       "P8": {
         "status": "unobserved",
