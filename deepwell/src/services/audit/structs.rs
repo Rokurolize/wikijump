@@ -141,6 +141,13 @@ pub enum AuditEvent<'a> {
         page_id: i64,
         layout: Option<Layout>,
     },
+    FileCreate {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+    },
     FileUndelete {
         user_id: i64,
         site_id: i64,
@@ -555,6 +562,24 @@ impl<'a> AuditEvent<'a> {
                 extra_id_1: None,
                 extra_id_2: None,
                 extra_string_1: layout.map(|l| cow!(l.value())),
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::FileCreate {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "file.create",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
                 extra_string_2: None,
                 extra_number: None,
             },
@@ -1303,6 +1328,26 @@ mod tests {
         });
         assert_event_type(&raw, "page_layout.update");
         assert_eq!(raw.extra_string_1.as_deref(), Some("wikidot"));
+    }
+
+    #[test]
+    fn extracts_file_create_event() {
+        let raw = extract(AuditEvent::FileCreate {
+            user_id: 31,
+            site_id: 32,
+            page_id: 33,
+            file_id: 34,
+            revision_id: 35,
+        });
+        assert_event_type(&raw, "file.create");
+        assert_eq!(raw.user_id, Some(31));
+        assert_eq!(raw.site_id, Some(32));
+        assert_eq!(raw.page_id, Some(33));
+        assert_eq!(raw.extra_id_1, Some(34));
+        assert_eq!(raw.extra_id_2, Some(35));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
     }
 
     #[test]

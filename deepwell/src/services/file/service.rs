@@ -28,7 +28,7 @@ use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::ServiceContext;
-use crate::services::audit::{AuditEvent, AuditService, ObjectScope};
+use crate::services::audit::{AuditEvent, ObjectScope};
 use crate::services::blob::{ContentTypeDescriptor, FinalizeBlobUploadOutput};
 use crate::services::file_revision::{
     CreateFileRevision, CreateFileRevisionBody, CreateFirstFileRevision,
@@ -36,7 +36,9 @@ use crate::services::file_revision::{
     GetFileRevision,
 };
 use crate::services::filter::{FilterClass, FilterType};
-use crate::services::{BlobService, FileRevisionService, FilterService, PageService};
+use crate::services::{
+    AuditService, BlobService, FileRevisionService, FilterService, PageService,
+};
 use crate::types::{FileOrder, FileRevisionType};
 use crate::types::{Maybe, Reference};
 use crate::utils::now;
@@ -159,7 +161,19 @@ impl FileService {
         .await
         .or_raise(make_error)?;
 
-        // TODO audit log
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::FileCreate {
+                user_id,
+                site_id,
+                page_id,
+                file_id: output.file_id,
+                revision_id: output.file_revision_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
 
         Ok(output)
     }

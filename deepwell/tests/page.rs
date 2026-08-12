@@ -35,6 +35,7 @@ use deepwell::license::License;
 use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
 use deepwell::models::file;
+use deepwell::models::file_revision::Entity as FileRevisionTable;
 use deepwell::models::forum_post::{self, Entity as ForumPostTable};
 use deepwell::models::forum_thread::Entity as ForumThreadTable;
 use deepwell::models::known_user;
@@ -29448,6 +29449,218 @@ async fn create_committed_page_pending_blob_fixture(
         },
         data,
     )
+}
+
+async fn create_prefinalized_empty_page_blob_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+) -> String {
+    let pending_blob_id = cuid();
+    let mut pending = page_pending_blob_model(
+        pending_blob_id.clone(),
+        format!("uploads/{pending_blob_id}"),
+        user_id,
+        Some(site_id),
+        Some(page_id),
+        0,
+    );
+    pending.s3_hash = Set(Some(EMPTY_BLOB_HASH.to_vec()));
+    pending.content_type_label = Set(Some("empty".to_owned()));
+    pending.content_type_description = Set(Some("empty".to_owned()));
+    pending
+        .insert(runner.context().transaction())
+        .await
+        .expect("pre-finalized empty pending blob fixture should be inserted");
+    pending_blob_id
+}
+
+#[tokio::test]
+async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let pending_blob_id = create_prefinalized_empty_page_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+    let supplied_ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 47));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": format!("audit-success-{pending_blob_id}.txt"),
+            "uploaded_blob_id": pending_blob_id,
+            "revision_comments": "file create audit success",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.create"))
+        .all(runner.context().transaction())
+        .await
+        .expect("file-create audit lookup should succeed");
+    assert_eq!(events.len(), 1, "successful file create should audit once");
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(page.page_id));
+    assert_eq!(event.extra_id_1, Some(created.file_id));
+    assert_eq!(event.extra_id_2, Some(created.file_revision_id));
+    assert_eq!(event.ip_address, supplied_ip.to_string());
+
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": "audit-denied.txt",
+            "uploaded_blob_id": "not-used-before-permission-denial",
+            "revision_comments": "file create audit denial",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    let event_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("file-create audit count after denial should succeed");
+    assert_eq!(event_count, 1, "denied file create should not be audited");
+}
+
+#[tokio::test]
+async fn file_create_file_revision_and_audit_roll_back_together() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let pending_blob_id = create_prefinalized_empty_page_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("file-create rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let created = deepwell::endpoints::all::file_create(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": format!("audit-rollback-{pending_blob_id}.txt"),
+            "uploaded_blob_id": pending_blob_id,
+            "revision_comments": "file create audit rollback",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional file create should succeed");
+
+    assert!(
+        file::Entity::find_by_id(created.file_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file lookup should succeed")
+            .is_some()
+    );
+    assert!(
+        FileRevisionTable::find_by_id(created.file_revision_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file revision lookup should succeed")
+            .is_some()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.create"))
+            .filter(AuditLogColumn::ExtraId1.eq(created.file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(created.file_revision_id))
+            .count(&transaction)
+            .await
+            .expect("transactional file-create audit lookup should succeed"),
+        1,
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("file-create savepoint should roll back");
+
+    assert!(
+        file::Entity::find_by_id(created.file_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file lookup should succeed")
+            .is_none()
+    );
+    assert!(
+        FileRevisionTable::find_by_id(created.file_revision_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file revision lookup should succeed")
+            .is_none()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.create"))
+            .filter(AuditLogColumn::ExtraId1.eq(created.file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(created.file_revision_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back file-create audit lookup should succeed"),
+        0,
+    );
 }
 
 async fn cleanup_committed_page_pending_blob_fixture(
