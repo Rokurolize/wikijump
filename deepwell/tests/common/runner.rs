@@ -95,6 +95,7 @@ impl TestRunner {
         Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
     }
 
+    #[allow(unused)]
     pub async fn setup_with_config(config: Config) -> Self {
         let request_ctx = TestRunnerRequestContext::new_with_config(config).await;
         Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
