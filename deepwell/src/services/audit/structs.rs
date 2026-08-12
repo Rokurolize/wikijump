@@ -148,6 +148,13 @@ pub enum AuditEvent<'a> {
         file_id: i64,
         revision_id: i64,
     },
+    FileEdit {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+    },
     FileUndelete {
         user_id: i64,
         site_id: i64,
@@ -573,6 +580,24 @@ impl<'a> AuditEvent<'a> {
                 revision_id,
             } => RawAuditEvent {
                 event_type: "file.create",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::FileEdit {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "file.edit",
                 ip_address,
                 user_id: Some(user_id),
                 site_id: Some(site_id),
@@ -1345,6 +1370,26 @@ mod tests {
         assert_eq!(raw.page_id, Some(33));
         assert_eq!(raw.extra_id_1, Some(34));
         assert_eq!(raw.extra_id_2, Some(35));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
+    fn extracts_file_edit_event() {
+        let raw = extract(AuditEvent::FileEdit {
+            user_id: 36,
+            site_id: 37,
+            page_id: 38,
+            file_id: 39,
+            revision_id: 40,
+        });
+        assert_event_type(&raw, "file.edit");
+        assert_eq!(raw.user_id, Some(36));
+        assert_eq!(raw.site_id, Some(37));
+        assert_eq!(raw.page_id, Some(38));
+        assert_eq!(raw.extra_id_1, Some(39));
+        assert_eq!(raw.extra_id_2, Some(40));
         assert_eq!(raw.extra_string_1, None);
         assert_eq!(raw.extra_string_2, None);
         assert_eq!(raw.extra_number, None);

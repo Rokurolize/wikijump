@@ -29557,6 +29557,269 @@ async fn create_prefinalized_empty_page_blob_fixture(
 }
 
 #[tokio::test]
+async fn file_edit_public_endpoint_audits_success_once_and_not_denial() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-edit-audit-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let file = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file edit audit fixture revision should exist");
+    let supplied_ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 48));
+
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "file edit audit denial",
+            "user_id": UNKNOWN_USER_ID,
+            "name": format!("denied-{fixture_name}"),
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("denied file-edit audit count should succeed"),
+        0,
+        "denied file edits must not be audited",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "file edit audit success",
+            "user_id": ADMIN_USER_ID,
+            "name": format!("edited-{fixture_name}"),
+            "ip_address": supplied_ip,
+        }),
+    )
+    .expect("changed file edit should create a revision");
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.edit"))
+        .filter(AuditLogColumn::ExtraId1.eq(file_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("successful file-edit audit lookup should succeed");
+    assert_eq!(events.len(), 1, "successful file edit should audit once");
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(page.page_id));
+    assert_eq!(event.extra_id_1, Some(file_id));
+    assert_eq!(event.extra_id_2, Some(edited.file_revision_id));
+    assert_eq!(event.ip_address, supplied_ip.to_string());
+}
+
+#[tokio::test]
+async fn file_edit_semantic_no_op_emits_no_audit_event() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-edit-no-op-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let file = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file edit no-op fixture revision should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "semantically empty file edit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        edited.is_none(),
+        "semantic no-op should not create a revision"
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("file-edit no-op audit count should succeed"),
+        0,
+        "semantic no-op must not be audited",
+    );
+}
+
+#[tokio::test]
+async fn file_edit_revision_and_audit_roll_back_together() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-edit-rollback-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let file = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file edit rollback fixture revision should exist");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("file-edit rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let edited = deepwell::endpoints::all::file_edit(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "transactional file edit",
+            "user_id": ADMIN_USER_ID,
+            "name": format!("edited-{fixture_name}"),
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional file edit should succeed")
+    .expect("transactional file edit should create a revision");
+
+    assert!(
+        FileRevisionTable::find_by_id(edited.file_revision_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file revision lookup should succeed")
+            .is_some()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(edited.file_revision_id))
+            .count(&transaction)
+            .await
+            .expect("transactional file-edit audit lookup should succeed"),
+        1,
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("file-edit savepoint should roll back");
+
+    assert!(
+        FileRevisionTable::find_by_id(edited.file_revision_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file revision lookup should succeed")
+            .is_none()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(edited.file_revision_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back file-edit audit lookup should succeed"),
+        0,
+    );
+    let current = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("rolled-back file edit fixture revision should remain");
+    assert_eq!(current.revision_id, file.revision_id);
+    assert_eq!(current.name, fixture_name);
+}
+
+#[tokio::test]
 async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))

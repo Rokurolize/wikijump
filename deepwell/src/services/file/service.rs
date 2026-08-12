@@ -327,6 +327,22 @@ impl FileService {
         .await
         .or_raise(make_error)?;
 
+        if let Some(ref output) = revision_output {
+            AuditService::log(
+                ctx,
+                ip_address,
+                AuditEvent::FileEdit {
+                    user_id,
+                    site_id,
+                    page_id,
+                    file_id,
+                    revision_id: output.file_revision_id,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+
         Ok(revision_output)
     }
 

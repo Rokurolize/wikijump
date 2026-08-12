@@ -16,6 +16,7 @@ use deepwell::config::{Config, Secrets};
 use deepwell::constants::ADMIN_USER_ID;
 use deepwell::error::ErrorType;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
+use deepwell::models::audit_log::{self, Entity as AuditLog};
 use deepwell::models::blob_pending::{self, Entity as BlobPending};
 use deepwell::models::file::{self, Entity as File};
 use deepwell::models::file_revision::{self, Entity as FileRevision};
@@ -324,6 +325,14 @@ async fn cleanup_fixture(
 ) -> Result<(), String> {
     let mut failures = Vec::new();
     if let Some(file_id) = cleanup.file_id {
+        if let Err(error) = AuditLog::delete_many()
+            .filter(audit_log::Column::EventType.eq("file.edit"))
+            .filter(audit_log::Column::ExtraId1.eq(file_id))
+            .exec(&state.database)
+            .await
+        {
+            failures.push(format!("fixture audit cleanup failed: {error:?}"));
+        }
         if let Err(error) = FileRevision::delete_many()
             .filter(file_revision::Column::FileId.eq(file_id))
             .exec(&state.database)
@@ -527,6 +536,25 @@ async fn concurrent_registered_file_edits_promote_only_the_winning_blob() {
             responses[winner_index]["result"]["file_revision_number"],
             json!(fixture.revision_number + 1)
         );
+
+        let audit_events = AuditLog::find()
+            .filter(audit_log::Column::EventType.eq("file.edit"))
+            .filter(audit_log::Column::ExtraId1.eq(fixture.file_id))
+            .all(&state.database)
+            .await
+            .expect("committed file-edit audit events should be readable");
+        assert_eq!(
+            audit_events.len(),
+            1,
+            "only the winning concurrent edit should be audited"
+        );
+        let audit_event = &audit_events[0];
+        assert_eq!(audit_event.user_id, Some(ADMIN_USER_ID));
+        assert_eq!(audit_event.site_id, Some(fixture.site_id));
+        assert_eq!(audit_event.page_id, Some(fixture.page_id));
+        assert_eq!(audit_event.extra_id_1, Some(fixture.file_id));
+        assert_eq!(audit_event.extra_id_2, Some(winner_revision.revision_id));
+        assert_eq!(audit_event.ip_address, "192.0.2.80");
 
         let winner_hash = sha512_hash(&fixture.uploads[winner_index].data);
         let loser_hash = sha512_hash(&fixture.uploads[loser_index].data);
