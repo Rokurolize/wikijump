@@ -269,6 +269,7 @@ async fn random_listpages_rechecks_actor_visibility_and_deleted_candidates() {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("the private fixture site should be created");

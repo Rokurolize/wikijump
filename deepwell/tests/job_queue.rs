@@ -264,6 +264,7 @@ async fn create_editable_site_fixture(state: &ServerState, site_slug: &str) -> i
                 locale: String::from("en"),
                 ip_address: IpAddr::V4(Ipv4Addr::new(192, 0, 2, 61)),
             },
+            None,
         )
         .await
         .expect("editable site fixture should be created");
@@ -539,6 +540,7 @@ impl SiteNavigationRpcFixture {
                 locale: String::from("en"),
                 ip_address: SITE_NAVIGATION_TEST_IP,
             },
+            None,
         )
         .await
         .expect("owned site navigation site should be created");

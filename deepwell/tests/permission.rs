@@ -107,6 +107,7 @@ impl PermissionFixture {
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
             },
+            None,
         )
         .await
         .expect("Failed to create test site");
@@ -1846,6 +1847,7 @@ async fn get_permissions_for_role_rejects_cross_site_numeric_role_id() {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("Failed to create other test site");

@@ -27,7 +27,9 @@ use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::alias::{self, Entity as AliasTable};
 use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
+use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
 use deepwell::models::site::Entity as SiteTable;
+use deepwell::models::user::{Column as UserColumn, Entity as UserTable};
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
 use deepwell::services::ServiceContext;
@@ -140,10 +142,178 @@ async fn create_site(runner: &TestRunner, n: u64) -> i64 {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("failed to create test site")
     .site_id
+}
+
+#[tokio::test]
+async fn public_site_create_audits_authenticated_actor_and_supplied_ip_once() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "site-creator").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("public-site-create-audit-{n}"),
+            "name": format!("Public site create audit {n}"),
+            "tagline": "Audited public creation",
+            "description": "Public site creation actor projection fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.create"))
+        .filter(AuditLogColumn::SiteId.eq(created.site_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("site-create audit lookup should succeed");
+    assert_eq!(events.len(), 1, "successful public creation audits once");
+    assert_eq!(events[0].user_id, Some(actor_user_id));
+    assert_eq!(events[0].ip_address, common::IP_ADDRESS.to_string());
+}
+
+#[tokio::test]
+async fn anonymous_site_create_emits_no_event() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let before = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("baseline site-create audit count should succeed");
+
+    let error = run_endpoint_err!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("anonymous-site-create-audit-{n}"),
+            "name": format!("Anonymous site create audit {n}"),
+            "tagline": "",
+            "description": "Anonymous creation must be rejected",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let after = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("anonymous site-create audit count should succeed");
+    assert_eq!(after, before);
+}
+
+#[tokio::test]
+async fn site_create_site_user_relation_and_audit_roll_back_together() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "rollback-site-creator").await;
+    let slug = format!("site-create-audit-rollback-{n}");
+    let site_user_name = format!("site:{slug}");
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("site-create audit savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(actor_user_id),
+            ..Default::default()
+        });
+
+    let created = deepwell::endpoints::all::site_create(
+        &ctx,
+        common::make_params(json!({
+            "slug": slug,
+            "name": format!("Site create audit rollback {n}"),
+            "tagline": "",
+            "description": "Savepoint rollback fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional public site creation should succeed");
+
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("site.create"))
+            .filter(AuditLogColumn::SiteId.eq(created.site_id))
+            .count(&transaction)
+            .await
+            .expect("transactional site-create audit count should succeed"),
+        1,
+    );
+    assert_eq!(
+        RelationTable::find()
+            .filter(RelationColumn::DestId.eq(created.site_id))
+            .filter(RelationColumn::FromId.eq(created.site_user_id))
+            .count(&transaction)
+            .await
+            .expect("transactional site-user relation count should succeed"),
+        1,
+    );
+
+    transaction
+        .rollback()
+        .await
+        .expect("site-create audit savepoint should roll back");
+
+    assert_eq!(
+        SiteTable::find_by_id(created.site_id)
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site count should succeed"),
+        0,
+    );
+    assert_eq!(
+        UserTable::find()
+            .filter(UserColumn::Name.eq(site_user_name))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site user count should succeed"),
+        0,
+    );
+    assert_eq!(
+        RelationTable::find()
+            .filter(RelationColumn::DestId.eq(created.site_id))
+            .filter(RelationColumn::FromId.eq(created.site_user_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site-user relation count should succeed"),
+        0,
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("site.create"))
+            .filter(AuditLogColumn::SiteId.eq(created.site_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site-create audit count should succeed"),
+        0,
+    );
 }
 
 #[tokio::test]
@@ -845,6 +1015,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
             },
+            None,
         )
         .await
         .expect_err("normalized platform hostname must not be creatable");
@@ -936,6 +1107,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("unrelated slug containing a reserved word should remain valid");

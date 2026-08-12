@@ -187,6 +187,7 @@ impl SiteService {
             locale,
             ip_address,
         }: CreateSite,
+        actor_user_id: Option<i64>,
     ) -> Result<CreateSiteOutput> {
         let txn = ctx.transaction();
 
@@ -270,6 +271,7 @@ impl SiteService {
             ip_address,
             AuditEvent::SiteCreate {
                 site_id: site.site_id,
+                user_id: actor_user_id,
             },
         )
         .await

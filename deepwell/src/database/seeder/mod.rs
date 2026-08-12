@@ -237,6 +237,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 locale: site.locale,
                 ip_address: SEED_IP_ADDRESS,
             },
+            None,
         )
         .await
         .or_raise(make_error)?;

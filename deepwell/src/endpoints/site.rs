@@ -33,9 +33,10 @@ pub async fn site_create(
     params: Params<'static>,
 ) -> Result<CreateSiteOutput> {
     let input: CreateSite = parse!(params, Site);
-    MutationAuthorization::require_authenticated(ctx, "create a site")?;
+    let actor_user_id =
+        MutationAuthorization::require_authenticated(ctx, "create a site")?;
 
-    SiteService::create(ctx, input)
+    SiteService::create(ctx, input, Some(actor_user_id))
         .await
         .or_raise(|| Error::new("failed to create site", ErrorType::Site))
 }
