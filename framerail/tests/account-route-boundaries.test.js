@@ -139,7 +139,12 @@ test("logout and user-edit route actions bind mutations to the server session", 
         restricted: false
       }
     }
-    if (method === "user_edit") return { user_id: 41 }
+    if (method === "user_edit") {
+      return {
+        user_id: 987654321,
+        slug: "rpc-user-edit-result-must-remain-private"
+      }
+    }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 
@@ -171,6 +176,12 @@ test("logout and user-edit route actions bind mutations to the server session", 
   })
 
   assert.equal(edited.form.valid, true)
+  assert.deepEqual(Object.keys(edited), ["form"])
+  assert.equal("res" in edited, false)
+  assert.equal(
+    JSON.stringify(edited).includes("rpc-user-edit-result-must-remain-private"),
+    false
+  )
   assert.deepEqual(deletedCookies, [
     {
       name: "wikijump_token",

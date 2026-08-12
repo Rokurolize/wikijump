@@ -212,7 +212,7 @@ export async function userEditAction({
       locales
     } = form.data
 
-    const res = await userEdit(
+    await userEdit(
       session.user_id,
       ipAddress,
       {
@@ -236,7 +236,7 @@ export async function userEditAction({
       getRequestContext(locals)
     )
 
-    return withFiles({ form, res })
+    return withFiles({ form })
   } catch (error) {
     return failForActionError(error, { form })
   }
