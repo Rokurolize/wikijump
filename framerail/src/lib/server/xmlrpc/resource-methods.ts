@@ -15,6 +15,8 @@ import {
   expectDeepwellCategories,
   expectDeepwellFiles,
   expectDeepwellForumPosts,
+  expectDeepwellPageCreateOutput,
+  expectDeepwellPageMoveOutput,
   expectDeepwellStringArray,
   isDeepwellBlobUpload,
   isDeepwellDirectParentMetadata,
@@ -288,22 +290,24 @@ export async function savePageOne(
 
   const createdPage = !page
   if (!page) {
-    await requestDeepwell(
-      "page_create",
-      {
-        site_id: siteId,
-        wikitext: content ?? "",
-        title: title ?? pageReference,
-        alt_title: null,
-        slug: pageReference,
-        layout: "wikidot",
-        revision_comments: revisionComment,
-        user_id: writeContext.userId,
-        ip_address: writeContext.ipAddress
-      },
-      writeContext
+    const createOutput = expectDeepwellPageCreateOutput(
+      await requestDeepwell(
+        "page_create",
+        {
+          site_id: siteId,
+          wikitext: content ?? "",
+          title: title ?? pageReference,
+          alt_title: null,
+          slug: pageReference,
+          layout: "wikidot",
+          revision_comments: revisionComment,
+          user_id: writeContext.userId,
+          ip_address: writeContext.ipAddress
+        },
+        writeContext
+      )
     )
-    page = await requireDeepwellPage(siteId, pageReference, true)
+    page = await requireDeepwellPage(siteId, createOutput.slug, true)
   }
 
   const editBody: { wikitext?: string; title?: string; tags?: string[] } = {}
@@ -340,20 +344,22 @@ export async function savePageOne(
 
   let finalPageReference = page.slug
   if (renameAs !== null && renameAs !== page.slug) {
-    await requestDeepwell(
-      "page_move",
-      {
-        site_id: siteId,
-        page: page.slug,
-        last_revision_id: page.revision_id,
-        new_slug: renameAs,
-        revision_comments: revisionComment,
-        user_id: writeContext.userId,
-        ip_address: writeContext.ipAddress
-      },
-      { ...writeContext, page: page.slug }
+    const moveOutput = expectDeepwellPageMoveOutput(
+      await requestDeepwell(
+        "page_move",
+        {
+          site_id: siteId,
+          page: page.slug,
+          last_revision_id: page.revision_id,
+          new_slug: renameAs,
+          revision_comments: revisionComment,
+          user_id: writeContext.userId,
+          ip_address: writeContext.ipAddress
+        },
+        { ...writeContext, page: page.slug }
+      )
     )
-    finalPageReference = renameAs
+    finalPageReference = moveOutput.new_slug
   }
 
   return buildXmlRpcPage(

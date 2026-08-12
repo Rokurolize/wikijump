@@ -73,6 +73,14 @@ export interface DeepwellPageLifecycleIdentity {
   updated_by: string | null
 }
 
+export interface DeepwellPageCreateOutput {
+  slug: string
+}
+
+export interface DeepwellPageMoveOutput {
+  new_slug: string
+}
+
 export interface DeepwellForumPost {
   id: number
   fullname: string
@@ -149,6 +157,28 @@ export function isDeepwellPageLifecycleIdentity(
     (value.updated_by === null ||
       (typeof value.updated_by === "string" && value.updated_by.trim().length > 0))
   )
+}
+
+export function expectDeepwellPageCreateOutput(value: unknown): DeepwellPageCreateOutput {
+  if (
+    !isXmlRpcStruct(value) ||
+    typeof value.slug !== "string" ||
+    value.slug.length === 0
+  ) {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_create")
+  }
+  return value
+}
+
+export function expectDeepwellPageMoveOutput(value: unknown): DeepwellPageMoveOutput {
+  if (
+    !isXmlRpcStruct(value) ||
+    typeof value.new_slug !== "string" ||
+    value.new_slug.length === 0
+  ) {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_move")
+  }
+  return value
 }
 
 export function isDeepwellBlobUpload(
