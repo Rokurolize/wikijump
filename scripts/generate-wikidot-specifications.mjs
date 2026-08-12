@@ -146,6 +146,16 @@ for (const observation of liveObservations.observations) {
     Array.isArray(observation.evidence) && observation.evidence.length > 0,
     `Live observation has no evidence: ${observation.id}`,
   );
+  for (const rawCapture of observation.raw_captures ?? []) {
+    invariant(
+      typeof rawCapture.path === "string" && rawCapture.path.startsWith("/"),
+      `Live raw capture must use an absolute path for ${observation.id}`,
+    );
+    invariant(
+      sha256(readFileSync(rawCapture.path)) === rawCapture.sha256,
+      `Live raw capture hash drifted for ${observation.id}: ${rawCapture.path}`,
+    );
+  }
   for (const evidence of observation.evidence) {
     const evidencePath = resolve(repositoryRoot, evidence.path);
     const rawEvidence = readFileSync(evidencePath, "utf8");
@@ -1282,7 +1292,20 @@ Normative behavior:
 
 ${observation.normative_behavior.map((claim) => `- ${claim}`).join("\n")}
 
-Evidence:
+${
+  observation.raw_captures?.length > 0
+    ? `Raw HTTP captures:
+
+${observation.raw_captures
+  .map(
+    (capture) =>
+      `- ${capture.phase} stored locale \`${capture.stored_locale}\`: \`${capture.path}\` (SHA-256 \`${capture.sha256}\`)`,
+  )
+  .join("\n")}
+
+`
+    : ""
+}Evidence:
 
 ${observation.evidence
   .map(

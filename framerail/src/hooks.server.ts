@@ -135,7 +135,12 @@ export const handle: Handle = async ({ event, resolve }) => {
   const resolveWithWikidotRequestInfo = async () =>
     resolve(event, {
       transformPageChunk: ({ html }) =>
-        injectWikidotRequestInfo(html, locals.wikidotRequestInfo, locals.siteLocale)
+        injectWikidotRequestInfo(
+          html,
+          locals.wikidotRequestInfo,
+          locals.siteLocale,
+          locals.wikidotDocument === true
+        )
     })
 
   if (SITE_CONTEXT_EXEMPT_PATHS.has(event.url.pathname)) {

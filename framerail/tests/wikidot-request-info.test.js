@@ -144,6 +144,50 @@ test("injects the raw Wikidot site locale as the document language independently
   )
 })
 
+test("Wikidot documents emit the raw locale in the legacy root and content-language metadata", () => {
+  const info = buildWikidotRequestInfo({
+    ...input,
+    site: { ...input.site, locale: "ja-corrections" }
+  })
+  const html = `<html lang="en"><head><meta data-wikidot-document-language /><script>${WIKIDOT_REQUEST_INFO_MARKER}</script></head></html>`
+
+  const injected = injectWikidotRequestInfo(html, info, "ja-corrections", true)
+
+  assert.match(
+    injected,
+    /<html xmlns="http:\/\/www\.w3\.org\/1999\/xhtml" xml:lang="ja-corrections" lang="ja-corrections">/u
+  )
+  assert.equal(
+    injected.match(/<meta http-equiv="content-language" content="ja-corrections"\/>/gu)
+      ?.length,
+    1
+  )
+  assert.match(injected, /WIKIREQUEST\.info\.lang = "ja-corrections";/u)
+
+  const reinjected = injectWikidotRequestInfo(injected, info, "ja-corrections", true)
+  assert.equal(reinjected.match(/<meta http-equiv="content-language"/gu)?.length, 1)
+})
+
+test("English Wikidot documents emit the complete legacy language contract", () => {
+  const html =
+    '<html lang="en"><head><meta data-wikidot-document-language /></head></html>'
+
+  assert.equal(
+    injectWikidotRequestInfo(html, undefined, "en", true),
+    '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head><meta http-equiv="content-language" content="en"/></head></html>'
+  )
+})
+
+test("Wikijump and non-article shells keep locale substitution without legacy metadata", () => {
+  const html =
+    '<html lang="en"><head><meta data-wikidot-document-language /></head></html>'
+  const injected = injectWikidotRequestInfo(html, undefined, "ja-corrections", false)
+
+  assert.match(injected, /<html lang="ja-corrections">/u)
+  assert.doesNotMatch(injected, /\bxmlns=|\bxml:lang=|content-language/u)
+  assert.doesNotMatch(injected, /data-wikidot-document-language/u)
+})
+
 test("the app template binds the compatibility script to SvelteKit's CSP nonce", async () => {
   const template = await fs.readFile(path.join(ROOT, "src/app.html"), "utf8")
   assert.match(
@@ -164,4 +208,11 @@ test("the app template preserves Wikidot's body shell without an extra wrapper",
   const template = await fs.readFile(path.join(ROOT, "src/app.html"), "utf8")
   assert.match(template, /<body id="html-body">\s*%sveltekit\.body%\s*<\/body>/u)
   assert.doesNotMatch(template, /<body[^>]*>\s*<div>%sveltekit\.body%<\/div>/u)
+})
+
+test("the app template has one removable document-language marker and no global legacy metadata", async () => {
+  const template = await fs.readFile(path.join(ROOT, "src/app.html"), "utf8")
+
+  assert.equal(template.match(/<meta data-wikidot-document-language \/>/gu)?.length, 1)
+  assert.doesNotMatch(template, /\bxmlns=|\bxml:lang=|content-language/u)
 })

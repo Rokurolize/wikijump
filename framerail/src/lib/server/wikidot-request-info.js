@@ -1,4 +1,5 @@
 export const WIKIDOT_REQUEST_INFO_MARKER = "/*__WIKIDOT_REQUEST_INFO__*/"
+const WIKIDOT_DOCUMENT_LANGUAGE_MARKER = "<meta data-wikidot-document-language />"
 
 const SITE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
 
@@ -140,23 +141,38 @@ export const serializeWikidotRequestInfo = (info) => {
  * @param {string} html
  * @param {ReturnType<typeof buildWikidotRequestInfo> | undefined} info
  * @param {string | undefined} siteLocale
+ * @param {boolean} wikidotDocument
  */
-export const injectWikidotRequestInfo = (html, info, siteLocale = undefined) => {
-  const localizedHtml = siteLocale
-    ? html.replace(
-        '<html lang="en">',
-        `<html lang="${htmlAttribute(requireString(siteLocale, "site locale", 64))}">`
-      )
-    : html
-  const first = localizedHtml.indexOf(WIKIDOT_REQUEST_INFO_MARKER)
-  if (first === -1) return localizedHtml
+export const injectWikidotRequestInfo = (
+  html,
+  info,
+  siteLocale = undefined,
+  wikidotDocument = false
+) => {
+  const locale = siteLocale
+    ? htmlAttribute(requireString(siteLocale, "site locale", 64))
+    : undefined
+  const root = locale
+    ? wikidotDocument
+      ? `<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="${locale}" lang="${locale}">`
+      : `<html lang="${locale}">`
+    : undefined
+  const localizedHtml = root ? html.replace('<html lang="en">', root) : html
+  const documentHtml = localizedHtml.replace(
+    WIKIDOT_DOCUMENT_LANGUAGE_MARKER,
+    wikidotDocument && locale
+      ? `<meta http-equiv="content-language" content="${locale}"/>`
+      : ""
+  )
+  const first = documentHtml.indexOf(WIKIDOT_REQUEST_INFO_MARKER)
+  if (first === -1) return documentHtml
   if (
-    localizedHtml.indexOf(
+    documentHtml.indexOf(
       WIKIDOT_REQUEST_INFO_MARKER,
       first + WIKIDOT_REQUEST_INFO_MARKER.length
     ) !== -1
   ) {
     throw new Error("WIKIREQUEST template marker must occur at most once")
   }
-  return `${localizedHtml.slice(0, first)}${serializeWikidotRequestInfo(info)}${localizedHtml.slice(first + WIKIDOT_REQUEST_INFO_MARKER.length)}`
+  return `${documentHtml.slice(0, first)}${serializeWikidotRequestInfo(info)}${documentHtml.slice(first + WIKIDOT_REQUEST_INFO_MARKER.length)}`
 }
