@@ -163,6 +163,14 @@ pub enum AuditEvent<'a> {
         file_id: i64,
         revision_id: i64,
     },
+    FileRollback {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+        revision_number: i32,
+    },
     FilterViolation {
         object: ObjectScope,
         info: &'a FilterSummary,
@@ -626,6 +634,25 @@ impl<'a> AuditEvent<'a> {
                 extra_string_1: None,
                 extra_string_2: None,
                 extra_number: None,
+            },
+            AuditEvent::FileRollback {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+                revision_number,
+            } => RawAuditEvent {
+                event_type: "file.rollback",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: Some(revision_number),
             },
             AuditEvent::FilterViolation {
                 object,
@@ -1426,6 +1453,27 @@ mod tests {
         assert_eq!(raw.extra_string_1, None);
         assert_eq!(raw.extra_string_2, None);
         assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
+    fn extracts_file_rollback_event() {
+        let raw = extract(AuditEvent::FileRollback {
+            user_id: 46,
+            site_id: 47,
+            page_id: 48,
+            file_id: 49,
+            revision_id: 50,
+            revision_number: 3,
+        });
+        assert_event_type(&raw, "file.rollback");
+        assert_eq!(raw.user_id, Some(46));
+        assert_eq!(raw.site_id, Some(47));
+        assert_eq!(raw.page_id, Some(48));
+        assert_eq!(raw.extra_id_1, Some(49));
+        assert_eq!(raw.extra_id_2, Some(50));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, Some(3));
     }
 
     #[test]

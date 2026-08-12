@@ -809,6 +809,23 @@ impl FileService {
         };
         model.update(txn).await.or_raise(make_error)?;
 
+        if let Some(ref output) = revision_output {
+            AuditService::log(
+                ctx,
+                ip_address,
+                AuditEvent::FileRollback {
+                    user_id,
+                    site_id,
+                    page_id,
+                    file_id,
+                    revision_id: output.file_revision_id,
+                    revision_number,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
+
         Ok(revision_output)
     }
 

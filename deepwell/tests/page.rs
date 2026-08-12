@@ -30322,6 +30322,301 @@ async fn file_edit_revision_and_audit_roll_back_together() {
 }
 
 #[tokio::test]
+async fn file_rollback_public_endpoint_audits_only_created_revisions() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-rollback-audit-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let initial = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file rollback audit fixture revision should exist");
+    let edited_name = format!("edited-{fixture_name}");
+    let supplied_ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 49));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": initial.revision_id,
+            "revision_comments": "prepare file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "name": edited_name,
+            "ip_address": supplied_ip,
+        }),
+    )
+    .expect("file edit should prepare rollback audit fixture");
+
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": edited_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "denied file rollback audit",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("denied file-rollback audit count should succeed"),
+        0,
+        "denied file rollbacks must not be audited",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let rolled_back = run_endpoint!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": edited_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "successful file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    )
+    .expect("changed file rollback should create a revision");
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.rollback"))
+        .filter(AuditLogColumn::ExtraId1.eq(file_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("successful file-rollback audit lookup should succeed");
+    assert_eq!(
+        events.len(),
+        1,
+        "successful file rollback should audit once"
+    );
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(page.page_id));
+    assert_eq!(event.extra_id_1, Some(file_id));
+    assert_eq!(event.extra_id_2, Some(rolled_back.file_revision_id));
+    assert_eq!(event.extra_number, Some(initial.revision_number));
+    assert_eq!(event.ip_address, supplied_ip.to_string());
+
+    let error = run_endpoint_err!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": fixture_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "stale file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+
+    let no_op = run_endpoint!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": fixture_name,
+            "last_revision_id": rolled_back.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "no-op file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert!(no_op.is_none(), "unchanged file rollback should be a no-op");
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("stale and no-op file-rollback audit count should succeed"),
+        1,
+        "stale and no-op file rollbacks must not be audited",
+    );
+}
+
+#[tokio::test]
+async fn file_rollback_revision_and_audit_roll_back_together() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-rollback-transaction-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let initial = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file rollback transaction fixture revision should exist");
+    let edited_name = format!("edited-{fixture_name}");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": initial.revision_id,
+            "revision_comments": "prepare transactional file rollback",
+            "user_id": ADMIN_USER_ID,
+            "name": edited_name,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("file edit should prepare transactional rollback fixture");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("file-rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let rolled_back = deepwell::endpoints::all::file_rollback(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": edited_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "transactional file rollback",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional file rollback should succeed")
+    .expect("transactional file rollback should create a revision");
+
+    assert!(
+        FileRevisionTable::find_by_id(rolled_back.file_revision_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file revision lookup should succeed")
+            .is_some()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(rolled_back.file_revision_id))
+            .count(&transaction)
+            .await
+            .expect("transactional file-rollback audit lookup should succeed"),
+        1,
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("file-rollback savepoint should roll back");
+
+    assert!(
+        FileRevisionTable::find_by_id(rolled_back.file_revision_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file revision lookup should succeed")
+            .is_none()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(rolled_back.file_revision_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back file-rollback audit lookup should succeed"),
+        0,
+    );
+    let current = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("rolled-back file rollback fixture revision should remain");
+    assert_eq!(current.revision_id, edited.file_revision_id);
+    assert_eq!(current.name, edited_name);
+}
+
+#[tokio::test]
 async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
