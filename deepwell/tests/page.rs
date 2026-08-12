@@ -53,7 +53,7 @@ use deepwell::services::forum_post::{
     CreateForumPost, UpdateForumPost, UpdateForumPostBody,
 };
 use deepwell::services::forum_thread::CreateForumThread;
-use deepwell::services::page::CreatePage;
+use deepwell::services::page::{CreatePage, GetPageOutput};
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
@@ -2266,6 +2266,321 @@ async fn rerender_uses_latest_navigation_page_revision() {
             .compiled_generator
             .ends_with("; deepwell-render/v9")
     );
+}
+
+async fn create_navigation_fixture_page(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &'static str,
+    title: &'static str,
+    wikitext: &'static str,
+) -> GetPageOutput {
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": wikitext,
+            "title": title,
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": format!("create {title}"),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+        }),
+    )
+    .unwrap_or_else(|| panic!("navigation fixture page {slug} should exist"))
+}
+
+async fn rerender_navigation_fixture_page(runner: &mut TestRunner, page: &GetPageOutput) {
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        page.site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": page.site_id,
+            "category_id": page.page_category_id,
+            "page_id": page.page_id,
+        }),
+    );
+}
+
+async fn public_page_view_top_bar(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &'static str,
+    found: bool,
+) -> Option<String> {
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    match (found, view) {
+        (
+            true,
+            GetPageViewOutput::Found {
+                compiled_top_bar_html,
+                ..
+            },
+        )
+        | (
+            false,
+            GetPageViewOutput::Missing {
+                compiled_top_bar_html,
+                ..
+            },
+        ) => compiled_top_bar_html,
+        (_, other) => panic!("unexpected public page view for {slug}: {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn deleted_site_navigation_is_absent_from_found_and_missing_page_views() {
+    const NAV_SLUG: &str = "nav:deleted-site-navigation-fixture";
+    const PAGE_SLUG: &str = "deleted-site-navigation-article";
+    const MISSING_SLUG: &str = "deleted-site-navigation-missing";
+    const MARKER: &str = "deleted site navigation marker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+        .expect("editable local authoring site should exist");
+    let site_id = site.site.site_id;
+    let navigation = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        NAV_SLUG,
+        "Deleted site navigation fixture",
+        MARKER,
+    )
+    .await;
+    let article = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Deleted site navigation article",
+        "Deleted site navigation article body",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "top_bar_page": NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found)
+            .await
+            .expect("configured top bar should be present");
+        assert!(
+            top_bar.contains(MARKER),
+            "configured top bar should contain the marker for {slug}:\n{top_bar}",
+        );
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(navigation.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": navigation.page_id,
+            "last_revision_id": navigation.revision_id,
+            "revision_comments": "delete configured site navigation",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found).await;
+        assert_eq!(
+            top_bar, None,
+            "deleted configured navigation must be absent for {slug}",
+        );
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(navigation.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": navigation.page_id,
+            "slug": NAV_SLUG,
+            "revision_comments": "restore configured site navigation",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false), (NAV_SLUG, true)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found)
+            .await
+            .expect("restored top bar should be present");
+        assert!(
+            top_bar.contains(MARKER),
+            "restored top bar should contain the marker for {slug}:\n{top_bar}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn deleted_category_navigation_does_not_fall_back_to_site_navigation() {
+    const SITE_NAV_SLUG: &str = "nav:deleted-category-site-fallback-fixture";
+    const CATEGORY_NAV_SLUG: &str = "nav:deleted-category-navigation-fixture";
+    const PAGE_SLUG: &str = "deleted-category-navigation:article";
+    const MISSING_SLUG: &str = "deleted-category-navigation:missing";
+    const SITE_MARKER: &str = "site navigation fallback must stay absent";
+    const CATEGORY_MARKER: &str = "deleted category navigation marker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        SITE_NAV_SLUG,
+        "Category navigation site fallback fixture",
+        SITE_MARKER,
+    )
+    .await;
+    let category_navigation = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        CATEGORY_NAV_SLUG,
+        "Deleted category navigation fixture",
+        CATEGORY_MARKER,
+    )
+    .await;
+    let article = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Deleted category navigation article",
+        "Deleted category navigation article body",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "top_bar_page": SITE_NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": article.page_category_id,
+            "user_id": ADMIN_USER_ID,
+            "top_bar_page": CATEGORY_NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found)
+            .await
+            .expect("category top bar should be present");
+        assert!(top_bar.contains(CATEGORY_MARKER), "{slug}:\n{top_bar}");
+        assert!(!top_bar.contains(SITE_MARKER), "{slug}:\n{top_bar}");
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(category_navigation.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": category_navigation.page_id,
+            "last_revision_id": category_navigation.revision_id,
+            "revision_comments": "delete configured category navigation",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found).await;
+        assert_eq!(
+            top_bar, None,
+            "a deleted category override must stay absent rather than inherit site navigation for {slug}",
+        );
+    }
 }
 
 #[tokio::test]

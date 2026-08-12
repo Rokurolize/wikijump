@@ -490,10 +490,26 @@ impl SettingsService {
                 NavigationPage::Disabled => return Ok(None),
             };
 
+            let Some(page) =
+                PageService::get_optional(ctx, site_id, Reference::Slug(cow!(page_slug)))
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            format!(
+                                "failed to resolve navigation page '{}' in site ID {}",
+                                page_slug, site_id,
+                            ),
+                            ErrorType::Page,
+                        )
+                    })?
+            else {
+                return Ok(None);
+            };
+
             PageRevisionService::get_wikitext_optional(
                 ctx,
                 site_id,
-                Reference::Slug(cow!(page_slug)),
+                Reference::Id(page.page_id),
             )
             .await
             .or_raise(|| {
@@ -564,10 +580,26 @@ impl SettingsService {
                 NavigationPage::Disabled => return Ok(None),
             };
 
+            let Some(page) =
+                PageService::get_optional(ctx, site_id, Reference::Slug(cow!(page_slug)))
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            format!(
+                                "failed to resolve navigation page '{}' in site ID {}",
+                                page_slug, site_id,
+                            ),
+                            ErrorType::Page,
+                        )
+                    })?
+            else {
+                return Ok(None);
+            };
+
             PageRevisionService::get_compiled_html_optional(
                 ctx,
                 site_id,
-                Reference::Slug(cow!(page_slug)),
+                Reference::Id(page.page_id),
             )
             .await
             .or_raise(|| {

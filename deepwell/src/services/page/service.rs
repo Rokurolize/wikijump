@@ -33,14 +33,15 @@ use crate::services::filter::{FilterClass, FilterType};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, CreatePageRevisionOutput, CreateResurrectionPageRevision,
-    CreateTombstonePageRevision, GetPageRevision,
+    CreateTombstonePageRevision, GetPageRevision, RerenderType,
 };
 use crate::services::{
     CategoryService, FilterService, PageRevisionService, TextBlockService, TextService,
 };
 use crate::types::Maybe;
 use crate::types::{
-    Action, PageId, PageOrder, PageRevisionType, Permission, Reference, Resource,
+    Action, PageId, PageOrder, PageRevisionType, Permission, Reference, RerenderDepth,
+    Resource,
 };
 use crate::utils::now;
 use crate::utils::{get_category_name, trim_default};
@@ -811,7 +812,7 @@ WHERE page.site_id = $1
         .await
         .or_raise(make_error)?;
 
-        // Set deletion flag
+        // Publish the restored identity and its resurrection revision together.
         let model = page::ActiveModel {
             page_id: Set(page_id),
             page_category_id: Set(category.category_id),
@@ -823,6 +824,19 @@ WHERE page.site_id = $1
 
         let page = model.update(txn).await.or_raise(make_error)?;
         assert_latest_revision(&page);
+
+        // Resurrection rendering happens while the page is still deleted so
+        // generic body queries do not observe a half-restored aggregate. Run the
+        // established navigation-only followup after the live page and new latest
+        // revision are both visible in this transaction.
+        PageRevisionService::rerender(
+            ctx,
+            id,
+            RerenderDepth::default(),
+            RerenderType::NavigationOnly,
+        )
+        .await
+        .or_raise(make_error)?;
 
         // Audit log
         AuditService::log(
