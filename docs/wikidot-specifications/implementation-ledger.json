@@ -1335,6 +1335,7 @@
       "confirmed_public_seams": [
         "Run-owned saved-page live Wikidot oracle on sandbox-for-codex",
         "Deepwell public saved-page page_get and page_view render interfaces",
+        "Deepwell registered page_restore -> public page_get / anonymous page_view resurrection freshness seam",
         "Deepwell public article_view_cache_metadata interface for imported pages"
       ],
       "tests": [
@@ -1361,9 +1362,21 @@
         {
           "path": "deepwell/tests/page.rs",
           "scope": "imported_countpages_sources_are_excluded_from_article_view_cache_metadata covers direct, template-composed, whitespace-delimited static fallback, and code-literal imported CountPages cache eligibility through the public article_view_cache_metadata interface"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "restored_countpages_page_stores_and_serves_its_current_self_count; restored_page_uses_destination_template_countpages_after_explicit_restore; restored_literal_and_unsupported_countpages_shapes_stay_inert",
+          "scope": "P3 lifecycle and persistence coverage uses registered page_restore followed by public page_get and anonymous page_view to verify the restored page's current self-count, explicit destination slug/category and category-template composition, and preservation of code-literal and unsupported bare-@URL shapes"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "restore_rerender_failure_rolls_back_resurrection_identity_and_revision",
+          "scope": "P8 Deepwell failure-atomicity coverage injects a transaction-local compiled-body update failure after resurrection insertion and identity publication, then verifies the original deleted page remains and the explicit destination remains absent through page_get and page_view; this regression does not claim live-Wikidot temporal evidence"
         }
       ],
       "implementation_files": [
+        "deepwell/src/services/page/service.rs",
+        "deepwell/src/services/page_revision/service.rs",
         "deepwell/src/services/render/count_pages_recognition.rs",
         "deepwell/src/services/render/list_pages/rendering.rs",
         "deepwell/src/services/render/list_pages/rendering_support.rs",
