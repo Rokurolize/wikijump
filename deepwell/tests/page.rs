@@ -37486,18 +37486,28 @@ async fn cleanup_page_move_rpc_fixture(
         .map_err(|error| format!("page move fixture cleanup commit failed: {error:?}"))
 }
 
+struct PageMoveRpcCreatePage<'a> {
+    slug: &'a str,
+    title: &'a str,
+    wikitext: String,
+    owns_category: bool,
+}
+
 async fn page_move_rpc_create_page(
     client: &reqwest::Client,
     address: SocketAddr,
     session_token: &str,
     user_id: i64,
     site_id: i64,
-    slug: &str,
-    title: &str,
-    wikitext: String,
+    request: PageMoveRpcCreatePage<'_>,
     cleanup: &mut PageMoveRpcCleanup,
-    owns_category: bool,
 ) -> JsonValue {
+    let PageMoveRpcCreatePage {
+        slug,
+        title,
+        wikitext,
+        owns_category,
+    } = request;
     let created = page_move_rpc_result(
         page_move_rpc_request(
             client,
@@ -37937,11 +37947,13 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
             &session_token,
             user_id,
             site_id,
-            &component_slug,
-            "Page Move Rollback Include Source",
-            format!("Page move rollback include source {run_id}."),
+            PageMoveRpcCreatePage {
+                slug: &component_slug,
+                title: "Page Move Rollback Include Source",
+                wikitext: format!("Page move rollback include source {run_id}."),
+                owns_category: false,
+            },
             &mut cleanup,
-            false,
         )
         .await;
         page_move_rpc_create_page(
@@ -37950,11 +37962,13 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
             &session_token,
             user_id,
             site_id,
-            &destination_template_slug,
-            "Page Move Rollback Destination Template",
-            destination_template_wikitext,
+            PageMoveRpcCreatePage {
+                slug: &destination_template_slug,
+                title: "Page Move Rollback Destination Template",
+                wikitext: destination_template_wikitext,
+                owns_category: true,
+            },
             &mut cleanup,
-            true,
         )
         .await;
         let created = page_move_rpc_create_page(
@@ -37963,11 +37977,13 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
             &session_token,
             user_id,
             site_id,
-            &source_slug,
-            "Page Move Rollback Source",
-            source_wikitext,
+            PageMoveRpcCreatePage {
+                slug: &source_slug,
+                title: "Page Move Rollback Source",
+                wikitext: source_wikitext,
+                owns_category: true,
+            },
             &mut cleanup,
-            true,
         )
         .await;
         let page_id = created["page_id"]
