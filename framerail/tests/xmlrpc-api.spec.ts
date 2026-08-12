@@ -1784,6 +1784,81 @@ test("XML-RPC files.get_meta validates resources before returning an empty struc
   expect(body).not.toContain("<fault>")
 })
 
+test("XML-RPC files.get_one rejects metadata above the local 6 MB read limit before requesting content", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-file-requests`)
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest("scp-173", "xmlrpc-read-limit-over-cap.txt"),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(413)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>413</int></value>")
+  expect(body).toContain("files.get_one file exceeds local 6 MB read limit")
+
+  const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
+  expect(fileLogResponse.status()).toBe(200)
+  const fileLog = await fileLogResponse.json()
+  expect(fileLog.fileGet.map(({ params }) => params.details.data)).toEqual([false])
+})
+
+test("XML-RPC files.get_one allows the local 6 MB boundary using a tiny synthetic payload", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-file-requests`)
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest("scp-173", "xmlrpc-read-limit-at-cap.txt"),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).not.toContain("<fault>")
+  expect(body).toContain("<name>size</name><value><int>6000000</int></value>")
+  expect(body).toContain(
+    `<name>content</name><value><string>${Buffer.from("at cap").toString("base64")}</string></value>`
+  )
+
+  const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
+  expect(fileLogResponse.status()).toBe(200)
+  const fileLog = await fileLogResponse.json()
+  expect(fileLog.fileGet.map(({ params }) => params.details.data)).toEqual([false, true])
+})
+
+test("XML-RPC files.get_meta still returns metadata above the local files.get_one read limit", async ({
+  request
+}) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetMetaRequest("scp-wiki", "scp-173", [
+      "xmlrpc-read-limit-over-cap.txt"
+    ]),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).not.toContain("<fault>")
+  expect(body).toContain("<name>size</name><value><int>6000001</int></value>")
+})
+
+test("XML-RPC files.get_one rechecks the local read limit after fetching content", async ({
+  request
+}) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest("scp-173", "xmlrpc-read-limit-race.txt"),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(413)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>413</int></value>")
+  expect(body).toContain("files.get_one file exceeds local 6 MB read limit")
+})
+
 test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
   const pageSlug = `fixture-xmlrpc-file-${randomUUID()}`
   const fileName = "B&W.txt"

@@ -49,6 +49,7 @@ import {
 type DeepwellStringParams = Record<string, string | string[] | undefined>
 const MAX_XML_RPC_FILTER_VALUES = 100
 const MAX_XML_RPC_TAG_PAGE_FILTER_VALUES = 10
+const MAX_XML_RPC_FILE_READ_BYTES = 6_000_000
 export const MAX_XML_RPC_FILE_BYTES = 50_000_000
 const PAGE_SELECT_DECIMAL_RATING_PATTERN =
   /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/
@@ -423,14 +424,27 @@ export async function getFileOne(call: XmlRpcCall): Promise<Record<string, XmlRp
   const siteId = await getDeepwellSiteId(site)
   const page = await requireDeepwellPage(siteId, pageReference, false)
   const pageId = requireDeepwellPageId(page)
+  const metadata = await getDeepwellFile(siteId, pageId, fileName, false)
+  if (!metadata) {
+    throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
+  }
+  enforceXmlRpcFileReadLimit(metadata)
+
   const file = await getDeepwellFile(siteId, pageId, fileName, true)
   if (!file) {
     throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
   }
+  enforceXmlRpcFileReadLimit(file)
 
   return {
     ...buildXmlRpcFileMeta(site, page.slug, file),
     content: deepwellFileContentBase64(file)
+  }
+}
+
+function enforceXmlRpcFileReadLimit(file: DeepwellFile): void {
+  if (file.size > MAX_XML_RPC_FILE_READ_BYTES) {
+    throw new XmlRpcFault(413, "files.get_one file exceeds local 6 MB read limit", 413)
   }
 }
 
