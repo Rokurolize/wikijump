@@ -5,7 +5,6 @@
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { Layout, PagePane } from "$lib/types"
   import { resolve } from "$app/paths"
-  import { buildWikidotPageTagsHtml } from "$lib/wikidot/wikidot-page-tags"
   import {
     buildGeneratedPageStylesHead,
     getPageFontPreloadHrefs
@@ -35,6 +34,7 @@
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
   import PageHead from "./PageHead.svelte"
   import PagePaneContent from "./PagePaneContent.svelte"
+  import WikidotFoundPageTags from "./WikidotFoundPageTags.svelte"
 
   import type { PageProps } from "./$types"
   import type { Optional } from "$lib/types"
@@ -402,14 +402,18 @@
 
   {#if showRevision}
     {#if revision?.tags?.length}
-      <div class="page-tags" class:hidden={dataFormEditing}>
-        <span>{@html buildWikidotPageTagsHtml(revision.tags)}</span>
-      </div>
+      <WikidotFoundPageTags
+        currentTags={data.page_revision?.tags ?? []}
+        hidden={dataFormEditing}
+        revisionTags={revision.tags}
+        {showRevision}
+      />
     {/if}
   {:else if data.page_revision?.tags?.length}
-    <div class="page-tags" class:hidden={dataFormEditing}>
-      <span>{@html buildWikidotPageTagsHtml(data.page_revision.tags)}</span>
-    </div>
+    <WikidotFoundPageTags
+      currentTags={data.page_revision.tags}
+      hidden={dataFormEditing}
+    />
   {/if}
 
   {#if data.options?.edit}
