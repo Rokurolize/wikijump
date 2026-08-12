@@ -20,8 +20,60 @@
 
 use super::prelude::*;
 use crate::models::relation::Model as RelationModel;
+use crate::services::MutationAuthorization;
 use crate::services::relation::{CreateSiteBan, GetSiteBan, RemoveSiteBan, SiteBanData};
+use crate::services::user::User;
+use crate::types::{Action, Permission, Reference, Resource};
 use std::net::IpAddr;
+
+async fn authorize_site_ban_mutation(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    target_user_id: i64,
+    submitted_actor_user_id: i64,
+    action: &str,
+) -> Result<()> {
+    MutationAuthorization::require_matching_actor(ctx, submitted_actor_user_id, action)?;
+    let site = SiteService::get(ctx, Reference::Id(site_id))
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to validate the site for a site-ban mutation",
+                ErrorType::SiteBanRelation,
+            )
+        })?;
+    if site.deleted_at.is_some() {
+        return Err(Error::new("site does not exist", ErrorType::SiteNotFound).into());
+    }
+    MutationAuthorization::require_permission(
+        ctx,
+        site_id,
+        None,
+        Permission {
+            resource_type: Resource::Role,
+            resource_category: None,
+            action: Action::Assign,
+        },
+        action,
+    )
+    .await?;
+    let target = UserService::get(ctx, Reference::Id(target_user_id))
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to validate the target user for a site-ban mutation",
+                ErrorType::SiteBanRelation,
+            )
+        })?;
+    let target_is_active = match target {
+        User::Wikijump(user) => user.deleted_at.is_none(),
+        User::Wikidot(user) => !user.is_deleted,
+    };
+    if !target_is_active {
+        return Err(Error::new("user does not exist", ErrorType::UserNotFound).into());
+    }
+    Ok(())
+}
 
 #[derive(Deserialize, Debug, Clone)]
 struct CreateSiteBanInput {
@@ -74,6 +126,9 @@ pub async fn site_ban_set(
         ip_address,
     } = parse!(params, SiteBanRelation);
 
+    authorize_site_ban_mutation(ctx, site_id, user_id, created_by, "create a site ban")
+        .await?;
+
     RelationService::create_site_ban(
         ctx,
         CreateSiteBan {
@@ -104,6 +159,9 @@ pub async fn site_ban_remove(
         reason,
         ip_address,
     } = parse!(params, SiteBanRelation);
+
+    authorize_site_ban_mutation(ctx, site_id, user_id, removed_by, "remove a site ban")
+        .await?;
 
     RelationService::remove_site_ban_with_audit(
         ctx,
