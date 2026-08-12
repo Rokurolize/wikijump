@@ -484,7 +484,6 @@ WHERE page.site_id = $1
 
         let PageModel {
             page_id,
-            page_category_id: category_id,
             slug: old_slug,
             latest_revision_id,
             ..
@@ -500,12 +499,6 @@ WHERE page.site_id = $1
                 ),
                 ErrorType::Page,
             )
-        };
-
-        let id = PageId {
-            site_id,
-            category_id,
-            page_id,
         };
 
         // Check last revision ID argument
@@ -533,11 +526,27 @@ WHERE page.site_id = $1
             CategoryService::get_or_create(ctx, site_id, get_category_name(&new_slug))
                 .await
                 .or_raise(make_error)?;
+        let id = PageId {
+            site_id,
+            category_id,
+            page_id,
+        };
 
         // Get latest revision
         let last_revision = PageRevisionService::get_latest(ctx, site_id, page_id)
             .await
             .or_raise(make_error)?;
+
+        // The move revision must render against the destination page identity. Keep
+        // the existing latest revision in place until the new revision is persisted;
+        // the surrounding transaction rolls this identity change back on failure.
+        let model = page::ActiveModel {
+            page_id: Set(page_id),
+            slug: Set(new_slug.clone()),
+            page_category_id: Set(category_id),
+            ..Default::default()
+        };
+        model.update(txn).await.or_raise(make_error)?;
 
         // Create revision for move
         let revision_input = CreatePageRevision {
@@ -560,15 +569,9 @@ WHERE page.site_id = $1
             None => ActiveValue::NotSet,
         };
 
-        // Update page after move. This changes:
-        // * slug               -- New slug for the page
-        // * page_category_id   -- In case the category also changed
-        // * latest_revision_id -- In case a new revision was created
-        // * updated_at         -- This is updated every time a page is changed
+        // Finish updating the page after the move revision has been persisted.
         let model = page::ActiveModel {
             page_id: Set(page_id),
-            slug: Set(new_slug.clone()),
-            page_category_id: Set(category_id),
             latest_revision_id,
             updated_at: Set(Some(now())),
             ..Default::default()
