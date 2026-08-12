@@ -6,6 +6,7 @@
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
       "module-listpages",
+      "module-backlinks",
       "module-tagcloud",
       "page-tags"
     ],
@@ -1176,16 +1177,22 @@
       ]
     },
     "module-backlinks": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, link graph, permissions, and page-view interface",
-        "RenderService Backlinks module rendering for empty and non-empty link graph output"
+        "Deepwell public page_view rendering after an independent incoming-link mutation"
       ],
       "tests": [
-        "deepwell/tests/page.rs::backlinks_module_renders_current_page_incoming_links",
-        "deepwell/tests/page.rs::backlinks_module_ignores_arguments_like_live_wikidot",
-        "deepwell/src/services/render/backlinks.rs::tests::backlinks_name_must_end_before_arguments",
-        "deepwell/src/services/render/backlinks.rs::tests::empty_backlinks_box_matches_live_wikidot"
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "backlinks_module_renders_current_page_incoming_links",
+          "scope": "public page_get and page_view rendering verifies current-page incoming-link selection, title ordering, exact list and anchor DOM, inline literal preservation, and freshness after an independent link mutation"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "backlinks_module_ignores_arguments_like_live_wikidot",
+          "scope": "public page_get rendering verifies that page and unknown arguments are ignored and both invocations target the containing page"
+        }
       ],
       "implementation_files": [
         "deepwell/src/services/render/backlinks.rs",
@@ -1193,13 +1200,16 @@
         "deepwell/tests/page.rs"
       ],
       "documentation_evidence": [
-        "specifications/module/module-backlinks.md"
+        "specifications/module/module-backlinks.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
       "live_oracle_evidence": [
         "live-observations.json::navigation-list-modules-live-dom-and-argument-quirks",
         "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
       ],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "Parser nesting and composition, saved/imported lifecycle round trips, denied or private inbound-link visibility, and public failure and resource-bound behavior remain unobserved; module-backlinks therefore remains in progress rather than implemented."
+      ]
     },
     "module-categories": {
       "status": "in_progress",
@@ -4504,6 +4514,70 @@
         ],
         "observation_gaps": [
           "The local database seam proves saved TagCloud runtime freshness after an independent tag mutation and exact inert stops, while live evidence covers limit fallbacks; live temporal freshness and resource-bound behavior remain unobserved."
+        ]
+      }
+    },
+    "module-backlinks": {
+      "P1": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:navigation-list-modules-live-dom-and-argument-quirks",
+          "test:deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot"
+        ],
+        "observation_gaps": []
+      },
+      "P2": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Backlinks parser-stage nesting and composition behavior has not been established by paired live Wikidot evidence and an in-repository public regression seam."
+        ]
+      },
+      "P3": {
+        "status": "unobserved",
+        "evidence": [
+          "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+        ],
+        "observation_gaps": [
+          "The public page_view seam proves local freshness after an independent incoming-link mutation, but saved-page persistence, reload, import, and round-trip behavior have not been established against live Wikidot."
+        ]
+      },
+      "P4": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Denied or private inbound-link visibility has not been established by paired live Wikidot evidence and an in-repository public regression seam."
+        ]
+      },
+      "P5": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:navigation-list-modules-live-dom-and-argument-quirks",
+          "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+        ],
+        "observation_gaps": []
+      },
+      "P6": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:navigation-list-modules-live-dom-and-argument-quirks",
+          "test:deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot"
+        ],
+        "observation_gaps": []
+      },
+      "P7": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:navigation-list-modules-live-dom-and-argument-quirks",
+          "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+        ],
+        "observation_gaps": []
+      },
+      "P8": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Backlinks public failure behavior and resource-bound behavior lack paired live Wikidot evidence and an in-repository public regression seam."
         ]
       }
     }
