@@ -3740,12 +3740,12 @@
       "status": "in_progress",
       "confirmed_public_seams": [
         "Framerail Wikidot-layout found-page route SSR for current, tagless, and editing-hidden page-tag output",
-        "Framerail display-only found-page tag SSR after client-side revision selection"
+        "Framerail display-only found-page tag leaf SSR with supplied revision tags"
       ],
       "tests": [
         {
           "path": "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
-          "scope": "public found-page route SSR covers ordered direct tag anchors, tagless omission, and editing-hidden state; the display-only component covers the direct-child shape after the parent selects revision tags"
+          "scope": "public found-page route SSR covers ordered direct tag anchors, tagless omission, and editing-hidden state; the display-only leaf SSR covers the direct-child shape with supplied revision tags"
         },
         {
           "path": "framerail/tests/wikidot-page-tags.test.js",
@@ -4367,7 +4367,7 @@
           "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags",
           "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#tagless found-page route SSR omits page-tags",
           "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#editing found-page route SSR preserves the hidden page-tags state",
-          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#revision found-page tag SSR keeps parent-selected order and direct links"
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#display-only found-page tag leaf SSR renders supplied revision tags directly"
         ],
         "observation_gaps": [
           "The retained captures establish only the settled found-page wrapper shape. Broader CSS, resource, geometry, interaction, client revision-selection, and intermediate-state behavior remains unobserved."

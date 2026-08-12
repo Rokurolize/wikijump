@@ -52,6 +52,23 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function parseEvidenceRows(path, rawEvidence) {
+  if (!path.endsWith(".jsonl")) {
+    try {
+      return [JSON.parse(rawEvidence)];
+    } catch (error) {
+      if (!(error instanceof SyntaxError)) {
+        throw error;
+      }
+    }
+  }
+
+  return rawEvidence
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -163,12 +180,7 @@ for (const observation of liveObservations.observations) {
       sha256(rawEvidence) === evidence.sha256,
       `Live evidence hash drifted for ${observation.id}: ${evidence.path}`,
     );
-    const evidenceRows = evidence.path.endsWith(".jsonl")
-      ? rawEvidence
-          .split(/\r?\n/)
-          .filter(Boolean)
-          .map((line) => JSON.parse(line))
-      : [JSON.parse(rawEvidence)];
+    const evidenceRows = parseEvidenceRows(evidence.path, rawEvidence);
     const capturedCaseIds = new Set();
     for (const row of evidenceRows) {
       if (

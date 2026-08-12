@@ -94,7 +94,7 @@ test("normal found-page route SSR renders ordered tag links directly in page-tag
   )
 })
 
-test("revision found-page tag SSR keeps parent-selected order and direct links", () => {
+test("display-only found-page tag leaf SSR renders supplied revision tags directly", () => {
   const body = withoutSvelteComments(
     render(pageTagsComponent, {
       props: { tags: ["lp-range-20260727", "older-revision-tag"], hidden: false }

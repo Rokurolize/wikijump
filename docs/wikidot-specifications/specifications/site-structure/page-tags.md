@@ -40,6 +40,7 @@ Normative behavior:
 
 Evidence:
 
+- `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json` (SHA-256 `9494777d18face903fa6b8c48444f4c3aa687fae6175156977700fa8476559ea`), cases: `lp-live-tag-selectors`, `lp-live-range-selectors`, `lp-live-parent-selectors`, `lp-live-metric-selectors`
 - `install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json` (SHA-256 `8864c8c37d8e9cb12eca1c1a76fe413b9e14a328368e6087a9a71a478ca20499`), cases: `lp-live-tag-selectors`, `lp-live-range-selectors`, `lp-live-parent-selectors`, `lp-live-metric-selectors`
 
 
