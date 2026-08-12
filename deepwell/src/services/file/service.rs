@@ -28,7 +28,7 @@ use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::ServiceContext;
-use crate::services::audit::ObjectScope;
+use crate::services::audit::{AuditEvent, AuditService, ObjectScope};
 use crate::services::blob::{ContentTypeDescriptor, FinalizeBlobUploadOutput};
 use crate::services::file_revision::{
     CreateFileRevision, CreateFileRevisionBody, CreateFirstFileRevision,
@@ -601,6 +601,20 @@ impl FileService {
             ..Default::default()
         };
         model.update(txn).await.or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::FileUndelete {
+                user_id,
+                site_id,
+                page_id: new_page_id,
+                file_id,
+                revision_id: output.file_revision_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
 
         Ok(RestoreFileOutput {
             page_id: new_page_id,

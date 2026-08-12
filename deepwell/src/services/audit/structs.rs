@@ -141,6 +141,13 @@ pub enum AuditEvent<'a> {
         page_id: i64,
         layout: Option<Layout>,
     },
+    FileUndelete {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+    },
     FilterViolation {
         object: ObjectScope,
         info: &'a FilterSummary,
@@ -548,6 +555,24 @@ impl<'a> AuditEvent<'a> {
                 extra_id_1: None,
                 extra_id_2: None,
                 extra_string_1: layout.map(|l| cow!(l.value())),
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::FileUndelete {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "file.undelete",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
                 extra_string_2: None,
                 extra_number: None,
             },
@@ -1278,6 +1303,26 @@ mod tests {
         });
         assert_event_type(&raw, "page_layout.update");
         assert_eq!(raw.extra_string_1.as_deref(), Some("wikidot"));
+    }
+
+    #[test]
+    fn extracts_file_undelete_event() {
+        let raw = extract(AuditEvent::FileUndelete {
+            user_id: 41,
+            site_id: 42,
+            page_id: 43,
+            file_id: 44,
+            revision_id: 45,
+        });
+        assert_event_type(&raw, "file.undelete");
+        assert_eq!(raw.user_id, Some(41));
+        assert_eq!(raw.site_id, Some(42));
+        assert_eq!(raw.page_id, Some(43));
+        assert_eq!(raw.extra_id_1, Some(44));
+        assert_eq!(raw.extra_id_2, Some(45));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
     }
 
     #[test]

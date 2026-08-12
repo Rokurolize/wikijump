@@ -28844,6 +28844,86 @@ async fn file_mutations_require_parent_page_edit_permission() {
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
 
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the denied file restore audit count should succeed");
+    assert_eq!(audit_count, 0, "denied restores must not be audited");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("the file restore savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(SAMPLE_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let transactional_restore = deepwell::endpoints::all::file_restore(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "file_id": restore_file.file_id,
+            "new_page": destination_page.page_id,
+            "revision_comments": "transactional file restore",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("the transactional file restore should succeed");
+    let transactional_event = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .one(&transaction)
+        .await
+        .expect("the transactional file restore audit lookup should succeed")
+        .expect("the transactional file restore should emit an audit event");
+    assert_eq!(transactional_event.page_id, Some(destination_page.page_id));
+    assert_eq!(
+        transactional_event.extra_id_2,
+        Some(transactional_restore.file_revision_id)
+    );
+    let transactional_file = file::Entity::find_by_id(restore_file.file_id)
+        .one(&transaction)
+        .await
+        .expect("the transactional restored file lookup should succeed")
+        .expect("the transactional restored file should exist");
+    assert_eq!(transactional_file.page_id, destination_page.page_id);
+    assert!(transactional_file.deleted_at.is_none());
+
+    transaction
+        .rollback()
+        .await
+        .expect("the file restore savepoint should roll back");
+    let rolled_back_file = file::Entity::find_by_id(restore_file.file_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the rolled-back file lookup should succeed")
+        .expect("the rolled-back file should exist");
+    assert_eq!(rolled_back_file.page_id, page.page_id);
+    assert!(
+        rolled_back_file.deleted_at.is_some(),
+        "the file restore state update must roll back"
+    );
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the rolled-back file restore audit count should succeed");
+    assert_eq!(
+        audit_count, 0,
+        "the file restore audit event must roll back with the state update"
+    );
+
     let restored = run_endpoint!(
         runner,
         file_restore,
@@ -28858,6 +28938,42 @@ async fn file_mutations_require_parent_page_edit_permission() {
     );
     assert_eq!(restored.file_id, restore_file_id);
     assert!(restored.file_revision_id > deleted_restore.file_revision_id);
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("the successful file restore audit lookup should succeed");
+    assert_eq!(events.len(), 1, "a successful restore must be audited once");
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(SAMPLE_USER_ID));
+    assert_eq!(event.site_id, Some(site_id));
+    assert_eq!(event.page_id, Some(restored.page_id));
+    assert_eq!(event.extra_id_1, Some(restored.file_id));
+    assert_eq!(event.extra_id_2, Some(restored.file_revision_id));
+    assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+
+    let error = run_endpoint_err!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "file_id": restore_file.file_id,
+            "revision_comments": "repeated file restore",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::FileNotDeleted);
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the repeated file restore audit count should succeed");
+    assert_eq!(audit_count, 1, "a repeated restore must not be audited");
 
     let rollback_file = run_endpoint!(
         runner,
