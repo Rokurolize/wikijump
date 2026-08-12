@@ -32,7 +32,7 @@ use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
-use deepwell::services::{RelationService, RequestContext};
+use deepwell::services::{RelationService, RequestContext, UserService};
 use deepwell::types::{Action, Permission, Reference, RelationType, Resource};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde_json::json;
@@ -575,6 +575,191 @@ async fn lifecycle_membership_blocking_and_audit() {
         Some("Test site ban removal")
     );
     assert_eq!(remove_event.extra_string_2, None);
+}
+
+#[tokio::test]
+async fn authorized_manager_can_remove_ban_after_target_is_tombstoned() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(request_actor(Some(ADMIN_USER_ID)));
+    let site_id = test_site_id(&runner).await;
+
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Tombstoned Site Ban Target",
+            "email": "tombstoned-site-ban-target@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let manager_role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: String::from("Tombstoned Site Ban Manager"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to create site-ban manager role");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(manager_role.role_id),
+            new_permissions: vec![Permission {
+                resource_type: Resource::Role,
+                resource_category: None,
+                action: Action::Assign,
+            }],
+            cascade_removals: false,
+            updating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to configure site-ban manager role");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: UNKNOWN_USER_ID,
+            role_id: manager_role.role_id,
+            site_id,
+            assigning_user_id: ADMIN_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to grant site-ban manager role");
+
+    run_endpoint!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": target.user_id,
+            "metadata": {
+                "banned_until": null,
+                "reason": "tombstone removal test",
+            },
+            "created_by": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted = run_endpoint!(runner, user_delete, json!({"user": target.user_id}),);
+    assert!(deleted.deleted_at.is_some());
+
+    runner.set_request_context(request_actor(Some(UNKNOWN_USER_ID)));
+    let error = run_endpoint_err!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": target.user_id,
+            "metadata": {
+                "banned_until": null,
+                "reason": "must not recreate against a deleted user",
+            },
+            "created_by": UNKNOWN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserNotFound);
+
+    assert_site_ban_remove_denied(
+        &mut runner,
+        request_actor(Some(UNKNOWN_USER_ID)),
+        site_id,
+        target.user_id,
+        ADMIN_USER_ID,
+    )
+    .await;
+    assert_site_ban_remove_denied(
+        &mut runner,
+        request_actor(Some(SAMPLE_USER_ID)),
+        site_id,
+        target.user_id,
+        SAMPLE_USER_ID,
+    )
+    .await;
+
+    runner.set_request_context(request_actor(Some(ADMIN_USER_ID)));
+    let other_site_id =
+        run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+            .expect("Seeded editable site not found")
+            .site
+            .site_id;
+    for (candidate_site_id, candidate_user_id) in
+        [(other_site_id, target.user_id), (site_id, 700_999_i64)]
+    {
+        let error = run_endpoint_err!(
+            runner,
+            site_ban_remove,
+            json!({
+                "site_id": candidate_site_id,
+                "user_id": candidate_user_id,
+                "removed_by": ADMIN_USER_ID,
+                "reason": "non-matching site ban",
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::SiteBanRelation);
+    }
+    let active = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({"site_id": site_id, "user_id": target.user_id}),
+    );
+    assert!(active.is_some(), "Rejected removal removed the site ban");
+
+    runner.set_request_context(request_actor(Some(UNKNOWN_USER_ID)));
+    let removed = run_endpoint!(
+        runner,
+        site_ban_remove,
+        json!({
+            "site_id": site_id,
+            "user_id": target.user_id,
+            "removed_by": UNKNOWN_USER_ID,
+            "reason": "target account was deleted",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(removed.deleted_by, Some(UNKNOWN_USER_ID));
+    assert!(removed.deleted_at.is_some());
+
+    let ban = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({"site_id": site_id, "user_id": target.user_id}),
+    );
+    assert!(ban.is_none(), "Removed site ban is still active");
+
+    let tombstone =
+        UserService::get_real(runner.context(), Reference::Id(target.user_id))
+            .await
+            .expect("Tombstoned target user was not found");
+    assert!(
+        tombstone.deleted_at.is_some(),
+        "Removing the site ban restored the target account",
+    );
+
+    let remove_event =
+        latest_audit_event(&runner, "site_ban.remove", site_id, target.user_id).await;
+    assert_eq!(remove_event.extra_id_1, Some(UNKNOWN_USER_ID));
+    assert_eq!(remove_event.extra_id_2, Some(removed.relation_id));
+    assert_eq!(
+        remove_event.extra_string_1.as_deref(),
+        Some("target account was deleted"),
+    );
 }
 
 #[tokio::test]

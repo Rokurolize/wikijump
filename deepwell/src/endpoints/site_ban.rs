@@ -29,7 +29,6 @@ use std::net::IpAddr;
 async fn authorize_site_ban_mutation(
     ctx: &ServiceContext<'_>,
     site_id: i64,
-    target_user_id: i64,
     submitted_actor_user_id: i64,
     action: &str,
 ) -> Result<()> {
@@ -57,6 +56,13 @@ async fn authorize_site_ban_mutation(
         action,
     )
     .await?;
+    Ok(())
+}
+
+async fn require_active_site_ban_target(
+    ctx: &ServiceContext<'_>,
+    target_user_id: i64,
+) -> Result<()> {
     let target = UserService::get(ctx, Reference::Id(target_user_id))
         .await
         .or_raise(|| {
@@ -126,8 +132,8 @@ pub async fn site_ban_set(
         ip_address,
     } = parse!(params, SiteBanRelation);
 
-    authorize_site_ban_mutation(ctx, site_id, user_id, created_by, "create a site ban")
-        .await?;
+    authorize_site_ban_mutation(ctx, site_id, created_by, "create a site ban").await?;
+    require_active_site_ban_target(ctx, user_id).await?;
 
     RelationService::create_site_ban(
         ctx,
@@ -160,8 +166,7 @@ pub async fn site_ban_remove(
         ip_address,
     } = parse!(params, SiteBanRelation);
 
-    authorize_site_ban_mutation(ctx, site_id, user_id, removed_by, "remove a site ban")
-        .await?;
+    authorize_site_ban_mutation(ctx, site_id, removed_by, "remove a site ban").await?;
 
     RelationService::remove_site_ban_with_audit(
         ctx,
