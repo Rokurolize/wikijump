@@ -8,7 +8,8 @@
       "module-listpages",
       "module-backlinks",
       "module-tagcloud",
-      "page-tags"
+      "page-tags",
+      "syntax-comments"
     ],
     "note": "All catalog entries remain represented as required by IMPLEMENTATION_PROMPT.md. Campaign-scoped features must classify P1-P8 before a terminal implementation claim; unrelated catalog entries remain pending rather than being falsely marked complete."
   },
@@ -3906,15 +3907,29 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "syntax-comments": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell public wikidot_page_preview rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "listpages_respects_corpus_literal_context_ownership",
+          "scope": "public PagePreview rendering verifies inline-monospace and complete-comment ownership of ListPages-shaped text"
+        }
+      ],
       "implementation_files": [],
       "documentation_evidence": [
-        "specifications/wiki-syntax/syntax-comments.md"
+        "specifications/wiki-syntax/syntax-comments.md",
+        "docs/wikidot-specifications/live-observations.json"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "live-observations.json::listpages-literal-context-ownership"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Only comment ownership of ListPages-shaped text and the observed comment-closing boundary have an in-repository public regression seam. Saved-page persistence, reload, and imported-source round trips remain unobserved, and malformed or unclosed comments plus bounded-work behavior lack an in-repository public regression seam; syntax-comments therefore remains in progress rather than implemented."
+      ]
     },
     "syntax-date": {
       "status": "pending",
@@ -4577,6 +4592,62 @@
         "evidence": [],
         "observation_gaps": [
           "Backlinks public failure behavior and resource-bound behavior lack paired live Wikidot evidence and an in-repository public regression seam."
+        ]
+      }
+    },
+    "syntax-comments": {
+      "P1": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-literal-context-ownership",
+          "test:deepwell/tests/list_pages.rs#listpages_respects_corpus_literal_context_ownership"
+        ],
+        "observation_gaps": []
+      },
+      "P2": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:listpages-literal-context-ownership",
+          "test:deepwell/tests/list_pages.rs#listpages_respects_corpus_literal_context_ownership"
+        ],
+        "observation_gaps": []
+      },
+      "P3": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Saved-page persistence, reload, and imported-source round trips for comment ownership have not been observed through an in-repository public seam."
+        ]
+      },
+      "P4": {
+        "status": "not_applicable",
+        "evidence": [],
+        "observation_gaps": [],
+        "rationale": "Comments are syntax-level source suppression with no actor, permission, visibility, or privacy contract."
+      },
+      "P5": {
+        "status": "not_applicable",
+        "evidence": [],
+        "observation_gaps": [],
+        "rationale": "Comments do not select, order, count, or paginate runtime records."
+      },
+      "P6": {
+        "status": "not_applicable",
+        "evidence": [],
+        "observation_gaps": [],
+        "rationale": "Comments define no HTTP, API, URL, Ajax, feed, or navigation contract."
+      },
+      "P7": {
+        "status": "not_applicable",
+        "evidence": [],
+        "observation_gaps": [],
+        "rationale": "A recognized comment emits no DOM, CSS, resource, interaction, or geometry surface."
+      },
+      "P8": {
+        "status": "unobserved",
+        "evidence": [],
+        "observation_gaps": [
+          "Malformed and unclosed comment behavior and bounded-work limits lack an in-repository public regression seam."
         ]
       }
     }
