@@ -45,7 +45,7 @@ use paste::paste;
 use sea_orm::ActiveValue;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
-    FromQueryResult, QueryFilter, QueryOrder, Set, Statement, Value,
+    FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, Statement, Value,
 };
 use std::net::IpAddr;
 
@@ -192,6 +192,23 @@ impl FileService {
         };
 
         let txn = ctx.transaction();
+        // Serialize edits before validating the revision snapshot or promoting a blob.
+        File::find_by_id(file_id)
+            .filter(file::Column::SiteId.eq(site_id))
+            .filter(file::Column::PageId.eq(page_id))
+            .lock_exclusive()
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_raise(|| {
+                Error::new(
+                    format!(
+                        "file ID {} does not exist on page ID {} in site ID {}",
+                        file_id, page_id, site_id,
+                    ),
+                    ErrorType::FileNotFound,
+                )
+            })?;
         let last_revision =
             FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
                 .await
