@@ -545,7 +545,11 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC posts.select rejects the unimplemented thread selector locally",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC posts.select treats a nil thread selector as omitted",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC posts.select validates required site before thread support"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -554,8 +558,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
