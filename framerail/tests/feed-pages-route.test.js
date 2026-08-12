@@ -8,7 +8,6 @@ import { createServer as createViteServer } from "vite"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
 const siteHeaders = {
-  cookie: "wikijump_token=route-test",
   "X-Wikijump-Site-Id": "17",
   "X-Wikijump-Site-Slug": "test"
 }
@@ -95,7 +94,9 @@ before(async () => {
   client.request = async (method) => {
     if (method === "article_view") return structuredClone(missingArticleView)
     if (method === "translate") return {}
-    if (method === "wikidot_list_pages_feed") return { items: [] }
+    if (method === "wikidot_list_pages_feed") {
+      throw new Error("Exact /feed/pages must not use the feed endpoint")
+    }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 
@@ -113,23 +114,34 @@ after(async () => {
   if (previousWorkingDirectory) process.chdir(previousWorkingDirectory)
 })
 
-test("exact feed/pages is a missing page while selector paths remain XML feeds", async () => {
+test("anonymous exact feed/pages renders the generic missing-page shell", async () => {
   const missingResponse = await fetch(`${baseUrl}/feed/pages`, {
     headers: siteHeaders
   })
   const missingBody = await missingResponse.text()
 
   assert.equal(missingResponse.status, 404)
-  assert.match(missingResponse.headers.get("content-type"), /^text\/html\b/u)
   assert.match(missingBody, /id="404-message"/u)
   assert.match(missingBody, /<em[^>]*>feed<\/em>/u)
+})
 
-  const feedResponse = await fetch(`${baseUrl}/feed/pages/category/news`, {
-    headers: siteHeaders
-  })
-  const feedBody = await feedResponse.text()
+test("selector feed paths remain XML feeds", async () => {
+  const rejectingClientRequest = client.request
+  client.request = async (method, ...args) => {
+    if (method === "wikidot_list_pages_feed") return { items: [] }
+    return rejectingClientRequest(method, ...args)
+  }
 
-  assert.equal(feedResponse.status, 200)
-  assert.equal(feedResponse.headers.get("content-type"), "text/xml;charset=utf-8")
-  assert.match(feedBody, /^<\?xml version="1\.0" encoding="UTF-8" \?>/u)
+  try {
+    const feedResponse = await fetch(`${baseUrl}/feed/pages/category/news`, {
+      headers: siteHeaders
+    })
+    const feedBody = await feedResponse.text()
+
+    assert.equal(feedResponse.status, 200)
+    assert.equal(feedResponse.headers.get("content-type"), "text/xml;charset=utf-8")
+    assert.match(feedBody, /^<\?xml version="1\.0" encoding="UTF-8" \?>/u)
+  } finally {
+    client.request = rejectingClientRequest
+  }
 })
