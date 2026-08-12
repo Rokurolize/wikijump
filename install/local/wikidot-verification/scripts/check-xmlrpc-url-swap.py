@@ -146,6 +146,17 @@ def check_documented_methods(
         params = {"unexpected": True} if method_name == "users.get_me" else {}
         expect_fault(proxy, method_name, -32602, params)
 
+    posts_get_fault = expect_fault(
+        proxy,
+        "posts.get",
+        -32602,
+        {"site": "url-swap-fixture", "posts": [7000300]},
+    )
+    if posts_get_fault.faultString != "Argument posts should be a list of strings":
+        raise ConformanceError(
+            "posts.get returned the wrong fault text for an integer post ID"
+        )
+
     expect_fault(
         proxy,
         "tags.select",

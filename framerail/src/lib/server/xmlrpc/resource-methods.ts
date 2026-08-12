@@ -39,7 +39,6 @@ import {
   getOptionalStructStringOrInt,
   getRequiredStructString,
   getRequiredStructStringArray,
-  getRequiredStructStringOrIntArray,
   getStructParam,
   isXmlRpcStruct
 } from "$lib/server/xmlrpc/parameters"
@@ -488,7 +487,11 @@ export async function selectPosts(call: XmlRpcCall): Promise<number[]> {
 export async function getPosts(call: XmlRpcCall): Promise<Record<string, XmlRpcValue>> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
-  const posts = getRequiredStructStringOrIntArray(params, "posts")
+  const posts = params.posts
+
+  if (!Array.isArray(posts) || posts.some((post) => typeof post !== "string")) {
+    throw new XmlRpcFault(-32602, "Argument posts should be a list of strings")
+  }
 
   if (posts.length > 10) {
     throw new XmlRpcFault(-32602, "posts.get posts is limited to 10 entries")

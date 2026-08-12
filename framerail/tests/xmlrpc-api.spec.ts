@@ -1394,7 +1394,7 @@ test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
   )
 
   const postsGetResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPostsGetRequest(["7000300"], "int"),
+    data: xmlRpcPostsGetRequest(["7000300"]),
     headers: xmlRpcHeaders
   })
   expect(postsGetResponse.status()).toBe(200)

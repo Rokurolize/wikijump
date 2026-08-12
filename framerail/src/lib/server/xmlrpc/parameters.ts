@@ -73,19 +73,6 @@ export function getRequiredStructStringArray(
   return value
 }
 
-export function getRequiredStructStringOrIntArray(
-  params: XmlRpcStruct,
-  name: string
-): string[] {
-  const value = params[name]
-  if (!Array.isArray(value)) {
-    throw new XmlRpcFault(-32602, `Expected string or integer array field: ${name}`)
-  }
-  return value.map((entry) =>
-    stringifyStringOrInteger(entry, `Expected string or integer array field: ${name}`)
-  )
-}
-
 export function getOptionalStructStringArray(
   params: XmlRpcStruct,
   name: string
