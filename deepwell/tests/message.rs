@@ -29,6 +29,11 @@ use deepwell::services::{MessageService, RequestContext};
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde_json::json;
 
+fn public_error(error: deepwell::error::ExnError) -> (i32, String) {
+    let error = exn_error_to_rpc_error(error);
+    (error.code(), error.message().to_owned())
+}
+
 fn draft_params(subject: &str, wikitext: &str) -> serde_json::Value {
     json!({
         "user_id": ADMIN_USER_ID,
@@ -41,6 +46,113 @@ fn draft_params(subject: &str, wikitext: &str) -> serde_json::Value {
         "reply_to": null,
         "forwarded_from": null,
     })
+}
+
+#[tokio::test]
+async fn message_draft_mutations_do_not_reveal_foreign_drafts() {
+    const ABSENT_DRAFT_ID: &str = "c00000000000000000000000";
+
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let editable = run_endpoint!(
+        runner,
+        message_draft_create,
+        draft_params("Private editable draft", "Original edit body"),
+    );
+    let deletable = run_endpoint!(
+        runner,
+        message_draft_create,
+        draft_params("Private deletable draft", "Original delete body"),
+    );
+    let sendable = run_endpoint!(
+        runner,
+        message_draft_create,
+        draft_params("Private sendable draft", "Original send body"),
+    );
+
+    let edit_params = |message_draft_id: &str| {
+        json!({
+            "message_draft_id": message_draft_id,
+            "recipients": [SAMPLE_USER_ID],
+            "carbon_copy": [],
+            "blind_carbon_copy": [],
+            "locale": "en",
+            "subject": "Unauthorized update",
+            "wikitext": "Unauthorized body",
+        })
+    };
+
+    macro_rules! assert_indistinguishable {
+        ($endpoint:ident, $existing:expr, $absent:expr, $expected:expr $(,)?) => {{
+            let existing_error =
+                public_error(run_endpoint_err!(runner, $endpoint, $existing));
+            let absent_error =
+                public_error(run_endpoint_err!(runner, $endpoint, $absent));
+            let expected = ($expected.code(), $expected.summary().to_owned());
+
+            assert_eq!(existing_error, expected);
+            assert_eq!(existing_error, absent_error);
+        }};
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+    assert_indistinguishable!(
+        message_draft_edit,
+        edit_params(editable.external_id.as_str()),
+        edit_params(ABSENT_DRAFT_ID),
+        deepwell::error::ErrorType::MessageDraftNotFound,
+    );
+    assert_indistinguishable!(
+        message_draft_delete,
+        json!({"message_draft_id": deletable.external_id}),
+        json!({"message_draft_id": ABSENT_DRAFT_ID}),
+        deepwell::error::ErrorType::MessageDraftNotFound,
+    );
+    assert_indistinguishable!(
+        message_draft_send,
+        json!({"message_draft_id": sendable.external_id}),
+        json!({"message_draft_id": ABSENT_DRAFT_ID}),
+        deepwell::error::ErrorType::MessageDraftNotFound,
+    );
+
+    runner.set_request_context(RequestContext::default());
+    assert_indistinguishable!(
+        message_draft_edit,
+        edit_params(editable.external_id.as_str()),
+        edit_params(ABSENT_DRAFT_ID),
+        deepwell::error::ErrorType::PermissionDenied,
+    );
+    assert_indistinguishable!(
+        message_draft_delete,
+        json!({"message_draft_id": deletable.external_id}),
+        json!({"message_draft_id": ABSENT_DRAFT_ID}),
+        deepwell::error::ErrorType::PermissionDenied,
+    );
+    assert_indistinguishable!(
+        message_draft_send,
+        json!({"message_draft_id": sendable.external_id}),
+        json!({"message_draft_id": ABSENT_DRAFT_ID}),
+        deepwell::error::ErrorType::PermissionDenied,
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    for expected in [&editable, &deletable, &sendable] {
+        let actual =
+            MessageService::get_draft(runner.context(), expected.external_id.as_str())
+                .await
+                .expect("a denied mutation must preserve the owner's draft");
+        assert_eq!(&actual, expected);
+    }
 }
 
 #[tokio::test]
@@ -76,7 +188,7 @@ async fn message_draft_lifecycle_sends_and_deletes_drafts() {
             "wikitext": "Unauthorized body",
         }),
     );
-    assert_contains_error!(error, deepwell::error::ErrorType::PermissionDenied);
+    assert_contains_error!(error, deepwell::error::ErrorType::MessageDraftNotFound,);
     runner.set_request_context(RequestContext {
         user_id: Some(ADMIN_USER_ID),
         ..Default::default()
