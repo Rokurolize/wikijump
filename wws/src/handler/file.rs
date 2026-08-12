@@ -414,7 +414,7 @@ mod tests {
     use axum::http::StatusCode;
     use axum::http::header::{
         ACCEPT_RANGES, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
-        ETAG, RANGE,
+        ETAG, LOCATION, RANGE,
     };
     use s3::creds::Credentials;
     use s3::region::Region;
@@ -441,6 +441,11 @@ mod tests {
                 "error": {"code": -32603, "message": "backend failure"},
                 "id": id
             }),
+            "page_get" if request["params"]["page"] == "fragment:2117-1" => json!({
+                "jsonrpc": "2.0",
+                "result": {"page_id": 2117},
+                "id": id
+            }),
             "page_get" => json!({
                 "jsonrpc": "2.0",
                 "result": {"page_id": 123},
@@ -454,6 +459,14 @@ mod tests {
                 "error": {"code": 3106, "message": "permission denied"},
                 "id": id
             }),
+            "file_get"
+                if matches!(
+                    request["params"]["file"].as_str(),
+                    Some("nested/present.txt" | "bad%ZZ.txt" | "control\0.txt")
+                ) =>
+            {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
             "file_get" if request["params"]["file"] == "present.txt" => json!({
                 "jsonrpc": "2.0",
                 "result": {
@@ -465,6 +478,22 @@ mod tests {
                 },
                 "id": id
             }),
+            "file_get"
+                if request["params"]["page_id"] == 2117
+                    && request["params"]["file"] == "present file.txt" =>
+            {
+                json!({
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "file_id": 8,
+                        "revision_id": 18,
+                        "mime": "application/x-test",
+                        "size": 6,
+                        "s3_hash": "public-hash"
+                    },
+                    "id": id
+                })
+            }
             "basic_error_missing_page_slug" | "basic_error_missing_file_name" => {
                 json!({
                     "jsonrpc": "2.0",
@@ -491,6 +520,31 @@ mod tests {
             axum::serve(listener, app).await.unwrap();
         });
         (format!("http://{address}"), task)
+    }
+
+    async fn router_request(
+        state: ServerState,
+        method: Method,
+        path: &str,
+        range: Option<&str>,
+    ) -> reqwest::Response {
+        let app = crate::route::build_router(state);
+        let listener = TokioTcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let _server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let mut request = client
+            .request(method, format!("http://{address}{path}"))
+            .header(crate::handler::HEADER_SITE_ID, "10");
+        if let Some(range) = range {
+            request = request.header(RANGE, range);
+        }
+        request.send().await.unwrap()
     }
 
     struct S3Server {
@@ -694,6 +748,195 @@ mod tests {
             .unwrap();
         assert_eq!(&response_body[..], b"abcdef");
 
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_decodes_page_and_filename_and_returns_file_without_redirect()
+    {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request(
+            state,
+            Method::GET,
+            "/local--files/fragment%3A2117-1/present%20file.txt",
+            None,
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(CONTENT_TYPE).unwrap(),
+            "application/x-test",
+        );
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert!(!response.headers().contains_key(LOCATION));
+        assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_matches_internal_file_response() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let local = router_request(
+            Arc::clone(&state),
+            Method::GET,
+            "/local--files/existing-page/present.txt",
+            None,
+        )
+        .await;
+        let internal = router_request(
+            state,
+            Method::GET,
+            "/-/file/existing-page/present.txt",
+            None,
+        )
+        .await;
+
+        assert_eq!(local.status(), internal.status());
+        for header in [CONTENT_TYPE, CONTENT_LENGTH, ETAG, ACCEPT_RANGES] {
+            assert_eq!(
+                local.headers().get(&header),
+                internal.headers().get(&header)
+            );
+        }
+        assert!(!local.headers().contains_key(LOCATION));
+        assert_eq!(
+            local.bytes().await.unwrap(),
+            internal.bytes().await.unwrap()
+        );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_preserves_satisfiable_and_unsatisfiable_ranges() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(206, b"bcd")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let partial = router_request(
+            Arc::clone(&state),
+            Method::GET,
+            "/local--files/existing-page/present.txt",
+            Some("bytes=1-3"),
+        )
+        .await;
+        assert_eq!(partial.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(partial.headers().get(CONTENT_RANGE).unwrap(), "bytes 1-3/6");
+        assert!(!partial.headers().contains_key(LOCATION));
+        assert_eq!(partial.bytes().await.unwrap(), &b"bcd"[..]);
+
+        let unsatisfiable = router_request(
+            state,
+            Method::GET,
+            "/local--files/existing-page/present.txt",
+            Some("bytes=9-12"),
+        )
+        .await;
+        assert_eq!(unsatisfiable.status(), StatusCode::RANGE_NOT_SATISFIABLE,);
+        assert_eq!(
+            unsatisfiable.headers().get(CONTENT_RANGE).unwrap(),
+            "bytes */6",
+        );
+        assert!(!unsatisfiable.headers().contains_key(LOCATION));
+        assert!(unsatisfiable.bytes().await.unwrap().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_hides_missing_and_denied_files_without_reading_blobs() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for filename in ["missing.txt", "denied.txt"] {
+            let response = router_request(
+                Arc::clone(&state),
+                Method::GET,
+                &format!("/local--files/existing-page/{filename}"),
+                None,
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(
+                response.headers().get(CONTENT_TYPE).unwrap(),
+                "text/html; charset=utf-8",
+            );
+            assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "404");
+            assert!(!response.headers().contains_key(LOCATION));
+            assert_eq!(
+                response.bytes().await.unwrap(),
+                &WIKIDOT_MISSING_FILE_HTML[..],
+            );
+        }
+
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_head_and_post_keep_permanent_redirect_fallback() {
+        let state = test_state().await;
+
+        for method in [Method::HEAD, Method::POST] {
+            let response = router_request(
+                Arc::clone(&state),
+                method,
+                "/local--files/scp-173/image.png",
+                None,
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+            assert_eq!(
+                response.headers().get(LOCATION).unwrap(),
+                "/-/file/scp-173/image.png",
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn local_files_get_does_not_widen_encoded_slashes_or_controls() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for path in [
+            "/local--files/existing-page/nested%2Fpresent.txt",
+            "/local--files/existing-page/bad%ZZ.txt",
+            "/local--files/existing-page/control%00.txt",
+        ] {
+            let response =
+                router_request(Arc::clone(&state), Method::GET, path, None).await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(!response.headers().contains_key(LOCATION));
+            assert_eq!(
+                response.bytes().await.unwrap(),
+                &WIKIDOT_MISSING_FILE_HTML[..],
+            );
+        }
+
+        assert!(s3_server.requests().is_empty());
         s3_server.join();
         deepwell_server.abort();
     }

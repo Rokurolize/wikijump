@@ -22,7 +22,7 @@ use crate::handler::*;
 use crate::state::ServerState;
 use axum::Router;
 use axum::http::header::{ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue};
-use axum::routing::{any, get};
+use axum::routing::{MethodFilter, any, get, on};
 use tower_http::compression::CompressionLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
@@ -41,7 +41,7 @@ pub fn build_router(state: ServerState) -> Router {
         // Wikidot redirects
         .route(
             "/local--files/{page_slug}/{filename}",
-            any(handle_file_redirect),
+            on(MethodFilter::GET, handle_file_fetch).fallback(handle_file_redirect),
         )
         .route(
             "/local--code/{page_slug}/{index}",
