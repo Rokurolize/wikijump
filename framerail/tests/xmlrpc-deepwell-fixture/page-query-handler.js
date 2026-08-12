@@ -1,17 +1,59 @@
 import { fixtureState, hasExactKeys, requestContextHeaders } from "./context.js"
+import { sendRpcError } from "./response.js"
 
 /**
  * @param {{
  *   rpcRequest: any
  *   request: import("node:http").IncomingMessage
+ *   response: import("node:http").ServerResponse
  * }} input
  */
-export const handlePageQueryRpc = ({ rpcRequest, request }) => {
+export const handlePageQueryRpc = ({ rpcRequest, request, response }) => {
   const { pageReadRequests } = fixtureState
   /** @type {string[]} */
   let result
 
   if (
+    rpcRequest.method === "page_select" &&
+    rpcRequest.params !== null &&
+    typeof rpcRequest.params === "object" &&
+    rpcRequest.params.site === "missing-site" &&
+    Object.keys(rpcRequest.params).every((key) =>
+      ["site", "categories", "tags_any", "tags_all", "tags_none"].includes(key)
+    ) &&
+    Object.entries(rpcRequest.params).every(
+      ([key, value]) => key === "site" || (Array.isArray(value) && value.length === 0)
+    ) &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token"
+  ) {
+    pageReadRequests.pageSelect.push({
+      headers: requestContextHeaders(request),
+      params: rpcRequest.params
+    })
+    sendRpcError(response, rpcRequest.id, 2004, "Site does not exist")
+    return { responded: true }
+  } else if (
+    rpcRequest.method === "page_select" &&
+    rpcRequest.params !== null &&
+    typeof rpcRequest.params === "object" &&
+    rpcRequest.params.site === "scp-wiki" &&
+    Object.keys(rpcRequest.params).some((key) =>
+      ["categories", "tags_any"].includes(key)
+    ) &&
+    Object.keys(rpcRequest.params).every((key) =>
+      ["site", "categories", "tags_any"].includes(key)
+    ) &&
+    Object.entries(rpcRequest.params).every(
+      ([key, value]) => key === "site" || (Array.isArray(value) && value.length === 0)
+    ) &&
+    request.headers["x-deepwell-session-token"] === "fixture-session-token"
+  ) {
+    pageReadRequests.pageSelect.push({
+      headers: requestContextHeaders(request),
+      params: rpcRequest.params
+    })
+    result = []
+  } else if (
     rpcRequest.method === "page_select" &&
     hasExactKeys(rpcRequest.params, ["parent", "site"]) &&
     rpcRequest.params.site === "scp-wiki" &&

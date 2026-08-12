@@ -6,6 +6,7 @@ import { handlePageQueryRpc } from "./page-query-handler.js"
  * @param {{
  *   rpcRequest: any
  *   request: import("node:http").IncomingMessage
+ *   response: import("node:http").ServerResponse
  * }} input
  */
 export const handlePageReadRpc = (input) => {

@@ -547,6 +547,37 @@ function xmlRpcPagesSelectWithFilterCount(
 </methodCall>`
 }
 
+function xmlRpcPagesSelectWithFilters(
+  site: string,
+  filters: Partial<
+    Record<"categories" | "tags_any" | "tags_all" | "tags_none", string[]>
+  > = {}
+): string {
+  const filterMembers = Object.entries(filters)
+    .map(
+      ([name, values]) =>
+        `<member><name>${name}</name><value><array><data>${values
+          .map((value) => `<value><string>${xmlEscape(value)}</string></value>`)
+          .join("")}</data></array></value></member>`
+    )
+    .join("")
+
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>${xmlEscape(site)}</string></value></member>
+          ${filterMembers}
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
 function xmlRpcPagesSelectWithScalarFilter(name: string, value: string): string {
   return `<?xml version="1.0"?>
 <methodCall>
@@ -914,6 +945,62 @@ test("XML-RPC endpoint selects pages with documented filters and ordering", asyn
     rating: ">=0",
     site: "scp-wiki"
   })
+})
+
+test("XML-RPC pages.select resolves a missing site before empty selectors", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+
+  const variants = [
+    {},
+    { categories: [] },
+    { tags_any: [] },
+    { categories: [], tags_any: [] },
+    { tags_all: [] },
+    { tags_none: [] }
+  ]
+  const responses = []
+  for (const filters of variants) {
+    responses.push(
+      await request.post("/xml-rpc-api.php", {
+        data: xmlRpcPagesSelectWithFilters("missing-site", filters),
+        headers: xmlRpcHeaders
+      })
+    )
+  }
+  const baselineBody = await responses[0].text()
+
+  for (const response of responses) {
+    expect(response.status()).toBe(200)
+    expect(response.headers()["content-type"]).toContain("text/xml")
+    expect(await response.text()).toBe(baselineBody)
+  }
+  expect(baselineBody).toContain("<fault>")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(deepwellRequests.status()).toBe(200)
+  expect((await deepwellRequests.json()).pageSelect).toEqual(
+    variants.map((filters) => ({
+      headers: { sessionToken: "fixture-session-token" },
+      params: { site: "missing-site", ...filters }
+    }))
+  )
+
+  for (const filters of [
+    { categories: [] },
+    { tags_any: [] },
+    { categories: [], tags_any: [] }
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSelectWithFilters("scp-wiki", filters),
+      headers: xmlRpcHeaders
+    })
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).toContain("<array><data></data></array>")
+    expect(body).not.toContain("<fault>")
+  }
 })
 
 test("XML-RPC endpoint bounds pages.select filters", async ({ request }) => {

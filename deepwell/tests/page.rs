@@ -26,6 +26,7 @@ use cuid2::cuid;
 use deepwell::constants::{
     ADMIN_USER_ID, ANONYMOUS_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID, UNKNOWN_USER_ID,
 };
+use deepwell::error::exn_error_to_rpc_error;
 use deepwell::error::prelude::*;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::license::License;
@@ -31200,14 +31201,66 @@ async fn page_tags_select_requires_an_authenticated_request_context() {
 #[tokio::test]
 async fn page_select_requires_an_authenticated_request_context() {
     let runner = TestRunner::setup().await;
-    let error = run_endpoint_err!(
+    for selectors in [
+        json!({}),
+        json!({"categories": []}),
+        json!({"tags_any": []}),
+        json!({"categories": [], "tags_any": []}),
+    ] {
+        let mut params = selectors;
+        params["site"] = json!("scp-wiki");
+        let error = run_endpoint_err!(runner, page_select, params);
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    }
+}
+
+#[tokio::test]
+async fn page_select_resolves_the_site_before_empty_selectors() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: None,
+    });
+
+    let baseline = exn_error_to_rpc_error(run_endpoint_err!(
         runner,
         page_select,
-        json!({
-            "site": "scp-wiki",
-        }),
-    );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+        json!({"site": "xmlrpc-missing-site"}),
+    ));
+    let baseline_shape = (baseline.code(), baseline.message().to_owned());
+
+    for selectors in [
+        json!({"categories": []}),
+        json!({"tags_any": []}),
+        json!({"categories": [], "tags_any": []}),
+        json!({"tags_all": []}),
+        json!({"tags_none": []}),
+    ] {
+        let mut params = selectors;
+        params["site"] = json!("xmlrpc-missing-site");
+        let error =
+            exn_error_to_rpc_error(run_endpoint_err!(runner, page_select, params,));
+        assert_eq!(
+            (error.code(), error.message().to_owned()),
+            baseline_shape,
+            "empty selectors must preserve the ordinary missing-site fault shape",
+        );
+    }
+
+    for selectors in [
+        json!({"categories": []}),
+        json!({"tags_any": []}),
+        json!({"categories": [], "tags_any": []}),
+    ] {
+        let mut params = selectors;
+        params["site"] = json!("scp-wiki");
+        let selected = run_endpoint!(runner, page_select, params);
+        assert!(selected.is_empty());
+    }
 }
 
 #[tokio::test]
