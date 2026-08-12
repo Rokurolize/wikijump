@@ -47,6 +47,7 @@ import {
 type DeepwellStringParams = Record<string, string | string[] | undefined>
 const MAX_XML_RPC_FILTER_VALUES = 100
 const MAX_XML_RPC_TAG_PAGE_FILTER_VALUES = 10
+export const MAX_XML_RPC_FILE_BYTES = 50_000_000
 const PAGE_SELECT_DECIMAL_RATING_PATTERN =
   /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/
 export async function selectCategories(call: XmlRpcCall): Promise<string[]> {
@@ -561,7 +562,10 @@ export async function getPosts(call: XmlRpcCall): Promise<Record<string, XmlRpcV
   )
 }
 
-function decodeXmlRpcBase64(content: string): Buffer {
+export function decodeXmlRpcBase64(
+  content: string,
+  maximumBytes = MAX_XML_RPC_FILE_BYTES
+): Buffer {
   const normalized = content.replace(/\s+/g, "")
   if (
     normalized.length % 4 !== 0 ||
@@ -569,7 +573,11 @@ function decodeXmlRpcBase64(content: string): Buffer {
   ) {
     throw new XmlRpcFault(-32602, "Argument content invalid: malformed base64")
   }
-  return Buffer.from(normalized, "base64")
+  const decoded = Buffer.from(normalized, "base64")
+  if (decoded.length > maximumBytes) {
+    throw new XmlRpcFault(413, "files.save_one content is too large", 413)
+  }
+  return decoded
 }
 
 async function commitXmlRpcFileContent(

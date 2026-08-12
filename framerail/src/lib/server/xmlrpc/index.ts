@@ -18,12 +18,13 @@ interface BasicAuthCredentials {
   password: string
 }
 
-const MAX_XML_RPC_BODY_BYTES = 1_048_576
+export const MAX_XML_RPC_BODY_BYTES = 67_108_864
 const XML_RPC_DEFAULT_REQUEST_IP = "127.0.0.1"
 
 export async function handleXmlRpcRequest(
   request: Request,
-  requestIp = XML_RPC_DEFAULT_REQUEST_IP
+  requestIp = XML_RPC_DEFAULT_REQUEST_IP,
+  maximumBodyBytes = MAX_XML_RPC_BODY_BYTES
 ): Promise<Response> {
   if (request.method !== "POST") {
     return faultResponse(
@@ -43,7 +44,7 @@ export async function handleXmlRpcRequest(
   }
 
   try {
-    const body = await readXmlRpcBody(request)
+    const body = await readXmlRpcBody(request, maximumBodyBytes)
     const call = parseXmlRpcCall(body)
     const result = await dispatchXmlRpcCall(call, {
       allowMulticall: true,
@@ -60,13 +61,16 @@ export async function handleXmlRpcRequest(
   }
 }
 
-async function readXmlRpcBody(request: Request): Promise<string> {
+async function readXmlRpcBody(
+  request: Request,
+  maximumBodyBytes: number
+): Promise<string> {
   const contentLength = request.headers.get("content-length")
   if (contentLength) {
     const normalizedContentLength = contentLength.trim()
     if (
       !/^\d+$/.test(normalizedContentLength) ||
-      Number.parseInt(normalizedContentLength, 10) > MAX_XML_RPC_BODY_BYTES
+      Number.parseInt(normalizedContentLength, 10) > maximumBodyBytes
     ) {
       throw new XmlRpcFault(413, "XML-RPC request body is too large", 413)
     }
@@ -88,7 +92,7 @@ async function readXmlRpcBody(request: Request): Promise<string> {
     }
 
     bytesRead += value.byteLength
-    if (bytesRead > MAX_XML_RPC_BODY_BYTES) {
+    if (bytesRead > maximumBodyBytes) {
       await reader.cancel()
       throw new XmlRpcFault(413, "XML-RPC request body is too large", 413)
     }
