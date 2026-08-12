@@ -13057,11 +13057,18 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             .body
             .contains(r#"<div class="forum-start-box">"#)
             && forum_start_ajax.body.contains("Read Model Visible Group")
-            && !forum_start_ajax.body.contains("Read Model Hidden Group"),
+            && !forum_start_ajax.body.contains("Read Model Hidden Group")
+            && !forum_start_ajax.body.contains("Order by:"),
         "{}",
         forum_start_ajax.body,
     );
 
+    let category_order = |category_id| {
+        format!(
+            r#"<div class="options">Order by: <div class="btn btn-primary disabled btn-small btn-sm"><strong>Last post date</strong></div> <a href="/forum/c-{category_id}/sort/start" class="btn btn-primary btn-small btn-sm">Thread starting date</a></div>"#,
+        )
+    };
+    let primary_category_order = category_order(primary_category.forum_category_id);
     let category_ajax = run_endpoint!(
         runner,
         wikidot_forum_module,
@@ -13084,7 +13091,25 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && !category_ajax
                 .body
                 .contains("Private Page Discussion Marker")
+            && category_ajax.body.matches(&primary_category_order).count() == 1
             && !category_ajax.body.contains("Create a new thread"),
+        "{}",
+        category_ajax.body,
+    );
+    let description_position = category_ajax
+        .body
+        .find("Primary &lt;category&gt; description</div>")
+        .expect("category description should render");
+    let order_position = category_ajax
+        .body
+        .find(&primary_category_order)
+        .expect("default category order projection should render");
+    let table_position = category_ajax
+        .body
+        .find(r#"<table style="width: 98%" class="table">"#)
+        .expect("category thread table should render");
+    assert!(
+        description_position < order_position && order_position < table_position,
         "{}",
         category_ajax.body,
     );
@@ -13098,7 +13123,33 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
         }),
     );
     assert_eq!(missing_category_ajax.status, "no_category");
-    assert!(missing_category_ajax.body.is_empty());
+    assert!(
+        missing_category_ajax.body.is_empty()
+            && !missing_category_ajax.body.contains("Order by:")
+    );
+    let empty_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": empty_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    let empty_category_order = category_order(empty_category.forum_category_id);
+    assert_eq!(empty_category_ajax.status, "ok");
+    assert_eq!(
+        empty_category_ajax
+            .body
+            .matches(&empty_category_order)
+            .count(),
+        1,
+        "{}",
+        empty_category_ajax.body,
+    );
     let empty_second_page = run_endpoint!(
         runner,
         wikidot_forum_module,
@@ -13185,9 +13236,15 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
         }),
     );
     assert_eq!(second_category_page.status, "ok");
+    let pagination_category_order = category_order(pagination_category.forum_category_id);
     assert!(
         second_category_page.body.contains("Pagination Thread 00")
             && !second_category_page.body.contains("Pagination Thread 20")
+            && second_category_page
+                .body
+                .matches(&pagination_category_order)
+                .count()
+                == 1
             && second_category_page
                 .body
                 .contains(r#"<span class="pager-no">page 2 of 2</span>"#)
@@ -13200,6 +13257,18 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
                 .matches(r#"<div class="pager">"#)
                 .count()
                 == 1,
+        "{}",
+        second_category_page.body,
+    );
+    assert!(
+        second_category_page
+            .body
+            .find(&pagination_category_order)
+            .expect("default category order projection should render")
+            < second_category_page
+                .body
+                .find(r#"<div class="pager">"#)
+                .expect("later category page pager should render"),
         "{}",
         second_category_page.body,
     );
@@ -13239,6 +13308,7 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && thread_ajax.body.contains("Unfold All")
             && thread_ajax.body.contains("Edit Title &amp; Description")
             && thread_ajax.body.contains("New Post")
+            && !thread_ajax.body.contains("Order by:")
             && thread_ajax.body.contains(r#"id="post-options-template""#),
         "{}",
         thread_ajax.body,

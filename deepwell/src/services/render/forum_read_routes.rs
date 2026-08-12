@@ -284,6 +284,11 @@ fn render_forum_category(
         escape_list_pages_html_text(category_description),
     )
     .expect("writing to a String cannot fail");
+    write!(
+        &mut output,
+        "<div class=\"options\">Order by: <div class=\"btn btn-primary disabled btn-small btn-sm\"><strong>Last post date</strong></div> <a href=\"/forum/c-{category_id}/sort/start\" class=\"btn btn-primary btn-small btn-sm\">Thread starting date</a></div>",
+    )
+    .expect("writing to a String cannot fail");
     push_forum_category_pager(&mut output, category_id, page, page_count);
     output.push_str("<table style=\"width: 98%\" class=\"table\"><tr class=\"head\"><td>Thread name</td><td>Started</td><td>Posts</td><td>Recent post</td></tr>");
     for thread in page_threads {

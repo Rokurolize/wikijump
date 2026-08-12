@@ -1593,7 +1593,7 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
-          "scope": "category summary, permission-before-count thread table, exact 20-row pages, duplicate and single pager placement, later-page routes, and no_category wire status"
+          "scope": "category summary, permission-before-count thread table, exact default Order by DOM after the description on populated, empty, and later pages with stops outside category and no_category status, exact 20-row pages, duplicate and single pager placement, later-page routes, and no_category wire status"
         },
         {
           "path": "framerail/tests/ajax-module-connector.test.js",
@@ -1622,7 +1622,7 @@
         "live-observations.json::forum-q1034-readonly-route-core-20260809"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The exact observed page 1, 2, 11, and 12 pager DOM is implemented. Browser replacement and transitions, full actor behavior, and mutation controls remain unimplemented or unverified."
+        "The exact observed default Order by projection and page 1, 2, 11, and 12 pager DOM are implemented. P6 remains incomplete: /sort/start navigation and sorted behavior are unimplemented and retain the existing Framerail 404. The create-thread control, browser replacement and transitions, full actor behavior, and mutation controls remain unimplemented or unverified."
       ]
     },
     "module-forumnewthread": {
