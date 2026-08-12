@@ -211,6 +211,7 @@ function diagnosticRefreshReceipt() {
       user_id: -1,
       authentication: "sealed_session_and_rpc_bearer",
       permission: "page_edit_checked_before_page_rerender",
+      session_cleanup: "logout_and_session_get_null",
     },
     site: {site_id: 6000006, slug: "scp-wiki"},
     rendered_artifact_authority: {
@@ -264,5 +265,11 @@ test("candidate diagnostic refresh binds complete rendered artifact identities",
   assert.throws(
     () => validateCandidateRefreshReceipt(wrongTarget, candidateIdentity),
     /target identity is invalid/u,
+  );
+  const missingCleanup = structuredClone(receipt);
+  delete missingCleanup.actor.session_cleanup;
+  assert.throws(
+    () => validateCandidateRefreshReceipt(missingCleanup, candidateIdentity),
+    /authority is invalid/u,
   );
 });

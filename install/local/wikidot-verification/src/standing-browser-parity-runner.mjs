@@ -256,7 +256,8 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
   if (value.site?.site_id !== 6000006 || value.site?.slug !== "scp-wiki"
     || value.actor?.user_id !== -1
     || value.actor?.authentication !== "sealed_session_and_rpc_bearer"
-    || value.actor?.permission !== "page_edit_checked_before_page_rerender") {
+    || value.actor?.permission !== "page_edit_checked_before_page_rerender"
+    || value.actor?.session_cleanup !== "logout_and_session_get_null") {
     throw new Error("candidate diagnostic refresh authority is invalid");
   }
   const shaPattern = /^[0-9a-f]{64}$/u;
