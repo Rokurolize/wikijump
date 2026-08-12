@@ -1156,11 +1156,8 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   expect(await deepwellRequests.json()).toEqual({
+    forumPostGet: [],
     forumPostPageSummary: [
-      {
-        page: "scp-173",
-        site_id: 6000005
-      },
       {
         page: "scp-173",
         site_id: 6000005
