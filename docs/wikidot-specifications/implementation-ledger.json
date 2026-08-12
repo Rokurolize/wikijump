@@ -3035,8 +3035,8 @@
       "status": "blocked",
       "confirmed_public_seams": [
         "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, permissions, and page-view interface",
-        "Deepwell public saved-page page_view interface after an independent page tag mutation, paired with page_get to prove the stored compiled artifact remains unchanged",
-        "Deepwell public article_view_cache_metadata interface for imported executable and inert TagCloud sources"
+        "Saved TagCloud runtime freshness refers to recomputing an executable two-dimensional TagCloud through the public page_view interface after an independent page tag mutation, paired with page_get to prove the stored compiled artifact remains unchanged.",
+        "The executable TagCloud cache fence refers to the public article_view_cache_metadata interface denying a cache key for imported executable TagCloud sources while retaining one for inert sources."
       ],
       "tests": [
         "deepwell/tests/page.rs::tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
@@ -3062,7 +3062,7 @@
         "install/local/wikidot-verification/artifacts/tagcloud-module-edge-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Browser-visible P7 TagCloud acceptance is deferred under the active mobile constraint. The database render seam proves settled HTML and freshness but does not verify browser resources, intermediate paints, interaction, or geometry."
+        "Browser acceptance deferred refers to leaving browser-visible P7 TagCloud acceptance blocked under the active mobile constraint. The database render seam proves settled HTML and freshness but does not verify browser resources, intermediate paints, interaction, or geometry."
       ]
     },
     "module-themepreviewer": {
@@ -4423,7 +4423,7 @@
           "test:deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
         ],
         "observation_gaps": [
-          "The public import and saved-page seams prove local persistence, current page_view rendering, unchanged page_get compiled HTML, and imported article-cache fencing, but no live Wikidot observation establishes TagCloud freshness after an independent tag mutation."
+          "The public import and saved-page seams prove local persistence, saved TagCloud runtime freshness, unchanged page_get compiled HTML, and the executable TagCloud cache fence, but no live Wikidot observation establishes freshness after an independent tag mutation."
         ]
       },
       "P4": {
@@ -4462,7 +4462,7 @@
           "test:deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
         ],
         "observation_gaps": [
-          "Browser-visible acceptance is deferred under the active mobile constraint; no current browser run verifies resources, intermediate paints, interaction, or geometry."
+          "Browser acceptance deferred leaves P7 blocked under the active mobile constraint; no current browser run verifies resources, intermediate paints, interaction, or geometry."
         ]
       },
       "P8": {
@@ -4472,7 +4472,7 @@
           "test:deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
         ],
         "observation_gaps": [
-          "The local database seam proves deterministic freshness after an independent tag mutation and exact inert stops, while live evidence covers limit fallbacks; live temporal freshness and resource-bound behavior remain unobserved."
+          "The local database seam proves saved TagCloud runtime freshness after an independent tag mutation and exact inert stops, while live evidence covers limit fallbacks; live temporal freshness and resource-bound behavior remain unobserved."
         ]
       }
     }
