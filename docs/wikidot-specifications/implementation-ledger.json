@@ -4127,15 +4127,33 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "syntax-literal-text": {
-      "status": "pending",
+      "status": "in_progress",
       "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "tests": [
+        {
+          "path": "install/local/wikidot-verification/tests/pr1334-ftml-inline-core-syntax-source-attribution.test.mjs",
+          "name": "source, public-test, fixture, and catalog evidence reconcile without hidden gaps",
+          "scope": "attribution-only validation records pinned FTML source, upstream public-test, fixture, and catalog witnesses for syntax-literal-text; it does not render Wikijump behavior"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/pr1334-ftml-lexical-text-source-attribution.test.mjs",
+          "name": "exact identities, denominator, inventory preconditions, and non-claim statuses",
+          "scope": "attribution-only validation records pinned FTML ownership and explicit non-claim statuses for syntax-literal-text; it does not render Wikijump behavior"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/Cargo.toml",
+        "deepwell/Cargo.lock"
+      ],
       "documentation_evidence": [
-        "specifications/wiki-syntax/syntax-literal-text.md"
+        "specifications/wiki-syntax/syntax-literal-text.md",
+        "install/local/wikidot-verification/artifacts/pr1334-ftml-inline-core-syntax-source-attribution-20260810.json (SHA-256 84c6938b305fb6fd0cebfb2c8459df221a8d163911e3a4e31059ae02574abbcd)",
+        "install/local/wikidot-verification/artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json (SHA-256 436918d4ac62c4977cd8bacc9ab564129dfc7e2b5bcb92cf18f41a9cf39dca45)"
       ],
       "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "External pinned FTML owns literal-text parsing and rendering, and the recorded local tests are attribution-only. No allowed public Wikijump regression renders the five live literal-text cases, so this entry makes no P1, P2, or P7 compatibility claim and remains in progress."
+      ]
     },
     "syntax-math": {
       "status": "pending",
