@@ -185,6 +185,7 @@ impl RenderService {
                 Self::update_residual_div_raw_text_depth(raw_text_depth, line_body);
         }
 
+        output.extend(std::iter::repeat_n("</div>", alignment_stack.len()));
         Self::restore_residual_wikidot_alignment_html_markers(&output)
     }
 
@@ -271,6 +272,7 @@ impl RenderService {
         }
 
         output.push_str(rest);
+        output.extend(std::iter::repeat_n("</div>", alignment_stack.len()));
         output
     }
 

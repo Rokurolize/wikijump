@@ -11053,7 +11053,30 @@ fn restores_repeated_residual_wikidot_alignment_html_markers() {
 
     assert_eq!(
         restored,
-        r#"<div style="text-align: center;">"#.repeat(1024)
+        format!(
+            "{}{}",
+            r#"<div style="text-align: center;">"#.repeat(1024),
+            "</div>".repeat(1024),
+        ),
+    );
+}
+
+#[test]
+fn closes_unmatched_residual_wikidot_alignment_at_fragment_boundary() {
+    let html = "<p>[[&gt;]]</p>Imported";
+
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            html,
+            None,
+            &Config::integration_testing(),
+            true,
+            &[],
+        );
+
+    assert_eq!(
+        restored,
+        r#"<div style="text-align: right;">Imported</div>"#,
     );
 }
 
@@ -11069,7 +11092,7 @@ fn restores_every_residual_wikidot_alignment_html_marker() {
     for (marker, replacement) in open_cases {
         assert_eq!(
             RenderService::restore_residual_wikidot_alignment_html_markers(marker),
-            replacement,
+            format!("{replacement}</div>"),
             "open marker {marker}",
         );
     }
