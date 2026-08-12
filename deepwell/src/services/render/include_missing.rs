@@ -21,7 +21,7 @@ static EMPTY_SITE_INCLUDE_TARGET_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?i)\[\[include[ \t]+::(?P<page>[^:\]\s]+)[ \t]*\]\]").unwrap()
 });
 static INCLUDE_TARGET_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    RegexBuilder::new(r"^[ \t]*(?P<opening>\[\[\s*include\s+(?P<target>[^\s|\]]+))")
+    RegexBuilder::new(r"^[ \t]*(?P<opening>\[\[[ \t\n]*include\s+(?P<target>[^\s|\]]+))")
         .case_insensitive(true)
         .multi_line(true)
         .build()
@@ -293,6 +293,8 @@ mod tests {
         for source in [
             "[[include component:license",
             ">[[include component:license]]",
+            "[[\rinclude component:license]]",
+            "[[[!-- parser-space --]include component:license]]",
             "[[code]]\n[[include component:license]]\n[[/code]]",
         ] {
             assert!(

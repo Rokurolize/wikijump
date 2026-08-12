@@ -2404,6 +2404,16 @@ async fn page_create_refreshes_only_executable_dynamic_navigation_after_recordin
             true,
         ),
         (
+            "cr-include",
+            "[[\rinclude nav:create-freshness-component-whitespace-include]]",
+            false,
+        ),
+        (
+            "comment-include",
+            "[[[!-- parser-space --]include nav:create-freshness-component-whitespace-include]]",
+            false,
+        ),
+        (
             "code-literal",
             "[[code]]\n[[module ListPages tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]\n[[/code]]",
             false,

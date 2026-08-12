@@ -2290,6 +2290,8 @@ fn first_revision_followups_ignore_literal_and_invalid_runtime_markers() {
         "[[include]]",
         "[[include component:license",
         ">[[include component:license]]",
+        "[[\rinclude component:license]]",
+        "[[[!-- parser-space --]include component:license]]",
     ] {
         let followups = first_revision_followups(str!("guide"), source, None, None, None);
         assert!(
