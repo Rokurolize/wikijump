@@ -33,6 +33,7 @@ use super::list_pages::{
     wikitext_has_executable_list_pages_module,
 };
 use super::literal_regions::LiteralRegionIndex;
+use super::new_page_module::wikitext_has_runtime_dependent_new_page_module;
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::page_tree::PAGE_TREE_MODULE_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
@@ -225,6 +226,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || wikitext_has_executable_list_pages_module(wikitext)
         || wikitext_has_executable_count_pages_module(wikitext)
         || wikitext_has_executable_tag_cloud_module(wikitext)
+        || wikitext_has_runtime_dependent_new_page_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || BACKLINKS_MODULE_REGEX.is_match(wikitext)
         || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
@@ -297,6 +299,58 @@ mod tests {
         assert!(!wikitext_requires_runtime_render(
             "[[code]]\n[[module TagCloud]]\n[[/code]]"
         ));
+    }
+
+    #[test]
+    fn only_executable_template_backed_newpage_modules_require_runtime_rendering() {
+        assert!(!wikitext_reads_url_arguments(
+            r#"[[module NewPage template="template:alpha"]]"#,
+        ));
+        for source in [
+            r#"[[module NewPage template="template:alpha"]]"#,
+            r#"[[module NEWPAGE template="template:alpha"]]"#,
+            r#"[[module NewPage template="" template="template:alpha"]]"#,
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+        }
+
+        for source in [
+            "[[module NewPage]]",
+            r#"[[module NewPage template=""]]"#,
+            r#"[[module NewPage template="template:alpha" template=""]]"#,
+            r#"[[module NewPage template='template:alpha']]"#,
+            r#"[[module NewPage template="ordinary-page,template:alpha"]]"#,
+            "[[code]]\n[[module NewPage template=\"template:alpha\"]]\n[[/code]]",
+            "<pre>[[module NewPage template=\"template:alpha\"]]</pre>",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source), "{source}");
+        }
+        assert!(wikitext_requires_runtime_render(
+            r#"[[module NewPage template="template:alpha,ordinary-page"]]"#,
+        ));
+
+        let at_template_budget = (0..32)
+            .map(|index| format!("template:fixture-{index}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        assert!(wikitext_requires_runtime_render(&format!(
+            r#"[[module NewPage template="{at_template_budget}"]]"#,
+        )));
+        let over_template_budget = format!("{at_template_budget},template:fixture-32");
+        assert!(!wikitext_requires_runtime_render(&format!(
+            r#"[[module NewPage template="{over_template_budget}"]]"#,
+        )));
+
+        let module_at_budget = format!(
+            "{}\n[[module NewPage template=\"template:within-budget\"]]",
+            "[[module NewPage]]\n".repeat(63),
+        );
+        assert!(wikitext_requires_runtime_render(&module_at_budget));
+        let module_after_budget = format!(
+            "{}[[module NewPage template=\"template:after-budget\"]]",
+            "[[module NewPage]]\n".repeat(64),
+        );
+        assert!(!wikitext_requires_runtime_render(&module_after_budget));
     }
 
     #[test]

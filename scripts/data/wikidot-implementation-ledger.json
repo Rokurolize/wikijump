@@ -2426,6 +2426,7 @@
       "confirmed_public_seams": [
         "Saved-page and preview rendering through Deepwell's public Wikidot page render pipeline",
         "Existing-template lookup through runtime page/category/revision state",
+        "Local runtime-freshness correctness through public page_view: current referenced-template title, existence, deletion/restoration, and anonymous visibility without rewriting stored compiled HTML",
         "Framerail browser submit behavior through the Wikidot-compatible NewPage helper runtime",
         "Ajax Module Connector NewPage helper action envelope through the public /ajax-module-connector.php route",
         "Autosave page creation through the existing Deepwell page_create and parent_update mutation APIs"
@@ -2438,6 +2439,8 @@
         "deepwell/src/services/render/new_page_module.rs::tests::renders_existing_template_selector_options",
         "deepwell/src/services/render/new_page_module.rs::tests::extracts_comma_separated_template_names",
         "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
+        "deepwell/src/services/render/url_arguments.rs::tests::only_executable_template_backed_newpage_modules_require_runtime_rendering",
+        "deepwell/tests/page.rs::saved_newpage_views_resolve_templates_from_current_anonymous_state",
         "framerail/tests/ajax-module-connector.test.js::dispatches NewPage helper default action with Wikidot edit-routing fields",
         "framerail/tests/ajax-module-connector.test.js::dispatches NewPage template and category action fields like Wikidot",
         "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests when the target already exists",
@@ -2456,6 +2459,7 @@
       "implementation_files": [
         "deepwell/src/services/render/new_page_module.rs",
         "deepwell/src/services/render/runtime_modules.rs",
+        "deepwell/src/services/render/url_arguments.rs",
         "deepwell/src/services/render/service.rs",
         "deepwell/src/services/render/compat/preparation.rs",
         "framerail/src/lib/server/ajax-module-connector.js",

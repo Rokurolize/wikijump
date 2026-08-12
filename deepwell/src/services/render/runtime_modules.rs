@@ -25,7 +25,7 @@ use super::module_arguments::{
 use super::native_list_context::collect_unproven_scope_ranges;
 use super::new_page_module::{
     NEWPAGE_MODULE_REGEX, NewPageTemplateOption, NewPageTemplateRendering,
-    new_page_template_names, render_new_page_module,
+    executable_new_page_modules, new_page_template_lookup_slug, render_new_page_module,
 };
 use super::percent_encoding::percent_encode_path_segment;
 use super::rate_actions::RateActionRegistry;
@@ -62,7 +62,6 @@ use crate::services::{
 };
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
-use crate::utils::{normalize_page_slug, split_category, trim_default};
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
 
@@ -89,10 +88,6 @@ const USERINFO_NO_USER_HTML: &str =
     r#"<div class="error-block">No user specified.</div>"#;
 const SEARCHUSERS_DISABLED_HTML: &str = r#"<div class="error-block">User search has been (temporarily) disabled. Sorry!</div>"#;
 const THEME_PREVIEWER_PREVIEW_ERROR_HTML: &str = r#"<div class="error-block">Preview mode error: please contact Wikidot.com for a better error message</div>"#;
-/// Bound executable NewPage modules in one render. Modules beyond this bound
-/// remain authored text so a page cannot multiply template lookups without
-/// limit.
-pub(super) const MAX_NEW_PAGE_MODULES_PER_RENDER: usize = 64;
 const MEMBERSHIP_EMAIL_INVITATION_MISSING_HTML: &str = concat!(
     r#"<div id="membership-email-invitation-box">"#,
     "\n\t\n\t\t\t<p>\n\t\t\t",
@@ -528,31 +523,26 @@ fn render_simpletodo_module(head: &str, index: usize) -> String {
 async fn resolve_new_page_templates(
     ctx: &ServiceContext<'_>,
     current_site_id: Option<i64>,
-    head: &str,
-) -> Result<Option<NewPageTemplateRendering>> {
-    let Some(names) = new_page_template_names(head) else {
-        return Ok(None);
-    };
+    names: &[&str],
+) -> Result<NewPageTemplateRendering> {
     if names.is_empty() {
-        return Ok(Some(NewPageTemplateRendering::None));
+        return Ok(NewPageTemplateRendering::None);
     }
 
     let Some(site_id) = current_site_id else {
-        return Ok(Some(NewPageTemplateRendering::Error(format!(
+        return Ok(NewPageTemplateRendering::Error(format!(
             "Template \"{}\" can not be found.",
             names[0],
-        ))));
+        )));
     };
 
     let mut options = Vec::with_capacity(names.len());
     for name in names {
-        let normalized = normalize_page_slug(name);
-        if split_category(&normalized).0 != Some("template") {
-            return Ok(Some(NewPageTemplateRendering::Error(format!(
+        let Some(lookup_slug) = new_page_template_lookup_slug(name) else {
+            return Ok(NewPageTemplateRendering::Error(format!(
                 "\"{name}\" is not in the \"template:\" category.",
-            ))));
-        }
-        let lookup_slug = trim_default(&normalized).to_owned();
+            )));
+        };
         let Some(page) = PageService::get_optional(
             ctx,
             site_id,
@@ -560,9 +550,9 @@ async fn resolve_new_page_templates(
         )
         .await?
         else {
-            return Ok(Some(NewPageTemplateRendering::Error(format!(
+            return Ok(NewPageTemplateRendering::Error(format!(
                 "Template \"{name}\" can not be found.",
-            ))));
+            )));
         };
         let can_view = PermissionService::check_user_can(
             ctx,
@@ -579,9 +569,9 @@ async fn resolve_new_page_templates(
         )
         .await?;
         if !can_view {
-            return Ok(Some(NewPageTemplateRendering::Error(format!(
+            return Ok(NewPageTemplateRendering::Error(format!(
                 "Template \"{name}\" can not be found.",
-            ))));
+            )));
         }
         let revision =
             PageRevisionService::get_latest(ctx, site_id, page.page_id).await?;
@@ -591,17 +581,13 @@ async fn resolve_new_page_templates(
         });
     }
 
-    Ok(Some(match options.len() {
+    Ok(match options.len() {
         0 => NewPageTemplateRendering::None,
         1 => NewPageTemplateRendering::Single(
             options.into_iter().next().expect("len was checked above"),
         ),
         _ => NewPageTemplateRendering::Multiple(options),
-    }))
-}
-
-fn new_page_module_budget_exceeded(module_count: usize) -> bool {
-    module_count >= MAX_NEW_PAGE_MODULES_PER_RENDER
+    })
 }
 
 fn parse_rated_pages_arguments(head: &str) -> Option<RatedPagesArguments> {
@@ -1514,32 +1500,16 @@ impl RenderService {
             return Ok(wikitext);
         }
 
-        let literal_regions =
-            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
         let mut cursor = 0;
-        let mut module_count = 0;
-        for captures in NEWPAGE_MODULE_REGEX.captures_iter(&wikitext) {
-            let matched = captures
-                .get(0)
-                .expect("a NewPage module capture always has a complete match");
-            if literal_regions.contains(matched.start()) {
-                continue;
-            }
-            if new_page_module_budget_exceeded(module_count) {
-                continue;
-            }
-            module_count += 1;
-            output.push_str(&wikitext[cursor..matched.start()]);
-            let head = captures.name("head").map_or("", |mtch| mtch.as_str());
-            let Some(templates) =
-                resolve_new_page_templates(ctx, current_site_id, head).await?
-            else {
-                continue;
-            };
-            let rendered = render_new_page_module(head, templates);
+        for module in executable_new_page_modules(&wikitext) {
+            output.push_str(&wikitext[cursor..module.source_range.start]);
+            let templates =
+                resolve_new_page_templates(ctx, current_site_id, &module.template_names)
+                    .await?;
+            let rendered = render_new_page_module(module.head, templates);
             output.push_str(&compat_html.push_html(rendered));
-            cursor = matched.end();
+            cursor = module.source_range.end;
         }
         if cursor == 0 {
             return Ok(wikitext);
@@ -2835,21 +2805,6 @@ mod page_calendar_tests {
 
         assert_eq!(first, second);
         assert_eq!(loads.get(), 1);
-    }
-}
-
-#[cfg(test)]
-mod new_page_budget_tests {
-    use super::{MAX_NEW_PAGE_MODULES_PER_RENDER, new_page_module_budget_exceeded};
-
-    #[test]
-    fn preserves_modules_after_the_per_render_budget() {
-        assert!(!new_page_module_budget_exceeded(
-            MAX_NEW_PAGE_MODULES_PER_RENDER - 1
-        ));
-        assert!(new_page_module_budget_exceeded(
-            MAX_NEW_PAGE_MODULES_PER_RENDER
-        ));
     }
 }
 

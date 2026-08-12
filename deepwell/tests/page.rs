@@ -19233,6 +19233,260 @@ async fn newpage_module_resolves_existing_templates_in_rendered_pages() {
 }
 
 #[tokio::test]
+async fn saved_newpage_views_resolve_templates_from_current_anonymous_state() {
+    const TEMPLATE_SLUG: &str = "template:fixture-newpage-freshness-target";
+    const TEMPLATE_OLD_TITLE: &str = "Fixture NewPage Freshness Old";
+    const TEMPLATE_NEW_TITLE: &str = "Fixture NewPage Freshness Current";
+    const HOLDER_SLUG: &str = "fixture-newpage-freshness-holder";
+    const COMPOSED_TEMPLATE_SLUG: &str = "fixture-newpage-freshness-composed:_template";
+    const COMPOSED_HOLDER_SLUG: &str = "fixture-newpage-freshness-composed:holder";
+    const PRIVATE_CATEGORY: &str = "fixture-newpage-freshness-private";
+    const MISSING_TEMPLATE_SLUG: &str =
+        "template:fixture-newpage-freshness-created-later";
+    const MISSING_HOLDER_SLUG: &str = "fixture-newpage-freshness-missing-holder";
+
+    fn assert_single_template(html: &str, page_id: i64) {
+        assert!(
+            html.contains(&format!(
+                r#"<input type="hidden" name="template" value="{page_id}"/>"#,
+            )),
+            "single-template NewPage output should contain page ID {page_id}:\n{html}",
+        );
+        assert!(
+            !html.contains("<select name=\"template\""),
+            "one template should not render a selector:\n{html}",
+        );
+    }
+
+    async fn load_view(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+        session_token: Option<&str>,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found NewPage holder view, got {other:?}"),
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let template_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_SLUG,
+        TEMPLATE_OLD_TITLE,
+        "NewPage freshness template source.",
+    )
+    .await;
+    let template_id = listpages_test_page_id(&runner, site_id, TEMPLATE_SLUG).await;
+    let stable_template_slug = "template:fixture-newpage-freshness-stable";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        stable_template_slug,
+        "Fixture NewPage Freshness Stable",
+        "Stable NewPage template source.",
+    )
+    .await;
+
+    let newpage_source = format!(
+        r#"[[module NewPage template="{TEMPLATE_SLUG},{stable_template_slug}"]]"#,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "Fixture NewPage Freshness Holder",
+        &newpage_source,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPOSED_TEMPLATE_SLUG,
+        "Fixture NewPage Freshness Category Template",
+        &format!("{newpage_source}\n%%content%%"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPOSED_HOLDER_SLUG,
+        "Fixture NewPage Freshness Composed Holder",
+        "COMPOSED_NEWPAGE_CONTENT",
+    )
+    .await;
+
+    let stored_holder =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    let stored_composed =
+        load_listpages_test_compiled_html(&runner, site_id, COMPOSED_HOLDER_SLUG).await;
+    for stored in [&stored_holder, &stored_composed] {
+        assert!(stored.contains(TEMPLATE_OLD_TITLE), "{stored}");
+        assert!(!stored.contains(TEMPLATE_NEW_TITLE), "{stored}");
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(template_id),
+    );
+    let edited_template = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": template_id,
+            "last_revision_id": template_revision,
+            "revision_comments": "change NewPage freshness template title",
+            "user_id": ADMIN_USER_ID,
+            "title": TEMPLATE_NEW_TITLE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("NewPage template title edit should create a revision");
+
+    for slug in [HOLDER_SLUG, COMPOSED_HOLDER_SLUG] {
+        let current = load_view(&runner, site_id, slug, None).await;
+        assert!(
+            current.contains(TEMPLATE_NEW_TITLE) && !current.contains(TEMPLATE_OLD_TITLE),
+            "saved NewPage view should use the independently edited title for {slug}:\n{current}",
+        );
+    }
+    assert_eq!(
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await,
+        stored_holder,
+        "a fresh NewPage GET must not rewrite the holder's stored compiled HTML",
+    );
+    assert_eq!(
+        load_listpages_test_compiled_html(&runner, site_id, COMPOSED_HOLDER_SLUG).await,
+        stored_composed,
+        "a category-template-hosted NewPage GET must not rewrite stored compiled HTML",
+    );
+
+    let admin_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "NewPage anonymous template visibility test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("administrator session should be created");
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    set_listpages_test_category_slug(&runner, site_id, TEMPLATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("NewPage visibility cache should invalidate");
+
+    let missing_error = format!(
+        r#"<div class="error-block">Template "{TEMPLATE_SLUG}" can not be found.</div>"#,
+    );
+    for session in [None, Some(admin_session.as_str())] {
+        let hidden = load_view(&runner, site_id, HOLDER_SLUG, session).await;
+        assert!(
+            hidden.contains(&missing_error),
+            "anonymous and authenticated views must both resolve NewPage templates with anonymous visibility:\n{hidden}",
+        );
+        assert!(!hidden.contains(TEMPLATE_NEW_TITLE), "{hidden}");
+    }
+
+    set_listpages_test_category_slug(&runner, site_id, TEMPLATE_SLUG, "template").await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("restored NewPage visibility cache should invalidate");
+    let visible_again = load_view(&runner, site_id, HOLDER_SLUG, None).await;
+    assert!(
+        visible_again.contains(TEMPLATE_NEW_TITLE),
+        "{visible_again}"
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(template_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": template_id,
+            "last_revision_id": edited_template.revision_id,
+            "revision_comments": "delete NewPage freshness template",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted = load_view(&runner, site_id, HOLDER_SLUG, None).await;
+    assert!(deleted.contains(&missing_error), "{deleted}");
+
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": template_id,
+            "revision_comments": "restore NewPage freshness template",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let restored = load_view(&runner, site_id, HOLDER_SLUG, None).await;
+    assert!(restored.contains(TEMPLATE_NEW_TITLE), "{restored}");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        MISSING_HOLDER_SLUG,
+        "Fixture NewPage Late Template Holder",
+        &format!(r#"[[module NewPage template="{MISSING_TEMPLATE_SLUG}"]]"#),
+    )
+    .await;
+    let late_missing = load_view(&runner, site_id, MISSING_HOLDER_SLUG, None).await;
+    assert!(
+        late_missing.contains(&format!(
+            r#"Template "{MISSING_TEMPLATE_SLUG}" can not be found."#,
+        )),
+        "{late_missing}",
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        MISSING_TEMPLATE_SLUG,
+        "Fixture NewPage Created Later",
+        "Late-created NewPage template source.",
+    )
+    .await;
+    let late_template_id =
+        listpages_test_page_id(&runner, site_id, MISSING_TEMPLATE_SLUG).await;
+    let late_created = load_view(&runner, site_id, MISSING_HOLDER_SLUG, None).await;
+    assert_single_template(&late_created, late_template_id);
+    assert!(!late_created.contains("can not be found"), "{late_created}");
+}
+
+#[tokio::test]
 async fn newpage_over_budget_template_list_remains_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
