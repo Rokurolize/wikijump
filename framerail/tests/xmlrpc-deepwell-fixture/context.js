@@ -31,6 +31,7 @@ export const fixtureState = {
   lastPageSelectParams: null,
   /** @type {Record<string, unknown[]>} */
   pageReadRequests: {
+    forumPostSelect: [],
     forumPostPageSummary: [],
     forumPostGet: [],
     pageGet: [],

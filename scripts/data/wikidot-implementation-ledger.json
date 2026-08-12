@@ -158,15 +158,25 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "api-posts-select": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Published XML-RPC POST /xml-rpc-api.php posts.select boundary backed by the public Deepwell fixture"
+      ],
+      "tests": [
+        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC posts.select rejects the unimplemented thread selector locally",
+        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC posts.select treats a nil thread selector as omitted",
+        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC posts.select validates required site before thread support"
+      ],
+      "implementation_files": [
+        "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+      ],
       "documentation_evidence": [
         "specifications/api/api-posts-select.md"
       ],
       "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "The documented thread selector remains unimplemented. A present non-nil thread value fails closed locally with XML-RPC fault -32602 before site lookup or Deepwell access; nil is treated as omitted. This bounded slice does not establish thread filtering, generic unknown-key rejection, or complete posts.select parity."
+      ]
     },
     "api-tags-select": {
       "status": "pending",

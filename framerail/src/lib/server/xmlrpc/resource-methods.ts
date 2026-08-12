@@ -523,6 +523,9 @@ export async function saveFileOne(
 export async function selectPosts(call: XmlRpcCall): Promise<number[]> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
+  if (params.thread !== undefined && params.thread !== null) {
+    throw new XmlRpcFault(-32602, "posts.select thread is not implemented")
+  }
   const page = getOptionalStructString(params, "page")
   const replyTo = getOptionalStructStringOrInt(params, "reply_to")
   const createdBy = getOptionalStructString(params, "created_by")

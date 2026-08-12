@@ -11,6 +11,22 @@ import {
 test.describe.configure({ mode: "serial" })
 
 const fixtureUrl = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
+const emptyPageReadRequests = {
+  forumPostSelect: [],
+  forumPostPageSummary: [],
+  forumPostGet: [],
+  pageGet: [],
+  pageGetDirect: [],
+  pageLifecycleIdentity: [],
+  pageRevisionGet: [],
+  pageView: [],
+  pageViewPermission: [],
+  pageSelect: [],
+  parentDirectMetadata: [],
+  parentRelationshipsGet: [],
+  siteGet: [],
+  voteList: []
+}
 
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
@@ -456,7 +472,11 @@ function xmlRpcFilesSaveOneRequest({
 </methodCall>`
 }
 
-function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): string {
+function xmlRpcPostsSelectRequest(
+  page?: string,
+  replyTo?: string | number,
+  threadValue?: string
+): string {
   const pageMember =
     page !== undefined
       ? `<member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>`
@@ -469,6 +489,10 @@ function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): str
             : `<string>${xmlEscape(replyTo)}</string>`
         }</value></member>`
       : ""
+  const threadMember =
+    threadValue !== undefined
+      ? `<member><name>thread</name><value>${threadValue}</value></member>`
+      : ""
 
   return `<?xml version="1.0"?>
 <methodCall>
@@ -479,6 +503,7 @@ function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): str
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           ${pageMember}
+          ${threadMember}
           ${replyToMember}
         </struct>
       </value>
@@ -1156,7 +1181,7 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   expect(await deepwellRequests.json()).toEqual({
-    forumPostGet: [],
+    ...emptyPageReadRequests,
     forumPostPageSummary: [
       {
         page: "scp-173",
@@ -1185,7 +1210,6 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         site_id: 6000005
       }
     ],
-    pageGetDirect: [],
     pageLifecycleIdentity: [
       {
         headers: {
@@ -1204,7 +1228,6 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         params: { page: "scp-173", site_id: 6000005 }
       }
     ],
-    pageRevisionGet: [],
     pageSelect: [
       {
         headers: { sessionToken: "fixture-session-token" },
@@ -1239,7 +1262,6 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         }
       }
     ],
-    pageViewPermission: [],
     parentDirectMetadata: [
       {
         headers: { sessionToken: "fixture-session-token" },
@@ -1250,14 +1272,12 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         params: { page: "scp-173", site_id: 6000005 }
       }
     ],
-    parentRelationshipsGet: [],
     siteGet: [
       { site: "scp-wiki" },
       { site: "scp-wiki" },
       { site: "missing-site" },
       { site: "missing-site" }
-    ],
-    voteList: []
+    ]
   })
 })
 
@@ -1550,6 +1570,76 @@ test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
   expect(outOfRangeStringPostBody).toContain(
     "<name>faultCode</name><value><int>-32603</int></value>"
   )
+})
+
+test("XML-RPC posts.select rejects the unimplemented thread selector locally", async ({
+  request
+}) => {
+  for (const threadValue of ["<string>123</string>", "<boolean>1</boolean>"]) {
+    await request.get(`${fixtureUrl}/last-page-read-requests`)
+
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPostsSelectRequest(undefined, undefined, threadValue),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).toContain("<fault>")
+    expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+    expect(body).toContain("posts.select thread is not implemented")
+
+    const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+    expect(await deepwellRequests.json()).toEqual(emptyPageReadRequests)
+  }
+})
+
+test("XML-RPC posts.select treats a nil thread selector as omitted", async ({
+  request
+}) => {
+  for (const requestBody of [
+    xmlRpcPostsSelectRequest(undefined, undefined, "<nil />"),
+    xmlRpcPostsSelectRequest("xmlrpc-post-page"),
+    xmlRpcPostsSelectRequest("xmlrpc-post-page", "-")
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: requestBody,
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain("<value><int>7000300</int></value>")
+  }
+})
+
+test("XML-RPC posts.select validates required site before thread support", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+  const requestBody = xmlRpcPostsSelectRequest(
+    undefined,
+    undefined,
+    "<string>123</string>"
+  ).replace(
+    "<member><name>site</name><value><string>scp-wiki</string></value></member>",
+    ""
+  )
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: requestBody,
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("Expected string field: site")
+  expect(body).not.toContain("posts.select thread is not implemented")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(await deepwellRequests.json()).toEqual(emptyPageReadRequests)
 })
 
 test("XML-RPC posts.get accepts integer and i4 post IDs", async ({ request }) => {
