@@ -4055,6 +4055,215 @@ async fn page_view_separates_generated_css_modules_from_compiled_body_html() {
 }
 
 #[tokio::test]
+async fn saved_page_view_rewrites_exact_cn_interwiki_embed_iframes() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let slug = "cn-interwiki-embed-fixture";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        slug,
+        "CN Interwiki Embed Fixture",
+        concat!(
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=cn-interwiki-embed-fixture" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//cn.interwiki.scpwikicn.com/interwikiFrame.html?stop=subdomain" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="http://interwiki.scpwikicn.com/interwikiFrame.html?stop=http" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrames.html?stop=path-typo" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe class="html-block-iframe scpnet-interwiki-frame" src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=reordered" allowtransparency="true"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=added" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame" title="added"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[!-- [[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=comment" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]] --]\n",
+            "[[code]]\n[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=code" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n[[/code]]\n",
+            r#"@@[[embed]]<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=escape" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>[[/embed]]@@"#,
+            "\n[[html]]\n[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=html" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n[[/html]]\n",
+            r#"[[iframe //interwiki.scpwikicn.com/interwikiFrame.html?stop=iframe]]"#,
+            "\n[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=unbalanced" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        ),
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found page view, got {other:?}"),
+    };
+
+    for expected in [
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=cn-interwiki-embed-fixture" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+    ] {
+        assert!(
+            html.contains(expected),
+            "saved page_view should rewrite the exact CN interwiki iframe and preserve its query verbatim: {html}",
+        );
+        assert_eq!(html.matches(expected).count(), 1, "{html}");
+    }
+    assert_eq!(
+        html.matches("/-/wikidot-interwiki/").count(),
+        2,
+        "wildcard/subdomain, HTTP, path typo, attribute changes, malformed embed, literal-owned source, and [[iframe]] must remain outside the exact rewrite contract: {html}",
+    );
+    for stop in [
+        "stop=subdomain",
+        "stop=http",
+        "stop=path-typo",
+        "stop=reordered",
+        "stop=added",
+        "stop=unbalanced",
+        "stop=comment",
+        "stop=code",
+        "stop=escape",
+        "stop=html",
+        "stop=iframe",
+    ] {
+        assert!(
+            !html.contains(&format!("/-/wikidot-interwiki/interwikiFrame.html?{stop}")),
+            "unsupported boundary {stop:?} must not be rewritten: {html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn saved_page_view_rewrites_cn_interwiki_embeds_after_listpages_expansion() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture:cn-interwiki-listpages-consumer";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "component:cn-interwiki-parameterized",
+        "Parameterized CN Interwiki Fixture",
+        concat!(
+            "[[module ListPages range=\".\" limit=\"1\"]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang={$lang}&community={$community}&type={$type}&pagename=%%fullname%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "component:cn-interwiki-sidebar",
+        "CN Interwiki Sidebar Fixture",
+        concat!(
+            "[[module ListPages range=\".\" limit=\"1\"]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=%%name%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[/module]]\n",
+            "[[module ListPages range=\".\" limit=\"1\"]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang=cn&community=wl&type=sidebar&pagename=%%fullname%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle-wl.css" style="display: none"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        slug,
+        "CN Interwiki ListPages Consumer",
+        concat!(
+            "[[include component:cn-interwiki-parameterized\n",
+            "|lang=cn\n",
+            "|community=scp\n",
+            "|type=sidebar\n",
+            "]]\n",
+            "[[include component:cn-interwiki-sidebar]]",
+        ),
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found page view, got {other:?}"),
+    };
+
+    for expected in [
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=fixture:cn-interwiki-listpages-consumer" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=cn-interwiki-listpages-consumer" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=wl&type=sidebar&pagename=fixture:cn-interwiki-listpages-consumer" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle-wl.css" style="display: none"></iframe>"#,
+    ] {
+        assert_eq!(
+            html.matches(expected).count(),
+            1,
+            "saved page_view should rewrite the retained CN ListPages shape after include and delayed-variable expansion: {html}",
+        );
+    }
+    assert_eq!(html.matches("/-/wikidot-interwiki/").count(), 5, "{html}");
+    for unresolved in [
+        "{$lang}",
+        "{$community}",
+        "{$type}",
+        "%%fullname%%",
+        "%%name%%",
+    ] {
+        assert!(!html.contains(unresolved), "{unresolved}: {html}");
+    }
+}
+
+#[tokio::test]
 async fn missing_remote_site_include_does_not_fall_back_to_same_slug_local_page() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
