@@ -488,8 +488,13 @@ function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): str
 }
 
 function xmlRpcPostsGetRequest(
-  posts: string[],
-  valueType: "string" | "int" = "string"
+  posts: (string | number)[],
+  valueType:
+    | "string"
+    | "int"
+    | "i4"
+    | "boolean"
+    | ("string" | "int" | "i4" | "boolean")[] = "string"
 ): string {
   return `<?xml version="1.0"?>
 <methodCall>
@@ -500,11 +505,15 @@ function xmlRpcPostsGetRequest(
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           <member><name>posts</name><value><array><data>${posts
-            .map((post) =>
-              valueType === "int"
-                ? `<value><int>${post}</int></value>`
-                : `<value><string>${xmlEscape(post)}</string></value>`
-            )
+            .map((post, index) => {
+              const type = Array.isArray(valueType)
+                ? valueType[index]
+                : typeof post === "number"
+                  ? "int"
+                  : valueType
+              const value = type === "string" ? xmlEscape(String(post)) : post
+              return `<value><${type}>${value}</${type}></value>`
+            })
             .join("")}</data></array></value></member>
         </struct>
       </value>
@@ -1457,6 +1466,65 @@ test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
   expect(outOfRangeStringPostBody).toContain(
     "<name>faultCode</name><value><int>-32603</int></value>"
   )
+})
+
+test("XML-RPC posts.get accepts integer and i4 post IDs", async ({ request }) => {
+  const resetReads = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(resetReads.status()).toBe(200)
+
+  const mixedResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest(["7000300", 7000301]),
+    headers: xmlRpcHeaders
+  })
+  expect(mixedResponse.status()).toBe(200)
+  const mixedBody = await mixedResponse.text()
+  expect(mixedBody).toContain("<name>7000300</name>")
+  expect(mixedBody).toContain("<name>7000301</name>")
+
+  const mixedReadsResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(mixedReadsResponse.status()).toBe(200)
+  const mixedReads = await mixedReadsResponse.json()
+  expect(mixedReads.forumPostGet).toEqual([
+    {
+      params: { posts: ["7000300", "7000301"], site_id: 6000005 },
+      resultIds: [7000300, 7000301]
+    }
+  ])
+
+  const i4Response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest(["7000301"], "i4"),
+    headers: xmlRpcHeaders
+  })
+  expect(i4Response.status()).toBe(200)
+  expect(await i4Response.text()).toContain("<name>7000301</name>")
+
+  const i4ReadsResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(i4ReadsResponse.status()).toBe(200)
+  const i4Reads = await i4ReadsResponse.json()
+  expect(i4Reads.forumPostGet).toEqual([
+    {
+      params: { posts: ["7000301"], site_id: 6000005 },
+      resultIds: [7000301]
+    }
+  ])
+
+  const forbiddenResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest(["7000300", "1"], ["string", "boolean"]),
+    headers: xmlRpcHeaders
+  })
+  expect(forbiddenResponse.status()).toBe(200)
+  const forbiddenBody = await forbiddenResponse.text()
+  expect(forbiddenBody).toContain("<fault>")
+  expect(forbiddenBody).toContain(
+    "<name>faultCode</name><value><int>-32602</int></value>"
+  )
+
+  const forbiddenReadsResponse = await request.get(
+    `${fixtureUrl}/last-page-read-requests`
+  )
+  expect(forbiddenReadsResponse.status()).toBe(200)
+  const forbiddenReads = await forbiddenReadsResponse.json()
+  expect(forbiddenReads.forumPostGet).toEqual([])
 })
 
 test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename", async ({

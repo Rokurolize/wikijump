@@ -526,6 +526,17 @@ export const toArticleViewResult = (page) => ({
 
 /** @type {Record<string, FixtureForumPost[]>} */
 export const forumPostsByPage = {
+  "xmlrpc-integer-post-page": [
+    {
+      id: 7000301,
+      reply_to: null,
+      title: "XML-RPC integer ID proof",
+      content: "XML-RPC integer post ID proof body.",
+      html: "<p>XML-RPC integer post ID proof body.</p>",
+      created_by: "administrator",
+      created_at: "2026-06-22T00:00:00Z"
+    }
+  ],
   "xmlrpc-post-page": [
     {
       id: 7000300,

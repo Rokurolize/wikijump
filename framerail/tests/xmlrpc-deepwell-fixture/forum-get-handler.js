@@ -1,4 +1,4 @@
-import { isSignedI64String } from "./context.js"
+import { fixtureState, isSignedI64String } from "./context.js"
 import { forumPostsByPage } from "./data.js"
 import { sendRpcError } from "./response.js"
 
@@ -69,6 +69,11 @@ export const handleForumGetRpc = ({ rpcRequest, response }) => {
       return fixturePost === undefined ? [] : [fixturePost]
     }
   )
+
+  fixtureState.pageReadRequests.forumPostGet.push({
+    params: structuredClone(rpcRequest.params),
+    resultIds: result.map((post) => post.id)
+  })
 
   return { result }
 }

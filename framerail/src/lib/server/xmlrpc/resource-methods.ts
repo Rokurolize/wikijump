@@ -528,8 +528,17 @@ export async function getPosts(call: XmlRpcCall): Promise<Record<string, XmlRpcV
   const site = getRequiredStructString(params, "site")
   const posts = params.posts
 
-  if (!Array.isArray(posts) || posts.some((post) => typeof post !== "string")) {
-    throw new XmlRpcFault(-32602, "Argument posts should be a list of strings")
+  if (
+    !Array.isArray(posts) ||
+    posts.some(
+      (post) =>
+        typeof post !== "string" && (typeof post !== "number" || !Number.isInteger(post))
+    )
+  ) {
+    throw new XmlRpcFault(
+      -32602,
+      "Argument posts should be a list of strings or integers"
+    )
   }
 
   if (posts.length > 10) {
@@ -537,10 +546,11 @@ export async function getPosts(call: XmlRpcCall): Promise<Record<string, XmlRpcV
   }
 
   const siteId = await getDeepwellSiteId(site)
+  const postIds = posts.map(String)
   const result = expectDeepwellForumPosts(
     await requestDeepwell("forum_post_get", {
       site_id: siteId,
-      posts
+      posts: postIds
     }),
     "forum_post_get"
   )
