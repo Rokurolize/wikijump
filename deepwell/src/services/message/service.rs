@@ -521,7 +521,7 @@ impl MessageService {
             // If it was sent *only* to oneself, then there is not outbox message.
             // If it was sent to others in addition to oneself, then there *is* an outbox message.
             debug!("Self message, checking recipients list");
-            (recipients.only_has(sender_id), true)
+            (!recipients.only_has(sender_id), true)
         } else {
             // For regular messages, then just mark the outbox.
             debug!("Regular message, marking outbox only");

@@ -24,8 +24,11 @@ mod common;
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID};
 use deepwell::error::exn_error_to_rpc_error;
+use deepwell::models::message::{self, Entity as MessageTable};
 use deepwell::models::message_draft::{self, Entity as MessageDraftTable};
+use deepwell::models::message_recipient::{self, Entity as MessageRecipientTable};
 use deepwell::services::{MessageService, RequestContext};
+use deepwell::types::MessageRecipientType;
 use sea_orm::{ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter};
 use serde_json::json;
 
@@ -46,6 +49,125 @@ fn draft_params(subject: &str, wikitext: &str) -> serde_json::Value {
         "reply_to": null,
         "forwarded_from": null,
     })
+}
+
+#[tokio::test]
+async fn self_only_message_marks_its_sender_row_as_self_without_outbox() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let draft = run_endpoint!(
+        runner,
+        message_draft_create,
+        json!({
+            "user_id": ADMIN_USER_ID,
+            "recipients": [],
+            "carbon_copy": [ADMIN_USER_ID, ADMIN_USER_ID],
+            "blind_carbon_copy": [],
+            "locale": "en",
+            "subject": "Self only",
+            "wikitext": "Message to self",
+            "reply_to": null,
+            "forwarded_from": null,
+        }),
+    );
+    let record = run_endpoint!(
+        runner,
+        message_draft_send,
+        json!({"message_draft_id": draft.external_id}),
+    );
+
+    let messages = MessageTable::find()
+        .filter(message::Column::RecordId.eq(&record.external_id))
+        .all(runner.context().transaction())
+        .await
+        .unwrap();
+    assert_eq!(messages.len(), 1);
+    let sender_message = &messages[0];
+    assert_eq!(sender_message.user_id, ADMIN_USER_ID);
+    assert!(!sender_message.flag_inbox);
+    assert!(!sender_message.flag_outbox);
+    assert!(sender_message.flag_self);
+
+    let recipients = MessageRecipientTable::find()
+        .filter(message_recipient::Column::RecordId.eq(&record.external_id))
+        .all(runner.context().transaction())
+        .await
+        .unwrap();
+    assert_eq!(recipients.len(), 1);
+    assert_eq!(recipients[0].recipient_id, ADMIN_USER_ID);
+    assert_eq!(recipients[0].recipient_type, MessageRecipientType::Cc);
+}
+
+#[tokio::test]
+async fn self_and_other_message_marks_sender_as_self_and_outbox() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let draft = run_endpoint!(
+        runner,
+        message_draft_create,
+        json!({
+            "user_id": ADMIN_USER_ID,
+            "recipients": [SAMPLE_USER_ID, SAMPLE_USER_ID],
+            "carbon_copy": [ADMIN_USER_ID],
+            "blind_carbon_copy": [],
+            "locale": "en",
+            "subject": "Self and other",
+            "wikitext": "Message to self and another user",
+            "reply_to": null,
+            "forwarded_from": null,
+        }),
+    );
+    let record = run_endpoint!(
+        runner,
+        message_draft_send,
+        json!({"message_draft_id": draft.external_id}),
+    );
+
+    let messages = MessageTable::find()
+        .filter(message::Column::RecordId.eq(&record.external_id))
+        .all(runner.context().transaction())
+        .await
+        .unwrap();
+    assert_eq!(messages.len(), 2);
+
+    let sender_message = messages
+        .iter()
+        .find(|message| message.user_id == ADMIN_USER_ID)
+        .unwrap();
+    assert!(!sender_message.flag_inbox);
+    assert!(sender_message.flag_outbox);
+    assert!(sender_message.flag_self);
+
+    let recipient_message = messages
+        .iter()
+        .find(|message| message.user_id == SAMPLE_USER_ID)
+        .unwrap();
+    assert!(recipient_message.flag_inbox);
+    assert!(!recipient_message.flag_outbox);
+    assert!(!recipient_message.flag_self);
+
+    let recipients = MessageRecipientTable::find()
+        .filter(message_recipient::Column::RecordId.eq(&record.external_id))
+        .all(runner.context().transaction())
+        .await
+        .unwrap();
+    assert_eq!(recipients.len(), 2);
+    assert!(recipients.iter().any(|recipient| {
+        recipient.recipient_id == ADMIN_USER_ID
+            && recipient.recipient_type == MessageRecipientType::Cc
+    }));
+    assert!(recipients.iter().any(|recipient| {
+        recipient.recipient_id == SAMPLE_USER_ID
+            && recipient.recipient_type == MessageRecipientType::Regular
+    }));
 }
 
 #[tokio::test]
