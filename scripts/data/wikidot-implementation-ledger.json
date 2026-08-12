@@ -1186,7 +1186,7 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "backlinks_module_renders_current_page_incoming_links",
-          "scope": "public page_get and page_view rendering verifies current-page incoming-link selection, title ordering, exact list and anchor DOM, inline literal preservation, and freshness after an independent link mutation"
+          "scope": "public page_get and page_view rendering verifies current-page incoming-link selection, title ordering, backlink href substrings, inline literal preservation, and freshness after an independent link mutation"
         },
         {
           "path": "deepwell/tests/page.rs",
@@ -1196,8 +1196,7 @@
       ],
       "implementation_files": [
         "deepwell/src/services/render/backlinks.rs",
-        "deepwell/src/services/render/service.rs",
-        "deepwell/tests/page.rs"
+        "deepwell/src/services/render/service.rs"
       ],
       "documentation_evidence": [
         "specifications/module/module-backlinks.md",
@@ -1208,7 +1207,7 @@
         "install/local/wikidot-verification/artifacts/navigation-list-modules-live.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Parser nesting and composition, saved/imported lifecycle round trips, denied or private inbound-link visibility, and public failure and resource-bound behavior remain unobserved; module-backlinks therefore remains in progress rather than implemented."
+        "Parser nesting and composition, saved/imported lifecycle round trips, denied or private inbound-link visibility, exact full nonempty and empty-wrapper DOM, and public failure and resource-bound behavior remain unobserved; module-backlinks therefore remains in progress rather than implemented."
       ]
     },
     "module-categories": {
@@ -4558,20 +4557,20 @@
         "observation_gaps": []
       },
       "P6": {
-        "status": "evidence_backed",
-        "evidence": [
-          "live:navigation-list-modules-live-dom-and-argument-quirks",
-          "test:deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot"
-        ],
-        "observation_gaps": []
+        "status": "not_applicable",
+        "evidence": [],
+        "observation_gaps": [],
+        "rationale": "Backlinks has no independent HTTP, API, URL-state, Ajax, feed, or navigation contract; its rendered link destinations belong to the DOM output classified under P7."
       },
       "P7": {
-        "status": "evidence_backed",
+        "status": "unobserved",
         "evidence": [
           "live:navigation-list-modules-live-dom-and-argument-quirks",
           "test:deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
         ],
-        "observation_gaps": []
+        "observation_gaps": [
+          "Exact full nonempty Backlinks DOM and the empty backlinks-module-box wrapper lack an in-repository public regression seam."
+        ]
       },
       "P8": {
         "status": "unobserved",
