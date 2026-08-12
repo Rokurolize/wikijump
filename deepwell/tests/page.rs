@@ -34179,6 +34179,54 @@ async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
         }
     }
 
+    async fn import_holder(
+        runner: &mut TestRunner,
+        site_id: i64,
+        page_id: i64,
+        revision_id: i64,
+        slug: &str,
+        source: &str,
+    ) {
+        set_mutation_request_context(
+            runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Owned(slug.to_owned())),
+        );
+        run_endpoint!(
+            runner,
+            import_wikidot_page,
+            json!({
+                "page_id": page_id,
+                "site_id": site_id,
+                "created_at": "2026-08-13T00:00:00Z",
+                "slug": slug,
+                "locked": false,
+                "discussion_thread_id": null,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        run_endpoint!(
+            runner,
+            import_wikidot_page_revision,
+            json!({
+                "revision_id": revision_id,
+                "revision_type": "create",
+                "created_at": "2026-08-13 00:00:00.0 +00:00:00",
+                "updated_at": null,
+                "revision_number": 0,
+                "page_id": page_id,
+                "site_id": site_id,
+                "user_id": ADMIN_USER_ID,
+                "wikitext": source,
+                "comments": "import TagCloud cache fixture",
+                "title": "Imported TagCloud Freshness Holder",
+                "slug": slug,
+                "tags": [],
+            }),
+        );
+    }
+
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -34201,19 +34249,21 @@ async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
         "TagCloud freshness target.",
     )
     .await;
-    create_listpages_test_page(
+    import_holder(
         &mut runner,
         site_id,
+        2_140_170_000,
+        2_140_171_000,
         holder_slug,
-        "Fixture TagCloud Freshness Holder",
         &format!("[[module TagCloud category=\"{category}\" target=\"{link_target}\"]]",),
     )
     .await;
-    create_listpages_test_page(
+    import_holder(
         &mut runner,
         site_id,
+        2_140_170_001,
+        2_140_171_001,
         duplicate_2d_slug,
-        "Fixture TagCloud Freshness Last Attribute",
         &format!(
             "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"3d\" mode=\"2d\"]]",
         ),
@@ -34245,12 +34295,13 @@ async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
             ),
         ),
     ];
-    for (slug, source) in &inert_holders {
-        create_listpages_test_page(
+    for (index, (slug, source)) in inert_holders.iter().enumerate() {
+        import_holder(
             &mut runner,
             site_id,
+            2_140_170_002 + index as i64,
+            2_140_171_002 + index as i64,
             slug,
-            "Fixture Inert TagCloud Freshness Holder",
             source,
         )
         .await;
@@ -34270,27 +34321,6 @@ async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
     assert!(!stored_before.contains(tag));
     assert!(!stored_duplicate_2d.contains(tag));
 
-    for slug in std::iter::once(holder_slug)
-        .chain(std::iter::once(duplicate_2d_slug))
-        .chain(inert_holders.iter().map(|(slug, _)| *slug))
-    {
-        let holder = PageTable::find()
-            .filter(
-                sea_orm::Condition::all()
-                    .add(page::Column::SiteId.eq(site_id))
-                    .add(page::Column::Slug.eq(slug)),
-            )
-            .one(runner.context().transaction())
-            .await
-            .expect("TagCloud cache fixture lookup should succeed")
-            .expect("TagCloud cache fixture should exist");
-        let mut holder = holder.into_active_model();
-        holder.from_wikidot = Set(true);
-        holder
-            .update(runner.context().transaction())
-            .await
-            .expect("TagCloud cache fixture should be marked imported");
-    }
     for slug in [holder_slug, duplicate_2d_slug] {
         let cache_metadata = run_endpoint!(
             runner,

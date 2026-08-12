@@ -6,6 +6,7 @@
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
       "module-listpages",
+      "module-tagcloud",
       "page-tags"
     ],
     "note": "All catalog entries remain represented as required by IMPLEMENTATION_PROMPT.md. Campaign-scoped features must classify P1-P8 before a terminal implementation claim; unrelated catalog entries remain pending rather than being falsely marked complete."
@@ -3031,20 +3032,26 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-tagcloud": {
-      "status": "implemented",
+      "status": "blocked",
       "confirmed_public_seams": [
-        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, permissions, and page-view interface"
+        "Deepwell page_get with details.compiled=true after saved-page rendering through the real parser, renderer, test database, permissions, and page-view interface",
+        "Deepwell public saved-page page_view interface after an independent page tag mutation, paired with page_get to prove the stored compiled artifact remains unchanged",
+        "Deepwell public article_view_cache_metadata interface for imported executable and inert TagCloud sources"
       ],
       "tests": [
         "deepwell/tests/page.rs::tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
-        "deepwell/tests/page.rs::tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
+        "deepwell/tests/page.rs::tagcloud_module_renders_live_sitewide_skip_3d_and_color_error",
+        "deepwell/tests/page.rs::saved_tagcloud_page_view_follows_independent_tag_mutations",
+        "deepwell/tests/page.rs::tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags"
       ],
       "implementation_files": [
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/service.rs",
         "deepwell/src/services/render/list_pages/mod.rs",
         "deepwell/src/services/render/list_pages/presentation.rs",
-        "deepwell/src/services/render/service/tests.rs"
+        "deepwell/src/services/render/service/tests.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/view/article_cache.rs"
       ],
       "documentation_evidence": [
         "specifications/module/module-tagcloud.md"
@@ -3054,7 +3061,9 @@
         "install/local/wikidot-verification/artifacts/tagcloud-module-live.json",
         "install/local/wikidot-verification/artifacts/tagcloud-module-edge-live.json"
       ],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "Browser-visible P7 TagCloud acceptance is deferred under the active mobile constraint. The database render seam proves settled HTML and freshness but does not verify browser resources, intermediate paints, interaction, or geometry."
+      ]
     },
     "module-themepreviewer": {
       "status": "pending",
@@ -4386,6 +4395,84 @@
         "evidence": [],
         "observation_gaps": [
           "Temporal behavior, failures, limits, and resource bounds are not established by the settled raw wrapper captures."
+        ]
+      }
+    },
+    "module-tagcloud": {
+      "P1": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:tagcloud-live-dom-url-style-and-legacy-3d",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
+          "test:deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
+        ],
+        "observation_gaps": []
+      },
+      "P2": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:tagcloud-live-dom-url-style-and-legacy-3d",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error",
+          "test:deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
+        ],
+        "observation_gaps": []
+      },
+      "P3": {
+        "status": "unobserved",
+        "evidence": [
+          "test:deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
+        ],
+        "observation_gaps": [
+          "The public import and saved-page seams prove local persistence, current page_view rendering, unchanged page_get compiled HTML, and imported article-cache fencing, but no live Wikidot observation establishes TagCloud freshness after an independent tag mutation."
+        ]
+      },
+      "P4": {
+        "status": "unobserved",
+        "evidence": [
+          "test:deepwell/tests/page.rs#tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags"
+        ],
+        "observation_gaps": [
+          "Anonymous hidden-category filtering is covered locally, but equivalent actor and permission boundaries have not been captured from live Wikidot."
+        ]
+      },
+      "P5": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:tagcloud-live-dom-url-style-and-legacy-3d",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
+        ],
+        "observation_gaps": []
+      },
+      "P6": {
+        "status": "evidence_backed",
+        "evidence": [
+          "live:tagcloud-live-dom-url-style-and-legacy-3d",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
+        ],
+        "observation_gaps": []
+      },
+      "P7": {
+        "status": "blocked",
+        "evidence": [
+          "artifact:install/local/wikidot-verification/artifacts/tagcloud-module-live.json",
+          "artifact:install/local/wikidot-verification/artifacts/tagcloud-module-edge-live.json",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
+          "test:deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
+        ],
+        "observation_gaps": [
+          "Browser-visible acceptance is deferred under the active mobile constraint; no current browser run verifies resources, intermediate paints, interaction, or geometry."
+        ]
+      },
+      "P8": {
+        "status": "unobserved",
+        "evidence": [
+          "artifact:install/local/wikidot-verification/artifacts/tagcloud-module-edge-live.json",
+          "test:deepwell/tests/page.rs#saved_tagcloud_page_view_follows_independent_tag_mutations"
+        ],
+        "observation_gaps": [
+          "The local database seam proves deterministic freshness after an independent tag mutation and exact inert stops, while live evidence covers limit fallbacks; live temporal freshness and resource-bound behavior remain unobserved."
         ]
       }
     }
