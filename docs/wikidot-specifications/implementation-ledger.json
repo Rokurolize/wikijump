@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-12",
+  "updated_at": "2026-08-13",
   "catalog_sha256": "0bb6711445c61bd18ad6238402bb4286529aca9f80c5a950bb058192165e7a23",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
@@ -1332,7 +1332,8 @@
       "status": "implemented",
       "confirmed_public_seams": [
         "Run-owned saved-page live Wikidot oracle on sandbox-for-codex",
-        "Deepwell public saved-page page_get render interface"
+        "Deepwell public saved-page page_get and page_view render interfaces",
+        "Deepwell public article_view_cache_metadata interface for imported pages"
       ],
       "tests": [
         {
@@ -1350,12 +1351,26 @@
         {
           "path": "deepwell/src/services/render/service/tests.rs",
           "scope": "count_pages_should_remain_literal unit coverage preserves fail-closed all-category broad behavior while allowing omitted selectors to execute"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "countpages_saved_page_views_follow_current_matching_page_state covers direct, category-template-composed, and static @URL-fallback CountPages lifecycle freshness through public page_view while preserving bare @URL and literal-region boundaries"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "scope": "imported_countpages_sources_are_excluded_from_article_view_cache_metadata covers direct, template-composed, whitespace-delimited static fallback, and code-literal imported CountPages cache eligibility through the public article_view_cache_metadata interface"
         }
       ],
       "implementation_files": [
+        "deepwell/src/services/render/count_pages_recognition.rs",
         "deepwell/src/services/render/list_pages/rendering.rs",
+        "deepwell/src/services/render/list_pages/rendering_support.rs",
         "deepwell/src/services/render/list_pages/scanner.rs",
-        "deepwell/src/services/render/list_pages/substitution.rs"
+        "deepwell/src/services/render/list_pages/substitution.rs",
+        "deepwell/src/services/render/list_pages/substitution/selectors.rs",
+        "deepwell/src/services/render/render_dependency.rs",
+        "deepwell/src/services/render/url_arguments.rs",
+        "deepwell/src/services/view/article_cache.rs"
       ],
       "documentation_evidence": [
         "specifications/module/module-countpages.md",
