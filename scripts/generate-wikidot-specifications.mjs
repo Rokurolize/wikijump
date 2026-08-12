@@ -15,6 +15,10 @@ import { fileURLToPath } from "node:url";
 import {
   validateWikidotImplementationLedger,
 } from "./lib/wikidot-implementation-ledger.mjs";
+import {
+  parseWikidotLiveEvidenceRows,
+  resolveWikidotLiveEvidenceFormat,
+} from "./lib/wikidot-live-evidence.mjs";
 import { escapeMarkdownTableCell } from "./lib/markdown.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -50,23 +54,6 @@ function invariant(condition, message) {
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
-}
-
-function parseEvidenceRows(path, rawEvidence) {
-  if (!path.endsWith(".jsonl")) {
-    try {
-      return [JSON.parse(rawEvidence)];
-    } catch (error) {
-      if (!(error instanceof SyntaxError)) {
-        throw error;
-      }
-    }
-  }
-
-  return rawEvidence
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map((line) => JSON.parse(line));
 }
 
 function slugify(value) {
@@ -180,7 +167,10 @@ for (const observation of liveObservations.observations) {
       sha256(rawEvidence) === evidence.sha256,
       `Live evidence hash drifted for ${observation.id}: ${evidence.path}`,
     );
-    const evidenceRows = parseEvidenceRows(evidence.path, rawEvidence);
+    const evidenceRows = parseWikidotLiveEvidenceRows(
+      rawEvidence,
+      resolveWikidotLiveEvidenceFormat(evidence),
+    );
     const capturedCaseIds = new Set();
     for (const row of evidenceRows) {
       if (

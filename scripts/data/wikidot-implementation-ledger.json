@@ -4346,17 +4346,25 @@
         ]
       },
       "P5": {
-        "status": "unobserved",
-        "evidence": [],
+        "status": "blocked",
+        "evidence": [
+          "live:found-page-tag-wrapper-dom-20260727",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags"
+        ],
         "observation_gaps": [
-          "Selection, counting, and broader ordering behavior beyond retained displayed tag order are not established by this slice."
+          "The retained captures establish displayed tag order only. Wider selection, ordering, and counting behavior remains unobserved."
         ]
       },
       "P6": {
-        "status": "unobserved",
-        "evidence": [],
+        "status": "blocked",
+        "evidence": [
+          "live:found-page-tag-wrapper-dom-20260727",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
+          "test:framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags"
+        ],
         "observation_gaps": [
-          "HTTP, API, Ajax, and navigation contracts are not established by this wrapper-only slice."
+          "The retained captures establish only the displayed /system:page-tags/tag/<tag>#pages anchor form. URL encoding, HTTP, API, Ajax, and navigation behavior remains unobserved."
         ]
       },
       "P7": {
