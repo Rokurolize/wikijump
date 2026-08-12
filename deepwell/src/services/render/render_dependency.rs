@@ -23,6 +23,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 
+use super::literal_regions::LiteralRegionIndex;
 use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -109,6 +110,9 @@ static WIKIDOT_USER_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 
 pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     let mut classes = RenderDependencyClasses::revision_local();
+    let pages_by_tag_literal_regions = PAGES_BY_TAG_MODULE_REGEX
+        .is_match(source)
+        .then(|| LiteralRegionIndex::new_wikidot_module_recognition(source));
 
     if INCLUDE_REGEX.is_match(source)
         || EMPTY_LABEL_WIKIDOT_LINK_REGEX.is_match(source)
@@ -140,6 +144,12 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
 
         let name = name.to_ascii_lowercase();
         if name == "pagesbytag" {
+            if pages_by_tag_literal_regions
+                .as_ref()
+                .is_some_and(|literal_regions| literal_regions.contains(module_start))
+            {
+                continue;
+            }
             if supported_pages_by_tag_module_at(source, module_start) {
                 classes.insert(RenderDependencyClass::QueryDependent);
                 classes.insert(RenderDependencyClass::RequestDependent);
@@ -326,6 +336,18 @@ mod tests {
             assert!(!classes.contains(RenderDependencyClass::RequestDependent));
             assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
         }
+    }
+
+    #[test]
+    fn literal_pages_by_tag_text_is_revision_local() {
+        let classes = classify_render_dependencies(
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
+        );
+
+        assert!(classes.contains(RenderDependencyClass::RevisionLocal));
+        assert!(!classes.contains(RenderDependencyClass::QueryDependent));
+        assert!(!classes.contains(RenderDependencyClass::RequestDependent));
+        assert!(!classes.contains(RenderDependencyClass::UnsupportedUnverified));
     }
 
     #[test]

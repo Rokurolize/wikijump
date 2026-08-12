@@ -15507,7 +15507,10 @@ async fn pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms(
             "LITERAL_END\n\n",
             "NOARG_START\n\n",
             "[[module PagesByTag]]\n\n",
-            "NOARG_END",
+            "NOARG_END\n\n",
+            "CODE_START\n\n",
+            "[[code]]\n[[module PagesByTag tag=\"a\"]]\n[[/code]]\n\n",
+            "CODE_END",
         ),
     )
     .await;
@@ -15563,6 +15566,13 @@ async fn pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms(
     assert!(
         !noarg.contains("tagged-pages-list") && !noarg.contains("PagesByTag"),
         "tagless module renders nothing: {noarg}",
+    );
+    let code = &html[html.find("CODE_START").expect("code marker")
+        ..html.find("CODE_END").expect("code end marker")];
+    assert!(
+        code.contains("[[module PagesByTag tag=&quot;a&quot;]]")
+            && !code.contains("tagged-pages-list"),
+        "PagesByTag text in a code block must remain literal: {code}",
     );
 }
 

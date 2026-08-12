@@ -394,6 +394,7 @@ mod tests {
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
             "[[[empty-label|]]]",
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
         ] {
             let key = format_article_page_cache_key_if_source_eligible(
                 Some(source),
@@ -555,6 +556,7 @@ mod tests {
             "[[include component:license-box]]",
             "[[module CountPages category=\"news\"]][[/module]]",
             "[[*user example]]",
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
         ] {
             assert!(anonymous_article_cache_source_eligible(source), "{source}");
         }

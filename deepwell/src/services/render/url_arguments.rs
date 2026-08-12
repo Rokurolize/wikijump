@@ -31,6 +31,7 @@ use super::list_pages::{
     parse_list_pages_arguments,
     scanner::{find_list_pages_module_matches, list_pages_runtime_head_can_execute},
 };
+use super::literal_regions::LiteralRegionIndex;
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::page_tree::PAGE_TREE_MODULE_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
@@ -240,11 +241,19 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
 }
 
 fn wikitext_has_supported_pages_by_tag_module(wikitext: &str) -> bool {
+    if !PAGES_BY_TAG_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
     PAGES_BY_TAG_MODULE_REGEX
         .captures_iter(wikitext)
         .any(|captures| {
+            let module = captures
+                .get(0)
+                .expect("a PagesByTag capture always has a complete match");
             let head = captures.name("head").map_or("", |head| head.as_str());
-            parse_pages_by_tag_arguments(head).is_some()
+            !literal_regions.contains(module.start())
+                && parse_pages_by_tag_arguments(head).is_some()
         })
 }
 
@@ -286,6 +295,9 @@ mod tests {
         assert!(!wikitext_reads_url_arguments(
             r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
         ));
+        assert!(!wikitext_reads_url_arguments(
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
+        ));
     }
 
     #[test]
@@ -296,6 +308,9 @@ mod tests {
         assert!(wikitext_requires_runtime_render("[[module PagesByTag]]"));
         assert!(!wikitext_requires_runtime_render(
             r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
+        ));
+        assert!(!wikitext_requires_runtime_render(
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
         ));
     }
 
