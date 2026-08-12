@@ -21,8 +21,8 @@
 use super::{get_session_token, get_site_id};
 use crate::deepwell::{TextBlockId, TextBlockIndex, TextBlockType};
 use crate::error::{
-    BasicError, Error as WwsError, FallbackError, TextBlockErrorReason,
-    build_basic_error_response, is_deepwell_permission_denied,
+    BasicError, FallbackError, TextBlockErrorReason, build_basic_error_response,
+    is_deepwell_permission_denied,
 };
 use crate::state::ServerState;
 use axum::body::Body;
@@ -30,7 +30,6 @@ use axum::extract::{Path, State};
 use axum::http::header::{self, HeaderMap};
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Response};
-use jsonrpsee::core::ClientError;
 use std::collections::HashMap;
 
 const HTML_BLOCK_DOCUMENT_PREFIX: &[u8] = br#"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -91,7 +90,8 @@ async fn handle_text_block(
     block_id: BlockId,
 ) -> Response {
     let site_id = get_site_id(headers);
-    let page_id = try_response!(state.get_page_or_response(headers, site_id, page_slug));
+    let page_id =
+        try_response!(state.get_page_fresh_or_response(headers, site_id, page_slug));
     let session_token = get_session_token(headers);
 
     let (index, s3_filename) = match block_id {
@@ -358,8 +358,167 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::HeaderValue;
+    use crate::config::{RpcToken, Secrets};
+    use crate::error::Error as WwsError;
+    use crate::route::build_router;
+    use crate::state::build_server_state;
+    use axum::Router;
+    use axum::body::Bytes;
+    use axum::extract::State;
+    use axum::http::{HeaderValue, StatusCode};
+    use axum::routing::{get, post};
+    use jsonrpsee::core::ClientError;
     use jsonrpsee_types::ErrorObjectOwned;
+    use s3::creds::Credentials;
+    use s3::region::Region;
+    use serde_json::{Value, json};
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+    use tokio::net::TcpListener;
+    use tokio::task::JoinHandle;
+
+    const SITE_ID: i64 = 10;
+    const PAGE_ID: i64 = 42;
+
+    #[derive(Debug)]
+    struct MutableTextBlockMock {
+        pages: Mutex<HashMap<String, i64>>,
+    }
+
+    impl MutableTextBlockMock {
+        fn move_page(&self) {
+            let mut pages = self.pages.lock().unwrap();
+            pages.remove("old-page");
+            pages.insert("new-page".to_owned(), PAGE_ID);
+        }
+    }
+
+    #[derive(Debug)]
+    struct TextBlockTestApp {
+        base_url: String,
+        client: reqwest::Client,
+        mock: Arc<MutableTextBlockMock>,
+        tasks: Vec<JoinHandle<()>>,
+    }
+
+    impl TextBlockTestApp {
+        async fn spawn() -> Self {
+            let mock = Arc::new(MutableTextBlockMock {
+                pages: Mutex::new(HashMap::from([("old-page".to_owned(), PAGE_ID)])),
+            });
+            let services = Router::new()
+                .route("/", post(mock_rpc))
+                .route("/{*path}", get(mock_text_block_s3))
+                .with_state(Arc::clone(&mock));
+            let services_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let services_address = services_listener.local_addr().unwrap();
+            let services_task = tokio::spawn(async move {
+                axum::serve(services_listener, services).await.unwrap();
+            });
+            let endpoint = format!("http://{services_address}");
+            let state = build_server_state(
+                false,
+                Secrets {
+                    deepwell_url: endpoint.clone(),
+                    deepwell_rpc_token: RpcToken::parse("0".repeat(64)).unwrap(),
+                    redis_url: str!("redis://127.0.0.1:1/"),
+                    s3_files_bucket: str!("files"),
+                    s3_tblocks_bucket: str!("text-blocks"),
+                    s3_region: Region::Custom {
+                        region: str!("test"),
+                        endpoint,
+                    },
+                    s3_credentials: Credentials::new(
+                        Some("access-key"),
+                        Some("secret-key"),
+                        None,
+                        None,
+                        None,
+                    )
+                    .unwrap(),
+                    s3_path_style: true,
+                },
+            )
+            .await
+            .unwrap();
+            let wws_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let wws_address = wws_listener.local_addr().unwrap();
+            let wws_task = tokio::spawn(async move {
+                axum::serve(wws_listener, build_router(state))
+                    .await
+                    .unwrap();
+            });
+
+            Self {
+                base_url: format!("http://{wws_address}"),
+                client: reqwest::Client::new(),
+                mock,
+                tasks: vec![wws_task, services_task],
+            }
+        }
+
+        async fn get(&self, path: &str) -> reqwest::Response {
+            self.client
+                .get(format!("{}{path}", self.base_url))
+                .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID.to_string())
+                .send()
+                .await
+                .unwrap()
+        }
+    }
+
+    impl Drop for TextBlockTestApp {
+        fn drop(&mut self) {
+            for task in &self.tasks {
+                task.abort();
+            }
+        }
+    }
+
+    async fn mock_rpc(
+        State(state): State<Arc<MutableTextBlockMock>>,
+        body: Bytes,
+    ) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let id = request["id"].clone();
+        let result = match request["method"].as_str().unwrap() {
+            "page_get" => {
+                let page = request["params"]["page"].as_str().unwrap();
+                state
+                    .pages
+                    .lock()
+                    .unwrap()
+                    .get(page)
+                    .map(|page_id| json!({"page_id": page_id}))
+            }
+            "text_block_get_index" => Some(json!({
+                "index": 1,
+                "s3_filename": format!("block-{}", request["params"]["block_type"].as_str().unwrap()),
+            })),
+            "basic_error_missing_page_slug" => Some(json!({
+                "title": "missing page",
+                "body": "not found",
+            })),
+            other => panic!("unexpected mock JSON-RPC method: {other}"),
+        };
+        json!({"jsonrpc": "2.0", "result": result, "id": id})
+            .to_string()
+            .into_response()
+    }
+
+    async fn mock_text_block_s3(Path(path): Path<String>) -> Response {
+        let body: &'static [u8] = if path.ends_with("block-html") {
+            b"<p>moved content</p>"
+        } else {
+            b"moved content"
+        };
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "text/plain")
+            .header(header::ETAG, "\"text-block\"")
+            .body(Body::from(body))
+            .unwrap()
+    }
 
     #[test]
     fn s3_headers_are_read_case_insensitively() {
@@ -372,6 +531,38 @@ mod tests {
 
         assert_eq!(parsed.content_type, "text/html");
         assert_eq!(parsed.etag, "\"abc\"");
+    }
+
+    #[tokio::test]
+    async fn public_text_block_routes_follow_page_moves_after_the_old_slug_is_warm() {
+        for route in ["code", "html"] {
+            let app = TextBlockTestApp::spawn().await;
+            let old_path = format!("/-/{route}/old-page/1");
+            let new_path = format!("/-/{route}/new-page/1");
+
+            let warm = app.get(&old_path).await;
+            assert_eq!(warm.status(), StatusCode::OK, "warm {route} route");
+            assert!(
+                String::from_utf8_lossy(&warm.bytes().await.unwrap())
+                    .contains("moved content")
+            );
+
+            app.mock.move_page();
+
+            let stale = app.get(&old_path).await;
+            assert_eq!(stale.status(), StatusCode::NOT_FOUND, "old {route} route");
+            assert!(
+                !String::from_utf8_lossy(&stale.bytes().await.unwrap())
+                    .contains("moved content")
+            );
+
+            let moved = app.get(&new_path).await;
+            assert_eq!(moved.status(), StatusCode::OK, "new {route} route");
+            assert!(
+                String::from_utf8_lossy(&moved.bytes().await.unwrap())
+                    .contains("moved content")
+            );
+        }
     }
 
     #[test]

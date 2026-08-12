@@ -130,62 +130,6 @@ impl ServerStateInner {
         }
     }
 
-    pub async fn get_page(&self, site_id: i64, page_slug: &str) -> Result<Option<i64>> {
-        match self.cache.get_page(site_id, page_slug).await? {
-            Some(page_id) => Ok(Some(page_id)),
-            None => match self.deepwell.get_page(site_id, page_slug).await? {
-                None => Ok(None),
-                Some(PageData { page_id, .. }) => {
-                    self.cache.set_page(site_id, page_slug, page_id).await?;
-                    Ok(Some(page_id))
-                }
-            },
-        }
-    }
-
-    pub async fn get_page_or_response(
-        &self,
-        headers: &HeaderMap,
-        site_id: i64,
-        page_slug: &str,
-    ) -> ResponseResult<i64> {
-        match self.get_page(site_id, page_slug).await {
-            Ok(Some(page_id)) => Ok(page_id),
-            Ok(None) => {
-                error!(
-                    site_id = site_id,
-                    page_slug = page_slug,
-                    "Cannot complete request, no such page",
-                );
-
-                let response = build_basic_error_response(
-                    self,
-                    headers,
-                    BasicError::PageSlug { site_id, page_slug },
-                )
-                .await;
-
-                Err(response)
-            }
-            Err(error) => {
-                error!(
-                    site_id = site_id,
-                    page_slug = page_slug,
-                    "Cannot get page info: {error}",
-                );
-
-                let response = build_basic_error_response(
-                    self,
-                    headers,
-                    BasicError::PageFetch { site_id, page_slug },
-                )
-                .await;
-
-                Err(response)
-            }
-        }
-    }
-
     pub async fn get_page_fresh_or_response(
         &self,
         headers: &HeaderMap,
