@@ -969,6 +969,22 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   expect(metaBody).toContain("<name>tags</name><value><array><data>")
   expect(metaBody).toContain("<name>rating</name><value><int>173</int></value>")
   expect(metaBody).toContain("<name>revisions</name><value><int>3</int></value>")
+  const metaMemberNames = [...metaBody.matchAll(/<name>([^<]+)<\/name>/g)]
+    .map((match) => match[1])
+    .filter((name) => name !== "scp-173")
+    .sort()
+  expect(metaMemberNames).toEqual([
+    "created_at",
+    "created_by",
+    "fullname",
+    "parent_fullname",
+    "rating",
+    "revisions",
+    "tags",
+    "title",
+    "updated_at",
+    "updated_by"
+  ])
   expect(metaBody).not.toContain("Item #:")
 
   const oneResponse = await request.post("/xml-rpc-api.php", {

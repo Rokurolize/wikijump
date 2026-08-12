@@ -175,14 +175,13 @@ export async function getPagesMeta(
       continue
     }
 
-    const [parentPage, creatorUserId, postSummary] = await Promise.all([
+    const [parentPage, creatorUserId] = await Promise.all([
       getDeepwellDirectParentPage(siteId, page.slug, principal),
-      getDeepwellPageCreatorUserId(siteId, page),
-      getDeepwellForumPostSummary(siteId, page.slug)
+      getDeepwellPageCreatorUserId(siteId, page)
     ])
     entries.push([
       page.slug,
-      buildXmlRpcPageMeta(page, parentPage?.slug ?? null, creatorUserId, postSummary)
+      buildXmlRpcPageMeta(page, parentPage?.slug ?? null, creatorUserId)
     ])
   }
 
@@ -689,7 +688,7 @@ async function buildXmlRpcPage(
   )
 
   return {
-    ...buildXmlRpcPageMeta(page, parentFullname, creatorUserId, postSummary),
+    ...buildXmlRpcPageDetails(page, parentFullname, creatorUserId, postSummary),
     parent_title: parentTitle,
     children: children.length,
     content: page.wikitext ?? "",
@@ -963,8 +962,7 @@ async function getDeepwellPageCreatorUserId(
 function buildXmlRpcPageMeta(
   page: DeepwellPage,
   parentFullname: string | null,
-  creatorUserId: number,
-  postSummary: DeepwellForumPostSummary
+  creatorUserId: number
 ): Record<string, XmlRpcValue> {
   const creatorId = String(creatorUserId)
   const updaterId = String(page.revision_user_id)
@@ -979,7 +977,18 @@ function buildXmlRpcPageMeta(
     parent_fullname: parentFullname,
     tags: page.tags,
     rating: Math.round(page.rating),
-    revisions: page.page_revision_count,
+    revisions: page.page_revision_count
+  }
+}
+
+function buildXmlRpcPageDetails(
+  page: DeepwellPage,
+  parentFullname: string | null,
+  creatorUserId: number,
+  postSummary: DeepwellForumPostSummary
+): Record<string, XmlRpcValue> {
+  return {
+    ...buildXmlRpcPageMeta(page, parentFullname, creatorUserId),
     comments: postSummary.comments,
     commented_at: postSummary.commented_at,
     commented_by: postSummary.commented_by
