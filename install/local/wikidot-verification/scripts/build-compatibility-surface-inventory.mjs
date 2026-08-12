@@ -939,14 +939,30 @@ function scanRustTokens(sourceText, reference) {
   return tokens
 }
 
-function productionRustTokens(tokens) {
+function productionRustTokens(tokens, reference) {
   const testAttribute = ["#", "[", "cfg", "(", "test", ")", "]"]
-  for (let index = 0; index <= tokens.length - testAttribute.length; index += 1) {
-    if (testAttribute.every((value, offset) => tokens[index + offset].value === value)) {
-      return tokens.slice(0, index)
+  const production = []
+  for (let index = 0; index < tokens.length;) {
+    if (testAttribute.every((value, offset) => tokens[index + offset]?.value === value)) {
+      const moduleIndex = index + testAttribute.length
+      if (tokens[moduleIndex]?.value !== "mod" || tokens[moduleIndex + 1]?.kind !== "identifier") {
+        throw new Error(`${reference} contains an unsupported cfg(test) item`)
+      }
+      const moduleBodyIndex = moduleIndex + 2
+      if (tokens[moduleBodyIndex]?.value === ";") {
+        index = moduleBodyIndex + 1
+        continue
+      }
+      if (tokens[moduleBodyIndex]?.value !== "{") {
+        throw new Error(`${reference} contains an unsupported cfg(test) item`)
+      }
+      index = matchingRustDelimiter(tokens, moduleBodyIndex, reference) + 1
+      continue
     }
+    production.push(tokens[index])
+    index += 1
   }
-  return tokens
+  return production
 }
 
 function matchingRustDelimiter(tokens, openIndex, reference) {
@@ -1180,7 +1196,7 @@ function aggregateWwsDispatch(declarations, registryPath) {
 async function discoverWwsRoutes(root) {
   const registryPath = "wws/src/route.rs"
   const sourceText = await readText(root, registryPath)
-  const tokens = productionRustTokens(scanRustTokens(sourceText, registryPath))
+  const tokens = productionRustTokens(scanRustTokens(sourceText, registryPath), registryPath)
   const declarations = extractWwsRouteDeclarations(tokens, registryPath)
   if (declarations.length === 0) throw new Error(`${registryPath} declares no WWS routes`)
   return aggregateWwsDispatch(declarations, registryPath).map(({ method, routePath, reference }) =>

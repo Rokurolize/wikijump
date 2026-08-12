@@ -526,6 +526,75 @@ mod tests {
   )
 })
 
+test("CLI discovers production routes on both sides of a cfg(test) module", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-cfg-test-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn first_router() {
+  Router::new().route("/before-tests", any(handle_before))
+}
+
+#[cfg(test)]
+mod tests {
+  fn fixture() {
+    Router::new().route("/test-only", get(test_handler));
+  }
+}
+
+pub fn second_router() {
+  Router::new().route("/after-tests", get(handle_after))
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces
+      .filter(({ kind }) => kind === "wws_route")
+      .map(({ surface_id }) => surface_id),
+    [
+      "wws-route:ANY:/before-tests",
+      "wws-route:GET:/after-tests",
+      "wws-route:HEAD:/after-tests"
+    ]
+  )
+})
+
+test("CLI fails closed for an unsupported cfg(test)-attributed item", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-cfg-item-"))
+  await writeRepositoryFixture(root)
+  await writeText(
+    root,
+    "wws/src/route.rs",
+    `pub fn first_router() {
+  Router::new().route("/before-tests", any(handle_before))
+}
+
+#[cfg(test)]
+fn fixture() {
+  Router::new().route("/test-only", get(test_handler));
+}
+
+pub fn second_router() {
+  Router::new().route("/after-tests", any(handle_after))
+}
+`
+  )
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 1, result.stderr)
+  assert.match(result.stderr, /wws\/src\/route\.rs contains an unsupported cfg\(test\) item/u)
+  await assert.rejects(fs.access(outputPath))
+})
+
 test("CLI fails closed for unknown, service, dynamic, and malformed WWS route shapes", async () => {
   const cases = [
     ["unknown filter", 'on(MethodFilter::COPY, handler).fallback(unmatched)'],
