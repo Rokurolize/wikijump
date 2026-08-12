@@ -13,6 +13,7 @@ let client
 let originalClientRequest
 let rootActions
 let slugActions
+let buildPageForms
 
 before(async () => {
   previousWorkingDirectory = process.cwd()
@@ -29,6 +30,9 @@ before(async () => {
   ;({ actions: rootActions } = await vite.ssrLoadModule("/src/routes/+page.server.ts"))
   ;({ actions: slugActions } = await vite.ssrLoadModule(
     "/src/routes/[slug]/[...extra]/+page.server.ts"
+  ))
+  ;({ buildPageForms } = await vite.ssrLoadModule(
+    "/src/lib/server/load/page/page-forms.ts"
   ))
 })
 
@@ -62,6 +66,15 @@ const parentSetEvent = (serializedPayload) => {
     }
   }
 }
+
+test("page form initialization gives ParentPane only its parents field", async () => {
+  const forms = await buildPageForms(new Request("https://wikijump.test/example"))
+
+  assert.deepEqual(forms.pageParentForm.data, { parents: "" })
+  assert.equal(Object.hasOwn(forms.pageParentForm.data, "siteId"), false)
+  assert.equal(Object.hasOwn(forms.pageParentForm.data, "pageId"), false)
+  assert.equal(Object.hasOwn(forms.pageParentForm.data, "lastRevisionId"), false)
+})
 
 test("root and slug parentSet actions accept the parent pane JSON payload", async () => {
   const calls = []
