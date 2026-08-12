@@ -2872,6 +2872,65 @@
           "case_ids": []
         }
       ]
+    },
+    {
+      "id": "forum-q1034-frontforum-custom-body-rendering-20260810",
+      "title": "FrontForum custom bodies evaluate documented variables at the typed module boundary",
+      "feature_ids": [
+        "module-frontforum"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-10",
+      "analysis": "Four anonymous, no-mutation PagePreviewModule captures establish the body-bearing FrontForum owner's exact closer consumption and variable evaluation for two one-row selections, with one unknown-variable control and one malformed-selector control. They do not establish raw or other-module closer ownership, multi-row or empty selection cardinality, custom-body nesting or composition, date formats beyond the captured %Y-%m-%d, feed or document-head behavior, fixRelativeLinks, private or deleted visibility, mutation authority, or browser transitions.",
+      "normative_behavior": [
+        "A recognized body-bearing FrontForum invocation consumes its exact [[/module]] closer and renders the evaluated body inside front-forum-box for each captured one-row selection.",
+        "The captured canonical variables render title as text; linked_title as a thread anchor; author as printuser markup; a custom-formatted date as odate markup; comments and category as anchors; description as the thread summary; and content as the first post body.",
+        "The observed aliases title_linked, short, summary, text, long, and body render the same value families as their documented canonical variables, while link renders the thread route as text.",
+        "An unknown custom-body variable remains literal without preventing the surrounding body from rendering.",
+        "A category list containing a malformed element renders the category parsing error and suppresses the custom body instead of leaking or evaluating it.",
+        "All four captures are anonymous and read-only; they do not establish the remaining FrontForum surfaces named in the analysis."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/frontforum-custom-body-live-20260810.json",
+          "sha256": "1cfdeed366ced060d051a64e58ad25bcd98a0b3ce6bdd6af5419c736396ebc48",
+          "case_ids": [
+            "frontforum-custom-body-canonical",
+            "frontforum-custom-body-alias-offset-multi",
+            "frontforum-custom-body-unknown",
+            "frontforum-custom-body-malformed-owner-control"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-form-hidden-field-lifecycle-20260810",
+      "title": "A captured plain hidden value persists without an editor control",
+      "feature_ids": [
+        "data-forms-hidden-field"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-10",
+      "analysis": "One authenticated generated create, save, edit, and reload lifecycle with anonymous saved-page display establishes the exact captured nonempty plain-scalar, single-field hidden contract. The generated editor exposes no hidden-field control or field fragment and declares empty form-fields; deliberately injected save payloads do not replace the captured configured value; and the default saved-page table displays that value. The documented numeric-looking value: 1.0 example, empty, quoted, escaped, mixed-field, extra-property, direct-variable, ListPages selection and ordering, exact browser DOM/CSS beyond the absent control, and browser-transition shapes remain unobserved.",
+      "normative_behavior": [
+        "The captured hidden field configured with the nonempty plain scalar HIDDEN_CONFIGURED_ALPHA stores that configured scalar when the generated page is created, regardless of the deliberately injected create payload value.",
+        "The generated create and edit responses expose no control or field fragment for the hidden field and declare an empty form-fields value.",
+        "An injected edit submission does not replace the configured value; edit and reload retain the same canonical stored scalar.",
+        "The generated default saved-page table displays the hidden field's label and configured value even though the value has no editor control.",
+        "The observation supplies no live correction for the documented value: 1.0 example or the other excluded shapes. Documentation remains authoritative for its explicit example; shapes unspecified by the documentation must fail closed or remain unimplemented until separately observed."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json",
+          "sha256": "a17c01429b6a26fe405b9a36b63ec0e64211b67d60930629b6e846f9952b2bd5",
+          "case_ids": [
+            "hidden-configured-value-create",
+            "hidden-configured-value-edit-reload",
+            "hidden-create-has-no-user-control",
+            "hidden-injected-submissions-cannot-override-value"
+          ]
+        }
+      ]
     }
   ]
 }

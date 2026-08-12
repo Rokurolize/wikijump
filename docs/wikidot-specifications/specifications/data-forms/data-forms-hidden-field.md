@@ -20,6 +20,31 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### A captured plain hidden value persists without an editor control
+
+- Observation ID: `data-form-hidden-field-lifecycle-20260810`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-10`
+- Analysis: One authenticated generated create, save, edit, and reload lifecycle with anonymous saved-page display establishes the exact captured nonempty plain-scalar, single-field hidden contract. The generated editor exposes no hidden-field control or field fragment and declares empty form-fields; deliberately injected save payloads do not replace the captured configured value; and the default saved-page table displays that value. The documented numeric-looking value: 1.0 example, empty, quoted, escaped, mixed-field, extra-property, direct-variable, ListPages selection and ordering, exact browser DOM/CSS beyond the absent control, and browser-transition shapes remain unobserved.
+
+Normative behavior:
+
+- The captured hidden field configured with the nonempty plain scalar HIDDEN_CONFIGURED_ALPHA stores that configured scalar when the generated page is created, regardless of the deliberately injected create payload value.
+- The generated create and edit responses expose no control or field fragment for the hidden field and declare an empty form-fields value.
+- An injected edit submission does not replace the configured value; edit and reload retain the same canonical stored scalar.
+- The generated default saved-page table displays the hidden field's label and configured value even though the value has no editor control.
+- The observation supplies no live correction for the documented value: 1.0 example or the other excluded shapes. Documentation remains authoritative for its explicit example; shapes unspecified by the documentation must fail closed or remain unimplemented until separately observed.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json` (SHA-256 `a17c01429b6a26fe405b9a36b63ec0e64211b67d60930629b6e846f9952b2bd5`), cases: `hidden-configured-value-create`, `hidden-configured-value-edit-reload`, `hidden-create-has-no-user-control`, `hidden-injected-submissions-cannot-override-value`
+
+
 
 ## Suggested public TDD seams
 

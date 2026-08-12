@@ -1284,17 +1284,33 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/data_form.rs#scalar_fields_follow_live_storage_and_display_contracts",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_hidden_password_static_url_scalar_contract",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#hidden-configured-value-create ignores injected submissions",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#hidden-configured-value-edit-reload remains configured and has no control",
+          "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden generated forms declare no control, fragment, or form field",
+          "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden has two positive and two negative live controls",
+          "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs#hidden records create, storage, display, edit, reload, and cleanup"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/data-forms/data-forms-hidden-field.md"
+          "docs/wikidot-specifications/specifications/data-forms/data-forms-hidden-field.md",
+          "install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json",
+          "live-observations.json::data-form-hidden-field-lifecycle-20260810"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/view/service.rs",
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -3755,8 +3771,14 @@
         "issues": [],
         "cases": [],
         "tests": [
+          "deepwell/src/services/render/forum_front.rs#frontforum_custom_body_alias_offset_multi_public_render",
+          "deepwell/src/services/render/forum_front.rs#frontforum_custom_body_canonical_public_render",
+          "deepwell/src/services/render/forum_front.rs#frontforum_custom_body_unknown_stays_literal",
+          "deepwell/src/services/render/forum_modules.rs#frontforum_custom_body_malformed_category_suppresses_body",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
-          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page.rs#frontforum_custom_body_matches_observed_public_preview_boundaries",
+          "install/local/wikidot-verification/tests/frontforum-custom-body-artifact.test.mjs#FrontForum custom-body artifact seals the documented variable and owner boundaries"
         ]
       },
       "evidence": {
@@ -3764,6 +3786,7 @@
         "references": [
           "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum",
           "docs/wikidot-specifications/specifications/module/module-frontforum.md",
+          "live-observations.json::forum-q1034-frontforum-custom-body-rendering-20260810",
           "live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810",
           "live-observations.json::forum-q1034-readonly-route-core-20260809"
         ]

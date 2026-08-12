@@ -72,6 +72,26 @@ Evidence:
 - `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-large.json` (SHA-256 `f6acea4c49603e657d174e0cf1aa24758198fc84158954ff1383d1b5580ef845`), cases: `q1034-frontforum-offset-large`
 - `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-invalid.json` (SHA-256 `174e0987cc2b54927704ee03253d8fa31295007ee4d67fa13609f1024b3959fb`), cases: `q1034-frontforum-offset-invalid`
 
+### FrontForum custom bodies evaluate documented variables at the typed module boundary
+
+- Observation ID: `forum-q1034-frontforum-custom-body-rendering-20260810`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-10`
+- Analysis: Four anonymous, no-mutation PagePreviewModule captures establish the body-bearing FrontForum owner's exact closer consumption and variable evaluation for two one-row selections, with one unknown-variable control and one malformed-selector control. They do not establish raw or other-module closer ownership, multi-row or empty selection cardinality, custom-body nesting or composition, date formats beyond the captured %Y-%m-%d, feed or document-head behavior, fixRelativeLinks, private or deleted visibility, mutation authority, or browser transitions.
+
+Normative behavior:
+
+- A recognized body-bearing FrontForum invocation consumes its exact [[/module]] closer and renders the evaluated body inside front-forum-box for each captured one-row selection.
+- The captured canonical variables render title as text; linked_title as a thread anchor; author as printuser markup; a custom-formatted date as odate markup; comments and category as anchors; description as the thread summary; and content as the first post body.
+- The observed aliases title_linked, short, summary, text, long, and body render the same value families as their documented canonical variables, while link renders the thread route as text.
+- An unknown custom-body variable remains literal without preventing the surrounding body from rendering.
+- A category list containing a malformed element renders the category parsing error and suppresses the custom body instead of leaking or evaluating it.
+- All four captures are anonymous and read-only; they do not establish the remaining FrontForum surfaces named in the analysis.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/frontforum-custom-body-live-20260810.json` (SHA-256 `1cfdeed366ced060d051a64e58ad25bcd98a0b3ce6bdd6af5419c736396ebc48`), cases: `frontforum-custom-body-canonical`, `frontforum-custom-body-alias-offset-multi`, `frontforum-custom-body-unknown`, `frontforum-custom-body-malformed-owner-control`
+
 
 
 ## Suggested public TDD seams

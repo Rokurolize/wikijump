@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-10",
-  "catalog_sha256": "69f10ebc44bd4e927ee60d715f7c4a272ef23b7242c60a6fb817e8910ee9d1ce",
+  "updated_at": "2026-08-12",
+  "catalog_sha256": "798d13e8dc2aa466997e6ad0a5652e2b5471f2832fd7704f3ceb8f40a1acd645",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -485,15 +485,66 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-hidden-field": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Authenticated live Wikidot generated create, save, edit, and reload plus anonymous saved-page GET",
+        "Deepwell public page_view missing-page, edit, and anonymous saved-page rendering"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_live_hidden_password_static_url_scalar_contract",
+          "scope": "public page_view verifies the configured hidden value in missing-page create data, edit restoration, anonymous default-table display, and missing-value fail-closed behavior"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "scalar_fields_follow_live_storage_and_display_contracts",
+          "scope": "configured hidden storage parses canonically and rejects stored source that differs from the configured value at the internal codec boundary"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
+          "name": "hidden-configured-value-create ignores injected submissions",
+          "scope": "generated create state omits the hidden control while serialization uses the configured value instead of an injected submission"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
+          "name": "hidden-configured-value-edit-reload remains configured and has no control",
+          "scope": "generated edit state omits the hidden control and formFields entry while retaining the configured value"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs",
+          "name": "hidden has two positive and two negative live controls",
+          "scope": "retained live artifact validates the exact two-positive/two-negative hidden-field control matrix"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs",
+          "name": "hidden records create, storage, display, edit, reload, and cleanup",
+          "scope": "retained live artifact validates the complete observed hidden-field lifecycle"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/data-form-scalar-fields-artifact.test.mjs",
+          "name": "hidden generated forms declare no control, fragment, or form field",
+          "scope": "retained live artifact directly validates the exact generated create, edit, and reload absence boundary"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/server/deepwell/views.ts",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-hidden-field.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "live-observations.json::data-form-hidden-field-lifecycle-20260810",
+        "install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The observed nonempty one-field configured value, absent editor control, canonical storage, edit/reload restoration, default-table display, and generated-editor serialization of the configured value are implemented. Mixed-field composition deliberately fails closed and lacks live boundary evidence; the documented numeric-looking value: 1.0 example plus empty, quoted, escaped, and extra-property shapes remain unobserved.",
+        "Hidden-field direct variables, ListPages selection and ordering, exact browser DOM/CSS beyond the absent control, and the public browser/action create-save-edit-reload lifecycle lack feature-specific local regression coverage. Local HTTP/navigation, failure atomicity, and temporal behavior are also unverified. In particular, helper coverage does not prove that an independently crafted public save action cannot influence stored source."
+      ]
     },
     "data-forms-hints": {
       "status": "in_progress",
@@ -1657,6 +1708,36 @@
           "path": "deepwell/tests/page.rs",
           "name": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
           "scope": "default item DOM, multiple-category global selection, offset defaults and boundaries, per-item category links, permission-before-offset-and-limit, comments count, malformed category error, and saved-page rendering"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "frontforum_custom_body_matches_observed_public_preview_boundaries",
+          "scope": "public preview verifies canonical and representative alias substitutions inside named custom wrappers, literal unknown variables, exact closer ownership, and malformed-category body suppression"
+        },
+        {
+          "path": "deepwell/src/services/render/forum_front.rs",
+          "name": "frontforum_custom_body_canonical_public_render",
+          "scope": "observed canonical variable matrix, typed body rendering, escaping, and link shapes"
+        },
+        {
+          "path": "deepwell/src/services/render/forum_front.rs",
+          "name": "frontforum_custom_body_alias_offset_multi_public_render",
+          "scope": "observed alias variable matrix after combined-category offset selection"
+        },
+        {
+          "path": "deepwell/src/services/render/forum_front.rs",
+          "name": "frontforum_custom_body_unknown_stays_literal",
+          "scope": "unknown custom-body variables remain literal without suppressing the surrounding body"
+        },
+        {
+          "path": "deepwell/src/services/render/forum_modules.rs",
+          "name": "frontforum_custom_body_malformed_category_suppresses_body",
+          "scope": "malformed category selection renders the module error without evaluating or leaking the custom body"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/frontforum-custom-body-artifact.test.mjs",
+          "name": "FrontForum custom-body artifact seals the documented variable and owner boundaries",
+          "scope": "retained two-positive/two-negative live evidence seals variable results, closer ownership, malformed-selector suppression, and forbidden inferences"
         }
       ],
       "implementation_files": [
@@ -1670,10 +1751,11 @@
       "live_oracle_evidence": [
         "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-frontforum",
         "live-observations.json::forum-q1034-readonly-route-core-20260809",
-        "live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810"
+        "live-observations.json::forum-q1034-frontforum-scalar-boundaries-20260810",
+        "live-observations.json::forum-q1034-frontforum-custom-body-rendering-20260810"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "Custom-body variables, feed output and head metadata, fixRelativeLinks, full actor visibility, deletion, mutation authority, and browser behavior remain unimplemented or unverified."
+        "The observed typed custom-body owner boundary, canonical variables, aliases, literal unknown variable, and malformed-category suppression are implemented. Raw or other-module closer ownership, multi-row and empty selection cardinality, custom-body nesting and composition, date formats beyond the captured %Y-%m-%d, feed output and head metadata, fixRelativeLinks, non-anonymous/private/deleted visibility, mutation authority, and browser transitions remain unverified."
       ]
     },
     "module-frontspecialmini": {

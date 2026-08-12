@@ -10276,6 +10276,181 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     assert_eq!(public_posts_after, public_posts_before);
 }
 
+#[tokio::test]
+async fn frontforum_custom_body_matches_observed_public_preview_boundaries() {
+    fn custom_div_body<'a>(html: &'a str, class: &str) -> &'a str {
+        let marker = format!(r#"<div class="{class}">"#);
+        let (_, after_marker) = html
+            .split_once(&marker)
+            .unwrap_or_else(|| panic!("missing {marker}: {html}"));
+        after_marker
+            .split_once("</div>")
+            .unwrap_or_else(|| panic!("unclosed {marker}: {html}"))
+            .0
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Custom Body Group".to_owned(),
+            description: "Custom body group description".to_owned(),
+            visible: true,
+            sort_index: Some(20_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Custom Body Category".to_owned(),
+            description: "Custom body category description".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body forum category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: SAMPLE_USER_ID,
+            associated_page_id: None,
+            title: "Custom Body Thread".to_owned(),
+            description: "Independent custom body description".to_owned(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body forum thread should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: SAMPLE_USER_ID,
+            title: "Custom Body Post".to_owned(),
+            wikitext: "Independent custom body content <observable>".to_owned(),
+            comments: "custom-body public preview fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body first post should be created");
+    runner.set_request_context(RequestContext::default());
+
+    let output = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum custom-body fixture",
+            "wikitext": format!(
+                concat!(
+                    "[[module FrontForum category=\"{}\" limit=\"1\"]]\n",
+                    "[[div class=\"custom-title\"]]\n%%title%%\n[[/div]]\n",
+                    "[[div class=\"custom-linked\"]]\n%%linked_title%%\n[[/div]]\n",
+                    "[[div class=\"custom-link\"]]\n%%link%%\n[[/div]]\n",
+                    "[[div class=\"custom-author\"]]\n%%author%%\n[[/div]]\n",
+                    "[[div class=\"custom-date\"]]\n%%date|%Y-%m-%d%%\n[[/div]]\n",
+                    "[[div class=\"custom-comments\"]]\n%%comments%%\n[[/div]]\n",
+                    "[[div class=\"custom-category\"]]\n%%category%%\n[[/div]]\n",
+                    "[[div class=\"custom-description\"]]\n%%short%%\n[[/div]]\n",
+                    "[[div class=\"custom-content\"]]\n%%body%%\n[[/div]]\n",
+                    "[[div class=\"custom-unknown\"]]\n%%unknown%%\n[[/div]]\n",
+                    "[[/module]]",
+                ),
+                category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    let thread_path = format!("/forum/t-{}/custom-body-thread", thread.forum_thread_id,);
+    assert!(
+        custom_div_body(&output, "custom-title").contains("Custom Body Thread"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-linked").contains(&format!(
+            r#"<a href="{thread_path}">Custom Body Thread</a>"#,
+        )),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-link")
+            .contains(&thread_path.replace('/', "&#x2F;")),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-author")
+            .contains(r#"<span class="printuser">User</span>"#),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-date").contains("format_%25Y-%25m-%25d"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-comments")
+            .contains(&format!(r#"<a href="{thread_path}">Comments: 0</a>"#)),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-category")
+            .contains("Custom Body Group / Custom Body Category"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-description")
+            .contains("Independent custom body description"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-content")
+            .contains("Independent custom body content &lt;observable&gt;"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-unknown").contains("%%unknown%%")
+            && !output.contains("[[/module]]"),
+        "{output}",
+    );
+
+    let malformed = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum malformed custom-body fixture",
+            "wikitext": format!(
+                "[[module FrontForum category=\"{};bad\" limit=\"1\"]]\nCUSTOM-BODY-SHOULD-NOT-RENDER %%title%%\n[[/module]]",
+                category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        malformed.contains(r#"Problem parsing attribute "category"."#)
+            && !malformed.contains("CUSTOM-BODY-SHOULD-NOT-RENDER")
+            && !malformed.contains("Custom Body Thread"),
+        "{malformed}",
+    );
+}
+
 #[test]
 fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
     // This comprehensive forum fixture exceeds the test harness's 2 MiB async
