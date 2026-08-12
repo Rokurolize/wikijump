@@ -2398,6 +2398,11 @@ async fn page_create_refreshes_only_executable_dynamic_navigation_after_recordin
             true,
         ),
         (
+            "whitespace-include",
+            "[[ \t include nav:create-freshness-component-whitespace-include]]",
+            true,
+        ),
+        (
             "code-literal",
             "[[code]]\n[[module ListPages tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]\n[[/code]]",
             false,
@@ -2424,6 +2429,16 @@ async fn page_create_refreshes_only_executable_dynamic_navigation_after_recordin
             Box::leak(format!("Page create freshness top {case}").into_boxed_str());
         let side_title =
             Box::leak(format!("Page create freshness side {case}").into_boxed_str());
+        if case == "whitespace-include" {
+            create_navigation_fixture_page(
+                &mut runner,
+                site_id,
+                "nav:create-freshness-component-whitespace-include",
+                "Page create freshness whitespace include component",
+                "[[module ListPages tags=\"+fresh\" separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
+            )
+            .await;
+        }
         create_navigation_fixture_page(
             &mut runner,
             site_id,

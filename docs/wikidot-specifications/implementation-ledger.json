@@ -1869,7 +1869,7 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
-          "scope": "public page_create to anonymous page_view matrix verifies executable mixed-whitespace ListPages refreshes top and side navigation after the first revision is attached, while code-owned and invalid module names keep the registered revision in its initial-render lifecycle state"
+          "scope": "public page_create to anonymous page_view matrix verifies direct executable mixed-whitespace ListPages and an FTML-supported whitespace-prefixed include of ListPages refresh top and side navigation after the first revision is attached, while code-owned and invalid module names keep the registered revision in its initial-render lifecycle state"
         },
         {
           "path": "framerail/tests/list-pages-feed.test.ts",

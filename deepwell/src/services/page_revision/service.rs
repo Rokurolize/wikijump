@@ -2265,7 +2265,7 @@ fn first_revision_followups_detect_runtime_content_in_page_or_template() {
     let template_followups = first_revision_followups(
         str!("guide"),
         "ordinary page text",
-        Some("[[include component:license]]"),
+        Some("[[ \t include component:license]]"),
         None,
         None,
     );

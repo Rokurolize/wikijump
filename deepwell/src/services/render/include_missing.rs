@@ -303,6 +303,10 @@ mod tests {
         assert!(
             !collect_include_display_pages("[[include component:license]]").is_empty()
         );
+        assert!(
+            !collect_include_display_pages("[[ \t include component:license]]")
+                .is_empty()
+        );
     }
 
     #[test]
