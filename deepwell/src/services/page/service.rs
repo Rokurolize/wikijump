@@ -802,7 +802,7 @@ WHERE page.site_id = $1
 
         // Create resurrection revision
         // This also updates backlinks, includes, etc.
-        let output = PageRevisionService::create_resurrection(
+        let revision = PageRevisionService::create_resurrection(
             ctx,
             CreateResurrectionPageRevision {
                 id,
@@ -819,7 +819,7 @@ WHERE page.site_id = $1
         let model = page::ActiveModel {
             page_id: Set(page_id),
             page_category_id: Set(category.category_id),
-            latest_revision_id: Set(Some(output.revision_id)),
+            latest_revision_id: Set(Some(revision.output.revision_id)),
             slug: Set(slug.clone()),
             deleted_at: Set(None),
             ..Default::default()
@@ -829,9 +829,15 @@ WHERE page.site_id = $1
         assert_latest_revision(&page);
 
         // Resurrection rendering happens while the page is still deleted so
-        // generic body queries do not observe a half-restored aggregate. Run the
-        // established navigation-only followup after the live page and new latest
-        // revision are both visible in this transaction.
+        // generic body queries do not observe a half-restored aggregate. Runtime
+        // content that depends on the live latest revision needs one full pass
+        // after both halves of the aggregate are published in this transaction.
+        let output = PageRevisionService::apply_resurrection_followups(ctx, id, revision)
+            .await
+            .or_raise(make_error)?;
+
+        // Preserve the established navigation-only followup after the restored
+        // identity and latest revision are visible.
         PageRevisionService::rerender(
             ctx,
             id,

@@ -140,6 +140,12 @@ pub(crate) struct PersistedPageRevision {
 }
 
 #[derive(Debug)]
+pub(crate) struct PersistedResurrectionPageRevision {
+    pub(crate) output: CreatePageRevisionOutput,
+    rerender_after_latest_revision: bool,
+}
+
+#[derive(Debug)]
 struct PageRevisionFollowups {
     revision_type: PageRevisionType,
     old_slug: Option<String>,
@@ -859,7 +865,7 @@ impl PageRevisionService {
     ///
     /// # Panics
     /// If the given previous revision is for a different page or site, this method will panic.
-    pub async fn create_resurrection(
+    pub(crate) async fn create_resurrection(
         ctx: &ServiceContext<'_>,
         CreateResurrectionPageRevision {
             id,
@@ -868,7 +874,7 @@ impl PageRevisionService {
             new_slug,
         }: CreateResurrectionPageRevision,
         previous: PageRevisionModel,
-    ) -> Result<CreatePageRevisionOutput> {
+    ) -> Result<PersistedResurrectionPageRevision> {
         let txn = ctx.transaction();
         let PageId {
             site_id,
@@ -931,6 +937,29 @@ impl PageRevisionService {
         let wikitext = TextService::get(ctx, &wikitext_hash)
             .await
             .or_raise(make_error)?;
+        let (category_slug, page_slug) = split_category(&new_slug);
+        let template_wikitext = BlueprintPageService::get_page_template(
+            ctx,
+            site_id,
+            category_slug,
+            page_slug,
+        )
+        .await
+        .or_raise(make_error)?;
+        let NavigationPageWikitext {
+            top_bar_page_wikitext,
+            side_bar_page_wikitext,
+        } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
+            .await
+            .or_raise(make_error)?;
+        let rerender_after_latest_revision = first_revision_followups(
+            new_slug.clone(),
+            &wikitext,
+            template_wikitext.as_deref(),
+            top_bar_page_wikitext.as_deref(),
+            side_bar_page_wikitext.as_deref(),
+        )
+        .rerender_after_latest_revision;
         let RenderPageOutput {
             // TODO: use html_output
             html_output: _,
@@ -999,11 +1028,25 @@ impl PageRevisionService {
         let PageRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
 
-        Ok(CreatePageRevisionOutput {
-            revision_id,
-            revision_number,
-            parser_errors: Some(errors),
+        Ok(PersistedResurrectionPageRevision {
+            output: CreatePageRevisionOutput {
+                revision_id,
+                revision_number,
+                parser_errors: Some(errors),
+            },
+            rerender_after_latest_revision,
         })
+    }
+
+    pub(crate) async fn apply_resurrection_followups(
+        ctx: &ServiceContext<'_>,
+        id: PageId,
+        revision: PersistedResurrectionPageRevision,
+    ) -> Result<CreatePageRevisionOutput> {
+        if revision.rerender_after_latest_revision {
+            Self::rerender(ctx, id, RerenderDepth::default(), RerenderType::Full).await?;
+        }
+        Ok(revision.output)
     }
 
     /// Helper method for performing rendering for a revision.

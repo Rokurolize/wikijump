@@ -27554,6 +27554,546 @@ async fn page_get_deleted_filters_pages_by_delete_permission() {
 }
 
 #[tokio::test]
+async fn restored_countpages_page_stores_and_serves_its_current_self_count() {
+    const PAGE_SLUG: &str = "fixture-page-restore-countpages:self";
+    const COUNT_MARKER: &str = "RESTORED_SELF_COUNT=1";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "[[module CountPages]]RESTORED_SELF_COUNT=%%total%%[[/module]]",
+            "title": "Restored CountPages Self Count",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    let deleted = run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted = serde_json::to_value(deleted)
+        .expect("CountPages deletion output should serialize");
+    let deleted_revision_id = deleted["revision_id"]
+        .as_i64()
+        .expect("CountPages deletion should return its revision ID");
+
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "revision_comments": "restore CountPages fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+        ..Default::default()
+    });
+    let stored = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("restored CountPages page should be readable");
+    assert!(stored.revision_id > deleted_revision_id);
+    let stored_html = stored
+        .compiled_body_html
+        .expect("restored CountPages page should store compiled HTML");
+    assert!(
+        stored_html.contains(COUNT_MARKER),
+        "restored CountPages stored HTML must count the now-live page itself:\n{stored_html}",
+    );
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view
+    else {
+        panic!("restored CountPages page should have a public view: {view:?}");
+    };
+    assert!(
+        compiled_body_html.contains(COUNT_MARKER),
+        "restored CountPages public view must count the now-live page itself:\n{compiled_body_html}",
+    );
+}
+
+#[tokio::test]
+async fn restored_page_uses_destination_template_countpages_after_explicit_restore() {
+    const SOURCE_SLUG: &str = "fixture-page-restore-countpages-source:templated";
+    const DESTINATION_CATEGORY: &str = "fixture-page-restore-countpages-destination";
+    const DESTINATION_TEMPLATE_SLUG: &str =
+        "fixture-page-restore-countpages-destination:_template";
+    const DESTINATION_SLUG: &str =
+        "fixture-page-restore-countpages-destination:templated";
+    const COUNT_MARKER: &str = "RESTORED_TEMPLATE_COUNT=1";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DESTINATION_TEMPLATE_SLUG,
+        "Restore CountPages Destination Template",
+        "[[module CountPages]]RESTORED_TEMPLATE_COUNT=%%total%%[[/module]]\n\n%%content%%",
+    )
+    .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SOURCE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "RESTORED_TEMPLATE_CONTENT",
+            "title": "Restored Destination Template CountPages",
+            "alt_title": null,
+            "slug": SOURCE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create destination template restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete destination template restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "slug": DESTINATION_SLUG,
+            "revision_comments": "restore into CountPages template category",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(DESTINATION_SLUG))),
+        ..Default::default()
+    });
+    let stored = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": DESTINATION_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("explicitly restored CountPages template page should be readable");
+    assert_eq!(stored.page_id, page.page_id);
+    assert_eq!(stored.slug, DESTINATION_SLUG);
+    assert_eq!(stored.page_category_slug, DESTINATION_CATEGORY);
+    let stored_html = stored
+        .compiled_body_html
+        .expect("explicitly restored template page should store compiled HTML");
+    for expected in [COUNT_MARKER, "RESTORED_TEMPLATE_CONTENT"] {
+        assert!(
+            stored_html.contains(expected),
+            "restored template-composed body should contain {expected:?}:\n{stored_html}",
+        );
+    }
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": DESTINATION_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        page: viewed_page,
+        compiled_body_html,
+        ..
+    } = view
+    else {
+        panic!("explicitly restored template page should have a public view: {view:?}");
+    };
+    assert_eq!(viewed_page.slug, DESTINATION_SLUG);
+    assert_eq!(viewed_page.page_category_id, stored.page_category_id);
+    for expected in [COUNT_MARKER, "RESTORED_TEMPLATE_CONTENT"] {
+        assert!(
+            compiled_body_html.contains(expected),
+            "public restored template view should contain {expected:?}:\n{compiled_body_html}",
+        );
+    }
+
+    assert!(
+        run_endpoint!(
+            runner,
+            page_get,
+            json!({"site_id": site_id, "page": SOURCE_SLUG}),
+        )
+        .is_none(),
+        "the pre-restore slug must remain unavailable",
+    );
+}
+
+#[tokio::test]
+async fn restored_literal_and_unsupported_countpages_shapes_stay_inert() {
+    const PAGE_SLUG: &str = "fixture-page-restore-countpages:literal";
+    const SOURCE: &str = concat!(
+        "[[code]]\n",
+        "[[module CountPages]]CODE_LITERAL_COUNT=%%total%%[[/module]]\n",
+        "[[/code]]\n\n",
+        "[[module CountPages tags=\"@URL\"]]DYNAMIC_LITERAL_COUNT=%%total%%[[/module]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "Restored Literal CountPages Shapes",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create literal CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let before = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("literal CountPages fixture should be readable")
+    .compiled_body_html
+    .expect("literal CountPages fixture should store compiled HTML");
+    assert!(before.contains("CODE_LITERAL_COUNT=%%total%%"));
+    assert!(before.contains("DYNAMIC_LITERAL_COUNT=%%total%%"));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete literal CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "revision_comments": "restore literal CountPages fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+        ..Default::default()
+    });
+    let after = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("restored literal CountPages fixture should be readable")
+    .compiled_body_html
+    .expect("restored literal CountPages fixture should store compiled HTML");
+    assert_eq!(after, before);
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": "/tag/should-not-activate"},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view
+    else {
+        panic!("restored literal CountPages page should have a public view: {view:?}");
+    };
+    assert_eq!(compiled_body_html, before);
+}
+
+#[tokio::test]
+async fn restore_rerender_failure_rolls_back_resurrection_identity_and_revision() {
+    let run_id = cuid();
+    let source_category = format!("fixture-page-restore-rollback-source-{run_id}");
+    let destination_category =
+        format!("fixture-page-restore-rollback-destination-{run_id}");
+    let source_slug = format!("{source_category}:target");
+    let destination_slug = format!("{destination_category}:target");
+    let fault_function = format!("force_restore_rerender_failure_{run_id}");
+    let fault_trigger = format!("force_restore_rerender_failure_{run_id}");
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(source_slug.clone())),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "[[module CountPages]]RESTORE_ROLLBACK_COUNT=%%total%%[[/module]]",
+            "title": "Restore Rerender Rollback Target",
+            "alt_title": null,
+            "slug": source_slug,
+            "layout": "wikidot",
+            "revision_comments": "create restore rollback target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete restore rollback target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let before = serde_json::to_value(run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({"site_id": site_id, "slug": source_slug}),
+    ))
+    .expect("deleted restore rollback state should serialize");
+    assert_eq!(before.as_array().map(Vec::len), Some(1));
+
+    runner
+        .context()
+        .transaction()
+        .execute_unprepared(&format!(
+            concat!(
+                "CREATE FUNCTION pg_temp.{fault_function}() RETURNS trigger ",
+                "LANGUAGE plpgsql AS $$ BEGIN ",
+                "RAISE EXCEPTION 'forced restore full rerender failure'; ",
+                "END $$; ",
+                "CREATE TRIGGER {fault_trigger} ",
+                "BEFORE UPDATE OF compiled_body_html_hash ON page_revision ",
+                "FOR EACH ROW WHEN (NEW.page_id = {page_id}) ",
+                "EXECUTE FUNCTION pg_temp.{fault_function}()",
+            ),
+            fault_function = fault_function,
+            fault_trigger = fault_trigger,
+            page_id = page.page_id,
+        ))
+        .await
+        .expect("restore rerender fault trigger should install");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("restore rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let error = deepwell::endpoints::all::page_restore(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "slug": destination_slug,
+            "revision_comments": "force failure after resurrection publication",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect_err("post-publication full rerender should hit the body-update fault");
+    assert!(
+        format!("{error:?}").contains("forced restore full rerender failure"),
+        "restore should fail in the post-publication full rerender: {error:?}",
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("failed restore savepoint should roll back");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let after = serde_json::to_value(run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({"site_id": site_id, "slug": source_slug}),
+    ))
+    .expect("rolled-back deleted page state should serialize");
+    assert_eq!(after, before);
+    assert!(
+        run_endpoint!(
+            runner,
+            page_get,
+            json!({"site_id": site_id, "page": destination_slug}),
+        )
+        .is_none(),
+        "failed explicit restore must not publish the destination identity",
+    );
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": destination_slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        matches!(view, GetPageViewOutput::Missing { .. }),
+        "failed explicit restore destination must stay publicly missing: {view:?}",
+    );
+}
+
+#[tokio::test]
 async fn page_restore_default_slug_requires_destination_create_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
