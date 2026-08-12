@@ -10722,6 +10722,239 @@ async fn frontforum_custom_body_matches_observed_public_preview_boundaries() {
     );
 }
 
+#[tokio::test]
+async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
+    async fn saved_body(runner: &TestRunner, site_id: i64, slug: &str) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected a found FrontForum feed argument page, got {other:?}")
+            }
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "FrontForum Feed Argument Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: Some(20_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "FrontForum Feed Argument Category".to_owned(),
+            description: String::new(),
+            sort_index: Some(1),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: SAMPLE_USER_ID,
+            associated_page_id: None,
+            title: "FrontForum Feed Argument Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument thread should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: SAMPLE_USER_ID,
+            title: "FrontForum Feed Argument Post".to_owned(),
+            wikitext: "FrontForum feed argument body".to_owned(),
+            comments: "create FrontForum feed argument fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument post should be created");
+
+    let ordinary_source = format!(
+        r#"[[module FrontForum category="{}" limit="1"]]"#,
+        category.forum_category_id,
+    );
+    let ordinary_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "FrontForum ordinary feed-argument control",
+            "wikitext": ordinary_source,
+        }),
+    )
+    .body;
+    assert!(
+        ordinary_preview.contains("FrontForum Feed Argument Thread")
+            && ordinary_preview.contains(r#"<div class="front-forum-box">"#),
+        "ordinary FrontForum fixture must be populated: {ordinary_preview}",
+    );
+
+    let accepted_suffixes = [
+        r#"feed="readonlyfeed" feedTitle="Read only feed""#,
+        r#"feed="readonlyfeed2""#,
+        r#"feed="""#,
+        r#"feed="../bad""#,
+    ];
+    let rejected_suffixes = [
+        r#"Feed="readonlyfeed""#,
+        "feed='readonlyfeed'",
+        "feedTitle='Read only feed'",
+        r#"feedName="readonlyfeed""#,
+        r#"feed="one" feed="two""#,
+        r#"feedTitle="one" feedTitle="two""#,
+    ];
+    let mut failures = Vec::new();
+    for (index, suffix) in accepted_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("FrontForum feed argument preview {index}"),
+                "wikitext": source,
+            }),
+        )
+        .body;
+        if preview != ordinary_preview {
+            failures.push(format!(
+                "preview accepted suffix {suffix:?} did not preserve the ordinary body: {preview}"
+            ));
+        }
+    }
+    for (index, suffix) in rejected_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("FrontForum rejected feed argument preview {index}"),
+                "wikitext": source,
+            }),
+        )
+        .body;
+        if !preview.contains("No such module") || preview.contains("front-forum-box") {
+            failures.push(format!(
+                "preview rejected suffix {suffix:?} did not fail closed: {preview}"
+            ));
+        }
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-frontforum-feed-argument-control",
+        "FrontForum Feed Argument Control",
+        &ordinary_source,
+    )
+    .await;
+    for (index, suffix) in accepted_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &format!("fixture-frontforum-feed-argument-{index}"),
+            &format!("FrontForum Feed Argument {index}"),
+            &source,
+        )
+        .await;
+    }
+    for (index, suffix) in rejected_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &format!("fixture-frontforum-rejected-feed-argument-{index}"),
+            &format!("FrontForum Rejected Feed Argument {index}"),
+            &source,
+        )
+        .await;
+    }
+    runner.set_request_context(RequestContext::default());
+
+    let ordinary_saved =
+        saved_body(&runner, site_id, "fixture-frontforum-feed-argument-control").await;
+    for (index, suffix) in accepted_suffixes.iter().enumerate() {
+        let saved = saved_body(
+            &runner,
+            site_id,
+            &format!("fixture-frontforum-feed-argument-{index}"),
+        )
+        .await;
+        if saved != ordinary_saved {
+            failures.push(format!(
+                "page_view accepted suffix {suffix:?} did not preserve the ordinary body: {saved}"
+            ));
+        }
+    }
+    for (index, suffix) in rejected_suffixes.iter().enumerate() {
+        let saved = saved_body(
+            &runner,
+            site_id,
+            &format!("fixture-frontforum-rejected-feed-argument-{index}"),
+        )
+        .await;
+        if !saved.contains("No such module") || saved.contains("front-forum-box") {
+            failures.push(format!(
+                "page_view rejected suffix {suffix:?} did not fail closed: {saved}"
+            ));
+        }
+    }
+
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
 #[test]
 fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
     // This comprehensive forum fixture exceeds the test harness's 2 MiB async

@@ -81,6 +81,8 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
     let mut limit_seen = false;
     let mut offset = 0;
     let mut offset_seen = false;
+    let mut feed_seen = false;
+    let mut feed_title_seen = false;
     for argument in arguments {
         if argument.op != "="
             || argument.value_kind != WikidotModuleArgumentValueKind::DoubleQuoted
@@ -117,6 +119,8 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
                 offset_seen = true;
                 offset = argument.value.parse::<usize>().unwrap_or_default();
             }
+            "feed" if !feed_seen => feed_seen = true,
+            "feedTitle" if !feed_title_seen => feed_title_seen = true,
             _ => return None,
         }
     }
