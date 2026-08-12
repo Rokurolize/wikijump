@@ -1019,14 +1019,28 @@
     },
     "layout-forum": {
       "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "confirmed_public_seams": [
+        "Actual Vite/Svelte SSR of the shared ForumModuleBody used by the read-only ForumStart, category, and thread GET routes"
+      ],
+      "tests": [
+        {
+          "path": "framerail/tests/forum-page-content-public-boundary.test.js",
+          "name": "read-only forum bodies render inside exactly one page-content root",
+          "scope": "forum-box, empty, and error-block bodies are enclosed by one div#page-content at the public SSR boundary"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/lib/ForumModuleBody.svelte"
+      ],
       "documentation_evidence": [
         "specifications/layout/layout-forum.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "live-observations.json::forum-q1034-readonly-route-core-20260809"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "This slice establishes only the shared read-only forum route page-content shell. The documented inner forum structure, CSS, resources, interaction, geometry, intermediate states, mutation and new-thread routes, and fallback /forum route remain unclassified, so layout-forum stays pending."
+      ]
     },
     "layout-page": {
       "status": "pending",
