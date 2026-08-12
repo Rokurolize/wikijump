@@ -192,3 +192,74 @@ test("logout and user-edit route actions bind mutations to the server session", 
     }
   ])
 })
+
+test("logout clears a stale browser session when Deepwell reports it invalid", async () => {
+  client.request = async (method) => {
+    assert.equal(method, "logout")
+    throw Object.assign(new Error("Session token is invalid"), { code: 3001 })
+  }
+
+  const deletedCookies = []
+  const result = await routes.logout.actions.logout({
+    request: pageRequest("/-/logout?/logout"),
+    cookies: {
+      get: () => "stale-account-session",
+      delete: (name, options) => deletedCookies.push({ name, options })
+    }
+  })
+
+  assert.deepEqual(result, { success: true })
+  assert.deepEqual(deletedCookies, [
+    {
+      name: "wikijump_token",
+      options: { path: "/", httpOnly: true, secure: true, sameSite: "lax" }
+    }
+  ])
+})
+
+test("logout retains the browser session when invalidation otherwise fails", async () => {
+  const errors = [
+    new Error("Deepwell transport unavailable"),
+    Object.assign(new Error("Database query failed"), { code: 1200 }),
+    Object.assign(new Error("Unexpected logout failure"), { code: 3999 })
+  ]
+  const statuses = []
+  const deletedCookies = []
+
+  for (const error of errors) {
+    client.request = async (method) => {
+      assert.equal(method, "logout")
+      throw error
+    }
+
+    const result = await routes.logout.actions.logout({
+      request: pageRequest("/-/logout?/logout"),
+      cookies: {
+        get: () => "active-account-session",
+        delete: (name, options) => deletedCookies.push({ name, options })
+      }
+    })
+    statuses.push(result.status)
+  }
+
+  assert.deepEqual(statuses, [500, 500, 500])
+  assert.deepEqual(deletedCookies, [])
+})
+
+test("logout without a browser session remains a bad request", async () => {
+  client.request = async (method) => {
+    assert.equal(method, "translate")
+    return { "error-api.NOT_LOGGED_IN": "Not logged in" }
+  }
+
+  const result = await routes.logout.actions.logout({
+    request: pageRequest("/-/logout?/logout"),
+    cookies: {
+      get: () => undefined,
+      delete: () => assert.fail("missing session must not delete a cookie")
+    }
+  })
+
+  assert.equal(result.status, 400)
+  assert.deepEqual(result.data, { message: "Not logged in" })
+})

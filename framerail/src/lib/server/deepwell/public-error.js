@@ -1,3 +1,4 @@
+export const DEEPWELL_SESSION_INVALID = 3001
 export const DEEPWELL_PERMISSION_DENIED = 3106
 
 /**
