@@ -180,32 +180,41 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-checkbox-field": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
-        "Live generated checkbox create/edit control DOM, exact stored-source readback, default display, and direct/ListPages variables",
-        "Deepwell public missing/found page view and ListPages query/render contracts",
-        "Framerail public generated data-form create/edit browser flow"
+        "Deepwell public missing-page and found-page page_view data-form contracts",
+        "Deepwell public saved-page ListPages rendering contract"
       ],
       "tests": [
         {
           "path": "deepwell/src/services/data_form.rs",
-          "name": "checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
-          "scope": "definition and storage regressions verify exact-one checkbox defaults, quoted binary records, common field properties, wiki dimensions, and fail-closed scalar boundaries"
+          "name": "checkbox_and_wiki_fields_follow_live_control_and_storage_contracts",
+          "scope": "internal Rust unit coverage verifies checkbox definition defaults plus canonical quoted-binary parsing and fail-closed storage boundaries; the same unit also covers adjacent wiki-field behavior"
+        },
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "scope": "internal Rust unit coverage verifies the observed exact-one checkbox default boundary; the same unit also covers adjacent wiki-field dimensions"
         },
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_checkbox_and_wiki_contract",
-          "scope": "public missing, create, saved, and edit page views verify checkbox controls, defaults, canonical storage restoration, and default-table output"
+          "scope": "public Deepwell page_view integration coverage verifies the checkbox create default, saved edit value, and anonymous default-table output; it does not exercise a browser create-save-edit-reload lifecycle"
         },
         {
           "path": "deepwell/tests/page.rs",
           "name": "listpages_checkbox_and_wiki_variables_match_live_wikidot",
-          "scope": "public saved-page ListPages rendering verifies checkbox form_data and form_raw both expose the stored digit"
+          "scope": "public Deepwell saved-page ListPages integration coverage verifies checkbox form_data and form_raw both expose the stored digit"
         },
         {
-          "path": "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts",
-          "name": "checkbox/wiki source serialization and public create/edit browser flow",
-          "scope": "unit and browser regressions verify exact checked DOM, default state, quoted storage, mutation payloads, and edit restoration"
+          "path": "framerail/tests/wikidot-data-form.test.js",
+          "name": "checkbox and wiki state and source match live Wikidot",
+          "scope": "Framerail JavaScript unit coverage verifies checkbox default state and quoted-binary source serialization"
+        },
+        {
+          "path": "framerail/tests/data-form-create-flow.spec.ts",
+          "name": "data-form checkbox and wiki controls match live DOM and storage",
+          "scope": "mocked Framerail UI coverage verifies checkbox control attributes, default state, and the page-create mutation payload against fixture responses; it is not live-browser, edit-restoration, or standing-runtime acceptance"
         }
       ],
       "implementation_files": [
@@ -220,9 +229,13 @@
         "specifications/data-forms/data-forms-checkbox-field.md"
       ],
       "live_oracle_evidence": [
-        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json"
+        "live-observations.json::data-form-checkbox-control-storage-and-variable-contract",
+        "install/local/wikidot-verification/artifacts/data-form-checkbox-wiki-live.json (SHA-256 8d806e502db320a3cfb1889368530c3c4f46921b3fb958cca2c660a63a835fe0; cases: checkbox-control-default-storage-display-and-restoration, direct-and-listpages-wiki-checkbox-variables)"
       ],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "The retained observation and artifact establish only the two named checkbox cases: exact-one defaults, generated control shape, quoted binary storage, default display, edit restoration on live Wikidot, and direct/ListPages variables. They do not close other data-form field types or adjacent wiki-field cases in the shared artifact.",
+        "Public Deepwell integration tests cover create definitions, stored edit values, default-table rendering, and ListPages variables; internal Rust units cover scalar boundaries; Framerail coverage is unit-level or fixture-mocked UI. Feature-specific live browser/mobile acceptance, a full public create-save-edit-reload restoration lifecycle, temporal behavior, permissions, failure atomicity, candidate delivery, standing activation, and closure remain unverified."
+      ]
     },
     "data-forms-creating-new-page": {
       "status": "in_progress",
