@@ -193,21 +193,34 @@ function renderedArtifact(overrides = {}) {
 }
 
 function diagnosticRefreshReceipt() {
+  const targets = [
+    ["scp-9506", 3000000026, 100000003],
+    ["scp-744", 3000019112, 100000003],
+    ["scp-2117", 3000013070, 100000003],
+    ["scp-5516", 3000016951, 100000003],
+    ["scp-8980", 3000020821, 100000003],
+    ["theme:basalt", 3000000020, 100000005],
+  ];
   return {
     schema: "wikijump.diagnostic_candidate_page_refresh.v2",
     status: "pass",
     classification: "diagnostic_non_promotional",
     controller: {path: "/controller.mjs", sha256: "f".repeat(64)},
     candidate_identity: {sha256: "d".repeat(64)},
+    actor: {
+      user_id: -1,
+      authentication: "sealed_session_and_rpc_bearer",
+      permission: "page_edit_checked_before_page_rerender",
+    },
+    site: {site_id: 6000006, slug: "scp-wiki"},
     rendered_artifact_authority: {
       ftml_sha: `${"62ebba4e"}${"0".repeat(32)}`,
       compiled_generator: "ftml v1.42.0+roku.20260630.1; deepwell-render/v8",
     },
-    pages: ["scp-9506", "scp-744", "scp-2117", "scp-5516", "scp-8980", "theme:basalt"]
-      .map((slug, index) => ({
+    pages: targets.map(([slug, pageId, categoryId]) => ({
         slug,
-        before: renderedArtifact({page_id: index + 1}),
-        after: renderedArtifact({page_id: index + 1, compiled_body_html_sha256: "e".repeat(64)}),
+        before: renderedArtifact({page_id: pageId, category_id: categoryId}),
+        after: renderedArtifact({page_id: pageId, category_id: categoryId, compiled_body_html_sha256: "e".repeat(64)}),
         finalization_state: "page_rerender_endpoint_complete",
       })),
   };
@@ -244,5 +257,12 @@ test("candidate diagnostic refresh binds complete rendered artifact identities",
   assert.throws(
     () => validateCandidateRefreshReceipt(wrongRenderer, candidateIdentity),
     /renderer identity is invalid/u,
+  );
+  const wrongTarget = structuredClone(receipt);
+  wrongTarget.pages[0].before.page_id = 99;
+  wrongTarget.pages[0].after.page_id = 99;
+  assert.throws(
+    () => validateCandidateRefreshReceipt(wrongTarget, candidateIdentity),
+    /target identity is invalid/u,
   );
 });

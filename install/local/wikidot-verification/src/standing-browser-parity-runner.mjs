@@ -245,15 +245,28 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
   ) {
     throw new Error("candidate diagnostic refresh receipt is invalid");
   }
-  const expectedSlugs = new Set([
-    "scp-9506", "scp-744", "scp-2117", "scp-5516", "scp-8980", "theme:basalt",
+  const expectedPages = new Map([
+    ["scp-9506", {pageId: 3000000026, categoryId: 100000003}],
+    ["scp-744", {pageId: 3000019112, categoryId: 100000003}],
+    ["scp-2117", {pageId: 3000013070, categoryId: 100000003}],
+    ["scp-5516", {pageId: 3000016951, categoryId: 100000003}],
+    ["scp-8980", {pageId: 3000020821, categoryId: 100000003}],
+    ["theme:basalt", {pageId: 3000000020, categoryId: 100000005}],
   ]);
+  if (value.site?.site_id !== 6000006 || value.site?.slug !== "scp-wiki"
+    || value.actor?.user_id !== -1
+    || value.actor?.authentication !== "sealed_session_and_rpc_bearer"
+    || value.actor?.permission !== "page_edit_checked_before_page_rerender") {
+    throw new Error("candidate diagnostic refresh authority is invalid");
+  }
   const shaPattern = /^[0-9a-f]{64}$/u;
   for (const page of pages) {
-    if (!expectedSlugs.delete(page?.slug)
+    const expectedPage = expectedPages.get(page?.slug);
+    if (!expectedPage
       || page.finalization_state !== "page_rerender_endpoint_complete") {
       throw new Error("candidate diagnostic refresh receipt page set is invalid");
     }
+    expectedPages.delete(page.slug);
     const before = page.before;
     const after = page.after;
     for (const snapshot of [before, after]) {
@@ -274,12 +287,15 @@ export function validateCandidateRefreshReceipt(value, candidateIdentity) {
         throw new Error("candidate diagnostic refresh receipt changed source identity");
       }
     }
+    if (after.page_id !== expectedPage.pageId || after.category_id !== expectedPage.categoryId) {
+      throw new Error("candidate diagnostic refresh receipt target identity is invalid");
+    }
     if (after.compiled_generator !== expectedGenerator
       || Date.parse(after.compiled_at) < Date.parse(before.compiled_at)) {
       throw new Error("candidate diagnostic refresh receipt renderer identity is invalid");
     }
   }
-  if (expectedSlugs.size !== 0) {
+  if (expectedPages.size !== 0) {
     throw new Error("candidate diagnostic refresh receipt page set is incomplete");
   }
   return value;
