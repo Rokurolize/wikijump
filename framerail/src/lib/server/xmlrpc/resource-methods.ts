@@ -989,6 +989,7 @@ function buildXmlRpcFileMeta(
   file: DeepwellFile
 ): Record<string, XmlRpcValue> {
   return {
+    filename: file.name,
     size: file.size,
     comment: file.revision_comments,
     mime_type: file.mime,

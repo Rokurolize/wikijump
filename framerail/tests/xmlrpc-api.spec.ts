@@ -1576,7 +1576,7 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
 
 test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
   const pageSlug = `fixture-xmlrpc-file-${randomUUID()}`
-  const fileName = "proof.txt"
+  const fileName = "B&W.txt"
   const initialText = "XML-RPC file proof initial content."
   const updatedText = "XML-RPC file proof updated content with extra bytes."
   const initialContent = Buffer.from(initialText).toString("base64")
@@ -1618,13 +1618,16 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
     "<name>comment</name><value><string>xmlrpc file create proof</string></value>"
   )
   expect(saveBody).toContain("<name>mime_type</name><value><string>text/plain")
+  expect(saveBody).toContain(
+    "<name>filename</name><value><string>B&amp;W.txt</string></value>"
+  )
 
   const selectResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcFilesSelectRequest(pageSlug),
     headers: xmlRpcHeaders
   })
   expect(selectResponse.status()).toBe(200)
-  expect(await selectResponse.text()).toContain("<string>proof.txt</string>")
+  expect(await selectResponse.text()).toContain("<string>B&amp;W.txt</string>")
 
   const metaResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcFilesGetMetaRequest(pageSlug, [fileName]),
@@ -1632,10 +1635,14 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   })
   expect(metaResponse.status()).toBe(200)
   const metaBody = await metaResponse.text()
-  expect(metaBody).toContain("<name>proof.txt</name>")
+  expect(metaBody).toContain("<name>B&amp;W.txt</name>")
   expect(metaBody).toContain("<name>size</name><value><int>35</int></value>")
   expect(metaBody).toContain(
     "<name>comment</name><value><string>xmlrpc file create proof</string></value>"
+  )
+  expect(metaBody.match(/<name>B&amp;W\.txt<\/name>/gu)).toHaveLength(1)
+  expect(metaBody).toContain(
+    "<name>filename</name><value><string>B&amp;W.txt</string></value>"
   )
   expect(metaBody).not.toContain(initialContent)
 
@@ -1645,6 +1652,9 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   })
   expect(oneResponse.status()).toBe(200)
   const oneBody = await oneResponse.text()
+  expect(oneBody).toContain(
+    "<name>filename</name><value><string>B&amp;W.txt</string></value>"
+  )
   expect(oneBody).toContain(
     `<name>content</name><value><string>${initialContent}</string></value>`
   )
