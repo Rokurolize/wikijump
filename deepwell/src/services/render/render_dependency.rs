@@ -31,6 +31,7 @@ use super::literal_regions::LiteralRegionIndex;
 use super::pages::wikitext_has_executable_pages_module;
 use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
 use super::runtime_modules::wikitext_has_executable_tag_cloud_module;
+use super::user_directory::wikitext_has_executable_members_module;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RenderDependencyClass {
@@ -77,7 +78,6 @@ const MODULE_QUERY_NAMES: &[&str] = &[
 ];
 const MODULE_VIEWER_NAMES: &[&str] = &[
     "rate",
-    "members",
     "newpage",
     "clone",
     "join",
@@ -114,6 +114,9 @@ static WIKIDOT_USER_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
 
 pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     let mut classes = RenderDependencyClasses::revision_local();
+    if wikitext_has_executable_members_module(source) {
+        classes.insert(RenderDependencyClass::QueryDependent);
+    }
     let count_pages_literal_regions = source
         .to_ascii_lowercase()
         .contains("countpages")
@@ -196,6 +199,9 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         if name == "pages" {
             classes.insert(RenderDependencyClass::QueryDependent);
             classes.insert(RenderDependencyClass::RequestDependent);
+            continue;
+        }
+        if name == "members" {
             continue;
         }
         if MODULE_QUERY_NAMES.contains(&name.as_str()) {
@@ -557,7 +563,6 @@ mod tests {
     fn render_dependency_viewer_module_is_viewer_dependent() {
         for source in [
             "[[module Rate]]",
-            "[[module Members]]",
             "[[module NewPage]]",
             "[[module Clone]]",
             "[[module Join]]",
@@ -570,6 +575,52 @@ mod tests {
 
             assert!(classes.contains(RenderDependencyClass::ViewerDependent));
             assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
+        }
+    }
+
+    #[test]
+    fn members_dependencies_follow_executable_runtime_recognition() {
+        for source in [
+            "[[module Members]]",
+            r#"[[module Members group="moderators" order="nameDesc"]]"#,
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(
+                classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::ViewerDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+        }
+
+        for source in [
+            "[[code]]\n[[module Members]]\n[[/code]]",
+            "<pre>[[module Members]]</pre>",
+            r#"[[module Members group="owners"]]"#,
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(
+                classes.contains(RenderDependencyClass::RevisionLocal),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::ViewerDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
         }
     }
 

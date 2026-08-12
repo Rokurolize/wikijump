@@ -6,9 +6,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
+use std::sync::LazyLock;
 
 use ftml::data::UserInfo;
 use rand::RngExt;
+use regex::Regex;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter,
     Statement, Value,
@@ -16,6 +18,7 @@ use sea_orm::{
 use serde::Serialize;
 
 use super::ftml_user_info::load_wikidot_user_info_by_ids;
+use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{WikidotModuleArgumentValueKind, wikidot_module_arguments};
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
@@ -33,6 +36,11 @@ use crate::types::{Action, Permission, RelationObjectType, RelationType, Resourc
 use crate::utils::now;
 
 pub(super) const MEMBERS_PAGE_SIZE: usize = 100;
+
+pub(super) static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("Members module expression is valid")
+});
 
 #[derive(Clone, Debug, Serialize)]
 pub struct WikidotMembersListModuleResponse {
@@ -155,6 +163,23 @@ impl MembersArguments {
             show_since: show_since.unwrap_or(group == MembersGroup::Members),
         })
     }
+}
+
+pub(super) fn wikitext_has_executable_members_module(wikitext: &str) -> bool {
+    if !MEMBERS_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    MEMBERS_MODULE_REGEX
+        .captures_iter(wikitext)
+        .any(|captures| {
+            let module = captures
+                .get(0)
+                .expect("a Members capture always has a complete match");
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            !literal_regions.contains(module.start())
+                && MembersArguments::parse(head).is_some()
+        })
 }
 
 #[derive(Clone, Debug)]

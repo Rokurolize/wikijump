@@ -40,6 +40,7 @@ use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_argument
 use super::runtime_modules::wikitext_has_executable_tag_cloud_module;
 use super::service::RATEDPAGES_MODULE_REGEX;
 use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
+use super::user_directory::wikitext_has_executable_members_module;
 use crate::services::page_query::OrderProperty;
 use regex::Regex;
 use std::borrow::Cow;
@@ -214,9 +215,10 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
 
 /// Whether a page view must render from source even without URL arguments.
 ///
-/// `Pages` is a live site index, and `PagesByTag` is a live tag/category query.
-/// Their results change when pages or their query-relevant state changes, so
-/// stored revision HTML cannot answer even the bare request.
+/// `Pages` is a live site index, `PagesByTag` is a live tag/category query, and
+/// `Members` is a live site-membership query. Their results change when the
+/// corresponding runtime state changes, so stored revision HTML cannot answer
+/// even the bare request.
 pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
         || wikitext_has_supported_pages_by_tag_module(wikitext)
@@ -235,6 +237,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
+        || wikitext_has_executable_members_module(wikitext)
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
         || FORUM_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
@@ -377,6 +380,26 @@ mod tests {
             "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
             "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
             "[[module CountPages]][[/module]]",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+    }
+
+    #[test]
+    fn executable_members_requires_runtime_render_without_reading_url_arguments() {
+        for source in [
+            "[[module Members]]",
+            r#"[[module Members group="admins" order="name"]]"#,
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+
+        for source in [
+            "[[code]]\n[[module Members]]\n[[/code]]",
+            "<pre>[[module Members]]</pre>",
+            r#"[[module Members group="owners"]]"#,
         ] {
             assert!(!wikitext_requires_runtime_render(source), "{source}");
             assert!(!wikitext_reads_url_arguments(source), "{source}");

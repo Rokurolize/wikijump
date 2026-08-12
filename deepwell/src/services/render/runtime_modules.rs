@@ -42,7 +42,7 @@ use super::service::{
 use super::site_changes::expand_site_changes_modules;
 use super::site_utility_modules::expand_site_utility_modules;
 use super::url_arguments::UrlArguments;
-use super::user_directory::render_members_module;
+use super::user_directory::{MEMBERS_MODULE_REGEX, render_members_module};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::membership::{JoinModuleState, MembershipPolicy, MembershipService};
 use crate::services::page_query::{
@@ -171,10 +171,6 @@ const MEMBERSHIP_APPLY_ANONYMOUS_HTML: &str = concat!(
 static LISTUSERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListUsers(?P<head>(?:[^\]"]+|"[^"]*")*)\]\](?P<body>.*?)\[\[/module\]\]"#)
         .expect("ListUsers module expression is valid")
-});
-static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
-        .expect("Members module expression is valid")
 });
 static LISTDRAFTS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+ListDrafts(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
