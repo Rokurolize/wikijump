@@ -25,8 +25,17 @@ use deepwell::api::{
 use deepwell::config::{Config, Secrets};
 use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::license::License;
-use deepwell::models::page::{Entity as PageTable, Model as PageModel};
+use deepwell::models::audit_log::{self, Entity as AuditLog};
+use deepwell::models::known_user::Entity as KnownUserTable;
+use deepwell::models::page::{self, Entity as PageTable, Model as PageModel};
+use deepwell::models::page_category::{self, Entity as PageCategory};
 use deepwell::models::page_connection::{self, Entity as PageConnection};
+use deepwell::models::relation::{self, Entity as RelationTable};
+use deepwell::models::role::{self, Entity as RoleTable};
+use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
+use deepwell::models::session::Entity as SessionTable;
+use deepwell::models::site::{Entity as SiteTable, Model as SiteModel};
+use deepwell::models::user::Entity as UserTable;
 use deepwell::redis::connect_with_namespace;
 use deepwell::services::category::CategoryService;
 use deepwell::services::job::{
@@ -35,6 +44,7 @@ use deepwell::services::job::{
 };
 use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::permission::PermissionService;
+use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::role::{
     InternalCreateRoleInput, RoleService, SystemRole, UpdateRolePermissionsInput,
 };
@@ -42,21 +52,27 @@ use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::{OutdateService, ServiceContext};
 use deepwell::types::{
-    Action, ConnectionType, PageId, Permission, Reference, RerenderDepth, Resource,
+    Action, ConnectionType, PageId, Permission, Reference, RelationObjectType,
+    RerenderDepth, Resource,
 };
 use redis::AsyncCommands;
 use rsmq_async::{Rsmq, RsmqConnection};
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set,
+    TransactionTrait,
 };
 use serde_json::{Value, json};
+use std::collections::HashSet;
 use std::env;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::panic::AssertUnwindSafe;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
 use tokio::time::{sleep, timeout};
 use uuid::Uuid;
+
+use futures::FutureExt;
 
 async fn cleanup_namespace(redis_url: &str, namespace: &str) {
     let client =
@@ -474,6 +490,537 @@ async fn assert_rollback_and_cycle_fences(
         .rollback()
         .await
         .expect("cycle fence fixture should roll back");
+}
+
+const SITE_NAVIGATION_TEST_IP: IpAddr = IpAddr::V4(Ipv4Addr::new(192, 0, 2, 71));
+
+struct SiteNavigationRpcFixture {
+    state: ServerState,
+    redis_url: String,
+    namespace: String,
+    queue: Rsmq,
+    session_token: String,
+    site: SiteModel,
+    site_user_id: i64,
+    role_id: i64,
+    top_inheriting_page_ids: HashSet<i64>,
+    side_inheriting_page_ids: HashSet<i64>,
+}
+
+impl SiteNavigationRpcFixture {
+    async fn setup(redis_url: String, namespace: String) -> Self {
+        let state = build_server_state_without_workers_with_job_queue_namespace(
+            Config::integration_testing(),
+            Secrets::load(),
+            &namespace,
+        )
+        .await
+        .expect("isolated site navigation state should build");
+        let mut queue = Rsmq::clone(&state.rsmq);
+        clear_job_queue(&mut queue).await;
+
+        let transaction = state
+            .database
+            .begin()
+            .await
+            .expect("site navigation fixture transaction should begin");
+        let ctx = ServiceContext::new(&state, &transaction);
+        let run_id = Uuid::new_v4().simple().to_string();
+        let created_site = SiteService::create(
+            &ctx,
+            CreateSite {
+                slug: format!("site-nav-rpc-{run_id}"),
+                name: String::from("Site navigation RPC fixture"),
+                tagline: String::new(),
+                description: String::from("UUID-owned navigation test state"),
+                default_page: None,
+                layout: Some(ftml::layout::Layout::Wikidot),
+                license: License::CcBySa40,
+                locale: String::from("en"),
+                ip_address: SITE_NAVIGATION_TEST_IP,
+            },
+        )
+        .await
+        .expect("owned site navigation site should be created");
+        let site = SiteService::get(&ctx, Reference::Id(created_site.site_id))
+            .await
+            .expect("owned site navigation site should load");
+
+        let top_inheriting_category =
+            CategoryService::get_or_create(&ctx, site.site_id, "top-inheriting")
+                .await
+                .expect("top-inheriting category should be created");
+        let side_inheriting_category =
+            CategoryService::get_or_create(&ctx, site.site_id, "side-inheriting")
+                .await
+                .expect("side-inheriting category should be created");
+        page_category::ActiveModel {
+            category_id: Set(top_inheriting_category.category_id),
+            top_bar_page: Set(None),
+            side_bar_page: Set(Some(String::from("fixture:side-override"))),
+            ..Default::default()
+        }
+        .update(&transaction)
+        .await
+        .expect("top-inheriting category should be configured");
+        page_category::ActiveModel {
+            category_id: Set(side_inheriting_category.category_id),
+            top_bar_page: Set(Some(String::from("fixture:top-override"))),
+            side_bar_page: Set(None),
+            ..Default::default()
+        }
+        .update(&transaction)
+        .await
+        .expect("side-inheriting category should be configured");
+
+        let everyone = RoleService::create(
+            &ctx,
+            InternalCreateRoleInput {
+                site_id: site.site_id,
+                name: SystemRole::Everyone.to_string(),
+                description: Some(String::from("Owned site-update RPC permission")),
+                is_virtual: true,
+                parent_role_id: None,
+                creating_user_id: SYSTEM_USER_ID,
+                ip_address: SITE_NAVIGATION_TEST_IP,
+            },
+        )
+        .await
+        .expect("owned everyone role should be created");
+        PermissionService::update_permissions_for_role(
+            &ctx,
+            UpdateRolePermissionsInput {
+                site_id: site.site_id,
+                role_reference: Reference::Id(everyone.role_id),
+                new_permissions: vec![Permission {
+                    resource_type: Resource::Site,
+                    resource_category: None,
+                    action: Action::Edit,
+                }],
+                cascade_removals: false,
+                updating_user_id: SYSTEM_USER_ID,
+                ip_address: SITE_NAVIGATION_TEST_IP,
+            },
+        )
+        .await
+        .expect("owned site-edit permission should be granted");
+
+        let mut top_inheriting_page_ids = HashSet::new();
+        let mut side_inheriting_page_ids = HashSet::new();
+        for index in 0..2 {
+            let top_page = page::ActiveModel {
+                site_id: Set(site.site_id),
+                page_category_id: Set(top_inheriting_category.category_id),
+                slug: Set(format!("top-inheriting-{run_id}-{index}")),
+                ..Default::default()
+            }
+            .insert(&transaction)
+            .await
+            .expect("top-inheriting page should be created");
+            top_inheriting_page_ids.insert(top_page.page_id);
+
+            let side_page = page::ActiveModel {
+                site_id: Set(site.site_id),
+                page_category_id: Set(side_inheriting_category.category_id),
+                slug: Set(format!("side-inheriting-{run_id}-{index}")),
+                ..Default::default()
+            }
+            .insert(&transaction)
+            .await
+            .expect("side-inheriting page should be created");
+            side_inheriting_page_ids.insert(side_page.page_id);
+        }
+
+        let session_token = SessionService::create(
+            &ctx,
+            CreateSession {
+                user_id: ADMIN_USER_ID,
+                ip_address: SITE_NAVIGATION_TEST_IP,
+                user_agent: String::from("site navigation post-commit RPC test"),
+                restricted: false,
+            },
+        )
+        .await
+        .expect("site navigation admin session should be created");
+        transaction
+            .commit()
+            .await
+            .expect("site navigation fixture should commit");
+
+        Self {
+            state,
+            redis_url,
+            namespace,
+            queue,
+            session_token,
+            site,
+            site_user_id: created_site.site_user_id,
+            role_id: everyone.role_id,
+            top_inheriting_page_ids,
+            side_inheriting_page_ids,
+        }
+    }
+
+    async fn cleanup(self) {
+        let database_result = AssertUnwindSafe(self.cleanup_database())
+            .catch_unwind()
+            .await;
+        let redis_result =
+            AssertUnwindSafe(cleanup_namespace(&self.redis_url, &self.namespace))
+                .catch_unwind()
+                .await;
+        let owned_redis_result = AssertUnwindSafe(self.cleanup_owned_redis_keys())
+            .catch_unwind()
+            .await;
+
+        if let Err(payload) = database_result {
+            std::panic::resume_unwind(payload);
+        }
+        if let Err(payload) = redis_result {
+            std::panic::resume_unwind(payload);
+        }
+        if let Err(payload) = owned_redis_result {
+            std::panic::resume_unwind(payload);
+        }
+    }
+
+    async fn cleanup_database(&self) {
+        let transaction = self
+            .state
+            .database
+            .begin()
+            .await
+            .expect("site navigation cleanup transaction should begin");
+
+        SessionTable::delete_by_id(self.session_token.clone())
+            .exec(&transaction)
+            .await
+            .expect("owned site navigation session should be removed");
+        PageTable::delete_many()
+            .filter(page::Column::SiteId.eq(self.site.site_id))
+            .exec(&transaction)
+            .await
+            .expect("owned site navigation pages should be removed");
+        PageCategory::delete_many()
+            .filter(page_category::Column::SiteId.eq(self.site.site_id))
+            .exec(&transaction)
+            .await
+            .expect("owned site navigation categories should be removed");
+        RolePermissionTable::delete_many()
+            .filter(role_permission::Column::SiteId.eq(self.site.site_id))
+            .exec(&transaction)
+            .await
+            .expect("owned site permissions should be removed");
+        RoleTable::delete_many()
+            .filter(role::Column::SiteId.eq(self.site.site_id))
+            .exec(&transaction)
+            .await
+            .expect("owned site roles should be removed");
+        RelationTable::delete_many()
+            .filter(
+                Condition::any()
+                    .add(
+                        Condition::all()
+                            .add(relation::Column::DestType.eq(RelationObjectType::Site))
+                            .add(relation::Column::DestId.eq(self.site.site_id)),
+                    )
+                    .add(
+                        Condition::all()
+                            .add(relation::Column::FromType.eq(RelationObjectType::User))
+                            .add(relation::Column::FromId.eq(self.site_user_id)),
+                    ),
+            )
+            .exec(&transaction)
+            .await
+            .expect("owned site-user relation should be removed");
+        AuditLog::delete_many()
+            .filter(
+                Condition::any()
+                    .add(audit_log::Column::SiteId.eq(self.site.site_id))
+                    .add(audit_log::Column::UserId.eq(self.site_user_id))
+                    .add(
+                        Condition::all()
+                            .add(
+                                audit_log::Column::EventType
+                                    .eq("role.update_permissions"),
+                            )
+                            .add(audit_log::Column::ExtraId1.eq(self.role_id)),
+                    ),
+            )
+            .exec(&transaction)
+            .await
+            .expect("owned site navigation audit rows should be removed");
+        UserTable::delete_by_id(self.site_user_id)
+            .exec(&transaction)
+            .await
+            .expect("owned site user should be removed");
+        SiteTable::delete_by_id(self.site.site_id)
+            .exec(&transaction)
+            .await
+            .expect("owned site should be removed");
+        KnownUserTable::delete_by_id(self.site_user_id)
+            .exec(&transaction)
+            .await
+            .expect("owned known-user identity should be removed");
+        transaction
+            .commit()
+            .await
+            .expect("site navigation cleanup should commit");
+    }
+
+    async fn cleanup_owned_redis_keys(&self) {
+        let public_cache_key = PublicContentCache::site_version_key(self.site.site_id);
+        let permission_pattern = format!("permission:site:{}:*", self.site.site_id);
+        let mut redis = self.state.redis.clone();
+        let mut keys: Vec<String> = redis
+            .keys(permission_pattern)
+            .await
+            .expect("owned permission cache keys should be listed");
+        keys.push(public_cache_key);
+        let _: usize = redis
+            .del(keys)
+            .await
+            .expect("owned site cache keys should be removed");
+    }
+}
+
+async fn rpc_response(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    session_token: &str,
+    site_id: i64,
+    method: &str,
+    params: Value,
+) -> Value {
+    client
+        .post(format!("http://{address}"))
+        .bearer_auth(
+            env::var("DEEPWELL_RPC_TOKEN").expect("test RPC token must be configured"),
+        )
+        .header("X-Deepwell-Session-Token", session_token)
+        .header("X-Deepwell-Site-Id", site_id)
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1174,
+            "method": method,
+            "params": params,
+        }))
+        .send()
+        .await
+        .expect("site navigation RPC should complete")
+        .json()
+        .await
+        .expect("site navigation RPC should return JSON")
+}
+
+async fn receive_jobs(rsmq: &mut Rsmq) -> Vec<Job> {
+    let mut jobs = Vec::new();
+    while let Some(message) = rsmq
+        .receive_message::<Vec<u8>>(JOB_QUEUE_NAME, None)
+        .await
+        .expect("site navigation queue should be readable")
+    {
+        jobs.push(
+            serde_json::from_slice(&message.message)
+                .expect("site navigation job should decode"),
+        );
+        rsmq.delete_message(JOB_QUEUE_NAME, &message.id)
+            .await
+            .expect("site navigation job should be removed");
+    }
+    jobs
+}
+
+fn assert_navigation_jobs(jobs: &[Job], expected_page_ids: &HashSet<i64>) {
+    let actual_page_ids = jobs
+        .iter()
+        .map(|job| match job {
+            Job::RerenderPage {
+                id,
+                r#type: RerenderType::NavigationOnly,
+                ..
+            } => id.page_id,
+            other => panic!("expected navigation-only rerender, got {other:?}"),
+        })
+        .collect::<HashSet<_>>();
+    assert_eq!(actual_page_ids, *expected_page_ids);
+    assert_eq!(jobs.len(), expected_page_ids.len());
+}
+
+async fn run_site_navigation_rpc_contract(
+    fixture: &mut SiteNavigationRpcFixture,
+    address: SocketAddr,
+) {
+    let client = reqwest::Client::new();
+    let site_id = fixture.site.site_id;
+    let mut revision = fixture.site.settings_revision;
+
+    let stale = rpc_response(
+        &client,
+        address,
+        &fixture.session_token,
+        site_id,
+        "site_update",
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": revision - 1,
+            "top_bar_page": "fixture:stale-top",
+            "ip_address": SITE_NAVIGATION_TEST_IP,
+        }),
+    )
+    .await;
+    assert!(
+        stale.get("error").is_some(),
+        "stale update should fail: {stale}"
+    );
+    assert!(receive_jobs(&mut fixture.queue).await.is_empty());
+
+    let unchanged = rpc_response(
+        &client,
+        address,
+        &fixture.session_token,
+        site_id,
+        "site_update",
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": revision,
+            "top_bar_page": fixture.site.top_bar_page,
+            "ip_address": SITE_NAVIGATION_TEST_IP,
+        }),
+    )
+    .await;
+    assert!(
+        unchanged.get("error").is_none(),
+        "unchanged update should succeed: {unchanged}",
+    );
+    revision += 1;
+    assert!(receive_jobs(&mut fixture.queue).await.is_empty());
+
+    let side_only = rpc_response(
+        &client,
+        address,
+        &fixture.session_token,
+        site_id,
+        "site_update",
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": revision,
+            "side_bar_page": "fixture:new-side",
+            "ip_address": SITE_NAVIGATION_TEST_IP,
+        }),
+    )
+    .await;
+    assert!(
+        side_only.get("error").is_none(),
+        "side-only update should succeed: {side_only}",
+    );
+    revision += 1;
+    assert_eq!(side_only["result"]["side_bar_page"], "fixture:new-side");
+    assert_eq!(
+        side_only["result"]["top_bar_page"],
+        fixture.site.top_bar_page,
+    );
+    assert_navigation_jobs(
+        &receive_jobs(&mut fixture.queue).await,
+        &fixture.side_inheriting_page_ids,
+    );
+
+    let both = rpc_response(
+        &client,
+        address,
+        &fixture.session_token,
+        site_id,
+        "site_update",
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": revision,
+            "top_bar_page": "fixture:new-top",
+            "side_bar_page": "fixture:new-side-again",
+            "ip_address": SITE_NAVIGATION_TEST_IP,
+        }),
+    )
+    .await;
+    assert!(
+        both.get("error").is_none(),
+        "combined navigation update should succeed: {both}",
+    );
+    assert_eq!(both["result"]["top_bar_page"], "fixture:new-top");
+    assert_eq!(both["result"]["side_bar_page"], "fixture:new-side-again",);
+    let expected_both = fixture
+        .top_inheriting_page_ids
+        .union(&fixture.side_inheriting_page_ids)
+        .copied()
+        .collect();
+    assert_navigation_jobs(&receive_jobs(&mut fixture.queue).await, &expected_both);
+
+    let fetched = rpc_response(
+        &client,
+        address,
+        &fixture.session_token,
+        site_id,
+        "site_get",
+        json!({ "site": site_id }),
+    )
+    .await;
+    assert_eq!(fetched["result"]["top_bar_page"], "fixture:new-top");
+    assert_eq!(fetched["result"]["side_bar_page"], "fixture:new-side-again",);
+}
+
+#[tokio::test]
+async fn site_navigation_updates_persist_and_dispatch_after_registered_rpc_commit() {
+    let redis_url =
+        env::var("REDIS_URL").expect("REDIS_URL must be set for integration tests");
+    let namespace = format!("site-navigation-rpc-{}", Uuid::new_v4().simple(),);
+    let setup = AssertUnwindSafe(SiteNavigationRpcFixture::setup(
+        redis_url.clone(),
+        namespace.clone(),
+    ))
+    .catch_unwind()
+    .await;
+    let mut fixture = match setup {
+        Ok(fixture) => fixture,
+        Err(payload) => {
+            cleanup_namespace(&redis_url, &namespace).await;
+            std::panic::resume_unwind(payload);
+        }
+    };
+    let server = build_server_at(
+        fixture.state.clone(),
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0),
+    )
+    .await;
+    let (address, handle) = match server {
+        Ok(server) => server,
+        Err(error) => {
+            fixture.cleanup().await;
+            panic!("site navigation RPC server should start: {error:?}");
+        }
+    };
+
+    let result =
+        AssertUnwindSafe(run_site_navigation_rpc_contract(&mut fixture, address))
+            .catch_unwind()
+            .await;
+    let stop_result = AssertUnwindSafe(async {
+        handle
+            .stop()
+            .expect("site navigation RPC server should stop");
+        handle.stopped().await;
+    })
+    .catch_unwind()
+    .await;
+    fixture.cleanup().await;
+
+    if let Err(payload) = result {
+        std::panic::resume_unwind(payload);
+    }
+    if let Err(payload) = stop_result {
+        std::panic::resume_unwind(payload);
+    }
 }
 
 #[tokio::test]

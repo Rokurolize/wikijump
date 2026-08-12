@@ -25,6 +25,7 @@ use crate::models::session::Model as SessionModel;
 use crate::runtime::ServerState;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::{Job, JobService};
+use crate::services::page_revision::RerenderType;
 use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
 use crate::types::{PageId, Permission, Reference, RerenderDepth};
@@ -144,10 +145,21 @@ pub struct ServiceContext<'txn> {
 
 #[derive(Debug)]
 pub(crate) enum PostCommitAction {
-    PermissionUser { site_id: i64, user_id: i64 },
-    PermissionSite { site_id: i64 },
-    PublicContentSite { site_id: i64 },
-    RerenderPage { id: PageId, depth: RerenderDepth },
+    PermissionUser {
+        site_id: i64,
+        user_id: i64,
+    },
+    PermissionSite {
+        site_id: i64,
+    },
+    PublicContentSite {
+        site_id: i64,
+    },
+    RerenderPage {
+        id: PageId,
+        depth: RerenderDepth,
+        r#type: RerenderType,
+    },
 }
 
 impl<'txn> ServiceContext<'txn> {
@@ -289,6 +301,23 @@ impl<'txn> ServiceContext<'txn> {
         id: PageId,
         depth: RerenderDepth,
     ) -> Result<()> {
+        self.defer_rerender(id, depth, RerenderType::Full)
+    }
+
+    pub(crate) fn defer_rerender_navigation_page(
+        &self,
+        id: PageId,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        self.defer_rerender(id, depth, RerenderType::NavigationOnly)
+    }
+
+    fn defer_rerender(
+        &self,
+        id: PageId,
+        depth: RerenderDepth,
+        r#type: RerenderType,
+    ) -> Result<()> {
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new("failed to queue page rerender", ErrorType::Page).raise()
         })?;
@@ -298,15 +327,17 @@ impl<'txn> ServiceContext<'txn> {
                 PostCommitAction::RerenderPage {
                     id: queued_id,
                     depth: queued_depth,
+                    r#type: queued_type,
                 } if queued_id.site_id == id.site_id
                     && queued_id.category_id == id.category_id
                     && queued_id.page_id == id.page_id
                     && *queued_depth == depth
+                    && *queued_type == r#type
             )
         }) {
             return Ok(());
         }
-        actions.push(PostCommitAction::RerenderPage { id, depth });
+        actions.push(PostCommitAction::RerenderPage { id, depth, r#type });
         Ok(())
     }
 
@@ -338,14 +369,10 @@ impl<'txn> ServiceContext<'txn> {
                 PostCommitAction::PublicContentSite { site_id } => {
                     PublicContentCache::invalidate_site_for_state(state, site_id).await?;
                 }
-                PostCommitAction::RerenderPage { id, depth } => {
+                PostCommitAction::RerenderPage { id, depth, r#type } => {
                     JobService::queue_job_inner(
                         &mut rsmq,
-                        &Job::RerenderPage {
-                            id,
-                            depth,
-                            r#type: crate::services::page_revision::RerenderType::Full,
-                        },
+                        &Job::RerenderPage { id, depth, r#type },
                         None,
                     )
                     .await?;

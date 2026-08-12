@@ -29,9 +29,9 @@ use crate::services::audit::{AuditEvent, AuditService, SiteFields};
 use crate::services::domain::{DEFAULT_SITE_SLUG, DomainService};
 use crate::services::relation::CreateSiteUser;
 use crate::services::user::{CreateUser, UpdateUserBody};
-use crate::services::{AliasService, RelationService, UserService};
+use crate::services::{AliasService, OutdateService, RelationService, UserService};
 use crate::types::{AliasType, UserType};
-use crate::types::{Maybe, Reference};
+use crate::types::{Maybe, Reference, RerenderDepth};
 use crate::utils::now;
 use crate::utils::{validate_locale, validate_wikidot_site_language};
 use ftml::layout::Layout;
@@ -370,6 +370,15 @@ impl SiteService {
             ));
         }
 
+        let top_bar_changed = input
+            .top_bar_page
+            .to_option()
+            .is_some_and(|value| value != &site.top_bar_page);
+        let side_bar_changed = input
+            .side_bar_page
+            .to_option()
+            .is_some_and(|value| value != &site.side_bar_page);
+
         let mut model = site::ActiveModel {
             site_id: Set(site.site_id),
             ..Default::default()
@@ -512,6 +521,14 @@ impl SiteService {
             model.welcome_page = Set(welcome_page);
         }
 
+        if let Maybe::Set(top_bar_page) = input.top_bar_page {
+            model.top_bar_page = Set(top_bar_page);
+        }
+
+        if let Maybe::Set(side_bar_page) = input.side_bar_page {
+            model.side_bar_page = Set(side_bar_page);
+        }
+
         if let Maybe::Set(analytics) = input.google_analytics {
             model.google_analytics_enabled = Set(analytics.enabled);
             model.google_analytics_profile =
@@ -612,6 +629,16 @@ impl SiteService {
         model.updated_at = Set(Some(now()));
         model.settings_revision = Set(site.settings_revision + 1);
         let new_site = model.update(txn).await.or_raise(make_error)?;
+
+        OutdateService::outdate_changed_site_navigation(
+            ctx,
+            site.site_id,
+            top_bar_changed,
+            side_bar_changed,
+            RerenderDepth::default(),
+        )
+        .await
+        .or_raise(make_error)?;
 
         // Update site user
         UserService::update(ctx, Reference::Id(site_user_id), ip_address, site_user_body)
