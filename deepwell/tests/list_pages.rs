@@ -7134,7 +7134,8 @@ async fn listpages_respects_corpus_literal_context_ownership() {
     .html_output
     .body;
     assert!(
-        unclosed_comment.contains("temporary hidden region")
+        unclosed_comment.contains("[!—")
+            && unclosed_comment.contains("temporary hidden region")
             && unclosed_comment.contains("UNCLOSED COMMENT REACHES EOF"),
         "an unclosed comment must preserve ordinary source literally through EOF:\n{unclosed_comment}",
     );
