@@ -37,7 +37,73 @@ import type { RequestEvent } from "@sveltejs/kit"
 
 export async function pageDeleteAction(event: RequestEvent) {
   const { request, params, getClientAddress } = event
-  const form = await superValidate(request, valibot(pageDeleteSchema))
+  const requestData = await request.formData()
+  const isNativeForm =
+    request.headers.get("content-type")?.split(";", 1)[0].trim() ===
+      "application/x-www-form-urlencoded" && !requestData.has("__superform_json")
+
+  if (isNativeForm) {
+    const submittedData = Object.fromEntries(requestData)
+    const form = await superValidate(submittedData, valibot(pageDeleteNativeSchema), {
+      strict: true
+    })
+    if (!form.valid) {
+      return fail(400, { form })
+    }
+
+    const ipAddress = getClientAddress()
+
+    try {
+      const context = await resolvePageActionRequestContext(event, {
+        session: "optional"
+      })
+      const userId = requirePageMutationUserId(context, context.siteId)
+      const requestLocales = getPreloadRequestLocales(request)
+      const backendLocales = getPreloadBackendLocales(requestLocales)
+      const view = await pageView(
+        context.siteId,
+        backendLocales,
+        { slug: params.slug, extra: params.extra },
+        context.sessionToken
+      )
+      if (view.type !== "found") throw new Error("Page not found.")
+
+      if (form.data.option === DeleteOptions.Move) {
+        const res = await pageMove(
+          {
+            siteId: context.siteId,
+            pageId: view.data.page.page_id,
+            userId,
+            userIpAddr: ipAddress,
+            slug: params.slug,
+            lastRevisionId: view.data.page_revision.revision_id,
+            newSlug: form.data["new-slug"],
+            revisionComments: form.data.comments
+          },
+          context.requestContext
+        )
+        return { form, res, option: DeleteOptions.Move }
+      }
+
+      const res = await pageDelete(
+        {
+          siteId: context.siteId,
+          pageId: view.data.page.page_id,
+          userId,
+          userIpAddr: ipAddress,
+          slug: params.slug,
+          lastRevisionId: view.data.page_revision.revision_id,
+          revisionComments: form.data.comments
+        },
+        context.requestContext
+      )
+      return { form, res, option: DeleteOptions.Delete }
+    } catch (error) {
+      return failForActionError(error, { form })
+    }
+  }
+
+  const form = await superValidate(requestData, valibot(pageDeleteSchema))
   if (!form.valid) {
     return fail(400, { form })
   }
@@ -100,6 +166,22 @@ export const pageDeleteSchema = variant("option", [
     option: literal(DeleteOptions.Delete),
     comments: string()
   })
+])
+
+const pageDeleteNativeMoveSchema = strictObject({
+  option: literal(DeleteOptions.Move),
+  "new-slug": string(),
+  comments: string()
+})
+
+const pageDeleteNativeDeleteSchema = strictObject({
+  option: literal(DeleteOptions.Delete),
+  comments: optional(string())
+})
+
+const pageDeleteNativeSchema = variant("option", [
+  pageDeleteNativeMoveSchema,
+  pageDeleteNativeDeleteSchema
 ])
 
 export async function pageEditPermissionAction(event: RequestEvent) {
