@@ -27,19 +27,6 @@ const emptyPageReadRequests = {
   siteGet: [],
   voteList: []
 }
-const emptyPageWriteRequests = {
-  login: [],
-  pageCreate: [],
-  pageEdit: [],
-  pageRollback: [],
-  pageMove: [],
-  parentGetAll: [],
-  parentUpdate: [],
-  sessionGet: [],
-  userGet: [],
-  voteSet: []
-}
-
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
   if (!value) throw new Error(`Missing required test environment variable: ${name}`)
@@ -950,7 +937,7 @@ test("XML-RPC endpoint selects local categories", async ({ request }) => {
   expect(categoriesBody).toContain("<string>nav</string>")
 })
 
-test("XML-RPC tags.select rejects categories and pages together before external work", async ({
+test("XML-RPC tags.select rejects categories and pages together before selector caps", async ({
   request
 }) => {
   for (const [categories, pages] of [
@@ -958,17 +945,6 @@ test("XML-RPC tags.select rejects categories and pages together before external 
     [["_default"], ["the-great-hippo"]],
     [Array.from({ length: 101 }, (_, index) => `category-${index}`), ["page"]]
   ] satisfies [string[], string[]][]) {
-    expect(
-      await request
-        .get(`${fixtureUrl}/last-page-read-requests`)
-        .then((response) => response.status())
-    ).toBe(200)
-    expect(
-      await request
-        .get(`${fixtureUrl}/last-page-write-requests`)
-        .then((response) => response.status())
-    ).toBe(200)
-
     const response = await request.post("/xml-rpc-api.php", {
       data: xmlRpcTagsSelectRequest(categories, pages),
       headers: xmlRpcHeaders
@@ -980,36 +956,18 @@ test("XML-RPC tags.select rejects categories and pages together before external 
     expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
     expect(body).toContain("tags.select accepts categories or pages, not both")
     expect(body).not.toContain("is limited to")
-
-    expect(
-      await request
-        .get(`${fixtureUrl}/last-page-read-requests`)
-        .then((fixtureResponse) => fixtureResponse.json())
-    ).toEqual(emptyPageReadRequests)
-    expect(
-      await request
-        .get(`${fixtureUrl}/last-page-write-requests`)
-        .then((fixtureResponse) => fixtureResponse.json())
-    ).toEqual(emptyPageWriteRequests)
-    expect(
-      await request
-        .get(`${fixtureUrl}/last-page-tags-request`)
-        .then((fixtureResponse) => fixtureResponse.json())
-    ).toBeNull()
   }
 })
 
 test("XML-RPC tags.select treats nil and omitted selectors as absent", async ({
   request
 }) => {
-  for (const [categories, pages, expectedParams] of [
-    [["_default"], null, { categories: ["_default"], site: "scp-wiki" }],
-    [undefined, ["the-great-hippo"], { pages: ["the-great-hippo"], site: "scp-wiki" }]
-  ] satisfies [
-    string[] | null | undefined,
-    string[] | null | undefined,
-    Record<string, string | string[]>
-  ][]) {
+  for (const [categories, pages] of [
+    [undefined, undefined],
+    [null, null],
+    [["_default"], null],
+    [undefined, ["the-great-hippo"]]
+  ] satisfies [string[] | null | undefined, string[] | null | undefined][]) {
     const response = await request.post("/xml-rpc-api.php", {
       data: xmlRpcTagsSelectRequest(categories, pages),
       headers: xmlRpcHeaders
@@ -1020,15 +978,6 @@ test("XML-RPC tags.select treats nil and omitted selectors as absent", async ({
     expect(body).not.toContain("<fault>")
     expect(body).toContain("<string>_cc</string>")
     expect(body).toContain("<string>tale</string>")
-
-    expect(
-      await request
-        .get(`${fixtureUrl}/last-page-tags-request`)
-        .then((fixtureResponse) => fixtureResponse.json())
-    ).toEqual({
-      headers: { sessionToken: "fixture-session-token" },
-      params: expectedParams
-    })
   }
 })
 

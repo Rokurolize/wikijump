@@ -181,11 +181,19 @@
     "api-tags-select": {
       "status": "in_progress",
       "confirmed_public_seams": [
-        "Published XML-RPC POST /xml-rpc-api.php tags.select boundary backed by the public Deepwell fixture"
+        "Published XML-RPC POST /xml-rpc-api.php tags.select boundary"
       ],
       "tests": [
-        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select rejects categories and pages together before external work",
-        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select treats nil and omitted selectors as absent"
+        {
+          "path": "framerail/tests/xmlrpc-api.spec.ts",
+          "name": "XML-RPC tags.select rejects categories and pages together before selector caps",
+          "scope": "Public XML-RPC POST response coverage verifies that both selector fields, including two empty arrays, fail with fault -32602 and the exact mutual-exclusion message; an over-cap mixed request verifies that fault takes precedence over existing selector-cap faults."
+        },
+        {
+          "path": "framerail/tests/xmlrpc-api.spec.ts",
+          "name": "XML-RPC tags.select treats nil and omitted selectors as absent",
+          "scope": "Public XML-RPC POST response coverage verifies successful tag output for site-only, two nil selectors, categories plus nil pages, and omitted categories plus pages."
+        }
       ],
       "implementation_files": [
         "framerail/src/lib/server/xmlrpc/resource-methods.ts"
@@ -195,7 +203,7 @@
       ],
       "live_oracle_evidence": [],
       "unresolved_ambiguities_or_blockers": [
-        "This bounded slice enforces categories/pages mutual exclusion and preserves the documented selector caps and existing single-selector behavior; it does not establish complete tags.select parity or generic unknown-key rejection."
+        "This bounded slice enforces categories/pages mutual exclusion and preserves existing selector caps and single-selector behavior; it does not establish complete tags.select parity or generic unknown-key rejection."
       ]
     },
     "api-users-get-me": {
