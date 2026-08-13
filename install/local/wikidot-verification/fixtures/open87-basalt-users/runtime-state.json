@@ -1,0 +1,76 @@
+{
+  "schema": "wikijump_syntax_differential.runtime_state_fixture.v1",
+  "captured_at": "2026-08-11T23:48:23.973Z",
+  "capture_source": {
+    "kind": "frozen-live-reference",
+    "report": "/home/roku/wjlab/evidence/open87-5f1-live-reference-policy-v9-attempt01/standing-browser-live-reference.json",
+    "report_sha256": "2d3b98a9f04767f396b9e3f4d6f2f1881f78d3a270a4bf5c5c22d939fc72ae4f",
+    "user_evidence": [
+      {
+        "source": "install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl",
+        "capture_file_sha256": "17ec06b4d731c8772111d19806487dbb0c57d587b448d79db43072b04b0a0c2f",
+        "captured_at": "2026-08-11T23:48:23.973Z",
+        "capture_line": 1,
+        "site": "scp-wiki",
+        "slug": "theme:basalt",
+        "wikidot_url": "https://scp-wiki.wikidot.com/theme:basalt",
+        "page_identity": 1312334753,
+        "saved_source_sha256": "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+        "wikidot_html_sha256": "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52",
+        "raw_live_dom": {
+          "path": "/home/roku/wjlab/evidence/ftml-pin-2e5be6f2-conditional-canary/browser-rendering-candidate-final2/EN_theme_basalt-63ed4b2bb703/live.dom.html",
+          "sha256": "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52"
+        }
+      }
+    ]
+  },
+  "roots": [],
+  "unresolved_pages": [],
+  "pages": [],
+  "absent_pages": [],
+  "categories": [],
+  "wikidot_users": [
+    {
+      "user_id": 3781861,
+      "name": "EstrellaYoshte",
+      "slug": "estrellayoshte",
+      "provenance": {
+        "source": "install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl",
+        "capture_file_sha256": "17ec06b4d731c8772111d19806487dbb0c57d587b448d79db43072b04b0a0c2f",
+        "captured_at": "2026-08-11T23:48:23.973Z",
+        "capture_line": 1,
+        "page_identity": 1312334753,
+        "saved_source_sha256": "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+        "wikidot_html_sha256": "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52"
+      }
+    },
+    {
+      "user_id": 6254643,
+      "name": "Liryn",
+      "slug": "liryn",
+      "provenance": {
+        "source": "install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl",
+        "capture_file_sha256": "17ec06b4d731c8772111d19806487dbb0c57d587b448d79db43072b04b0a0c2f",
+        "captured_at": "2026-08-11T23:48:23.973Z",
+        "capture_line": 1,
+        "page_identity": 1312334753,
+        "saved_source_sha256": "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+        "wikidot_html_sha256": "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52"
+      }
+    },
+    {
+      "user_id": 6536693,
+      "name": "Placeholder McD",
+      "slug": "placeholder-mcd",
+      "provenance": {
+        "source": "install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl",
+        "capture_file_sha256": "17ec06b4d731c8772111d19806487dbb0c57d587b448d79db43072b04b0a0c2f",
+        "captured_at": "2026-08-11T23:48:23.973Z",
+        "capture_line": 1,
+        "page_identity": 1312334753,
+        "saved_source_sha256": "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+        "wikidot_html_sha256": "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52"
+      }
+    }
+  ]
+}

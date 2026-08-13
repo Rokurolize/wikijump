@@ -8555,6 +8555,155 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
 }
 
 #[tokio::test]
+async fn basalt_runtime_state_users_rerender_identity_profile_subtrees() {
+    let runtime_state: serde_json::Value = serde_json::from_str(include_str!(
+        "../../install/local/wikidot-verification/fixtures/open87-basalt-users/runtime-state.json"
+    ))
+    .expect("the committed Basalt runtime-state fixture should be valid JSON");
+    let evidence: serde_json::Value = serde_json::from_str(include_str!(
+        "../../install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl"
+    ))
+    .expect("the committed Basalt evidence projection should be valid JSON");
+    let fixture_users = runtime_state["wikidot_users"]
+        .as_array()
+        .expect("the Basalt runtime-state fixture should contain Wikidot users");
+    let evidence_users = evidence["users"]
+        .as_array()
+        .expect("the Basalt evidence projection should contain user counts");
+    assert_eq!(fixture_users.len(), 3);
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let transaction = runner.context().transaction();
+    for user in fixture_users {
+        let user_id = user["user_id"]
+            .as_i64()
+            .expect("fixture user ID should be an integer");
+        let name = user["name"]
+            .as_str()
+            .expect("fixture user name should be a string");
+        let slug = user["slug"]
+            .as_str()
+            .expect("fixture user slug should be a string");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "INSERT INTO known_user (user_id) VALUES ($1)",
+                [Value::from(user_id)],
+            ))
+            .await
+            .expect("Basalt known-user fixture row should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO wikidot_user (",
+                    "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                    ") VALUES ($1, NOW() - INTERVAL '1 second', NOW(), FALSE, $2, $3, 0, FALSE)",
+                ),
+                [
+                    Value::from(user_id),
+                    Value::from(name.to_owned()),
+                    Value::from(slug.to_owned()),
+                ],
+            ))
+            .await
+            .expect("Basalt Wikidot user fixture row should be inserted");
+    }
+
+    let basalt = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site.site_id, "page": "theme:basalt"}),
+    )
+    .expect("the seeded Basalt page should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: Some(Reference::Id(basalt.page_id)),
+    });
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site.site.site_id,
+            "category_id": basalt.page_category_id,
+            "page_id": basalt.page_id,
+        }),
+    );
+    let basalt = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site.site_id,
+            "page": "theme:basalt",
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("the seeded Basalt page should exist after rerender");
+    let html = basalt
+        .compiled_body_html
+        .expect("the rerendered Basalt page should include compiled HTML");
+    assert_eq!(
+        html.matches(r#"<span class="printuser avatarhover">"#)
+            .count(),
+        evidence["occurrences"]["source_total"]
+            .as_u64()
+            .expect("source total should be an integer") as usize,
+    );
+
+    let more_memos_prefix = concat!(
+        r#"<div class="collapsible-block"><div class="collapsible-block-folded">"#,
+        r#"<a class="collapsible-block-link" href="javascript:;">+&nbsp;More&nbsp;memos</a></div>"#,
+        r#"<div class="collapsible-block-unfolded" style="display:none">"#,
+    );
+    assert_eq!(html.matches(more_memos_prefix).count(), 1);
+    let more_memos_start = html
+        .find(more_memos_prefix)
+        .expect("the + More memos collapsible should exist");
+    let collapsed_content = html[more_memos_start..]
+        .find(r#"<div class="collapsible-block-content">"#)
+        .map(|offset| more_memos_start + offset)
+        .expect("the + More memos collapsible should have content");
+    let collapsed_end = html[collapsed_content..]
+        .find("</div></div>")
+        .map(|offset| collapsed_content + offset)
+        .expect("the + More memos content should close");
+    let collapsed_html = &html[collapsed_content..collapsed_end];
+
+    for user in fixture_users {
+        let user_id = user["user_id"].as_i64().expect("fixture user ID");
+        let name = user["name"].as_str().expect("fixture user name");
+        let slug = user["slug"].as_str().expect("fixture user slug");
+        let counts = evidence_users
+            .iter()
+            .find(|entry| entry["user_id"].as_i64() == Some(user_id))
+            .expect("each runtime-state user should have evidence counts");
+        let occurrences = counts["source_occurrences"]
+            .as_u64()
+            .expect("source occurrences should be an integer")
+            as usize;
+        let profile = format!("http://www.wikidot.com/user:info/{slug}");
+        let onclick =
+            format!("WIKIDOT.page.listeners.userInfo({user_id}); return false;");
+        let avatar_prefix = format!(
+            r#"<span class="printuser avatarhover"><a href="{profile}" onclick="{onclick}"><img class="small" "#,
+        );
+        let name_suffix =
+            format!(r#"</a><a href="{profile}" onclick="{onclick}">{name}</a></span>"#,);
+        assert_eq!(html.matches(&avatar_prefix).count(), occurrences, "{html}");
+        assert_eq!(html.matches(&name_suffix).count(), occurrences, "{html}");
+
+        if counts["source_occurrences"] != counts["rendered_avatar_occurrences"] {
+            assert_eq!(collapsed_html.matches(&avatar_prefix).count(), 1, "{html}");
+            assert_eq!(collapsed_html.matches(&name_suffix).count(), 1, "{html}");
+        }
+    }
+}
+
+#[tokio::test]
 async fn listusers_module_matches_live_preview_and_runtime_viewer() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

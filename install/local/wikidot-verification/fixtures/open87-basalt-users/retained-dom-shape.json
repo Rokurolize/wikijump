@@ -1,0 +1,30 @@
+{
+  "schema": "wikijump.open87_basalt_retained_printuser_dom.v1",
+  "source": {
+    "path": "/home/roku/wjlab/evidence/ftml-pin-2e5be6f2-conditional-canary/browser-rendering-candidate-final2/EN_theme_basalt-63ed4b2bb703/live.dom.html",
+    "sha256": "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52",
+    "site": "scp-wiki",
+    "slug": "theme:basalt",
+    "page_identity": 1312334753
+  },
+  "printusers": [
+    {
+      "user_id": 3781861,
+      "name": "EstrellaYoshte",
+      "slug": "estrellayoshte",
+      "html": "<span class=\"printuser avatarhover\"><a href=\"http://www.wikidot.com/user:info/estrellayoshte\" onclick=\"WIKIDOT.page.listeners.userInfo(3781861); return false;\"><img class=\"small\" src=\"https://www.wikidot.com/avatar.php?userid=3781861&amp;amp;size=small&amp;amp;timestamp=1781455776\" alt=\"EstrellaYoshte\" style=\"background-image:url(https://www.wikidot.com/userkarma.php?u=3781861)\"></a><a href=\"http://www.wikidot.com/user:info/estrellayoshte\" onclick=\"WIKIDOT.page.listeners.userInfo(3781861); return false;\">EstrellaYoshte</a></span>"
+    },
+    {
+      "user_id": 6254643,
+      "name": "Liryn",
+      "slug": "liryn",
+      "html": "<span class=\"printuser avatarhover\"><a href=\"http://www.wikidot.com/user:info/liryn\" onclick=\"WIKIDOT.page.listeners.userInfo(6254643); return false;\"><img class=\"small\" src=\"https://www.wikidot.com/avatar.php?userid=6254643&amp;amp;size=small&amp;amp;timestamp=1781455776\" alt=\"Liryn\" style=\"background-image:url(https://www.wikidot.com/userkarma.php?u=6254643)\"></a><a href=\"http://www.wikidot.com/user:info/liryn\" onclick=\"WIKIDOT.page.listeners.userInfo(6254643); return false;\">Liryn</a></span>"
+    },
+    {
+      "user_id": 6536693,
+      "name": "Placeholder McD",
+      "slug": "placeholder-mcd",
+      "html": "<span class=\"printuser avatarhover\"><a href=\"http://www.wikidot.com/user:info/placeholder-mcd\" onclick=\"WIKIDOT.page.listeners.userInfo(6536693); return false;\"><img class=\"small\" src=\"https://www.wikidot.com/avatar.php?userid=6536693&amp;amp;size=small&amp;amp;timestamp=1781455776\" alt=\"Placeholder McD\" style=\"background-image:url(https://www.wikidot.com/userkarma.php?u=6536693)\"></a><a href=\"http://www.wikidot.com/user:info/placeholder-mcd\" onclick=\"WIKIDOT.page.listeners.userInfo(6536693); return false;\">Placeholder McD</a></span>"
+    }
+  ]
+}
