@@ -125,15 +125,27 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "api-pages-save-one": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Published authenticated XML-RPC POST /xml-rpc-api.php pages.save_one boundary backed by the public Deepwell fixture"
+      ],
+      "tests": [
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects a non-boolean notify_watchers value before Deepwell access",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects enabled watcher notifications before Deepwell access",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one treats omitted, nil, and false notify_watchers as disabled",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one preserves existing field and save_mode fault precedence"
+      ],
+      "implementation_files": [
+        "framerail/src/lib/server/xmlrpc/parameters.ts",
+        "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+      ],
       "documentation_evidence": [
         "specifications/api/api-pages-save-one.md"
       ],
       "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "Actual watcher notification delivery is not implemented. The documented notify_watchers=true input fails closed locally with XML-RPC fault -32602; live Wikidot compatibility for delivery recipients, timing, side effects, and the true-path return behavior remains unobserved. This bounded slice establishes only omitted, nil, and false disabled behavior, type validation, fail-closed true behavior, existing fault precedence, and pre-Deepwell failure atomicity."
+      ]
     },
     "api-pages-select": {
       "status": "pending",
