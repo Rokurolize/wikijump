@@ -1905,6 +1905,82 @@ test("pages.save_one rejects enabled watcher notifications without saving a page
   await expectXmlRpcPageMissing(request, page)
 })
 
+test("pages.save_one leaves an existing page unchanged when watcher notifications are enabled", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-update-${randomUUID()}`
+  const originalTitle = "Watcher notification baseline title"
+  const originalContent = "Watcher notification baseline content."
+  const originalTag = "watcher-notification-baseline"
+  const rejectedTitle = "Rejected watcher notification title"
+  const rejectedContent = "Rejected watcher notification content."
+  const rejectedTag = "rejected-watcher-notification"
+
+  const createResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      title: originalTitle,
+      content: originalContent,
+      tags: [originalTag],
+      saveMode: "create"
+    }),
+    headers: xmlRpcHeaders
+  })
+  expect(createResponse.status()).toBe(200)
+  expect(await createResponse.text()).not.toContain("<fault>")
+
+  const baselineResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(baselineResponse.status()).toBe(200)
+  const baselineBody = await baselineResponse.text()
+  expect(baselineBody).toContain(
+    `<name>title</name><value><string>${originalTitle}</string></value>`
+  )
+  expect(baselineBody).toContain(
+    `<name>content</name><value><string>${originalContent}</string></value>`
+  )
+  expect(baselineBody).toContain(
+    `<name>tags</name><value><array><data><value><string>${originalTag}</string></value></data></array></value>`
+  )
+
+  const updateResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      title: rejectedTitle,
+      content: rejectedContent,
+      tags: [rejectedTag],
+      saveMode: "update",
+      notifyWatchersValue: "<boolean>1</boolean>"
+    }),
+    headers: xmlRpcHeaders
+  })
+  expect(updateResponse.status()).toBe(200)
+  const updateBody = await updateResponse.text()
+  expect(updateBody).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(updateBody).toContain("pages.save_one notify_watchers is not implemented")
+
+  const finalResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(finalResponse.status()).toBe(200)
+  const finalBody = await finalResponse.text()
+  expect(finalBody).toContain(
+    `<name>title</name><value><string>${originalTitle}</string></value>`
+  )
+  expect(finalBody).toContain(
+    `<name>content</name><value><string>${originalContent}</string></value>`
+  )
+  expect(finalBody).toContain(
+    `<name>tags</name><value><array><data><value><string>${originalTag}</string></value></data></array></value>`
+  )
+  expect(finalBody).not.toContain(rejectedTitle)
+  expect(finalBody).not.toContain(rejectedContent)
+  expect(finalBody).not.toContain(rejectedTag)
+})
+
 test("pages.save_one treats omitted, nil, and false notify_watchers as disabled", async ({
   request
 }) => {

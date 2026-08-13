@@ -132,6 +132,7 @@
       "tests": [
         "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects a non-boolean notify_watchers value without saving a page",
         "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects enabled watcher notifications without saving a page",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one leaves an existing page unchanged when watcher notifications are enabled",
         "framerail/tests/xmlrpc-api.spec.ts#pages.save_one treats omitted, nil, and false notify_watchers as disabled",
         "framerail/tests/xmlrpc-api.spec.ts#pages.save_one preserves revision_comment and save_mode validation precedence"
       ],
@@ -144,7 +145,7 @@
       ],
       "live_oracle_evidence": [],
       "unresolved_ambiguities_or_blockers": [
-        "Actual watcher notification delivery is not implemented. The documented notify_watchers=true input fails closed locally with XML-RPC fault -32602; live Wikidot compatibility for delivery recipients, timing, side effects, and the true-path return behavior remains unobserved. This bounded slice establishes only omitted, nil, and false disabled behavior, type validation, fail-closed true behavior, revision_comment and save_mode validation precedence, and the publicly observable no-save outcome for rejected requests."
+        "Actual watcher notification delivery is not implemented. The documented notify_watchers=true input fails closed locally with XML-RPC fault -32602; live Wikidot compatibility for delivery recipients, timing, side effects, and the true-path return behavior remains unobserved. This bounded slice establishes only omitted, nil, and false disabled behavior, type validation, fail-closed true behavior, revision_comment and save_mode validation precedence, and the publicly observable outcomes that rejected requests neither create a new page nor change an existing page."
       ]
     },
     "api-pages-select": {
