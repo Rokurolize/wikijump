@@ -27,6 +27,18 @@ const emptyPageReadRequests = {
   siteGet: [],
   voteList: []
 }
+const emptyPageWriteRequests = {
+  login: [],
+  pageCreate: [],
+  pageEdit: [],
+  pageRollback: [],
+  pageMove: [],
+  parentGetAll: [],
+  parentUpdate: [],
+  sessionGet: [],
+  userGet: [],
+  voteSet: []
+}
 
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
@@ -152,7 +164,25 @@ const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
-const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
+function xmlRpcTagsSelectRequest(
+  categories: string[] | null | undefined,
+  pages: string[] | null | undefined
+): string {
+  const selectorMember = (
+    name: "categories" | "pages",
+    values: string[] | null | undefined
+  ): string => {
+    if (values === undefined) return ""
+    const value =
+      values === null
+        ? "<nil />"
+        : `<array><data>${values
+            .map((entry) => `<value><string>${xmlEscape(entry)}</string></value>`)
+            .join("")}</data></array>`
+    return `<member><name>${name}</name><value>${value}</value></member>`
+  }
+
+  return `<?xml version="1.0"?>
 <methodCall>
   <methodName>tags.select</methodName>
   <params>
@@ -160,13 +190,14 @@ const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>categories</name><value><array><data><value><string>_default</string></value></data></array></value></member>
-          <member><name>pages</name><value><array><data><value><string>the-great-hippo</string></value></data></array></value></member>
+          ${selectorMember("categories", categories)}
+          ${selectorMember("pages", pages)}
         </struct>
       </value>
     </param>
   </params>
 </methodCall>`
+}
 
 const xmlRpcPagesSelectRequest = `<?xml version="1.0"?>
 <methodCall>
@@ -919,29 +950,86 @@ test("XML-RPC endpoint selects local categories", async ({ request }) => {
   expect(categoriesBody).toContain("<string>nav</string>")
 })
 
-test("XML-RPC endpoint selects local tags", async ({ request }) => {
-  const tagsResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcTagsSelectRequest,
-    headers: xmlRpcHeaders
-  })
+test("XML-RPC tags.select rejects categories and pages together before external work", async ({
+  request
+}) => {
+  for (const [categories, pages] of [
+    [[], []],
+    [["_default"], ["the-great-hippo"]],
+    [Array.from({ length: 101 }, (_, index) => `category-${index}`), ["page"]]
+  ] satisfies [string[], string[]][]) {
+    expect(
+      await request
+        .get(`${fixtureUrl}/last-page-read-requests`)
+        .then((response) => response.status())
+    ).toBe(200)
+    expect(
+      await request
+        .get(`${fixtureUrl}/last-page-write-requests`)
+        .then((response) => response.status())
+    ).toBe(200)
 
-  expect(tagsResponse.status()).toBe(200)
-  const tagsBody = await tagsResponse.text()
-  expect(tagsBody).toContain("<string>_cc</string>")
-  expect(tagsBody).toContain("<string>tale</string>")
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest(categories, pages),
+      headers: xmlRpcHeaders
+    })
 
-  const deepwellRequest = await request.get(`${fixtureUrl}/last-page-tags-request`)
-  expect(deepwellRequest.status()).toBe(200)
-  expect(await deepwellRequest.json()).toEqual({
-    headers: {
-      sessionToken: "fixture-session-token"
-    },
-    params: {
-      categories: ["_default"],
-      pages: ["the-great-hippo"],
-      site: "scp-wiki"
-    }
-  })
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).toContain("<fault>")
+    expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+    expect(body).toContain("tags.select accepts categories or pages, not both")
+    expect(body).not.toContain("is limited to")
+
+    expect(
+      await request
+        .get(`${fixtureUrl}/last-page-read-requests`)
+        .then((fixtureResponse) => fixtureResponse.json())
+    ).toEqual(emptyPageReadRequests)
+    expect(
+      await request
+        .get(`${fixtureUrl}/last-page-write-requests`)
+        .then((fixtureResponse) => fixtureResponse.json())
+    ).toEqual(emptyPageWriteRequests)
+    expect(
+      await request
+        .get(`${fixtureUrl}/last-page-tags-request`)
+        .then((fixtureResponse) => fixtureResponse.json())
+    ).toBeNull()
+  }
+})
+
+test("XML-RPC tags.select treats nil and omitted selectors as absent", async ({
+  request
+}) => {
+  for (const [categories, pages, expectedParams] of [
+    [["_default"], null, { categories: ["_default"], site: "scp-wiki" }],
+    [undefined, ["the-great-hippo"], { pages: ["the-great-hippo"], site: "scp-wiki" }]
+  ] satisfies [
+    string[] | null | undefined,
+    string[] | null | undefined,
+    Record<string, string | string[]>
+  ][]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest(categories, pages),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain("<string>_cc</string>")
+    expect(body).toContain("<string>tale</string>")
+
+    expect(
+      await request
+        .get(`${fixtureUrl}/last-page-tags-request`)
+        .then((fixtureResponse) => fixtureResponse.json())
+    ).toEqual({
+      headers: { sessionToken: "fixture-session-token" },
+      params: expectedParams
+    })
+  }
 })
 
 test("XML-RPC endpoint selects pages with documented filters and ordering", async ({

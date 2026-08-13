@@ -179,15 +179,24 @@
       ]
     },
     "api-tags-select": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Published XML-RPC POST /xml-rpc-api.php tags.select boundary backed by the public Deepwell fixture"
+      ],
+      "tests": [
+        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select rejects categories and pages together before external work",
+        "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select treats nil and omitted selectors as absent"
+      ],
+      "implementation_files": [
+        "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+      ],
       "documentation_evidence": [
         "specifications/api/api-tags-select.md"
       ],
       "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "This bounded slice enforces categories/pages mutual exclusion and preserves the documented selector caps and existing single-selector behavior; it does not establish complete tags.select parity or generic unknown-key rejection."
+      ]
     },
     "api-users-get-me": {
       "status": "pending",
