@@ -1995,6 +1995,268 @@ async fn imported_page_layout_provenance_preserves_explicit_page_override() {
 }
 
 #[tokio::test]
+async fn initial_page_creation_uses_destination_category_layout() {
+    const SITE_SLUG: &str = "test";
+    const CATEGORY_SLUG: &str = "category-layout-create";
+    const PAGE_SLUG: &str = "category-layout-create:page";
+    const LAYOUT_MARKER: &str = "destination category layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikidot",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Fixture-only setup: category layout has no registered update endpoint.
+    // This immutable precondition must not be used to observe create behavior.
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, CATEGORY_SLUG)
+            .await
+            .expect("destination category fixture should exist");
+    let mut category = category.into_active_model();
+    category.layout = Set(Some("wikijump".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("destination category layout fixture should update");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Category layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create category layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><code class="wj-monospace">{LAYOUT_MARKER}</code></p>"#),
+        "the stored public body should use the destination category layout",
+    );
+}
+
+#[tokio::test]
+async fn initial_page_creation_explicit_layout_beats_destination_category_layout() {
+    const SITE_SLUG: &str = "test";
+    const CATEGORY_SLUG: &str = "explicit-layout-create";
+    const PAGE_SLUG: &str = "explicit-layout-create:page";
+    const LAYOUT_MARKER: &str = "explicit page layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikijump",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Fixture-only setup: category layout has no registered update endpoint.
+    // This immutable precondition must not be used to observe create behavior.
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, CATEGORY_SLUG)
+            .await
+            .expect("destination category fixture should exist");
+    let mut category = category.into_active_model();
+    category.layout = Set(Some("wikijump".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("destination category layout fixture should update");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Explicit page layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create explicit layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><tt>{LAYOUT_MARKER}</tt></p>"#),
+        "the stored public body should use the explicit page layout",
+    );
+}
+
+#[tokio::test]
+async fn initial_page_creation_without_category_override_uses_site_layout() {
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "site-layout-create:page";
+    const LAYOUT_MARKER: &str = "site fallback layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikidot",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Site fallback layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create site fallback layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><tt>{LAYOUT_MARKER}</tt></p>"#),
+        "the stored public body should fall back to the site layout",
+    );
+}
+
+#[tokio::test]
 async fn basic_edit() {
     let mut runner = TestRunner::setup().await;
 
@@ -38226,6 +38488,134 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
         slugs,
         ["zcategory:alpha", "acategory:beta", "mcategory:gamma"],
         "PageSlug order should sort by page slug, not by full category-qualified slug",
+    );
+}
+
+#[tokio::test]
+async fn page_query_revision_order_keeps_unrequested_count_out_of_results() {
+    const LOW_SLUG: &str = "page-query-revision-order-low";
+    const HIGH_SLUG: &str = "page-query-revision-order-high";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        LOW_SLUG,
+        "PageQuery revision-order low",
+        "one revision",
+    )
+    .await;
+    let high_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HIGH_SLUG,
+        "PageQuery revision-order high",
+        "first revision",
+    )
+    .await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(HIGH_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": HIGH_SLUG,
+            "last_revision_id": high_revision,
+            "revision_comments": "add second PageQuery revision-order revision",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("revision-order high fixture edit should create a revision");
+
+    let fixture_slugs = [Cow::Borrowed(LOW_SLUG), Cow::Borrowed(HIGH_SLUG)];
+    let mut query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        range: RangeSelector::Current,
+        name: None,
+        slug: None,
+        slugs: &fixture_slugs,
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::Revisions,
+            ascending: false,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(10),
+            ..Default::default()
+        },
+        variables: &[],
+        fields: FoundPageFields {
+            slug: true,
+            revision_count: false,
+            ..Default::default()
+        },
+    };
+
+    let ordered = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ordering-only revision query should succeed");
+    assert_eq!(
+        ordered
+            .pages
+            .iter()
+            .map(|row| row.slug.as_deref())
+            .collect::<Vec<_>>(),
+        [Some(HIGH_SLUG), Some(LOW_SLUG)],
+        "the internally projected count must still control revision ordering",
+    );
+    assert!(
+        ordered.pages.iter().all(|row| row.revision_count.is_none()),
+        "revision ordering must not expose an unrequested public result field",
+    );
+
+    query.fields.revision_count = true;
+    let requested = PageQueryService::find(runner.context(), query)
+        .await
+        .expect("revision query with requested count should succeed");
+    assert_eq!(
+        requested
+            .pages
+            .iter()
+            .map(|row| (row.slug.as_deref(), row.revision_count))
+            .collect::<Vec<_>>(),
+        [(Some(HIGH_SLUG), Some(2)), (Some(LOW_SLUG), Some(1))],
     );
 }
 

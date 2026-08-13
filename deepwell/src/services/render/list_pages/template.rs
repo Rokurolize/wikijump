@@ -722,6 +722,7 @@ fn found_page_fields(variables: ListPagesVariables) -> FoundPageFields {
         score: variables.contains(ListPagesVariable::Rating)
             || variables.contains(ListPagesVariable::RatingPercent)
             || rating_votes,
+        revision_count: variables.contains(ListPagesVariable::Revisions),
         ..Default::default()
     }
 }
@@ -791,6 +792,7 @@ mod tests {
                 updated_at: true,
                 updated_by: true,
                 score: true,
+                revision_count: true,
                 ..Default::default()
             }
         );

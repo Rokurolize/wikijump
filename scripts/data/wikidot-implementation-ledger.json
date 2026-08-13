@@ -125,15 +125,28 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "api-pages-save-one": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Published authenticated XML-RPC POST /xml-rpc-api.php pages.save_one boundary backed by the public Deepwell fixture"
+      ],
+      "tests": [
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects a non-boolean notify_watchers value without saving a page",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects enabled watcher notifications without saving a page",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one leaves an existing page unchanged when watcher notifications are enabled",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one treats omitted, nil, and false notify_watchers as disabled",
+        "framerail/tests/xmlrpc-api.spec.ts#pages.save_one validates each of revision_comment and save_mode before notify_watchers"
+      ],
+      "implementation_files": [
+        "framerail/src/lib/server/xmlrpc/parameters.ts",
+        "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+      ],
       "documentation_evidence": [
         "specifications/api/api-pages-save-one.md"
       ],
       "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "Actual watcher notification delivery is not implemented. The documented notify_watchers=true input fails closed locally with XML-RPC fault -32602; live Wikidot compatibility for delivery recipients, timing, side effects, and the true-path return behavior remains unobserved. This bounded slice establishes only omitted, nil, and false disabled behavior, type validation, fail-closed true behavior, revision_comment validation and save_mode validation each preceding notify_watchers validation, and the publicly observable outcomes that rejected requests neither create a new page nor change an existing page."
+      ]
     },
     "api-pages-select": {
       "status": "pending",
@@ -878,9 +891,15 @@
       "confirmed_public_seams": [
         "Live generated create/edit input and textarea DOM, regex validation, exact saved source, and default table display",
         "Deepwell public missing/found page view and ListPages field-query/render seams",
+        "Deepwell registered page-create, page-edit, page-view, and ListPages rendering lifecycle for canonical empty explicit and implicit text scalars",
         "Framerail public generated data-form create/edit browser flow"
       ],
       "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "scope": "registered public endpoints verify that canonical quoted-empty explicit and implicit text values survive create, edit, editor restoration, anonymous default-table view, and ListPages variables; text null and quoted-empty select records remain fail-closed while select null remains accepted"
+        },
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_text_and_select_control_contract",
@@ -1931,6 +1950,16 @@
         {
           "path": "deepwell/tests/list_pages.rs",
           "scope": "public ListPages and CountPages endpoint/render integration tests"
+        },
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
+          "scope": "public page-edit, move, delete, restore, and wikidot_page_preview regression verifies imported snapshot revision counts add only local-origin revisions, drive order=revisions and %%revisions%% from one value, omit the deleted page, restore at baseline plus four, leave a native page on its actual stored count, and preserve the original module for both ascending and descending revision ordering—with or without %%revisions%%—when a rollback-scoped malformed snapshot has a negative source count"
+        },
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "imported_revision_count_current_page_only_adds_local_revisions",
+          "scope": "public page-edit, page-rerender, and page-get regression verifies current-page-only ListPages renders an imported snapshot baseline plus its local-origin edit through the optimized current-page query path"
         },
         {
           "path": "deepwell/tests/page.rs",

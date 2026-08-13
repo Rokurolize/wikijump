@@ -1314,6 +1314,253 @@ quoted: false_value"#;
 }
 
 #[tokio::test]
+async fn empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle() {
+    const CATEGORY: &str = "data-form-empty-text-lifecycle";
+    const TEMPLATE_SLUG: &str = "data-form-empty-text-lifecycle:_template";
+    const TARGET_SLUG: &str = "data-form-empty-text-lifecycle:saved";
+    const EMPTY_SOURCE: &str = "explicit: ''\nimplicit: ''\nchoice: null";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  explicit:\n",
+        "    label: Explicit text\n",
+        "    type: text\n",
+        "  implicit:\n",
+        "    label: Implicit text\n",
+        "  choice:\n",
+        "    label: Choice\n",
+        "    type: select\n",
+        "    values:\n",
+        "      a: Alpha\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell empty text data-form lifecycle test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form target category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-empty-text-lifecycle-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let page = create_page(&mut runner, site_id, TARGET_SLUG, EMPTY_SOURCE).await;
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, EMPTY_SOURCE);
+            assert_eq!(
+                data_form.values,
+                BTreeMap::from([
+                    ("choice".to_owned(), String::new()),
+                    ("explicit".to_owned(), String::new()),
+                    ("implicit".to_owned(), String::new()),
+                ]),
+            );
+        }
+        other => {
+            panic!("expected canonical empty values immediately after create: {other:?}")
+        }
+    }
+
+    set_page_actor(&mut runner, site_id, TARGET_SLUG);
+    let populated = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TARGET_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "populate data-form fields",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "explicit: alpha\nimplicit: beta\nchoice: a",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("populated data-form edit should create a revision");
+    let emptied = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TARGET_SLUG,
+            "last_revision_id": populated.revision_id,
+            "revision_comments": "empty data-form text fields",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": EMPTY_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        emptied.is_some(),
+        "empty data-form edit should create a revision"
+    );
+
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => {
+            panic!("expected empty text values in the data-form editor, got {other:?}")
+        }
+    };
+    assert_eq!(
+        editor.values,
+        BTreeMap::from([
+            ("choice".to_owned(), String::new()),
+            ("explicit".to_owned(), String::new()),
+            ("implicit".to_owned(), String::new()),
+        ]),
+    );
+
+    let rendered_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": TARGET_SLUG, "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            compiled_body_html,
+            ..
+        } => compiled_body_html,
+        other => panic!("expected rendered empty data-form page, got {other:?}"),
+    };
+    assert!(rendered_html.contains("Explicit text"), "{rendered_html}");
+    assert!(rendered_html.contains("Implicit text"), "{rendered_html}");
+    assert!(!rendered_html.contains("alpha"), "{rendered_html}");
+    assert!(!rendered_html.contains("beta"), "{rendered_html}");
+
+    let index_source = concat!(
+        "[[module ListPages category=\"data-form-empty-text-lifecycle\" name=\"saved\" separate=\"no\" wrapper=\"no\"]]\n",
+        "EMPTY-TEXT-BEGIN|%%form_data{explicit}%%|%%form_raw{implicit}%%|EMPTY-TEXT-END\n",
+        "[[/module]]",
+    );
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-empty-text-lifecycle-index",
+        index_source,
+    )
+    .await;
+    let listpages_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-empty-text-lifecycle-index",
+                "extra": ""
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected rendered ListPages page, got {other:?}"),
+    };
+    assert!(
+        listpages_html.contains("EMPTY-TEXT-BEGIN|||EMPTY-TEXT-END"),
+        "ListPages must resolve canonical empty text values:\n{listpages_html}",
+    );
+
+    for (slug, source) in [
+        (
+            "data-form-empty-text-lifecycle:text-null",
+            "explicit: null\nimplicit: ''\nchoice: null",
+        ),
+        (
+            "data-form-empty-text-lifecycle:select-empty-string",
+            "explicit: ''\nimplicit: ''\nchoice: ''",
+        ),
+    ] {
+        create_page(&mut runner, site_id, slug, source).await;
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": slug, "extra": "/edit" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: None,
+                wikitext,
+                ..
+            } => assert_eq!(wikitext, source),
+            other => panic!("noncanonical empty scalar must fail closed: {other:?}"),
+        }
+    }
+}
+
+#[tokio::test]
 async fn page_view_exposes_live_checkbox_and_wiki_contract() {
     const CATEGORY: &str = "data-form-checkbox-wiki-contract";
     const TEMPLATE_SOURCE: &str = concat!(

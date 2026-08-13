@@ -104,6 +104,20 @@ export function getOptionalStructString(
   return value
 }
 
+export function getOptionalStructBoolean(
+  params: XmlRpcStruct,
+  name: string
+): boolean | null {
+  const value = params[name]
+  if (value === undefined || value === null) {
+    return null
+  }
+  if (typeof value !== "boolean") {
+    throw new XmlRpcFault(-32602, `Expected boolean field: ${name}`)
+  }
+  return value
+}
+
 export function getOptionalStructStringOrInt(
   params: XmlRpcStruct,
   name: string

@@ -42,7 +42,7 @@ use super::super::list_pages::{
     list_pages_content_query_target, list_pages_feed_info_html,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
-    list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
+    list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url, parse_list_pages_date_selector,
     push_list_pages_pager, register_generated_list_pages_html, render_list_pages_tags,
@@ -2758,6 +2758,7 @@ fn neutralizes_compat_markers_composed_by_list_pages_substitution() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let mut substituted = substitute_list_pages_variables(
         r#"<div id="ml-1" data-wikijump-%%title%%"#,
@@ -3217,6 +3218,7 @@ fn accepts_corpus_list_pages_comments_placeholder() {
             updated_at: None,
             updated_by: None,
             score: Some(12.0),
+            revision_count: None,
         },
         1,
         1,
@@ -3249,6 +3251,7 @@ fn substitutes_wikidot_list_pages_size_from_saved_source_scalar_values() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -3298,6 +3301,7 @@ fn substitutes_wikidot_list_pages_content_sections() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let wikitext = concat!(
         "=====\n",
@@ -3373,6 +3377,7 @@ fn substitutes_static_wikidot_data_form_variables() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let values = parse_static_wikidot_data_form_values(
         "codexkind: alpha\ncodexflag: 'df-red'\ncodex-hyphen: ok\n",
@@ -4639,6 +4644,7 @@ fn render_list_pages_title_variables_through_outer_pipeline(
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let template = concat!(
         "TITLE=%%title%%\n",
@@ -4716,6 +4722,7 @@ fn list_pages_plain_tag_variables_keep_visible_and_hidden_tags_disjoint() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -4856,6 +4863,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let mut users = BTreeMap::new();
     users.insert(
@@ -5002,6 +5010,7 @@ fn substitutes_wikidot_list_pages_site_domain_and_parent_fullname() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5043,6 +5052,7 @@ fn substitutes_wikidot_list_pages_child_count_and_leaves_rating_percent_literal(
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5075,70 +5085,6 @@ fn substitutes_wikidot_list_pages_child_count_and_leaves_rating_percent_literal(
 }
 
 #[test]
-fn resolves_wikidot_list_pages_revision_count_from_import_before_local_history() {
-    let page = FoundPageRow {
-        page_id: 101,
-        site_id: 1,
-        title: Some("Devereaux".to_owned()),
-        alt_title: None,
-        slug: Some("devereaux".to_owned()),
-        page_category_id: None,
-        page_revision_id: None,
-        tags: None,
-        created_at: None,
-        created_by: None,
-        updated_at: None,
-        updated_by: None,
-        score: None,
-    };
-    let snapshot = ListPagesSnapshotDisplay {
-        title_shown: None,
-        created_at: time::OffsetDateTime::UNIX_EPOCH,
-        updated_at: time::OffsetDateTime::UNIX_EPOCH,
-        created_by_user_id: None,
-        created_by_name: None,
-        created_by_slug: None,
-        updated_by_user_id: None,
-        updated_by_name: None,
-        updated_by_slug: None,
-        comments: 0,
-        commented_at: None,
-        commented_by_name: None,
-        rating_votes: None,
-        parent_fullname: None,
-        source_revision_count: 37,
-    };
-    let imported = BTreeMap::from([(101, snapshot.clone())]);
-    let local_history = BTreeMap::from([(101, 1)]);
-    let empty_snapshots = BTreeMap::new();
-
-    assert_eq!(
-        list_pages_revision_count(&page, &imported, &local_history),
-        Some(37),
-    );
-    assert_eq!(
-        list_pages_revision_count(&page, &empty_snapshots, &local_history),
-        Some(1),
-    );
-    assert_eq!(
-        list_pages_revision_count(&page, &empty_snapshots, &BTreeMap::new()),
-        None,
-    );
-
-    let negative = BTreeMap::from([(
-        101,
-        ListPagesSnapshotDisplay {
-            source_revision_count: -1,
-            ..snapshot
-        },
-    )]);
-    assert_eq!(
-        list_pages_revision_count(&page, &negative, &local_history),
-        None,
-    );
-}
-
-#[test]
 fn substitutes_wikidot_list_pages_revision_count() {
     let page = FoundPageRow {
         page_id: 1,
@@ -5154,6 +5100,7 @@ fn substitutes_wikidot_list_pages_revision_count() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5189,6 +5136,7 @@ fn resolves_wikidot_list_pages_parent_fullname_from_import_before_relations() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let source_created_at = time::OffsetDateTime::UNIX_EPOCH;
     let snapshot = ListPagesSnapshotDisplay {
@@ -5263,6 +5211,7 @@ fn substitutes_wikidot_list_pages_created_by_unix_from_account_unix_name() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let data_form_values = BTreeMap::new();
     let user_displays = BTreeMap::from([(
@@ -5380,6 +5329,7 @@ fn substitutes_wikidot_list_pages_limit_variable() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
 
     assert!(list_pages_body_variables_supported(body));
@@ -5426,6 +5376,7 @@ fn distinguishes_wikidot_list_pages_link_and_fullname() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let users = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5478,6 +5429,7 @@ fn substitutes_wikidot_list_pages_author_tool_variables() {
         updated_at: Some(updated_at),
         updated_by: Some(954_000_337),
         score: Some(42.0),
+        revision_count: None,
     };
     let mut users = BTreeMap::new();
     users.insert(
@@ -5548,6 +5500,7 @@ fn substitutes_wikidot_list_pages_hidden_tags_as_links() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
 
     let rendered = substitute_list_pages_variables(
@@ -5665,6 +5618,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
         updated_at: Some(local_created_at),
         updated_by: Some(ADMIN_USER_ID),
         score: Some(28.0),
+        revision_count: None,
     };
     let mut users = BTreeMap::new();
     users.insert(
@@ -5746,6 +5700,7 @@ fn missing_snapshot_vote_count_uses_zero_vote_ratio_state() {
         updated_at: None,
         updated_by: None,
         score: Some(49.0),
+        revision_count: None,
     };
     let body = concat!(
         "[[#ifexpr %%rating_votes%% == 0 | zero-vote | has-votes]] ",
@@ -5790,6 +5745,7 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let body = concat!(
         "||~ Published on %%created_at|%d %b %Y%% ||\n",
@@ -5857,6 +5813,7 @@ fn substitutes_artwork_hub_listpages_body_without_visible_html_or_parser_functio
         updated_at: None,
         updated_by: None,
         score: Some(28.0),
+        revision_count: None,
     };
     let body = concat!(
         "[[div class=\"tale-block %%tags%%\"]]\n",
