@@ -1897,6 +1897,11 @@
           "scope": "public ListPages and CountPages endpoint/render integration tests"
         },
         {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
+          "scope": "public page-edit, move, delete, restore, and wikidot_page_preview regression verifies imported snapshot revision counts add only local-origin revisions, drive order=revisions and %%revisions%% from one value, omit the deleted page, restore at baseline plus four, and leave a native page on its actual stored count"
+        },
+        {
           "path": "deepwell/tests/page.rs",
           "scope": "public saved-page, preview, URL, pagination, query, permission, CountPages-in-body limitation, and rendering integration tests"
         },

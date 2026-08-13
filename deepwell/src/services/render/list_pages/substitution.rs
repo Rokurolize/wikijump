@@ -349,8 +349,7 @@ impl ListPagesBatchDisplayRequirements {
             || users
             || template.uses_created_at()
             || template.uses_updated_at()
-            || template.uses_parent_metadata()
-            || template.uses_revisions();
+            || template.uses_parent_metadata();
         self.runtime |= template.uses_comments()
             || template.uses_commented_by()
             || template.uses_commented_at()
@@ -448,6 +447,7 @@ pub(in crate::services::render) fn union_found_page_fields(
     left.updated_at |= right.updated_at;
     left.updated_by |= right.updated_by;
     left.score |= right.score;
+    left.revision_count |= right.revision_count;
 }
 
 pub(in crate::services::render) fn parse_list_pages_arguments(

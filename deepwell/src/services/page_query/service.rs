@@ -46,13 +46,14 @@ use sea_orm::{
     QueryFilter, QueryOrder, QuerySelect, RelationTrait, Statement,
 };
 use sea_query::extension::postgres::PgBinOper;
-use sea_query::{Expr, Query, SimpleExpr, Value};
+use sea_query::{Alias, Expr, Query, SimpleExpr, Value};
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug)]
 struct PageQueryProjection {
     pages: Vec<page::Model>,
+    effective_revision_count_by_page_id: BTreeMap<i64, u64>,
     fields: FoundPageFields,
     order: OrderBySelector,
     offset: u32,
@@ -62,6 +63,15 @@ struct PageQueryProjection {
     sql_limit_offset_applied: bool,
     filtering_deferred_to_rust: bool,
     ordering_deferred_to_rust: bool,
+}
+
+const EFFECTIVE_REVISION_COUNT_ALIAS: &str = "effective_revision_count";
+
+#[derive(Debug, FromQueryResult)]
+struct PageQuerySelectedPage {
+    #[sea_orm(nested)]
+    page: page::Model,
+    effective_revision_count: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -769,6 +779,15 @@ impl PageQueryService {
         )
         .await?;
 
+        let projects_effective_revision_count =
+            fields.revision_count || matches!(order.property, OrderProperty::Revisions);
+        if projects_effective_revision_count {
+            query = query.column_as(
+                SimpleExpr::Custom(effective_revision_count_sql("page.page_id").into()),
+                EFFECTIVE_REVISION_COUNT_ALIAS,
+            );
+        }
+
         // Add on at the query-level (ORDER BY, LIMIT)
         let score_order = matches!(&order.property, OrderProperty::Score);
         let data_form_order =
@@ -884,23 +903,14 @@ impl PageQueryService {
                     query = query.order_by(expr, sql_order);
                 }
                 OrderProperty::Revisions => {
-                    let expr = SimpleExpr::Custom(
-                        "COALESCE((
-                            SELECT snapshot.source_revision_count
-                            FROM wikidot_page_snapshot snapshot
-                            WHERE snapshot.page_id = page.page_id
-                        ), (
-                            SELECT COUNT(*)
-                            FROM page_revision pr
-                            WHERE pr.page_id = page.page_id
-                        ), 0)"
-                            .into(),
-                    );
                     let identity = SimpleExpr::Custom(
                         wikidot_page_ordering_identity_sql("page.page_id").into(),
                     );
                     query = query
-                        .order_by(expr, sql_order.clone())
+                        .order_by(
+                            Expr::col(Alias::new(EFFECTIVE_REVISION_COUNT_ALIAS)),
+                            sql_order.clone(),
+                        )
                         .order_by(identity, sql_order.clone())
                         .order_by(page::Column::PageId, sql_order);
                 }
@@ -992,7 +1002,25 @@ impl PageQueryService {
         //      3. [14, 13, 12, 11, 10]
 
         // Execute it!
-        let mut pages = query.all(txn).await.or_raise(make_error)?;
+        let (mut pages, effective_revision_count_by_page_id) =
+            if projects_effective_revision_count {
+                let selected = query
+                    .into_model::<PageQuerySelectedPage>()
+                    .all(txn)
+                    .await
+                    .or_raise(make_error)?;
+                let mut pages = Vec::with_capacity(selected.len());
+                let mut counts = BTreeMap::new();
+                for selected in selected {
+                    let count = u64::try_from(selected.effective_revision_count)
+                        .or_raise(make_error)?;
+                    counts.insert(selected.page.page_id, count);
+                    pages.push(selected.page);
+                }
+                (pages, counts)
+            } else {
+                (query.all(txn).await.or_raise(make_error)?, BTreeMap::new())
+            };
         if let Some(candidate_limit) = hard_candidate_limit
             && pages.len() > usize::try_from(candidate_limit).unwrap_or(usize::MAX)
         {
@@ -1021,6 +1049,7 @@ impl PageQueryService {
             ctx,
             PageQueryProjection {
                 pages,
+                effective_revision_count_by_page_id,
                 fields,
                 order,
                 offset,
@@ -1062,6 +1091,47 @@ impl PageQueryService {
             })?
             .map(|row| row.votes)
             .unwrap_or(0))
+    }
+
+    pub(crate) async fn effective_revision_count(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+    ) -> Result<u64> {
+        #[derive(FromQueryResult, Debug)]
+        struct RevisionCountRow {
+            revision_count: i64,
+        }
+
+        let txn = ctx.transaction();
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            format!(
+                "SELECT {} AS revision_count",
+                effective_revision_count_sql("$1"),
+            ),
+            [Value::from(page_id)],
+        );
+        let row = RevisionCountRow::find_by_statement(statement)
+            .one(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to load effective ListPages revision count",
+                    ErrorType::PageQuery,
+                )
+            })?
+            .ok_or_else(|| {
+                Error::new(
+                    "effective ListPages revision count query returned no row",
+                    ErrorType::PageQuery,
+                )
+            })?;
+        u64::try_from(row.revision_count).or_raise(|| {
+            Error::new(
+                "effective ListPages revision count was negative",
+                ErrorType::PageQuery,
+            )
+        })
     }
 }
 
@@ -1170,6 +1240,7 @@ async fn project_page_query_results(
     ctx: &ServiceContext<'_>,
     PageQueryProjection {
         mut pages,
+        effective_revision_count_by_page_id,
         fields,
         order,
         offset,
@@ -1374,6 +1445,14 @@ async fn project_page_query_results(
                 score: fields
                     .score
                     .then(|| score_by_page_id.get(&page.page_id).copied().or(Some(0.0)))
+                    .flatten(),
+                revision_count: fields
+                    .revision_count
+                    .then(|| {
+                        effective_revision_count_by_page_id
+                            .get(&page.page_id)
+                            .copied()
+                    })
                     .flatten(),
             }
         })
@@ -1671,6 +1750,24 @@ fn effective_vote_count_sql(page_id_sql: &str) -> String {
                 AND vote.disabled_at IS NULL \
                 AND (snapshot.page_id IS NULL OR vote.from_wikidot = FALSE) \
             GROUP BY snapshot.page_id, snapshot.meta_json\
+        ), 0)"
+    )
+}
+
+fn effective_revision_count_sql(page_id_sql: &str) -> String {
+    format!(
+        "COALESCE((\
+            SELECT \
+                COALESCE(snapshot.source_revision_count::bigint, 0) \
+                + COUNT(revision.revision_id) \
+                    FILTER (WHERE snapshot.page_id IS NULL OR revision.from_wikidot = FALSE) \
+            FROM (SELECT 1) revision_seed \
+            LEFT JOIN wikidot_page_snapshot snapshot \
+                ON snapshot.page_id = {page_id_sql} \
+            LEFT JOIN page_revision revision \
+                ON revision.page_id = {page_id_sql} \
+                AND (snapshot.page_id IS NULL OR revision.from_wikidot = FALSE) \
+            GROUP BY snapshot.page_id, snapshot.source_revision_count\
         ), 0)"
     )
 }

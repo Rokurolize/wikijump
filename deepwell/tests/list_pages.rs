@@ -1633,6 +1633,23 @@ async fn imported_wikidot_revision_count_controls_revisions_order_and_substituti
     execute_sql(
         &runner,
         &format!(
+            "UPDATE page SET from_wikidot = true WHERE page_id IN ({}, {}, {})",
+            large.page_id, tied.page_id, small.page_id,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            "UPDATE page_revision SET from_wikidot = true WHERE revision_id IN ({}, {}, {})",
+            large.revision_id, tied.revision_id, small.revision_id,
+        ),
+    )
+    .await;
+
+    execute_sql(
+        &runner,
+        &format!(
             r#"
             INSERT INTO wikidot_corpus_import_run (
                 import_run_id,
@@ -1786,6 +1803,324 @@ async fn imported_wikidot_revision_count_controls_revisions_order_and_substituti
          %%revisions%%, with live page identity breaking equal-count ties in \
          the same direction, even when normalized local histories tie:\n{html}",
     );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution()
+ {
+    const CATEGORY: &str = "listpages-imported-revision-lifecycle";
+    const TARGET_SLUG: &str = "listpages-imported-revision-lifecycle:imported-target";
+    const MOVED_SLUG: &str =
+        "listpages-imported-revision-lifecycle:imported-target-moved";
+    const PEER_SLUG: &str = "listpages-imported-revision-lifecycle:imported-peer";
+    const LOCAL_SLUG: &str = "listpages-imported-revision-lifecycle:local-page";
+    const IMPORT_RUN_ID: i64 = 7_700_004;
+
+    let mut runner = TestRunner::setup().await;
+    ensure_wikidot_import_snapshot_tables(&runner).await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let mut pages = Vec::new();
+    for (slug, title) in [
+        (TARGET_SLUG, "Imported revision lifecycle target"),
+        (PEER_SLUG, "Imported revision lifecycle peer"),
+        (LOCAL_SLUG, "Local revision lifecycle control"),
+    ] {
+        runner.set_request_context(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Slug(slug.into())),
+            ..Default::default()
+        });
+        pages.push(run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": format!("{title} body"),
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": "wikidot",
+                "revision_comments": "create revision lifecycle fixture",
+                "user_id": ADMIN_USER_ID,
+                "bypass_filter": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        ));
+    }
+    let target = &pages[0];
+    let peer = &pages[1];
+    let local = &pages[2];
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(local.page_id)),
+        ..Default::default()
+    });
+    let local_edit = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": local.page_id,
+            "last_revision_id": local.revision_id,
+            "revision_comments": "second native revision",
+            "user_id": ADMIN_USER_ID,
+            "title": "Local revision lifecycle control edited",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("native control edit should create a revision");
+    assert!(local_edit.revision_id > local.revision_id);
+
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_corpus_import_run (
+                import_run_id,
+                site_id,
+                source_branch,
+                source_site,
+                manifest_sha256,
+                manifest_row_count,
+                complete_inventory,
+                state,
+                summary
+            ) VALUES (
+                {IMPORT_RUN_ID},
+                {site_id},
+                'revision-lifecycle-fixture',
+                'sandbox-for-codex',
+                decode(repeat('12', 32), 'hex'),
+                2,
+                false,
+                'metadata_done',
+                '{{}}'::jsonb
+            )
+            "#,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            "UPDATE page SET from_wikidot = true WHERE page_id IN ({}, {})",
+            target.page_id, peer.page_id,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            "UPDATE page_revision SET from_wikidot = true WHERE revision_id IN ({}, {})",
+            target.revision_id, peer.revision_id,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_page_snapshot (
+                page_id,
+                source_branch,
+                source_site,
+                source_entity_id,
+                source_fullname,
+                source_created_at,
+                source_updated_at,
+                source_revision_count,
+                imported_rating,
+                created_by_name,
+                updated_by_name,
+                title_shown,
+                parent_fullname,
+                comments,
+                commented_at,
+                commented_by_name,
+                source_sha256,
+                meta_sha256,
+                meta_json,
+                last_import_run_id
+            ) VALUES
+            (
+                {},
+                'revision-lifecycle-fixture',
+                'sandbox-for-codex',
+                '77777777-7777-4777-8777-777777777777',
+                '{TARGET_SLUG}',
+                TIMESTAMPTZ '2026-08-13T00:00:00Z',
+                TIMESTAMPTZ '2026-08-13T00:00:00Z',
+                53,
+                0,
+                NULL,
+                NULL,
+                'Imported revision lifecycle target',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('23', 32), 'hex'),
+                decode(repeat('34', 32), 'hex'),
+                '{{"fullname":"{TARGET_SLUG}","page_id":200,"revision_count":53}}'::jsonb,
+                {IMPORT_RUN_ID}
+            ),
+            (
+                {},
+                'revision-lifecycle-fixture',
+                'sandbox-for-codex',
+                '88888888-8888-4888-8888-888888888888',
+                '{PEER_SLUG}',
+                TIMESTAMPTZ '2026-08-13T00:00:01Z',
+                TIMESTAMPTZ '2026-08-13T00:00:01Z',
+                53,
+                0,
+                NULL,
+                NULL,
+                'Imported revision lifecycle peer',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('45', 32), 'hex'),
+                decode(repeat('56', 32), 'hex'),
+                '{{"fullname":"{PEER_SLUG}","page_id":100,"revision_count":53}}'::jsonb,
+                {IMPORT_RUN_ID}
+            )
+            "#,
+            target.page_id, peer.page_id,
+        ),
+    )
+    .await;
+
+    async fn render_rows(runner: &TestRunner, site_id: i64, category: &str) -> String {
+        run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "Imported revision lifecycle preview",
+                "wikitext": format!(
+                    "[[module ListPages category=\"{category}\" order=\"revisions desc\" separate=\"no\"]]\n%%name%%|%%revisions%%\n[[/module]]"
+                ),
+                "syntax_only": false,
+            }),
+        )
+        .body
+    }
+
+    let initial = render_rows(&runner, site_id, CATEGORY).await;
+    for expected in ["imported-target|53", "imported-peer|53", "local-page|2"] {
+        assert!(
+            initial.contains(expected),
+            "baseline revision row {expected:?} should render:\n{initial}",
+        );
+    }
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let edited = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": target.page_id,
+            "last_revision_id": target.revision_id,
+            "revision_comments": "local edit after import",
+            "user_id": ADMIN_USER_ID,
+            "title": "Imported revision lifecycle target edited",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("imported target edit should create a revision");
+    let after_edit = render_rows(&runner, site_id, CATEGORY).await;
+    let edited_row = after_edit
+        .find("imported-target|54")
+        .unwrap_or_else(|| panic!("edited imported count should render:\n{after_edit}"));
+    let peer_row = after_edit.find("imported-peer|53").unwrap_or_else(|| {
+        panic!("untouched imported count should render:\n{after_edit}")
+    });
+    assert!(
+        edited_row < peer_row,
+        "the effective count must control ordering and substitution together:\n{after_edit}",
+    );
+    assert!(after_edit.contains("local-page|2"), "{after_edit}");
+
+    let moved = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": target.page_id,
+            "new_slug": MOVED_SLUG,
+            "last_revision_id": edited.revision_id,
+            "revision_comments": "move imported target after import",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let after_move = render_rows(&runner, site_id, CATEGORY).await;
+    assert!(
+        after_move.contains("imported-target-moved|55"),
+        "move should add one local revision to the imported baseline:\n{after_move}",
+    );
+    assert!(after_move.contains("local-page|2"), "{after_move}");
+
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": target.page_id,
+            "last_revision_id": moved.revision_id,
+            "revision_comments": "delete imported target after import",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let while_deleted = render_rows(&runner, site_id, CATEGORY).await;
+    assert!(
+        !while_deleted.contains("imported-target"),
+        "deleted pages must remain absent from ListPages:\n{while_deleted}",
+    );
+    assert!(
+        while_deleted.contains("imported-peer|53"),
+        "{while_deleted}"
+    );
+    assert!(while_deleted.contains("local-page|2"), "{while_deleted}");
+
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": target.page_id,
+            "revision_comments": "restore imported target after import",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let after_restore = render_rows(&runner, site_id, CATEGORY).await;
+    assert!(
+        after_restore.contains("imported-target-moved|57"),
+        "edit, move, delete, and restore should add four local revisions:\n{after_restore}",
+    );
+    assert!(
+        after_restore.contains("imported-peer|53"),
+        "{after_restore}"
+    );
+    assert!(after_restore.contains("local-page|2"), "{after_restore}");
 
     runner.teardown().await;
 }

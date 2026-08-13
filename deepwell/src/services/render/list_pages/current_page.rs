@@ -29,7 +29,7 @@ use crate::services::page_revision::GetPageRevision;
 use crate::services::render::runtime_page_queries::CountPagesRawScanCompletion;
 use crate::services::render::service::{MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService};
 use crate::services::{
-    CategoryService, PageRevisionService, PageService, ServiceContext,
+    CategoryService, PageQueryService, PageRevisionService, PageService, ServiceContext,
 };
 use crate::types::Reference;
 use ftml::data::PageInfo;
@@ -136,6 +136,7 @@ pub(in crate::services::render) fn current_page_info_list_pages_row(
         || fields.created_by
         || fields.updated_at
         || fields.updated_by
+        || fields.revision_count
     {
         return None;
     }
@@ -162,6 +163,7 @@ pub(in crate::services::render) fn current_page_info_list_pages_row(
         updated_at: None,
         updated_by: None,
         score: requested_page_info_score(fields, page_info),
+        revision_count: None,
     })
 }
 
@@ -258,6 +260,15 @@ impl RenderService {
         .flatten();
         let latest_revision = latest_revision.as_ref();
         let creation_revision = creation_revision.as_ref();
+        let revision_count = if fields.revision_count {
+            Some(
+                PageQueryService::effective_revision_count(ctx, current_page_id)
+                    .await
+                    .or_raise(make_error)?,
+            )
+        } else {
+            None
+        };
 
         Ok(FoundPages {
             pages: vec![FoundPageRow {
@@ -320,6 +331,7 @@ impl RenderService {
                     None
                 },
                 score: requested_page_info_score(fields, page_info),
+                revision_count,
             }],
         })
     }
