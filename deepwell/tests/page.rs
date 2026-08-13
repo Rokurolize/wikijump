@@ -3640,12 +3640,77 @@ async fn page_view_rerenders_stale_persisted_compiled_artifact() {
         .await
         .expect("stale compiled artifact should be attached");
 
-    let view = run_endpoint!(
+    let anonymous_error = run_endpoint_err!(
         runner,
         page_view,
         json!({
             "site_id": site_id,
             "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(format!("{anonymous_error:?}").contains("failed to generate page view"));
+    let anonymous_article_error = run_endpoint_err!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        format!("{anonymous_article_error:?}").contains("failed to generate page view")
+    );
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "renderer epoch stale artifact test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let article = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token.clone(),
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                page_revision,
+                compiled_body_html,
+                ..
+            },
+        ..
+    } = article
+    else {
+        panic!("article view should refresh a stale persisted page");
+    };
+    assert!(
+        page_revision
+            .compiled_generator
+            .ends_with("; deepwell-render/v10")
+    );
+    assert!(compiled_body_html.contains(CURRENT_BODY));
+    assert!(!compiled_body_html.contains(STALE_BODY));
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
             "route": {"slug": SLUG, "extra": ""},
             "locales": ["en-US", "en"],
         }),

@@ -639,7 +639,14 @@ impl ViewService {
                 if user_can_access_page {
                     debug!("User has page access, return text data");
 
-                    if !compiled_generator_is_current(&page_revision.compiled_generator)
+                    let compiled_artifact_is_stale =
+                        !compiled_generator_is_current(&page_revision.compiled_generator);
+                    if compiled_artifact_is_stale
+                        && (user_session.is_none() || !user_can_edit_page)
+                    {
+                        bail!(make_error());
+                    }
+                    if compiled_artifact_is_stale
                         || options.rerender && user_can_edit_page
                     {
                         let depth = RerenderDepth::default();
