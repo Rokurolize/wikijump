@@ -1,6 +1,6 @@
 {
-  "base_commit": "0ffb1168b7ab1af3488209507c0986b395c949c6",
-  "base_tree": "9904ff993908e7c25c5f857875f392ee431f0669",
+  "base_commit": "955fcb7a2d7aad16e8cb2204637e77cabfaaa3a7",
+  "base_tree": "e7c4c9e806d298af162b2809d1878452e56255c8",
   "blocked_reason": "",
   "blocked_surface_ids": [],
   "candidate_status": "not_run",
@@ -21,7 +21,7 @@
     },
     "fixture": {
       "path": "install/local/wikidot-verification/fixtures/pr1334-join-membership-source-attribution.json",
-      "sha256": "d100dbb572fe23bd9eb69b0f9462ab15d9b8952effcc930e75e9c0cdb173ae76"
+      "sha256": "c092639432f904cf217c7b850729b7ab580a5e62853b16791802d3d1341a9e26"
     },
     "inventory": {
       "path": "docs/development/compatibility-surface-inventory.json",
@@ -29,7 +29,7 @@
     },
     "script": {
       "path": "install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py",
-      "sha256": "44d68abd23353eb9e42d687285ea4bcee85702bb967abf7ab0cf3f6926bb9c38"
+      "sha256": "bb4bd149841adbef99bd68df056b3814d502b3b4b0365e975afdf869dfea5699"
     }
   },
   "missing_witnesses": [],
@@ -89,7 +89,7 @@
             "start": 148
           },
           "path": "deepwell/src/services/view/service.rs",
-          "sha256": "7d7d0517b2f910f580b5e7de72b4ceb42de1b0a2d66ce9d365dba725fd3a15d0",
+          "sha256": "24608640d4e087addfd3195f5a909c655fab929e04c03e368c3cc852df24189b",
           "source_present": true
         }
       ],
@@ -577,7 +577,7 @@
             "start": 148
           },
           "path": "deepwell/src/services/view/service.rs",
-          "sha256": "7d7d0517b2f910f580b5e7de72b4ceb42de1b0a2d66ce9d365dba725fd3a15d0",
+          "sha256": "24608640d4e087addfd3195f5a909c655fab929e04c03e368c3cc852df24189b",
           "source_present": true
         },
         {
@@ -679,7 +679,7 @@
     },
     {
       "path": "deepwell/src/services/view/service.rs",
-      "sha256": "7d7d0517b2f910f580b5e7de72b4ceb42de1b0a2d66ce9d365dba725fd3a15d0"
+      "sha256": "24608640d4e087addfd3195f5a909c655fab929e04c03e368c3cc852df24189b"
     },
     {
       "path": "deepwell/tests/role.rs",

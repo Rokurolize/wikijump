@@ -61,8 +61,8 @@ const objectsWithKey = (value, key, output = []) => {
 
 test('pinned identities, exact denominator, and privacy contract', () => {
   assert.equal(artifact.schema, 'wikijump.pr1334.join_membership_source_attribution.v1');
-  assert.equal(artifact.base_commit, '0ffb1168b7ab1af3488209507c0986b395c949c6');
-  assert.equal(artifact.base_tree, '9904ff993908e7c25c5f857875f392ee431f0669');
+  assert.equal(artifact.base_commit, '955fcb7a2d7aad16e8cb2204637e77cabfaaa3a7');
+  assert.equal(artifact.base_tree, 'e7c4c9e806d298af162b2809d1878452e56255c8');
   assert.deepEqual(artifact.surface_ids, expectedIds);
   assert.deepEqual(fixture.surfaces.map(({ surface_id }) => surface_id), expectedIds);
   assert.equal(new Set(artifact.surface_ids).size, 10);

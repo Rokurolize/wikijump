@@ -9,8 +9,8 @@ import subprocess
 from collections import Counter
 from pathlib import Path
 
-BASE = "0ffb1168b7ab1af3488209507c0986b395c949c6"
-BASE_TREE = "9904ff993908e7c25c5f857875f392ee431f0669"
+BASE = "955fcb7a2d7aad16e8cb2204637e77cabfaaa3a7"
+BASE_TREE = "e7c4c9e806d298af162b2809d1878452e56255c8"
 FIXTURE_PATH = Path("install/local/wikidot-verification/fixtures/pr1334-join-membership-source-attribution.json")
 SCRIPT_PATH = Path("install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py")
 ARTIFACT_PATH = "install/local/wikidot-verification/artifacts/pr1334-join-membership-source-attribution-20260810.json"
