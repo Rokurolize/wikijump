@@ -2761,7 +2761,7 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v9")
+            .ends_with("; deepwell-render/v10")
     );
 }
 
@@ -3509,7 +3509,7 @@ async fn page_attribution_delete_refreshes_cached_article_only_when_rows_are_cle
 async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     const SLUG: &str = "renderer-epoch-cache-fixture";
     const CURRENT_BODY: &str = "renderer epoch current body";
-    const STALE_BODY: &str = "stale deepwell-render/v7 body";
+    const STALE_BODY: &str = "stale deepwell-render/v9 body";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
@@ -3564,12 +3564,12 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v9:"),
+        current_key.starts_with("deepwell:article-view:page:v10:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
+        "deepwell:article-view:page:v10:",
         "deepwell:article-view:page:v9:",
-        "deepwell:article-view:page:v7:",
         1,
     );
     assert_ne!(stale_key, current_key);

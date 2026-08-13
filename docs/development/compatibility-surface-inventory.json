@@ -5084,6 +5084,7 @@
           "deepwell/src/services/render/service/tests.rs#renders_wikidot_plus_only_rate_module_without_downvote",
           "deepwell/src/services/render/service/tests.rs#renders_wikidot_read_only_rate_module_with_downvote",
           "deepwell/src/services/render/service/tests.rs#wikidot_compatibility_fallback_centers_read_only_rate_module",
+          "deepwell/tests/page.rs#page_render_basalt_rate_does_not_claim_active_iftags_through_eof",
           "deepwell/tests/page.rs#page_render_emits_wikidot_rate_widget_structure",
           "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
           "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
@@ -5099,14 +5100,16 @@
         ]
       },
       "source": {
-        "status": "implemented",
+        "status": "in_progress",
         "references": [
           "deepwell/src/endpoints/vote.rs",
+          "deepwell/src/services/render/literal_regions/wikidot.rs",
           "deepwell/src/services/render/runtime_modules.rs",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/render/service/tests.rs",
           "deepwell/tests/page.rs",
-          "deepwell/tests/vote.rs"
+          "deepwell/tests/vote.rs",
+          "docs/ftml-boundary-deviations/rate-conditional-literal-boundary.md"
         ]
       },
       "candidate": {

@@ -12,7 +12,7 @@
 
 use std::sync::LazyLock;
 
-pub(crate) const DEEPWELL_RENDERER_EPOCH: u32 = 9;
+pub(crate) const DEEPWELL_RENDERER_EPOCH: u32 = 10;
 
 pub(super) static COMPILED_GENERATOR: LazyLock<String> = LazyLock::new(|| {
     format!(
@@ -28,6 +28,6 @@ mod tests {
     #[test]
     fn generator_identifies_ftml_and_deepwell_renderer_semantics() {
         assert!(COMPILED_GENERATOR.starts_with(ftml::info::VERSION.as_str()));
-        assert!(COMPILED_GENERATOR.ends_with("; deepwell-render/v9"));
+        assert!(COMPILED_GENERATOR.ends_with("; deepwell-render/v10"));
     }
 }
