@@ -66,6 +66,11 @@ export function isCandidateParityMode(mode) {
   return CANDIDATE_PARITY_MODES.has(mode);
 }
 
+export function candidateDiagnosticSourceMatches(candidateIdentity, executionIdentity) {
+  return executionIdentity.wikijump_commit === candidateIdentity.value.candidate.wikijump_commit
+    && executionIdentity.wikijump_tree === candidateIdentity.value.candidate.wikijump_tree;
+}
+
 function nextArgument(argv, index, flag) {
   const value = argv[index + 1];
   if (!value || value.startsWith("--"))
@@ -767,9 +772,10 @@ async function sealCandidateDiagnostic({
     schema: "wikijump.standing_browser_parity_diagnostic.v1",
     promotion_admissible: false,
   };
-  const sourceMatchesCandidate =
-    executionIdentity.wikijump_commit === candidateIdentity.value.wikijump_commit
-    && executionIdentity.wikijump_tree === candidateIdentity.value.wikijump_tree;
+  const sourceMatchesCandidate = candidateDiagnosticSourceMatches(
+    candidateIdentity,
+    executionIdentity,
+  );
   const diagnostic = {
     schema: "wikijump.standing_browser_candidate_diagnostic.v1",
     status: diagnosticLedger.status,

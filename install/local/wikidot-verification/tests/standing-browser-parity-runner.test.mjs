@@ -4,6 +4,7 @@ import test from "node:test";
 import { main as runParityCli, usage as parityCliUsage } from "../scripts/run-standing-browser-parity.mjs";
 import { closeParityBrowserResources } from "../src/standing-browser-parity-browser-session.mjs";
 import {
+  candidateDiagnosticSourceMatches,
   isCandidateParityMode,
   parseStandingBrowserParityArgs,
   validateCandidateRefreshReceipt,
@@ -15,6 +16,25 @@ test("candidate diagnostic mode receives the same local browser topology as offi
   assert.equal(isCandidateParityMode("candidate"), true);
   assert.equal(isCandidateParityMode("candidate-diagnostic"), true);
   assert.equal(isCandidateParityMode("live-reference"), false);
+});
+
+test("candidate diagnostic source match reads the sealed candidate source identity", () => {
+  const candidate = {
+    value: {
+      candidate: {
+        wikijump_commit: "a".repeat(40),
+        wikijump_tree: "b".repeat(40),
+      },
+    },
+  };
+  assert.equal(candidateDiagnosticSourceMatches(candidate, {
+    wikijump_commit: "a".repeat(40),
+    wikijump_tree: "b".repeat(40),
+  }), true);
+  assert.equal(candidateDiagnosticSourceMatches(candidate, {
+    wikijump_commit: "c".repeat(40),
+    wikijump_tree: "b".repeat(40),
+  }), false);
 });
 
 test("standing parity CLI exposes result and help without opening a browser", async () => {
