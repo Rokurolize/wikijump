@@ -656,7 +656,7 @@ pub fn parse_observed_wikidot_data_form_values(
             _ => return None,
         };
         let canonical = match field.field_type.as_deref() {
-            Some("text") => serialize_wikidot_stored_text_scalar(&value),
+            Some("text") => serialize_wikidot_stored_text_field_scalar(&value),
             Some("wiki") => serialize_wikidot_stored_wiki_scalar(&value),
             Some("checkbox") => serialize_wikidot_stored_checkbox_scalar(&value),
             Some("hidden") => serialize_wikidot_stored_text_scalar(&value),
@@ -937,6 +937,13 @@ fn valid_wikidot_stored_plain_scalar(value: &str) -> bool {
             value.to_ascii_lowercase().as_str(),
             "false" | "no" | "null" | "off" | "on" | "true" | "yes"
         )
+}
+
+fn serialize_wikidot_stored_text_field_scalar(value: &str) -> String {
+    if value.is_empty() {
+        return "''".to_owned();
+    }
+    serialize_wikidot_stored_text_scalar(value)
 }
 
 fn serialize_wikidot_stored_text_scalar(value: &str) -> String {
@@ -1247,6 +1254,37 @@ fields:
                 parse_observed_wikidot_data_form_values(&definition, source),
                 None,
                 "source must fail closed:\n{source}",
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_and_implicit_empty_text_scalars_round_trip_as_quoted_empty_strings() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  explicit:\n    type: text\n  implicit:\n    label: Implicit\n  choice:\n    type: select\n    values:\n      a: Alpha\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert_eq!(
+            parse_observed_wikidot_data_form_values(
+                &definition,
+                "explicit: ''\nimplicit: ''\nchoice: null",
+            ),
+            Some(BTreeMap::from([
+                ("choice".to_owned(), String::new()),
+                ("explicit".to_owned(), String::new()),
+                ("implicit".to_owned(), String::new()),
+            ])),
+        );
+        for source in [
+            "explicit: null\nimplicit: ''\nchoice: null",
+            "explicit: ''\nimplicit: null\nchoice: null",
+            "explicit: ''\nimplicit: ''\nchoice: ''",
+        ] {
+            assert_eq!(
+                parse_observed_wikidot_data_form_values(&definition, source),
+                None,
+                "noncanonical empty scalar must fail closed:\n{source}",
             );
         }
     }
