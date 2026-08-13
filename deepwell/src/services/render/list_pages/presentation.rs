@@ -283,17 +283,6 @@ pub(in crate::services::render) fn render_list_pages_snapshot_wikidot_user(
     render_list_pages_wikidot_user(user_id, Some(&display))
 }
 
-pub(in crate::services::render) fn list_pages_revision_count(
-    page: &FoundPageRow,
-    snapshot_displays: &BTreeMap<i64, ListPagesSnapshotDisplay>,
-    revision_counts: &BTreeMap<i64, u64>,
-) -> Option<u64> {
-    match snapshot_displays.get(&page.page_id) {
-        Some(snapshot) => u64::try_from(snapshot.source_revision_count).ok(),
-        None => revision_counts.get(&page.page_id).copied(),
-    }
-}
-
 pub(in crate::services::render) fn list_pages_parent_fullname<'a>(
     page: &FoundPageRow,
     snapshot_displays: &'a BTreeMap<i64, ListPagesSnapshotDisplay>,

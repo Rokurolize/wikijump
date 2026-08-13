@@ -38230,6 +38230,134 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
 }
 
 #[tokio::test]
+async fn page_query_revision_order_keeps_unrequested_count_out_of_results() {
+    const LOW_SLUG: &str = "page-query-revision-order-low";
+    const HIGH_SLUG: &str = "page-query-revision-order-high";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        LOW_SLUG,
+        "PageQuery revision-order low",
+        "one revision",
+    )
+    .await;
+    let high_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HIGH_SLUG,
+        "PageQuery revision-order high",
+        "first revision",
+    )
+    .await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(HIGH_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": HIGH_SLUG,
+            "last_revision_id": high_revision,
+            "revision_comments": "add second PageQuery revision-order revision",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("revision-order high fixture edit should create a revision");
+
+    let fixture_slugs = [Cow::Borrowed(LOW_SLUG), Cow::Borrowed(HIGH_SLUG)];
+    let mut query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        range: RangeSelector::Current,
+        name: None,
+        slug: None,
+        slugs: &fixture_slugs,
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::Revisions,
+            ascending: false,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(10),
+            ..Default::default()
+        },
+        variables: &[],
+        fields: FoundPageFields {
+            slug: true,
+            revision_count: false,
+            ..Default::default()
+        },
+    };
+
+    let ordered = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ordering-only revision query should succeed");
+    assert_eq!(
+        ordered
+            .pages
+            .iter()
+            .map(|row| row.slug.as_deref())
+            .collect::<Vec<_>>(),
+        [Some(HIGH_SLUG), Some(LOW_SLUG)],
+        "the internally projected count must still control revision ordering",
+    );
+    assert!(
+        ordered.pages.iter().all(|row| row.revision_count.is_none()),
+        "revision ordering must not expose an unrequested public result field",
+    );
+
+    query.fields.revision_count = true;
+    let requested = PageQueryService::find(runner.context(), query)
+        .await
+        .expect("revision query with requested count should succeed");
+    assert_eq!(
+        requested
+            .pages
+            .iter()
+            .map(|row| (row.slug.as_deref(), row.revision_count))
+            .collect::<Vec<_>>(),
+        [(Some(HIGH_SLUG), Some(2)), (Some(LOW_SLUG), Some(1))],
+    );
+}
+
+#[tokio::test]
 async fn page_query_page_slug_ties_follow_wikidot_source_identity() {
     const IMPORT_RUN_ID: i64 = 7_130_562;
     const B_OLDER: &str = "bcategory:alpha";
