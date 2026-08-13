@@ -1948,7 +1948,7 @@ async fn initial_page_creation_uses_destination_category_layout() {
     };
 
     assert_eq!(
-        compiled_body_html.trim(),
+        compiled_body_html,
         format!(r#"<p><code class="wj-monospace">{LAYOUT_MARKER}</code></p>"#),
         "the stored public body should use the destination category layout",
     );
