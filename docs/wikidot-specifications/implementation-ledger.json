@@ -2821,13 +2821,14 @@
       ]
     },
     "module-rate": {
-      "status": "implemented",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Run-owned saved-page live Wikidot oracle with anonymous saved HTML and logged-in browser DOM captures for star widget behavior",
         "Run-owned saved-page live Wikidot oracle with anonymous saved HTML for plus/minus paired-body behavior",
         "Deepwell public saved-page page_get compiled HTML interface after page_rerender",
         "Deepwell public registered vote_set, vote_remove, and staff vote_action lifecycle followed by local post-commit invalidation, task-owned exact queued target-rerender consumption, and saved page_view observation",
-        "Deepwell renderer compatibility fallback for paired plus/minus Rate body consumption"
+        "Deepwell renderer compatibility fallback for paired plus/minus Rate body consumption",
+        "Deepwell public RenderService page rendering for the repository Basalt source with active and inactive root theme gates plus code-literal and paired-Rate ownership controls"
       ],
       "tests": [
         {
@@ -2856,6 +2857,11 @@
           "scope": "public saved-page rendering verifies the existing Wikidot plus/minus Rate widget structure through Deepwell's page read interface"
         },
         {
+          "path": "deepwell/tests/page.rs",
+          "name": "page_render_basalt_rate_does_not_claim_active_iftags_through_eof",
+          "scope": "public RenderService rendering verifies the repository Basalt source resolves its root theme gate for tagged and untagged page contexts, keeps a conditional closer literal inside code, and preserves paired Rate body ownership; this regression records local behavior without adding a live-Wikidot claim"
+        },
+        {
           "path": "deepwell/src/services/render/service/tests.rs",
           "name": "wikidot_compatibility_fallback_centers_read_only_rate_module",
           "scope": "renderer fallback verifies centered read-only Rate output in Wikidot compatibility mode"
@@ -2878,11 +2884,13 @@
       ],
       "implementation_files": [
         "deepwell/src/endpoints/vote.rs",
+        "deepwell/src/services/render/literal_regions/wikidot.rs",
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/service.rs",
         "deepwell/src/services/render/service/tests.rs",
         "deepwell/tests/page.rs",
-        "deepwell/tests/vote.rs"
+        "deepwell/tests/vote.rs",
+        "docs/ftml-boundary-deviations/rate-conditional-literal-boundary.md"
       ],
       "documentation_evidence": [
         "specifications/module/module-rate.md"
