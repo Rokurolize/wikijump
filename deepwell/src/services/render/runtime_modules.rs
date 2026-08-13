@@ -22,7 +22,9 @@ use super::module_arguments::{
     WikidotModuleArgumentValueKind, wikidot_module_argument, wikidot_module_arguments,
     wikidot_module_arguments_ignoring_bare_flags,
 };
-use super::native_list_context::collect_unproven_scope_ranges;
+use super::native_list_context::{
+    collect_unproven_scope_ranges, matching_source_scope_close,
+};
 use super::new_page_module::{
     NEWPAGE_MODULE_REGEX, NewPageTemplateOption, NewPageTemplateRendering,
     new_page_template_names, render_new_page_module,

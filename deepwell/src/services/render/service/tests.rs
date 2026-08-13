@@ -6816,7 +6816,7 @@ fn rate_module_plusminus_body_is_consumed_like_live_wikidot() {
 }
 
 #[test]
-fn rate_module_body_does_not_revisit_nested_rate_heads() {
+fn rate_module_balanced_scope_does_not_bind_nested_closer_to_outer_rate() {
     let source = concat!(
         "[[module Rate]]\n",
         "body before a later rate head\n",
@@ -6843,9 +6843,13 @@ fn rate_module_body_does_not_revisit_nested_rate_heads() {
         &mut compat_text,
     );
 
-    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 1,);
+    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 2,);
     assert!(protected.ends_with("\nvisible tail\n"), "{protected}");
     assert!(!protected.contains("[[module Rate]]"), "{protected}");
+    assert!(
+        protected.contains("body before a later rate head"),
+        "{protected}"
+    );
 }
 
 #[test]
