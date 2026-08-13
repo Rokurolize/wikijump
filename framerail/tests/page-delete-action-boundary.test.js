@@ -36,12 +36,12 @@ after(async () => {
   if (previousWorkingDirectory) process.chdir(previousWorkingDirectory)
 })
 
-const deleteEvent = (body) => ({
+const deleteEvent = (body, contentType = "application/x-www-form-urlencoded") => ({
   request: new Request("https://wikijump.test/source-page/delete?/delete", {
     method: "POST",
     body,
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
+      ...(contentType ? { "Content-Type": contentType } : {}),
       "X-Wikijump-Site-Id": "17",
       "X-Wikijump-Site-Slug": "test"
     }
@@ -180,4 +180,122 @@ test("native delete stops without mutation when the routed page is missing", asy
 
   assert.equal(result.status, 500)
   assert.deepEqual(calls, ["session_get", "page_view"])
+})
+
+test("enhanced delete preserves supplied page identity without resolving the route", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") return { user_id: 91 }
+    if (method === "page_delete") {
+      return { page_id: 742, revision_id: 910, revision_number: 5 }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const data = new FormData()
+  data.set(
+    "__superform_json",
+    '[{"siteId":1,"pageId":2,"lastRevisionId":3,"option":4,"comments":5},17,742,909,"delete","Enhanced delete"]'
+  )
+
+  const result = await slugActions.delete(deleteEvent(data, null))
+
+  assert.equal(result.option, "delete")
+  assert.deepEqual(calls, [
+    { method: "session_get", params: ["delete-session"], context: undefined },
+    {
+      method: "page_delete",
+      params: {
+        site_id: 17,
+        page: 742,
+        user_id: 91,
+        ip_address: "192.0.2.92",
+        last_revision_id: 909,
+        revision_comments: "Enhanced delete"
+      },
+      context: {
+        siteId: 17,
+        page: "source-page",
+        sessionToken: "delete-session"
+      }
+    }
+  ])
+})
+
+test("enhanced delete-pane move preserves supplied page identity without resolving the route", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") return { user_id: 91 }
+    if (method === "page_move") {
+      return {
+        page_id: 743,
+        revision_id: 911,
+        revision_number: 5,
+        new_slug: "enhanced destination"
+      }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const data = new FormData()
+  data.set(
+    "__superform_json",
+    '[{"siteId":1,"pageId":2,"lastRevisionId":3,"option":4,"newSlug":5,"comments":6},17,743,910,"move","enhanced destination","Enhanced move"]'
+  )
+
+  const result = await slugActions.delete(deleteEvent(data, null))
+
+  assert.equal(result.option, "move")
+  assert.deepEqual(calls, [
+    { method: "session_get", params: ["delete-session"], context: undefined },
+    {
+      method: "page_move",
+      params: {
+        site_id: 17,
+        page: 743,
+        new_slug: "enhanced destination",
+        user_id: 91,
+        ip_address: "192.0.2.92",
+        last_revision_id: 910,
+        revision_comments: "Enhanced move"
+      },
+      context: {
+        siteId: 17,
+        page: "source-page",
+        sessionToken: "delete-session"
+      }
+    }
+  ])
+})
+
+test("native delete-pane move rejects supplied identity fields before Deepwell", async () => {
+  const calls = []
+  client.request = async (...args) => {
+    calls.push(args)
+    throw new Error("Deepwell must not be called for an invalid native move")
+  }
+
+  const result = await slugActions.delete(
+    deleteEvent("option=move&new-slug=next-page&comments=invalid&pageId=999")
+  )
+
+  assert.equal(result.status, 400)
+  assert.deepEqual(calls, [])
+})
+
+test("native delete rejects move-only fields before Deepwell", async () => {
+  const calls = []
+  client.request = async (...args) => {
+    calls.push(args)
+    throw new Error("Deepwell must not be called for an invalid native delete")
+  }
+
+  const result = await slugActions.delete(
+    deleteEvent("option=delete&comments=&new-slug=foreign-field")
+  )
+
+  assert.equal(result.status, 400)
+  assert.deepEqual(calls, [])
 })
