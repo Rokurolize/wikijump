@@ -43,20 +43,11 @@ function resolveWikidotModuleRedirect(
     return null
   }
 
-  const mappedLocation =
-    location.startsWith("/") &&
-    !location.includes("?") &&
-    !location.includes("#") &&
-    location.endsWith("/") &&
-    extra
-      ? `${location}${extra}`
-      : location
-
   let current: URL
   let target: URL
   try {
     current = new URL(requestUrl)
-    target = new URL(mappedLocation, current)
+    target = new URL(location, current)
   } catch {
     return null
   }
@@ -67,6 +58,24 @@ function resolveWikidotModuleRedirect(
     target.password !== ""
   ) {
     return null
+  }
+
+  const mappedLocation =
+    !location.includes("?") &&
+    !location.includes("#") &&
+    location.endsWith("/") &&
+    extra &&
+    !extra.includes("?") &&
+    !extra.includes("#")
+      ? `${location}${extra}`
+      : location
+
+  if (mappedLocation !== location) {
+    try {
+      target = new URL(mappedLocation, current)
+    } catch {
+      return null
+    }
   }
 
   let currentPath: string

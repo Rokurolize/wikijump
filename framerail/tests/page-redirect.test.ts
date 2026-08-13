@@ -39,6 +39,16 @@ test("Wikidot module redirects preserve evidenced absolute HTTP locations", () =
 test("Wikidot module redirects map route suffixes only below trailing-slash destinations", () => {
   for (const [location, extra, expected] of [
     ["/base/", "mapped-path/file1.html", "/base/mapped-path/file1.html"],
+    [
+      "http://www.example.com/base/",
+      "mapped-path/file1.html",
+      "http://www.example.com/base/mapped-path/file1.html"
+    ],
+    [
+      "https://www.example.com/base/",
+      "mapped-path",
+      "https://www.example.com/base/mapped-path"
+    ],
     ["/base", "mapped-path/file1.html", "/base"],
     ["/base/", undefined, "/base/"]
   ] as const) {
