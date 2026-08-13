@@ -780,7 +780,7 @@ impl PageQueryService {
         .await?;
 
         let projects_effective_revision_count =
-            fields.revision_count || matches!(order.property, OrderProperty::Revisions);
+            needs_effective_revision_projection(&fields, &order);
         if projects_effective_revision_count {
             query = query.column_as(
                 SimpleExpr::Custom(effective_revision_count_sql("page.page_id").into()),
@@ -1262,7 +1262,6 @@ async fn project_page_query_results(
 
     let mut page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
     let score_ordering = matches!(order.property, OrderProperty::Score);
-    let revision_ordering = matches!(order.property, OrderProperty::Revisions);
     let score_by_page_id: BTreeMap<i64, f32> =
         if (fields.score || score_ordering) && !page_ids.is_empty() {
             ScoreService::scores_bulk(ctx, &page_ids)
@@ -1451,13 +1450,12 @@ async fn project_page_query_results(
                     .score
                     .then(|| score_by_page_id.get(&page.page_id).copied().or(Some(0.0)))
                     .flatten(),
-                revision_count: (fields.revision_count || revision_ordering)
-                    .then(|| {
-                        effective_revision_count_by_page_id
-                            .get(&page.page_id)
-                            .copied()
-                    })
-                    .flatten(),
+                revision_count: project_effective_revision_count(
+                    &fields,
+                    effective_revision_count_by_page_id
+                        .get(&page.page_id)
+                        .copied(),
+                ),
             }
         })
         .collect();
@@ -1779,6 +1777,20 @@ fn effective_revision_count_sql(page_id_sql: &str) -> String {
             GROUP BY snapshot.page_id, snapshot.source_revision_count\
         )"
     )
+}
+
+fn needs_effective_revision_projection(
+    fields: &FoundPageFields,
+    order: &OrderBySelector,
+) -> bool {
+    fields.revision_count || matches!(order.property, OrderProperty::Revisions)
+}
+
+fn project_effective_revision_count(
+    fields: &FoundPageFields,
+    count: Option<u64>,
+) -> Option<u64> {
+    fields.revision_count.then_some(count).flatten()
 }
 
 fn wikidot_page_ordering_identity_sql(page_id_sql: &str) -> String {
@@ -2174,13 +2186,15 @@ mod tests {
         PageQueryScoreFilterSession, ScoreFilterCacheKey, ScoreFilterCacheLookup,
         ScoreFilterMembership, ScoreFilterPlan, bounded_score_page_ids,
         category_local_wikidot_name_patterns, date_span_bounds,
-        list_pages_deferred_ordering, score_filter_plan_from_probe,
+        list_pages_deferred_ordering, needs_effective_revision_projection,
+        project_effective_revision_count, score_filter_plan_from_probe,
         score_membership_condition, score_membership_polarity_order,
         score_selector_condition, score_selectors_condition, wikidot_name_pattern,
     };
     use crate::models::page;
     use crate::services::page_query::{
-        ComparisonOperation, DateTimeResolution, IncludedCategories, ScoreSelector,
+        ComparisonOperation, DateTimeResolution, FoundPageFields, IncludedCategories,
+        OrderBySelector, OrderProperty, ScoreSelector,
     };
     use crate::services::score::ScoreValue;
     use sea_orm::{
@@ -2226,6 +2240,27 @@ mod tests {
                 &newer,
             ),
             Ordering::Greater,
+        );
+    }
+
+    #[test]
+    fn revision_ordering_keeps_internal_count_out_of_unrequested_public_field() {
+        let fields = FoundPageFields::default();
+        let order = OrderBySelector {
+            property: OrderProperty::Revisions,
+            ascending: false,
+        };
+
+        assert!(needs_effective_revision_projection(&fields, &order));
+        assert_eq!(project_effective_revision_count(&fields, Some(53)), None,);
+
+        let requested = FoundPageFields {
+            revision_count: true,
+            ..FoundPageFields::default()
+        };
+        assert_eq!(
+            project_effective_revision_count(&requested, Some(53)),
+            Some(53),
         );
     }
 
