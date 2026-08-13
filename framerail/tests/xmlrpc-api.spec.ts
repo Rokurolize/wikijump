@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 
-import { expect, test } from "@playwright/test"
+import { expect, test, type APIRequestContext } from "@playwright/test"
 
 import {
   handleXmlRpcRequest,
@@ -255,6 +255,21 @@ function xmlRpcPagesGetOneForPageRequest(page: string): string {
 </methodCall>`
 }
 
+async function expectXmlRpcPageMissing(
+  request: APIRequestContext,
+  page: string
+): Promise<void> {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<fault>")
+  expect(body).toContain("Argument page invalid: page does not exist")
+}
+
 const xmlRpcPagesGetMetaTooManyRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>pages.get_meta</methodName>
@@ -308,7 +323,8 @@ function xmlRpcPagesSaveOneRequest({
   parentFullname,
   saveMode,
   renameAs,
-  revisionComment
+  revisionComment,
+  notifyWatchersValue
 }: {
   page: string
   title?: string
@@ -318,6 +334,7 @@ function xmlRpcPagesSaveOneRequest({
   saveMode?: string
   renameAs?: string
   revisionComment?: string
+  notifyWatchersValue?: string
 }): string {
   const optionalMembers = [
     title !== undefined
@@ -342,6 +359,9 @@ function xmlRpcPagesSaveOneRequest({
       : "",
     revisionComment !== undefined
       ? `<member><name>revision_comment</name><value><string>${revisionComment}</string></value></member>`
+      : "",
+    notifyWatchersValue !== undefined
+      ? `<member><name>notify_watchers</name><value>${notifyWatchersValue}</value></member>`
       : ""
   ].join("")
 
@@ -1844,6 +1864,192 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
     page: slug,
     user_id: 123
   })
+})
+
+test("pages.save_one rejects a non-boolean notify_watchers value without saving a page", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-${randomUUID()}`
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      notifyWatchersValue: "<string>false</string>"
+    }),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("Expected boolean field: notify_watchers")
+  await expectXmlRpcPageMissing(request, page)
+})
+
+test("pages.save_one rejects enabled watcher notifications without saving a page", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-${randomUUID()}`
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      notifyWatchersValue: "<boolean>1</boolean>"
+    }),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("pages.save_one notify_watchers is not implemented")
+  await expectXmlRpcPageMissing(request, page)
+})
+
+test("pages.save_one leaves an existing page unchanged when watcher notifications are enabled", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-update-${randomUUID()}`
+  const originalTitle = "Watcher notification baseline title"
+  const originalContent = "Watcher notification baseline content."
+  const originalTag = "watcher-notification-baseline"
+  const rejectedTitle = "Rejected watcher notification title"
+  const rejectedContent = "Rejected watcher notification content."
+  const rejectedTag = "rejected-watcher-notification"
+
+  const createResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      title: originalTitle,
+      content: originalContent,
+      tags: [originalTag],
+      saveMode: "create"
+    }),
+    headers: xmlRpcHeaders
+  })
+  expect(createResponse.status()).toBe(200)
+  expect(await createResponse.text()).not.toContain("<fault>")
+
+  const baselineResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(baselineResponse.status()).toBe(200)
+  const baselineBody = await baselineResponse.text()
+  expect(baselineBody).toContain(
+    `<name>title</name><value><string>${originalTitle}</string></value>`
+  )
+  expect(baselineBody).toContain(
+    `<name>content</name><value><string>${originalContent}</string></value>`
+  )
+  expect(baselineBody).toContain(
+    `<name>tags</name><value><array><data><value><string>${originalTag}</string></value></data></array></value>`
+  )
+
+  const updateResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      title: rejectedTitle,
+      content: rejectedContent,
+      tags: [rejectedTag],
+      saveMode: "update",
+      notifyWatchersValue: "<boolean>1</boolean>"
+    }),
+    headers: xmlRpcHeaders
+  })
+  expect(updateResponse.status()).toBe(200)
+  const updateBody = await updateResponse.text()
+  expect(updateBody).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(updateBody).toContain("pages.save_one notify_watchers is not implemented")
+
+  const finalResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(finalResponse.status()).toBe(200)
+  const finalBody = await finalResponse.text()
+  expect(finalBody).toContain(
+    `<name>title</name><value><string>${originalTitle}</string></value>`
+  )
+  expect(finalBody).toContain(
+    `<name>content</name><value><string>${originalContent}</string></value>`
+  )
+  expect(finalBody).toContain(
+    `<name>tags</name><value><array><data><value><string>${originalTag}</string></value></data></array></value>`
+  )
+  expect(finalBody).not.toContain(rejectedTitle)
+  expect(finalBody).not.toContain(rejectedContent)
+  expect(finalBody).not.toContain(rejectedTag)
+})
+
+test("pages.save_one treats omitted, nil, and false notify_watchers as disabled", async ({
+  request
+}) => {
+  for (const [description, notifyWatchersValue] of [
+    ["omitted", undefined],
+    ["nil", "<nil />"],
+    ["false", "<boolean>0</boolean>"]
+  ] as const) {
+    const slug = `fixture-xmlrpc-notify-${description}-${randomUUID()}`
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: slug,
+        saveMode: "create",
+        notifyWatchersValue
+      }),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain(`<name>fullname</name><value><string>${slug}</string></value>`)
+
+    const readResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesGetOneForPageRequest(slug),
+      headers: xmlRpcHeaders
+    })
+    expect(readResponse.status()).toBe(200)
+    const readBody = await readResponse.text()
+    expect(readBody).not.toContain("<fault>")
+    expect(readBody).toContain(
+      `<name>fullname</name><value><string>${slug}</string></value>`
+    )
+  }
+})
+
+test("pages.save_one validates each of revision_comment and save_mode before notify_watchers", async ({
+  request
+}) => {
+  for (const notifyWatchersValue of ["<string>false</string>", "<boolean>1</boolean>"]) {
+    const invalidRevisionPage = `fixture-xmlrpc-notify-${randomUUID()}`
+    const invalidRevisionResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: invalidRevisionPage,
+        revisionComment: "invalid-revision-comment",
+        notifyWatchersValue
+      }).replace("<string>invalid-revision-comment</string>", "<boolean>0</boolean>"),
+      headers: xmlRpcHeaders
+    })
+    expect(await invalidRevisionResponse.text()).toContain(
+      "Expected string field: revision_comment"
+    )
+    await expectXmlRpcPageMissing(request, invalidRevisionPage)
+
+    const invalidSaveModePage = `fixture-xmlrpc-notify-${randomUUID()}`
+    const invalidSaveModeResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: invalidSaveModePage,
+        saveMode: "invalid",
+        notifyWatchersValue
+      }),
+      headers: xmlRpcHeaders
+    })
+    expect(await invalidSaveModeResponse.text()).toContain(
+      "Unsupported pages.save_one save_mode: invalid"
+    )
+    await expectXmlRpcPageMissing(request, invalidSaveModePage)
+  }
 })
 
 test("XML-RPC files.get_meta validates resources before returning an empty struct", async ({
