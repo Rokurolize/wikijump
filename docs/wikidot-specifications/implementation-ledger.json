@@ -187,7 +187,12 @@
         {
           "path": "framerail/tests/xmlrpc-api.spec.ts",
           "name": "XML-RPC tags.select rejects categories and pages together before selector caps",
-          "scope": "Public XML-RPC POST response coverage verifies that both selector fields, including two empty arrays, fail with fault -32602 and the exact mutual-exclusion message; an over-cap mixed request verifies that fault takes precedence over existing selector-cap faults."
+          "scope": "Public XML-RPC POST response coverage decodes the fault value and verifies that both selector fields, including two empty arrays, fail with exactly fault -32602 and the mutual-exclusion message; an over-cap mixed request verifies that fault takes precedence over existing selector-cap faults."
+        },
+        {
+          "path": "framerail/tests/xmlrpc-api.spec.ts",
+          "name": "XML-RPC tags.select validates mixed selector fields before mutual exclusion",
+          "scope": "Public XML-RPC POST response coverage verifies malformed categories and malformed pages each produce their exact field-type fault before the mutual-exclusion rule is considered."
         },
         {
           "path": "framerail/tests/xmlrpc-api.spec.ts",

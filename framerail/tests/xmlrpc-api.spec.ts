@@ -706,6 +706,19 @@ const xmlRpcHandlerRequestWithBody = (body: string): Request =>
     method: "POST"
   })
 
+function decodeXmlRpcFault(body: string) {
+  const faultValue =
+    /^<\?xml version="1\.0"\?><methodResponse><fault>(<value>[\s\S]*<\/value>)<\/fault><\/methodResponse>$/u.exec(
+      body
+    )?.[1]
+  if (!faultValue) throw new Error("Expected an XML-RPC fault response")
+
+  return parseXmlRpcCall(`<methodCall>
+  <methodName>fault</methodName>
+  <params><param>${faultValue}</param></params>
+</methodCall>`).params[0]
+}
+
 function nestedXmlRpcValue(depth: number): string {
   let value = "<value><string>x</string></value>"
   for (let index = 0; index < depth; index += 1) {
@@ -952,10 +965,36 @@ test("XML-RPC tags.select rejects categories and pages together before selector 
 
     expect(response.status()).toBe(200)
     const body = await response.text()
-    expect(body).toContain("<fault>")
-    expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
-    expect(body).toContain("tags.select accepts categories or pages, not both")
-    expect(body).not.toContain("is limited to")
+    expect(decodeXmlRpcFault(body)).toEqual({
+      faultCode: -32602,
+      faultString: "tags.select accepts categories or pages, not both"
+    })
+  }
+})
+
+test("XML-RPC tags.select validates mixed selector fields before mutual exclusion", async ({
+  request
+}) => {
+  for (const [selector, malformedValue, faultString] of [
+    [
+      "categories",
+      "<string>not-an-array</string>",
+      "Expected string array field: categories"
+    ],
+    ["pages", "<boolean>1</boolean>", "Expected string array field: pages"]
+  ] as const) {
+    const emptyArrayMember = `<member><name>${selector}</name><value><array><data></data></array></value></member>`
+    const malformedMember = `<member><name>${selector}</name><value>${malformedValue}</value></member>`
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest([], []).replace(emptyArrayMember, malformedMember),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    expect(decodeXmlRpcFault(await response.text())).toEqual({
+      faultCode: -32602,
+      faultString
+    })
   }
 })
 
