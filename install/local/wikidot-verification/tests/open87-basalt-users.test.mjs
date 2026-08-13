@@ -208,6 +208,11 @@ test("Open87 Basalt retained evidence has exact nested HTTPS printuser DOM", asy
     slug: evidenceIdentity.slug,
     page_identity: evidenceIdentity.page_identity,
   });
+  assert.equal(retained.printusers.length, runtimeState.wikidot_users.length);
+  assert.deepEqual(
+    retained.printusers.map(({user_id, name, slug}) => ({user_id, name, slug})),
+    runtimeState.wikidot_users.map(({user_id, name, slug}) => ({user_id, name, slug})),
+  );
 
   for (const user of retained.printusers) {
     const fragment = parseFragment(user.html);
@@ -215,7 +220,7 @@ test("Open87 Basalt retained evidence has exact nested HTTPS printuser DOM", asy
     const span = fragment.childNodes[0];
     const spanAttributes = Object.fromEntries(span.attrs.map(({name, value}) => [name, value]));
     assert.equal(span.tagName, "span");
-    assert.equal(spanAttributes.class, "printuser avatarhover");
+    assert.deepEqual(spanAttributes, {class: "printuser avatarhover"});
     assert.equal(span.childNodes.length, 2);
 
     const [avatarLink, nameLink] = span.childNodes;
@@ -231,6 +236,7 @@ test("Open87 Basalt retained evidence has exact nested HTTPS printuser DOM", asy
     const image = avatarLink.childNodes[0];
     const imageAttributes = Object.fromEntries(image.attrs.map(({name, value}) => [name, value]));
     assert.equal(image.tagName, "img");
+    assert.deepEqual(Object.keys(imageAttributes).sort(), ["alt", "class", "src", "style"]);
     assert.equal(imageAttributes.class, "small");
     assert.equal(
       imageAttributes.src,
