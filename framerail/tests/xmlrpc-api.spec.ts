@@ -27,6 +27,7 @@ const emptyPageReadRequests = {
   siteGet: [],
   voteList: []
 }
+
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
   if (!value) throw new Error(`Missing required test environment variable: ${name}`)
@@ -2017,7 +2018,7 @@ test("pages.save_one treats omitted, nil, and false notify_watchers as disabled"
   }
 })
 
-test("pages.save_one preserves revision_comment and save_mode validation precedence", async ({
+test("pages.save_one validates each of revision_comment and save_mode before notify_watchers", async ({
   request
 }) => {
   for (const notifyWatchersValue of ["<string>false</string>", "<boolean>1</boolean>"]) {
