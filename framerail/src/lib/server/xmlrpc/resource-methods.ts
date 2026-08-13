@@ -37,6 +37,7 @@ import {
 } from "$lib/server/xmlrpc/protocol"
 import { commitPendingBlobUpload } from "$lib/server/deepwell/pending-blob-upload"
 import {
+  getOptionalStructBoolean,
   getOptionalStructString,
   getOptionalStructStringArray,
   getOptionalStructStringOrInt,
@@ -223,6 +224,10 @@ export async function savePageOne(
 
   if (!["create", "update", "create_or_update"].includes(saveMode)) {
     throw new XmlRpcFault(-32602, `Unsupported pages.save_one save_mode: ${saveMode}`)
+  }
+  const notifyWatchers = getOptionalStructBoolean(params, "notify_watchers") ?? false
+  if (notifyWatchers) {
+    throw new XmlRpcFault(-32602, "pages.save_one notify_watchers is not implemented")
   }
 
   const siteId = await getDeepwellSiteId(site)

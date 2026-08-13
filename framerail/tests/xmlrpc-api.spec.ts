@@ -27,6 +27,18 @@ const emptyPageReadRequests = {
   siteGet: [],
   voteList: []
 }
+const emptyPageWriteRequests = {
+  login: [],
+  pageCreate: [],
+  pageEdit: [],
+  pageRollback: [],
+  pageMove: [],
+  parentGetAll: [],
+  parentUpdate: [],
+  sessionGet: [],
+  userGet: [],
+  voteSet: []
+}
 
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
@@ -308,7 +320,8 @@ function xmlRpcPagesSaveOneRequest({
   parentFullname,
   saveMode,
   renameAs,
-  revisionComment
+  revisionComment,
+  notifyWatchersValue
 }: {
   page: string
   title?: string
@@ -318,6 +331,7 @@ function xmlRpcPagesSaveOneRequest({
   saveMode?: string
   renameAs?: string
   revisionComment?: string
+  notifyWatchersValue?: string
 }): string {
   const optionalMembers = [
     title !== undefined
@@ -342,6 +356,9 @@ function xmlRpcPagesSaveOneRequest({
       : "",
     revisionComment !== undefined
       ? `<member><name>revision_comment</name><value><string>${revisionComment}</string></value></member>`
+      : "",
+    notifyWatchersValue !== undefined
+      ? `<member><name>notify_watchers</name><value>${notifyWatchersValue}</value></member>`
       : ""
   ].join("")
 
@@ -1844,6 +1861,126 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
     page: slug,
     user_id: 123
   })
+})
+
+test("pages.save_one rejects a non-boolean notify_watchers value before Deepwell access", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+  await request.get(`${fixtureUrl}/last-page-write-requests`)
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: `fixture-xmlrpc-notify-${randomUUID()}`,
+      notifyWatchersValue: "<string>false</string>"
+    }),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("Expected boolean field: notify_watchers")
+
+  const readResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(await readResponse.json()).toEqual(emptyPageReadRequests)
+  const writeResponse = await request.get(`${fixtureUrl}/last-page-write-requests`)
+  expect(await writeResponse.json()).toEqual(emptyPageWriteRequests)
+})
+
+test("pages.save_one rejects enabled watcher notifications before Deepwell access", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+  await request.get(`${fixtureUrl}/last-page-write-requests`)
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page: `fixture-xmlrpc-notify-${randomUUID()}`,
+      notifyWatchersValue: "<boolean>1</boolean>"
+    }),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("pages.save_one notify_watchers is not implemented")
+
+  const readResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(await readResponse.json()).toEqual(emptyPageReadRequests)
+  const writeResponse = await request.get(`${fixtureUrl}/last-page-write-requests`)
+  expect(await writeResponse.json()).toEqual(emptyPageWriteRequests)
+})
+
+test("pages.save_one treats omitted, nil, and false notify_watchers as disabled", async ({
+  request
+}) => {
+  for (const [description, notifyWatchersValue] of [
+    ["omitted", undefined],
+    ["nil", "<nil />"],
+    ["false", "<boolean>0</boolean>"]
+  ] as const) {
+    await request.get(`${fixtureUrl}/last-page-read-requests`)
+    await request.get(`${fixtureUrl}/last-page-write-requests`)
+
+    const slug = `fixture-xmlrpc-notify-${description}-${randomUUID()}`
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: slug,
+        saveMode: "create",
+        notifyWatchersValue
+      }),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain(`<name>fullname</name><value><string>${slug}</string></value>`)
+
+    const writeResponse = await request.get(`${fixtureUrl}/last-page-write-requests`)
+    const writeRequests = await writeResponse.json()
+    expect(writeRequests.pageCreate).toHaveLength(1)
+  }
+})
+
+test("pages.save_one preserves existing field and save_mode fault precedence", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+  await request.get(`${fixtureUrl}/last-page-write-requests`)
+
+  for (const notifyWatchersValue of ["<string>false</string>", "<boolean>1</boolean>"]) {
+    const invalidRevisionResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: `fixture-xmlrpc-notify-${randomUUID()}`,
+        revisionComment: "invalid-revision-comment",
+        notifyWatchersValue
+      }).replace("<string>invalid-revision-comment</string>", "<boolean>0</boolean>"),
+      headers: xmlRpcHeaders
+    })
+    expect(await invalidRevisionResponse.text()).toContain(
+      "Expected string field: revision_comment"
+    )
+
+    const invalidSaveModeResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: `fixture-xmlrpc-notify-${randomUUID()}`,
+        saveMode: "invalid",
+        notifyWatchersValue
+      }),
+      headers: xmlRpcHeaders
+    })
+    expect(await invalidSaveModeResponse.text()).toContain(
+      "Unsupported pages.save_one save_mode: invalid"
+    )
+  }
+
+  const readResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(await readResponse.json()).toEqual(emptyPageReadRequests)
+  const writeResponse = await request.get(`${fixtureUrl}/last-page-write-requests`)
+  expect(await writeResponse.json()).toEqual(emptyPageWriteRequests)
 })
 
 test("XML-RPC files.get_meta validates resources before returning an empty struct", async ({
