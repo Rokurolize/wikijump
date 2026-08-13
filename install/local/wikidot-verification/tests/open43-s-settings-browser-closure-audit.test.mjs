@@ -24,11 +24,11 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.source_identity.standing_is_acceptance_evidence, false);
   assert.equal(
     audit.source_identity.observed_integration_head,
-    "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
+    "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
   );
   assert.equal(
     audit.source_identity.observed_integration_tree,
-    "38e2cbce621d210e5ce6b995837d696a8abb6071",
+    "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
   );
   assert.equal(audit.source_identity.final_source_freeze_reconciliation_required, true);
 

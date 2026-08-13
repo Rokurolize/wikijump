@@ -28,8 +28,8 @@
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
     "framerail_package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
     "framerail_svelte_config_sha256": "52b02a44f682cd0bb12b8b968e4a0dc5f84eda1b76c2201aee9566bc236fbcbc",
-    "observed_integration_head": "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
-    "observed_integration_tree": "38e2cbce621d210e5ce6b995837d696a8abb6071",
+    "observed_integration_head": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+    "observed_integration_tree": "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
     "observed_integration_head_is_dynamic": false,
     "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
@@ -1689,11 +1689,11 @@
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     },
     "post_epoch_source": {
-      "observed_integration_head": "e48ed01780ec0a67b503ffcdf957566e607c9767",
-      "observed_integration_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
+      "observed_integration_head": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+      "observed_integration_tree": "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
       "media_scope_commit": "081311e4ef26679e1768a23cc933d475a9b8842c",
-      "last_observed_render_commit": "e48ed01780ec0a67b503ffcdf957566e607c9767",
-      "last_observed_render_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
+      "last_observed_render_commit": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+      "last_observed_render_tree": "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
       "source_freeze_bump_required": false
     },
     "prior_epoch_v8_finalization": {
