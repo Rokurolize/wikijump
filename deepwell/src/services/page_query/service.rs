@@ -71,7 +71,7 @@ const EFFECTIVE_REVISION_COUNT_ALIAS: &str = "effective_revision_count";
 struct PageQuerySelectedPage {
     #[sea_orm(nested)]
     page: page::Model,
-    effective_revision_count: i64,
+    effective_revision_count: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -1012,9 +1012,10 @@ impl PageQueryService {
                 let mut pages = Vec::with_capacity(selected.len());
                 let mut counts = BTreeMap::new();
                 for selected in selected {
-                    let count = u64::try_from(selected.effective_revision_count)
-                        .or_raise(make_error)?;
-                    counts.insert(selected.page.page_id, count);
+                    if let Some(count) = selected.effective_revision_count {
+                        let count = u64::try_from(count).or_raise(make_error)?;
+                        counts.insert(selected.page.page_id, count);
+                    }
                     pages.push(selected.page);
                 }
                 (pages, counts)
@@ -1096,10 +1097,10 @@ impl PageQueryService {
     pub(crate) async fn effective_revision_count(
         ctx: &ServiceContext<'_>,
         page_id: i64,
-    ) -> Result<u64> {
+    ) -> Result<Option<u64>> {
         #[derive(FromQueryResult, Debug)]
         struct RevisionCountRow {
-            revision_count: i64,
+            revision_count: Option<i64>,
         }
 
         let txn = ctx.transaction();
@@ -1126,12 +1127,15 @@ impl PageQueryService {
                     ErrorType::PageQuery,
                 )
             })?;
-        u64::try_from(row.revision_count).or_raise(|| {
-            Error::new(
-                "effective ListPages revision count was negative",
-                ErrorType::PageQuery,
-            )
-        })
+        row.revision_count
+            .map(u64::try_from)
+            .transpose()
+            .or_raise(|| {
+                Error::new(
+                    "effective ListPages revision count was negative",
+                    ErrorType::PageQuery,
+                )
+            })
     }
 }
 
@@ -1756,11 +1760,16 @@ fn effective_vote_count_sql(page_id_sql: &str) -> String {
 
 fn effective_revision_count_sql(page_id_sql: &str) -> String {
     format!(
-        "COALESCE((\
+        "(\
             SELECT \
-                COALESCE(snapshot.source_revision_count::bigint, 0) \
-                + COUNT(revision.revision_id) \
-                    FILTER (WHERE snapshot.page_id IS NULL OR revision.from_wikidot = FALSE) \
+                CASE \
+                    WHEN snapshot.source_revision_count < 0 THEN NULL \
+                    ELSE COALESCE(snapshot.source_revision_count::bigint, 0) \
+                        + COUNT(revision.revision_id) FILTER (\
+                            WHERE snapshot.page_id IS NULL \
+                                OR revision.from_wikidot = FALSE\
+                        ) \
+                END \
             FROM (SELECT 1) revision_seed \
             LEFT JOIN wikidot_page_snapshot snapshot \
                 ON snapshot.page_id = {page_id_sql} \
@@ -1768,7 +1777,7 @@ fn effective_revision_count_sql(page_id_sql: &str) -> String {
                 ON revision.page_id = {page_id_sql} \
                 AND (snapshot.page_id IS NULL OR revision.from_wikidot = FALSE) \
             GROUP BY snapshot.page_id, snapshot.source_revision_count\
-        ), 0)"
+        )"
     )
 }
 

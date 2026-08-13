@@ -261,11 +261,9 @@ impl RenderService {
         let latest_revision = latest_revision.as_ref();
         let creation_revision = creation_revision.as_ref();
         let revision_count = if fields.revision_count {
-            Some(
-                PageQueryService::effective_revision_count(ctx, current_page_id)
-                    .await
-                    .or_raise(make_error)?,
-            )
+            PageQueryService::effective_revision_count(ctx, current_page_id)
+                .await
+                .or_raise(make_error)?
         } else {
             None
         };

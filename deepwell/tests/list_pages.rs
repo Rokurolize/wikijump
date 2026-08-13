@@ -2122,6 +2122,224 @@ async fn imported_revision_count_adds_local_lifecycle_revisions_for_order_and_su
     );
     assert!(after_restore.contains("local-page|2"), "{after_restore}");
 
+    execute_sql(
+        &runner,
+        "ALTER TABLE wikidot_page_snapshot DROP CONSTRAINT \
+         wikidot_page_snapshot_source_revision_count_check",
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            "UPDATE wikidot_page_snapshot SET source_revision_count = -1 WHERE page_id = {}",
+            target.page_id,
+        ),
+    )
+    .await;
+    let unavailable = render_rows(&runner, site_id, CATEGORY).await;
+    assert!(
+        unavailable.contains("%%revisions%%")
+            || unavailable.contains("[[module ListPages")
+            || unavailable.contains("module ListPages"),
+        "a negative imported baseline must preserve the original ListPages module:\n{unavailable}",
+    );
+    assert!(
+        !unavailable.contains("imported-target-moved|-1"),
+        "an unavailable imported baseline must not render as a revision count:\n{unavailable}",
+    );
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn imported_revision_count_current_page_only_adds_local_revisions() {
+    const SLUG: &str = "listpages-imported-current-revisions:target";
+    const IMPORT_RUN_ID: i64 = 7_700_005;
+
+    let mut runner = TestRunner::setup().await;
+    ensure_wikidot_import_snapshot_tables(&runner).await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(SLUG.into())),
+        ..Default::default()
+    });
+    let imported = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "Imported current-page revision baseline",
+            "title": "Imported current-page revision target",
+            "alt_title": null,
+            "slug": SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create imported current-page fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_corpus_import_run (
+                import_run_id,
+                site_id,
+                source_branch,
+                source_site,
+                manifest_sha256,
+                manifest_row_count,
+                complete_inventory,
+                state,
+                summary
+            ) VALUES (
+                {IMPORT_RUN_ID},
+                {site_id},
+                'current-revision-count-fixture',
+                'sandbox-for-codex',
+                decode(repeat('67', 32), 'hex'),
+                1,
+                false,
+                'metadata_done',
+                '{{}}'::jsonb
+            )
+            "#,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            "UPDATE page SET from_wikidot = true WHERE page_id = {}",
+            imported.page_id,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            "UPDATE page_revision SET from_wikidot = true WHERE revision_id = {}",
+            imported.revision_id,
+        ),
+    )
+    .await;
+    execute_sql(
+        &runner,
+        &format!(
+            r#"
+            INSERT INTO wikidot_page_snapshot (
+                page_id,
+                source_branch,
+                source_site,
+                source_entity_id,
+                source_fullname,
+                source_created_at,
+                source_updated_at,
+                source_revision_count,
+                imported_rating,
+                created_by_name,
+                updated_by_name,
+                title_shown,
+                parent_fullname,
+                comments,
+                commented_at,
+                commented_by_name,
+                source_sha256,
+                meta_sha256,
+                meta_json,
+                last_import_run_id
+            ) VALUES (
+                {},
+                'current-revision-count-fixture',
+                'sandbox-for-codex',
+                '99999999-9999-4999-8999-999999999999',
+                '{SLUG}',
+                TIMESTAMPTZ '2026-08-13T00:00:00Z',
+                TIMESTAMPTZ '2026-08-13T00:00:00Z',
+                53,
+                0,
+                NULL,
+                NULL,
+                'Imported current-page revision target',
+                NULL,
+                0,
+                NULL,
+                NULL,
+                decode(repeat('78', 32), 'hex'),
+                decode(repeat('89', 32), 'hex'),
+                '{{"fullname":"{SLUG}","revision_count":53}}'::jsonb,
+                {IMPORT_RUN_ID}
+            )
+            "#,
+            imported.page_id,
+        ),
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(imported.page_id)),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": imported.page_id,
+            "last_revision_id": imported.revision_id,
+            "revision_comments": "add current-page-only ListPages after import",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "[[module ListPages name=\"=\" separate=\"no\"]]\nCURRENT_REVISIONS=%%revisions%%\n[[/module]]",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("local edit should create the current-page-only module revision");
+
+    let saved = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": imported.page_id,
+        }),
+    )
+    .expect("saved imported current-page fixture should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": saved.page_category_id,
+            "page_id": imported.page_id,
+        }),
+    );
+    let html = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": imported.page_id,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("rerendered imported current-page fixture should exist")
+    .compiled_body_html
+    .expect("rerendered imported current-page fixture should have compiled HTML");
+    assert!(
+        html.contains("CURRENT_REVISIONS=54"),
+        "current-page-only ListPages must add the local edit to the imported baseline:\n{html}",
+    );
+    assert!(!html.contains("%%revisions%%"), "{html}");
+
     runner.teardown().await;
 }
 
