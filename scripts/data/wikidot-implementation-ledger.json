@@ -1059,7 +1059,7 @@
       ]
     },
     "layout-forum": {
-      "status": "pending",
+      "status": "in_progress",
       "confirmed_public_seams": [
         "Local SvelteKit public HTTP GET SSR through Vite middleware for the read-only ForumStart, category, and thread routes"
       ],
