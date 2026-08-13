@@ -3579,7 +3579,7 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     redis
         .set::<_, _, ()>(&stale_key, stale_json)
         .await
-        .expect("stale v7 page should be inserted into the test cache");
+        .expect("stale v9 page should be inserted into the test cache");
     drop(redis);
 
     let view = run_endpoint!(runner, article_view, input);
