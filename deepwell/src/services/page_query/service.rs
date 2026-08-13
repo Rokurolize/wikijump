@@ -1262,6 +1262,7 @@ async fn project_page_query_results(
 
     let mut page_ids = pages.iter().map(|page| page.page_id).collect::<Vec<_>>();
     let score_ordering = matches!(order.property, OrderProperty::Score);
+    let revision_ordering = matches!(order.property, OrderProperty::Revisions);
     let score_by_page_id: BTreeMap<i64, f32> =
         if (fields.score || score_ordering) && !page_ids.is_empty() {
             ScoreService::scores_bulk(ctx, &page_ids)
@@ -1450,8 +1451,7 @@ async fn project_page_query_results(
                     .score
                     .then(|| score_by_page_id.get(&page.page_id).copied().or(Some(0.0)))
                     .flatten(),
-                revision_count: fields
-                    .revision_count
+                revision_count: (fields.revision_count || revision_ordering)
                     .then(|| {
                         effective_revision_count_by_page_id
                             .get(&page.page_id)

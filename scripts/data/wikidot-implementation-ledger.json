@@ -1899,7 +1899,7 @@
         {
           "path": "deepwell/tests/list_pages.rs",
           "name": "imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
-          "scope": "public page-edit, move, delete, restore, and wikidot_page_preview regression verifies imported snapshot revision counts add only local-origin revisions, drive order=revisions and %%revisions%% from one value, omit the deleted page, restore at baseline plus four, leave a native page on its actual stored count, and preserve the original module when a rollback-scoped malformed snapshot has a negative source count"
+          "scope": "public page-edit, move, delete, restore, and wikidot_page_preview regression verifies imported snapshot revision counts add only local-origin revisions, drive order=revisions and %%revisions%% from one value, omit the deleted page, restore at baseline plus four, leave a native page on its actual stored count, and preserve the original module for both ascending and descending revision ordering—with or without %%revisions%%—when a rollback-scoped malformed snapshot has a negative source count"
         },
         {
           "path": "deepwell/tests/list_pages.rs",

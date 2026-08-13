@@ -657,7 +657,12 @@ impl RenderService {
                         unreachable!();
                     };
                     unique_slugs.insert(arguments.slug.as_ref().unwrap().to_string());
-                    union_found_page_fields(&mut fields, &template.fields());
+                    let mut block_fields = template.fields();
+                    block_fields.revision_count |= matches!(
+                        arguments.order.as_ref().map(|order| &order.property),
+                        Some(OrderProperty::Revisions)
+                    );
+                    union_found_page_fields(&mut fields, &block_fields);
                     display_requirements.include(template);
                 }
                 let slugs = unique_slugs
@@ -1728,6 +1733,11 @@ impl RenderService {
         let wants_site_domain = template.uses_site_domain();
         let wants_parent_metadata = template.uses_parent_metadata();
         let wants_revisions = template.uses_revisions();
+        let orders_by_revisions = matches!(
+            order.as_ref().map(|order| &order.property),
+            Some(OrderProperty::Revisions)
+        );
+        let needs_revision_count = wants_revisions || orders_by_revisions;
         let wants_children = template.uses_children();
         let resolved_authors = Self::resolve_list_pages_authors_cached(
             ctx,
@@ -1742,6 +1752,7 @@ impl RenderService {
         let mut query_fields = template.fields();
         query_fields.tags |= exact_visible_tags;
         query_fields.slug |= wants_first_image;
+        query_fields.revision_count |= needs_revision_count;
         let query = PageQuery {
             current_page_id,
             current_site_id,
@@ -2201,7 +2212,8 @@ impl RenderService {
         } else {
             BTreeMap::new()
         };
-        if wants_revisions && pages.iter().any(|page| page.revision_count.is_none()) {
+        if needs_revision_count && pages.iter().any(|page| page.revision_count.is_none())
+        {
             return Ok(ListPagesBlockRenderResult::PreserveOriginal(
                 "revision count unavailable",
             ));

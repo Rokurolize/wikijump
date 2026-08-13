@@ -2147,6 +2147,31 @@ async fn imported_revision_count_adds_local_lifecycle_revisions_for_order_and_su
         !unavailable.contains("imported-target-moved|-1"),
         "an unavailable imported baseline must not render as a revision count:\n{unavailable}",
     );
+    for direction in ["asc", "desc"] {
+        let ordering_only = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "Unavailable imported revision ordering preview",
+                "wikitext": format!(
+                    "[[module ListPages category=\"{CATEGORY}\" order=\"revisions {direction}\" separate=\"no\"]]\nORDERING_ONLY=%%name%%\n[[/module]]"
+                ),
+                "syntax_only": false,
+            }),
+        )
+        .body;
+        assert!(
+            ordering_only.contains("ORDERING_ONLY=%%name%%")
+                || ordering_only.contains("[[module ListPages")
+                || ordering_only.contains("module ListPages"),
+            "{direction} revision ordering must preserve the module when a selected count is unavailable:\n{ordering_only}",
+        );
+        assert!(
+            !ordering_only.contains("ORDERING_ONLY=imported-target-moved"),
+            "{direction} revision ordering must not continue with a NULL count:\n{ordering_only}",
+        );
+    }
 
     runner.teardown().await;
 }
