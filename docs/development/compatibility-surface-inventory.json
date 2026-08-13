@@ -440,7 +440,13 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/xmlrpc-api.spec.ts#pages.save_one leaves an existing page unchanged when watcher notifications are enabled",
+          "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects a non-boolean notify_watchers value without saving a page",
+          "framerail/tests/xmlrpc-api.spec.ts#pages.save_one rejects enabled watcher notifications without saving a page",
+          "framerail/tests/xmlrpc-api.spec.ts#pages.save_one treats omitted, nil, and false notify_watchers as disabled",
+          "framerail/tests/xmlrpc-api.spec.ts#pages.save_one validates each of revision_comment and save_mode before notify_watchers"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -449,8 +455,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "framerail/src/lib/server/xmlrpc/parameters.ts",
+          "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -586,7 +595,11 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select rejects categories and pages together before selector caps",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select treats nil and omitted selectors as absent",
+          "framerail/tests/xmlrpc-api.spec.ts#XML-RPC tags.select validates mixed selector fields before mutual exclusion"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -595,8 +608,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -1858,6 +1873,7 @@
         "tests": [
           "deepwell/src/services/data_form.rs#parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
           "deepwell/tests/page.rs#listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "deepwell/tests/page_template_assignment.rs#empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
           "framerail/tests/data-form-create-flow.spec.ts#a new data-form submission cancels stale validation and saves its own snapshot",
           "framerail/tests/data-form-create-flow.spec.ts#data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
@@ -2493,17 +2509,22 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/forum-page-content-public-boundary.test.js#forum GET routes enclose populated empty and error bodies in one page-content root"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/layout/layout-forum.md"
+          "docs/wikidot-specifications/specifications/layout/layout-forum.md",
+          "live-observations.json::forum-q1034-readonly-route-core-20260809"
         ]
       },
       "source": {
         "status": "pending",
-        "references": []
+        "references": [
+          "framerail/src/lib/ForumModuleBody.svelte"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -3962,6 +3983,8 @@
         "cases": [],
         "tests": [
           "deepwell/tests/list_pages.rs",
+          "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
+          "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
           "deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation; wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
           "deepwell/tests/page.rs",
           "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
@@ -3970,6 +3993,7 @@
           "deepwell/tests/page.rs#listpages_template_parser_functions_run_after_row_variable_substitution",
           "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
           "deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches",
+          "framerail/tests/feed-pages-route.test.js#empty selector feeds retain the Wikidot root separator",
           "framerail/tests/list-pages-feed.test.ts",
           "framerail/tests/list-pages-navigation.spec.ts",
           "install/local/wikidot-verification/tests",
@@ -5700,21 +5724,40 @@
         "issues": [],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics",
+          "deepwell/tests/user.rs::user_view_resolves_only_active_imported_slugs_without_changing_local_lookup",
+          "framerail/tests/account-route-boundaries.test.js#legacy user slug route fails closed for imported profiles",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo keeps an imported Pro profile without inventing an account-type label",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo omits unobserved imported karma labels",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo projects imported free accounts and the observed none/high karma labels",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo calls the typed user view with the route target and no session",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target -1 stays HTTP 200 with the exact missing body data",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target 0 stays HTTP 200 with the exact missing body data"
         ]
       },
       "evidence": {
         "status": "available",
         "references": [
           "docs/wikidot-specifications/specifications/module/module-userinfo.md",
-          "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json"
+          "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
+          "install/local/wikidot-verification/artifacts/userinfo-target-routes-live-20260810.json"
         ]
       },
       "source": {
-        "status": "blocked",
+        "status": "in_progress",
         "references": [
           "deepwell/src/services/render/runtime_modules.rs",
-          "deepwell/src/services/render/service.rs"
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/user/service.rs",
+          "deepwell/src/services/user/structs.rs",
+          "deepwell/src/services/view/service.rs",
+          "deepwell/src/services/view/structs.rs",
+          "framerail/src/lib/server/deepwell/user.ts",
+          "framerail/src/lib/server/load/user.ts",
+          "framerail/src/lib/server/wikidot-user-info.js",
+          "framerail/src/lib/types.ts",
+          "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
+          "framerail/src/routes/user[x+3a]info/[target]/+page.svelte"
         ]
       },
       "candidate": {
@@ -7454,7 +7497,9 @@
         "issues": [],
         "cases": [],
         "tests": [
-          "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page"
+          "deepwell/tests/media.rs#image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page",
+          "deepwell/tests/page.rs#changed_file_revision_fences_but_noop_and_failed_revision_do_not",
+          "deepwell/tests/page.rs#file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache"
         ]
       },
       "evidence": {
@@ -7470,7 +7515,9 @@
         "status": "in_progress",
         "references": [
           "deepwell/Cargo.lock",
-          "deepwell/Cargo.toml"
+          "deepwell/Cargo.toml",
+          "deepwell/src/services/context.rs",
+          "deepwell/src/services/file_revision/service.rs"
         ]
       },
       "candidate": {
