@@ -21,6 +21,10 @@ pub(super) static COMPILED_GENERATOR: LazyLock<String> = LazyLock::new(|| {
     )
 });
 
+pub(crate) fn compiled_generator_is_current(generator: &str) -> bool {
+    generator == COMPILED_GENERATOR.as_str()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -29,5 +33,9 @@ mod tests {
     fn generator_identifies_ftml_and_deepwell_renderer_semantics() {
         assert!(COMPILED_GENERATOR.starts_with(ftml::info::VERSION.as_str()));
         assert!(COMPILED_GENERATOR.ends_with("; deepwell-render/v10"));
+        assert!(compiled_generator_is_current(&COMPILED_GENERATOR));
+        assert!(!compiled_generator_is_current(
+            "fixture-ftml; deepwell-render/v9"
+        ));
     }
 }

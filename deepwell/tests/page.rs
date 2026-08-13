@@ -3552,11 +3552,14 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     });
     let mut stale_page = run_endpoint!(runner, page_view, input.clone());
     let GetPageViewOutput::Found {
-        compiled_body_html, ..
+        page_revision,
+        compiled_body_html,
+        ..
     } = &mut stale_page
     else {
         panic!("renderer epoch fixture should have a public page view");
     };
+    page_revision.compiled_generator = "fixture-ftml; deepwell-render/v9".to_owned();
     *compiled_body_html = STALE_BODY.to_owned();
 
     let metadata = run_endpoint!(runner, article_view_cache_metadata, input.clone());
@@ -3577,9 +3580,13 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         serde_json::to_string(&stale_page).expect("stale page should serialize");
     let mut redis = runner.context().redis();
     redis
-        .set::<_, _, ()>(&stale_key, stale_json)
+        .set::<_, _, ()>(&stale_key, &stale_json)
         .await
         .expect("stale v9 page should be inserted into the test cache");
+    redis
+        .set::<_, _, ()>(&current_key, &stale_json)
+        .await
+        .expect("stale artifact under the current cache key should be inserted");
     drop(redis);
 
     let view = run_endpoint!(runner, article_view, input);
@@ -3596,6 +3603,87 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     assert_eq!(served_key, current_key);
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
+}
+
+#[tokio::test]
+async fn page_view_rerenders_stale_persisted_compiled_artifact() {
+    const SLUG: &str = "renderer-epoch-persisted-fixture";
+    const CURRENT_BODY: &str = "renderer epoch persisted current body";
+    const STALE_BODY: &str = "stale deepwell-render/v9 persisted body";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Renderer epoch persisted fixture",
+        CURRENT_BODY,
+    )
+    .await;
+
+    let stale_body_hash = TextService::create(runner.context(), STALE_BODY.to_owned())
+        .await
+        .expect("stale compiled body should be stored");
+    let revision = PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("renderer epoch revision lookup should not fail")
+        .expect("renderer epoch revision should exist");
+    let mut revision = revision.into_active_model();
+    revision.compiled_body_html_hash = Set(stale_body_hash.to_vec());
+    revision.compiled_generator = Set("fixture-ftml; deepwell-render/v9".to_owned());
+    revision
+        .update(runner.context().transaction())
+        .await
+        .expect("stale compiled artifact should be attached");
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        page_revision,
+        compiled_body_html,
+        ..
+    } = view
+    else {
+        panic!("renderer epoch fixture should return a found page view");
+    };
+    assert!(
+        page_revision
+            .compiled_generator
+            .ends_with("; deepwell-render/v10"),
+        "page view must expose the current compiled generator",
+    );
+    assert!(compiled_body_html.contains(CURRENT_BODY));
+    assert!(!compiled_body_html.contains(STALE_BODY));
+
+    let persisted = PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("rerendered revision lookup should not fail")
+        .expect("rerendered revision should exist");
+    assert!(
+        persisted
+            .compiled_generator
+            .ends_with("; deepwell-render/v10"),
+        "read-time refresh should persist the current compiled generator",
+    );
+    let persisted_body =
+        TextService::get(runner.context(), &persisted.compiled_body_html_hash)
+            .await
+            .expect("rerendered compiled body should be readable");
+    assert!(persisted_body.contains(CURRENT_BODY));
+    assert!(!persisted_body.contains(STALE_BODY));
 }
 
 #[tokio::test]

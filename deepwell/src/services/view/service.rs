@@ -61,6 +61,7 @@ use crate::services::relation::{
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
+    compiled_generator_is_current,
 };
 use crate::services::settings::{
     NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
@@ -258,6 +259,7 @@ impl ViewService {
             && let Some(mut page) = ArticlePageCache::get(ctx, cache_key).await?
             && Self::cached_article_page_visible_to_viewer(ctx, &preload.viewer, &input)
                 .await?
+            && Self::cached_article_page_is_current(&page)
         {
             if let GetPageViewOutput::Found {
                 page: page_model,
@@ -314,6 +316,17 @@ impl ViewService {
                 .as_ref()
                 .map(|metadata| metadata.anonymous_permission_cache_fence.clone()),
         })
+    }
+
+    fn cached_article_page_is_current(page: &GetPageViewOutput) -> bool {
+        match page {
+            GetPageViewOutput::Found { page_revision, .. } => {
+                compiled_generator_is_current(&page_revision.compiled_generator)
+            }
+            GetPageViewOutput::Missing { .. } | GetPageViewOutput::Permissions { .. } => {
+                true
+            }
+        }
     }
 
     async fn apply_article_category_license(
@@ -588,7 +601,7 @@ impl ViewService {
             // This page exists, return its data directly.
             Some(page) => {
                 // Get associated revision
-                let page_revision =
+                let mut page_revision =
                     PageRevisionService::get_latest(ctx, site.site_id, page.page_id)
                         .await
                         .or_raise(make_error)?;
@@ -626,7 +639,9 @@ impl ViewService {
                 if user_can_access_page {
                     debug!("User has page access, return text data");
 
-                    if options.rerender && user_can_edit_page {
+                    if !compiled_generator_is_current(&page_revision.compiled_generator)
+                        || options.rerender && user_can_edit_page
+                    {
                         let depth = RerenderDepth::default();
                         info!(
                             "Re-rendering revision: site ID {} page ID {} revision ID {} (depth {})",
@@ -640,7 +655,19 @@ impl ViewService {
                         )
                         .await
                         .or_raise(make_error)?;
-                    };
+                        page_revision = PageRevisionService::get_latest(
+                            ctx,
+                            site.site_id,
+                            page.page_id,
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        if !compiled_generator_is_current(
+                            &page_revision.compiled_generator,
+                        ) {
+                            bail!(make_error());
+                        }
+                    }
 
                     let (
                         wikitext_result,

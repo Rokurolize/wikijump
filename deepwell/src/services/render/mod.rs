@@ -90,7 +90,9 @@ pub(crate) use self::diagnostics::{
 pub use self::forum_read_routes::{
     WikidotForumModuleRequest, WikidotForumModuleResponse,
 };
-pub(crate) use self::generator::DEEPWELL_RENDERER_EPOCH;
+pub(crate) use self::generator::{
+    DEEPWELL_RENDERER_EPOCH, compiled_generator_is_current,
+};
 pub use self::legacy_actions::{
     LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };
