@@ -190,12 +190,10 @@ export function buildWikidotListPagesFeedXml(
     `\t\t<description>${escapeXml(path.description)}</description>`,
     "\t\t<copyright></copyright>",
     `\t\t<lastBuildDate>${formatWikidotFeedDate(now)}</lastBuildDate>`,
-    items,
+    ...(items ? [items] : []),
     "\t</channel>",
     "</rss>"
-  ]
-    .filter((line) => line !== "")
-    .join("\n")
+  ].join("\n")
 }
 
 export function wikidotListPagesFeedErrorBody(message: string): string {
