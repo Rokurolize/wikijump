@@ -161,12 +161,13 @@ Normative behavior:
 - The endpoint accepts title t, description d, and home h metadata; repeated metadata path pairs use the last value.
 - In controlled live captures, limit, offset, and order path pairs do not affect the selected items, even though ListPages generates those pairs.
 - Unknown path arguments are ignored.
+- Every successful feed document begins with the exact prefix `<?xml version="1.0" encoding="UTF-8" ?>\n<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wikidot="http://www.wikidot.com/rss-namespace">\n\n\t<channel>\n`; all 10 successful sealed cases share it.
 - An invalid range, rating, or pagetype value produces an HTTP 200 generic feed error document rather than an HTTP error status.
 - A request ending at /feed/pages without a trailing argument path returns 404; malformed percent encoding returns 400.
 
 Evidence:
 
-- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`, `lpfeed-0002-metadata`, `lpfeed-0003-limit-ignored`, `lpfeed-0004-offset-ignored`, `lpfeed-0005-order-ignored`, `lpfeed-0006-duplicate-metadata-last-wins`, `lpfeed-0008-invalid-range`, `lpfeed-0009-invalid-rating`, `lpfeed-0010-invalid-pagetype-alias`, `lpfeed-0013-unknown-argument-ignored`, `lpfeed-0014-missing-trailing-path`, `lpfeed-0015-malformed-percent-escape`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`, `lpfeed-0002-metadata`, `lpfeed-0003-limit-ignored`, `lpfeed-0004-offset-ignored`, `lpfeed-0005-order-ignored`, `lpfeed-0006-duplicate-metadata-last-wins`, `lpfeed-0007-encoded-dot-range`, `lpfeed-0008-invalid-range`, `lpfeed-0009-invalid-rating`, `lpfeed-0010-invalid-pagetype-alias`, `lpfeed-0011-only-negative-category`, `lpfeed-0012-star-with-negative-category`, `lpfeed-0013-unknown-argument-ignored`, `lpfeed-0014-missing-trailing-path`, `lpfeed-0015-malformed-percent-escape`
 
 ### Template variables preserve legacy identity and missing-data behavior
 

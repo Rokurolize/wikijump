@@ -183,18 +183,17 @@ export function buildWikidotListPagesFeedXml(
   return [
     '<?xml version="1.0" encoding="UTF-8" ?>',
     '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wikidot="http://www.wikidot.com/rss-namespace">',
-    "\n\t<channel>",
+    "",
+    "\t<channel>",
     `\t\t<title>${escapeXml(path.title)}</title>`,
     `\t\t<link>${escapeXml(path.home ?? origin)}</link>`,
     `\t\t<description>${escapeXml(path.description)}</description>`,
     "\t\t<copyright></copyright>",
     `\t\t<lastBuildDate>${formatWikidotFeedDate(now)}</lastBuildDate>`,
-    items,
+    ...(items ? [items] : []),
     "\t</channel>",
     "</rss>"
-  ]
-    .filter((line) => line !== "")
-    .join("\n")
+  ].join("\n")
 }
 
 export function wikidotListPagesFeedErrorBody(message: string): string {
