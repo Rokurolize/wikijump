@@ -12,15 +12,15 @@
   "authoritative_manifests": [
     {"path": "docs/development/open43-q-page-graph-residual-case-manifest.json", "sha256": "c97b887024f26d08bb5b13de5f6d19e30bc598c7132250b3a8bca935441bc03d", "issues": [1028, 1035]},
     {"path": "docs/development/open43-a-forms-residual-case-manifest.json", "sha256": "d436874d0fe892a88039b0018ffbd1cdaff7846fb299774386c440b78cfc80ff", "issues": [1037]},
-    {"path": "docs/development/open43-a-utilities-case-manifest.json", "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683", "issues": [1037, 1038]}
+    {"path": "docs/development/open43-a-utilities-case-manifest.json", "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3", "issues": [1037, 1038]}
   ],
   "closure_audits": [
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1",
+      "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5",
       "issue_count": 9,
       "case_count": 64,
-      "classification_counts": {"source_ready": 26, "needs_source": 1, "candidate_required": 18, "blocked_evidence": 19},
+      "classification_counts": {"source_ready": 27, "needs_source": 0, "candidate_required": 18, "blocked_evidence": 19},
       "issue_summaries": [
         {"issue": 775, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 777, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
@@ -28,7 +28,7 @@
         {"issue": 1030, "case_count": 9, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 2}},
         {"issue": 1033, "case_count": 6, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 3}},
         {"issue": 1037, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
-        {"issue": 1038, "case_count": 10, "classification_counts": {"source_ready": 3, "needs_source": 1, "candidate_required": 0, "blocked_evidence": 6}},
+        {"issue": 1038, "case_count": 10, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 0, "blocked_evidence": 6}},
         {"issue": 1041, "case_count": 8, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 1}},
         {"issue": 1060, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 0}}
       ]
@@ -132,7 +132,7 @@
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 128, "needs_source": 2, "candidate_required": 84, "blocked_evidence": 71}
+    "classification_counts": {"source_ready": 129, "needs_source": 1, "candidate_required": 84, "blocked_evidence": 71}
   },
   "validation": {
     "jq_structural_assertions": "pass",

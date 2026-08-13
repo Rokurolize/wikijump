@@ -4206,17 +4206,33 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor",
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral accepts the exact parameter-free administrator read",
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral preserves the fail-closed envelope for non-administrators",
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral rejects unobserved fields and duplicates before rendering",
+          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral escapes every site-owned value",
+          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral renders the exact captured administrator read model"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/module/module-managesite.md"
+          "docs/wikidot-specifications/specifications/module/module-managesite.md",
+          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules.rs",
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs",
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/wikidot-manage-site-general.js",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -5019,17 +5035,25 @@
       "existing_refs": {
         "issues": [],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/module/module-petitionadmin.md"
+          "docs/wikidot-specifications/specifications/module/module-petitionadmin.md",
+          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "in_progress",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules.rs",
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20635,7 +20659,7 @@
     {
       "surface_id": "open43-audit-case:A1038_ADMIN_POSITIVE_READ_MODELS",
       "kind": "open43_audit_case",
-      "public_owner": "wikijump.open43.a_actions_membership_closure_audit.v1",
+      "public_owner": "deepwell-public-preview-and-page-view-plus-framerail-admin-read",
       "public_reference": [
         "docs/development/open43-a-actions-membership-closure-audit.json#A1038_ADMIN_POSITIVE_READ_MODELS"
       ],
@@ -20653,7 +20677,7 @@
         "references": []
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {

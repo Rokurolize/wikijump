@@ -2253,15 +2253,37 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-managesite": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Deepwell public wikidot_page_preview and saved page_view rendering for the exact standalone ManageSite actor boundary and captured administrator shell",
+        "Framerail public POST /ajax-module-connector.php parameter-free managesite/ManageSiteGeneralModule administrator read"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+        "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+        "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor",
+        "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral renders the exact captured administrator read model",
+        "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral escapes every site-owned value",
+        "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral accepts the exact parameter-free administrator read",
+        "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral preserves the fail-closed envelope for non-administrators",
+        "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral rejects unobserved fields and duplicates before rendering"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/site_utility_modules.rs",
+        "deepwell/src/services/render/site_utility_modules/admin_read_models.rs",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/wikidot-manage-site-general.js",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
+      ],
       "documentation_evidence": [
         "specifications/module/module-managesite.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "This bounded slice covers the exact no-attribute standalone actor boundary, captured initial administrator shell, and parameter-free ManageSiteGeneral read. The broader legacy administration panel interactions, submodules, save behavior, browser lifecycle, and any remote/platform-global mutation remain unverified or intentionally unavailable."
+      ]
     },
     "module-members": {
       "status": "in_progress",
@@ -2775,15 +2797,28 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "module-petitionadmin": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Deepwell public wikidot_page_preview and saved page_view rendering for exact standalone PetitionAdmin permission states and the captured administrator no-campaign shell"
+      ],
+      "tests": [
+        "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+        "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+        "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor"
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/site_utility_modules.rs",
+        "deepwell/src/services/render/site_utility_modules/admin_read_models.rs"
+      ],
       "documentation_evidence": [
         "specifications/module/module-petitionadmin.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json::E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "Only the observed permission boundary and captured administrator no-campaign read model are implemented. Campaign persistence, create/update/delete actions, identifier collision rules, CSRF, rate limits, export privacy, mutation atomicity/replay, and browser transitions remain unobserved and fail closed under the local administration policy."
+      ]
     },
     "module-rate": {
       "status": "implemented",

@@ -10,8 +10,8 @@
   "source": {
     "integration_base": "25f19ee3ce76bed6c4b0a83723bda41209ffe3ed",
     "integration_base_tree": "abeaf9f7209ad8e44196c5a27d1b77a5558eac87",
-    "audited_source_commit": "557795249d98326177d1d9dc7ba6160431c239d2",
-    "audited_source_tree": "2da8a606cbc59efb410d84abebcbc49ff9a5f3dd",
+    "audited_source_commit": "d3f1c4dce427b72911c0cb2a1eda4adb14143959",
+    "audited_source_tree": "064305e7b12fa5f73108c768e5e1c692d4684a5c",
     "ftml_revision": "62ebba4efda1f10e82363c23c925061fbe939e49",
     "deepwell_cargo_lock_sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9",
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
@@ -140,7 +140,7 @@
       },
       {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683"
+        "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3"
       },
       {
         "path": "docs/development/open43-a-forms-residual-case-manifest.json",
@@ -560,7 +560,7 @@
       "title": "Complete Wikidot site administration and cross-site utility modules",
       "authoritative_manifest": {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683"
+        "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3"
       },
       "source_ready": [
         {"case_id": "A1038_ANONYMOUS_SAFE_STATES"},
@@ -574,16 +574,22 @@
             "deepwell/tests/page.rs::authenticated_site_utility_preview_denies_only_non_administrators",
             "deepwell/tests/page.rs::saved_site_utility_modules_recheck_the_session_actor"
           ],
-          "result": "Anonymous ManageSite retains the login-capable live DOM. Actor B/C exact login-free ManageSite and PetitionAdmin denial DOM is rendered for authenticated non-administrators. Site administrators remain on generic fail-closed output and are never misclassified as non-admins."
-        }
-      ],
-      "needs_source": [
+          "result": "Anonymous ManageSite retains the login-capable live DOM. Actor B/C exact login-free ManageSite and PetitionAdmin denial DOM is rendered for authenticated non-administrators. Site administrators are never misclassified as non-admins and now render the separately captured read-only administrator models."
+        },
         {
           "case_id": "A1038_ADMIN_POSITIVE_READ_MODELS",
+          "acceptance": "Render only the captured administrator ManageSite initial shell, PetitionAdmin no-campaign shell, and parameter-free ManageSiteGeneral read model through the established current-site authorization/read owners; keep petition mutations and unobserved administration interactions unavailable.",
+          "owner": "deepwell-public-preview-and-page-view-plus-framerail-admin-read",
           "evidence_ids": ["E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810"],
-          "result": "The legacy ManageSite panel, ManageSiteGeneral form, and PetitionAdmin administrator shell are captured, but no faithful public adapter connects those contracts to the existing Framerail administration owner. They remain fail closed until one owner supplies the complete local read model."
+          "evidence": [
+            "deepwell/tests/page.rs::authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+            "framerail/tests/wikidot-manage-site-general.test.js::ManageSiteGeneral renders the exact captured administrator read model",
+            "framerail/tests/ajax-module-connector-manage-site-general.test.js::ManageSiteGeneral accepts the exact parameter-free administrator read"
+          ],
+          "result": "Administrator PagePreview and saved page_view render the captured initial ManageSite shell and PetitionAdmin no-campaign shell. The parameter-free ManageSiteGeneral AMC read authorizes through the existing Framerail admin view and renders the captured settings form from the local site preload. No remote mutation transport is added; PetitionAdmin actions remain blocked separately."
         }
       ],
+      "needs_source": [],
       "candidate_required": [],
       "blocked_evidence": [
         {
@@ -604,8 +610,10 @@
         {"case_id": "A1038_BROWSER_LIFECYCLE"}
       ],
       "exact_commands": [
+        "cargo test --manifest-path deepwell/Cargo.toml --test page authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models -- --exact --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page authenticated_site_utility_preview_denies_only_non_administrators -- --exact --nocapture",
         "cargo test --manifest-path deepwell/Cargo.toml --test page saved_site_utility_modules_recheck_the_session_actor -- --exact --nocapture",
+        "node --test framerail/tests/wikidot-manage-site-general.test.js framerail/tests/ajax-module-connector-manage-site-general.test.js",
         "node --test install/local/wikidot-verification/tests/local-administration-module-policy.test.mjs"
       ]
     },
@@ -750,8 +758,8 @@
     "issue_count": 9,
     "case_count": 64,
     "classification_counts": {
-      "source_ready": 26,
-      "needs_source": 1,
+      "source_ready": 27,
+      "needs_source": 0,
       "candidate_required": 18,
       "blocked_evidence": 19
     },
@@ -820,7 +828,7 @@
     {
       "command": "jq structural closure-audit assertions docs/development/open43-a-actions-membership-closure-audit.json",
       "status": "pass",
-      "result": "Exactly nine issues and 64 unique case IDs: source_ready 26, needs_source 1, candidate_required 18, blocked_evidence 19."
+      "result": "Exactly nine issues and 64 unique case IDs: source_ready 27, needs_source 0, candidate_required 18, blocked_evidence 19."
     },
     {
       "command": "rustfmt --edition 2024 --check deepwell/src/services/render/site_utility_modules.rs deepwell/src/services/render/runtime_modules.rs deepwell/tests/page.rs",

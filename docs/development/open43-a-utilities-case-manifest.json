@@ -116,13 +116,19 @@
         "deepwell/tests/page.rs::saved_site_utility_modules_recheck_the_session_actor"
       ],
       "evidence_id": "E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810",
-      "result": "ManageSite and PetitionAdmin now re-resolve the request actor against the current site's existing site:edit permission. Authenticated non-administrators receive the exact actor B/C live denial DOM in PagePreview and saved page_view. Anonymous ManageSite retains its login-capable DOM. Administrators are never mapped to the denial: without a faithful legacy panel owner, both administrator modules remain on FTML's generic fail-closed output."
+      "result": "ManageSite and PetitionAdmin re-resolve the request actor against the current site's existing site:edit permission. Authenticated non-administrators receive the exact actor B/C live denial DOM in PagePreview and saved page_view, while anonymous ManageSite retains its login-capable DOM. Administrators are never mapped to the denial and instead render the captured read-only administrator models through the same public seams."
     },
     {
       "case_id": "A1038_ADMIN_POSITIVE_READ_MODELS",
       "issue": 1038,
-      "status": "unimplemented",
-      "result": "The administrator captures establish a large legacy ManageSite panel, ManageSiteGeneral settings form, and an active PetitionAdmin shell, but Wikijump has no faithful public adapter from those legacy DOM contracts to the existing Framerail administration owner. They remain generic fail-closed rather than duplicating policy or exposing controls without a complete local read model."
+      "status": "implemented_unverified",
+      "public_tests": [
+        "deepwell/tests/page.rs::authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+        "framerail/tests/wikidot-manage-site-general.test.js::ManageSiteGeneral renders the exact captured administrator read model",
+        "framerail/tests/ajax-module-connector-manage-site-general.test.js::ManageSiteGeneral accepts the exact parameter-free administrator read"
+      ],
+      "evidence_id": "E_OPEN43_AUTH_ADMIN_BOUNDARY_20260810",
+      "result": "Administrator PagePreview and saved page_view now render the captured initial ManageSite manager shell and PetitionAdmin no-campaign shell exactly, without interpolating local site-owned text into the frozen legacy shell. The parameter-free managesite/ManageSiteGeneralModule AMC path authorizes through the existing Framerail admin owner and renders the captured General Settings read model from the local site preload. The read models do not create a remote mutation transport; PetitionAdmin actions and broader interactive administration remain separate blocked cases."
     },
     {
       "case_id": "A1038_PETITION_ADMIN_ACTIONS",
@@ -164,6 +170,7 @@
   "central_commands": [
     "cargo fmt --manifest-path deepwell/Cargo.toml --check",
     "cargo test --manifest-path deepwell/Cargo.toml --test page anonymous_page_and_site_utility_modules_match_frozen_safe_states -- --exact --nocapture",
+    "cargo test --manifest-path deepwell/Cargo.toml --test page authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page authenticated_site_utility_preview_denies_only_non_administrators -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page saved_site_utility_modules_recheck_the_session_actor -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --test page typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state -- --exact --nocapture",
@@ -174,6 +181,7 @@
     "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::url_arguments::tests::actor_sensitive_site_utility_modules_require_runtime_rendering -- --exact --nocapture",
     "cargo test --manifest-path deepwell/Cargo.toml --lib services::render::render_dependency::tests::render_dependency_viewer_module_is_viewer_dependent -- --exact --nocapture",
     "RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps",
+    "node --test framerail/tests/wikidot-manage-site-general.test.js framerail/tests/ajax-module-connector-manage-site-general.test.js",
     "node --test install/local/wikidot-verification/tests/local-administration-module-policy.test.mjs",
     "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
     "node scripts/generate-wikidot-specifications.mjs --check",
@@ -193,7 +201,6 @@
       "issue": 1038,
       "status": "in_progress",
       "blockers": [
-        "administrator ManageSite and ManageSiteGeneral positive read models",
         "PetitionAdmin local action contract",
         "Dashboard and Clone positive authenticated states",
         "local Clone action contract",
