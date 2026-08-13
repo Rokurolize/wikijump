@@ -1995,6 +1995,268 @@ async fn imported_page_layout_provenance_preserves_explicit_page_override() {
 }
 
 #[tokio::test]
+async fn initial_page_creation_uses_destination_category_layout() {
+    const SITE_SLUG: &str = "test";
+    const CATEGORY_SLUG: &str = "category-layout-create";
+    const PAGE_SLUG: &str = "category-layout-create:page";
+    const LAYOUT_MARKER: &str = "destination category layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikidot",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Fixture-only setup: category layout has no registered update endpoint.
+    // This immutable precondition must not be used to observe create behavior.
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, CATEGORY_SLUG)
+            .await
+            .expect("destination category fixture should exist");
+    let mut category = category.into_active_model();
+    category.layout = Set(Some("wikijump".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("destination category layout fixture should update");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Category layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create category layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><code class="wj-monospace">{LAYOUT_MARKER}</code></p>"#),
+        "the stored public body should use the destination category layout",
+    );
+}
+
+#[tokio::test]
+async fn initial_page_creation_explicit_layout_beats_destination_category_layout() {
+    const SITE_SLUG: &str = "test";
+    const CATEGORY_SLUG: &str = "explicit-layout-create";
+    const PAGE_SLUG: &str = "explicit-layout-create:page";
+    const LAYOUT_MARKER: &str = "explicit page layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikijump",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Fixture-only setup: category layout has no registered update endpoint.
+    // This immutable precondition must not be used to observe create behavior.
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, CATEGORY_SLUG)
+            .await
+            .expect("destination category fixture should exist");
+    let mut category = category.into_active_model();
+    category.layout = Set(Some("wikijump".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("destination category layout fixture should update");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Explicit page layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create explicit layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><tt>{LAYOUT_MARKER}</tt></p>"#),
+        "the stored public body should use the explicit page layout",
+    );
+}
+
+#[tokio::test]
+async fn initial_page_creation_without_category_override_uses_site_layout() {
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "site-layout-create:page";
+    const LAYOUT_MARKER: &str = "site fallback layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikidot",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Site fallback layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create site fallback layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><tt>{LAYOUT_MARKER}</tt></p>"#),
+        "the stored public body should fall back to the site layout",
+    );
+}
+
+#[tokio::test]
 async fn basic_edit() {
     let mut runner = TestRunner::setup().await;
 
