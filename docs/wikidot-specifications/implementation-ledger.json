@@ -192,15 +192,37 @@
       ]
     },
     "api-tags-select": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Published XML-RPC POST /xml-rpc-api.php tags.select boundary"
+      ],
+      "tests": [
+        {
+          "path": "framerail/tests/xmlrpc-api.spec.ts",
+          "name": "XML-RPC tags.select rejects categories and pages together before selector caps",
+          "scope": "Public XML-RPC POST response coverage decodes the fault value and verifies that both selector fields, including two empty arrays, fail with exactly fault -32602 and the mutual-exclusion message; an over-cap mixed request verifies that fault takes precedence over existing selector-cap faults."
+        },
+        {
+          "path": "framerail/tests/xmlrpc-api.spec.ts",
+          "name": "XML-RPC tags.select validates mixed selector fields before mutual exclusion",
+          "scope": "Public XML-RPC POST response coverage verifies malformed categories and malformed pages each produce their exact field-type fault before the mutual-exclusion rule is considered."
+        },
+        {
+          "path": "framerail/tests/xmlrpc-api.spec.ts",
+          "name": "XML-RPC tags.select treats nil and omitted selectors as absent",
+          "scope": "Public XML-RPC POST response coverage verifies successful tag output for site-only, two nil selectors, categories plus nil pages, and omitted categories plus pages."
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/lib/server/xmlrpc/resource-methods.ts"
+      ],
       "documentation_evidence": [
         "specifications/api/api-tags-select.md"
       ],
       "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "unresolved_ambiguities_or_blockers": [
+        "This bounded slice enforces categories/pages mutual exclusion and preserves existing selector caps and single-selector behavior; it does not establish complete tags.select parity or generic unknown-key rejection."
+      ]
     },
     "api-users-get-me": {
       "status": "pending",

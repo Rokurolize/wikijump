@@ -73,6 +73,9 @@ export async function selectTags(call: XmlRpcCall, requestIp: string): Promise<s
   const categories = getOptionalStructStringArray(params, "categories")
   const pages = getOptionalStructStringArray(params, "pages")
 
+  if (categories !== null && pages !== null) {
+    throw new XmlRpcFault(-32602, "tags.select accepts categories or pages, not both")
+  }
   if (categories && categories.length > MAX_XML_RPC_FILTER_VALUES) {
     throw new XmlRpcFault(
       -32602,

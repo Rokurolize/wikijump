@@ -27,7 +27,6 @@ const emptyPageReadRequests = {
   siteGet: [],
   voteList: []
 }
-
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
   if (!value) throw new Error(`Missing required test environment variable: ${name}`)
@@ -152,7 +151,25 @@ const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
-const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
+function xmlRpcTagsSelectRequest(
+  categories: string[] | null | undefined,
+  pages: string[] | null | undefined
+): string {
+  const selectorMember = (
+    name: "categories" | "pages",
+    values: string[] | null | undefined
+  ): string => {
+    if (values === undefined) return ""
+    const value =
+      values === null
+        ? "<nil />"
+        : `<array><data>${values
+            .map((entry) => `<value><string>${xmlEscape(entry)}</string></value>`)
+            .join("")}</data></array>`
+    return `<member><name>${name}</name><value>${value}</value></member>`
+  }
+
+  return `<?xml version="1.0"?>
 <methodCall>
   <methodName>tags.select</methodName>
   <params>
@@ -160,13 +177,14 @@ const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>categories</name><value><array><data><value><string>_default</string></value></data></array></value></member>
-          <member><name>pages</name><value><array><data><value><string>the-great-hippo</string></value></data></array></value></member>
+          ${selectorMember("categories", categories)}
+          ${selectorMember("pages", pages)}
         </struct>
       </value>
     </param>
   </params>
 </methodCall>`
+}
 
 const xmlRpcPagesSelectRequest = `<?xml version="1.0"?>
 <methodCall>
@@ -708,6 +726,19 @@ const xmlRpcHandlerRequestWithBody = (body: string): Request =>
     method: "POST"
   })
 
+function decodeXmlRpcFault(body: string) {
+  const faultValue =
+    /^<\?xml version="1\.0"\?><methodResponse><fault>(<value>[\s\S]*<\/value>)<\/fault><\/methodResponse>$/u.exec(
+      body
+    )?.[1]
+  if (!faultValue) throw new Error("Expected an XML-RPC fault response")
+
+  return parseXmlRpcCall(`<methodCall>
+  <methodName>fault</methodName>
+  <params><param>${faultValue}</param></params>
+</methodCall>`).params[0]
+}
+
 function nestedXmlRpcValue(depth: number): string {
   let value = "<value><string>x</string></value>"
   for (let index = 0; index < depth; index += 1) {
@@ -939,29 +970,74 @@ test("XML-RPC endpoint selects local categories", async ({ request }) => {
   expect(categoriesBody).toContain("<string>nav</string>")
 })
 
-test("XML-RPC endpoint selects local tags", async ({ request }) => {
-  const tagsResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcTagsSelectRequest,
-    headers: xmlRpcHeaders
-  })
+test("XML-RPC tags.select rejects categories and pages together before selector caps", async ({
+  request
+}) => {
+  for (const [categories, pages] of [
+    [[], []],
+    [["_default"], ["the-great-hippo"]],
+    [Array.from({ length: 101 }, (_, index) => `category-${index}`), ["page"]]
+  ] satisfies [string[], string[]][]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest(categories, pages),
+      headers: xmlRpcHeaders
+    })
 
-  expect(tagsResponse.status()).toBe(200)
-  const tagsBody = await tagsResponse.text()
-  expect(tagsBody).toContain("<string>_cc</string>")
-  expect(tagsBody).toContain("<string>tale</string>")
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(decodeXmlRpcFault(body)).toEqual({
+      faultCode: -32602,
+      faultString: "tags.select accepts categories or pages, not both"
+    })
+  }
+})
 
-  const deepwellRequest = await request.get(`${fixtureUrl}/last-page-tags-request`)
-  expect(deepwellRequest.status()).toBe(200)
-  expect(await deepwellRequest.json()).toEqual({
-    headers: {
-      sessionToken: "fixture-session-token"
-    },
-    params: {
-      categories: ["_default"],
-      pages: ["the-great-hippo"],
-      site: "scp-wiki"
-    }
-  })
+test("XML-RPC tags.select validates mixed selector fields before mutual exclusion", async ({
+  request
+}) => {
+  for (const [selector, malformedValue, faultString] of [
+    [
+      "categories",
+      "<string>not-an-array</string>",
+      "Expected string array field: categories"
+    ],
+    ["pages", "<boolean>1</boolean>", "Expected string array field: pages"]
+  ] as const) {
+    const emptyArrayMember = `<member><name>${selector}</name><value><array><data></data></array></value></member>`
+    const malformedMember = `<member><name>${selector}</name><value>${malformedValue}</value></member>`
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest([], []).replace(emptyArrayMember, malformedMember),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    expect(decodeXmlRpcFault(await response.text())).toEqual({
+      faultCode: -32602,
+      faultString
+    })
+  }
+})
+
+test("XML-RPC tags.select treats nil and omitted selectors as absent", async ({
+  request
+}) => {
+  for (const [categories, pages] of [
+    [undefined, undefined],
+    [null, null],
+    [["_default"], null],
+    [undefined, ["the-great-hippo"]]
+  ] satisfies [string[] | null | undefined, string[] | null | undefined][]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest(categories, pages),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain("<string>_cc</string>")
+    expect(body).toContain("<string>tale</string>")
+  }
 })
 
 test("XML-RPC endpoint selects pages with documented filters and ordering", async ({
