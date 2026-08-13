@@ -409,10 +409,10 @@ fn wikidot_literal_block(
         *text_tokens = lookahead_tokens;
         return Some(("[[/raw]]", content_start));
     }
-    let is_module = own_module_bodies && name.eq_ignore_ascii_case("module");
+    let module_candidate = own_module_bodies && name.eq_ignore_ascii_case("module");
     let (opener_end, head_end) = if name.eq_ignore_ascii_case("code")
         || name.eq_ignore_ascii_case("html")
-        || is_module
+        || module_candidate
         || (runtime_extended && name.eq_ignore_ascii_case("math"))
     {
         let end =
@@ -422,6 +422,13 @@ fn wikidot_literal_block(
         let end = first_wikidot_tag_end(source.as_bytes(), start, line_end)?;
         (end, end - 2)
     };
+    // Rate is valid without a closing marker, and its optional body is normal
+    // renderable source. It cannot own conditional syntax through EOF.
+    let is_module = module_candidate
+        && !source[name_end..head_end]
+            .split_whitespace()
+            .next()
+            .is_some_and(|name| name.eq_ignore_ascii_case("Rate"));
     let close = if name.eq_ignore_ascii_case("code") {
         "[[/code]]"
     } else if name.eq_ignore_ascii_case("html") {

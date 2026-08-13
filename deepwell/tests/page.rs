@@ -7909,6 +7909,40 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
 }
 
 #[tokio::test]
+async fn page_render_basalt_rate_does_not_claim_active_iftags_through_eof() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("basalt"),
+        category: Some(Cow::Borrowed("theme")),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Basalt"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: vec![Cow::Borrowed("co-authored"), Cow::Borrowed("theme")],
+        language: Cow::Borrowed("en"),
+    };
+
+    let output = RenderService::render(
+        runner.context(),
+        include_str!("../seeder/theme-basalt.ftml").to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with Rate inside an active gate should succeed");
+    let html = output.html_output.body;
+
+    assert!(html.contains(r#"class="page-rate-widget-box""#), "{html}");
+    assert!(
+        html.contains("Basalt</strong> is an aesthetic theme"),
+        "{html}"
+    );
+    assert!(!html.contains("[[iftags"), "{html}");
+    assert!(!html.contains("[[/iftags]]"), "{html}");
+}
+
+#[tokio::test]
 async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
     const SLUG: &str = "fixture-rate-action-sidecar";
     const SOURCE: &str = "[[module Rate]]";
