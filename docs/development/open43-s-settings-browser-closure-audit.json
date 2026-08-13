@@ -1151,26 +1151,26 @@
     }
   },
   "renderer_epoch_finalization": {
-    "classification": "needs_source",
-    "current_epoch": 9,
+    "classification": "source_ready",
+    "current_epoch": 10,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
     "required_bump_count": 2,
-    "completed_bump_count": 1,
+    "completed_bump_count": 2,
     "lane_must_not_bump": true,
     "current_epoch_introduced_by": {
-      "source_commit": "4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb",
-      "source_tree": "ec4295454c9520d5d3506e8f4f5d9bda48f35daa",
-      "subject": "fix(deepwell): refresh PagesByTag saved views",
-      "integration_commit_reconciliation_required": true,
+      "source_commit": "f9e092610e542ad645c0eec3e8c0ef0c4e7e7a6a",
+      "source_tree": "4d3b1c633df8b2f07a0aa017b65058e1defcd3cb",
+      "subject": "render: advance cache identity for Basalt boundary fix",
+      "integration_commit_reconciliation_required": false,
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     },
     "post_epoch_source": {
-      "observed_integration_head": "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
-      "observed_integration_tree": "38e2cbce621d210e5ce6b995837d696a8abb6071",
-      "last_observed_render_commit": "9059165d04ae2f24ca18fb65ad5ed9f85608917f",
-      "last_observed_render_tree": "4d68e5478905c83c2c104a775b2014b574323764",
-      "source_freeze_bump_required": true
+      "observed_integration_head": "e48ed01780ec0a67b503ffcdf957566e607c9767",
+      "observed_integration_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
+      "last_observed_render_commit": "e48ed01780ec0a67b503ffcdf957566e607c9767",
+      "last_observed_render_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
+      "source_freeze_bump_required": false
     }
   },
   "reconciliation": {

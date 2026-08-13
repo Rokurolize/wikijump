@@ -46,7 +46,7 @@
     },
     {
       "path": "docs/development/open43-m-closure-audit.json",
-      "sha256": "31225ba9a4a6194dbfd129d02421e7b92218cadd555e8c63e8bad1408cd5bda7",
+      "sha256": "d8c49b11098924c387c01de30df2f906f5100de5fa0ff858ce37a07e1f99dde8",
       "issue_count": 7,
       "case_count": 48,
       "classification_counts": {"source_ready": 24, "needs_source": 0, "candidate_required": 11, "blocked_evidence": 13},
@@ -104,7 +104,7 @@
     },
     {
       "path": "docs/development/open43-s-settings-browser-closure-audit.json",
-      "sha256": "aaab7f9f7756ebfb05617550ce823785fc67a766488bbc9a565f91deee78abbf",
+      "sha256": "293f4349aac60aa5254ad38833a7d0212d2fe3eed0dd1d5e932feb22ab8e4eca",
       "issue_count": 9,
       "case_count": 60,
       "classification_counts": {"source_ready": 23, "needs_source": 0, "candidate_required": 25, "blocked_evidence": 12},

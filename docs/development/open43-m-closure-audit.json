@@ -1268,8 +1268,8 @@
         {
           "case_id": "M1039_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before the Files renderer landed and rerender it under the final source-frozen renderer identity.",
-          "classification": "needs_source",
-          "reason": "The current renderer epoch is v9 and the anonymous article cache namespace derives from it, but render-affecting commits landed after the v9 bump. A later source-freeze bump is required before this row can claim a final compiled identity.",
+          "classification": "source_ready",
+          "reason": "The current renderer epoch is v10, the anonymous article cache namespace derives from it, and persisted stale revisions and current-namespace cache entries are rejected or rerendered before a public read can serve them.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/file_modules.rs",
@@ -1280,7 +1280,7 @@
             "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
           ],
           "evidence_ids": ["E_FILES_SAVED_EMPTY"],
-          "next_command_ids": ["C_RENDER_EPOCH"]
+          "next_command_ids": []
         }
       ]
     },
@@ -1331,8 +1331,8 @@
         {
           "case_id": "M1042_RENDER_CACHE_IDENTITY",
           "acceptance": "Bind saved output to the final provider policy and renderer semantics so pre-policy compiled output is not reused.",
-          "classification": "needs_source",
-          "reason": "Preview and saved output now assert deepwell-render/v9, and the shared article cache regression rejects an otherwise valid v7 artifact. Later render-affecting commits still share v9, so a source-freeze bump remains required.",
+          "classification": "source_ready",
+          "reason": "Preview and saved output assert deepwell-render/v10, and the shared article cache plus persisted-page regressions reject stale artifacts under both old and current cache keys.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/view/article_cache.rs",
@@ -1344,7 +1344,7 @@
             "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
           ],
           "evidence_ids": ["E_EMBED_ANALYSIS"],
-          "next_command_ids": ["C_RENDER_EPOCH", "C_DEEPWELL_MEDIA"]
+          "next_command_ids": ["C_DEEPWELL_MEDIA"]
         },
         {
           "case_id": "M1042_BROWSER_LIFECYCLE",
@@ -1494,8 +1494,8 @@
         {
           "case_id": "M1043_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before Gallery resolution landed and bind the next read to the final renderer epoch and exact file revision.",
-          "classification": "needs_source",
-          "reason": "Gallery cache fencing changed at commit 081311e4ef26679e1768a23cc933d475a9b8842c after epoch 9 was introduced. The exact file revision is now part of the cache boundary, but another renderer epoch bump is required to invalidate earlier v9 compiled artifacts.",
+          "classification": "source_ready",
+          "reason": "The final v10 renderer identity and persisted-artifact guard invalidate compiled output from before Gallery resolution and prevent stale v9 artifacts from being served or cached under the current namespace.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/compat/wikidot_gallery.rs",
@@ -1506,7 +1506,7 @@
             "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
           ],
           "evidence_ids": ["E_GALLERY_EMPTY"],
-          "next_command_ids": ["C_RENDER_EPOCH"]
+          "next_command_ids": []
         },
         {
           "case_id": "M1043_BROWSER_RENDER_AND_VIEWER",
@@ -1674,27 +1674,27 @@
     }
   ],
   "renderer_epoch_finalization": {
-    "classification": "needs_source",
-    "current_epoch": 9,
+    "classification": "source_ready",
+    "current_epoch": 10,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
     "required_bump_count": 2,
-    "completed_bump_count": 1,
+    "completed_bump_count": 2,
     "lane_must_not_bump": true,
     "current_epoch_introduced_by": {
-      "source_commit": "4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb",
-      "source_tree": "ec4295454c9520d5d3506e8f4f5d9bda48f35daa",
-      "subject": "fix(deepwell): refresh PagesByTag saved views",
-      "integration_commit_reconciliation_required": true,
+      "source_commit": "f9e092610e542ad645c0eec3e8c0ef0c4e7e7a6a",
+      "source_tree": "4d3b1c633df8b2f07a0aa017b65058e1defcd3cb",
+      "subject": "render: advance cache identity for Basalt boundary fix",
+      "integration_commit_reconciliation_required": false,
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     },
     "post_epoch_source": {
-      "observed_integration_head": "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
-      "observed_integration_tree": "38e2cbce621d210e5ce6b995837d696a8abb6071",
+      "observed_integration_head": "e48ed01780ec0a67b503ffcdf957566e607c9767",
+      "observed_integration_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
       "media_scope_commit": "081311e4ef26679e1768a23cc933d475a9b8842c",
-      "last_observed_render_commit": "9059165d04ae2f24ca18fb65ad5ed9f85608917f",
-      "last_observed_render_tree": "4d68e5478905c83c2c104a775b2014b574323764",
-      "source_freeze_bump_required": true
+      "last_observed_render_commit": "e48ed01780ec0a67b503ffcdf957566e607c9767",
+      "last_observed_render_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
+      "source_freeze_bump_required": false
     },
     "prior_epoch_v8_finalization": {
       "source_commit": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
@@ -1992,17 +1992,16 @@
       }
     ],
     "source_freeze_actions": [
-      "The historical renderer commit inventory remains sealed through epoch 8; epoch 9 was introduced by the PagesByTag freshness change at 4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb.",
+      "The historical renderer commit inventory remains sealed through epoch 8; epoch 9 was introduced by the PagesByTag freshness change at 4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb and epoch 10 was introduced by the Basalt cache-identity correction at f9e092610e542ad645c0eec3e8c0ef0c4e7e7a6a.",
       "The earlier source freeze bumped DEEPWELL_RENDERER_EPOCH once from v2 to v3 before the late renderer lanes landed.",
       "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v3 to v4.",
       "The previous correction bumped DEEPWELL_RENDERER_EPOCH once from v4 to v5 after the two post-v4 semantic renderer commits landed.",
       "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v5 to v6 after the Files renderer landed.",
       "The next correction bumped DEEPWELL_RENDERER_EPOCH once from v6 to v7 after the later author, utility, FrontForum, SiteChanges, tag-action, and visibility renderer changes landed.",
       "The next correction bumped DEEPWELL_RENDERER_EPOCH once from v7 to v8 after saved Files rendering was made fail-closed.",
-      "Epoch 9 was then introduced before later render-affecting changes, including Gallery cache fencing at 081311e4ef26679e1768a23cc933d475a9b8842c and Rate rendering changes through 9059165d04ae2f24ca18fb65ad5ed9f85608917f.",
-      "Saved-output tests now assert the current v9 identity, but v9 is not the final source-freeze identity at canonical head c36a00a4280d000d7ba91220e4c76f8de0814b3d.",
-      "C_RENDER_EPOCH remains mandatory and must be updated by the source-freeze owner before the expensive runtime candidate.",
-      "The current public article_view regression inserts an otherwise valid v7 cache entry and proves the v9 request does not reuse it; it does not invalidate compiled v9 artifacts created before the later render changes."
+      "Epoch 10 is the final local source-freeze identity at canonical head e48ed01780ec0a67b503ffcdf957566e607c9767 after the persisted compiled-artifact guard landed.",
+      "Saved-output tests assert the current v10 identity, while the public page and article_view regressions reject stale v9 artifacts from persisted rows and both old and current cache namespaces.",
+      "The current public article_view regression inserts an otherwise valid v9 cache entry and proves the v10 request does not reuse it; the persisted-page regression also rerenders a stale v9 revision before serving it."
     ]
   },
   "reconciliation": {

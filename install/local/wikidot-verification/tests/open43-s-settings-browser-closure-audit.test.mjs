@@ -191,27 +191,27 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.reconciliation.unknown_classifications, 0);
   assert.equal(audit.reconciliation.closure_claims, 0);
   assert.equal("renderer_epoch_coordination" in audit, false);
-  assert.equal(audit.renderer_epoch_finalization.classification, "needs_source");
-  assert.equal(audit.renderer_epoch_finalization.current_epoch, 9);
+  assert.equal(audit.renderer_epoch_finalization.classification, "source_ready");
+  assert.equal(audit.renderer_epoch_finalization.current_epoch, 10);
   assert.equal(audit.renderer_epoch_finalization.epoch_source, "deepwell/src/services/render/generator.rs");
   assert.equal(audit.renderer_epoch_finalization.required_bump_count, 2);
-  assert.equal(audit.renderer_epoch_finalization.completed_bump_count, 1);
+  assert.equal(audit.renderer_epoch_finalization.completed_bump_count, 2);
   assert.equal(
     audit.renderer_epoch_finalization.current_epoch_introduced_by.source_commit,
-    "4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb",
+    "f9e092610e542ad645c0eec3e8c0ef0c4e7e7a6a",
   );
   assert.equal(
     audit.renderer_epoch_finalization.current_epoch_introduced_by.source_tree,
-    "ec4295454c9520d5d3506e8f4f5d9bda48f35daa",
+    "4d3b1c633df8b2f07a0aa017b65058e1defcd3cb",
   );
   assert.equal(
     audit.renderer_epoch_finalization.current_epoch_introduced_by
       .integration_commit_reconciliation_required,
-    true,
+    false,
   );
   assert.equal(
     audit.renderer_epoch_finalization.post_epoch_source
       .source_freeze_bump_required,
-    true,
+    false,
   );
 });

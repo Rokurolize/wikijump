@@ -112,6 +112,8 @@ function classCheck(html, requiredTokens) {
   return {status: matching ? "match" : "mismatch", required_tokens: requiredTokens};
 }
 
+const DEEPWELL_RENDERER_EPOCH = 10;
+
 export function compiledGeneratorCheck(documentHtml, ftmlSha) {
   const observed = Array.from(
     documentHtml.matchAll(
@@ -120,12 +122,16 @@ export function compiledGeneratorCheck(documentHtml, ftmlSha) {
     (match) => match[1],
   );
   const expectedRevision = ftmlSha.slice(0, 8);
+  const expectedRenderer = `; deepwell-render/v${DEEPWELL_RENDERER_EPOCH}`;
   return {
     status:
-      observed.length === 1 && observed[0].includes(`[${expectedRevision}]`)
+      observed.length === 1 &&
+      observed[0].includes(`[${expectedRevision}]`) &&
+      observed[0].endsWith(expectedRenderer)
         ? "match"
         : "mismatch",
     expected_ftml_revision: expectedRevision,
+    expected_deepwell_renderer_epoch: DEEPWELL_RENDERER_EPOCH,
     observed,
   };
 }

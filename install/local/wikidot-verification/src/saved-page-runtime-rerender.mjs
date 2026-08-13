@@ -8,6 +8,7 @@ import {
 
 const SITE_SLUG = "scp-wiki";
 const IP_ADDRESS = "127.0.0.1";
+const DEEPWELL_RENDERER_EPOCH = 10;
 export const RERENDER_RECEIPT_SCHEMA =
   "wikijump_syntax_differential.saved_page_runtime_rerender_receipt.v1";
 
@@ -53,8 +54,15 @@ function assertStablePage(before, after, slug) {
 
 function assertCurrentGenerator(generator, ftmlSha, slug) {
   const expectedRevision = ftmlSha.slice(0, 8);
-  if (typeof generator !== "string" || !generator.includes(`[${expectedRevision}]`)) {
-    throw new Error(`local page ${slug} was not compiled by FTML ${expectedRevision}`);
+  const expectedRenderer = `; deepwell-render/v${DEEPWELL_RENDERER_EPOCH}`;
+  if (
+    typeof generator !== "string" ||
+    !generator.includes(`[${expectedRevision}]`) ||
+    !generator.endsWith(expectedRenderer)
+  ) {
+    throw new Error(
+      `local page ${slug} was not compiled by FTML ${expectedRevision} and Deepwell renderer v${DEEPWELL_RENDERER_EPOCH}`,
+    );
   }
 }
 
