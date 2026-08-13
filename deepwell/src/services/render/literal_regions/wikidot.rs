@@ -422,13 +422,16 @@ fn wikidot_literal_block(
         let end = first_wikidot_tag_end(source.as_bytes(), start, line_end)?;
         (end, end - 2)
     };
-    // Rate is valid without a closing marker, and its optional body is normal
-    // renderable source. It cannot own conditional syntax through EOF.
+    let is_rate = source[name_end..head_end]
+        .split_whitespace()
+        .next()
+        .is_some_and(|name| name.eq_ignore_ascii_case("Rate"));
+    // An absent closer after a complete Rate head must not mask later
+    // conditional boundaries through EOF. Paired Rate still owns its body.
     let is_module = module_candidate
-        && !source[name_end..head_end]
-            .split_whitespace()
-            .next()
-            .is_some_and(|name| name.eq_ignore_ascii_case("Rate"));
+        && (!is_rate
+            || find_block_close(source, opener_end, source.len(), "[[/module]]")
+                .is_some());
     let close = if name.eq_ignore_ascii_case("code") {
         "[[/code]]"
     } else if name.eq_ignore_ascii_case("html") {

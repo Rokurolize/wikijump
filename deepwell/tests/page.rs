@@ -7912,7 +7912,7 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
 async fn page_render_basalt_rate_does_not_claim_active_iftags_through_eof() {
     let runner = TestRunner::setup().await;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
-    let page_info = PageInfo {
+    let mut page_info = PageInfo {
         page: Cow::Borrowed("basalt"),
         category: Some(Cow::Borrowed("theme")),
         site: Cow::Borrowed("scp-wiki"),
@@ -7923,7 +7923,7 @@ async fn page_render_basalt_rate_does_not_claim_active_iftags_through_eof() {
         language: Cow::Borrowed("en"),
     };
 
-    let output = RenderService::render(
+    let active = RenderService::render(
         runner.context(),
         include_str!("../seeder/theme-basalt.ftml").to_owned(),
         &page_info,
@@ -7931,15 +7931,97 @@ async fn page_render_basalt_rate_does_not_claim_active_iftags_through_eof() {
     )
     .await
     .expect("page render with Rate inside an active gate should succeed");
-    let html = output.html_output.body;
+    let active_html = active.html_output.body;
 
-    assert!(html.contains(r#"class="page-rate-widget-box""#), "{html}");
     assert!(
-        html.contains("Basalt</strong> is an aesthetic theme"),
-        "{html}"
+        active_html.contains(r#"class="page-rate-widget-box""#),
+        "{active_html}"
     );
-    assert!(!html.contains("[[iftags"), "{html}");
-    assert!(!html.contains("[[/iftags]]"), "{html}");
+    assert!(
+        active_html.contains("Basalt</strong> is an aesthetic theme"),
+        "{active_html}"
+    );
+    assert!(!active_html.contains("[[iftags"), "{active_html}");
+    assert!(!active_html.contains("[[/iftags]]"), "{active_html}");
+
+    page_info.tags.clear();
+    let inactive = RenderService::render(
+        runner.context(),
+        include_str!("../seeder/theme-basalt.ftml").to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with the Basalt theme gate inactive should succeed");
+    let inactive_html = inactive.html_output.body;
+
+    assert!(
+        !inactive_html.contains(r#"class="page-rate-widget-box""#),
+        "{inactive_html}"
+    );
+    assert!(
+        !inactive_html.contains("Basalt</strong> is an aesthetic theme"),
+        "{inactive_html}"
+    );
+
+    page_info.tags.push(Cow::Borrowed("theme"));
+    let literal = RenderService::render(
+        runner.context(),
+        concat!(
+            "[[iftags +theme]]\n",
+            "[[code]]\n",
+            "[[/iftags]]\n",
+            "[[/code]]\n",
+            "visible after literal\n",
+            "[[/iftags]]\n",
+        )
+        .to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with a conditional closer inside code should succeed");
+    let literal_html = literal.html_output.body;
+
+    assert!(
+        literal_html.contains("visible after literal"),
+        "{literal_html}"
+    );
+    assert!(
+        literal_html.contains("<pre><code>[[/iftags]]"),
+        "{literal_html}"
+    );
+
+    let paired_rate = RenderService::render(
+        runner.context(),
+        concat!(
+            "[[iftags +theme]]\n",
+            "[[module Rate]]\n",
+            "[[/iftags]]\n",
+            "[[/module]]\n",
+            "visible after paired Rate\n",
+            "[[/iftags]]\n",
+        )
+        .to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with a conditional closer inside paired Rate should succeed");
+    let paired_rate_html = paired_rate.html_output.body;
+
+    assert!(
+        paired_rate_html.contains(r#"class="page-rate-widget-box""#),
+        "{paired_rate_html}"
+    );
+    assert!(
+        paired_rate_html.contains("visible after paired Rate"),
+        "{paired_rate_html}"
+    );
+    assert!(
+        !paired_rate_html.contains("[[/iftags]]"),
+        "{paired_rate_html}"
+    );
 }
 
 #[tokio::test]
