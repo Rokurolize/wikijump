@@ -1,6 +1,6 @@
 {
-  "base_commit": "c78561b3f6dc35198658f618fc01d10e4bcad6d0",
-  "base_tree": "9f236023be41fd9c807272bbb16dd060b500b140",
+  "base_commit": "0ffb1168b7ab1af3488209507c0986b395c949c6",
+  "base_tree": "9904ff993908e7c25c5f857875f392ee431f0669",
   "blocked_reason": "",
   "blocked_surface_ids": [],
   "candidate_status": "not_run",
@@ -17,19 +17,19 @@
   "identities": {
     "audit": {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+      "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
     },
     "fixture": {
       "path": "install/local/wikidot-verification/fixtures/pr1334-join-membership-source-attribution.json",
-      "sha256": "0599452fa2124a8b0d5e9e289d4858cb9f7cd390f0c6b22810a6abac80ea65a2"
+      "sha256": "d100dbb572fe23bd9eb69b0f9462ab15d9b8952effcc930e75e9c0cdb173ae76"
     },
     "inventory": {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da"
+      "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f"
     },
     "script": {
       "path": "install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py",
-      "sha256": "1f404cff4a7c34e910334f1b03a9240d3751c1fa776840ec899e18ab2b2951db"
+      "sha256": "44d68abd23353eb9e42d687285ea4bcee85702bb967abf7ab0cf3f6926bb9c38"
     }
   },
   "missing_witnesses": [],
@@ -64,7 +64,7 @@
         "public_reference": [
           "docs/wikidot-specifications/specifications/module/module-join.md"
         ],
-        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
+        "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f",
         "surface_id": "catalog-feature:module-join"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -85,11 +85,11 @@
         {
           "anchor": "async fn membership_browser_actions_for_page(",
           "line_range": {
-            "end": 147,
-            "start": 147
+            "end": 148,
+            "start": 148
           },
           "path": "deepwell/src/services/view/service.rs",
-          "sha256": "2c4b1b642940b2bf5f955054d7c0c9ea6b85a7a870a8a5932c43bf5c29308f8d",
+          "sha256": "7d7d0517b2f910f580b5e7de72b4ceb42de1b0a2d66ce9d365dba725fd3a15d0",
           "source_present": true
         }
       ],
@@ -109,11 +109,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         },
         {
@@ -135,7 +135,7 @@
         "public_reference": [
           "docs/wikidot-specifications/specifications/platform/site-membership.md"
         ],
-        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
+        "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f",
         "surface_id": "catalog-feature:site-membership"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -170,11 +170,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         }
       ]
@@ -186,7 +186,7 @@
         "public_reference": [
           "deepwell/src/api.rs#register:membership_join"
         ],
-        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
+        "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f",
         "surface_id": "deepwell-jsonrpc:membership_join"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -197,11 +197,11 @@
         {
           "anchor": "    register!(\"membership_join\", membership_join);",
           "line_range": {
-            "end": 416,
-            "start": 416
+            "end": 427,
+            "start": 427
           },
           "path": "deepwell/src/api.rs",
-          "sha256": "37e0863fb1f442c86ad8772f228218baf75f2d4eb5f76b424264a7c294a3e8ce",
+          "sha256": "32d92a9b01604d4198881ffb27c78585ed30e94f59627db62b5255111b1bee8c",
           "source_present": true
         },
         {
@@ -231,11 +231,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         }
       ]
@@ -248,7 +248,7 @@
           "framerail/src/lib/server/load/page/page-actions.ts#action:membershipJoin",
           "framerail/src/routes/+page.server.ts#action:membershipJoin"
         ],
-        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
+        "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f",
         "surface_id": "framerail-server-action:/?/membershipJoin"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -310,7 +310,7 @@
           "framerail/src/lib/server/load/page/page-actions.ts#action:membershipJoin",
           "framerail/src/routes/[slug]/[...extra]/+page.server.ts#action:membershipJoin"
         ],
-        "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da",
+        "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f",
         "surface_id": "framerail-server-action:/{slug}/{*extra}?/membershipJoin"
       },
       "claim": "source_and_existing_test_attribution_only",
@@ -369,7 +369,7 @@
         "case_id": "A1029_JOIN_RENDER_ARGUMENT_MATRIX",
         "owner": "deepwell",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+        "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "The allowed existing test covers saved case-varied Join recognition and binding, but not the audit row's complete render argument matrix; the audit's page.rs citation is outside this lane and is not cited here.",
@@ -407,7 +407,7 @@
         "case_id": "A1029_SAVED_RENDERER_BINDING",
         "owner": "deepwell-and-framerail",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+        "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -461,11 +461,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         },
         {
@@ -495,7 +495,7 @@
         "case_id": "A1029_ACTOR_BOUND_OPEN_SELF_JOIN",
         "owner": "deepwell",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+        "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -539,11 +539,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         }
       ]
@@ -553,7 +553,7 @@
         "case_id": "A1060_EDITABLE_SITE_PUBLIC_JOIN_ROUTE",
         "owner": "deepwell-seeder-and-view",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+        "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -573,11 +573,11 @@
         {
           "anchor": "async fn membership_browser_actions_for_page(",
           "line_range": {
-            "end": 147,
-            "start": 147
+            "end": 148,
+            "start": 148
           },
           "path": "deepwell/src/services/view/service.rs",
-          "sha256": "2c4b1b642940b2bf5f955054d7c0c9ea6b85a7a870a8a5932c43bf5c29308f8d",
+          "sha256": "7d7d0517b2f910f580b5e7de72b4ceb42de1b0a2d66ce9d365dba725fd3a15d0",
           "source_present": true
         },
         {
@@ -607,11 +607,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         }
       ]
@@ -621,7 +621,7 @@
         "case_id": "A1060_ORDINARY_MEMBER_PAGE_CREATE",
         "owner": "deepwell",
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+        "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
       },
       "claim": "source_and_existing_test_attribution_only",
       "gap_reason": "",
@@ -645,11 +645,11 @@
         {
           "anchor": "async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {",
           "line_range": {
-            "end": 56,
-            "start": 56
+            "end": 57,
+            "start": 57
           },
           "path": "deepwell/tests/role.rs",
-          "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664",
+          "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb",
           "source_present": true
         }
       ]
@@ -659,7 +659,7 @@
   "source_inputs": [
     {
       "path": "deepwell/src/api.rs",
-      "sha256": "37e0863fb1f442c86ad8772f228218baf75f2d4eb5f76b424264a7c294a3e8ce"
+      "sha256": "32d92a9b01604d4198881ffb27c78585ed30e94f59627db62b5255111b1bee8c"
     },
     {
       "path": "deepwell/src/database/seeder/data.rs",
@@ -679,19 +679,19 @@
     },
     {
       "path": "deepwell/src/services/view/service.rs",
-      "sha256": "2c4b1b642940b2bf5f955054d7c0c9ea6b85a7a870a8a5932c43bf5c29308f8d"
+      "sha256": "7d7d0517b2f910f580b5e7de72b4ceb42de1b0a2d66ce9d365dba725fd3a15d0"
     },
     {
       "path": "deepwell/tests/role.rs",
-      "sha256": "b5e8ef2a5fa69e1848c83d7c589b4f2fe1a1adb1657e0e8b91b0da8d4e9dc664"
+      "sha256": "d73d9e4e04fcd318ebf8cfccb31065afe14fd43026cba4f82e304dc185896abb"
     },
     {
       "path": "docs/development/compatibility-surface-inventory.json",
-      "sha256": "b14cd009a30d07907e16d4b19ad12ddf68d0823815ca031d78fa47fe176f39da"
+      "sha256": "c1100cf646f7e2ac528309d45740a49ab1002aa16ba7a6b69e46e81c3a27676f"
     },
     {
       "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-      "sha256": "64e3ca7d6a7da557689d3ab1292cd25861f4b693b2e3b33d47c7ba2bdb6f73e1"
+      "sha256": "6f667c41c8fa6db7ceff2d9408790fe1ed9a52f3ed104b096d1cdbe40894c5f5"
     },
     {
       "path": "docs/local-authoring-boundary.md",
