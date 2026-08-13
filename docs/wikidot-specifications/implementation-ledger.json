@@ -4142,18 +4142,31 @@
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
         "Deepwell public wikidot_page_preview rendering",
-        "Deepwell public saved page_view rendering"
+        "Deepwell public saved page_view rendering",
+        "Deepwell transaction-local JSON-RPC endpoint harness across file_create, file_edit, file_delete, file_restore, deferred-action drains, and explicit rerender simulation"
       ],
       "tests": [
         {
           "path": "deepwell/tests/media.rs",
           "name": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page",
           "scope": "exact ten-case f=image and =image ASCII-space, tab, NBSP, and lookalike ownership boundary through public preview and saved page view"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
+          "scope": "transaction-local registered file_create, file_delete, and file_restore calls leave the Gallery key unchanged until the test drains deferred actions; an explicit rerender simulation then exposes the new file state. This is not an independent-reader committed-request proof."
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "changed_file_revision_fences_but_noop_and_failed_revision_do_not",
+          "scope": "transaction-local registered JSON-RPC file_edit leaves the site public-content fence unchanged after deferred-action drains for a semantic no-op and failed invalid request, while a successful changed revision advances it when deferred actions are drained"
         }
       ],
       "implementation_files": [
         "deepwell/Cargo.toml",
-        "deepwell/Cargo.lock"
+        "deepwell/Cargo.lock",
+        "deepwell/src/services/context.rs",
+        "deepwell/src/services/file_revision/service.rs"
       ],
       "documentation_evidence": [
         "specifications/wiki-syntax/syntax-images.md",

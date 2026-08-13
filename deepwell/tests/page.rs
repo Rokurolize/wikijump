@@ -70,6 +70,7 @@ use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
+use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::relation::{
     CreatePageWatch, CreateSiteMember, PageAttribution, PageAttributionKind,
     RemovePageWatch, SiteMemberAccepted, SiteMemberData,
@@ -300,6 +301,137 @@ async fn load_cached_attribution_article(
         },
         other => panic!("expected a cacheable imported article, got {other:?}"),
     }
+}
+
+async fn import_cacheable_gallery_fixture(
+    runner: &mut TestRunner,
+    site_id: i64,
+) -> (i64, String) {
+    let run_id = cuid();
+    let page_id = rand::random_range(1_700_000_000_i64..1_799_999_999_i64);
+    let revision_id = rand::random_range(1_800_000_000_i64..1_899_999_999_i64);
+    let slug = format!("gallery-file-cache-{run_id}");
+
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(slug.clone())),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page,
+        json!({
+            "page_id": page_id,
+            "site_id": site_id,
+            "created_at": "1970-01-01T00:00:00Z",
+            "slug": slug,
+            "locked": false,
+            "discussion_thread_id": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page_revision,
+        json!({
+            "revision_id": revision_id,
+            "revision_type": "create",
+            "created_at": time::OffsetDateTime::UNIX_EPOCH,
+            "updated_at": null,
+            "revision_number": 0,
+            "page_id": page_id,
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "[[gallery]]",
+            "comments": "import Gallery file-cache fixture",
+            "title": "Gallery file-cache fixture",
+            "slug": slug,
+            "tags": [],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("Gallery import post-commit actions should complete");
+
+    (page_id, slug)
+}
+
+struct CachedGalleryArticle {
+    body: String,
+    cache_key: String,
+    fence: String,
+}
+
+async fn load_cached_gallery_article(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> CachedGalleryArticle {
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    match run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetArticleViewOutput {
+            page:
+                GetPageViewOutput::Found {
+                    compiled_body_html, ..
+                },
+            article_page_cache_key: Some(cache_key),
+            public_content_cache_fence: Some(fence),
+            ..
+        } => CachedGalleryArticle {
+            body: compiled_body_html,
+            cache_key,
+            fence,
+        },
+        other => panic!("expected a cacheable imported Gallery article, got {other:?}"),
+    }
+}
+
+async fn complete_gallery_file_mutation(
+    runner: &mut TestRunner,
+    site_id: i64,
+    page_id: i64,
+    slug: &str,
+    before: &CachedGalleryArticle,
+) -> CachedGalleryArticle {
+    let before_commit = load_cached_gallery_article(runner, site_id, slug).await;
+    assert_eq!(before_commit.fence, before.fence);
+    assert_eq!(before_commit.cache_key, before.cache_key);
+
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("file mutation post-commit actions should complete");
+    let before_worker = load_cached_gallery_article(runner, site_id, slug).await;
+    assert_ne!(before_worker.fence, before.fence);
+    assert_ne!(before_worker.cache_key, before.cache_key);
+    assert_eq!(
+        before_worker.body, before.body,
+        "the transaction-local rerender simulation has not run yet",
+    );
+
+    rerender_file_fixture_page(runner, page_id).await;
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("Gallery rerender post-commit actions should complete");
+    load_cached_gallery_article(runner, site_id, slug).await
 }
 
 async fn set_page_rating_policy(
@@ -5670,6 +5802,253 @@ async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl()
         "{anonymous}"
     );
     assert!(!anonymous.contains("wjfiles"), "{anonymous}");
+}
+
+#[tokio::test]
+async fn file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache() {
+    const FILE_NAME: &str = "cache-fresh-gallery-image.png";
+    const EMPTY_GALLERY: &str =
+        "Sorry, we couldn't find any images attached to this page.";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let (page_id, slug) =
+        import_cacheable_gallery_fixture(&mut runner, site.site_id).await;
+
+    let warm = load_cached_gallery_article(&mut runner, site.site_id, &slug).await;
+    assert!(warm.body.contains(EMPTY_GALLERY), "{}", warm.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    let mut png = vec![
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0,
+        0, 1, 8, 4, 0, 0, 0, 181, 28, 12, 2, 0, 0, 0, 11, 73, 68, 65, 84, 120, 218, 99,
+        100, 248, 15, 0, 1, 5, 1, 1, 39, 24, 227, 102, 0, 0, 0, 0, 73, 69, 78, 68, 174,
+        66, 96, 130,
+    ];
+    let pending_blob_id = cuid();
+    png.extend_from_slice(pending_blob_id.as_bytes());
+    let (pending, png) = create_committed_page_pending_blob_with_data_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page_id,
+        pending_blob_id,
+        png,
+    )
+    .await;
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page_id,
+            "name": FILE_NAME,
+            "uploaded_blob_id": pending.pending_blob_id.clone(),
+            "revision_comments": "create Gallery cache image",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let fresh =
+        complete_gallery_file_mutation(&mut runner, site.site_id, page_id, &slug, &warm)
+            .await;
+    assert!(fresh.body.contains(FILE_NAME), "{}", fresh.body);
+    assert!(!fresh.body.contains(EMPTY_GALLERY), "{}", fresh.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        file_delete,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page_id,
+            "file": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "delete Gallery cache image",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let deleted =
+        complete_gallery_file_mutation(&mut runner, site.site_id, page_id, &slug, &fresh)
+            .await;
+    assert!(deleted.body.contains(EMPTY_GALLERY), "{}", deleted.body);
+    assert!(!deleted.body.contains(FILE_NAME), "{}", deleted.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page_id,
+            "file_id": created.file_id,
+            "revision_comments": "restore Gallery cache image",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let restored = complete_gallery_file_mutation(
+        &mut runner,
+        site.site_id,
+        page_id,
+        &slug,
+        &deleted,
+    )
+    .await;
+    assert!(restored.body.contains(FILE_NAME), "{}", restored.body);
+    assert!(!restored.body.contains(EMPTY_GALLERY), "{}", restored.body);
+
+    cleanup_committed_page_pending_blob_fixture(runner.state(), &pending, &png)
+        .await
+        .expect("Gallery PNG fixture cleanup should succeed");
+}
+
+#[tokio::test]
+async fn changed_file_revision_fences_but_noop_and_failed_revision_do_not() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded home page should exist");
+    let pending_blob_id = create_prefinalized_empty_page_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": "file-revision-fence.png",
+            "uploaded_blob_id": pending_blob_id,
+            "revision_comments": "create file revision fence fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("file fixture post-commit actions should complete");
+    let initial_fence = PublicContentCache::cache_fence(runner.context(), site.site_id)
+        .await
+        .expect("initial public-content fence should be readable");
+
+    let no_op = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "semantic no-op",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(no_op.is_none());
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("no-op post-commit drain should succeed");
+    assert_eq!(
+        PublicContentCache::cache_fence(runner.context(), site.site_id)
+            .await
+            .expect("post-no-op fence should be readable"),
+        initial_fence,
+    );
+
+    let error = run_endpoint_err!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "invalid empty-name edit",
+            "user_id": ADMIN_USER_ID,
+            "name": "",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::FileNameEmpty);
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("failed edit post-commit drain should succeed");
+    assert_eq!(
+        PublicContentCache::cache_fence(runner.context(), site.site_id)
+            .await
+            .expect("post-failure fence should be readable"),
+        initial_fence,
+    );
+
+    run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "changed name",
+            "user_id": ADMIN_USER_ID,
+            "name": "file-revision-fence-renamed.png",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("changed file edit should create a revision");
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("changed edit post-commit actions should complete");
+    assert_ne!(
+        PublicContentCache::cache_fence(runner.context(), site.site_id)
+            .await
+            .expect("post-change fence should be readable"),
+        initial_fence,
+    );
 }
 
 #[tokio::test]
@@ -29993,8 +30372,27 @@ async fn create_committed_page_pending_blob_fixture(
     page_id: i64,
 ) -> (PagePendingBlobFixture, Vec<u8>) {
     let pending_blob_id = cuid();
-    let s3_path = format!("uploads/{pending_blob_id}");
     let data = format!("issue 1062 page-owned upload {pending_blob_id}").into_bytes();
+    create_committed_page_pending_blob_with_data_fixture(
+        runner,
+        user_id,
+        site_id,
+        page_id,
+        pending_blob_id,
+        data,
+    )
+    .await
+}
+
+async fn create_committed_page_pending_blob_with_data_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+    pending_blob_id: String,
+    data: Vec<u8>,
+) -> (PagePendingBlobFixture, Vec<u8>) {
+    let s3_path = format!("uploads/{pending_blob_id}");
     let response = runner
         .state()
         .s3_files_bucket
