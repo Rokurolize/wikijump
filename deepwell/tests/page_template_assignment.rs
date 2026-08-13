@@ -1382,6 +1382,36 @@ async fn empty_text_values_survive_public_create_edit_view_and_listpages_lifecyc
     );
 
     let page = create_page(&mut runner, site_id, TARGET_SLUG, EMPTY_SOURCE).await;
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, EMPTY_SOURCE);
+            assert_eq!(
+                data_form.values,
+                BTreeMap::from([
+                    ("choice".to_owned(), String::new()),
+                    ("explicit".to_owned(), String::new()),
+                    ("implicit".to_owned(), String::new()),
+                ]),
+            );
+        }
+        other => {
+            panic!("expected canonical empty values immediately after create: {other:?}")
+        }
+    }
+
     set_page_actor(&mut runner, site_id, TARGET_SLUG);
     let populated = run_endpoint!(
         runner,
