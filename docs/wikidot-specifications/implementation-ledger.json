@@ -856,9 +856,15 @@
       "confirmed_public_seams": [
         "Live generated create/edit input and textarea DOM, regex validation, exact saved source, and default table display",
         "Deepwell public missing/found page view and ListPages field-query/render seams",
+        "Deepwell registered page-create, page-edit, page-view, and ListPages rendering lifecycle for canonical empty explicit and implicit text scalars",
         "Framerail public generated data-form create/edit browser flow"
       ],
       "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "scope": "registered public endpoints verify that canonical quoted-empty explicit and implicit text values survive create, edit, editor restoration, anonymous default-table view, and ListPages variables; text null and quoted-empty select records remain fail-closed while select null remains accepted"
+        },
         {
           "path": "deepwell/tests/page_template_assignment.rs",
           "name": "page_view_exposes_live_text_and_select_control_contract",
