@@ -22,6 +22,15 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.deepEqual(audit.scope.issues, [610, 689, 690, 754, 755, 757, 758, 822, 1046]);
   assert.equal(audit.scope.issue_count, 9);
   assert.equal(audit.source_identity.standing_is_acceptance_evidence, false);
+  assert.equal(
+    audit.source_identity.observed_integration_head,
+    "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
+  );
+  assert.equal(
+    audit.source_identity.observed_integration_tree,
+    "38e2cbce621d210e5ce6b995837d696a8abb6071",
+  );
+  assert.equal(audit.source_identity.final_source_freeze_reconciliation_required, true);
 
   for (const input of [
     ...audit.input_manifests,
@@ -182,12 +191,27 @@ test("settings and browser closure audit is complete without promoting candidate
   assert.equal(audit.reconciliation.unknown_classifications, 0);
   assert.equal(audit.reconciliation.closure_claims, 0);
   assert.equal("renderer_epoch_coordination" in audit, false);
-  assert.equal(audit.renderer_epoch_finalization.classification, "source_ready");
-  assert.equal(audit.renderer_epoch_finalization.current_epoch, 8);
+  assert.equal(audit.renderer_epoch_finalization.classification, "needs_source");
+  assert.equal(audit.renderer_epoch_finalization.current_epoch, 9);
   assert.equal(audit.renderer_epoch_finalization.epoch_source, "deepwell/src/services/render/generator.rs");
-  assert.equal(audit.renderer_epoch_finalization.required_bump_count, 1);
+  assert.equal(audit.renderer_epoch_finalization.required_bump_count, 2);
   assert.equal(audit.renderer_epoch_finalization.completed_bump_count, 1);
-  assert.equal(audit.renderer_epoch_finalization.finalized_by.source_commit, "cea9076fdfe49d697716a3e0acb5ccb0c21025b5");
-  assert.equal(audit.renderer_epoch_finalization.finalized_by.source_tree, "8fc8e768c906b9b306e46442bb580d24b686e8a1");
-  assert.equal(audit.renderer_epoch_finalization.finalized_by.integration_commit_reconciliation_required, false);
+  assert.equal(
+    audit.renderer_epoch_finalization.current_epoch_introduced_by.source_commit,
+    "4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb",
+  );
+  assert.equal(
+    audit.renderer_epoch_finalization.current_epoch_introduced_by.source_tree,
+    "ec4295454c9520d5d3506e8f4f5d9bda48f35daa",
+  );
+  assert.equal(
+    audit.renderer_epoch_finalization.current_epoch_introduced_by
+      .integration_commit_reconciliation_required,
+    true,
+  );
+  assert.equal(
+    audit.renderer_epoch_finalization.post_epoch_source
+      .source_freeze_bump_required,
+    true,
+  );
 });

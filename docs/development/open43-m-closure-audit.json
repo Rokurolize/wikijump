@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.open43.m_closure_audit.v1",
-  "generated_on": "2026-08-11",
+  "generated_on": "2026-08-13",
   "scope": {
     "issues": [756, 776, 806, 1039, 1042, 1043, 1062],
     "issue_count": 7,
@@ -8,7 +8,7 @@
   },
   "classification_contract": {
     "referent_table_path": "docs/development/referent-table-open43-m-closure-audit.md",
-    "referent_table_sha256": "674c462ae26951c2eedb7530098038a645ec7abce07c336918c070ab590469ee",
+    "referent_table_sha256": "390803118d2e7d8a2c3e1fef55f06bf08b2ed796a891b72cede83a343de850a9",
     "allowed": [
       "source_ready",
       "needs_source",
@@ -28,10 +28,10 @@
     "framerail_pnpm_lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
     "framerail_package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
     "framerail_svelte_config_sha256": "52b02a44f682cd0bb12b8b968e4a0dc5f84eda1b76c2201aee9566bc236fbcbc",
-    "observed_integration_head": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
-    "observed_integration_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
+    "observed_integration_head": "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
+    "observed_integration_tree": "38e2cbce621d210e5ce6b995837d696a8abb6071",
     "observed_integration_head_is_dynamic": false,
-    "final_source_freeze_reconciliation_required": false,
+    "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
   },
   "resized_asset_lane_amendment": {
@@ -131,12 +131,28 @@
     ],
     "base_commit": "f0c8682882e58b4d0f5191bf9577f8379c4bab68",
     "base_tree": "8ba889a3b66d79360a0a89d8bc638461190c68c5",
-    "source_commit": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
-    "source_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
-    "previous_epoch": 7,
-    "final_epoch": 8,
+    "source_commit": "4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb",
+    "source_tree": "ec4295454c9520d5d3506e8f4f5d9bda48f35daa",
+    "previous_epoch": 8,
+    "current_epoch": 9,
     "bump_count": 1,
-    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator and ignores a valid serialized page stored only under the v7 namespace.",
+    "public_boundary": "A public article_view computes a cache namespace from the same renderer epoch as compiled_generator. The current regression proves epoch 9 rejects a valid serialized page stored under the v7 namespace, but later render-affecting commits require another source-freeze bump before candidate execution.",
+    "post_epoch_render_changes": {
+      "observed_source_head": "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
+      "observed_source_tree": "38e2cbce621d210e5ce6b995837d696a8abb6071",
+      "media_scope_commit": "081311e4ef26679e1768a23cc933d475a9b8842c",
+      "media_scope_subject": "fix(cache): fence gallery views on file revisions",
+      "last_observed_render_commit": "9059165d04ae2f24ca18fb65ad5ed9f85608917f",
+      "last_observed_render_tree": "4d68e5478905c83c2c104a775b2014b574323764",
+      "source_freeze_bump_required": true
+    },
+    "prior_epoch_v8_bump": {
+      "source_commit": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
+      "source_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
+      "previous_epoch": 7,
+      "final_epoch": 8,
+      "bump_count": 1
+    },
     "prior_epoch_v6_bump": {
       "base_commit": "132c01334aa9448b24f73647d46a2b3834a76310",
       "base_tree": "48e97dee87afff2e1e9e2828c24a17733be85c6e",
@@ -146,7 +162,7 @@
       "final_epoch": 6,
       "bump_count": 1
     },
-    "integration_commit_reconciliation_required": false,
+    "integration_commit_reconciliation_required": true,
     "source_ready_is_not_pass": true
   },
   "github_issue_inputs": [
@@ -204,7 +220,7 @@
     },
     {
       "path": "docs/wikidot-specifications/live-observations.json",
-      "sha256": "58cd39e295426d6c40e1d74af28d178bd68119a90d435994851e35112874f65a",
+      "sha256": "9f805b4eae468371a63bc41165adb139bd8526ddb1b25e3fe6349aff08f95712",
       "feature_specific_rows_for_scope": 1
     }
   ],
@@ -1252,8 +1268,8 @@
         {
           "case_id": "M1039_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before the Files renderer landed and rerender it under the final source-frozen renderer identity.",
-          "classification": "source_ready",
-          "reason": "The final renderer epoch is v8, the anonymous article cache namespace derives from that same epoch, and the public article_view regression proves a stored v7 cache entry is ignored.",
+          "classification": "needs_source",
+          "reason": "The current renderer epoch is v9 and the anonymous article cache namespace derives from it, but render-affecting commits landed after the v9 bump. A later source-freeze bump is required before this row can claim a final compiled identity.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/file_modules.rs",
@@ -1315,8 +1331,8 @@
         {
           "case_id": "M1042_RENDER_CACHE_IDENTITY",
           "acceptance": "Bind saved output to the final provider policy and renderer semantics so pre-policy compiled output is not reused.",
-          "classification": "source_ready",
-          "reason": "Preview and saved output now assert deepwell-render/v8, while the shared article cache namespace and public regression reject an otherwise valid v7 artifact.",
+          "classification": "needs_source",
+          "reason": "Preview and saved output now assert deepwell-render/v9, and the shared article cache regression rejects an otherwise valid v7 artifact. Later render-affecting commits still share v9, so a source-freeze bump remains required.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/view/article_cache.rs",
@@ -1478,8 +1494,8 @@
         {
           "case_id": "M1043_RENDER_CACHE_IDENTITY",
           "acceptance": "Invalidate compiled output from before Gallery resolution landed and bind the next read to the final renderer epoch and exact file revision.",
-          "classification": "source_ready",
-          "reason": "Gallery is covered by the final v7 compiled generator, and the v7 article cache namespace plus public article_view regression prevents reuse of a v6 artifact even when its stored page identity remains otherwise valid.",
+          "classification": "needs_source",
+          "reason": "Gallery cache fencing changed at commit 081311e4ef26679e1768a23cc933d475a9b8842c after epoch 9 was introduced. The exact file revision is now part of the cache boundary, but another renderer epoch bump is required to invalidate earlier v9 compiled artifacts.",
           "source_paths": [
             "deepwell/src/services/render/generator.rs",
             "deepwell/src/services/render/compat/wikidot_gallery.rs",
@@ -1658,18 +1674,32 @@
     }
   ],
   "renderer_epoch_finalization": {
-    "classification": "source_ready",
-    "current_epoch": 8,
+    "classification": "needs_source",
+    "current_epoch": 9,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
-    "required_bump_count": 1,
+    "required_bump_count": 2,
     "completed_bump_count": 1,
     "lane_must_not_bump": true,
-    "finalized_by": {
+    "current_epoch_introduced_by": {
+      "source_commit": "4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb",
+      "source_tree": "ec4295454c9520d5d3506e8f4f5d9bda48f35daa",
+      "subject": "fix(deepwell): refresh PagesByTag saved views",
+      "integration_commit_reconciliation_required": true,
+      "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+    },
+    "post_epoch_source": {
+      "observed_integration_head": "c36a00a4280d000d7ba91220e4c76f8de0814b3d",
+      "observed_integration_tree": "38e2cbce621d210e5ce6b995837d696a8abb6071",
+      "media_scope_commit": "081311e4ef26679e1768a23cc933d475a9b8842c",
+      "last_observed_render_commit": "9059165d04ae2f24ca18fb65ad5ed9f85608917f",
+      "last_observed_render_tree": "4d68e5478905c83c2c104a775b2014b574323764",
+      "source_freeze_bump_required": true
+    },
+    "prior_epoch_v8_finalization": {
       "source_commit": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
       "source_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
       "subject": "fix(compat): close reviewed public surface gaps",
-      "integration_commit_reconciliation_required": false,
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
     },
     "prior_epoch_v7_finalization": {
@@ -1962,24 +1992,25 @@
       }
     ],
     "source_freeze_actions": [
-      "The renderer commit inventory records the exact post-v4 forum scalar and PageTree commits, the post-v5 Files renderer commits, every production renderer touch after v6 through v7, and the saved-Files fail-closed correction through the v8 source freeze.",
+      "The historical renderer commit inventory remains sealed through epoch 8; epoch 9 was introduced by the PagesByTag freshness change at 4dfb85fd82a03ca2f0e507cbc135d6a125cb49eb.",
       "The earlier source freeze bumped DEEPWELL_RENDERER_EPOCH once from v2 to v3 before the late renderer lanes landed.",
       "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v3 to v4.",
       "The previous correction bumped DEEPWELL_RENDERER_EPOCH once from v4 to v5 after the two post-v4 semantic renderer commits landed.",
       "The prior correction bumped DEEPWELL_RENDERER_EPOCH once from v5 to v6 after the Files renderer landed.",
       "The next correction bumped DEEPWELL_RENDERER_EPOCH once from v6 to v7 after the later author, utility, FrontForum, SiteChanges, tag-action, and visibility renderer changes landed.",
-      "The final correction bumped DEEPWELL_RENDERER_EPOCH once from v7 to v8 after saved Files rendering was made fail-closed.",
-      "Saved-output tests now assert the final v8 identity.",
-      "C_RENDER_EPOCH exists and remains mandatory before the expensive runtime candidate.",
-      "The public article_view regression inserts an otherwise valid v7 cache entry and proves the v8 request does not reuse it."
+      "The next correction bumped DEEPWELL_RENDERER_EPOCH once from v7 to v8 after saved Files rendering was made fail-closed.",
+      "Epoch 9 was then introduced before later render-affecting changes, including Gallery cache fencing at 081311e4ef26679e1768a23cc933d475a9b8842c and Rate rendering changes through 9059165d04ae2f24ca18fb65ad5ed9f85608917f.",
+      "Saved-output tests now assert the current v9 identity, but v9 is not the final source-freeze identity at canonical head c36a00a4280d000d7ba91220e4c76f8de0814b3d.",
+      "C_RENDER_EPOCH remains mandatory and must be updated by the source-freeze owner before the expensive runtime candidate.",
+      "The current public article_view regression inserts an otherwise valid v7 cache entry and proves the v9 request does not reuse it; it does not invalidate compiled v9 artifacts created before the later render changes."
     ]
   },
   "reconciliation": {
     "issue_count": 7,
     "subrow_count": 48,
     "classification_counts": {
-      "source_ready": 24,
-      "needs_source": 0,
+      "source_ready": 21,
+      "needs_source": 3,
       "candidate_required": 11,
       "blocked_evidence": 13
     },
