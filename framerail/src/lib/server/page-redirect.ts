@@ -19,7 +19,7 @@ export function resolvePageRedirect(
   }
 
   if (viewData.redirect_kind === "wikidot_module") {
-    return resolveWikidotModuleRedirect(viewData.redirect_page, requestUrl)
+    return resolveWikidotModuleRedirect(viewData.redirect_page, extra, requestUrl)
   }
   if (viewData.redirect_kind !== null && viewData.redirect_kind !== undefined) {
     return null
@@ -33,6 +33,7 @@ export function resolvePageRedirect(
 
 function resolveWikidotModuleRedirect(
   location: string,
+  extra: string | null | undefined,
   requestUrl: string
 ): ResolvedPageRedirect | null {
   if (
@@ -59,6 +60,24 @@ function resolveWikidotModuleRedirect(
     return null
   }
 
+  const mappedLocation =
+    !location.includes("?") &&
+    !location.includes("#") &&
+    location.endsWith("/") &&
+    extra &&
+    !extra.includes("?") &&
+    !extra.includes("#")
+      ? `${location}${extra}`
+      : location
+
+  if (mappedLocation !== location) {
+    try {
+      target = new URL(mappedLocation, current)
+    } catch {
+      return null
+    }
+  }
+
   let currentPath: string
   let targetPath: string
   try {
@@ -78,7 +97,7 @@ function resolveWikidotModuleRedirect(
     return null
   }
 
-  return { status: 301, location }
+  return { status: 301, location: mappedLocation }
 }
 
 function buildRoute(

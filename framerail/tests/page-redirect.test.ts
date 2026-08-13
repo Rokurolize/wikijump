@@ -36,6 +36,35 @@ test("Wikidot module redirects preserve evidenced absolute HTTP locations", () =
   )
 })
 
+test("Wikidot module redirects map route suffixes only below trailing-slash destinations", () => {
+  for (const [location, extra, expected] of [
+    ["/base/", "mapped-path/file1.html", "/base/mapped-path/file1.html"],
+    [
+      "http://www.example.com/base/",
+      "mapped-path/file1.html",
+      "http://www.example.com/base/mapped-path/file1.html"
+    ],
+    [
+      "https://www.example.com/base/",
+      "mapped-path",
+      "https://www.example.com/base/mapped-path"
+    ],
+    ["/base", "mapped-path/file1.html", "/base"],
+    ["/base/", undefined, "/base/"]
+  ] as const) {
+    assert.deepEqual(
+      resolvePageRedirect(
+        { redirect_page: location, redirect_kind: "wikidot_module" },
+        "redir",
+        extra,
+        `https://example.test/redir${extra ? `/${extra}` : ""}`
+      ),
+      { status: 301, location: expected },
+      `${location} + ${extra ?? "<root>"}`
+    )
+  }
+})
+
 test("GET and HEAD receive the same 301 and Location contract", () => {
   for (const method of ["GET", "HEAD"]) {
     const request = new Request("https://example.test/source", { method })
