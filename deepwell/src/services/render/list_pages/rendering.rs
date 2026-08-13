@@ -83,7 +83,7 @@ use super::{
     list_pages_has_unsupported_parent_selector,
     list_pages_head_has_current_data_form_query_selector,
     list_pages_html_encoded_head_owns_script_tail, list_pages_parent_fullname,
-    list_pages_revision_count, list_pages_row_markup_bytes, list_pages_row_scan_target,
+    list_pages_row_markup_bytes, list_pages_row_scan_target,
     list_pages_runtime_container_open, list_pages_runtime_row_container_close,
     list_pages_runtime_row_container_open, list_pages_static_category_preflight,
     list_pages_static_parent_fullname_with_url, list_pages_unknown_link_target_slugs,
@@ -657,7 +657,12 @@ impl RenderService {
                         unreachable!();
                     };
                     unique_slugs.insert(arguments.slug.as_ref().unwrap().to_string());
-                    union_found_page_fields(&mut fields, &template.fields());
+                    let mut block_fields = template.fields();
+                    block_fields.revision_count |= matches!(
+                        arguments.order.as_ref().map(|order| &order.property),
+                        Some(OrderProperty::Revisions)
+                    );
+                    union_found_page_fields(&mut fields, &block_fields);
                     display_requirements.include(template);
                 }
                 let slugs = unique_slugs
@@ -1728,6 +1733,11 @@ impl RenderService {
         let wants_site_domain = template.uses_site_domain();
         let wants_parent_metadata = template.uses_parent_metadata();
         let wants_revisions = template.uses_revisions();
+        let orders_by_revisions = matches!(
+            order.as_ref().map(|order| &order.property),
+            Some(OrderProperty::Revisions)
+        );
+        let needs_revision_count = wants_revisions || orders_by_revisions;
         let wants_children = template.uses_children();
         let resolved_authors = Self::resolve_list_pages_authors_cached(
             ctx,
@@ -1742,6 +1752,7 @@ impl RenderService {
         let mut query_fields = template.fields();
         query_fields.tags |= exact_visible_tags;
         query_fields.slug |= wants_first_image;
+        query_fields.revision_count |= needs_revision_count;
         let query = PageQuery {
             current_page_id,
             current_site_id,
@@ -2146,8 +2157,7 @@ impl RenderService {
             || wants_commented_by
             || wants_commented_at
             || wants_rating_votes
-            || wants_parent_metadata
-            || wants_revisions;
+            || wants_parent_metadata;
         let loaded_snapshot_displays =
             if wants_snapshot_displays && prefetched_displays.is_none() {
                 Some(Self::load_list_pages_snapshot_displays(ctx, &pages).await?)
@@ -2202,37 +2212,12 @@ impl RenderService {
         } else {
             BTreeMap::new()
         };
-        let revision_counts = if wants_revisions {
-            let mut missing_by_site = BTreeMap::<i64, Vec<i64>>::new();
-            for page in &pages {
-                if !snapshot_displays.contains_key(&page.page_id) {
-                    missing_by_site
-                        .entry(page.site_id)
-                        .or_default()
-                        .push(page.page_id);
-                }
-            }
-            let mut revision_counts = BTreeMap::<i64, u64>::new();
-            for (site_id, page_ids) in missing_by_site {
-                revision_counts.extend(
-                    PageRevisionService::get_revision_count_batch(
-                        ctx, site_id, &page_ids,
-                    )
-                    .await?,
-                );
-            }
-            if pages.iter().any(|page| {
-                list_pages_revision_count(page, snapshot_displays, &revision_counts)
-                    .is_none()
-            }) {
-                return Ok(ListPagesBlockRenderResult::PreserveOriginal(
-                    "revision count unavailable",
-                ));
-            }
-            revision_counts
-        } else {
-            BTreeMap::new()
-        };
+        if needs_revision_count && pages.iter().any(|page| page.revision_count.is_none())
+        {
+            return Ok(ListPagesBlockRenderResult::PreserveOriginal(
+                "revision count unavailable",
+            ));
+        }
         let relational_parent_displays = if wants_parent_metadata {
             load_list_pages_parent_displays(ctx, viewer_user_id, &pages).await?
         } else {
@@ -2628,10 +2613,9 @@ impl RenderService {
                 page_child_count: wants_children
                     .then(|| child_counts.get(&page.page_id).copied().unwrap_or(0)),
                 page_revision_count: wants_revisions.then(|| {
-                    list_pages_revision_count(page, snapshot_displays, &revision_counts)
-                        .expect(
-                            "revision-backed ListPages rows were validated before substitution",
-                        )
+                    page.revision_count.expect(
+                        "revision-backed ListPages rows were validated before substitution",
+                    )
                 }),
                 data_form_values: &data_form_values,
                 data_form_definition: page

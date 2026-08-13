@@ -399,6 +399,7 @@ pub struct FoundPageFields {
     pub updated_at: bool,
     pub updated_by: bool,
     pub score: bool,
+    pub revision_count: bool,
 }
 
 /// A single page row in the query results.
@@ -435,6 +436,8 @@ pub struct FoundPageRow {
     pub updated_by: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub score: Option<f32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revision_count: Option<u64>,
 }
 
 /// The result of `PageQueryService::find()`.

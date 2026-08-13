@@ -1917,6 +1917,16 @@
           "scope": "public ListPages and CountPages endpoint/render integration tests"
         },
         {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
+          "scope": "public page-edit, move, delete, restore, and wikidot_page_preview regression verifies imported snapshot revision counts add only local-origin revisions, drive order=revisions and %%revisions%% from one value, omit the deleted page, restore at baseline plus four, leave a native page on its actual stored count, and preserve the original module for both ascending and descending revision ordering—with or without %%revisions%%—when a rollback-scoped malformed snapshot has a negative source count"
+        },
+        {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "imported_revision_count_current_page_only_adds_local_revisions",
+          "scope": "public page-edit, page-rerender, and page-get regression verifies current-page-only ListPages renders an imported snapshot baseline plus its local-origin edit through the optimized current-page query path"
+        },
+        {
           "path": "deepwell/tests/page.rs",
           "scope": "public saved-page, preview, URL, pagination, query, permission, CountPages-in-body limitation, and rendering integration tests"
         },
@@ -1928,6 +1938,11 @@
         {
           "path": "framerail/tests/list-pages-feed.test.ts",
           "scope": "public feed-route parsing and RSS response behavior"
+        },
+        {
+          "path": "framerail/tests/feed-pages-route.test.js",
+          "name": "empty selector feeds retain the Wikidot root separator",
+          "scope": "public anonymous HTTP feed regression verifies the exact successful XML declaration, RSS root, blank-line separator, and tab-indented channel prefix"
         },
         {
           "path": "framerail/tests/list-pages-navigation.spec.ts",
@@ -4148,18 +4163,31 @@
       "confirmed_public_seams": [
         "Anonymous live Wikidot edit/PagePreviewModule",
         "Deepwell public wikidot_page_preview rendering",
-        "Deepwell public saved page_view rendering"
+        "Deepwell public saved page_view rendering",
+        "Deepwell transaction-local JSON-RPC endpoint harness across file_create, file_edit, file_delete, file_restore, deferred-action drains, and explicit rerender simulation"
       ],
       "tests": [
         {
           "path": "deepwell/tests/media.rs",
           "name": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page",
           "scope": "exact ten-case f=image and =image ASCII-space, tab, NBSP, and lookalike ownership boundary through public preview and saved page view"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache",
+          "scope": "transaction-local registered file_create, file_delete, and file_restore calls leave the Gallery key unchanged until the test drains deferred actions; an explicit rerender simulation then exposes the new file state. This is not an independent-reader committed-request proof."
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "changed_file_revision_fences_but_noop_and_failed_revision_do_not",
+          "scope": "transaction-local registered JSON-RPC file_edit leaves the site public-content fence unchanged after deferred-action drains for a semantic no-op and failed invalid request, while a successful changed revision advances it when deferred actions are drained"
         }
       ],
       "implementation_files": [
         "deepwell/Cargo.toml",
-        "deepwell/Cargo.lock"
+        "deepwell/Cargo.lock",
+        "deepwell/src/services/context.rs",
+        "deepwell/src/services/file_revision/service.rs"
       ],
       "documentation_evidence": [
         "specifications/wiki-syntax/syntax-images.md",
@@ -4464,6 +4492,7 @@
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
           "test:deepwell/tests/page.rs#listpages_rss_link_and_rss_only_match_live_wikidot_markup",
           "test:framerail/tests/list-pages-feed.test.ts#renders RSS metadata, items, escaped descriptions, and safe CDATA",
+          "test:framerail/tests/feed-pages-route.test.js#empty selector feeds retain the Wikidot root separator",
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history",
           "live:listpages-random-idle-cache-live-20260730",
           "test:deepwell/tests/list_pages.rs#wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",

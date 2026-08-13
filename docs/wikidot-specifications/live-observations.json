@@ -819,6 +819,7 @@
         "The endpoint accepts title t, description d, and home h metadata; repeated metadata path pairs use the last value.",
         "In controlled live captures, limit, offset, and order path pairs do not affect the selected items, even though ListPages generates those pairs.",
         "Unknown path arguments are ignored.",
+        "Every successful feed document begins with the exact prefix `<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\\n<rss version=\"2.0\" xmlns:content=\"http://purl.org/rss/1.0/modules/content/\" xmlns:wikidot=\"http://www.wikidot.com/rss-namespace\">\\n\\n\\t<channel>\\n`; all 10 successful sealed cases share it.",
         "An invalid range, rating, or pagetype value produces an HTTP 200 generic feed error document rather than an HTTP error status.",
         "A request ending at /feed/pages without a trailing argument path returns 404; malformed percent encoding returns 400."
       ],
@@ -833,9 +834,12 @@
             "lpfeed-0004-offset-ignored",
             "lpfeed-0005-order-ignored",
             "lpfeed-0006-duplicate-metadata-last-wins",
+            "lpfeed-0007-encoded-dot-range",
             "lpfeed-0008-invalid-range",
             "lpfeed-0009-invalid-rating",
             "lpfeed-0010-invalid-pagetype-alias",
+            "lpfeed-0011-only-negative-category",
+            "lpfeed-0012-star-with-negative-category",
             "lpfeed-0013-unknown-argument-ignored",
             "lpfeed-0014-missing-trailing-path",
             "lpfeed-0015-malformed-percent-escape"

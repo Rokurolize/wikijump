@@ -1929,6 +1929,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2027,6 +2028,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2127,6 +2129,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2237,6 +2240,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2326,6 +2330,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2402,6 +2407,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();

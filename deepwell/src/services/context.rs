@@ -292,7 +292,21 @@ impl<'txn> ServiceContext<'txn> {
             )
             .raise()
         })?;
-        actions.push(PostCommitAction::PublicContentSite { site_id });
+        if actions.iter().any(|action| {
+            matches!(
+                action,
+                PostCommitAction::PublicContentSite {
+                    site_id: queued_site_id,
+                } if *queued_site_id == site_id
+            )
+        }) {
+            return Ok(());
+        }
+        let insert_at = actions
+            .iter()
+            .position(|action| matches!(action, PostCommitAction::RerenderPage { .. }))
+            .unwrap_or(actions.len());
+        actions.insert(insert_at, PostCommitAction::PublicContentSite { site_id });
         Ok(())
     }
 

@@ -561,6 +561,9 @@ mod tests {
             "[[module CountPages]][[/module]]",
             "[[*user example]]",
             "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
+            "[[gallery]]",
+            "[[code]]\n[[gallery]]\n[[/code]]",
+            "A[[gallery]]B",
         ] {
             assert!(anonymous_article_cache_source_eligible(source), "{source}");
         }

@@ -655,10 +655,10 @@ impl PageRevisionService {
         );
 
         // If the page creation doesn't specify a preferred layout,
-        // use the default for the site.
+        // use the effective layout for the inserted destination page.
         let layout = match layout {
             Some(layout) => layout,
-            None => SettingsService::get_layout(ctx, site_id, None)
+            None => SettingsService::get_layout(ctx, site_id, Some(page_id))
                 .await
                 .or_raise(make_error)?,
         };

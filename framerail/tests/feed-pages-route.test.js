@@ -125,7 +125,7 @@ test("anonymous exact feed/pages renders the generic missing-page shell", async 
   assert.match(missingBody, /<em[^>]*>feed<\/em>/u)
 })
 
-test("selector feed paths remain XML feeds", async () => {
+test("empty selector feeds retain the Wikidot root separator", async () => {
   const rejectingClientRequest = client.request
   client.request = async (method, ...args) => {
     if (method === "wikidot_list_pages_feed") return { items: [] }
@@ -140,7 +140,13 @@ test("selector feed paths remain XML feeds", async () => {
 
     assert.equal(feedResponse.status, 200)
     assert.equal(feedResponse.headers.get("content-type"), "text/xml;charset=utf-8")
-    assert.match(feedBody, /^<\?xml version="1\.0" encoding="UTF-8" \?>/u)
+    assert.ok(
+      feedBody.startsWith(
+        '<?xml version="1.0" encoding="UTF-8" ?>\n' +
+          '<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wikidot="http://www.wikidot.com/rss-namespace">\n\n' +
+          "\t<channel>\n"
+      )
+    )
   } finally {
     client.request = rejectingClientRequest
   }
