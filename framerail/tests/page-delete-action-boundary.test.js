@@ -138,7 +138,7 @@ test("native Wikidot delete accepts an omitted comment", async () => {
       user_id: 91,
       ip_address: "192.0.2.92",
       last_revision_id: 9,
-      revision_comments: ""
+      revision_comments: undefined
     },
     context: {
       siteId: 17,

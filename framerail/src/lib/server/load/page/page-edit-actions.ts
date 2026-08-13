@@ -27,7 +27,6 @@ import {
   nullable,
   object,
   optional,
-  safeParse,
   strictObject,
   string,
   variant,
@@ -45,17 +44,10 @@ export async function pageDeleteAction(event: RequestEvent) {
 
   if (isNativeForm) {
     const submittedData = Object.fromEntries(requestData)
-    const parsed = safeParse(pageDeleteNativeSchema, submittedData)
-    const submittedOption = requestData.get("option")
-    const nativeSchema =
-      submittedOption === DeleteOptions.Move
-        ? pageDeleteNativeMoveSchema
-        : pageDeleteNativeDeleteSchema
-    const form = await superValidate(
-      parsed.success ? parsed.output : submittedData,
-      valibot(nativeSchema)
-    )
-    if (!parsed.success || !form.valid) {
+    const form = await superValidate(submittedData, valibot(pageDeleteNativeSchema), {
+      strict: true
+    })
+    if (!form.valid) {
       return fail(400, { form })
     }
 
@@ -184,7 +176,7 @@ const pageDeleteNativeMoveSchema = strictObject({
 
 const pageDeleteNativeDeleteSchema = strictObject({
   option: literal(DeleteOptions.Delete),
-  comments: optional(string(), "")
+  comments: optional(string())
 })
 
 const pageDeleteNativeSchema = variant("option", [
