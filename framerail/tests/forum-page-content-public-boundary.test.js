@@ -76,33 +76,60 @@ const pageContentBody = (html) => {
 }
 
 let previousWorkingDirectory
+let previousDeepwellHost
+let previousDeepwellPort
+let previousDeepwellToken
 let vite
+let deepwellServer
 let server
 let baseUrl
-let client
-let originalClientRequest
 
 before(async () => {
   previousWorkingDirectory = process.cwd()
   process.chdir(root)
+  previousDeepwellHost = process.env.DEEPWELL_HOST
+  previousDeepwellPort = process.env.DEEPWELL_PORT
+  previousDeepwellToken = process.env.DEEPWELL_RPC_TOKEN
+
+  deepwellServer = createHttpServer((request, response) => {
+    let body = ""
+    request.on("data", (chunk) => {
+      body += chunk
+    })
+    request.on("end", () => {
+      const rpcRequest = JSON.parse(body)
+      let result
+      if (rpcRequest.method === "preload_view") {
+        result = structuredClone(viewer)
+      } else if (rpcRequest.method === "translate") {
+        result = {}
+      } else if (rpcRequest.method === "wikidot_forum_module") {
+        result = forumBodies[rpcRequest.params.module_name]
+      }
+      assert.ok(result, `unexpected Deepwell method ${rpcRequest.method}`)
+      response.setHeader("content-type", "application/json")
+      response.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          id: rpcRequest.id,
+          result: structuredClone(result)
+        })
+      )
+    })
+  })
+  await new Promise((resolve) => deepwellServer.listen(0, "127.0.0.1", resolve))
+  const deepwellAddress = deepwellServer.address()
+  assert.equal(typeof deepwellAddress, "object")
+  process.env.DEEPWELL_HOST = "127.0.0.1"
+  process.env.DEEPWELL_PORT = String(deepwellAddress.port)
+  process.env.DEEPWELL_RPC_TOKEN = "0".repeat(64)
+
   vite = await createViteServer({
     root,
     appType: "custom",
     logLevel: "silent",
     server: { middlewareMode: true }
   })
-
-  ;({ client } = await vite.ssrLoadModule("/src/lib/server/deepwell/index.ts"))
-  originalClientRequest = client.request
-  client.request = async (method, parameters) => {
-    if (method === "preload_view") return structuredClone(viewer)
-    if (method === "translate") return {}
-    if (method === "wikidot_forum_module") {
-      const response = forumBodies[parameters.module_name]
-      if (response) return structuredClone(response)
-    }
-    throw new Error(`Unexpected Deepwell method ${method}`)
-  }
 
   server = createHttpServer((request, response) => vite.middlewares(request, response))
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve))
@@ -112,9 +139,15 @@ before(async () => {
 })
 
 after(async () => {
-  if (client && originalClientRequest) client.request = originalClientRequest
   if (server) await new Promise((resolve) => server.close(resolve))
+  if (deepwellServer) await new Promise((resolve) => deepwellServer.close(resolve))
   if (vite) await vite.close()
+  if (previousDeepwellHost === undefined) delete process.env.DEEPWELL_HOST
+  else process.env.DEEPWELL_HOST = previousDeepwellHost
+  if (previousDeepwellPort === undefined) delete process.env.DEEPWELL_PORT
+  else process.env.DEEPWELL_PORT = previousDeepwellPort
+  if (previousDeepwellToken === undefined) delete process.env.DEEPWELL_RPC_TOKEN
+  else process.env.DEEPWELL_RPC_TOKEN = previousDeepwellToken
   if (previousWorkingDirectory) process.chdir(previousWorkingDirectory)
 })
 
