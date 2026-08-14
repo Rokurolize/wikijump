@@ -229,11 +229,10 @@ async fn handle_text_block(
     };
 
     let Headers { content_type, etag } = get_headers(s3_response.headers());
-    if matches!(block_type, TextBlockType::Code)
-        && headers
-            .get(header::IF_NONE_MATCH)
-            .and_then(|value| value.to_str().ok())
-            .is_some_and(|value| value.trim() == etag)
+    if headers
+        .get(header::IF_NONE_MATCH)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.trim() == etag)
     {
         return StatusCode::NOT_MODIFIED.into_response();
     }
@@ -526,17 +525,31 @@ mod tests {
     }
 
     async fn mock_text_block_s3(Path(path): Path<String>) -> Response {
-        let body: &'static [u8] = if path.ends_with("block-html") {
+        let is_html = path.ends_with("block-html");
+        let body: &'static [u8] = if is_html {
             b"<p>moved content</p>"
         } else {
             b"moved content"
         };
         Response::builder()
             .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "text/plain")
+            .header(
+                header::CONTENT_TYPE,
+                if is_html { "text/html" } else { "text/plain" },
+            )
             .header(header::ETAG, "\"text-block\"")
             .body(Body::from(body))
             .unwrap()
+    }
+
+    fn assert_html_cache_headers_omitted(headers: &HeaderMap) {
+        for omitted in [
+            header::LAST_MODIFIED,
+            header::CACHE_CONTROL,
+            header::ACCEPT_RANGES,
+        ] {
+            assert!(!headers.contains_key(omitted));
+        }
     }
 
     #[test]
@@ -689,6 +702,75 @@ mod tests {
         assert!(response.headers().get(header::CONTENT_TYPE).is_none());
         assert!(!response.headers().contains_key(header::CACHE_CONTROL));
         assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn html_terminal_matches_evidenced_cache_and_method_behavior() {
+        let app = TextBlockTestApp::spawn().await;
+        let path = "/-/html/old-page/1";
+
+        let redirect_client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let redirect = redirect_client
+            .get(format!("{}/local--html/old-page/1", app.base_url))
+            .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(redirect.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(redirect.headers().get(header::LOCATION).unwrap(), path);
+
+        let full = app.get(path).await;
+        assert_eq!(full.status(), StatusCode::OK);
+        assert_eq!(full.headers().get(header::ETAG).unwrap(), "\"text-block\"");
+        assert_eq!(
+            full.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/html"
+        );
+        assert_html_cache_headers_omitted(full.headers());
+        let full_body = full.bytes().await.unwrap();
+
+        let head = app.request(Method::HEAD, path, &[]).await;
+        assert_eq!(head.status(), StatusCode::OK);
+        assert_eq!(head.headers().get(header::ETAG).unwrap(), "\"text-block\"");
+        assert_html_cache_headers_omitted(head.headers());
+        assert!(head.bytes().await.unwrap().is_empty());
+
+        for method in [Method::GET, Method::HEAD] {
+            let exact = app
+                .request(method, path, &[(header::IF_NONE_MATCH, "\"text-block\"")])
+                .await;
+            assert_eq!(exact.status(), StatusCode::NOT_MODIFIED);
+            assert_html_cache_headers_omitted(exact.headers());
+            assert!(exact.bytes().await.unwrap().is_empty());
+        }
+
+        let wrong = app
+            .request(Method::GET, path, &[(header::IF_NONE_MATCH, "\"wrong\"")])
+            .await;
+        assert_eq!(wrong.status(), StatusCode::OK);
+        assert_html_cache_headers_omitted(wrong.headers());
+        assert_eq!(wrong.bytes().await.unwrap(), full_body);
+
+        for request_headers in [
+            vec![(header::RANGE, "bytes=0-4")],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"text-block\""),
+            ],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"wrong\""),
+            ],
+        ] {
+            let ranged = app.request(Method::GET, path, &request_headers).await;
+            assert_eq!(ranged.status(), StatusCode::OK);
+            assert!(!ranged.headers().contains_key(header::CONTENT_RANGE));
+            assert_html_cache_headers_omitted(ranged.headers());
+            assert_eq!(ranged.bytes().await.unwrap(), full_body);
+        }
     }
 
     #[test]

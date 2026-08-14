@@ -41,6 +41,17 @@ For both controls:
 - HEAD used the same conditional behavior and returned no body.
 - `Range`, matching `If-Range`, and wrong `If-Range` all returned the full 200 response. Code-block range requests were ignored.
 
+## Public HTML-block controls
+
+A supplemental anonymous capture on 2026-08-15 verified two positive controls:
+
+- `scp-wiki` page `the-significant-others-part-b`, page ID `1260799294`, revision ID `1543488342`, live/corpus source SHA-256 `1a827468a5323227b60d67f4996d677fc3e8224c25c824b40861f9770e64d19f`: `https://scp-wiki.wdfiles.com/local--html/the-significant-others-part-b/ce7f19fcbd96efe6128fc7a5366475fbccde48e5-11264642292013236711/scp-wiki.wikidot.com/` returned 200 `text/html`, ETag `"b45c861ec9e800b5eff9a0e08529d325"`, and 502 body bytes with SHA-256 `83f071c542fd5629c5cb7d1f9861cb68b5344015bf6f9dbbbb7521b68235b045`.
+- `scp-int` page `sangredereptil`, page ID `52188988`, revision ID `86479563`, live/corpus source SHA-256 `524066deea618069e2d4c9af3dfa70197be7ca1fcf1fca71bcbed778f39e423a`: `https://scp-int.wdfiles.com/local--html/sangredereptil/10e9b84cbc7189d8aaf0a8520a49adcb44ad45e8-884256985228152597/scp-int.wikidot.com/` returned 200 `text/html`, ETag `"63d4c87b205311a571f39f4c4cde87c8"`, and 1764 body bytes with SHA-256 `8381f14d79a2def324f7dcba5272f5424637973a45fccfcbf931c8734551f951`.
+
+For both controls, HEAD returned 200 with no body, exact `If-None-Match` returned 304, a wrong ETag returned the full 200 response, and `Range`, matching `If-Range`, and wrong `If-Range` were ignored with the full 200 response. The responses included no `Content-Length`, `Last-Modified`, `Accept-Ranges`, or `Cache-Control`.
+
+These controls establish terminal HTML-block HTTP semantics, not exact Wikijump route identity. Wikijump's numeric `/local--html/{page_slug}/{id}` route remains a compatibility redirect to `/-/html/{page_slug}/{id}` because the shipped iframe script's numeric fallback recognizes only the latter shape; the live hash/domain path needs a separate evidenced identity contract.
+
 ## Initial host transition
 
 The Wikidot front door did not serve these representations directly. At 2026-08-14T17:11:45Z and 2026-08-14T17:11:46Z:
@@ -52,7 +63,7 @@ The initial redirect and terminal WDFiles response are separate observable inter
 
 ## Evidence gaps
 
-- No valid existing public `local--html` block was found. `https://scp-wiki.wdfiles.com/local--html/scp-8822/1` returned a missing-file-style 200 HTML page, so it is not a positive control. Do not generalize the code-block behavior to HTML blocks.
+- `https://scp-wiki.wdfiles.com/local--html/scp-8822/1` remains an invalid control because it returned a missing-file-style 200 HTML page. The two positive controls above, rather than this negative control, support the HTML-block behavior.
 - Missing `Cache-Control` on these four representations proves only these captures, not a universal policy for every site or resource.
 - The historical route artifact `install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json` is source attribution only and records `compatibility_verdict: not_evaluated`.
 
