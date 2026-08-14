@@ -10,8 +10,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const cli = path.join(root, "install/local/wikidot-verification/scripts/verify-wikidot-py-amc-transport-contract.mjs")
 const contractPath = path.join(root, "docs/development/wikidot-py-amc-transport-contract.json")
 const evidencePath = path.join(root, "install/local/wikidot-verification/artifacts/wikidot-py-amc-authenticated-live-20260815.json")
-const sourceRoot = "/home/roku/src/Rokurolize/wikidot.py"
-const wrapperPath = "/home/roku/.codex/skills/wikidot-py-operations/scripts/wikidot-python"
+const sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py"
+const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? "/home/roku/.codex/skills/wikidot-py-operations/scripts/wikidot-python"
 const gitEnvironment = {
   GIT_CONFIG_GLOBAL: "/dev/null",
   GIT_CONFIG_NOSYSTEM: "1",

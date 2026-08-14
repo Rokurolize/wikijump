@@ -12,8 +12,8 @@ const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
 const SEMANTICS_REGISTRY = "docs/development/compatibility-surface-semantics.json"
-const WIKIDOT_PY_GIT_DIR = "/home/roku/src/Rokurolize/wikidot.py/.git"
-const FTML_GIT_DIR = "/home/roku/src/Rokurolize/ftml/.git"
+const WIKIDOT_PY_GIT_DIR = path.join(process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py", ".git")
+const FTML_GIT_DIR = path.join(process.env.WIKIJUMP_FTML_CHECKOUT ?? "/home/roku/src/Rokurolize/ftml", ".git")
 const GIT_EXECUTABLE = "/usr/bin/git"
 const GIT_ENVIRONMENT = Object.freeze({
   GIT_CONFIG_GLOBAL: "/dev/null",

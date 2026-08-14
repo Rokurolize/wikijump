@@ -103,9 +103,9 @@ const expectedContractSha256 = "92b09a5358ee912536d42cc27880e5916b07921376daa287
 
 function parseArgs(argv) {
   let contract = path.join(repositoryRoot, "docs/development/wikidot-py-amc-transport-contract.json")
-  let sourceRoot = "/home/roku/src/Rokurolize/wikidot.py"
+  let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py"
   let evidenceRoot = repositoryRoot
-  let wrapper = expectedWrapper.path
+  let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? expectedWrapper.path
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--contract") contract = path.resolve(argv[++index] ?? "")
     else if (argv[index] === "--source-root") sourceRoot = path.resolve(argv[++index] ?? "")

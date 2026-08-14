@@ -7,7 +7,7 @@ import test from "node:test"
 import { fileURLToPath } from "node:url"
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..")
-const wikidotPyRoot = path.resolve(repositoryRoot, "../wikidot.py")
+const wikidotPyRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../wikidot.py")
 const contractPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-write-surface.json")
 const authorityPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-client-parity.json")
 const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"))
