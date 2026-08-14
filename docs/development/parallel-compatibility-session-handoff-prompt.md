@@ -128,7 +128,7 @@ Freeze exact product commit/tree, FTML commit, Cargo.lock, verifier commit/tree,
 
 ## Phase 5: One serialized successor candidate
 
-Do not start this phase merely because static tests pass. Read and obey `/home/roku/wjlab/state/current.json`; it is the execution authority. A BUILDING state does not authorize activation. A future candidate requires a separately reviewed terminal-custody vacancy transition, fresh successor identity, fresh dossier, fresh seal, vacant run-owned outputs, and exact zero-argument authority.
+Do not start this phase merely because static tests pass. Treat `/home/roku/wjlab/state/current.json` as a resume cursor, not a permission gate. A future candidate still requires a reviewed terminal-custody vacancy transition, fresh successor identity, fresh dossier, fresh seal, vacant run-owned outputs, and an exact zero-argument controller entrypoint.
 
 Run exactly one fresh successor candidate from the frozen source. Candidate custody, lease, ports, output roots, snapshots, credentials, Docker resources, and evidence are shared, so no other candidate or source mutation may run concurrently. A terminal candidate is never resumed or repurposed. Failure must produce terminal, cleanup, reconciliation, resource-absence, and custody evidence before a separately authorized vacancy transition.
 
@@ -187,7 +187,7 @@ Verify these exact files before relying on this snapshot:
 
 Review the closed product record `{identity,commit,tree,archive,snapshot,tree_manifest}`, descriptor-read archive and manifest bytes, no `.git`, no symlinks, exact Git-blob content, no mutable checkout reread, renderer and tool identities, pre-Docker ordering, cleanup, reconciliation, recovery lineage, and controller/wrapper pin consistency.
 
-`/home/roku/wjlab/state/current.json` is currently schema `wjlab.compatibility_execution_state.v1`, phase `BUILDING`, SHA-256 `1781ccb83d816e96e5f59eb1dd0cec54302ce7dd7ebbe4e9a561cb24f3f45617`. It authorizes static review and preparation of a fresh r35 authority package only. It does not authorize activation, Docker, custody acquisition, candidate, browser, merge, or standing work. Do not alter historical r31-r34 terminal evidence. Recheck the state bytes immediately before any future live action and stop if the exact requested action is not authorized.
+`/home/roku/wjlab/state/current.json` is schema `wjlab.compatibility_execution_state.v1` and currently records phase `BUILDING`. It is a mutable resume cursor, not a permission mechanism. Current user instructions control whether work proceeds. Preserve historical r31-r34 terminal evidence and recheck material source, custody, and runtime identities before live actions.
 
 ## GitHub and delivery protocol
 
@@ -195,7 +195,7 @@ At each frontier change, refresh #1354 native blocker edges and latest comments.
 
 Commit coherent work before long validation. Push when the local validated head differs from PR #1353. Record exact commands, counts, hashes, evidence paths, and review verdicts in the owning issue and PR. Do not force push, admin merge, or push to `scpwiki/*`.
 
-When blocked, continue every other safe lane. Ask the user only when completion needs new authority, credentials, an irreversible external action, or a choice that materially changes the contract. A blocker in one lane does not pause unrelated lanes.
+When blocked, continue every other safe lane and resolve campaign-owned blockers directly. Ask the user only when completion needs unavailable credentials, an irreversible external action outside the authorized campaign, or a choice that materially changes the product contract. A blocker in one lane does not pause unrelated lanes.
 
 ## Required status report format
 
