@@ -542,6 +542,7 @@ mod tests {
                     "result": {
                         "file_id": 7,
                         "revision_id": revision_id,
+                        "revision_created_at": "2020-07-23T06:38:39Z",
                         "mime": mime,
                         "size": size,
                         "s3_hash": s3_hash,

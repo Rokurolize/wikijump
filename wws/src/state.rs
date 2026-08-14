@@ -300,6 +300,7 @@ mod tests {
                 "result": {
                     "file_id": 7,
                     "revision_id": 17,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
                     "mime": "text/plain",
                     "size": 42,
                     "s3_hash": "private-blob"

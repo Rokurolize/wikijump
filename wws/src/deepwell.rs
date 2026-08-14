@@ -328,6 +328,8 @@ pub struct PageData {
 pub struct FileData {
     pub file_id: i64,
     pub revision_id: i64,
+    #[serde(with = "time::serde::rfc3339")]
+    pub revision_created_at: time::OffsetDateTime,
     pub mime: String,
     pub size: i64,
     pub s3_hash: String,
@@ -401,6 +403,7 @@ mod tests {
             "file_get" => json!({
                 "file_id": 7,
                 "revision_id": 17,
+                "revision_created_at": "2020-07-23T06:38:39Z",
                 "mime": "text/plain",
                 "size": 42,
                 "s3_hash": "abc123",
@@ -504,6 +507,7 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(file.file_id, 7);
+        assert_eq!(file.revision_created_at.unix_timestamp(), 1_595_486_319);
         assert_eq!(file.mime, "text/plain");
         assert_eq!(file.size, 42);
         assert_eq!(file.s3_hash, "abc123");

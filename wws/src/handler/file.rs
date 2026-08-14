@@ -70,6 +70,7 @@ fn range_not_satisfiable(file_size: u64) -> Response {
 
 struct ServeParams<'a> {
     etag: &'a str,
+    last_modified: &'a str,
     as_attachment: bool,
     filename: &'a str,
     file_size: u64,
@@ -87,9 +88,11 @@ async fn serve_file(
 ) -> Response {
     let file_size = file_info.size as u64;
     let etag = format!("\"{}\"", file_info.s3_hash);
+    let last_modified = httpdate::fmt_http_date(file_info.revision_created_at.into());
     let is_head = *method == Method::HEAD;
     let params = ServeParams {
         etag: &etag,
+        last_modified: &last_modified,
         as_attachment,
         filename,
         file_size,
@@ -101,11 +104,11 @@ async fn serve_file(
         .and_then(|value| value.to_str().ok())
         .is_some_and(|value| value.trim() == etag)
     {
-        // Last-Modified remains blocked: FileData has no evidenced timestamp.
         return build_or_500(
             Response::builder()
                 .status(StatusCode::NOT_MODIFIED)
                 .header(header::ETAG, &etag)
+                .header(header::LAST_MODIFIED, &last_modified)
                 .body(Body::empty()),
         );
     }
@@ -158,6 +161,7 @@ async fn serve_full(
         base_headers(
             StatusCode::OK,
             params.etag,
+            params.last_modified,
             params.as_attachment,
             params.filename,
         )
@@ -197,6 +201,7 @@ async fn serve_single_range(
         base_headers(
             StatusCode::PARTIAL_CONTENT,
             params.etag,
+            params.last_modified,
             params.as_attachment,
             params.filename,
         )
@@ -227,6 +232,7 @@ async fn serve_multi_range(
             base_headers(
                 StatusCode::PARTIAL_CONTENT,
                 params.etag,
+                params.last_modified,
                 params.as_attachment,
                 params.filename,
             )
@@ -272,6 +278,7 @@ async fn serve_multi_range(
         base_headers(
             StatusCode::PARTIAL_CONTENT,
             params.etag,
+            params.last_modified,
             params.as_attachment,
             params.filename,
         )
@@ -359,12 +366,14 @@ pub async fn handle_file_download(
 fn base_headers(
     status: StatusCode,
     etag: &str,
+    last_modified: &str,
     as_attachment: bool,
     filename: &str,
 ) -> axum::http::response::Builder {
     let mut builder = Response::builder()
         .status(status)
         .header(header::ETAG, etag)
+        .header(header::LAST_MODIFIED, last_modified)
         .header(header::ACCEPT_RANGES, "bytes");
 
     if as_attachment {
@@ -441,7 +450,7 @@ mod tests {
     use axum::http::StatusCode;
     use axum::http::header::{
         ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE,
-        CONTENT_TYPE, ETAG, IF_NONE_MATCH, IF_RANGE, LOCATION, RANGE,
+        CONTENT_TYPE, ETAG, IF_NONE_MATCH, IF_RANGE, LAST_MODIFIED, LOCATION, RANGE,
     };
     use s3::creds::Credentials;
     use s3::region::Region;
@@ -499,6 +508,7 @@ mod tests {
                 "result": {
                     "file_id": 7,
                     "revision_id": 17,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
                     "mime": "application/x-test",
                     "size": 6,
                     "s3_hash": "public-hash"
@@ -514,6 +524,7 @@ mod tests {
                     "result": {
                         "file_id": 8,
                         "revision_id": 18,
+                        "revision_created_at": "2020-07-23T06:38:39Z",
                         "mime": "application/x-test",
                         "size": 6,
                         "s3_hash": "public-hash"
@@ -659,6 +670,8 @@ mod tests {
         FileData {
             file_id: 1,
             revision_id: 17,
+            revision_created_at: time::OffsetDateTime::from_unix_timestamp(1_595_486_319)
+                .unwrap(),
             mime: str!("text/plain"),
             size,
             s3_hash: str!("sha512-hash"),
@@ -780,6 +793,10 @@ mod tests {
             "application/x-test",
         );
         assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert_eq!(
+            response.headers().get(LAST_MODIFIED).unwrap(),
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+        );
         assert!(!response.headers().contains_key(CACHE_CONTROL));
         let response_body = body::to_bytes(response.into_body(), usize::MAX)
             .await
@@ -879,6 +896,10 @@ mod tests {
 
             assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
             assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+            assert_eq!(
+                response.headers().get(LAST_MODIFIED).unwrap(),
+                "Thu, 23 Jul 2020 06:38:39 GMT",
+            );
             assert!(!response.headers().contains_key(ACCEPT_RANGES));
             assert!(!response.headers().contains_key(CONTENT_DISPOSITION));
             assert!(!response.headers().contains_key(CACHE_CONTROL));
@@ -952,6 +973,10 @@ mod tests {
         .await;
         assert_eq!(partial.status(), StatusCode::PARTIAL_CONTENT);
         assert_eq!(partial.headers().get(CONTENT_RANGE).unwrap(), "bytes 0-1/6");
+        assert_eq!(
+            partial.headers().get(LAST_MODIFIED).unwrap(),
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+        );
         assert_eq!(partial.bytes().await.unwrap(), &b"ab"[..]);
 
         let full = router_request_with_headers(
@@ -1370,9 +1395,15 @@ mod tests {
 
     #[test]
     fn base_headers_sets_etag_and_accept_ranges() {
-        let response = base_headers(StatusCode::OK, "\"etag\"", false, "file.txt")
-            .body(Body::empty())
-            .unwrap();
+        let response = base_headers(
+            StatusCode::OK,
+            "\"etag\"",
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+            false,
+            "file.txt",
+        )
+        .body(Body::empty())
+        .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(response.headers().get(ETAG).unwrap(), "\"etag\"");
@@ -1382,9 +1413,15 @@ mod tests {
 
     #[test]
     fn base_headers_sets_attachment_disposition_when_requested() {
-        let response = base_headers(StatusCode::OK, "\"etag\"", true, "report 1.txt")
-            .body(Body::empty())
-            .unwrap();
+        let response = base_headers(
+            StatusCode::OK,
+            "\"etag\"",
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+            true,
+            "report 1.txt",
+        )
+        .body(Body::empty())
+        .unwrap();
 
         let disposition = response.headers().get(CONTENT_DISPOSITION).unwrap();
         assert_eq!(disposition, "attachment; filename=\"report 1.txt\"");

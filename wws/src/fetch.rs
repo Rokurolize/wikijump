@@ -268,6 +268,8 @@ mod tests {
         FileData {
             file_id: 1,
             revision_id: 17,
+            revision_created_at: time::OffsetDateTime::from_unix_timestamp(1_595_486_319)
+                .unwrap(),
             mime: str!("text/plain"),
             size: 6,
             s3_hash: str!("sha512-hash"),
