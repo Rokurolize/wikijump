@@ -296,6 +296,19 @@ The private JSON names `candidate_identity_sha256`, `deepwell_rpc_url`, `deepwel
 
 The 2026-07-26 benchmark streamed 10,000 frozen matching cases through one debug FTML renderer process and completed the local render and comparison in 1.72 seconds with 302,324 KiB maximum RSS. Treat this as a throughput baseline, not a fixed performance gate.
 
+## Identity-bound differential runner
+
+`scripts/run-identity-bound-differential.mjs` is the thin one-command owner for one complete saved-page runtime differential case. Its only supported adapter runs the existing candidate-manifest-bound `run-generic-runtime-differential-stack.mjs` interface. It accepts no executable or argument extension points.
+
+```sh
+pnpm --dir install/local/wikidot-verification identity-bound-differential -- \
+  --case-manifest /absolute/evidence/path/case-manifest.json
+```
+
+The `wikijump_syntax_differential.case_manifest.v1` case manifest uses absolute paths. It binds exactly one runtime case source, an independent list of site-state fixtures, saved Wikidot captures and external references, the exact saved Wikidot page URL, the seeded administrator actor, saved-page context, the candidate build manifest, this repository, fixed Node, Git, and Docker executables, the stack report path, and the final verdict path. The selected capture domain and slug must match that URL. The existing stack controller verifies that the clean repository HEAD, FTML Cargo pin, dependency lock, and executable hash match the candidate manifest before it starts its disposable runtime. It runs absolute Git and Docker paths with minimal environments and a fixed local Docker socket. The served Deepwell process is that bound executable, not an arbitrary standing URL.
+
+Raw HTML, parsed DOM, and visible text are mandatory. Browser intervals may be not applicable only with a reason whose basis is the case contract. Stack arguments are derived only from the validated manifest. The stack controller owns its disposable Compose project, run root, runtime pages, and state, then writes a cleanup receipt; a missing or failed receipt makes the outer verdict fail. The outer command has no timeout that can interrupt controller cleanup. The final `wikijump_syntax_differential.identity_bound_verdict.v1` file is published without replacement and records the actual Node invocation plus absolute paths and SHA-256 values for every retained input, runtime report, cleanup receipt, and stack log when Compose started. The report, cleanup receipt, stack log, and final verdict paths are all reserved before execution and never replaced. A moving identity, omitted channel, incomplete case, partial report, failed cleanup, unknown manifest field, or output collision fails closed.
+
 ## Python environment
 
 The authenticated Wikidot helper runs from this component's private `.venv`. The runtime package subset mirrored from the frozen `requirements.txt` manifest lives in `requirements-pypi.txt`, build packages live in `requirements-build.txt`, and both are hash-locked in `requirements.lock`; the owner's `Rokurolize/wikidot.py` fork remains pinned separately to a full commit in `requirements.txt`. The setup script installs the hash-verified packages first, fetches only that commit, verifies the checked-out `HEAD`, and installs it without dependency resolution or build isolation. Create or refresh the environment before using the theme-localization execution path:

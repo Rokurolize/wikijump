@@ -1667,6 +1667,25 @@ test("stack controller accepts an explicit matching binary path", async (t) => {
   assert.equal(candidate.binary, binary);
 });
 
+test("candidate binding ignores caller Git routing", async (t) => {
+  const fixture = await reusableCandidateFixture(t);
+  const saved = Object.fromEntries(["PATH", "GIT_DIR", "GIT_WORK_TREE"].map((name) => [name, process.env[name]]));
+  Object.assign(process.env, {PATH: "/poison", GIT_DIR: "/poison", GIT_WORK_TREE: "/poison"});
+  try {
+    const candidate = await bindCandidate({
+      repository: fixture.repository,
+      candidateManifest: fixture.candidateManifest,
+      binary: null,
+    });
+    assert.equal(candidate.binary, fixture.binary);
+  } finally {
+    for (const [name, previous] of Object.entries(saved)) {
+      if (previous === undefined) delete process.env[name];
+      else process.env[name] = previous;
+    }
+  }
+});
+
 test("candidate binding rejects an artifact key digest mismatch", async (t) => {
   const fixture = await reusableCandidateFixture(t);
   fixture.manifest.artifact_key.inputs.rustflags = "-Cdebuginfo=2";
@@ -1794,19 +1813,24 @@ test("stack controller has no candidate build path", async () => {
 
 test("stack cleanup does not remove reusable candidate assets", async (t) => {
   const fixture = await reusableCandidateFixture(t);
+  const output = path.join(path.dirname(fixture.repository), "report.json");
   await assert.rejects(
     runStack([
       "--repository", fixture.repository,
       "--candidate-manifest", fixture.candidateManifest,
       "--cases", path.join(path.dirname(fixture.repository), "cases.jsonl"),
       "--captures", path.join(path.dirname(fixture.repository), "captures.jsonl"),
-      "--output", path.join(path.dirname(fixture.repository), "report.json"),
+      "--output", output,
     ]),
     /install\/local\/deepwell\/config\.toml/u,
   );
 
   assert.equal((await fsp.stat(fixture.candidateManifest)).isFile(), true);
   assert.equal((await fsp.stat(fixture.binary)).isFile(), true);
+  const cleanup = JSON.parse(await fsp.readFile(`${output}.cleanup.json`, "utf8"));
+  assert.equal(cleanup.status, "pass");
+  assert.equal(cleanup.compose_started, false);
+  assert.equal(cleanup.run_root_removed, true);
 });
 
 test("runtime identity rejects obsolete candidate manifest shapes", () => {
