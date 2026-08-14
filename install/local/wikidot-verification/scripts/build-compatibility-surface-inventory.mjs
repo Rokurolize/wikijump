@@ -52,6 +52,42 @@ const BLOCKED_ROUTE_STATUSES = new Set([
   "blocked_no_mapping"
 ])
 const HTTP_METHOD_NAMES = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+const MISSING_PAGE_CONTROL_CONTRACTS = new Map([
+  [
+    "create",
+    {
+      operations: ["edit"],
+      states: [
+        "missing-page-settled",
+        "editor-loading",
+        "editor-settled",
+        "save-loading",
+        "save-success",
+        "save-denial",
+        "save-failure",
+        "created-page-settled"
+      ]
+    }
+  ],
+  [
+    "restore",
+    {
+      operations: ["deletedGet", "restore"],
+      states: [
+        "missing-page-settled",
+        "deleted-selection-loading",
+        "deleted-selection-settled",
+        "deleted-selection-denial",
+        "deleted-selection-failure",
+        "restore-loading",
+        "restore-success",
+        "restore-denial",
+        "restore-failure",
+        "restored-page-settled"
+      ]
+    }
+  ]
+])
 
 function usage() {
   return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--output JSON]\n`
@@ -773,7 +809,7 @@ async function discoverFramerailXmlRpc(root) {
 async function discoverPageActionSurfaces(root) {
   const registryPath = "docs/development/wikidot-page-action-surfaces.json"
   const registry = await readJson(root, registryPath)
-  if (registry.schema !== "wikijump.wikidot_page_action_surface_registry.v1") {
+  if (registry.schema !== "wikijump.wikidot_page_action_surface_registry.v2") {
     throw new Error(`${registryPath} has an unsupported schema`)
   }
   if (!Array.isArray(registry.evidence_references) || registry.evidence_references.length === 0) {
@@ -782,7 +818,10 @@ async function discoverPageActionSurfaces(root) {
   if (!Array.isArray(registry.surfaces) || registry.surfaces.length === 0) {
     throw new Error(`${registryPath} must declare surfaces`)
   }
-  return registry.surfaces.map((entry) => {
+  if (!Array.isArray(registry.missing_page_controls)) {
+    throw new Error(`${registryPath} must declare missing_page_controls`)
+  }
+  const pageActions = registry.surfaces.map((entry) => {
     if (!entry || !/^[a-z][a-z0-9-]+$/u.test(entry.action_id ?? "")) {
       throw new Error(`${registryPath} contains an invalid action_id`)
     }
@@ -805,6 +844,140 @@ async function discoverPageActionSurfaces(root) {
       standing: phase(standingStatus)
     })
   })
+  const controlIds = registry.missing_page_controls.map((entry) => entry?.control_id)
+  if (
+    new Set(controlIds).size !== controlIds.length ||
+    JSON.stringify([...controlIds].sort()) !==
+      JSON.stringify([...MISSING_PAGE_CONTROL_CONTRACTS.keys()].sort())
+  ) {
+    throw new Error(`${registryPath} must declare exactly one create and one restore control`)
+  }
+  const missingPageControls = []
+  for (const entry of registry.missing_page_controls) {
+    const contract = MISSING_PAGE_CONTROL_CONTRACTS.get(entry.control_id)
+    if (!LEDGER_STATUSES.has(entry.source_status)) {
+      throw new Error(
+        `${registryPath} has an unknown source status for missing-page ${entry.control_id}`
+      )
+    }
+    if (!Array.isArray(entry.operation_bindings)) {
+      throw new Error(`${registryPath} ${entry.control_id} operation_bindings must be an array`)
+    }
+    const operationIds = entry.operation_bindings.map((binding) => binding?.operation_id)
+    if (
+      new Set(operationIds).size !== operationIds.length ||
+      JSON.stringify(operationIds) !== JSON.stringify(contract.operations)
+    ) {
+      throw new Error(
+        `${registryPath} ${entry.control_id} operations must be ${contract.operations.join(",")}`
+      )
+    }
+    const operationBindings = entry.operation_bindings.map((binding) => {
+      if (
+        !Array.isArray(binding.public_references) ||
+        binding.public_references.length === 0 ||
+        binding.public_references.some(
+          (reference) =>
+            typeof reference !== "string" ||
+            !reference.endsWith(`#action:${binding.operation_id}`)
+        )
+      ) {
+        throw new Error(
+          `${registryPath} ${entry.control_id} ${binding.operation_id} has invalid public references`
+        )
+      }
+      return {
+        operation_id: binding.operation_id,
+        public_references: uniqueSortedStrings(binding.public_references)
+      }
+    })
+    if (JSON.stringify(entry.observable_states) !== JSON.stringify(contract.states)) {
+      throw new Error(
+        `${registryPath} ${entry.control_id} observable_states do not match the closed contract`
+      )
+    }
+    const proof = entry.browser_interval_proof
+    if (
+      !proof ||
+      !["available", "missing"].includes(proof.status) ||
+      (proof.status === "missing" && !Number.isInteger(proof.issue)) ||
+      (proof.status === "available" &&
+        (!Array.isArray(proof.references) || proof.references.length === 0))
+    ) {
+      throw new Error(`${registryPath} ${entry.control_id} has invalid browser_interval_proof`)
+    }
+    if (!Array.isArray(entry.source_identities) || entry.source_identities.length === 0) {
+      throw new Error(`${registryPath} ${entry.control_id} must declare source_identities`)
+    }
+    const identityPaths = new Set()
+    const sourceIdentities = []
+    for (const identity of entry.source_identities) {
+      const normalizedIdentityPath =
+        typeof identity?.path === "string" ? toPosix(path.normalize(identity.path)) : ""
+      if (
+        !identity ||
+        typeof identity.path !== "string" ||
+        identity.path === "" ||
+        path.isAbsolute(identity.path) ||
+        normalizedIdentityPath !== identity.path ||
+        normalizedIdentityPath === ".." ||
+        normalizedIdentityPath.startsWith("../") ||
+        !/^[0-9a-f]{64}$/u.test(identity.sha256 ?? "")
+      ) {
+        throw new Error(`${registryPath} ${entry.control_id} has an invalid source identity`)
+      }
+      if (identityPaths.has(identity.path)) {
+        throw new Error(
+          `${registryPath} ${entry.control_id} has duplicate source identity ${identity.path}`
+        )
+      }
+      identityPaths.add(identity.path)
+      const sourceText = await readText(root, identity.path)
+      if (sha256(sourceText) !== identity.sha256) {
+        throw new Error(
+          `${registryPath} ${entry.control_id} source identity is stale: ${identity.path}`
+        )
+      }
+      sourceIdentities.push({ path: identity.path, sha256: identity.sha256 })
+    }
+    for (const binding of operationBindings) {
+      for (const reference of binding.public_references) {
+        const sourcePath = reference.split("#", 1)[0]
+        if (!identityPaths.has(sourcePath)) {
+          throw new Error(
+            `${registryPath} ${entry.control_id} operation reference lacks a source identity: ${sourcePath}`
+          )
+        }
+      }
+    }
+    const base = surface({
+      surfaceId: `missing-page-control:${entry.control_id}`,
+      kind: "missing_page_control",
+      publicOwner: "framerail",
+      publicReference: [
+        registryPath,
+        ...sourceIdentities.map(({ path: sourcePath }) => sourcePath),
+        ...operationBindings.flatMap(({ public_references: references }) => references)
+      ],
+      issues: entry.issues ?? [],
+      tests: entry.test_references ?? [],
+      evidence: phase(
+        proof.status,
+        proof.status === "available" ? proof.references : []
+      ),
+      source: phase(entry.source_status, sourceIdentities.map(({ path: sourcePath }) => sourcePath))
+    })
+    missingPageControls.push({
+      ...base,
+      operation_bindings: operationBindings,
+      observable_states: [...entry.observable_states],
+      browser_interval_proof: proof.status === "missing"
+        ? { status: "missing", issue: proof.issue }
+        : { status: "available", references: uniqueSortedStrings(proof.references) },
+      source_identities: sourceIdentities
+    })
+  }
+  return [...pageActions, ...missingPageControls]
 }
 
 const WWS_DIRECT_METHODS = new Map([

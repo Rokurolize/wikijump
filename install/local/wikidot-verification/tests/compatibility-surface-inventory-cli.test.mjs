@@ -59,7 +59,7 @@ async function writeRepositoryFixture(root) {
     'register!("ping", ping);\n'
   )
   await writeJson(root, "docs/development/wikidot-page-action-surfaces.json", {
-    schema: "wikijump.wikidot_page_action_surface_registry.v1",
+    schema: "wikijump.wikidot_page_action_surface_registry.v2",
     evidence_references: ["evidence/page-shell.html"],
     surfaces: [
       {
@@ -68,13 +68,87 @@ async function writeRepositoryFixture(root) {
         public_references: ["framerail/src/routes/+page.svelte"],
         test_references: ["tests/page-edit.test.js"]
       }
+    ],
+    missing_page_controls: [
+      {
+        control_id: "create",
+        source_status: "implemented",
+        operation_bindings: [
+          {
+            operation_id: "edit",
+            public_references: ["framerail/src/routes/+page.server.ts#action:edit"]
+          }
+        ],
+        observable_states: [
+          "missing-page-settled",
+          "editor-loading",
+          "editor-settled",
+          "save-loading",
+          "save-success",
+          "save-denial",
+          "save-failure",
+          "created-page-settled"
+        ],
+        browser_interval_proof: { status: "missing", issue: 1372 },
+        source_identities: [
+          {
+            path: "framerail/src/routes/+page.svelte",
+            sha256: "b14d226020649601ba32153ab426b08d816efbdaa68fd0618cf3fe6143ee0fee"
+          },
+          {
+            path: "framerail/src/routes/+page.server.ts",
+            sha256: "f5c0620b1478af0222b90a7cbedc9ef8b97fc11f0d776d2f4d3a59a026d40efa"
+          }
+        ],
+        issues: [1371, 1372],
+        test_references: ["tests/missing-page-create.spec.ts"]
+      },
+      {
+        control_id: "restore",
+        source_status: "implemented",
+        operation_bindings: [
+          {
+            operation_id: "deletedGet",
+            public_references: ["framerail/src/routes/+page.server.ts#action:deletedGet"]
+          },
+          {
+            operation_id: "restore",
+            public_references: ["framerail/src/routes/+page.server.ts#action:restore"]
+          }
+        ],
+        observable_states: [
+          "missing-page-settled",
+          "deleted-selection-loading",
+          "deleted-selection-settled",
+          "deleted-selection-denial",
+          "deleted-selection-failure",
+          "restore-loading",
+          "restore-success",
+          "restore-denial",
+          "restore-failure",
+          "restored-page-settled"
+        ],
+        browser_interval_proof: { status: "missing", issue: 1372 },
+        source_identities: [
+          {
+            path: "framerail/src/routes/+page.svelte",
+            sha256: "b14d226020649601ba32153ab426b08d816efbdaa68fd0618cf3fe6143ee0fee"
+          },
+          {
+            path: "framerail/src/routes/+page.server.ts",
+            sha256: "f5c0620b1478af0222b90a7cbedc9ef8b97fc11f0d776d2f4d3a59a026d40efa"
+          }
+        ],
+        issues: [1371, 1372],
+        test_references: ["tests/missing-page-restore.spec.ts"]
+      }
     ]
   })
   await writeText(root, "framerail/src/routes/+page.svelte", "<h1>Fixture</h1>\n")
   await writeText(
     root,
     "framerail/src/routes/+page.server.ts",
-    "export const actions = { save: saveAction }\n"
+    "export const actions = { edit: editAction }\n"
   )
   await writeText(
     root,
@@ -251,11 +325,11 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 28 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 30 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.deepEqual(inventory.counts, {
-    total: 28,
+    total: 30,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
@@ -264,6 +338,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
       framerail_route: 1,
       framerail_server_action: 1,
       framerail_xmlrpc_method: 1,
+      missing_page_control: 2,
       open43_audit_case: 1,
       page_action: 1,
       wikidot_py_amc_module_shape: 2,
@@ -322,6 +397,75 @@ test("CLI discovers declared public surfaces and writes deterministic completion
     standing: { status: "pending", references: [] },
     closure: { status: "open", references: [] }
   })
+  const missingPageControls = inventory.surfaces.filter(
+    ({ kind }) => kind === "missing_page_control"
+  )
+  assert.deepEqual(
+    missingPageControls.map(({ surface_id }) => surface_id),
+    ["missing-page-control:create", "missing-page-control:restore"]
+  )
+  assert.deepEqual(missingPageControls[0].operation_bindings, [
+    {
+      operation_id: "edit",
+      public_references: ["framerail/src/routes/+page.server.ts#action:edit"]
+    }
+  ])
+  assert.deepEqual(missingPageControls[1].operation_bindings, [
+    {
+      operation_id: "deletedGet",
+      public_references: ["framerail/src/routes/+page.server.ts#action:deletedGet"]
+    },
+    {
+      operation_id: "restore",
+      public_references: ["framerail/src/routes/+page.server.ts#action:restore"]
+    }
+  ])
+  assert.deepEqual(
+    missingPageControls.map(({ browser_interval_proof }) => browser_interval_proof),
+    [
+      { status: "missing", issue: 1372 },
+      { status: "missing", issue: 1372 }
+    ]
+  )
+  assert.deepEqual(missingPageControls[0].observable_states, [
+    "missing-page-settled",
+    "editor-loading",
+    "editor-settled",
+    "save-loading",
+    "save-success",
+    "save-denial",
+    "save-failure",
+    "created-page-settled"
+  ])
+  assert.deepEqual(missingPageControls[1].observable_states, [
+    "missing-page-settled",
+    "deleted-selection-loading",
+    "deleted-selection-settled",
+    "deleted-selection-denial",
+    "deleted-selection-failure",
+    "restore-loading",
+    "restore-success",
+    "restore-denial",
+    "restore-failure",
+    "restored-page-settled"
+  ])
+  assert.deepEqual(missingPageControls[0].source_identities, [
+    {
+      path: "framerail/src/routes/+page.svelte",
+      sha256: "b14d226020649601ba32153ab426b08d816efbdaa68fd0618cf3fe6143ee0fee"
+    },
+    {
+      path: "framerail/src/routes/+page.server.ts",
+      sha256: "f5c0620b1478af0222b90a7cbedc9ef8b97fc11f0d776d2f4d3a59a026d40efa"
+    }
+  ])
+  assert.deepEqual(
+    missingPageControls.map(({ evidence }) => evidence),
+    [
+      { status: "missing", references: [] },
+      { status: "missing", references: [] }
+    ]
+  )
   assert.deepEqual(
     inventory.surfaces.map(({ surface_id }) => surface_id),
     [...inventory.surfaces.map(({ surface_id }) => surface_id)].sort()
@@ -331,6 +475,58 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const secondResult = runCli(root, outputPath)
   assert.equal(secondResult.status, 0, secondResult.stderr)
   assert.equal(await fs.readFile(outputPath, "utf8"), firstOutput)
+})
+
+test("CLI rejects an omitted or duplicate missing-page control", async () => {
+  for (const mutation of ["omit", "duplicate"]) {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), `compatibility-missing-page-${mutation}-`))
+    await writeRepositoryFixture(root)
+    const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+    const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+    registry.missing_page_controls = mutation === "omit"
+      ? registry.missing_page_controls.slice(0, 1)
+      : [registry.missing_page_controls[0], registry.missing_page_controls[0]]
+    await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+
+    const result = runCli(root, path.join(root, "inventory.json"))
+
+    assert.equal(result.status, 1, mutation)
+    assert.match(
+      result.stderr,
+      /must declare exactly one create and one restore control/u,
+      mutation
+    )
+  }
+})
+
+test("CLI rejects a stale missing-page source identity", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-stale-"))
+  await writeRepositoryFixture(root)
+  const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+  registry.missing_page_controls[0].source_identities[0].sha256 = "0".repeat(64)
+  await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /create source identity is stale/u)
+  await assert.rejects(fs.access(path.join(root, "inventory.json")))
+})
+
+test("CLI rejects a missing-page source identity outside the repository", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-path-"))
+  await writeRepositoryFixture(root)
+  const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+  registry.missing_page_controls[0].source_identities[0].path = "../outside-source.svelte"
+  await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /create has an invalid source identity/u)
+  await assert.rejects(fs.access(path.join(root, "inventory.json")))
 })
 
 test("CLI discovers GET, implicit HEAD, and FALLBACK for the production composite route", async () => {

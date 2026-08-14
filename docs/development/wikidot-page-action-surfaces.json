@@ -1,5 +1,5 @@
 {
-  "schema": "wikijump.wikidot_page_action_surface_registry.v1",
+  "schema": "wikijump.wikidot_page_action_surface_registry.v2",
   "evidence_references": [
     "install/local/wikidot-verification/fixtures/listpages-late-evidence/html-preview-context/fondazionescp-scp-245-saved-page.html"
   ],
@@ -183,6 +183,101 @@
       "action_id": "file-delete",
       "source_status": "implemented",
       "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+    }
+  ],
+  "missing_page_controls": [
+    {
+      "control_id": "create",
+      "source_status": "implemented",
+      "operation_bindings": [
+        {
+          "operation_id": "edit",
+          "public_references": [
+            "framerail/src/lib/server/load/page/page-actions.ts#action:edit"
+          ]
+        }
+      ],
+      "observable_states": [
+        "missing-page-settled",
+        "editor-loading",
+        "editor-settled",
+        "save-loading",
+        "save-success",
+        "save-denial",
+        "save-failure",
+        "created-page-settled"
+      ],
+      "browser_interval_proof": {
+        "status": "missing",
+        "issue": 1372
+      },
+      "source_identities": [
+        {
+          "path": "framerail/src/routes/+error.svelte",
+          "sha256": "f364c6e19d96bbb2def049bfdc1ce8efc1d32c276eee6266e6e31de107bab2d8"
+        },
+        {
+          "path": "framerail/src/lib/server/load/page/page-actions.ts",
+          "sha256": "c70af3d435e123cef92bf02b9a499af3a5c59548a5130efd4e292b16d214b34e"
+        }
+      ],
+      "issues": [1371, 1372],
+      "test_references": [
+        "framerail/tests/new-page-helper.spec.ts",
+        "framerail/tests/data-form-create-flow.spec.ts"
+      ]
+    },
+    {
+      "control_id": "restore",
+      "source_status": "implemented",
+      "operation_bindings": [
+        {
+          "operation_id": "deletedGet",
+          "public_references": [
+            "framerail/src/lib/server/load/page/page-actions.ts#action:deletedGet"
+          ]
+        },
+        {
+          "operation_id": "restore",
+          "public_references": [
+            "framerail/src/lib/server/load/page/page-actions.ts#action:restore"
+          ]
+        }
+      ],
+      "observable_states": [
+        "missing-page-settled",
+        "deleted-selection-loading",
+        "deleted-selection-settled",
+        "deleted-selection-denial",
+        "deleted-selection-failure",
+        "restore-loading",
+        "restore-success",
+        "restore-denial",
+        "restore-failure",
+        "restored-page-settled"
+      ],
+      "browser_interval_proof": {
+        "status": "missing",
+        "issue": 1372
+      },
+      "source_identities": [
+        {
+          "path": "framerail/src/routes/+error.svelte",
+          "sha256": "f364c6e19d96bbb2def049bfdc1ce8efc1d32c276eee6266e6e31de107bab2d8"
+        },
+        {
+          "path": "framerail/src/lib/server/load/page/page-actions.ts",
+          "sha256": "c70af3d435e123cef92bf02b9a499af3a5c59548a5130efd4e292b16d214b34e"
+        },
+        {
+          "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
+          "sha256": "cc3482139a394c68d30f4a9204fb64b9671d9a07e44305bc92e5a991a167f98c"
+        }
+      ],
+      "issues": [1371, 1372],
+      "test_references": [
+        "framerail/tests/page-deleted-authorization.test.js"
+      ]
     }
   ]
 }
