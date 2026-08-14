@@ -32,6 +32,7 @@ import {
   wikidotSiteChangesModule
 } from "$lib/server/deepwell/page"
 import {
+  renderWikidotListDrafts,
   renderWikidotOrphanedPages,
   renderWikidotSiteTools,
   renderWikidotWantedPages
@@ -276,6 +277,9 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       if (moduleName === "sitetools/OrphanedPagesModule") {
         const pages = await siteToolsOrphanedPages(siteId, requestContext)
         return { status: "ok", body: renderWikidotOrphanedPages(pages) }
+      }
+      if (moduleName === "list/ListDraftsModule") {
+        return { status: "ok", body: renderWikidotListDrafts() }
       }
       return { status: "not_ok", body: "" }
     },

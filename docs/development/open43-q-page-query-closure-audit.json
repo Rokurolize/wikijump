@@ -11,12 +11,13 @@
     "candidate_identity": null,
     "implementation_commits": [
       "9cb81315957f6cd70e7721ef4d66cbf54caa4242",
-      "8d347148ff025da4d229dba9d5524fa9d036fd4d"
+      "8d347148ff025da4d229dba9d5524fa9d036fd4d",
+      "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127"
     ]
   },
   "github_snapshot": {
     "repository": "Rokurolize/wikijump",
-    "captured_at": "2026-08-09",
+    "captured_at": "2026-08-15",
     "command": "gh issue view <issue> --repo Rokurolize/wikijump --json number,title,state,body,comments",
     "issues": [
       {
@@ -130,7 +131,7 @@
     },
     {
       "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
-      "sha256": "c97b887024f26d08bb5b13de5f6d19e30bc598c7132250b3a8bca935441bc03d",
+      "sha256": "68d197f553b642998adea35a072b223d0bc732e4e709bd5209b4fa16a352b52e",
       "issues": [1028, 1035]
     },
     {
@@ -344,7 +345,7 @@
       "module": "Categories",
       "authoritative_manifest": {
         "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
-        "sha256": "c97b887024f26d08bb5b13de5f6d19e30bc598c7132250b3a8bca935441bc03d"
+        "sha256": "68d197f553b642998adea35a072b223d0bc732e4e709bd5209b4fa16a352b52e"
       },
       "subrows": [
         {"case_id": "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS", "status": "source_ready"},
@@ -359,7 +360,7 @@
       "module": "SiteChanges and ListDrafts",
       "authoritative_manifest": {
         "path": "docs/development/open43-q-page-graph-residual-case-manifest.json",
-        "sha256": "c97b887024f26d08bb5b13de5f6d19e30bc598c7132250b3a8bca935441bc03d"
+        "sha256": "68d197f553b642998adea35a072b223d0bc732e4e709bd5209b4fa16a352b52e"
       },
       "subrows": [
         {"case_id": "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT", "status": "source_ready"},
@@ -379,7 +380,19 @@
           "missing": "Alternative per-page selection and the browser loading, failure, replacement, history, focus, keyboard, and temporal lifecycle remain unobserved and unimplemented."
         },
         {"case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE", "status": "blocked_evidence"},
-        {"case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX", "status": "source_ready"},
+        {
+          "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
+          "status": "source_ready",
+          "owner": "deepwell-framerail",
+          "implementation_commit": "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127",
+          "tests": [
+            "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
+            "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its empty renderer",
+            "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC allows only the four observed read shapes",
+            "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC rejects unobserved parameters before Deepwell"
+          ],
+          "result": "The public preview matrix covers the observed empty wrapper and exact pageType and standalone parsing rules. The public AMC route source wires the exact ListDrafts branch to the empty renderer; the existing injected-callback and negative-shape tests remain intact. Central Rust execution remains outstanding."
+        },
         {"case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY", "status": "blocked_evidence"}
       ]
     },
@@ -472,6 +485,11 @@
       "result": "22 tests passed."
     },
     {
+      "command": "pnpm --dir framerail exec node --test tests/listdrafts-route-public-boundary.test.js tests/site-tools-read-actions.test.js",
+      "status": "pass",
+      "result": "6 tests passed, including the public route wiring, exact four-shape callback, and unobserved-shape boundary."
+    },
+    {
       "command": "node scripts/initialize-wikidot-implementation-ledger.mjs --check",
       "status": "pass",
       "result": "Validated 210 implementation ledger entries."
@@ -497,9 +515,9 @@
       "result": "Codex gpt-5.6-sol high review completed in one pass with no accepted or actionable P0 findings; overall patch-correct confidence 0.98."
     },
     {
-      "command": "jq structural closure-audit assertions docs/development/open43-q-page-query-closure-audit.json",
+      "command": "manifest_sha256=$(sha256sum docs/development/open43-q-page-graph-residual-case-manifest.json | cut -d' ' -f1) && jq -e --arg digest \"$manifest_sha256\" '([.issues[].subrows[]] | length) == .reconciliation.subrow_count and ([.issues[].subrows[].case_id] | length) == ([.issues[].subrows[].case_id] | unique | length) and ([.issues[].subrows[] | select(.status == \"source_ready\")] | length) == .reconciliation.classification_counts.source_ready and ([.issues[].subrows[] | select(.status == \"needs_source\")] | length) == .reconciliation.classification_counts.needs_source and ([.issues[].subrows[] | select(.status == \"candidate_required\")] | length) == .reconciliation.classification_counts.candidate_required and ([.issues[].subrows[] | select(.status == \"blocked_evidence\")] | length) == .reconciliation.classification_counts.blocked_evidence and (([.issues[] | select(.issue == 1028 or .issue == 1035) | .authoritative_manifest.sha256] | sort) == [$digest, $digest]) and (([.evidence[] | select(.path == \"docs/development/open43-q-page-graph-residual-case-manifest.json\") | .sha256] | sort) == [$digest])' docs/development/open43-q-page-query-closure-audit.json",
       "status": "pass",
-      "result": "Exactly seven issues and 33 unique case IDs: source_ready 18, candidate_required 7, blocked_evidence 8, needs_source 0."
+      "result": "Exactly seven issues and 33 unique case IDs: source_ready 18, candidate_required 7, blocked_evidence 8, needs_source 0; the file digest, top-level evidence hash, and both nested issue manifest hashes agree."
     }
   ],
   "central_commands": [
