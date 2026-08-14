@@ -11,6 +11,7 @@ const SCHEMA = "wikijump.compatibility_surface_inventory.v2"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
+const SEMANTICS_REGISTRY = "docs/development/compatibility-surface-semantics.json"
 const WIKIDOT_PY_GIT_DIR = "/home/roku/src/Rokurolize/wikidot.py/.git"
 const FTML_GIT_DIR = "/home/roku/src/Rokurolize/ftml/.git"
 const GIT_EXECUTABLE = "/usr/bin/git"
@@ -41,6 +42,9 @@ const WIKIDOT_PY_SOURCE = {
 }
 const WIKIDOT_PY_AMC_MODULE_EXCLUSIONS = new Set(["edit/PageEditModule"])
 const SOURCE_INPUTS = new Map()
+const SUPPORTED_RELATIONSHIP_EDGE_TYPES = new Set([
+  "alias", "equivalence", "implemented_by", "parsed_by", "rendered_by", "tested_by"
+])
 
 function pinnedWikidotPyAmcModules() {
   const result = spawnSync(
@@ -301,6 +305,88 @@ function uniqueSortedStrings(values) {
   return [...new Set(values.filter((value) => typeof value === "string" && value !== ""))].sort()
 }
 
+function assertExactKeys(value, expected, context) {
+  const actual = value && typeof value === "object" && !Array.isArray(value)
+    ? Object.keys(value).sort()
+    : []
+  if (JSON.stringify(actual) !== JSON.stringify([...expected].sort())) {
+    throw new Error(`${context} has missing or extra keys`)
+  }
+}
+
+function assertCanonicalStrings(values, context) {
+  if (!Array.isArray(values) || JSON.stringify(values) !== JSON.stringify(uniqueSortedStrings(values))) {
+    throw new Error(`${context} must be a sorted unique string array`)
+  }
+}
+
+function validateSemanticsRegistry(semantics) {
+  assertExactKeys(semantics, [
+    "schema",
+    "ftml",
+    "relationship_edge_types",
+    "specification_owner_by_kind",
+    "implementation_owners_by_legacy_owner",
+    "specification_owner_keys",
+    "implementation_owner_keys"
+  ], SEMANTICS_REGISTRY)
+  if (semantics.schema !== "wikijump.compatibility_surface_semantics.v1") {
+    throw new Error(`${SEMANTICS_REGISTRY} has unknown schema`)
+  }
+  assertExactKeys(semantics.ftml, [
+    "counts", "raw_surface_identities", "catalog_crosswalk"
+  ], `${SEMANTICS_REGISTRY} ftml`)
+  assertExactKeys(semantics.ftml.counts, [
+    "lexer_rules", "parser_functions", "canonical_blocks", "block_aliases",
+    "typed_modules", "ast_variants", "delayed_forms", "generated_runtime_kinds",
+    "renderer_modules", "wikidot_fixtures", "total"
+  ], `${SEMANTICS_REGISTRY} FTML counts`)
+  if (!Array.isArray(semantics.ftml.raw_surface_identities)) {
+    throw new Error(`${SEMANTICS_REGISTRY} has no FTML identities`)
+  }
+  for (const identity of semantics.ftml.raw_surface_identities) {
+    assertExactKeys(identity, ["surface_id", "kind"], `${SEMANTICS_REGISTRY} FTML identity`)
+  }
+  const sortedIdentities = [...semantics.ftml.raw_surface_identities].sort((left, right) =>
+    left.surface_id.localeCompare(right.surface_id, "en")
+  )
+  if (
+    new Set(semantics.ftml.raw_surface_identities.map(({ surface_id: id }) => id)).size !==
+      semantics.ftml.raw_surface_identities.length ||
+    JSON.stringify(sortedIdentities) !== JSON.stringify(semantics.ftml.raw_surface_identities)
+  ) {
+    throw new Error(`${SEMANTICS_REGISTRY} FTML identities must be sorted and unique`)
+  }
+  if (!Array.isArray(semantics.ftml.catalog_crosswalk)) {
+    throw new Error(`${SEMANTICS_REGISTRY} has no FTML crosswalk`)
+  }
+  for (const row of semantics.ftml.catalog_crosswalk) {
+    assertExactKeys(row, [
+      "feature_id", "parsed_by", "rendered_by", "tested_by", "ftml_surfaces", "runtime_owner"
+    ], `${SEMANTICS_REGISTRY} FTML crosswalk row`)
+    for (const field of ["parsed_by", "rendered_by", "tested_by", "ftml_surfaces"]) {
+      assertCanonicalStrings(row[field], `${SEMANTICS_REGISTRY} ${row.feature_id} ${field}`)
+    }
+  }
+  const crosswalkIds = semantics.ftml.catalog_crosswalk.map(({ feature_id: id }) => id)
+  if (JSON.stringify(crosswalkIds) !== JSON.stringify(uniqueSortedStrings(crosswalkIds))) {
+    throw new Error(`${SEMANTICS_REGISTRY} FTML crosswalk rows must be sorted and unique`)
+  }
+  assertCanonicalStrings(semantics.relationship_edge_types, `${SEMANTICS_REGISTRY} edge types`)
+  assertCanonicalStrings(semantics.specification_owner_keys, `${SEMANTICS_REGISTRY} specification owners`)
+  assertCanonicalStrings(semantics.implementation_owner_keys, `${SEMANTICS_REGISTRY} implementation owners`)
+  if (
+    !semantics.specification_owner_by_kind ||
+    typeof semantics.specification_owner_by_kind !== "object" ||
+    Array.isArray(semantics.specification_owner_by_kind) ||
+    !semantics.implementation_owners_by_legacy_owner ||
+    typeof semantics.implementation_owners_by_legacy_owner !== "object" ||
+    Array.isArray(semantics.implementation_owners_by_legacy_owner)
+  ) {
+    throw new Error(`${SEMANTICS_REGISTRY} owner maps must be objects`)
+  }
+}
+
 function isCanonicalRepositoryReference(reference) {
   if (typeof reference !== "string" || reference === "" || reference.trim() !== reference) {
     return false
@@ -425,6 +511,242 @@ function verifyRegistryBlobs(root, sourceRevision) {
     if (sha256(pinnedSource) !== sha256(source)) {
       throw new Error(`registry blob drift: ${registryPath}`)
     }
+  }
+}
+
+function readFtmlObject(revision, objectPath, sources) {
+  let bytes
+  try {
+    bytes = execFileSync(
+      GIT_EXECUTABLE,
+      ["--no-replace-objects", `--git-dir=${FTML_GIT_DIR}`, "show", `${revision}:${objectPath}`],
+      { env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
+    )
+  } catch {
+    throw new Error(`cannot read pinned FTML source: ${objectPath}`)
+  }
+  const blob = resolveGitObject(
+    [`--git-dir=${FTML_GIT_DIR}`],
+    `${revision}:${objectPath}`,
+    `FTML source ${objectPath}`
+  )
+  sources.set(objectPath, { path: objectPath, blob, sha256: sha256(bytes) })
+  return bytes.toString("utf8")
+}
+
+function listFtmlFiles(revision, prefix) {
+  let output
+  try {
+    output = execFileSync(
+      GIT_EXECUTABLE,
+      [
+        "--no-replace-objects",
+        `--git-dir=${FTML_GIT_DIR}`,
+        "ls-tree",
+        "-r",
+        "--name-only",
+        revision,
+        "--",
+        prefix
+      ],
+      { encoding: "utf8", env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
+    )
+  } catch {
+    throw new Error(`cannot list pinned FTML source: ${prefix}`)
+  }
+  return output.trim().split("\n").filter(Boolean)
+}
+
+function rustEnumVariants(source, enumName, sourcePath) {
+  const tokens = scanRustTokens(source, sourcePath)
+  const enumIndex = tokens.findIndex(
+    (token, index) => token.value === "enum" && tokens[index + 1]?.value === enumName
+  )
+  const start = tokens.findIndex((token, index) => index > enumIndex && token.value === "{")
+  if (enumIndex < 0 || start < 0) throw new Error(`${sourcePath} has no ${enumName} enum`)
+  const variants = []
+  const depth = { "{": 1, "(": 0, "[": 0 }
+  const closing = { "}": "{", ")": "(", "]": "[" }
+  let expectVariant = true
+  for (let index = start + 1; index < tokens.length && depth["{"] > 0; index += 1) {
+    const token = tokens[index]
+    if (token.value in depth) depth[token.value] += 1
+    else if (token.value in closing) depth[closing[token.value]] -= 1
+    else if (depth["{"] === 1 && depth["("] === 0 && depth["["] === 0 && token.value === ",") {
+      expectVariant = true
+    } else if (
+      depth["{"] === 1 &&
+      depth["("] === 0 &&
+      depth["["] === 0 &&
+      expectVariant &&
+      token.kind === "identifier"
+    ) {
+      variants.push(token.value)
+      expectVariant = false
+    }
+  }
+  if (new Set(variants).size !== variants.length) {
+    throw new Error(`${sourcePath} has duplicate ${enumName} variants`)
+  }
+  return variants
+}
+
+function ftmlRecord(surfaceId, kind, name, sourcePath, extra = {}) {
+  return {
+    surface_id: surfaceId,
+    kind,
+    name,
+    source_reference: sourcePath,
+    ...extra
+  }
+}
+
+function buildFtmlCrosswalk(catalog, recordIds, semantics) {
+  const nominated = catalog.features
+    .filter((feature) =>
+      (feature.suggested_tdd_seams ?? []).some((seam) => seam.includes("FTML public parse/render"))
+    )
+    .map(({ id }) => id)
+    .sort()
+  const rows = semantics.ftml?.catalog_crosswalk
+  if (!Array.isArray(rows)) throw new Error(`${SEMANTICS_REGISTRY} has no FTML catalog crosswalk`)
+  const featureIds = rows.map(({ feature_id: featureId }) => featureId)
+  if (
+    new Set(featureIds).size !== featureIds.length ||
+    JSON.stringify([...featureIds].sort()) !== JSON.stringify(nominated)
+  ) {
+    throw new Error(`${SEMANTICS_REGISTRY} FTML crosswalk does not exactly match Catalog nominations`)
+  }
+  for (const row of rows) {
+    const fields = ["parsed_by", "rendered_by", "tested_by"]
+    if (fields.some((field) => !Array.isArray(row[field]))) {
+      throw new Error(`${SEMANTICS_REGISTRY} has malformed FTML crosswalk row: ${row.feature_id}`)
+    }
+    const ftmlSurfaces = uniqueSortedStrings(fields.flatMap((field) => row[field]))
+    if (JSON.stringify(ftmlSurfaces) !== JSON.stringify(row.ftml_surfaces)) {
+      throw new Error(`${SEMANTICS_REGISTRY} has inconsistent FTML crosswalk row: ${row.feature_id}`)
+    }
+    for (const surfaceId of ftmlSurfaces) {
+      if (!recordIds.has(surfaceId)) throw new Error(`${row.feature_id} links unknown FTML surface: ${surfaceId}`)
+    }
+    if (
+      row.runtime_owner !== null &&
+      row.runtime_owner !== `wikijump.runtime:${row.feature_id}`
+    ) {
+      throw new Error(`${SEMANTICS_REGISTRY} has invalid runtime owner: ${row.feature_id}`)
+    }
+  }
+  return rows.map((row) => ({ ...row }))
+}
+
+function discoverFtmlRawSurfaceManifest(ftmlSource, catalog, semantics) {
+  const revision = ftmlSource.commit
+  const sources = new Map()
+  const records = []
+  const add = (record) => records.push(record)
+
+  const lexerPath = "src/parsing/lexer.pest"
+  const lexer = readFtmlObject(revision, lexerPath, sources)
+  for (const name of [...lexer.matchAll(/^([a-z_][a-z0-9_]*)\s*=/gmu)].map((match) => match[1])) {
+    add(ftmlRecord(`ftml.tokenizer:${name}`, "lexer_rule", name, lexerPath))
+  }
+
+  const parserFunctionsPath = "src/preproc/parser_functions/mod.rs"
+  const parserFunctions = readFtmlObject(revision, parserFunctionsPath, sources)
+  for (const name of [...parserFunctions.matchAll(/^\s*"(if|ifexpr|expr)"\s*=>\s*ParserFunctionKind::/gmu)].map((match) => `#${match[1]}`)) {
+    add(ftmlRecord(`ftml.preprocessor:${name}`, "parser_function", name, parserFunctionsPath))
+  }
+
+  const blocksPath = "conf/blocks.toml"
+  const blocks = readFtmlObject(revision, blocksPath, sources)
+  const sections = [...blocks.matchAll(/^\[([a-z0-9-]+)\]$/gmu)]
+  for (const [index, section] of sections.entries()) {
+    const name = section[1]
+    add(ftmlRecord(`ftml.block:${name}`, "canonical_block", name, blocksPath))
+    const end = sections[index + 1]?.index ?? blocks.length
+    const aliases = /^aliases\s*=\s*(\[[^\n]*\])/mu.exec(blocks.slice(section.index, end))
+    for (const alias of aliases ? JSON.parse(aliases[1]) : []) {
+      add(ftmlRecord(`ftml.block-alias:${alias}->${name}`, "block_alias", alias, blocksPath, {
+        canonical_surface: `ftml.block:${name}`
+      }))
+    }
+  }
+
+  const moduleRoot = "src/parsing/rule/impls/block/blocks/module/modules"
+  for (const modulePath of listFtmlFiles(revision, moduleRoot).filter((value) => value.endsWith(".rs") && !value.endsWith("/mod.rs"))) {
+    const moduleSource = readFtmlObject(revision, modulePath, sources)
+    const name = /accepts_names:\s*&\["([A-Za-z]+)"\]/u.exec(moduleSource)?.[1]
+    if (!name) throw new Error(`${modulePath} has no typed module name`)
+    add(ftmlRecord(`ftml.module:${name}`, "typed_module", name, modulePath))
+  }
+
+  const astPath = "src/tree/element/object.rs"
+  const ast = readFtmlObject(revision, astPath, sources)
+  for (const name of rustEnumVariants(ast, "Element", astPath)) {
+    add(ftmlRecord(`ftml.ast:${name}`, "ast_variant", name, astPath))
+  }
+
+  const delayedPath = "src/delayed.rs"
+  const delayed = readFtmlObject(revision, delayedPath, sources)
+  for (const name of rustEnumVariants(delayed, "DelayedNode", delayedPath)) {
+    add(ftmlRecord(`ftml.delayed:${name}`, "delayed_form", name, delayedPath))
+  }
+  for (const name of rustEnumVariants(delayed, "GeneratedKind", delayedPath)) {
+    add(ftmlRecord(`ftml.generated:${name}`, "generated_runtime_kind", name, delayedPath))
+  }
+
+  const rendererRoot = "src/render/html/element"
+  const rendererIndexPath = `${rendererRoot}/mod.rs`
+  const rendererIndex = readFtmlObject(revision, rendererIndexPath, sources)
+  add(ftmlRecord("ftml.renderer:dispatcher", "renderer_module", "dispatcher", rendererIndexPath))
+  for (const name of [...rendererIndex.matchAll(/^mod\s+([a-z_]+);$/gmu)].map((match) => match[1])) {
+    const rendererPath = `${rendererRoot}/${name}.rs`
+    readFtmlObject(revision, rendererPath, sources)
+    add(ftmlRecord(`ftml.renderer:${name}`, "renderer_module", name, rendererPath))
+  }
+
+  for (const fixturePath of listFtmlFiles(revision, "test").filter((value) => value.endsWith("/wikidot.html"))) {
+    readFtmlObject(revision, fixturePath, sources)
+    const name = fixturePath.slice(0, -"/wikidot.html".length)
+    add(ftmlRecord(`ftml.fixture:${name}`, "wikidot_fixture", name, fixturePath))
+  }
+
+  const identifiers = records.map(({ surface_id: surfaceId }) => surfaceId)
+  if (new Set(identifiers).size !== identifiers.length) throw new Error("duplicate FTML raw surface")
+  const counts = {
+    lexer_rules: records.filter(({ kind }) => kind === "lexer_rule").length,
+    parser_functions: records.filter(({ kind }) => kind === "parser_function").length,
+    canonical_blocks: records.filter(({ kind }) => kind === "canonical_block").length,
+    block_aliases: records.filter(({ kind }) => kind === "block_alias").length,
+    typed_modules: records.filter(({ kind }) => kind === "typed_module").length,
+    ast_variants: records.filter(({ kind }) => kind === "ast_variant").length,
+    delayed_forms: records.filter(({ kind }) => kind === "delayed_form").length,
+    generated_runtime_kinds: records.filter(({ kind }) => kind === "generated_runtime_kind").length,
+    renderer_modules: records.filter(({ kind }) => kind === "renderer_module").length,
+    wikidot_fixtures: records.filter(({ kind }) => kind === "wikidot_fixture").length,
+    total: records.length
+  }
+  if (JSON.stringify(counts) !== JSON.stringify(semantics.ftml?.counts)) {
+    throw new Error(`pinned FTML raw surface denominator drift: ${JSON.stringify(counts)}`)
+  }
+  const identities = records
+    .map(({ surface_id: surfaceId, kind }) => ({ surface_id: surfaceId, kind }))
+    .sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en"))
+  const expectedIdentities = semantics.ftml?.raw_surface_identities
+  if (
+    !Array.isArray(expectedIdentities) ||
+    JSON.stringify(identities) !== JSON.stringify(expectedIdentities)
+  ) {
+    throw new Error("pinned FTML raw surface identities drift")
+  }
+  const recordIds = new Set(identifiers)
+  return {
+    schema: "wikijump.ftml_raw_surface_manifest.v1",
+    source: { ...ftmlSource },
+    registries: [...sources.values()].sort((left, right) => left.path.localeCompare(right.path, "en")),
+    counts,
+    records: records.sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")),
+    catalog_crosswalk: buildFtmlCrosswalk(catalog, recordIds, semantics)
   }
 }
 
@@ -2110,8 +2432,173 @@ async function discoverOpen43AuditCases(root) {
   return { records, auditPaths: [...routing.source_audits] }
 }
 
-function validateInventory(surfaces) {
+function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics) {
+  const specificationKinds = uniqueSortedStrings(
+    surfaces
+      .filter(({ kind }) => kind !== "catalog_feature" && kind !== "open43_audit_case")
+      .map(({ kind }) => kind)
+  )
+  const mappedSpecificationKinds = Object.keys(semantics.specification_owner_by_kind ?? {}).sort()
+  if (JSON.stringify(mappedSpecificationKinds) !== JSON.stringify(specificationKinds)) {
+    throw new Error(`${SEMANTICS_REGISTRY} has missing or unused specification owner kinds`)
+  }
+  const legacyOwners = uniqueSortedStrings(surfaces.map(({ public_owner: owner }) => owner))
+  const mappedLegacyOwners = Object.keys(semantics.implementation_owners_by_legacy_owner ?? {}).sort()
+  if (JSON.stringify(mappedLegacyOwners) !== JSON.stringify(legacyOwners)) {
+    throw new Error(`${SEMANTICS_REGISTRY} has missing or unused legacy owner keys`)
+  }
+  const declaredImplementationOwners = new Set(semantics.implementation_owner_keys)
+  for (const [legacyOwner, owners] of Object.entries(semantics.implementation_owners_by_legacy_owner)) {
+    assertCanonicalStrings(owners, `${SEMANTICS_REGISTRY} legacy owner ${legacyOwner}`)
+    if (owners.some((owner) => !declaredImplementationOwners.has(owner))) {
+      throw new Error(`${SEMANTICS_REGISTRY} legacy owner ${legacyOwner} has an undeclared owner`)
+    }
+  }
+  const crosswalkByFeature = new Map(
+    catalogCrosswalk.map((row) => [row.feature_id, row])
+  )
+  return surfaces.map((record) => {
+    const { public_owner: legacyOwner, ...normalized } = record
+    let specificationOwner
+    let implementationOwners
+    if (record.kind === "catalog_feature") {
+      const featureId = record.surface_id.slice("catalog-feature:".length)
+      const crosswalk = crosswalkByFeature.get(featureId)
+      specificationOwner = `catalog.feature:${featureId}`
+      implementationOwners = crosswalk
+        ? uniqueSortedStrings(["ftml", crosswalk.runtime_owner])
+        : []
+    } else if (record.kind === "open43_audit_case") {
+      const caseId = record.surface_id.slice("open43-audit-case:".length)
+      specificationOwner = `open43.case:${caseId}`
+      implementationOwners = semantics.implementation_owners_by_legacy_owner?.[legacyOwner]
+    } else {
+      specificationOwner = semantics.specification_owner_by_kind?.[record.kind]
+      implementationOwners = semantics.implementation_owners_by_legacy_owner?.[legacyOwner]
+    }
+    if (!specificationOwner) {
+      throw new Error(`unknown specification owner kind for ${record.surface_id}: ${record.kind}`)
+    }
+    if (!implementationOwners) {
+      throw new Error(`unknown implementation owner for ${record.surface_id}: ${legacyOwner}`)
+    }
+    return {
+      ...normalized,
+      specification_owner: specificationOwner,
+      implementation_owners: uniqueSortedStrings(implementationOwners)
+    }
+  })
+}
+
+function buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics) {
+  const publicIds = new Set(surfaces.map(({ surface_id: surfaceId }) => surfaceId))
+  if (publicIds.size !== surfaces.length) {
+    const seen = new Set()
+    const duplicate = surfaces.find(({ surface_id: surfaceId }) => {
+      if (seen.has(surfaceId)) return true
+      seen.add(surfaceId)
+      return false
+    })
+    throw new Error(`duplicate surface_id: ${duplicate.surface_id}`)
+  }
+  const rawIds = new Set(
+    ftmlRawSurfaceManifest.records.map(({ surface_id: surfaceId }) => surfaceId)
+  )
+  for (const surfaceId of rawIds) {
+    if (publicIds.has(surfaceId)) throw new Error(`FTML raw surface is double-counted: ${surfaceId}`)
+  }
+
+  const specificationOwners = semantics.specification_owner_keys
+  const implementationOwners = semantics.implementation_owner_keys
+  for (const [name, owners] of [
+    ["specification", specificationOwners],
+    ["implementation", implementationOwners]
+  ]) {
+    if (!Array.isArray(owners) || new Set(owners).size !== owners.length) {
+      throw new Error(`${SEMANTICS_REGISTRY} has missing or duplicate ${name} owner keys`)
+    }
+  }
+  const usedSpecificationOwners = uniqueSortedStrings(
+    surfaces.map(({ specification_owner: owner }) => owner)
+  )
+  const usedImplementationOwners = uniqueSortedStrings(
+    surfaces.flatMap(({ implementation_owners: owners }) => owners)
+  )
+  if (JSON.stringify(specificationOwners) !== JSON.stringify(usedSpecificationOwners)) {
+    throw new Error(`${SEMANTICS_REGISTRY} has missing or unused specification owner keys`)
+  }
+  if (JSON.stringify(implementationOwners) !== JSON.stringify(usedImplementationOwners)) {
+    throw new Error(`${SEMANTICS_REGISTRY} has missing or unused implementation owner keys`)
+  }
+  const implementationOwnerSet = new Set(implementationOwners)
+  const edges = []
+  for (const record of surfaces) {
+    for (const owner of record.implementation_owners) {
+      edges.push({ source: record.surface_id, type: "implemented_by", target: owner })
+    }
+  }
+  for (const row of ftmlRawSurfaceManifest.catalog_crosswalk) {
+    const source = `catalog-feature:${row.feature_id}`
+    if (!publicIds.has(source)) throw new Error(`FTML crosswalk has unknown catalog feature: ${source}`)
+    for (const [field, type] of [
+      ["parsed_by", "parsed_by"],
+      ["rendered_by", "rendered_by"],
+      ["tested_by", "tested_by"]
+    ]) {
+      for (const target of row[field]) edges.push({ source, type, target })
+    }
+  }
+  for (const record of ftmlRawSurfaceManifest.records) {
+    if (record.kind === "block_alias") {
+      edges.push({ source: record.surface_id, type: "alias", target: record.canonical_surface })
+    }
+  }
+
+  const edgeKeys = new Set()
+  const edgeTypes = semantics.relationship_edge_types
+  if (
+    !Array.isArray(edgeTypes) ||
+    new Set(edgeTypes).size !== edgeTypes.length ||
+    edgeTypes.some((type) => !SUPPORTED_RELATIONSHIP_EDGE_TYPES.has(type)) ||
+    [...SUPPORTED_RELATIONSHIP_EDGE_TYPES].some((type) => !edgeTypes.includes(type))
+  ) {
+    throw new Error(`${SEMANTICS_REGISTRY} has missing, duplicate, or unknown relationship edge types`)
+  }
+  const edgeTypeSet = new Set(edgeTypes)
+  for (const edge of edges) {
+    const key = `${edge.source}\u0000${edge.type}\u0000${edge.target}`
+    if (edgeKeys.has(key)) throw new Error(`duplicate relationship edge: ${key}`)
+    edgeKeys.add(key)
+    if (!edgeTypeSet.has(edge.type)) throw new Error(`unknown relationship edge type: ${edge.type}`)
+    if (!publicIds.has(edge.source) && !rawIds.has(edge.source)) {
+      throw new Error(`relationship edge has unknown source: ${edge.source}`)
+    }
+    if (edge.type === "implemented_by") {
+      if (!implementationOwnerSet.has(edge.target)) {
+        throw new Error(`relationship edge has unknown implementation owner: ${edge.target}`)
+      }
+    } else if (!rawIds.has(edge.target)) {
+      throw new Error(`relationship edge has unknown FTML target: ${edge.target}`)
+    }
+  }
+  return {
+    owner_keys: {
+      specification: specificationOwners,
+      implementation: implementationOwners
+    },
+    relationship_edges: edges.sort((left, right) =>
+      `${left.source}\u0000${left.type}\u0000${left.target}`.localeCompare(
+        `${right.source}\u0000${right.type}\u0000${right.target}`,
+        "en"
+      )
+    )
+  }
+}
+
+function validateInventory(surfaces, ownerKeys) {
   const identifiers = new Set()
+  const specificationOwners = new Set(ownerKeys.specification)
+  const implementationOwners = new Set(ownerKeys.implementation)
   for (const record of surfaces) {
     if (typeof record.surface_id !== "string" || record.surface_id === "") {
       throw new Error("compatibility surface is missing surface_id")
@@ -2120,8 +2607,14 @@ function validateInventory(surfaces) {
       throw new Error(`duplicate surface_id: ${record.surface_id}`)
     }
     identifiers.add(record.surface_id)
-    if (typeof record.public_owner !== "string" || record.public_owner === "") {
-      throw new Error(`missing public owner for ${record.surface_id}`)
+    if (!specificationOwners.has(record.specification_owner)) {
+      throw new Error(`unknown specification owner for ${record.surface_id}`)
+    }
+    if (
+      !Array.isArray(record.implementation_owners) ||
+      record.implementation_owners.some((owner) => !implementationOwners.has(owner))
+    ) {
+      throw new Error(`unknown implementation owner for ${record.surface_id}`)
     }
     if (!Array.isArray(record.public_reference) || record.public_reference.length === 0) {
       throw new Error(`missing public reference for ${record.surface_id}`)
@@ -2147,7 +2640,8 @@ async function buildInventory(root, sourceRevision) {
     xmlRpc,
     pageActions,
     wws,
-    open43
+    open43,
+    semantics
   ] =
     await Promise.all([
       sourceProvenance(root, sourceRevision),
@@ -2159,10 +2653,17 @@ async function buildInventory(root, sourceRevision) {
       discoverFramerailXmlRpc(root),
       discoverPageActionSurfaces(root),
       discoverWwsRoutes(root),
-      discoverOpen43AuditCases(root)
+      discoverOpen43AuditCases(root),
+      readJson(root, SEMANTICS_REGISTRY)
     ])
+  validateSemanticsRegistry(semantics)
+  const ftmlRawSurfaceManifest = discoverFtmlRawSurfaceManifest(
+    provenance.ftml,
+    JSON.parse(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")),
+    semantics
+  )
   verifyRegistryBlobs(root, provenance.wikijump.commit)
-  const surfaces = [
+  const surfaces = normalizeSurfaceOwners([
     ...catalog,
     ...deepwell,
     ...framerailRoutes,
@@ -2172,14 +2673,18 @@ async function buildInventory(root, sourceRevision) {
     ...pageActions,
     ...wws,
     ...open43.records
-  ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en"))
-  validateInventory(surfaces)
+  ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")), ftmlRawSurfaceManifest.catalog_crosswalk, semantics)
+  const relationshipModel = buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics)
+  validateInventory(surfaces, relationshipModel.owner_keys)
   const byKind = {}
   for (const kind of uniqueSortedStrings(surfaces.map(({ kind }) => kind))) {
     byKind[kind] = surfaces.filter((surfaceRecord) => surfaceRecord.kind === kind).length
   }
   return {
     schema: SCHEMA,
+    relationship_edge_types: [...semantics.relationship_edge_types],
+    ...relationshipModel,
+    ftml_raw_surface_manifest: ftmlRawSurfaceManifest,
     provenance: {
       ...provenance,
       registries: [...SOURCE_INPUTS]
@@ -2191,6 +2696,7 @@ async function buildInventory(root, sourceRevision) {
       live_observations: "docs/wikidot-specifications/live-observations.json",
       implementation_ledger: "docs/wikidot-specifications/implementation-ledger.json",
       source_coverage: "docs/wikidot-specifications/source-coverage.json",
+      compatibility_surface_semantics: SEMANTICS_REGISTRY,
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",

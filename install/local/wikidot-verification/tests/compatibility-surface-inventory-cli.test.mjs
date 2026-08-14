@@ -8,6 +8,7 @@ import test from "node:test"
 import { fileURLToPath } from "node:url"
 
 const toolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const repositoryRoot = path.resolve(toolRoot, "../../..")
 const cliPath = path.join(toolRoot, "scripts/build-compatibility-surface-inventory.mjs")
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
@@ -80,6 +81,28 @@ async function writeText(root, relativePath, value) {
 }
 
 async function writeRepositoryFixture(root) {
+  const semantics = JSON.parse(
+    await fs.readFile(
+      path.join(repositoryRoot, "docs/development/compatibility-surface-semantics.json"),
+      "utf8"
+    )
+  )
+  semantics.ftml.catalog_crosswalk = []
+  const fixtureLegacyOwners = [
+    "Rokurolize/wikidot.py", "deepwell", "docs/wikidot-specifications", "framerail", "wws"
+  ]
+  semantics.implementation_owners_by_legacy_owner = Object.fromEntries(
+    fixtureLegacyOwners.map((owner) => [owner, semantics.implementation_owners_by_legacy_owner[owner]])
+  )
+  semantics.specification_owner_keys = [
+    ...Object.values(semantics.specification_owner_by_kind),
+    "catalog.feature:feature-one",
+    "open43.case:F123_PUBLIC_CASE"
+  ].sort().filter((owner, index, owners) => owner !== owners[index - 1])
+  semantics.implementation_owner_keys = [
+    ...new Set(Object.values(semantics.implementation_owners_by_legacy_owner).flat())
+  ].sort()
+  await writeJson(root, "docs/development/compatibility-surface-semantics.json", semantics)
   const catalog = {
     feature_count: 1,
     features: [
@@ -350,7 +373,7 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
                   {
                     case_id: "F123_PUBLIC_CASE",
                     classification: "candidate_required",
-                    owner: "fixture-public-owner",
+                    owner: "deepwell",
                     existing_tests: ["tests/public.test.mjs#public case"]
                   }
                 ]
@@ -637,7 +660,8 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.deepEqual(caseSurface, {
     surface_id: "open43-audit-case:F123_PUBLIC_CASE",
     kind: "open43_audit_case",
-    public_owner: "fixture-public-owner",
+    specification_owner: "open43.case:F123_PUBLIC_CASE",
+    implementation_owners: ["wikijump.deepwell"],
     public_reference: [
       "docs/development/open43-audit-1.json#F123_PUBLIC_CASE"
     ],
@@ -877,6 +901,215 @@ test("CLI keeps an explicit source revision across metadata commits and rejects 
   )
   assert.equal(drift.status, 1, drift.stderr)
   assert.match(drift.stderr, /registry blob drift: deepwell\/src\/api\.rs/u)
+})
+
+test("CLI emits the pinned FTML raw manifest without changing the public denominator", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-ftml-raw-"))
+  cleanupFixture(t, outputRoot)
+  const trackedInventory = JSON.parse(
+    await fs.readFile(path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json"), "utf8")
+  )
+  const outputPath = path.join(outputRoot, "inventory.json")
+
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    trackedInventory.provenance.wikijump.commit
+  ], { encoding: "utf8" })
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.equal(inventory.counts.total, 921)
+  assert.deepEqual(inventory.ftml_raw_surface_manifest.counts, {
+    lexer_rules: 62,
+    parser_functions: 3,
+    canonical_blocks: 63,
+    block_aliases: 47,
+    typed_modules: 7,
+    ast_variants: 47,
+    delayed_forms: 9,
+    generated_runtime_kinds: 2,
+    renderer_modules: 29,
+    wikidot_fixtures: 26,
+    total: 295
+  })
+  assert.equal(inventory.ftml_raw_surface_manifest.catalog_crosswalk.length, 41)
+  assert.deepEqual(inventory.ftml_raw_surface_manifest.source, inventory.provenance.ftml)
+  assert.ok(
+    inventory.ftml_raw_surface_manifest.records.some(
+      ({ surface_id: surfaceId }) => surfaceId === "ftml.tokenizer:document"
+    )
+  )
+  assert.ok(
+    inventory.ftml_raw_surface_manifest.records.some(
+      ({ surface_id: surfaceId }) => surfaceId === "ftml.fixture:test/link/canonical-inline"
+    )
+  )
+})
+
+test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift", async (t) => {
+  const cases = [
+    {
+      name: "same-count FTML identity substitution",
+      mutate: (semantics) => {
+        semantics.ftml.raw_surface_identities[0].surface_id = "ftml.ast:Ancho"
+      },
+      error: /pinned FTML raw surface identities drift/u
+    },
+    {
+      name: "missing crosswalk row",
+      nominate: true,
+      mutate: () => {},
+      error: /FTML crosswalk does not exactly match Catalog nominations/u
+    },
+    {
+      name: "duplicate crosswalk row",
+      nominate: true,
+      mutate: (semantics) => {
+        const row = {
+          feature_id: "feature-one",
+          parsed_by: ["ftml.ast:Anchor"],
+          rendered_by: [],
+          tested_by: [],
+          ftml_surfaces: ["ftml.ast:Anchor"],
+          runtime_owner: null
+        }
+        semantics.ftml.catalog_crosswalk = [row, row]
+      },
+      error: /FTML crosswalk rows must be sorted and unique/u
+    },
+    {
+      name: "missing owner key",
+      mutate: (semantics) => {
+        semantics.specification_owner_keys = semantics.specification_owner_keys.filter(
+          (owner) => owner !== "catalog.feature:feature-one"
+        )
+      },
+      error: /missing or unused specification owner keys/u
+    },
+    {
+      name: "duplicate owner key",
+      mutate: (semantics) => {
+        semantics.implementation_owner_keys.push(semantics.implementation_owner_keys[0])
+      },
+      error: /implementation owners must be a sorted unique string array/u
+    },
+    {
+      name: "unused legacy owner key",
+      mutate: (semantics) => {
+        semantics.implementation_owners_by_legacy_owner.unused = []
+      },
+      error: /missing or unused legacy owner keys/u
+    },
+    {
+      name: "missing edge type",
+      mutate: (semantics) => {
+        semantics.relationship_edge_types = semantics.relationship_edge_types.filter(
+          (type) => type !== "alias"
+        )
+      },
+      error: /missing, duplicate, or unknown relationship edge types/u
+    },
+    {
+      name: "duplicate edge type",
+      mutate: (semantics) => {
+        semantics.relationship_edge_types.push("alias")
+      },
+      error: /edge types must be a sorted unique string array/u
+    },
+    {
+      name: "unknown edge type",
+      mutate: (semantics) => {
+        semantics.relationship_edge_types.push("invented_by")
+      },
+      error: /edge types must be a sorted unique string array/u
+    }
+  ]
+
+  for (const fixtureCase of cases) {
+    await t.test(fixtureCase.name, async (t) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-semantics-"))
+      cleanupFixture(t, root)
+      await writeRepositoryFixture(root)
+      const semanticsPath = path.join(root, "docs/development/compatibility-surface-semantics.json")
+      const semantics = JSON.parse(await fs.readFile(semanticsPath, "utf8"))
+      fixtureCase.mutate(semantics)
+      await fs.writeFile(semanticsPath, `${JSON.stringify(semantics, null, 2)}\n`)
+      if (fixtureCase.nominate) {
+        const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
+        const catalog = JSON.parse(await fs.readFile(catalogPath, "utf8"))
+        catalog.features[0].suggested_tdd_seams = ["FTML public parse/render"]
+        await fs.writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`)
+        await refreshCatalogHash(root)
+      }
+
+      const result = runCli(root, path.join(root, "inventory.json"))
+
+      assert.equal(result.status, 1, result.stderr)
+      assert.match(result.stderr, fixtureCase.error)
+    })
+  }
+})
+
+test("CLI emits closed owner keys and typed edges without double-counting FTML records", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-owner-edges-"))
+  cleanupFixture(t, outputRoot)
+  const trackedInventory = JSON.parse(
+    await fs.readFile(path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json"), "utf8")
+  )
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    trackedInventory.provenance.wikijump.commit
+  ], { encoding: "utf8" })
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(inventory.relationship_edge_types, [
+    "alias",
+    "equivalence",
+    "implemented_by",
+    "parsed_by",
+    "rendered_by",
+    "tested_by"
+  ])
+  const specificationOwners = new Set(inventory.owner_keys.specification)
+  const implementationOwners = new Set(inventory.owner_keys.implementation)
+  assert.ok(inventory.surfaces.every((record) => !("public_owner" in record)))
+  assert.ok(inventory.surfaces.every((record) => specificationOwners.has(record.specification_owner)))
+  assert.ok(
+    inventory.surfaces.every((record) =>
+      record.implementation_owners.every((owner) => implementationOwners.has(owner))
+    )
+  )
+  const publicIds = new Set(inventory.surfaces.map(({ surface_id: surfaceId }) => surfaceId))
+  const rawIds = new Set(
+    inventory.ftml_raw_surface_manifest.records.map(({ surface_id: surfaceId }) => surfaceId)
+  )
+  assert.ok([...rawIds].every((surfaceId) => !publicIds.has(surfaceId)))
+  assert.equal(inventory.counts.total, 921)
+  assert.equal(
+    inventory.relationship_edges.filter(({ type }) => type === "alias").length,
+    47
+  )
+  const edgeKeys = inventory.relationship_edges.map(
+    ({ source, type, target }) => `${source}\u0000${type}\u0000${target}`
+  )
+  assert.equal(new Set(edgeKeys).size, edgeKeys.length)
+  assert.ok(
+    inventory.relationship_edges.every(({ type }) =>
+      inventory.relationship_edge_types.includes(type)
+    )
+  )
 })
 
 test("CLI rejects an omitted or duplicate missing-page control", async (t) => {
