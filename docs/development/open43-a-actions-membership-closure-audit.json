@@ -99,7 +99,7 @@
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "58cd39e295426d6c40e1d74af28d178bd68119a90d435994851e35112874f65a"
+        "sha256": "9f805b4eae468371a63bc41165adb139bd8526ddb1b25e3fe6349aff08f95712"
       },
       {
         "path": "docs/local-authoring-boundary.md",
@@ -140,7 +140,7 @@
       },
       {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3"
+        "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683"
       },
       {
         "path": "docs/development/open43-a-forms-residual-case-manifest.json",
@@ -560,7 +560,7 @@
       "title": "Complete Wikidot site administration and cross-site utility modules",
       "authoritative_manifest": {
         "path": "docs/development/open43-a-utilities-case-manifest.json",
-        "sha256": "36c7453edef01644edf574bfcb01858abfe3d4a09d8dbf19f11afab9c6f0d4b3"
+        "sha256": "c0edfa9901c087f9b9a28af833dc7ebde1e0a6edeeee185b55c071a1956b5683"
       },
       "source_ready": [
         {"case_id": "A1038_ANONYMOUS_SAFE_STATES"},

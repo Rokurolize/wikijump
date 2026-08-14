@@ -558,7 +558,7 @@
         },
         {
           "path": "install/local/wikidot-verification/src/standing-browser-runtime-identity.mjs",
-          "sha256": "9ed1f3c883cc6248bf03a73d50adc4f6921e5819190a09271371a3d4e17de89b",
+          "sha256": "68c25d57ae01631cabc49d6a864d5f76328f23f4d315e94b35c4f60a30f10063",
           "reuse": "Observe every declared candidate service before and after execution, bind required private loopback publications to exact Compose roles, and reject infrastructure drift."
         },
         {
@@ -570,7 +570,7 @@
       "do_not_reuse_as_acceptance": [
         {
           "path": "framerail/playwright.config.ts",
-          "sha256": "6ae435ee5e0ac42e538d2e5c96e6cfa4bb303aa15100ec486f66c21e03c59bf4",
+          "sha256": "11a7eb09edc12987c37f26d78dabcc3f58cc6720e20d40e459d9262bda4b554d",
           "reason": "It starts a mock XML-RPC fixture and a development Framerail preview instead of attaching to the sealed production candidate."
         },
         {

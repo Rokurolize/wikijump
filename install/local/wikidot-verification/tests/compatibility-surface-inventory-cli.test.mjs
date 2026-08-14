@@ -352,6 +352,25 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
       }
     }
   })
+  for (const args of [
+    ["init", "-q"],
+    ["add", "."],
+    ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "commit", "-qm", "fixture"]
+  ]) {
+    const result = spawnSync("git", args, { cwd: root, encoding: "utf8" })
+    assert.equal(result.status, 0, result.stderr)
+  }
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8"
+  }).stdout.trim()
+  const reconciliationPath = path.join(
+    root,
+    "docs/development/open43-closure-audit-ownership-reconciliation.json"
+  )
+  const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
+  for (const audit of reconciliation.closure_audits) audit.source_revision = sourceRevision
+  await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
 }
 
 async function replacePageActionsFixture(root, actionSource) {
@@ -1155,6 +1174,83 @@ test("CLI rejects a stale Open43 audit digest", async () => {
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /reconciliation digest does not match/u)
+})
+
+test("CLI rejects ambiguous or mismatched nested Open43 source provenance", async (t) => {
+  for (const [name, mutate, error] of [
+    [
+      "missing revision interpretation",
+      (reconciliation) => { delete reconciliation.closure_audits[0].source_revision },
+      /has no source_revision/u
+    ],
+    [
+      "mismatched digest",
+      (_reconciliation, audit) => {
+        audit.evidence = [{ path: "docs/wikidot-specifications/catalog.json", sha256: "0".repeat(64) }]
+      },
+      /nested source digest does not match/u
+    ]
+  ]) {
+    await t.test(name, async (t) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-audit-source-"))
+      cleanupFixture(t, root)
+      await writeRepositoryFixture(root)
+      const auditPath = path.join(root, "docs/development/open43-audit-1.json")
+      const reconciliationPath = path.join(
+        root,
+        "docs/development/open43-closure-audit-ownership-reconciliation.json"
+      )
+      const audit = JSON.parse(await fs.readFile(auditPath, "utf8"))
+      const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
+      mutate(reconciliation, audit)
+      const serializedAudit = `${JSON.stringify(audit, null, 2)}\n`
+      await fs.writeFile(auditPath, serializedAudit)
+      reconciliation.closure_audits[0].sha256 = sha256(serializedAudit)
+      await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
+
+      const result = runCli(root, path.join(root, "inventory.json"))
+
+      assert.equal(result.status, 1, result.stderr)
+      assert.match(result.stderr, error)
+    })
+  }
+
+  await t.test("accepts an explicit historical source revision", async (t) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-audit-history-"))
+    cleanupFixture(t, root)
+    await writeRepositoryFixture(root)
+    const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
+    const historicalCatalog = await fs.readFile(catalogPath)
+    const reconciliationPath = path.join(
+      root,
+      "docs/development/open43-closure-audit-ownership-reconciliation.json"
+    )
+    const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
+    const historicalRevision = reconciliation.closure_audits[0].source_revision
+    await fs.appendFile(catalogPath, "\n")
+    assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0)
+    assert.equal(spawnSync("git", ["commit", "-qm", "new source"], { cwd: root }).status, 0)
+    const currentRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+      cwd: root,
+      encoding: "utf8"
+    }).stdout.trim()
+    for (const audit of reconciliation.closure_audits) audit.source_revision = currentRevision
+    const auditPath = path.join(root, "docs/development/open43-audit-1.json")
+    const audit = JSON.parse(await fs.readFile(auditPath, "utf8"))
+    audit.evidence = [{
+      path: "docs/wikidot-specifications/catalog.json",
+      sha256: sha256(historicalCatalog),
+      source_revision: historicalRevision
+    }]
+    const serializedAudit = `${JSON.stringify(audit, null, 2)}\n`
+    await fs.writeFile(auditPath, serializedAudit)
+    reconciliation.closure_audits[0].sha256 = sha256(serializedAudit)
+    await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
+
+    const result = runCli(root, path.join(root, "inventory.json"))
+
+    assert.equal(result.status, 0, result.stderr)
+  })
 })
 
 test("CLI rejects a blocked-evidence routing row outside the audit denominator", async () => {

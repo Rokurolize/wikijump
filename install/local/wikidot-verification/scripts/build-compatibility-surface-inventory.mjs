@@ -2,6 +2,7 @@
 
 import fs from "node:fs/promises"
 import { createHash } from "node:crypto"
+import { execFileSync } from "node:child_process"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -1623,6 +1624,46 @@ function auditCompletion(classification) {
   }
 }
 
+function validateNestedAuditSources(root, auditPath, audit, sourceRevision) {
+  if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
+    throw new Error(`${auditPath} has no source_revision`)
+  }
+  const visit = (value) => {
+    if (!value || typeof value !== "object") return
+    if (!Array.isArray(value) && typeof value.path === "string" && value.sha256 !== undefined) {
+      if (!/^[0-9a-f]{64}$/u.test(value.sha256)) {
+        throw new Error(`${auditPath} has an invalid nested source digest for ${value.path}`)
+      }
+      // Absolute evidence and ftml@REV:path are not objects in this Git repository.
+      if (!path.isAbsolute(value.path) && !/^ftml@[0-9a-f]{40}:/u.test(value.path)) {
+        if (!isCanonicalRepositoryReference(value.path) || value.path.includes("#")) {
+          throw new Error(`${auditPath} has an invalid nested source path: ${value.path}`)
+        }
+        const revision = value.source_revision ?? sourceRevision
+        if (!/^[0-9a-f]{40}$/u.test(revision)) {
+          throw new Error(`${auditPath} ${value.path} has invalid source_revision`)
+        }
+        if (value.source_revision === sourceRevision) {
+          throw new Error(`${auditPath} ${value.path} has a redundant source_revision`)
+        }
+        let source
+        try {
+          source = execFileSync("git", ["-C", root, "show", `${revision}:${value.path}`], {
+            stdio: ["ignore", "pipe", "ignore"]
+          })
+        } catch {
+          throw new Error(`${auditPath} cannot read nested source ${revision}:${value.path}`)
+        }
+        if (sha256(source) !== value.sha256) {
+          throw new Error(`${auditPath} nested source digest does not match ${revision}:${value.path}`)
+        }
+      }
+    }
+    for (const nested of Object.values(value)) visit(nested)
+  }
+  visit(audit)
+}
+
 async function discoverOpen43AuditCases(root) {
   const routingPath = "docs/development/open43-blocked-evidence-routing.json"
   const reconciliationPath =
@@ -1685,6 +1726,7 @@ async function discoverOpen43AuditCases(root) {
     if (reconciliationAudit.sha256 !== sha256(auditText)) {
       throw new Error(`${auditPath} reconciliation digest does not match`)
     }
+    validateNestedAuditSources(root, auditPath, audit, reconciliationAudit.source_revision)
     const currentAuditRows = []
     const fallbackOwner = typeof audit.schema === "string" ? audit.schema : "open43-audit"
     for (const issue of audit.issues) {
