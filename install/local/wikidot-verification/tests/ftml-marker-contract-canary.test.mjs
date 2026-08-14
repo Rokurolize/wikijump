@@ -25,8 +25,9 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
+const candidateFtml = "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
+const ownershipPinReceiptFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const sanitizedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(
@@ -133,7 +134,7 @@ test("the 2026-08-10 ownership pin marker canary receipt remains immutable", () 
     receipt.baseline_ftml_sha,
     "902e72a2ff261b7af42402734b2f8b659e6a294a",
   );
-  assert.equal(receipt.candidate_ftml_sha, candidateFtml);
+  assert.equal(receipt.candidate_ftml_sha, ownershipPinReceiptFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(
     {
