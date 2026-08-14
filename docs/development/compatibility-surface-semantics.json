@@ -11,8 +11,8 @@
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
       "renderer_modules": 29,
-      "wikidot_fixtures": 26,
-      "total": 295
+      "wikidot_fixtures": 130,
+      "total": 399
     },
     "raw_surface_identities": [
       {
@@ -680,7 +680,19 @@
         "kind": "delayed_form"
       },
       {
+        "surface_id": "ftml.fixture:test/align/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/align/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/anchor/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/anchor/fail",
         "kind": "wikidot_fixture"
       },
       {
@@ -688,11 +700,79 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/audio/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/blockquote/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/blockquote/native",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/bold/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/bold/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/bold/native",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/checkbox/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/checkbox/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/code/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/code/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/code/revert",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/collapsible/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/collapsible/wikidot-parity",
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/color/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/color/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/color/malformed-nested",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/color/malformed-nested-footnote-bug",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/date/agohover",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/date/escaped-agohover-format",
         "kind": "wikidot_fixture"
       },
       {
@@ -704,7 +784,15 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/date/matrix-french",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/date/timezone",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/date/timezone-fail",
         "kind": "wikidot_fixture"
       },
       {
@@ -712,7 +800,31 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/definition-list/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/definition-list/missing-separator",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/diff/alias",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/diff/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/diff/newlines",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/div/wikidot-nested-list-boundary",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/embed/basic",
         "kind": "wikidot_fixture"
       },
       {
@@ -720,7 +832,79 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/footnote/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-empty",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-hide",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-multiple",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-title",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/revert",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/heading/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/heading/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/hidden/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/html/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/iframe/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/iframe/xss",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/image/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/invisible/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/italics/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/later/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/line-breaks/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/line-breaks/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/link/anchor",
         "kind": "wikidot_fixture"
       },
       {
@@ -736,6 +920,26 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/list/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/block-score-nested",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/block-spaced-end",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/native",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/native-literal",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/list/native-skipped-depth-empty-parent",
         "kind": "wikidot_fixture"
       },
@@ -744,7 +948,43 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/mark/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/math/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/media/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/media/path-variants",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/bibliography",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/bibliography-missing-cite",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/center",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/char",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/misc/clear-float",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/comment",
         "kind": "wikidot_fixture"
       },
       {
@@ -752,11 +992,55 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/misc/em-dash",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/misc/email",
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/misc/guillemet",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/hr",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/spaces",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/symbols",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/module/css",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/monospace/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/monospace/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/paragraph/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/radio/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/radio/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/raw/adjacent-empty",
         "kind": "wikidot_fixture"
       },
       {
@@ -768,11 +1052,139 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/raw/disallowed-flags",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/raw/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/raw/left-raw-eof",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/ruby/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/size/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/strikethrough/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/strikethrough/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/subscript/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/subscript/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/superscript/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/superscript/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/table/advanced",
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/table/advanced-attrs-header-regular",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/advanced-colspan",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/advanced-colspan-fallback",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/advanced-malformed-arguments",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/table/simple",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-aligned-colspan",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-eof",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-followed-by-paragraph",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-spaced-delimiter-next-cell",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-trailing-whitespace",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/target/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/target/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/multiple-blocks",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/revert",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underline/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underline/native",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underscore/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underscore/fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underscore/start-of-line-fail",
         "kind": "wikidot_fixture"
       },
       {
@@ -781,6 +1193,10 @@
       },
       {
         "surface_id": "ftml.fixture:test/video/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/video/fail",
         "kind": "wikidot_fixture"
       },
       {

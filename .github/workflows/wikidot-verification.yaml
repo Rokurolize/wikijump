@@ -11,6 +11,8 @@ on:
       - 'scripts/initialize-wikidot-implementation-ledger.mjs'
       - 'scripts/lib/wikidot-implementation-ledger.mjs'
       - 'docs/wikidot-specifications/**'
+      - 'deepwell/Cargo.toml'
+      - 'deepwell/Cargo.lock'
       - '.github/workflows/wikidot-verification.yaml'
   push:
     branches:
@@ -25,6 +27,8 @@ on:
       - 'scripts/initialize-wikidot-implementation-ledger.mjs'
       - 'scripts/lib/wikidot-implementation-ledger.mjs'
       - 'docs/wikidot-specifications/**'
+      - 'deepwell/Cargo.toml'
+      - 'deepwell/Cargo.lock'
       - '.github/workflows/wikidot-verification.yaml'
   workflow_dispatch:
 
@@ -47,11 +51,28 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Read pinned FTML revision
+        id: ftml-pin
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import tomllib
+          from pathlib import Path
+
+          with Path("deepwell/Cargo.toml").open("rb") as source:
+              revision = tomllib.load(source)["dependencies"]["ftml"]["rev"]
+          if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+              raise SystemExit("deepwell/Cargo.toml must pin a full FTML commit")
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+              output.write(f"revision={revision}\n")
+          PY
+
       - name: Checkout pinned FTML authority
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: Rokurolize/ftml
-          ref: 62ebba4efda1f10e82363c23c925061fbe939e49
+          ref: ${{ steps.ftml-pin.outputs.revision }}
           path: .verification-ftml
           persist-credentials: false
 
