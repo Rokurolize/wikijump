@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import process from "node:process";
 
 import {
@@ -373,7 +373,14 @@ const ledger = {
   rows,
 };
 
-await writeFile(outputPath, `${JSON.stringify(ledger, null, 2)}\n`);
+const temporaryOutput = `${outputPath}.tmp-${process.pid}`;
+try {
+  await writeFile(temporaryOutput, `${JSON.stringify(ledger, null, 2)}\n`);
+  await rename(temporaryOutput, outputPath);
+} catch (error) {
+  await rm(temporaryOutput, { force: true });
+  throw error;
+}
 process.stdout.write(
   `${ledger.counts.canonical_surfaces} canonical compatibility surfaces\n`,
 );
