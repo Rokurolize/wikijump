@@ -16,9 +16,22 @@ const inventoryCliPath = path.join(
   "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs"
 )
 const manifestPath = path.join(repositoryRoot, "docs/development/deepwell-jsonrpc-contract-manifest.json")
+const historicalEvidencePaths = [
+  "install/local/wikidot-verification/artifacts/pr1334-deepwell-identity-jsonrpc-attribution-20260810.json",
+  "install/local/wikidot-verification/artifacts/pr1334-deepwell-page-revision-jsonrpc-attribution-20260810.json"
+]
 
 function runCli(cli, argumentsList) {
   return spawnSync(process.execPath, [cli, ...argumentsList], { encoding: "utf8" })
+}
+
+async function writeSourceFixture(root) {
+  await fs.cp(path.join(repositoryRoot, "deepwell"), path.join(root, "deepwell"), { recursive: true })
+  for (const evidencePath of historicalEvidencePaths) {
+    const target = path.join(root, evidencePath)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.copyFile(path.join(repositoryRoot, evidencePath), target)
+  }
 }
 
 test("Deepwell JSON-RPC manifest exactly covers the current registered contract", async () => {
@@ -37,10 +50,45 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
     assert.equal(method.params_schema.transport, "jsonrpsee::types::params::Params<'static>")
     assert.equal(typeof method.params_schema.decoder, "string")
     assert.ok(Array.isArray(method.actor_context.requirements))
-    assert.ok(["mutating", "read_only_or_indirect"].includes(method.mutation_class.classification))
+    assert.ok(["mutating", "read_only"].includes(method.mutation_class.classification))
     assert.ok(["default", "RepeatableRead"].includes(method.transaction_isolation))
-    assert.equal(method.test_witness.reference, "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract")
+    assert.ok(["endpoint_behavioral", "source_contract_only"].includes(method.test_witness.kind))
   }
+
+  const byMethod = new Map(manifest.methods.map((method) => [method.method, method]))
+  assert.deepEqual(byMethod.get("member_set").actor_context.requirements, [
+    "authenticated_user",
+    "permission_check"
+  ])
+  assert.deepEqual(byMethod.get("member_remove").actor_context.requirements, [
+    "authenticated_user",
+    "permission_check"
+  ])
+  assert.deepEqual(byMethod.get("membership_join").actor_context.requirements, [])
+  assert.equal(byMethod.get("blob_blacklist_add").params_schema.decoder, "params.parse()")
+  for (const method of [
+    "blob_blacklist_add",
+    "blob_blacklist_remove",
+    "mfa_verify",
+    "mfa_setup",
+    "mfa_reset_recovery",
+    "session_renew"
+  ]) {
+    assert.equal(byMethod.get(method).mutation_class.classification, "mutating")
+  }
+  assert.deepEqual(byMethod.get("ping").actor_context.transport_authentication, {
+    header: "Authorization",
+    scheme: "Bearer",
+    token_format: "64 lowercase hexadecimal characters",
+    duplicate_values: "rejected"
+  })
+  assert.deepEqual(byMethod.get("ping").actor_context.request_context_headers, [
+    { header: "X-Deepwell-Session-Token", target: "session_token" },
+    { header: "X-Deepwell-Site-Id", target: "site_id" },
+    { header: "X-Deepwell-Page", target: "page_ref" }
+  ])
+  assert.equal(byMethod.get("blob_blacklist_add").test_witness.kind, "endpoint_behavioral")
+  assert.match(byMethod.get("blob_blacklist_add").test_witness.reference, /^deepwell\/tests\/blob\.rs#/u)
 
   const outputDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-inventory-"))
   const inventoryPath = path.join(outputDirectory, "inventory.json")
@@ -79,15 +127,7 @@ test("Deepwell JSON-RPC verifier rejects omitted or duplicate contract records",
 
 test("Deepwell JSON-RPC generator rejects a duplicate source registration", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-source-"))
-  await fs.cp(path.join(repositoryRoot, "deepwell"), path.join(root, "deepwell"), { recursive: true })
-  for (const evidencePath of [
-    "install/local/wikidot-verification/artifacts/pr1334-deepwell-identity-jsonrpc-attribution-20260810.json",
-    "install/local/wikidot-verification/artifacts/pr1334-deepwell-page-revision-jsonrpc-attribution-20260810.json"
-  ]) {
-    const target = path.join(root, evidencePath)
-    await fs.mkdir(path.dirname(target), { recursive: true })
-    await fs.copyFile(path.join(repositoryRoot, evidencePath), target)
-  }
+  await writeSourceFixture(root)
   const apiPath = path.join(root, "deepwell/src/api.rs")
   const apiSource = await fs.readFile(apiPath, "utf8")
   await fs.writeFile(apiPath, apiSource.replace("#[cfg(test)]", 'register!("ping", ping);\n\n#[cfg(test)]'))
@@ -96,4 +136,25 @@ test("Deepwell JSON-RPC generator rejects a duplicate source registration", asyn
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /duplicate JSON-RPC registration: ping/u)
+})
+
+test("Deepwell JSON-RPC generator fails closed when middleware contract declarations drift", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-middleware-"))
+  await writeSourceFixture(root)
+  const authPath = path.join(root, "deepwell/src/middleware/rpc_auth.rs")
+  const authSource = await fs.readFile(authPath, "utf8")
+  await fs.writeFile(authPath, authSource.replace('value.strip_prefix("Bearer ")', 'value.strip_prefix("Token ")'))
+
+  const authResult = runCli(cliPath, ["--root", root, "--output", path.join(root, "manifest.json")])
+  assert.equal(authResult.status, 1)
+  assert.match(authResult.stderr, /unsupported RPC authentication declaration/u)
+
+  await writeSourceFixture(root)
+  const middlewarePath = path.join(root, "deepwell/src/middleware.rs")
+  const middlewareSource = await fs.readFile(middlewarePath, "utf8")
+  await fs.writeFile(middlewarePath, middlewareSource.replace("X-Deepwell-Site-Id", "X-Alternate-Site-Id"))
+
+  const contextResult = runCli(cliPath, ["--root", root, "--output", path.join(root, "manifest.json")])
+  assert.equal(contextResult.status, 1)
+  assert.match(contextResult.stderr, /unsupported request context header declaration/u)
 })

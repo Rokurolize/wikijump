@@ -94,73 +94,234 @@ async function endpointSources(root) {
     .map((entry) => entry.name)
     .filter((name) => !["macros.rs", "mod.rs"].includes(name))
     .sort()
-  const entries = []
+  const byHandler = new Map()
   for (const file of files) {
     const relativePath = `${ENDPOINTS_DIRECTORY}/${file}`
     const source = await readText(root, relativePath)
-    for (const match of source.matchAll(/pub\s+async\s+fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/gu)) {
-      entries.push({
+    const fileFunctions = new Map()
+    for (const match of source.matchAll(/(?:pub\s+)?async\s+fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/gu)) {
+      const entry = {
         handler: match[1],
         source,
         sourcePath: relativePath,
-        offset: match.index
-      })
+        offset: match.index,
+        body: rustFunctionBody(source, match.index, `${relativePath}#${match[1]}`)
+      }
+      const localMatches = fileFunctions.get(entry.handler) ?? []
+      localMatches.push(entry)
+      fileFunctions.set(entry.handler, localMatches)
     }
-  }
-  const byHandler = new Map()
-  for (const entry of entries) {
-    const matches = byHandler.get(entry.handler) ?? []
-    matches.push(entry)
-    byHandler.set(entry.handler, matches)
+    for (const entries of fileFunctions.values()) {
+      for (const entry of entries) entry.fileFunctions = fileFunctions
+      if (entries[0].source.slice(entries[0].offset).startsWith("pub async fn")) {
+        const matches = byHandler.get(entries[0].handler) ?? []
+        matches.push(...entries)
+        byHandler.set(entries[0].handler, matches)
+      }
+    }
   }
   return byHandler
 }
 
-function endpointContract(entry) {
-  const nextEndpoint = /\npub\s+async\s+fn\s+[A-Za-z_][A-Za-z0-9_]*\s*\(/gu
-  nextEndpoint.lastIndex = entry.offset + 1
-  const next = nextEndpoint.exec(entry.source)
-  const source = entry.source.slice(entry.offset, next?.index)
+function rustFunctionBody(source, offset, reference) {
+  const open = source.indexOf("{", offset)
+  if (open < 0) throw new Error(`${reference} has no function body`)
+  let depth = 0
+  for (let index = open; index < source.length; index += 1) {
+    if (source.startsWith("//", index)) {
+      const newline = source.indexOf("\n", index + 2)
+      index = newline < 0 ? source.length : newline
+      continue
+    }
+    if (source.startsWith("/*", index)) {
+      const close = source.indexOf("*/", index + 2)
+      if (close < 0) throw new Error(`${reference} has an unterminated block comment`)
+      index = close + 1
+      continue
+    }
+    const rawString = /^(?:b|c)?r(#+)?"/u.exec(source.slice(index))
+    if (rawString) {
+      const terminator = `"${rawString[1] ?? ""}`
+      const close = source.indexOf(terminator, index + rawString[0].length)
+      if (close < 0) throw new Error(`${reference} has an unterminated raw string`)
+      index = close + terminator.length - 1
+      continue
+    }
+    if (source[index] === '"') {
+      index += 1
+      while (index < source.length && source[index] !== '"') {
+        if (source[index] === "\\") index += 1
+        index += 1
+      }
+      if (index >= source.length) throw new Error(`${reference} has an unterminated string`)
+      continue
+    }
+    if (source[index] === "{") depth += 1
+    else if (source[index] === "}") {
+      depth -= 1
+      if (depth === 0) return source.slice(offset, index + 1)
+    }
+  }
+  throw new Error(`${reference} has an unterminated function body`)
+}
+
+function localFunctionClosure(entry) {
+  const closure = []
+  const visited = new Set()
+  function visit(current) {
+    if (visited.has(current.handler)) return
+    visited.add(current.handler)
+    closure.push(current)
+    for (const match of current.body.matchAll(/\b([A-Za-z_][A-Za-z0-9_]*)\s*\(/gu)) {
+      const matches = current.fileFunctions.get(match[1]) ?? []
+      if (matches.length === 1) visit(matches[0])
+    }
+  }
+  visit(entry)
+  return closure
+}
+
+function parameterDecoder(source) {
+  const macro = /\b(parse(?:_one)?)!\s*\(([\s\S]*?)\)\s*;/u.exec(source)
+  if (macro !== null) return `${macro[1]}!(${normalizeSource(macro[2])})`
+  const method = /\b([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*parse\s*\(\s*\)\s*\.or_raise\s*\(/u.exec(source)
+  return method === null ? "not_decoded" : `${method[1]}.parse()`
+}
+
+function sourceRequirements(sources) {
+  const requirements = new Set()
+  for (const source of sources) {
+    if (/ctx\.request\(\)\.user_id\(\)/u.test(source)) requirements.add("authenticated_user")
+    else if (/ctx\.request\(\)\.user_id\b/u.test(source)) requirements.add("optional_user")
+    if (/ctx\.request\(\)\.site_id\(\)/u.test(source)) requirements.add("site_context")
+    if (/ctx\.request\(\)\.page_reference\(\)/u.test(source)) requirements.add("page_context")
+    if (/MutationAuthorization::/u.test(source)) requirements.add("mutation_authorization")
+    if (/PermissionService::/u.test(source)) requirements.add("permission_check")
+  }
+  return [...requirements].sort()
+}
+
+function mutationSignals(sources) {
+  const signals = []
+  const serviceCall = /\b([A-Za-z_][A-Za-z0-9_]*Service)::([A-Za-z_][A-Za-z0-9_]*)\b/gu
+  const mutationName = /(?:^|_)(?:create|update|delete|remove|set|edit|move|restore|rollback|upload|cancel|send|invalidate|issue|disable|verify|activate|import|blacklist|hard_delete|add|renew|reset|setup|join)(?:_|$)/u
+  for (const source of sources) {
+    for (const match of source.matchAll(serviceCall)) {
+      if (mutationName.test(match[2])) signals.push(`${match[1]}::${match[2]}`)
+    }
+  }
+  return [...new Set(signals)].sort()
+}
+
+function endpointContract(entry, transport) {
+  const source = entry.body
   const params = /\b(_?[A-Za-z_][A-Za-z0-9_]*)\s*:\s*Params\s*<\s*'static\s*>/u.exec(source)
   if (!params) throw new Error(`${entry.sourcePath}#${entry.handler} has no Params argument`)
-  const decoder = /\b(parse(?:_one)?)!\s*\(([\s\S]*?)\)\s*;/u.exec(source)
-  const requirements = []
-  if (/ctx\.request\(\)\.user_id\(\)/u.test(source)) requirements.push("authenticated_user")
-  else if (/ctx\.request\(\)\.user_id\b/u.test(source)) requirements.push("optional_user")
-  if (/ctx\.request\(\)\.site_id\(\)/u.test(source)) requirements.push("site_context")
-  if (/ctx\.request\(\)\.page_reference\(\)/u.test(source)) requirements.push("page_context")
-  if (/MutationAuthorization::/u.test(source)) requirements.push("mutation_authorization")
-  if (/PermissionService::/u.test(source)) requirements.push("permission_check")
-  const mutationSignals = [...source.matchAll(
-    /\b[A-Za-z_][A-Za-z0-9_]*Service::(?:create|update|delete|remove|set|edit|move|restore|rollback|upload|cancel|send|invalidate|issue|disable|verify|activate|import|blacklist|hard_delete)\b/gu
-  )].map((match) => match[0])
+  const closure = localFunctionClosure(entry)
+  const sources = closure.map(({ body }) => body)
+  const signals = mutationSignals(sources)
   return {
     endpoint_owner: {
       component: "deepwell",
       handler: entry.handler,
       source: `${entry.sourcePath}#${entry.handler}`,
-      source_sha256: sha256(entry.source)
+      source_sha256: sha256(entry.source),
+      function_sha256: sha256(source)
     },
     params_schema: {
       transport: "jsonrpsee::types::params::Params<'static>",
       parameter_name: params[1],
-      decoder: decoder === null ? "not_decoded" : `${decoder[1]}!(${normalizeSource(decoder[2])})`
+      decoder: parameterDecoder(source)
     },
     actor_context: {
-      transport_authentication: "Bearer token required by RpcAuthLayer",
-      request_context_headers: ["X-Deepwell-Session-Token", "X-Deepwell-Site-Id", "X-Deepwell-Page"],
-      requirements
+      transport_authentication: transport.authentication,
+      request_context_headers: transport.requestContextHeaders,
+      requirements: sourceRequirements(sources),
+      requirement_sources: closure.map(({ handler, sourcePath }) => `${sourcePath}#${handler}`).sort()
     },
     mutation_class: {
-      classification: mutationSignals.length === 0 ? "read_only_or_indirect" : "mutating",
-      source_signals: [...new Set(mutationSignals)].sort()
+      classification: signals.length === 0 ? "read_only" : "mutating",
+      source_signals: signals
     }
   }
 }
 
+function deriveTransportContract(rpcAuthSource, middlewareSource) {
+  const tokenLength = /const\s+TOKEN_HEX_LENGTH\s*:\s*usize\s*=\s*([0-9]+)\s*;/u.exec(rpcAuthSource)
+  if (
+    tokenLength === null ||
+    !rpcAuthSource.includes("headers.get_all(AUTHORIZATION).iter()") ||
+    !rpcAuthSource.includes('value.strip_prefix("Bearer ")') ||
+    !rpcAuthSource.includes("byte.is_ascii_digit() || (b'a'..=b'f').contains(byte)")
+  ) {
+    throw new Error("deepwell/src/middleware/rpc_auth.rs has an unsupported RPC authentication declaration")
+  }
+  const contextFunction = rustFunctionBody(
+    middlewareSource,
+    middlewareSource.indexOf("fn request_context_headers"),
+    "deepwell/src/middleware.rs#request_context_headers"
+  )
+  const headers = [...contextFunction.matchAll(
+    /let\s+([A-Za-z_][A-Za-z0-9_]*)\s*=\s*request[\s\S]*?\.get\("([^"]+)"\)/gu
+  )].map((match) => ({ target: match[1], header: match[2] }))
+  const expected = [
+    ["session_token", "X-Deepwell-Session-Token"],
+    ["site_id", "X-Deepwell-Site-Id"],
+    ["page_ref", "X-Deepwell-Page"]
+  ]
+  if (
+    headers.length !== expected.length ||
+    !expected.every(([target, header], index) => headers[index]?.target === target && headers[index]?.header === header)
+  ) {
+    throw new Error("deepwell/src/middleware.rs has an unsupported request context header declaration")
+  }
+  return {
+    authentication: {
+      header: "Authorization",
+      scheme: "Bearer",
+      token_format: `${tokenLength[1]} lowercase hexadecimal characters`,
+      duplicate_values: "rejected"
+    },
+    requestContextHeaders: headers.map(({ header, target }) => ({ header, target }))
+  }
+}
+
+async function behavioralWitnesses(root) {
+  const directory = path.join(root, "deepwell/tests")
+  const files = []
+  async function visit(current) {
+    for (const entry of await fs.readdir(current, { withFileTypes: true })) {
+      const target = path.join(current, entry.name)
+      if (entry.isDirectory()) await visit(target)
+      else if (entry.isFile() && entry.name.endsWith(".rs")) files.push(target)
+    }
+  }
+  await visit(directory)
+  const witnesses = new Map()
+  for (const file of files.sort()) {
+    const source = await fs.readFile(file, "utf8")
+    const tests = [...source.matchAll(/#\[(?:tokio::test|test)\]\s*(?:async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)/gu)]
+    for (const match of source.matchAll(/run_endpoint(?:_err)?!\(\s*runner\s*,\s*([A-Za-z_][A-Za-z0-9_]*)/gu)) {
+      const testName = [...tests].reverse().find(({ index }) => index < match.index)?.[1]
+      if (testName === undefined) continue
+      const handler = match[1]
+      const references = witnesses.get(handler) ?? []
+      references.push(`${toPosix(path.relative(root, file))}#${testName}`)
+      witnesses.set(handler, references)
+    }
+  }
+  return new Map([...witnesses].map(([handler, references]) => [handler, [...new Set(references)].sort()]))
+}
+
 async function buildManifest(root) {
   const apiSource = await readText(root, API_PATH)
-  const endpointByHandler = await endpointSources(root)
+  const [endpointByHandler, witnesses, rpcAuthSource, middlewareSource] = await Promise.all([
+    endpointSources(root),
+    behavioralWitnesses(root),
+    readText(root, "deepwell/src/middleware/rpc_auth.rs"),
+    readText(root, "deepwell/src/middleware.rs")
+  ])
+  const transport = deriveTransportContract(rpcAuthSource, middlewareSource)
   const methods = []
   for (const registration of registeredMethods(apiSource)) {
     const matches = endpointByHandler.get(registration.handler) ?? []
@@ -169,13 +330,9 @@ async function buildManifest(root) {
     }
     methods.push({
       method: registration.method,
-      ...endpointContract(matches[0]),
+      ...endpointContract(matches[0], transport),
       transaction_isolation: registration.isolation,
-      test_witness: {
-        kind: "source_contract",
-        reference: CONTRACT_TEST,
-        scope: "registration, endpoint owner, parameter decoder, context observations, mutation signals, and transaction isolation"
-      }
+      test_witness: witnessFor(witnesses.get(registration.handler) ?? [])
     })
   }
   const historicalEvidence = []
@@ -189,16 +346,32 @@ async function buildManifest(root) {
       jsonrpc_registry: { path: API_PATH, sha256: sha256(apiSource) },
       request_context_middleware: {
         path: "deepwell/src/middleware.rs",
-        sha256: sha256(await readText(root, "deepwell/src/middleware.rs"))
+        sha256: sha256(middlewareSource)
       },
       rpc_authentication_middleware: {
         path: "deepwell/src/middleware/rpc_auth.rs",
-        sha256: sha256(await readText(root, "deepwell/src/middleware/rpc_auth.rs"))
+        sha256: sha256(rpcAuthSource)
       }
     },
     historical_evidence: historicalEvidence,
     method_count: methods.length,
     methods
+  }
+}
+
+function witnessFor(references) {
+  if (references.length > 0) {
+    return {
+      kind: "endpoint_behavioral",
+      reference: references[0],
+      alternatives: references.slice(1),
+      source_contract_reference: CONTRACT_TEST
+    }
+  }
+  return {
+    kind: "source_contract_only",
+    reference: CONTRACT_TEST,
+    scope: "no direct run_endpoint witness was found"
   }
 }
 
