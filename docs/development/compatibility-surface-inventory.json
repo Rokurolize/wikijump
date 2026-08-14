@@ -4900,7 +4900,12 @@
     {
       "source": "open43-audit-case:Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
       "type": "implemented_by",
-      "target": "wikijump.runtime:page-query"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "open43-audit-case:Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "open43-audit-case:Q1035_LISTDRAFTS_NONEMPTY_QUERY",
@@ -8879,8 +8884,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "566fdd089e58c13b6e8f212d50597416eaf96c86",
-      "tree": "9093d50b69327e535b4c552552db6ace34eda853"
+      "commit": "ae0a5e8a812d09a1b997795904bd5ef88b2492c2",
+      "tree": "e82616fee00a5cc457442b14ff362fbde29c2f44"
     },
     "ftml": {
       "commit": "62ebba4efda1f10e82363c23c925061fbe939e49",
@@ -8921,7 +8926,7 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "76fd6405c8cbc2b3dfd80e765b31f279e0f812a87b740a3898da50afb9782f37"
+        "sha256": "b4504d84df672b277b1d20dde24adf8e4e62e9beaaf8584832848ba88603e60b"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -8933,11 +8938,11 @@
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
-        "sha256": "4853d4ee9bcddf2aa64a9ddeb59e35cd1654f1bb80e671feb2c5fb38cfbd01fb"
+        "sha256": "e315a265f2a86b33a6620e5015c521e46ed2742a7a882c7fbc8ba3795242ee5d"
       },
       {
         "path": "docs/development/open43-q-search-users-closure-audit.json",
-        "sha256": "52d7a4ba51da9011688358ae9f543aec7edb10427a431701c47654093bd924c7"
+        "sha256": "7844c652ccd984af3d1c256c7e162f8374b4483b70c6c18c95bf005594637dbd"
       },
       {
         "path": "docs/development/open43-s-settings-browser-closure-audit.json",
@@ -9105,7 +9110,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "a98c0baea9a4c3c8c456b02f2784c9b7af0fb30f185495c526259efbf373becd"
+        "sha256": "ea1ec057a16a6692d0a2d9a72e86971fe9e15efb823627e3b1a65307609e1525"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -38416,7 +38421,12 @@
         "cases": [
           "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
+          "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its empty renderer",
+          "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC allows only the four observed read shapes",
+          "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC rejects unobserved parameters before Deepwell"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38440,7 +38450,8 @@
       },
       "specification_owner": "open43.case:Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
       "implementation_owners": [
-        "wikijump.runtime:page-query"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
