@@ -18,7 +18,7 @@ The following records have different roles. Do not replace one with another.
 
 1. `/home/roku/wjlab/plan.md` is the enduring compatibility charter and defines completion. Read it completely. Starting SHA-256: `b79695e3eddc7de7e5185cce906ce8b241a4916cdc379e8e1d84fad042efd577`.
 2. `docs/development/parallel-compatibility-execution-plan.md` defines the dependency layers, ownership seams, and phase structure. Starting SHA-256: `b09d1b4e3466049ba30b087ab8250baeff12334fc58d37b5b9561f30ee2ec5a3`.
-3. `docs/development/open43-closure-audit-ownership-reconciliation.json` is the current acceptance-case state and ownership authority. Starting SHA-256: `05340179ce37a1da00cd69057bc945acb4bd528b5fd59bbe9ad7c87eb5378f72`.
+3. `docs/development/open43-closure-audit-ownership-reconciliation.json` is the current acceptance-case state and ownership authority. Starting SHA-256: `f5967a3ef7eeb910bb577b0ae627fc2c11e95f547e528ecb8dd2e06f39b68e81`.
 4. `docs/development/open43-concurrency-ledger.json` is the historical source-execution ledger, not the current per-issue completion state. Starting SHA-256: `4732b2d02f0f061df32f4bdd72ce99ffdefadb3e120ee7cb128019d16856c857`.
 5. GitHub issue [#1354](https://github.com/Rokurolize/wikijump/issues/1354) is the live execution map. Native blocker edges and current comments, not issue number order or historical batch letters, determine readiness.
 6. Draft PR [#1353](https://github.com/Rokurolize/wikijump/pull/1353) is the current delivery and review surface. Keep its remote head synchronized with the exact locally validated commit.
@@ -165,7 +165,7 @@ Publish the final-zero receipt with absolute paths and hashes for every cited ac
 Treat this section as a starting snapshot to revalidate, not permanent authority.
 
 - Branch: `compat/data-forms-tags-mobile-20260812`.
-- Local and PR #1353 head at the start of this handoff edit: `364f40568973b606686d54076c045cba784573fa`.
+- Local and PR #1353 head at the start of this handoff edit: `c41c1a61b232873debc601872523020a7255e98a`.
 - #1354, #1359, #1365-#1368, #1370-#1382 are open. #1369 is closed.
 - #1371 latest implementation commit: `7ebb51323`. Earlier Spec review is READY; run a fresh independent Standards review of the TypeScript lexical mask, exact Create/Restore action anchors, proof shapes, 921-record reproduction, focused tests, and temporary cleanup. Browser intervals remain #1372.
 - #1368 latest implementation commit: `3e5dc9c705b3d50a546837faca5d9e32e594c110`, manifest SHA-256 `634a72e3d0b0e642bff3c7891cb28984e082f22812076035aa8226f322eff4db`. Run fresh independent Standards and Spec reviews of decoder coverage, semantic mutation classification, helper-derived actor requirements, highest-available behavioral witnesses, AUTHORIZATION binding, duplicate-header rejection, and exact 163-method coverage.
@@ -187,7 +187,7 @@ Verify these exact files before relying on this snapshot:
 
 Review the closed product record `{identity,commit,tree,archive,snapshot,tree_manifest}`, descriptor-read archive and manifest bytes, no `.git`, no symlinks, exact Git-blob content, no mutable checkout reread, renderer and tool identities, pre-Docker ordering, cleanup, reconciliation, recovery lineage, and controller/wrapper pin consistency.
 
-`/home/roku/wjlab/state/current.json` is currently schema `wjlab.compatibility_execution_state.v1`, phase `BUILDING`, SHA-256 `bbd76aa1b5eb85be8e9969407bb27879a8d62457a71d4e8b2b6c9825f38f6350`. It authorizes static review only. It does not authorize activation, Docker, custody rewrite, candidate, browser, merge, or standing work. Do not reseal state or alter historical r31-r34 terminal evidence. Recheck the state bytes immediately before any future live action and stop if the exact requested action is not authorized.
+`/home/roku/wjlab/state/current.json` is currently schema `wjlab.compatibility_execution_state.v1`, phase `BUILDING`, SHA-256 `1781ccb83d816e96e5f59eb1dd0cec54302ce7dd7ebbe4e9a561cb24f3f45617`. It authorizes static review and preparation of a fresh r35 authority package only. It does not authorize activation, Docker, custody acquisition, candidate, browser, merge, or standing work. Do not alter historical r31-r34 terminal evidence. Recheck the state bytes immediately before any future live action and stop if the exact requested action is not authorized.
 
 ## GitHub and delivery protocol
 
