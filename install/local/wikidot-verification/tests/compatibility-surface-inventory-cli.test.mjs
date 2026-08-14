@@ -11,6 +11,16 @@ const toolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const cliPath = path.join(toolRoot, "scripts/build-compatibility-surface-inventory.mjs")
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+const pageActionsFixtureSource = `export const pageActions = {
+  edit: editAction,
+  deletedGet: deletedGetAction,
+  restore: restoreAction
+}
+`
+
+function cleanupFixture(t, root) {
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+}
 
 const listPagesParameters = [
   "p", "pagetype", "page_type", "page-type", "category", "tags", "tag", "parent",
@@ -76,7 +86,9 @@ async function writeRepositoryFixture(root) {
         operation_bindings: [
           {
             operation_id: "edit",
-            public_references: ["framerail/src/routes/+page.server.ts#action:edit"]
+            public_references: [
+              "framerail/src/lib/server/load/page/page-actions.ts#action:edit"
+            ]
           }
         ],
         observable_states: [
@@ -96,8 +108,8 @@ async function writeRepositoryFixture(root) {
             sha256: "b14d226020649601ba32153ab426b08d816efbdaa68fd0618cf3fe6143ee0fee"
           },
           {
-            path: "framerail/src/routes/+page.server.ts",
-            sha256: "f5c0620b1478af0222b90a7cbedc9ef8b97fc11f0d776d2f4d3a59a026d40efa"
+            path: "framerail/src/lib/server/load/page/page-actions.ts",
+            sha256: sha256(pageActionsFixtureSource)
           }
         ],
         issues: [1371, 1372],
@@ -109,11 +121,15 @@ async function writeRepositoryFixture(root) {
         operation_bindings: [
           {
             operation_id: "deletedGet",
-            public_references: ["framerail/src/routes/+page.server.ts#action:deletedGet"]
+            public_references: [
+              "framerail/src/lib/server/load/page/page-actions.ts#action:deletedGet"
+            ]
           },
           {
             operation_id: "restore",
-            public_references: ["framerail/src/routes/+page.server.ts#action:restore"]
+            public_references: [
+              "framerail/src/lib/server/load/page/page-actions.ts#action:restore"
+            ]
           }
         ],
         observable_states: [
@@ -135,8 +151,8 @@ async function writeRepositoryFixture(root) {
             sha256: "b14d226020649601ba32153ab426b08d816efbdaa68fd0618cf3fe6143ee0fee"
           },
           {
-            path: "framerail/src/routes/+page.server.ts",
-            sha256: "f5c0620b1478af0222b90a7cbedc9ef8b97fc11f0d776d2f4d3a59a026d40efa"
+            path: "framerail/src/lib/server/load/page/page-actions.ts",
+            sha256: sha256(pageActionsFixtureSource)
           }
         ],
         issues: [1371, 1372],
@@ -149,6 +165,11 @@ async function writeRepositoryFixture(root) {
     root,
     "framerail/src/routes/+page.server.ts",
     "export const actions = { edit: editAction }\n"
+  )
+  await writeText(
+    root,
+    "framerail/src/lib/server/load/page/page-actions.ts",
+    pageActionsFixtureSource
   )
   await writeText(
     root,
@@ -317,8 +338,9 @@ function runCli(root, outputPath) {
   })
 }
 
-test("CLI discovers declared public surfaces and writes deterministic completion fields", async () => {
+test("CLI discovers declared public surfaces and writes deterministic completion fields", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-"))
+  cleanupFixture(t, root)
   await writeRepositoryFixture(root)
   const outputPath = path.join(root, "inventory.json")
 
@@ -407,17 +429,19 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.deepEqual(missingPageControls[0].operation_bindings, [
     {
       operation_id: "edit",
-      public_references: ["framerail/src/routes/+page.server.ts#action:edit"]
+      public_references: ["framerail/src/lib/server/load/page/page-actions.ts#action:edit"]
     }
   ])
   assert.deepEqual(missingPageControls[1].operation_bindings, [
     {
       operation_id: "deletedGet",
-      public_references: ["framerail/src/routes/+page.server.ts#action:deletedGet"]
+      public_references: [
+        "framerail/src/lib/server/load/page/page-actions.ts#action:deletedGet"
+      ]
     },
     {
       operation_id: "restore",
-      public_references: ["framerail/src/routes/+page.server.ts#action:restore"]
+      public_references: ["framerail/src/lib/server/load/page/page-actions.ts#action:restore"]
     }
   ])
   assert.deepEqual(
@@ -455,8 +479,8 @@ test("CLI discovers declared public surfaces and writes deterministic completion
       sha256: "b14d226020649601ba32153ab426b08d816efbdaa68fd0618cf3fe6143ee0fee"
     },
     {
-      path: "framerail/src/routes/+page.server.ts",
-      sha256: "f5c0620b1478af0222b90a7cbedc9ef8b97fc11f0d776d2f4d3a59a026d40efa"
+      path: "framerail/src/lib/server/load/page/page-actions.ts",
+      sha256: sha256(pageActionsFixtureSource)
     }
   ])
   assert.deepEqual(
@@ -477,9 +501,10 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.equal(await fs.readFile(outputPath, "utf8"), firstOutput)
 })
 
-test("CLI rejects an omitted or duplicate missing-page control", async () => {
+test("CLI rejects an omitted or duplicate missing-page control", async (t) => {
   for (const mutation of ["omit", "duplicate"]) {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), `compatibility-missing-page-${mutation}-`))
+    cleanupFixture(t, root)
     await writeRepositoryFixture(root)
     const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
     const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
@@ -499,8 +524,9 @@ test("CLI rejects an omitted or duplicate missing-page control", async () => {
   }
 })
 
-test("CLI rejects a stale missing-page source identity", async () => {
+test("CLI rejects a stale missing-page source identity", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-stale-"))
+  cleanupFixture(t, root)
   await writeRepositoryFixture(root)
   const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
   const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
@@ -514,8 +540,9 @@ test("CLI rejects a stale missing-page source identity", async () => {
   await assert.rejects(fs.access(path.join(root, "inventory.json")))
 })
 
-test("CLI rejects a missing-page source identity outside the repository", async () => {
+test("CLI rejects a missing-page source identity outside the repository", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-path-"))
+  cleanupFixture(t, root)
   await writeRepositoryFixture(root)
   const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
   const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
@@ -527,6 +554,84 @@ test("CLI rejects a missing-page source identity outside the repository", async 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /create has an invalid source identity/u)
   await assert.rejects(fs.access(path.join(root, "inventory.json")))
+})
+
+test("CLI rejects malformed or contradictory available browser proof", async (t) => {
+  const invalidProofs = [
+    { status: "available", references: [null] },
+    { status: "available", references: [""] },
+    { status: "available", references: ["./evidence/create.json"] },
+    { status: "available", references: [" evidence/create.json"] },
+    { status: "available", references: ["evidence/create.json", "evidence/create.json"] },
+    { status: "available", references: ["evidence/create.json"], issue: 1372 },
+    { status: "missing", issue: 1372, references: ["evidence/create.json"] },
+    { status: "missing", issue: 1372, extra: true }
+  ]
+  for (const [index, proof] of invalidProofs.entries()) {
+    const root = await fs.mkdtemp(
+      path.join(os.tmpdir(), `compatibility-missing-page-proof-${index}-`)
+    )
+    cleanupFixture(t, root)
+    await writeRepositoryFixture(root)
+    const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+    const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+    registry.missing_page_controls[0].browser_interval_proof = proof
+    await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+
+    const result = runCli(root, path.join(root, "inventory.json"))
+
+    assert.equal(result.status, 1, JSON.stringify(proof))
+    assert.match(result.stderr, /create has invalid browser_interval_proof/u)
+  }
+})
+
+test("CLI accepts canonical available browser proof without adding an issue", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-proof-ok-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+  registry.missing_page_controls[0].browser_interval_proof = {
+    status: "available",
+    references: ["evidence/create-browser.json#settled"]
+  }
+  await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const create = inventory.surfaces.find(
+    ({ surface_id }) => surface_id === "missing-page-control:create"
+  )
+  assert.deepEqual(create.browser_interval_proof, {
+    status: "available",
+    references: ["evidence/create-browser.json#settled"]
+  })
+})
+
+test("CLI rejects an operation anchor absent from the declared pageActions object", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-action-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const actionPath = "framerail/src/lib/server/load/page/page-actions.ts"
+  const actionSource = pageActionsFixtureSource.replace("edit: editAction,\n", "")
+  await writeText(root, actionPath, actionSource)
+  const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+  for (const control of registry.missing_page_controls) {
+    const identity = control.source_identities.find(
+      ({ path: sourcePath }) => sourcePath === actionPath
+    )
+    identity.sha256 = sha256(actionSource)
+  }
+  await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /create edit is not declared by .*#pageActions/u)
 })
 
 test("CLI discovers GET, implicit HEAD, and FALLBACK for the production composite route", async () => {

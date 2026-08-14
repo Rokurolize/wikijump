@@ -196,6 +196,56 @@ function uniqueSortedStrings(values) {
   return [...new Set(values.filter((value) => typeof value === "string" && value !== ""))].sort()
 }
 
+function isCanonicalRepositoryReference(reference) {
+  if (typeof reference !== "string" || reference === "" || reference.trim() !== reference) {
+    return false
+  }
+  const fragmentIndex = reference.indexOf("#")
+  const referencePath = fragmentIndex < 0 ? reference : reference.slice(0, fragmentIndex)
+  const fragment = fragmentIndex < 0 ? null : reference.slice(fragmentIndex + 1)
+  const normalizedPath = toPosix(path.normalize(referencePath))
+  return (
+    referencePath !== "" &&
+    !path.isAbsolute(referencePath) &&
+    normalizedPath === referencePath &&
+    normalizedPath !== "." &&
+    normalizedPath !== ".." &&
+    !normalizedPath.startsWith("../") &&
+    fragment !== ""
+  )
+}
+
+function validatedBrowserIntervalProof(proof, registryPath, controlId) {
+  if (!proof || Array.isArray(proof) || typeof proof !== "object") {
+    throw new Error(`${registryPath} ${controlId} has invalid browser_interval_proof`)
+  }
+  const keys = Object.keys(proof).sort()
+  if (proof.status === "missing") {
+    if (
+      JSON.stringify(keys) !== JSON.stringify(["issue", "status"]) ||
+      !Number.isInteger(proof.issue) ||
+      proof.issue <= 0
+    ) {
+      throw new Error(`${registryPath} ${controlId} has invalid browser_interval_proof`)
+    }
+    return { status: "missing", issue: proof.issue }
+  }
+  if (proof.status === "available") {
+    const references = proof.references
+    if (
+      JSON.stringify(keys) !== JSON.stringify(["references", "status"]) ||
+      !Array.isArray(references) ||
+      references.length === 0 ||
+      references.some((reference) => !isCanonicalRepositoryReference(reference)) ||
+      JSON.stringify(references) !== JSON.stringify(uniqueSortedStrings(references))
+    ) {
+      throw new Error(`${registryPath} ${controlId} has invalid browser_interval_proof`)
+    }
+    return { status: "available", references: [...references] }
+  }
+  throw new Error(`${registryPath} ${controlId} has invalid browser_interval_proof`)
+}
+
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
 }
@@ -396,6 +446,22 @@ function objectPropertyNames(objectExpression, declaration) {
     if (!match) throw new Error(`unsupported property in ${declaration}: ${entry}`)
     return match[1] ?? match[2] ?? match[3]
   })
+}
+
+async function declaredPageActions(root, sourcePath) {
+  const sourceText = await readText(root, sourcePath)
+  const declaration = /export\s+const\s+pageActions\s*=\s*/u.exec(sourceText)
+  if (!declaration) throw new Error(`${sourcePath} has no exported pageActions declaration`)
+  const expressionStart = declaration.index + declaration[0].length
+  if (sourceText[expressionStart] !== "{") {
+    throw new Error(`${sourcePath}#pageActions is not an object literal`)
+  }
+  const expression = extractBalanced(sourceText, expressionStart, "{", "}")
+  const names = objectPropertyNames(expression, `${sourcePath}#pageActions`)
+  if (new Set(names).size !== names.length) {
+    throw new Error(`${sourcePath}#pageActions contains duplicate declarations`)
+  }
+  return new Set(names)
 }
 
 async function resolveModulePath(root, fromPath, specifier) {
@@ -853,6 +919,7 @@ async function discoverPageActionSurfaces(root) {
     throw new Error(`${registryPath} must declare exactly one create and one restore control`)
   }
   const missingPageControls = []
+  const pageActionDeclarations = new Map()
   for (const entry of registry.missing_page_controls) {
     const contract = MISSING_PAGE_CONTROL_CONTRACTS.get(entry.control_id)
     if (!LEDGER_STATUSES.has(entry.source_status)) {
@@ -877,9 +944,15 @@ async function discoverPageActionSurfaces(root) {
         !Array.isArray(binding.public_references) ||
         binding.public_references.length === 0 ||
         binding.public_references.some(
-          (reference) =>
-            typeof reference !== "string" ||
-            !reference.endsWith(`#action:${binding.operation_id}`)
+          (reference) => {
+            if (typeof reference !== "string") return true
+            const parts = reference.split("#")
+            return (
+              parts.length !== 2 ||
+              !isCanonicalRepositoryReference(reference) ||
+              parts[1] !== `action:${binding.operation_id}`
+            )
+          }
         )
       ) {
         throw new Error(
@@ -896,16 +969,11 @@ async function discoverPageActionSurfaces(root) {
         `${registryPath} ${entry.control_id} observable_states do not match the closed contract`
       )
     }
-    const proof = entry.browser_interval_proof
-    if (
-      !proof ||
-      !["available", "missing"].includes(proof.status) ||
-      (proof.status === "missing" && !Number.isInteger(proof.issue)) ||
-      (proof.status === "available" &&
-        (!Array.isArray(proof.references) || proof.references.length === 0))
-    ) {
-      throw new Error(`${registryPath} ${entry.control_id} has invalid browser_interval_proof`)
-    }
+    const proof = validatedBrowserIntervalProof(
+      entry.browser_interval_proof,
+      registryPath,
+      entry.control_id
+    )
     if (!Array.isArray(entry.source_identities) || entry.source_identities.length === 0) {
       throw new Error(`${registryPath} ${entry.control_id} must declare source_identities`)
     }
@@ -948,6 +1016,16 @@ async function discoverPageActionSurfaces(root) {
             `${registryPath} ${entry.control_id} operation reference lacks a source identity: ${sourcePath}`
           )
         }
+        let declarations = pageActionDeclarations.get(sourcePath)
+        if (!declarations) {
+          declarations = await declaredPageActions(root, sourcePath)
+          pageActionDeclarations.set(sourcePath, declarations)
+        }
+        if (!declarations.has(binding.operation_id)) {
+          throw new Error(
+            `${registryPath} ${entry.control_id} ${binding.operation_id} is not declared by ${sourcePath}#pageActions`
+          )
+        }
       }
     }
     const base = surface({
@@ -971,9 +1049,7 @@ async function discoverPageActionSurfaces(root) {
       ...base,
       operation_bindings: operationBindings,
       observable_states: [...entry.observable_states],
-      browser_interval_proof: proof.status === "missing"
-        ? { status: "missing", issue: proof.issue }
-        : { status: "available", references: uniqueSortedStrings(proof.references) },
+      browser_interval_proof: proof,
       source_identities: sourceIdentities
     })
   }
