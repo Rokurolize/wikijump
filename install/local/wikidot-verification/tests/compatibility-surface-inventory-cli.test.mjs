@@ -648,12 +648,11 @@ test("CLI rejects an operation anchor absent from the declared pageActions objec
   assert.match(result.stderr, /create edit is not declared by .*#pageActions/u)
 })
 
-test("CLI ignores pageActions declarations shadowed by TypeScript comments and literals", async (t) => {
+test("CLI ignores pageActions declarations shadowed by TypeScript comments and strings", async (t) => {
   const realDeclaration = pageActionsFixtureSource.replace("edit: editAction,\n", "")
   const shadows = {
     comment: "// export const pageActions = { edit: fake, deletedGet: fake, restore: fake }",
-    string: 'const shadow = "export const pageActions = { edit: fake, deletedGet: fake, restore: fake }"',
-    regex: "/export const pageActions = { edit: fake, deletedGet: fake, restore: fake }/"
+    string: 'const shadow = "export const pageActions = { edit: fake, deletedGet: fake, restore: fake }"'
   }
   for (const [kind, shadow] of Object.entries(shadows)) {
     await t.test(kind, async (t) => {
@@ -676,12 +675,24 @@ test("CLI rejects duplicate pageActions declarations", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-page-actions-duplicate-"))
   cleanupFixture(t, root)
   await writeRepositoryFixture(root)
-  await replacePageActionsFixture(root, `${pageActionsFixtureSource}\nexport const pageActions = {}\n`)
+  await replacePageActionsFixture(root, `${pageActionsFixtureSource.trimEnd()}; export const pageActions = {}\n`)
 
   const result = runCli(root, path.join(root, "inventory.json"))
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /duplicate exported pageActions declarations/u)
+})
+
+test("CLI fails closed on declaration-shaped RegExp text", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-page-actions-regexp-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  await replacePageActionsFixture(root, "const shadow = /export const pageActions = {}/\n")
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /declaration-shaped text outside a supported top-level declaration/u)
 })
 
 test("CLI discovers GET, implicit HEAD, and FALLBACK for the production composite route", async () => {

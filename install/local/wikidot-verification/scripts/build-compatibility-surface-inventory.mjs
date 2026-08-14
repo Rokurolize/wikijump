@@ -551,8 +551,13 @@ function maskTypeScriptCommentsAndLiterals(sourceText, reference) {
 async function declaredPageActions(root, sourcePath) {
   const sourceText = await readText(root, sourcePath)
   const lexicalSource = maskTypeScriptCommentsAndLiterals(sourceText, sourcePath)
-  const declarations = [...lexicalSource.matchAll(/^\s*export\s+const\s+pageActions\s*=\s*/gmu)]
-  if (declarations.length > 1) throw new Error(`${sourcePath} has duplicate exported pageActions declarations`)
+  const candidates = [...lexicalSource.matchAll(/\bexport\s+const\s+pageActions\s*=\s*/gu)]
+  const declarations = candidates.filter((candidate) => {
+    const lineStart = lexicalSource.lastIndexOf("\n", candidate.index) + 1
+    return /^[ \t]*$/u.test(lexicalSource.slice(lineStart, candidate.index))
+  })
+  if (candidates.length > 1) throw new Error(`${sourcePath} has duplicate exported pageActions declarations`)
+  if (declarations.length !== candidates.length) throw new Error(`${sourcePath} has declaration-shaped text outside a supported top-level declaration`)
   const [declaration] = declarations
   if (!declaration) throw new Error(`${sourcePath} has no exported pageActions declaration`)
   const expressionStart = declaration.index + declaration[0].length
