@@ -289,7 +289,7 @@ pub async fn handle_local_file(
     path: Path<(String, String)>,
     headers: HeaderMap,
 ) -> Response {
-    if method == Method::GET {
+    if method == Method::GET || method == Method::HEAD {
         handle_file_fetch(state, method, path, headers).await
     } else {
         super::handle_file_redirect(path).await.into_response()
@@ -1069,24 +1069,48 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn local_files_head_and_post_keep_permanent_redirect_fallback() {
+    async fn local_files_post_keeps_permanent_redirect_fallback() {
         let state = test_state().await;
 
-        for method in [Method::HEAD, Method::POST] {
-            let response = router_request(
-                Arc::clone(&state),
-                method,
-                "/local--files/scp-173/image.png",
-                None,
-            )
-            .await;
+        let response =
+            router_request(state, Method::POST, "/local--files/scp-173/image.png", None)
+                .await;
 
-            assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
-            assert_eq!(
-                response.headers().get(LOCATION).unwrap(),
-                "/-/file/scp-173/image.png",
-            );
-        }
+        assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            response.headers().get(LOCATION).unwrap(),
+            "/-/file/scp-173/image.png",
+        );
+    }
+
+    #[tokio::test]
+    async fn local_files_head_returns_selected_range_metadata_without_a_body() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::HEAD,
+            "/local--files/existing-page/present.txt",
+            &[(RANGE, "bytes=0-1")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(
+            response.headers().get(CONTENT_RANGE).unwrap(),
+            "bytes 0-1/6"
+        );
+        assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "2");
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert!(!response.headers().contains_key(CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+        assert!(s3_server.requests().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
     }
 
     #[tokio::test]
