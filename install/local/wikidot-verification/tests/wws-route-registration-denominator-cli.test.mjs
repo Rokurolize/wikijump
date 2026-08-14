@@ -44,16 +44,14 @@ const expectedRegistrations = [
   ["GET", "/{page_slug}/code", "handle_default_code_redirect", "wws/src/handler/redirect.rs"]
 ]
 
-function runCli(root, output) {
-  return spawnSync(process.execPath, [cliPath, "--root", root, "--output", output], {
-    encoding: "utf8"
+function runCli(root, output, extraArguments = [], environment = process.env) {
+  const arguments_ = [cliPath, "--root", root]
+  if (output !== null) arguments_.push("--output", output)
+  arguments_.push(...extraArguments)
+  return spawnSync(process.execPath, arguments_, {
+    encoding: "utf8",
+    env: environment
   })
-}
-
-function git(root, ...arguments_) {
-  const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" })
-  assert.equal(result.status, 0, result.stderr)
-  return result.stdout.trim()
 }
 
 async function sha256(filePath) {
@@ -69,6 +67,44 @@ async function writeRouteSource(root, source) {
 function runGit(root, ...arguments_) {
   const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" })
   assert.equal(result.status, 0, result.stderr)
+}
+
+async function copyHistoricalEvidence(root) {
+  for (const relativePath of [
+    "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",
+    "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
+  ]) {
+    const target = path.join(root, relativePath)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.copyFile(path.join(repositoryRoot, relativePath), target)
+  }
+}
+
+async function writeCommittedProductionFixture(root) {
+  await fs.cp(path.join(repositoryRoot, "wws/src"), path.join(root, "wws/src"), { recursive: true })
+  await copyHistoricalEvidence(root)
+  runGit(root, "init", "--quiet")
+  runGit(root, "config", "user.email", "denominator-test@example.invalid")
+  runGit(root, "config", "user.name", "Denominator Test")
+  runGit(root, "add", "wws/src")
+  runGit(root, "commit", "--quiet", "-m", "fixture")
+}
+
+async function writeNonProductionHandlerFixture(root, symbol, handlerSource) {
+  const routes = Array.from(
+    { length: 30 },
+    (_, index) => `.route("/fixture-${index}", any(${symbol}))`
+  ).join("\n")
+  await writeRouteSource(root, `pub fn build_router() { Router::new()${routes} }\n`)
+  const handlerPath = path.join(root, "wws/src/handler/fake.rs")
+  await fs.mkdir(path.dirname(handlerPath), { recursive: true })
+  await fs.writeFile(handlerPath, handlerSource)
+  await copyHistoricalEvidence(root)
+  runGit(root, "init", "--quiet")
+  runGit(root, "config", "user.email", "denominator-test@example.invalid")
+  runGit(root, "config", "user.name", "Denominator Test")
+  runGit(root, "add", "wws/src")
+  runGit(root, "commit", "--quiet", "-m", "fixture")
 }
 
 test("CLI writes the exact current 30-registration WWS denominator with source ownership", async (t) => {
@@ -90,8 +126,8 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
     registration_count: 27,
     status: "historical_27_route_source_attribution_preserved"
   })
-  assert.equal(manifest.source.repository_commit, git(repositoryRoot, "rev-parse", "HEAD"))
-  assert.equal(manifest.source.repository_tree, git(repositoryRoot, "rev-parse", "HEAD^{tree}"))
+  assert.equal(manifest.source.identity, "git_blob_and_sha256_per_captured_input")
+  assert.deepEqual(Object.keys(manifest.source).sort(), ["identity", "inputs"])
   assert.deepEqual(manifest.counts, {
     registrations: 30,
     by_declared_method_class: { ANY: 17, GET: 13 },
@@ -124,6 +160,98 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
     assert.ok(registration.handler_definition_reference.startsWith(`${registration.handler_definition_path}#L`))
   }
 })
+
+test("CLI reproduces and verifies the exact committed denominator", async (t) => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-verify-"))
+  t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
+  const output = path.join(temporaryDirectory, "denominator.json")
+
+  const generateResult = runCli(repositoryRoot, output)
+  const verifyResult = runCli(repositoryRoot, null, ["--verify"])
+
+  assert.equal(generateResult.status, 0, generateResult.stderr)
+  assert.equal(verifyResult.status, 0, verifyResult.stderr)
+  assert.equal(
+    verifyResult.stdout,
+    "verified 30 WWS route registrations in docs/development/wws-route-registration-denominator.json\n"
+  )
+  assert.deepEqual(
+    await fs.readFile(output),
+    await fs.readFile(path.join(repositoryRoot, "docs/development/wws-route-registration-denominator.json"))
+  )
+})
+
+test("CLI verify rejects a byte-drifted denominator", async (t) => {
+  const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-stale-"))
+  t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
+  const output = path.join(temporaryDirectory, "denominator.json")
+  const committedOutput = await fs.readFile(
+    path.join(repositoryRoot, "docs/development/wws-route-registration-denominator.json"),
+    "utf8"
+  )
+  await fs.writeFile(output, `${committedOutput}\n`)
+
+  const result = runCli(repositoryRoot, output, ["--verify"])
+
+  assert.notEqual(result.status, 0)
+  assert.match(result.stderr, /denominator\.json is stale/u)
+  assert.equal(result.stdout, "")
+})
+
+test("CLI hashes the same captured source bytes that it parses", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-captured-bytes-"))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  await writeCommittedProductionFixture(root)
+  const originalRouteSource = await fs.readFile(path.join(root, "wws/src/route.rs"))
+  const shimDirectory = path.join(root, "git-shim")
+  await fs.mkdir(shimDirectory)
+  const realGit = spawnSync("which", ["git"], { encoding: "utf8" }).stdout.trim()
+  await fs.writeFile(
+    path.join(shimDirectory, "git"),
+    `#!/bin/sh
+repository=""
+if [ "$1" = "-C" ]; then
+  repository="$2"
+  shift 2
+fi
+if [ "$1" = "hash-object" ] && [ "$2" != "--stdin" ]; then
+  printf '\\n// changed after capture\\n' >> "$repository/$2"
+fi
+exec "${realGit}" -C "$repository" "$@"
+`
+  )
+  await fs.chmod(path.join(shimDirectory, "git"), 0o755)
+  const output = path.join(root, "denominator.json")
+
+  const result = runCli(root, output, [], {
+    ...process.env,
+    PATH: `${shimDirectory}:${process.env.PATH}`
+  })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(await fs.readFile(path.join(root, "wws/src/route.rs")), originalRouteSource)
+  const manifest = JSON.parse(await fs.readFile(output, "utf8"))
+  const routeInput = manifest.source.inputs.find(({ path: inputPath }) => inputPath === "wws/src/route.rs")
+  assert.equal(routeInput.sha256, createHash("sha256").update(originalRouteSource).digest("hex"))
+})
+
+for (const [form, symbol, handlerSource] of [
+  ["comment", "handle_comment_only", "// pub async fn handle_comment_only() {}\n"],
+  ["string", "handle_string_only", "const EXAMPLE: &str = \"pub async fn handle_string_only() {}\";\n"],
+  ["cfg(test)", "handle_test_only", "#[cfg(test)]\nmod tests { pub async fn handle_test_only() {} }\n"]
+]) {
+  test(`CLI rejects a handler found only in a Rust ${form}`, async (t) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-handler-owner-"))
+    t.after(() => fs.rm(root, { recursive: true, force: true }))
+    await writeNonProductionHandlerFixture(root, symbol, handlerSource)
+
+    const result = runCli(root, path.join(root, "denominator.json"))
+
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, new RegExp(`missing WWS handler definition: ${symbol}`, "u"))
+    assert.equal(result.stdout, "")
+  })
+}
 
 test("CLI rejects duplicate registrations with equivalent reordered method filters", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-duplicate-"))

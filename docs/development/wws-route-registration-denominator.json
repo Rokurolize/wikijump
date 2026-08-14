@@ -1,8 +1,7 @@
 {
   "schema": "wikijump.wws_route_registration_denominator.v1",
   "source": {
-    "repository_commit": "4d952bc84a05e0e8c879419262e4a34998421c5b",
-    "repository_tree": "c2651439c652d3f32495e2ee1eb9fe4476d3413e",
+    "identity": "git_blob_and_sha256_per_captured_input",
     "inputs": [
       {
         "path": "wws/src/handler/basic_error.rs",
@@ -53,7 +52,7 @@
   },
   "generator": {
     "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-    "sha256": "208b4a4681eb4d3c5c1627e7c297c2af0ff00d726069f419ff14c908ec7628e4"
+    "sha256": "f9783fd17d84e4ef581a3202e27e6536e4db0d57dbcc23963d53f6a1356bfae7"
   },
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",

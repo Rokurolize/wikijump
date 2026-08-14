@@ -32,7 +32,7 @@ const DELIMITER_PAIRS = new Map([["(", ")"], ["[", "]"], ["{", "}"]])
 const UNSUPPORTED_ROUTER_COMPOSITION_METHODS = new Set(["merge", "nest", "nest_service", "route_service"])
 
 function usage() {
-  return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--output JSON]\n`
+  return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--output JSON] [--verify]\n`
 }
 
 function requireValue(arguments_, index, option) {
@@ -44,16 +44,18 @@ function requireValue(arguments_, index, option) {
 function parseArguments(arguments_) {
   let root = DEFAULT_ROOT
   let output
+  let verify = false
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index]
     if (argument === "--root") root = path.resolve(requireValue(arguments_, ++index, argument))
     else if (argument === "--output") output = path.resolve(requireValue(arguments_, ++index, argument))
+    else if (argument === "--verify") verify = true
     else if (argument === "--help" || argument === "-h") {
       process.stdout.write(usage())
       process.exit(0)
     } else throw new Error(`unknown argument: ${argument}`)
   }
-  return { root, output: output ?? path.join(root, DEFAULT_OUTPUT) }
+  return { root, output: output ?? path.join(root, DEFAULT_OUTPUT), verify }
 }
 
 function toPosix(value) {
@@ -70,6 +72,15 @@ function sha256(value) {
 
 function git(root, ...arguments_) {
   const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" })
+  if (result.status !== 0) throw new Error(result.stderr.trim() || `git ${arguments_.join(" ")} failed`)
+  return result.stdout.trim()
+}
+
+function gitWithInput(root, input, ...arguments_) {
+  const result = spawnSync("git", ["-C", root, ...arguments_], {
+    encoding: "utf8",
+    input
+  })
   if (result.status !== 0) throw new Error(result.stderr.trim() || `git ${arguments_.join(" ")} failed`)
   return result.stdout.trim()
 }
@@ -302,34 +313,44 @@ async function resolveHandlerDefinitions(root, symbols) {
   const directory = path.join(root, HANDLER_DIRECTORY)
   const fileNames = (await fs.readdir(directory)).filter((name) => name.endsWith(".rs")).sort(compareText)
   const definitions = new Map()
-  const sourceByPath = new Map()
+  const bytesByPath = new Map()
   for (const fileName of fileNames) {
     const relativePath = `${HANDLER_DIRECTORY}/${fileName}`
-    const source = await fs.readFile(path.join(root, relativePath), "utf8")
-    sourceByPath.set(relativePath, source)
-    for (const symbol of symbols) {
-      const matches = [...source.matchAll(new RegExp(`pub\\s+async\\s+fn\\s+${symbol}\\b`, "gu"))]
-      for (const match of matches) {
-        if (definitions.has(symbol)) throw new Error(`duplicate WWS handler definition: ${symbol}`)
-        definitions.set(symbol, { path: relativePath, line: lineNumber(source, match.index) })
+    const sourceBytes = await fs.readFile(path.join(root, relativePath))
+    const source = sourceBytes.toString("utf8")
+    bytesByPath.set(relativePath, sourceBytes)
+    const tokens = productionTokens(scanRustTokens(source, relativePath), relativePath)
+    for (let index = 0; index < tokens.length - 3; index += 1) {
+      if (
+        tokens[index].value !== "pub" ||
+        tokens[index + 1]?.value !== "async" ||
+        tokens[index + 2]?.value !== "fn" ||
+        tokens[index + 3]?.kind !== "identifier"
+      ) {
+        continue
       }
+      const symbol = tokens[index + 3].value
+      if (!symbols.has(symbol)) continue
+      if (definitions.has(symbol)) throw new Error(`duplicate WWS handler definition: ${symbol}`)
+      definitions.set(symbol, { path: relativePath, line: lineNumber(source, tokens[index].start) })
     }
   }
   for (const symbol of symbols) {
     if (!definitions.has(symbol)) throw new Error(`missing WWS handler definition: ${symbol}`)
   }
-  return { definitions, sourceByPath }
+  return { definitions, bytesByPath }
 }
 
-function gitSourceIdentity(root, commit, relativePath, content) {
+function gitSourceIdentity(root, commit, relativePath, capturedBytes) {
   const blob = git(root, "rev-parse", `${commit}:${relativePath}`)
-  const workingBlob = git(root, "hash-object", relativePath)
-  if (workingBlob !== blob) throw new Error(`${relativePath} differs from pinned repository commit ${commit}`)
-  return { path: relativePath, git_blob: blob, sha256: sha256(content) }
+  const capturedBlob = gitWithInput(root, capturedBytes, "hash-object", "--stdin")
+  if (capturedBlob !== blob) throw new Error(`${relativePath} differs from pinned repository commit ${commit}`)
+  return { path: relativePath, git_blob: blob, sha256: sha256(capturedBytes) }
 }
 
 async function buildDenominator(root) {
-  const routeSource = await fs.readFile(path.join(root, ROUTE_REGISTRY), "utf8")
+  const routeBytes = await fs.readFile(path.join(root, ROUTE_REGISTRY))
+  const routeSource = routeBytes.toString("utf8")
   const registrations = extractRegistrations(routeSource)
   if (registrations.length !== EXPECTED_REGISTRATION_COUNT) {
     throw new Error(`${ROUTE_REGISTRY} registration count is ${registrations.length}; expected ${EXPECTED_REGISTRATION_COUNT}`)
@@ -341,11 +362,10 @@ async function buildDenominator(root) {
   if (duplicateIds.length > 0) throw new Error(`duplicate WWS route registration ids: ${duplicateIds.join(", ")}`)
 
   const handlerSymbols = new Set(registrations.flatMap(({ handler, fallbackHandler }) => [handler, fallbackHandler].filter(Boolean)))
-  const { definitions, sourceByPath } = await resolveHandlerDefinitions(root, handlerSymbols)
+  const { definitions, bytesByPath } = await resolveHandlerDefinitions(root, handlerSymbols)
   const commit = git(root, "rev-parse", "HEAD")
-  const tree = git(root, "rev-parse", `${commit}^{tree}`)
-  const inputContent = new Map([[ROUTE_REGISTRY, routeSource]])
-  for (const definition of definitions.values()) inputContent.set(definition.path, sourceByPath.get(definition.path))
+  const inputContent = new Map([[ROUTE_REGISTRY, routeBytes]])
+  for (const definition of definitions.values()) inputContent.set(definition.path, bytesByPath.get(definition.path))
   const inputs = [...inputContent]
     .sort(([left], [right]) => compareText(left, right))
     .map(([relativePath, content]) => gitSourceIdentity(root, commit, relativePath, content))
@@ -382,8 +402,7 @@ async function buildDenominator(root) {
   return {
     schema: SCHEMA,
     source: {
-      repository_commit: commit,
-      repository_tree: tree,
+      identity: "git_blob_and_sha256_per_captured_input",
       inputs
     },
     generator: {
@@ -411,12 +430,22 @@ async function buildDenominator(root) {
 }
 
 async function main() {
-  const { root, output } = parseArguments(process.argv.slice(2))
+  const { root, output, verify } = parseArguments(process.argv.slice(2))
   const denominator = await buildDenominator(root)
-  await fs.mkdir(path.dirname(output), { recursive: true })
-  await fs.writeFile(output, `${JSON.stringify(denominator, null, 2)}\n`)
+  const serialized = `${JSON.stringify(denominator, null, 2)}\n`
   const relativeOutput = path.relative(root, output)
-  process.stdout.write(`wrote ${denominator.counts.registrations} WWS route registrations to ${relativeOutput.startsWith("..") ? output : toPosix(relativeOutput)}\n`)
+  const outputReference = relativeOutput.startsWith("..") ? output : toPosix(relativeOutput)
+  if (verify) {
+    const committedOutput = await fs.readFile(output, "utf8")
+    if (committedOutput !== serialized) {
+      throw new Error(`${outputReference} is stale; regenerate the WWS route denominator`)
+    }
+    process.stdout.write(`verified ${denominator.counts.registrations} WWS route registrations in ${outputReference}\n`)
+    return
+  }
+  await fs.mkdir(path.dirname(output), { recursive: true })
+  await fs.writeFile(output, serialized)
+  process.stdout.write(`wrote ${denominator.counts.registrations} WWS route registrations to ${outputReference}\n`)
 }
 
 main().catch((error) => {
