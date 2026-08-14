@@ -65,7 +65,7 @@ const foundPageData = {
   page_discussion: { enabled: false },
   options: {},
   wikitext: "Holder body",
-  compiled_body_html: "<p>Holder body</p>",
+  compiled_body_html: "<p>Holder <!--page-source-note-->body</p>",
   compiled_body_styles: [],
   theme: {},
   legacy_actions: [],
@@ -83,27 +83,24 @@ const renderFoundPage = (data) =>
     context: new Map([[PAGE_LAYOUT_CONTEXT_KEY, { current: Layout.WIKIDOT }]])
   }).body
 
-const withoutSvelteComments = (body) => body.replace(/<!--.*?-->/gu, "")
-
 test("normal found-page route SSR renders ordered tag links directly in page-tags", () => {
-  const body = withoutSvelteComments(renderFoundPage(foundPageData))
+  const body = renderFoundPage(foundPageData)
 
+  assert.match(body, /<!--page-source-note-->/u)
   assert.match(
     body,
-    /<div class="page-tags"><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">_lp-holder-hidden<\/a><a href="\/system:page-tags\/tag\/lp-same-a-20260727#pages">lp-same-a-20260727<\/a><a href="\/system:page-tags\/tag\/lp-same-b-20260727#pages">lp-same-b-20260727<\/a><\/div>/u
+    /<div class="page-tags"><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">_lp-holder-hidden<\/a><a href="\/system:page-tags\/tag\/lp-same-a-20260727#pages">lp-same-a-20260727<\/a><a href="\/system:page-tags\/tag\/lp-same-b-20260727#pages">lp-same-b-20260727<\/a><!----><\/div>/u
   )
 })
 
 test("display-only found-page tag leaf SSR renders supplied revision tags directly", () => {
-  const body = withoutSvelteComments(
-    render(pageTagsComponent, {
-      props: { tags: ["lp-range-20260727", "older-revision-tag"], hidden: false }
-    }).body
-  )
+  const body = render(pageTagsComponent, {
+    props: { tags: ["lp-range-20260727", "older-revision-tag"], hidden: false }
+  }).body
 
   assert.equal(
     body,
-    '<div class="page-tags"><a href="/system:page-tags/tag/lp-range-20260727#pages">lp-range-20260727</a><a href="/system:page-tags/tag/older-revision-tag#pages">older-revision-tag</a></div>'
+    '<!--[--><!--[0--><div class="page-tags"><!--1s3gosb--><a href="/system:page-tags/tag/lp-range-20260727#pages">lp-range-20260727</a><a href="/system:page-tags/tag/older-revision-tag#pages">older-revision-tag</a><!----></div><!--]--><!--]-->'
   )
 })
 
@@ -117,16 +114,14 @@ test("tagless found-page route SSR omits page-tags", () => {
 })
 
 test("editing found-page route SSR preserves the hidden page-tags state", () => {
-  const body = withoutSvelteComments(
-    renderFoundPage({
-      ...foundPageData,
-      options: { edit: true },
-      data_form: { fields: [] }
-    })
-  )
+  const body = renderFoundPage({
+    ...foundPageData,
+    options: { edit: true },
+    data_form: { fields: [] }
+  })
 
   assert.match(
     body,
-    /<div class="page-tags hidden"><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">/u
+    /<div class="page-tags hidden"><!--1dsqzw2--><a href="\/system:page-tags\/tag\/_lp-holder-hidden#pages">/u
   )
 })

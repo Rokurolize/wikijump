@@ -44,7 +44,7 @@ const viewer = {
 const forumBodies = {
   "forum/ForumStartModule": {
     status: "ok",
-    body: '<section data-forum-fixture="populated">forum</section>',
+    body: '<section data-forum-fixture="populated"><!--forum-source-note-->forum</section>',
     js_include: []
   },
   "forum/ForumViewCategoryModule": {
@@ -119,20 +119,21 @@ after(async () => {
 })
 
 test("forum GET routes enclose populated empty and error bodies in one page-content root", async () => {
-  for (const [path, expectedBody] of [
-    ["/forum/start", forumBodies["forum/ForumStartModule"].body],
-    ["/forum/c-8503559/open-topic", ""],
+  for (const [path, expectedMarker, expectedBody] of [
+    ["/forum/start", "1qplnk3", forumBodies["forum/ForumStartModule"].body],
+    ["/forum/c-8503559/open-topic", "45h", ""],
     [
       "/forum/t-18029831/deleted-thread",
+      "1lnhxh9",
       '<div class="error-block">The thread you\'re trying to show seems to have been deleted</div>'
     ]
   ]) {
     const response = await fetch(`${baseUrl}${path}`, { headers: siteHeaders })
     const html = await response.text()
-    const moduleBody = pageContentBody(html).replace(/<!--[\s\S]*?-->/gu, "")
+    const moduleBody = pageContentBody(html)
 
     assert.equal(response.status, 200)
     assert.equal(html.match(/id="page-content"/gu)?.length ?? 0, 1)
-    assert.equal(moduleBody, expectedBody)
+    assert.equal(moduleBody, `<!--${expectedMarker}-->${expectedBody}<!---->`)
   }
 })
