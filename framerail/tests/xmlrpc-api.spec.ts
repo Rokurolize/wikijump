@@ -886,7 +886,13 @@ test("XML-RPC endpoint exposes system method help and signatures", async ({
   })
   const signatureBody = await signatureResponse.text()
   expect(signatureResponse.status()).toBe(200)
-  expect(signatureBody).toContain("<string>array</string>")
+  expect(signatureBody).toContain(
+    "<name>returnType</name><value><string>void</string></value>"
+  )
+  expect(signatureBody).toContain(
+    "<name>parameters</name><value><array><data><value><string>struct</string></value></data></array></value>"
+  )
+  expect(signatureBody).not.toContain("<string>array</string>")
 })
 
 test("XML-RPC endpoint does not treat inherited object properties as methods", async ({
