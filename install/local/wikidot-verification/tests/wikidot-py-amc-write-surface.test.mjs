@@ -11,6 +11,20 @@ const contractPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-
 const authorityPath = path.join(repositoryRoot, "docs/development/wikidot-py-amc-client-parity.json")
 const contract = JSON.parse(fs.readFileSync(contractPath, "utf8"))
 const authority = JSON.parse(fs.readFileSync(authorityPath, "utf8"))
+const GIT_EXECUTABLE = "/usr/bin/git"
+const PYTHON_EXECUTABLE = "/usr/bin/python3"
+const EXECUTION_ENVIRONMENT = Object.freeze({
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_NO_LAZY_FETCH: "1",
+  GIT_NO_REPLACE_OBJECTS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  GIT_PAGER: "cat",
+  GIT_TERMINAL_PROMPT: "0",
+  LANG: "C",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin"
+})
 
 const pythonScanner = String.raw`
 import ast, json, subprocess, sys
@@ -19,11 +33,23 @@ request = json.load(sys.stdin)
 functions = {}
 module_dicts = []
 conditional_lock_fields = []
+git_environment = {
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_NO_LAZY_FETCH": "1",
+    "GIT_NO_REPLACE_OBJECTS": "1",
+    "GIT_OPTIONAL_LOCKS": "0",
+    "GIT_PAGER": "cat",
+    "GIT_TERMINAL_PROMPT": "0",
+    "LANG": "C",
+    "LC_ALL": "C",
+    "PATH": "/usr/bin:/bin",
+}
 
 for path in request["paths"]:
     source = subprocess.run(
-        ["git", "-C", request["root"], "show", request["commit"] + ":" + path],
-        check=True, capture_output=True, text=True,
+        ["/usr/bin/git", "-C", request["root"], "show", request["commit"] + ":" + path],
+        check=True, capture_output=True, env=git_environment, text=True,
     ).stdout
     tree = ast.parse(source)
     for owner in tree.body:
@@ -119,14 +145,20 @@ json.dump({
 `
 
 function git(...args) {
-  const result = spawnSync("git", ["-C", wikidotPyRoot, ...args], { encoding: "utf8" })
+  const result = spawnSync(GIT_EXECUTABLE, ["-C", wikidotPyRoot, ...args], {
+    cwd: "/",
+    encoding: "utf8",
+    env: EXECUTION_ENVIRONMENT
+  })
   assert.equal(result.status, 0, result.stderr)
   return result.stdout.trim()
 }
 
 function scanSource(value) {
-  const result = spawnSync("python3", ["-c", pythonScanner], {
+  const result = spawnSync(PYTHON_EXECUTABLE, ["-c", pythonScanner], {
+    cwd: "/",
     encoding: "utf8",
+    env: EXECUTION_ENVIRONMENT,
     input: JSON.stringify({
       root: wikidotPyRoot,
       commit: value.source.commit,
@@ -204,6 +236,21 @@ const source = scanSource(contract)
 
 test("wikidot.py AMC write contract exactly matches its pinned source", () => {
   verifyContract(contract, source)
+})
+
+test("wikidot.py AMC write verifier ignores poisoned process execution state", () => {
+  const originalPath = process.env.PATH
+  const originalGitDirectory = process.env.GIT_DIR
+  process.env.PATH = "/poisoned"
+  process.env.GIT_DIR = "/poisoned"
+  try {
+    verifyContract(contract, scanSource(contract))
+  } finally {
+    if (originalPath === undefined) delete process.env.PATH
+    else process.env.PATH = originalPath
+    if (originalGitDirectory === undefined) delete process.env.GIT_DIR
+    else process.env.GIT_DIR = originalGitDirectory
+  }
 })
 
 test("wikidot.py AMC write contract rejects incomplete or ambiguous inventories", () => {
