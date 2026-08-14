@@ -448,15 +448,64 @@ function objectPropertyNames(objectExpression, declaration) {
   })
 }
 
+function maskTypeScriptCommentsAndLiterals(sourceText, reference) {
+  const masked = sourceText.split("")
+  const blank = (start, end) => {
+    for (let index = start; index < end; index += 1) {
+      if (masked[index] !== "\n" && masked[index] !== "\r") masked[index] = " "
+    }
+  }
+  let index = 0
+  while (index < sourceText.length) {
+    if (sourceText.startsWith("//", index)) {
+      const newline = sourceText.indexOf("\n", index + 2)
+      const end = newline < 0 ? sourceText.length : newline
+      blank(index, end)
+      index = end
+      continue
+    }
+    if (sourceText.startsWith("/*", index)) {
+      const close = sourceText.indexOf("*/", index + 2)
+      if (close < 0) throw new Error(`${reference} contains an unterminated block comment`)
+      const end = close + 2
+      blank(index, end)
+      index = end
+      continue
+    }
+    const quote = sourceText[index]
+    if (quote === '"' || quote === "'" || quote === "`") {
+      let cursor = index + 1
+      let escaped = false
+      while (cursor < sourceText.length) {
+        const character = sourceText[cursor]
+        if (escaped) escaped = false
+        else if (character === "\\") escaped = true
+        else if (character === quote) break
+        cursor += 1
+      }
+      if (cursor >= sourceText.length) {
+        throw new Error(`${reference} contains an unterminated TypeScript literal`)
+      }
+      blank(index + 1, cursor)
+      index = cursor + 1
+      continue
+    }
+    index += 1
+  }
+  return masked.join("")
+}
+
 async function declaredPageActions(root, sourcePath) {
   const sourceText = await readText(root, sourcePath)
-  const declaration = /export\s+const\s+pageActions\s*=\s*/u.exec(sourceText)
+  const lexicalSource = maskTypeScriptCommentsAndLiterals(sourceText, sourcePath)
+  const declaration = /export\s+const\s+pageActions\s*=\s*/u.exec(lexicalSource)
   if (!declaration) throw new Error(`${sourcePath} has no exported pageActions declaration`)
   const expressionStart = declaration.index + declaration[0].length
-  if (sourceText[expressionStart] !== "{") {
+  if (lexicalSource[expressionStart] !== "{") {
     throw new Error(`${sourcePath}#pageActions is not an object literal`)
   }
-  const expression = extractBalanced(sourceText, expressionStart, "{", "}")
+  const lexicalExpression = extractBalanced(lexicalSource, expressionStart, "{", "}")
+  const expression = sourceText.slice(expressionStart, expressionStart + lexicalExpression.length)
   const names = objectPropertyNames(expression, `${sourcePath}#pageActions`)
   if (new Set(names).size !== names.length) {
     throw new Error(`${sourcePath}#pageActions contains duplicate declarations`)

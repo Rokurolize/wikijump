@@ -332,6 +332,20 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
   })
 }
 
+async function replacePageActionsFixture(root, actionSource) {
+  const actionPath = "framerail/src/lib/server/load/page/page-actions.ts"
+  await writeText(root, actionPath, actionSource)
+  const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
+  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
+  for (const control of registry.missing_page_controls) {
+    const identity = control.source_identities.find(
+      ({ path: sourcePath }) => sourcePath === actionPath
+    )
+    identity.sha256 = sha256(actionSource)
+  }
+  await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+}
+
 function runCli(root, outputPath) {
   return spawnSync(process.execPath, [cliPath, "--root", root, "--output", outputPath], {
     encoding: "utf8"
@@ -615,23 +629,36 @@ test("CLI rejects an operation anchor absent from the declared pageActions objec
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-missing-page-action-"))
   cleanupFixture(t, root)
   await writeRepositoryFixture(root)
-  const actionPath = "framerail/src/lib/server/load/page/page-actions.ts"
   const actionSource = pageActionsFixtureSource.replace("edit: editAction,\n", "")
-  await writeText(root, actionPath, actionSource)
-  const registryPath = path.join(root, "docs/development/wikidot-page-action-surfaces.json")
-  const registry = JSON.parse(await fs.readFile(registryPath, "utf8"))
-  for (const control of registry.missing_page_controls) {
-    const identity = control.source_identities.find(
-      ({ path: sourcePath }) => sourcePath === actionPath
-    )
-    identity.sha256 = sha256(actionSource)
-  }
-  await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
+  await replacePageActionsFixture(root, actionSource)
 
   const result = runCli(root, path.join(root, "inventory.json"))
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /create edit is not declared by .*#pageActions/u)
+})
+
+test("CLI ignores pageActions declarations shadowed by TypeScript comments and strings", async (t) => {
+  const realDeclaration = pageActionsFixtureSource.replace("edit: editAction,\n", "")
+  const shadows = {
+    comment: "// export const pageActions = { edit: fake, deletedGet: fake, restore: fake }",
+    string: 'const shadow = "export const pageActions = { edit: fake, deletedGet: fake, restore: fake }"'
+  }
+  for (const [kind, shadow] of Object.entries(shadows)) {
+    await t.test(kind, async (t) => {
+      const root = await fs.mkdtemp(
+        path.join(os.tmpdir(), `compatibility-missing-page-${kind}-`)
+      )
+      cleanupFixture(t, root)
+      await writeRepositoryFixture(root)
+      await replacePageActionsFixture(root, `${shadow}\n${realDeclaration}`)
+
+      const result = runCli(root, path.join(root, "inventory.json"))
+
+      assert.equal(result.status, 1)
+      assert.match(result.stderr, /create edit is not declared by .*#pageActions/u)
+    })
+  }
 })
 
 test("CLI discovers GET, implicit HEAD, and FALLBACK for the production composite route", async () => {
