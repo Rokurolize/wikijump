@@ -48,7 +48,7 @@
       "case_id": "Q1032_STATIC_USER_MODULE_BASELINE",
       "issue": 1032,
       "status": "implemented_unverified",
-      "evidence_path": "/home/roku/wjlab/worktrees/open87-pr2/q-users-g1/install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
+      "evidence_path": "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
       "evidence_sha256": "bde2f0e6ef4daf8fe9f52134aec967a24f9187503f066338b5365439b3dac628",
       "result": "The integration base already has live-backed UserInfo no-user, SearchUsers disabled, Watchers empty, and WhoInvited initial-form branches in static_account_modules_match_live_preview_and_page_view_basics. This lane adds no production abstraction for those existing cases. Central regression execution remains outstanding."
     },
@@ -56,7 +56,7 @@
       "case_id": "Q1032_LISTUSERS_CURRENT_VIEWER_BASELINE",
       "issue": 1032,
       "status": "implemented_unverified",
-      "evidence_path": "/home/roku/wjlab/worktrees/open87-pr2/q-users-g1/install/local/wikidot-verification/artifacts/listusers-module-live-preview.json",
+      "evidence_path": "install/local/wikidot-verification/artifacts/listusers-module-live-preview.json",
       "evidence_sha256": "f20910497a983e6cb4e6be7688420d028bfbba7f16a514ed0eb263f538e37ffe",
       "result": "The integration base already implements the observed anonymous and authenticated users=. template contract in listusers_module_matches_live_preview_and_runtime_viewer. This lane adds no replacement query framework. Central regression execution remains outstanding."
     },

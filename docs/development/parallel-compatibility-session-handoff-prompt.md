@@ -18,7 +18,7 @@ The following records have different roles. Do not replace one with another.
 
 1. `/home/roku/wjlab/plan.md` is the enduring compatibility charter and defines completion. Read it completely. Starting SHA-256: `b79695e3eddc7de7e5185cce906ce8b241a4916cdc379e8e1d84fad042efd577`.
 2. `docs/development/parallel-compatibility-execution-plan.md` defines the dependency layers, ownership seams, and phase structure. Starting SHA-256: `b09d1b4e3466049ba30b087ab8250baeff12334fc58d37b5b9561f30ee2ec5a3`.
-3. `docs/development/open43-closure-audit-ownership-reconciliation.json` is the current acceptance-case state and ownership authority. Starting SHA-256: `76fd6405c8cbc2b3dfd80e765b31f279e0f812a87b740a3898da50afb9782f37`.
+3. `docs/development/open43-closure-audit-ownership-reconciliation.json` is the current acceptance-case state and ownership authority. Starting SHA-256: `b4504d84df672b277b1d20dde24adf8e4e62e9beaaf8584832848ba88603e60b`.
 4. `docs/development/open43-concurrency-ledger.json` is the historical source-execution ledger, not the current per-issue completion state. Starting SHA-256: `4732b2d02f0f061df32f4bdd72ce99ffdefadb3e120ee7cb128019d16856c857`.
 5. GitHub issue [#1354](https://github.com/Rokurolize/wikijump/issues/1354) is the live execution map. Native blocker edges and current comments, not issue number order or historical batch letters, determine readiness.
 6. Draft PR [#1353](https://github.com/Rokurolize/wikijump/pull/1353) is the current delivery and review surface. Keep its remote head synchronized with the exact locally validated commit.
