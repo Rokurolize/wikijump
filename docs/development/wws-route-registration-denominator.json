@@ -10,8 +10,8 @@
       },
       {
         "path": "wws/src/handler/file.rs",
-        "git_blob": "a4ab71a962c0d4928018ca2c61507c67f3ef50fa",
-        "sha256": "c160a63aa3ea41f782d005f536e1f372d9ad7197a6164ed5432ff1916dc0e8e3"
+        "git_blob": "567a9d139d08f4baf8a175acf3949a6c1bb03931",
+        "sha256": "4a6efef343c3130bc6ef4c2789a5768ec7864a24f49cca6c50145eb47a510c52"
       },
       {
         "path": "wws/src/handler/misc.rs",
@@ -25,8 +25,8 @@
       },
       {
         "path": "wws/src/handler/resized_image.rs",
-        "git_blob": "72ca924a73b1d23036eb4d5cfd3c578d675ef1b6",
-        "sha256": "3f47a26b1bf83fbc1bc81b33534635f7835dcc0d0a679e1a6c9e97c4b61141cf"
+        "git_blob": "b35f47291b8573f31673675482d956c5bd816998",
+        "sha256": "b76b217bc46052305a08491998ed256c6fbef9dbffe71bc573823f465fceae6a"
       },
       {
         "path": "wws/src/handler/robots.rs",
@@ -35,8 +35,8 @@
       },
       {
         "path": "wws/src/handler/text_block.rs",
-        "git_blob": "90f65ee074fd04c28f69cfb7064798d73233eb97",
-        "sha256": "71d6a56a0fbb95bcd5925ff2f767ee76d5653329242ec2965701c616b098d537"
+        "git_blob": "12e7f5689cda102998c3457051ec0002790c65cd",
+        "sha256": "3cf49aa80a0f2c3ff740881337af9a9f86cf2beacdbf7a51a74982d82d68ffa4"
       },
       {
         "path": "wws/src/handler/well_known.rs",
@@ -191,7 +191,7 @@
       "registered_handler_symbol": "handle_local_file",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L42",
-      "handler_definition_reference": "wws/src/handler/file.rs#L272",
+      "handler_definition_reference": "wws/src/handler/file.rs#L293",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -290,7 +290,7 @@
       "registered_handler_symbol": "handle_file_download",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L76",
-      "handler_definition_reference": "wws/src/handler/file.rs#L317",
+      "handler_definition_reference": "wws/src/handler/file.rs#L338",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },
@@ -301,7 +301,7 @@
       "registered_handler_symbol": "handle_file_fetch",
       "handler_definition_path": "wws/src/handler/file.rs",
       "route_registration_reference": "wws/src/route.rs#L66",
-      "handler_definition_reference": "wws/src/handler/file.rs#L285",
+      "handler_definition_reference": "wws/src/handler/file.rs#L306",
       "fallback_handler_symbol": null,
       "fallback_handler_definition_reference": null
     },

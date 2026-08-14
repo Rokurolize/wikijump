@@ -8879,8 +8879,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "4c0751ecb8cd38e55261a3a9b3c51fb653f60553",
-      "tree": "237050ce7d068171f644440de818dad8867ae5b8"
+      "commit": "566fdd089e58c13b6e8f212d50597416eaf96c86",
+      "tree": "9093d50b69327e535b4c552552db6ace34eda853"
     },
     "ftml": {
       "commit": "62ebba4efda1f10e82363c23c925061fbe939e49",
@@ -8957,11 +8957,11 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "4c27b82f674cb17962fb173eaf0d7d1b12b396b2d907bf1152d8ee2caf3954d6"
+        "sha256": "b10372a22729932a1b02b372e7803eac2ba23de7bfabcfb097528b9446569f0d"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "1d2182230aa99e7996da77b136160c325c76b720fdafe236061f1205c41ffaa8"
+        "sha256": "70ba63f33c5985a54a2b9b95272fc1d8d17b8eadf2d0f10cb49a6a745527d98a"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -8985,7 +8985,7 @@
       },
       {
         "path": "framerail/src/lib/server/xmlrpc/methods.ts",
-        "sha256": "878e04e8704d85efd2b052a76d86b62efd5f54cf851877936dff1e04f2169735"
+        "sha256": "c580941033831c02e20b1c650eab389c00b7675f90a74e09fc1e4d40fb1f3f83"
       },
       {
         "path": "framerail/src/routes/_admin/+page.server.ts",
@@ -13308,11 +13308,13 @@
         "cases": [],
         "tests": [
           "deepwell/tests/list_pages.rs",
+          "deepwell/tests/list_pages.rs#delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
           "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
           "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
           "deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation; wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
           "deepwell/tests/page.rs",
           "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance; listpages_imported_editor_identity_uses_structured_corpus_provenance; listpages_imported_commenter_identity_uses_structured_corpus_provenance; wikidot_listpages_feed_uses_imported_creator_identity_provenance",
           "deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal; listpages_aggregate_generated_output_budget_preserves_overflowing_module; listpages_following_paragraph_boundary_counts_toward_generated_output_budget; listpages_module_count_over_the_render_budget_remains_literal; listpages_module_source_over_the_render_budget_remains_literal; listpages_current_page_content_shares_the_module_work_budget",
           "deepwell/tests/page.rs#listpages_template_parser_functions_run_after_row_variable_substitution",
@@ -13346,6 +13348,7 @@
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-corpus-replay-final-20260806.json",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
           "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-runtime-budget-envelope.json",
+          "docs/wikidot-specifications/install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "docs/wikidot-specifications/live-observations.json",
           "docs/wikidot-specifications/specifications/module/module-listpages.md",
           "install/local/wikidot-verification/artifacts/countpages-inside-listpages-live.json",
@@ -13367,6 +13370,7 @@
           "install/local/wikidot-verification/artifacts/listpages-offset-extreme-boundary-live.jsonl",
           "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
           "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
+          "install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
           "install/local/wikidot-verification/artifacts/listpages-unquoted-comparison-discriminators-live.jsonl"
         ]
       },
