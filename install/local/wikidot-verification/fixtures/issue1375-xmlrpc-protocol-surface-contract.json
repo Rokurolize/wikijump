@@ -1,0 +1,221 @@
+{
+  "schema": "wikijump.issue1375.xmlrpc_protocol_surface_contract.v1",
+  "issue": 1375,
+  "repositories": [
+    {
+      "repository_id": "wikijump",
+      "revision": "acb51c30120317936e7da8a52c89d4ae062310eb"
+    },
+    {
+      "repository_id": "scp-wiki-translation",
+      "revision": "58b996999930e88dec937db5eaa6363c94b48b8e"
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "framerail-authentication",
+      "repository_id": "wikijump",
+      "path": "framerail/src/lib/server/xmlrpc/authentication.ts",
+      "sha256": "17b8f23d54ccf0145b945c8c0139bff8497f3135274275b80cbed0d2e8856425",
+      "anchor": "export async function getXmlRpcWritePrincipal("
+    },
+    {
+      "source_id": "framerail-handler",
+      "repository_id": "wikijump",
+      "path": "framerail/src/lib/server/xmlrpc/index.ts",
+      "sha256": "bda8d5299cbc5611a2d20f2827774b4a424fed9c49889775150f6a02c9b39707",
+      "anchor": "export const MAX_XML_RPC_BODY_BYTES = 67_108_864"
+    },
+    {
+      "source_id": "framerail-methods",
+      "repository_id": "wikijump",
+      "path": "framerail/src/lib/server/xmlrpc/methods.ts",
+      "sha256": "878e04e8704d85efd2b052a76d86b62efd5f54cf851877936dff1e04f2169735",
+      "anchor": "const MAX_XML_RPC_MULTICALLS = 100"
+    },
+    {
+      "source_id": "framerail-protocol",
+      "repository_id": "wikijump",
+      "path": "framerail/src/lib/server/xmlrpc/protocol.ts",
+      "sha256": "50749ee31035af72e9c0242e85a1fbd2eb793679abe6bde06866cc6ed012e1c9",
+      "anchor": "const XML_RPC_MAX_VALUE_DEPTH = 64"
+    },
+    {
+      "source_id": "framerail-resources",
+      "repository_id": "wikijump",
+      "path": "framerail/src/lib/server/xmlrpc/resource-methods.ts",
+      "sha256": "6e18513c6780ec44d7800811316d1de3f4da34e2d64fa62f1f9fd12f5daa1d66",
+      "anchor": "export const MAX_XML_RPC_FILE_BYTES = 50_000_000"
+    },
+    {
+      "source_id": "framerail-api-tests",
+      "repository_id": "wikijump",
+      "path": "framerail/tests/xmlrpc-api.spec.ts",
+      "sha256": "07afc1a578f4dbf68c885ac28f9f358cb32e56b5cb179ab5926e403c26799805",
+      "anchor": "test(\"XML-RPC endpoint supports system.multicall with partial faults\""
+    },
+    {
+      "source_id": "framerail-size-tests",
+      "repository_id": "wikijump",
+      "path": "framerail/tests/xmlrpc-request-size.test.js",
+      "sha256": "eb5b75cdefd896f3cc80f33ba62ac8ad5eee173e3512663c78478adc330cddf0",
+      "anchor": "test(\"files.save_one rejects decoded content over its configured limit\""
+    },
+    {
+      "source_id": "framerail-page-identity-tests",
+      "repository_id": "wikijump",
+      "path": "framerail/tests/xmlrpc-page-lifecycle-identities.test.js",
+      "sha256": "62c7a7a1c2fec2c084a6586bf69f58915e644e3ea25f24d088434bf59ab1fb8c",
+      "anchor": "test(\"pages.save_one preflights a new page actor before page creation\""
+    },
+    {
+      "source_id": "framerail-file-lifecycle-tests",
+      "repository_id": "wikijump",
+      "path": "framerail/tests/xmlrpc-file-upload-lifecycle.test.js",
+      "sha256": "0c096adc505a1e1d21b464a99215e0574b96af06adf6131e10d364dd56a4065b",
+      "anchor": "test(\"XML-RPC file save preserves its commit fault when pending cleanup also fails\""
+    },
+    {
+      "source_id": "framerail-page-slug-tests",
+      "repository_id": "wikijump",
+      "path": "framerail/tests/xmlrpc-save-canonical-slug-public-boundary.test.js",
+      "sha256": "6ca5a98bac06d4c45b6fa842466ab0b69ed459404a9c78af504bd578d8a3ebe5",
+      "anchor": "test(\"pages.save_one returns and follows the canonical slug from page_create\""
+    },
+    {
+      "source_id": "historical-pr1334-attribution",
+      "repository_id": "wikijump",
+      "path": "install/local/wikidot-verification/artifacts/pr1334-xmlrpc-surface-attribution-20260810.json",
+      "sha256": "ac6552961bec041fa6972bccdbcf7d8bab715591f298fc54fcb5e9b766e04010",
+      "anchor": "wikijump.pr1334.xmlrpc_surface_attribution.v1"
+    },
+    {
+      "source_id": "wikidot-api-reference",
+      "repository_id": "scp-wiki-translation",
+      "path": "scripts/WIKIDOT_API.md",
+      "sha256": "8f806c84032dd3e6067d2357b20f6f36d0ccc102623ac37b7ed4f1bed9314207",
+      "anchor": "# Wikidot API Reference"
+    }
+  ],
+  "protocol_records": [
+    {
+      "surface_id": "xmlrpc-protocol:authentication-boundary:http-basic",
+      "kind": "authentication-boundary",
+      "contract": "The HTTP endpoint requires complete Basic credentials and authenticates the application credentials separately from the write actor.",
+      "source_ids": ["framerail-handler", "framerail-api-tests", "wikidot-api-reference"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:authentication-boundary:actor-login",
+      "kind": "authentication-boundary",
+      "contract": "Actor-backed reads and writes obtain a Deepwell login session and reject missing, invalid, or unusable actor sessions before persistence.",
+      "source_ids": ["framerail-authentication", "framerail-page-identity-tests", "wikidot-api-reference"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:multicall-boundary:valid",
+      "kind": "multicall-boundary",
+      "contract": "A valid child call returns its value inside the multicall result array.",
+      "source_ids": ["framerail-methods", "framerail-api-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:multicall-boundary:invalid-child",
+      "kind": "multicall-boundary",
+      "contract": "An invalid child becomes a per-child fault without discarding successful siblings.",
+      "source_ids": ["framerail-methods", "framerail-api-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:multicall-boundary:nested",
+      "kind": "multicall-boundary",
+      "contract": "A nested system.multicall child returns fault -32600.",
+      "source_ids": ["framerail-methods", "framerail-api-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:multicall-boundary:count",
+      "kind": "multicall-boundary",
+      "contract": "One system.multicall accepts at most 100 child calls.",
+      "source_ids": ["framerail-methods", "framerail-api-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:fault-boundary:xml",
+      "kind": "fault-boundary",
+      "contract": "Protocol and method failures serialize as XML-RPC fault responses.",
+      "source_ids": ["framerail-protocol", "framerail-api-tests", "wikidot-api-reference"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:fault-boundary:http",
+      "kind": "fault-boundary",
+      "contract": "Authentication, method, request-size, and file-size failures may carry HTTP 401, 405, or 413 while retaining an XML-RPC fault body.",
+      "source_ids": ["framerail-handler", "framerail-protocol", "framerail-api-tests", "framerail-size-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:resource-boundary:body-bytes",
+      "kind": "resource-boundary",
+      "contract": "The request body ceiling is 67108864 bytes and is enforced against declared and streamed bytes.",
+      "source_ids": ["framerail-handler", "framerail-size-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:resource-boundary:value-depth",
+      "kind": "resource-boundary",
+      "contract": "XML-RPC values permit fewer than 64 nested value levels.",
+      "source_ids": ["framerail-protocol", "framerail-api-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:resource-boundary:node-budget",
+      "kind": "resource-boundary",
+      "contract": "All request parameters share one 10000-value structural node budget.",
+      "source_ids": ["framerail-protocol", "framerail-api-tests"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:resource-boundary:filter-count",
+      "kind": "resource-boundary",
+      "contract": "Generic page and category filter arrays are capped at 100, while tag page filters and batch get arrays are capped at 10 where defined.",
+      "source_ids": ["framerail-resources", "framerail-api-tests", "wikidot-api-reference"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:resource-boundary:file-bytes",
+      "kind": "resource-boundary",
+      "contract": "files.get_one is capped at 6000000 bytes and files.save_one decoded content is capped at 50000000 bytes.",
+      "source_ids": ["framerail-resources", "framerail-api-tests", "framerail-size-tests", "wikidot-api-reference"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:resource-boundary:upload-timeout",
+      "kind": "resource-boundary",
+      "contract": "The presigned blob PUT times out after 30000 milliseconds and becomes XML-RPC fault -32603.",
+      "source_ids": ["framerail-resources"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:persistence-boundary:page",
+      "kind": "persistence-boundary",
+      "contract": "Page create, update, parent replacement, and rename use actor context; preflight failures perform no write; the returned page follows the canonical created or moved slug.",
+      "source_ids": ["framerail-resources", "framerail-page-identity-tests", "framerail-page-slug-tests", "wikidot-api-reference"]
+    },
+    {
+      "surface_id": "xmlrpc-protocol:persistence-boundary:file",
+      "kind": "persistence-boundary",
+      "contract": "File create or update commits a pending blob and rereads metadata; a failed commit attempts pending-blob cancellation while preserving the commit fault.",
+      "source_ids": ["framerail-resources", "framerail-size-tests", "framerail-file-lifecycle-tests", "wikidot-api-reference"]
+    }
+  ],
+  "historical_attribution": {
+    "source_id": "historical-pr1334-attribution",
+    "method_count": 17,
+    "record_count": 31,
+    "role": "historical-source-attribution-only"
+  },
+  "authority_gaps": [
+    {
+      "gap_id": "xmlrpc-gap:authenticated-wikidot-protocol-observation",
+      "required_authority": "authenticated-xmlrpc",
+      "unverified_outcome": "Current Wikidot responses for valid and invalid Basic authentication, actor identity, multicall child handling, faults, limits, and timeout behavior require credentialed read authority."
+    },
+    {
+      "gap_id": "xmlrpc-gap:run-owned-page-persistence",
+      "required_authority": "run-owned-persistence",
+      "unverified_outcome": "A fresh page create, update, rename, reread, and cleanup matrix requires authority over a run-owned Wikidot page."
+    },
+    {
+      "gap_id": "xmlrpc-gap:run-owned-file-persistence",
+      "required_authority": "run-owned-persistence",
+      "unverified_outcome": "A fresh file create, update, download, metadata reread, and cleanup matrix requires authority over a run-owned Wikidot attachment."
+    }
+  ]
+}
