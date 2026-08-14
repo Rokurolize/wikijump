@@ -11,6 +11,19 @@ const toolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const cliPath = path.join(toolRoot, "scripts/build-compatibility-surface-inventory.mjs")
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+const wikidotPySource = {
+  repository: "Rokurolize/wikidot.py",
+  commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
+  root_tree: "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+  objects: [
+    { path: "src/wikidot", type: "tree", oid: "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38" },
+    { path: "src/wikidot/module", type: "tree", oid: "514e1dfe6cada07f123f4f922c815fafe71ccc4b" },
+    { path: "src/wikidot/connector", type: "tree", oid: "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f" },
+    { path: "src/wikidot/connector/ajax.py", type: "blob", oid: "9566f18a37cee098c371519963eeaadb56121e81" },
+    { path: "pyproject.toml", type: "blob", oid: "7d2ed894e868994ce41af5fa83b4494fcb43cd07" },
+    { path: "uv.lock", type: "blob", oid: "30a21e269683d755c5715cc937e332c8442143aa" }
+  ]
+}
 const pageActionsFixtureSource = `export const pageActions = {
   edit: editAction,
   deletedGet: deletedGetAction,
@@ -245,7 +258,7 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
   )
   await writeJson(root, "docs/development/wikidot-py-amc-client-parity.json", {
     schema: "wikijump.wikidot_py_amc_client_parity.v1",
-    source: { commit: "a".repeat(40) },
+    source: wikidotPySource,
     modules: [
       {
         module_name: "viewsource/ViewSourceModule",
@@ -361,6 +374,34 @@ function runCli(root, outputPath) {
   })
 }
 
+test("CLI rejects supported wikidot.py source identity drift", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const contractPath = path.join(root, "docs/development/wikidot-py-amc-client-parity.json")
+  const contract = JSON.parse(await fs.readFile(contractPath, "utf8"))
+  const drifts = [
+    (source) => { source.repository = "example/wikidot.py" },
+    (source) => { source.commit = "a".repeat(40) },
+    (source) => { source.root_tree = "a".repeat(40) },
+    (source) => { source.objects.find(({ path }) => path === "src/wikidot").oid = "a".repeat(40) },
+    (source) => { source.objects.find(({ path }) => path === "src/wikidot/module").oid = "a".repeat(40) },
+    (source) => { source.objects.find(({ path }) => path === "src/wikidot/connector").oid = "a".repeat(40) },
+    (source) => { source.objects.find(({ path }) => path === "src/wikidot/connector/ajax.py").oid = "a".repeat(40) },
+    (source) => { source.objects.find(({ path }) => path === "pyproject.toml").oid = "a".repeat(40) },
+    (source) => { source.objects.find(({ path }) => path === "uv.lock").oid = "a".repeat(40) }
+  ]
+
+  for (const drift of drifts) {
+    const changed = structuredClone(contract)
+    drift(changed.source)
+    await fs.writeFile(contractPath, `${JSON.stringify(changed, null, 2)}\n`)
+    const result = runCli(root, path.join(root, "inventory.json"))
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /wikidot-py-amc-client-parity\.json source identity drift/u)
+  }
+})
+
 test("CLI discovers declared public surfaces and writes deterministic completion fields", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-"))
   cleanupFixture(t, root)
@@ -374,6 +415,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.equal(inventory.sources.live_observations, "docs/wikidot-specifications/live-observations.json")
+  assert.deepEqual(inventory.sources.wikidot_py_source, wikidotPySource)
   assert.deepEqual(inventory.counts, {
     total: 30,
     by_kind: {

@@ -10,6 +10,19 @@ const SCHEMA = "wikijump.compatibility_surface_inventory.v1"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
+const WIKIDOT_PY_SOURCE = {
+  repository: "Rokurolize/wikidot.py",
+  commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
+  root_tree: "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+  objects: new Map([
+    ["src/wikidot", ["tree", "e4c0e5299b6b68c771a2bf263c656d73f2ffdd38"]],
+    ["src/wikidot/module", ["tree", "514e1dfe6cada07f123f4f922c815fafe71ccc4b"]],
+    ["src/wikidot/connector", ["tree", "5e53e6b1bb4cc3591055100c99fcc8ed53ef0a7f"]],
+    ["src/wikidot/connector/ajax.py", ["blob", "9566f18a37cee098c371519963eeaadb56121e81"]],
+    ["pyproject.toml", ["blob", "7d2ed894e868994ce41af5fa83b4494fcb43cd07"]],
+    ["uv.lock", ["blob", "30a21e269683d755c5715cc937e332c8442143aa"]]
+  ])
+}
 
 const PHASE_STATUSES = {
   evidence: new Set(["available", "partial", "missing", "blocked"]),
@@ -915,8 +928,21 @@ async function discoverWikidotPyAmc(root) {
   if (contract.schema !== "wikijump.wikidot_py_amc_client_parity.v1") {
     throw new Error(`unknown Wikidot.py AMC contract schema: ${contract.schema}`)
   }
-  if (!/^[0-9a-f]{40}$/u.test(contract.source?.commit ?? "")) {
-    throw new Error(`${contractPath} source commit must be a full Git commit`)
+  const objects = contract.source?.objects
+  const objectPaths = Array.isArray(objects) ? objects.map(({ path: objectPath }) => objectPath) : []
+  if (
+    contract.source?.repository !== WIKIDOT_PY_SOURCE.repository ||
+    contract.source?.commit !== WIKIDOT_PY_SOURCE.commit ||
+    contract.source?.root_tree !== WIKIDOT_PY_SOURCE.root_tree ||
+    !Array.isArray(objects) ||
+    objects.length !== WIKIDOT_PY_SOURCE.objects.size ||
+    new Set(objectPaths).size !== objectPaths.length ||
+    objects.some(({ path: objectPath, type, oid }) => {
+      const expected = WIKIDOT_PY_SOURCE.objects.get(objectPath)
+      return expected?.[0] !== type || expected?.[1] !== oid
+    })
+  ) {
+    throw new Error(`${contractPath} source identity drift`)
   }
   if (!Array.isArray(contract.modules)) {
     throw new Error(`${contractPath} modules must be an array`)
@@ -1875,6 +1901,16 @@ async function buildInventory(root) {
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",
       framerail_amc_wire_contracts: "docs/development/framerail-amc-wire-contracts.json",
       wikidot_py_amc_contract: "docs/development/wikidot-py-amc-client-parity.json",
+      wikidot_py_source: {
+        repository: WIKIDOT_PY_SOURCE.repository,
+        commit: WIKIDOT_PY_SOURCE.commit,
+        root_tree: WIKIDOT_PY_SOURCE.root_tree,
+        objects: [...WIKIDOT_PY_SOURCE.objects].map(([objectPath, [type, oid]]) => ({
+          path: objectPath,
+          type,
+          oid
+        }))
+      },
       framerail_xmlrpc_registry: "framerail/src/lib/server/xmlrpc/methods.ts",
       page_action_registry: "docs/development/wikidot-page-action-surfaces.json",
       wws_route_registry: "wws/src/route.rs",
