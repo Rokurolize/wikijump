@@ -1971,6 +1971,16 @@
           "scope": "public page_create to anonymous page_view matrix verifies direct executable mixed-whitespace ListPages and an FTML-supported whitespace-prefixed include of ListPages refresh top and side navigation after the first revision is attached, while code-owned and invalid module names keep the registered revision in its initial-render lifecycle state"
         },
         {
+          "path": "deepwell/tests/list_pages.rs",
+          "name": "delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
+          "scope": "public PagePreview regression proves a delayed ListPages row is evaluated while its completed HTML opener, closer, and escaped payload remain literal"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "listpages_generated_html_preview_saved_section_controls",
+          "scope": "public PagePreview and saved page_view lifecycle matrix covers empty section zero and out-of-range positive controls plus nonempty section and invalid-opener negative controls without recognizing captured page content"
+        },
+        {
           "path": "framerail/tests/list-pages-feed.test.ts",
           "scope": "public feed-route parsing and RSS response behavior"
         },
@@ -2067,6 +2077,7 @@
         "docs/wikidot-specifications/specifications/module/module-listpages.md",
         "docs/wikidot-specifications/live-observations.json",
         "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
+        "install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/documentation-inventory.json",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-invocations.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-campaign-inventory/corpus-listpages-clusters.json",
@@ -2098,7 +2109,8 @@
         "install/local/wikidot-verification/artifacts/listpages-offset-extreme-boundary-live.jsonl",
         "install/local/wikidot-verification/artifacts/listpages-current-tag-selectors-live-20260730.json",
         "install/local/wikidot-verification/artifacts/listpages-random-idle-cache-live-20260730.json",
-        "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json"
+        "install/local/wikidot-verification/artifacts/listpages-p8-temporal-boundary-live-20260730.json",
+        "install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json"
       ],
       "delivery_evidence": [
         {
@@ -4502,6 +4514,9 @@
         "evidence": [
           "live:listpages-invalid-numeric-fallbacks",
           "live:listpages-duplicate-and-alias-precedence",
+          "live:listpages-preview-and-saved-html-context-20260730",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
+          "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-generated-preview-reconciliation.json",
           "test:deepwell/tests/page.rs#listpages_reverse_boolean_coercion_matches_live_wikidot",
           "test:deepwell/tests/page.rs#listpages_categories_alias_selects_only_default_category_rows"
@@ -4515,6 +4530,10 @@
           "live:listpages-title-variable-parser-context",
           "live:listpages-legacy-and-body-edge-behavior",
           "live:countpages-inside-listpages-body",
+          "live:listpages-preview-and-saved-html-context-20260730",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
+          "test:deepwell/tests/list_pages.rs#delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
+          "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "test:deepwell/tests/page.rs#ajax_listpages_recursively_renders_balanced_nested_modules",
           "test:deepwell/tests/page.rs#listpages_generated_pager_keeps_ascii_dots_after_authored_typography",
           "test:deepwell/tests/page.rs#countpages_inside_listpages_body_matches_live_empty_item_behavior"
@@ -4527,6 +4546,8 @@
           "live:listpages-imported-lifecycle-identity-provenance",
           "live:data-form-checkbox-control-storage-and-variable-contract",
           "live:data-form-wiki-control-rendering-and-variable-contract",
+          "live:listpages-preview-and-saved-html-context-20260730",
+          "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "artifact:install/local/wikidot-verification/artifacts/listpages-imported-lifecycle-identity-live.json",
           "test:deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance",
           "test:deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
@@ -4584,6 +4605,9 @@
         "evidence": [
           "live:listpages-template-variable-rendering",
           "live:listpages-rss-link-and-rssonly",
+          "live:listpages-preview-and-saved-html-context-20260730",
+          "artifact:install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
+          "test:deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
           "artifact:install/local/wikidot-verification/artifacts/listpages-campaign-navigation-coverage.json",
           "test:deepwell/tests/page.rs#listpages_combined_and_separate_templates_match_live_container_dom",
           "test:framerail/tests/list-pages-navigation.spec.ts#ListPages pagination survives direct loads, reload, and browser history"

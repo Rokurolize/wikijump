@@ -801,7 +801,7 @@ async fn delayed_listpages_rows_keep_wikidot_whitespace_boundaries() {
 }
 
 #[tokio::test]
-async fn delayed_listpages_rows_register_authored_html_blocks() {
+async fn delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview() {
     const TARGET_SLUG: &str = "listpages-delayed-html-block-target";
 
     let mut runner = TestRunner::setup().await;
@@ -852,11 +852,14 @@ async fn delayed_listpages_rows_register_authored_html_blocks() {
     .body;
 
     assert!(
-        preview.contains(r#"class="html-block-iframe""#)
-            && preview.contains(r#"src="/search:site/html/"#)
-            && !preview.contains(r#"src="https://example.com/""#)
-            && !preview.contains("ROW_HTML_PAYLOAD"),
-        "ListPages HTML blocks must retain their runtime route metadata after delayed binding:\n{preview}",
+        preview.contains("[[html]]")
+            && preview.contains("[[/html]]")
+            && preview.contains("ListPages Delayed HTML Block Target")
+            && preview.contains("&lt;strong&gt;ROW_HTML_PAYLOAD&lt;/strong&gt;")
+            && !preview.contains("%%title%%")
+            && !preview.contains("[[module ListPages")
+            && !preview.contains("html-block-iframe"),
+        "PagePreview must keep delayed ListPages HTML blocks literal:\n{preview}",
     );
 }
 

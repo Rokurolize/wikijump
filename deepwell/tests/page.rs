@@ -16155,6 +16155,145 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
 }
 
 #[tokio::test]
+async fn listpages_generated_html_preview_saved_section_controls() {
+    const TARGET_SLUG: &str = "fixture-listpages-section-zero-html-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "ListPages Section Zero HTML Target",
+        "SECTION_ONE",
+    )
+    .await;
+    for (case, section, opener, marker, executes_when_saved) in [
+        ("section-zero", 0, "html", "SECTION_ZERO_HTML", true),
+        (
+            "section-out-of-range",
+            999,
+            "html",
+            "SECTION_OUT_OF_RANGE_HTML",
+            true,
+        ),
+        ("section-one", 1, "html", "SECTION_ONE_HTML", false),
+        ("invalid-opener", 0, "htmlx", "INVALID_OPENER_HTML", false),
+    ] {
+        let consumer_slug = format!("fixture-listpages-generated-html-{case}");
+        let source = format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "ROW_EVALUATED:%%title%%\n",
+                "[[%%content{{{}}}%%{}]]\n",
+                "<b>{}</b>\n",
+                "[[/html]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG, section, opener, marker,
+        );
+
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("ListPages generated HTML {case} preview"),
+                "wikitext": &source,
+            }),
+        );
+        assert!(
+            preview
+                .body
+                .contains(&format!("&lt;b&gt;{marker}&lt;/b&gt;"))
+                && preview
+                    .body
+                    .contains("ROW_EVALUATED:ListPages Section Zero HTML Target")
+                && !preview.body.contains("%%content{")
+                && !preview.body.contains("%%title%%")
+                && !preview.body.contains("[[module ListPages")
+                && !preview.body.contains("html-block-iframe"),
+            "{case} PagePreview must evaluate the row while keeping its generated HTML shape literal:\n{}",
+            preview.body,
+        );
+        if executes_when_saved {
+            assert!(
+                preview.body.contains("[[html]]") && preview.body.contains("[[/html]]"),
+                "{case}: {}",
+                preview.body
+            );
+        } else if section == 1 {
+            assert!(
+                preview.body.contains("[[SECTION_ONEhtml]]")
+                    && preview.body.contains("[[/html]]"),
+                "{case} must preserve the nonempty-section opener and literal closer: {}",
+                preview.body,
+            );
+        } else {
+            assert!(
+                preview.body.contains("[[htmlx]]") && preview.body.contains("[[/html]]"),
+                "{case} must preserve the invalid opener and literal closer: {}",
+                preview.body,
+            );
+        }
+
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &consumer_slug,
+            &format!("ListPages Generated HTML {case}"),
+            &source,
+        )
+        .await;
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": &consumer_slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        let GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } = view
+        else {
+            panic!("expected saved generated HTML consumer, got {view:?}");
+        };
+        assert_eq!(
+            compiled_body_html.contains("html-block-iframe"),
+            executes_when_saved,
+            "{case} saved view used the wrong HTML execution state:\n{compiled_body_html}",
+        );
+        if executes_when_saved {
+            assert!(
+                compiled_body_html.contains(&format!(r#"src="/{consumer_slug}/html/1""#))
+                    && !compiled_body_html.contains(marker),
+                "{case} saved HTML must use its hosted iframe:\n{compiled_body_html}",
+            );
+        } else {
+            assert!(
+                compiled_body_html.contains(&format!("&lt;b&gt;{marker}&lt;/b&gt;"))
+                    && compiled_body_html
+                        .contains("ROW_EVALUATED:ListPages Section Zero HTML Target"),
+                "{case} saved non-HTML output must retain the evaluated row and escaped payload:\n{compiled_body_html}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

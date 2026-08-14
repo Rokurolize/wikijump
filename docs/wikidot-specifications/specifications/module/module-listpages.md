@@ -547,10 +547,12 @@ Normative behavior:
 - The rule is actor-independent for the anonymous, administrator, ordinary-member, and non-member roles observed on the controlled sandbox.
 - Saved-page rendering retains the executable html-block-iframe behavior for a complete HTML block.
 - Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML.
+- For a ListPages row opener composed from a selected page section, empty section zero and an out-of-range section complete [[html]], while a nonempty section or a different opener suffix does not; preview keeps every completed block literal and a saved view executes only the completed HTML blocks.
 
 Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+- `install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json` (SHA-256 `c1494f51b8445948a22321b70a671c475387415d1478e308feb0dce7b7e783f0`), cases: `issue-1383-preview-section-zero-positive`, `issue-1383-preview-out-of-range-positive`, `issue-1383-preview-section-one-negative`, `issue-1383-preview-invalid-opener-negative`
 
 ### ListPages keys, quoting, operators, and duplicate state use per-argument source grammar
 

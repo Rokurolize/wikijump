@@ -1058,6 +1058,7 @@ fn seal_list_pages_delayed_output_with_modes(
     })?;
     let mut list_settings =
         WikitextSettings::from_mode(WikitextMode::List, settings.layout);
+    list_settings.enable_html_blocks = settings.enable_html_blocks;
     list_settings.list_pages_inline = list_pages_inline;
     let delayed_tree = parse_delayed_list(&delayed_input, page_info, &list_settings)
         .map_err(|error| {
