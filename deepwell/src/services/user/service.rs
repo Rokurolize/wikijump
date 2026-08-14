@@ -223,10 +223,18 @@ impl UserService {
             // has a matching slug. Import activation uses the Wikidot ID as
             // the identity and may choose a new Wikijump name.
             Some(user_id) => {
+                let wikidot_user_id = i32::try_from(user_id).map_err(|_| {
+                    Error::new(
+                        format!(
+                            "cannot create user with ID {user_id}, which does not fit in a Wikidot user ID"
+                        ),
+                        ErrorType::BadRequest,
+                    )
+                })?;
                 let result = WikidotUser::find()
                     .filter(
                         Condition::all()
-                            .add(wikidot_user::Column::UserId.eq(user_id))
+                            .add(wikidot_user::Column::UserId.eq(wikidot_user_id))
                             .add(wikidot_user::Column::IsDeleted.eq(false)),
                     )
                     .one(txn)
