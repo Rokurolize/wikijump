@@ -8,6 +8,10 @@ import test from "node:test"
 
 const root = new URL("../../../../", import.meta.url)
 const registryPath = new URL("docs/development/framerail-route-action-evidence.json", root)
+const browserContractPath = new URL(
+  "install/local/wikidot-verification/fixtures/framerail-route-action-browser/run-contract.json",
+  root
+)
 const execFileAsync = promisify(execFile)
 const gitEnvironment = Object.freeze({
   GIT_CONFIG_GLOBAL: "/dev/null",
@@ -180,4 +184,58 @@ test("Framerail evidence verifier rejects invented and poisoned source identitie
   const staleInventory = structuredClone(registry)
   staleInventory.inventory.sha256 = "0".repeat(64)
   await assert.rejects(verifyRegistry(staleInventory))
+})
+
+test("issue #1372 browser run contract is complete, source-bound, and blocked", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  assert.equal(contract.schema, "wikijump.framerail_route_action_browser_run.v1")
+  assert.equal(contract.issue, 1372)
+  assert.equal(contract.status, "blocked_authority")
+  assert.match(contract.source_revision, /^[0-9a-f]{40}$/u)
+
+  const registryBytes = await gitBlob(contract.source_revision, contract.evidence_registry.path)
+  assert.equal(
+    createHash("sha256").update(registryBytes).digest("hex"),
+    contract.evidence_registry.sha256
+  )
+  const registry = JSON.parse(registryBytes.toString("utf8"))
+  const expectedSubjectIds = registry.records.flatMap(({ temporal }) => temporal.map(({ id }) => id))
+  assert.deepEqual(contract.subjects.map(({ id }) => id).sort(), expectedSubjectIds.sort())
+  assert.equal(new Set(contract.subjects.map(({ id }) => id)).size, 14)
+  assert.deepEqual(contract.required_intervals, missingIntervals)
+  assert.equal(contract.subjects.length * contract.required_intervals.length, 84)
+  for (const subject of contract.subjects) {
+    assert.ok(subject.trigger_selectors.length > 0, `${subject.id} has no trigger`)
+    assert.match(subject.settled_selector, /^[#.]/u)
+  }
+
+  assert.deepEqual(contract.actor_classes, ["denied", "permitted"])
+  assert.deepEqual(contract.result_controls, ["denial", "failure", "success"])
+  assert.equal(contract.layout, "wikidot")
+  assert.deepEqual(contract.preflight_required, [
+    "authority_state_sha256",
+    "browser_identity",
+    "evidence_output_path",
+    "failure_control_identity",
+    "fixture_identity",
+    "run_id",
+    "runtime_identity"
+  ])
+  assert.deepEqual(contract.evidence_fields, [
+    "actor_class", "browser_identity", "console_errors", "dom", "failed_requests",
+    "http_errors", "interval", "page_errors", "runtime_identity", "screenshot",
+    "source_revision", "subject_id", "timestamp", "url"
+  ])
+  assert.deepEqual(contract.authority, {
+    required: ["browser", "run-owned-fixture-mutation", "run-owned-runtime"],
+    current: "not_authorized",
+    source: "/home/roku/wjlab/state/current.json"
+  })
+  assert.deepEqual(contract.historical_evidence, {
+    path: "/home/roku/wjlab/evidence/page-pane-lazy-browser-20260713.json",
+    sha256: "17b9b5215d40c32123ada66b43c5d5a37ea4a06a37bf2ebf99c0595e39c61ba9",
+    classification: "historical_history_only"
+  })
+  assert.equal(contract.cleanup.required, true)
+  assert.equal(contract.cleanup.protected_resources_must_remain_unchanged, true)
 })

@@ -1,0 +1,147 @@
+{
+  "schema": "wikijump.framerail_route_action_browser_run.v1",
+  "issue": 1372,
+  "status": "blocked_authority",
+  "source_revision": "c41c1a61b232873debc601872523020a7255e98a",
+  "evidence_registry": {
+    "path": "docs/development/framerail-route-action-evidence.json",
+    "sha256": "b55456ad096a249c78d20b5c117f7f0ab5c5d87aff0cbe046089e3f1bbf145c4"
+  },
+  "historical_evidence": {
+    "path": "/home/roku/wjlab/evidence/page-pane-lazy-browser-20260713.json",
+    "sha256": "17b9b5215d40c32123ada66b43c5d5a37ea4a06a37bf2ebf99c0595e39c61ba9",
+    "classification": "historical_history_only"
+  },
+  "authority": {
+    "required": [
+      "browser",
+      "run-owned-fixture-mutation",
+      "run-owned-runtime"
+    ],
+    "current": "not_authorized",
+    "source": "/home/roku/wjlab/state/current.json"
+  },
+  "browser_interface": "served Framerail route",
+  "layout": "wikidot",
+  "preflight_required": [
+    "authority_state_sha256",
+    "browser_identity",
+    "evidence_output_path",
+    "failure_control_identity",
+    "fixture_identity",
+    "run_id",
+    "runtime_identity"
+  ],
+  "actor_classes": [
+    "denied",
+    "permitted"
+  ],
+  "result_controls": [
+    "denial",
+    "failure",
+    "success"
+  ],
+  "required_intervals": [
+    "denial",
+    "failure",
+    "loading",
+    "selection",
+    "settled",
+    "success"
+  ],
+  "evidence_fields": [
+    "actor_class",
+    "browser_identity",
+    "console_errors",
+    "dom",
+    "failed_requests",
+    "http_errors",
+    "interval",
+    "page_errors",
+    "runtime_identity",
+    "screenshot",
+    "source_revision",
+    "subject_id",
+    "timestamp",
+    "url"
+  ],
+  "subjects": [
+    {
+      "id": "control:create",
+      "trigger_selectors": ["#create-it-now-link a"],
+      "settled_selector": "#editor"
+    },
+    {
+      "id": "control:restore",
+      "trigger_selectors": ["#restore-button"],
+      "settled_selector": "#page-restore"
+    },
+    {
+      "id": "pane:append",
+      "trigger_selectors": ["#more-options-button", "#edit-append-button"],
+      "settled_selector": "#page-append"
+    },
+    {
+      "id": "pane:backlinks",
+      "trigger_selectors": ["#more-options-button", "#backlinks-button"],
+      "settled_selector": "#page-backlinks-list"
+    },
+    {
+      "id": "pane:delete",
+      "trigger_selectors": ["#more-options-button", "#delete-button"],
+      "settled_selector": "#page-delete"
+    },
+    {
+      "id": "pane:edit-meta",
+      "trigger_selectors": ["#more-options-button", "#edit-meta-button"],
+      "settled_selector": "#edit-meta-newtag"
+    },
+    {
+      "id": "pane:layout",
+      "trigger_selectors": ["#more-options-button", "#layout-button"],
+      "settled_selector": "#page-layout"
+    },
+    {
+      "id": "pane:lock",
+      "trigger_selectors": ["#more-options-button", "#lock-page-button"],
+      "settled_selector": "#page-lock"
+    },
+    {
+      "id": "pane:move",
+      "trigger_selectors": ["#more-options-button", "#rename-move-button"],
+      "settled_selector": "#page-move"
+    },
+    {
+      "id": "pane:parent",
+      "trigger_selectors": ["#more-options-button", "#parent-page-button"],
+      "settled_selector": "#page-parent"
+    },
+    {
+      "id": "pane:site-tools",
+      "trigger_selectors": ["#site-tools-button"],
+      "settled_selector": "#action-area [role=\"toolbar\"]"
+    },
+    {
+      "id": "pane:tags",
+      "trigger_selectors": ["#tags-button"],
+      "settled_selector": "#page-tags"
+    },
+    {
+      "id": "pane:vote",
+      "trigger_selectors": ["#pagerate-button"],
+      "settled_selector": ".page-rate-widget-area"
+    },
+    {
+      "id": "pane:watchers",
+      "trigger_selectors": ["#more-options-button", "#watchers-button"],
+      "settled_selector": ".page-watchers-header"
+    }
+  ],
+  "cleanup": {
+    "required": true,
+    "run_owned_fixture_restored_or_removed": true,
+    "browser_state_removed": true,
+    "runtime_stopped": true,
+    "protected_resources_must_remain_unchanged": true
+  }
+}
