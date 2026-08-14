@@ -1803,11 +1803,12 @@ test("candidate binding fails closed on identity mismatches", async (t) => {
   }
 });
 
-test("stack controller has no candidate build path", async () => {
+test("stack controller uses the active Node executable and has no candidate build path", async () => {
   const source = await fsp.readFile(
     new URL("../scripts/run-generic-runtime-differential-stack.mjs", import.meta.url),
     "utf8",
   );
+  assert.match(source, /const NODE = process\.execPath;/u);
   assert.doesNotMatch(source, /build-deepwell-candidate|CARGO_TARGET_DIR|cargo build/u);
 });
 

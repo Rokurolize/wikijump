@@ -11,7 +11,7 @@ import {main} from "../scripts/run-identity-bound-differential.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REPOSITORY = fileURLToPath(new URL("../../../..", import.meta.url));
-const NODE = "/usr/bin/node";
+const NODE = process.execPath;
 const GIT = "/usr/bin/git";
 const DOCKER = "/usr/bin/docker";
 const STACK = path.join(ROOT, "scripts/run-generic-runtime-differential-stack.mjs");
