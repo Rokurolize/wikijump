@@ -24,6 +24,30 @@ const wikidotPySource = {
     { path: "uv.lock", type: "blob", oid: "30a21e269683d755c5715cc937e332c8442143aa" }
   ]
 }
+const wikidotPyModuleNames = [
+  "changes/SiteChangesListModule",
+  "dashboard/messages/DMInboxModule",
+  "dashboard/messages/DMSentModule",
+  "dashboard/messages/DMViewMessageModule",
+  "edit/EditMetaModule",
+  "files/PageFilesModule",
+  "forum/ForumCommentsListModule",
+  "forum/ForumStartModule",
+  "forum/ForumViewCategoryModule",
+  "forum/ForumViewThreadModule",
+  "forum/ForumViewThreadPostsModule",
+  "forum/sub/ForumEditPostFormModule",
+  "forum/sub/ForumPostRevisionModule",
+  "forum/sub/ForumPostRevisionsModule",
+  "history/PageRevisionListModule",
+  "history/PageSourceModule",
+  "history/PageVersionModule",
+  "list/ListPagesModule",
+  "managesite/ManageSiteMembersApplicationsModule",
+  "membership/MembersListModule",
+  "pagerate/WhoRatedPageModule",
+  "viewsource/ViewSourceModule"
+]
 const pageActionsFixtureSource = `export const pageActions = {
   edit: editAction,
   deletedGet: deletedGetAction,
@@ -259,21 +283,13 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
   await writeJson(root, "docs/development/wikidot-py-amc-client-parity.json", {
     schema: "wikijump.wikidot_py_amc_client_parity.v1",
     source: wikidotPySource,
-    modules: [
-      {
-        module_name: "viewsource/ViewSourceModule",
-        parameters: ["page_id"],
-        status: "supported",
-        source_reference: "src/wikidot/module/page.py#source"
-      },
-      {
-        module_name: "history/PageRevisionListModule",
-        parameters: ["page_id"],
-        status: "unsupported_unevidenced",
-        gap: "fixture gap",
-        source_reference: "src/wikidot/module/page.py#history"
-      }
-    ]
+    modules: wikidotPyModuleNames.map((moduleName) => ({
+      module_name: moduleName,
+      parameters: [],
+      status: "unsupported_unevidenced",
+      gap: "fixture gap",
+      source_reference: "src/wikidot/module/fixture.py#fixture"
+    }))
   })
   await writeText(
     root,
@@ -387,9 +403,10 @@ async function replacePageActionsFixture(root, actionSource) {
   await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
 }
 
-function runCli(root, outputPath) {
+function runCli(root, outputPath, env = process.env) {
   return spawnSync(process.execPath, [cliPath, "--root", root, "--output", outputPath], {
-    encoding: "utf8"
+    encoding: "utf8",
+    env
   })
 }
 
@@ -421,6 +438,21 @@ test("CLI rejects supported wikidot.py source identity drift", async (t) => {
   }
 })
 
+test("CLI rejects an omitted or duplicate pinned wikidot.py module", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const contractPath = path.join(root, "docs/development/wikidot-py-amc-client-parity.json")
+  const contract = JSON.parse(await fs.readFile(contractPath, "utf8"))
+
+  for (const modules of [contract.modules.slice(1), [...contract.modules, contract.modules[0]]]) {
+    await fs.writeFile(contractPath, `${JSON.stringify({ ...contract, modules }, null, 2)}\n`)
+    const result = runCli(root, path.join(root, "inventory.json"))
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /wikidot-py-amc-client-parity\.json module denominator drift/u)
+  }
+})
+
 test("CLI discovers declared public surfaces and writes deterministic completion fields", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-"))
   cleanupFixture(t, root)
@@ -430,13 +462,13 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 30 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 50 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
   assert.equal(inventory.sources.live_observations, "docs/wikidot-specifications/live-observations.json")
   assert.deepEqual(inventory.sources.wikidot_py_source, wikidotPySource)
   assert.deepEqual(inventory.counts, {
-    total: 30,
+    total: 50,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
@@ -448,12 +480,12 @@ test("CLI discovers declared public surfaces and writes deterministic completion
       missing_page_control: 2,
       open43_audit_case: 1,
       page_action: 1,
-      wikidot_py_amc_module_shape: 2,
+      wikidot_py_amc_module_shape: 22,
       wws_route: 2
     }
   })
   const listPagesSurfaces = inventory.surfaces
-    .filter(({ surface_id }) => surface_id.includes("list/ListPagesModule"))
+    .filter(({ surface_id }) => surface_id.startsWith("framerail-amc-module:list/ListPagesModule"))
     .map(({ surface_id }) => surface_id)
   assert.equal(listPagesSurfaces.length, 8)
   assert.ok(listPagesSurfaces.some((id) => id.includes(`parameters=${[...listPagesParameters].sort().join(",")}`)))
@@ -467,7 +499,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.ok(listPagesSurfaces.every((id) => !id.includes("*")))
   assert.deepEqual(
     inventory.surfaces
-      .filter(({ surface_id }) => surface_id.includes("SiteChangesListModule"))
+      .filter(({ surface_id }) => surface_id.startsWith("framerail-amc-module:changes/SiteChangesListModule"))
       .map(({ surface_id }) => surface_id),
     [
       "framerail-amc-module:changes/SiteChangesListModule:parameters=categoryId,options,page,pageId,perpage",
@@ -1177,6 +1209,38 @@ test("CLI rejects a stale Open43 audit digest", async () => {
 })
 
 test("CLI rejects ambiguous or mismatched nested Open43 source provenance", async (t) => {
+  await t.test("ignores poisoned Git process state", async (t) => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-audit-git-state-"))
+    cleanupFixture(t, root)
+    await writeRepositoryFixture(root)
+    const shim = path.join(root, "bin")
+    await fs.mkdir(shim)
+    await fs.writeFile(path.join(shim, "git"), "#!/bin/sh\nexit 97\n", { mode: 0o755 })
+    const auditPath = path.join(root, "docs/development/open43-audit-1.json")
+    const audit = JSON.parse(await fs.readFile(auditPath, "utf8"))
+    audit.evidence = [{
+      path: "docs/wikidot-specifications/catalog.json",
+      sha256: sha256(await fs.readFile(path.join(root, "docs/wikidot-specifications/catalog.json")))
+    }]
+    const serializedAudit = `${JSON.stringify(audit, null, 2)}\n`
+    await fs.writeFile(auditPath, serializedAudit)
+    const reconciliationPath = path.join(
+      root,
+      "docs/development/open43-closure-audit-ownership-reconciliation.json"
+    )
+    const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
+    reconciliation.closure_audits[0].sha256 = sha256(serializedAudit)
+    await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
+
+    const result = runCli(root, path.join(root, "inventory.json"), {
+      ...process.env,
+      PATH: shim,
+      GIT_DIR: path.join(root, "poisoned-git-dir")
+    })
+
+    assert.equal(result.status, 0, result.stderr)
+  })
+
   for (const [name, mutate, error] of [
     [
       "missing revision interpretation",

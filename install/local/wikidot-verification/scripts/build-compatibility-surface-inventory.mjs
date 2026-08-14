@@ -2,7 +2,7 @@
 
 import fs from "node:fs/promises"
 import { createHash } from "node:crypto"
-import { execFileSync } from "node:child_process"
+import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -11,6 +11,20 @@ const SCHEMA = "wikijump.compatibility_surface_inventory.v1"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
+const WIKIDOT_PY_GIT_DIR = "/home/roku/src/Rokurolize/wikidot.py/.git"
+const GIT_EXECUTABLE = "/usr/bin/git"
+const GIT_ENVIRONMENT = Object.freeze({
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_NO_LAZY_FETCH: "1",
+  GIT_NO_REPLACE_OBJECTS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  GIT_PAGER: "cat",
+  GIT_TERMINAL_PROMPT: "0",
+  LANG: "C",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin"
+})
 const WIKIDOT_PY_SOURCE = {
   repository: "Rokurolize/wikidot.py",
   commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
@@ -23,6 +37,70 @@ const WIKIDOT_PY_SOURCE = {
     ["pyproject.toml", ["blob", "7d2ed894e868994ce41af5fa83b4494fcb43cd07"]],
     ["uv.lock", ["blob", "30a21e269683d755c5715cc937e332c8442143aa"]]
   ])
+}
+const WIKIDOT_PY_AMC_MODULE_EXCLUSIONS = new Set(["edit/PageEditModule"])
+
+function pinnedWikidotPyAmcModules() {
+  const result = spawnSync(
+    GIT_EXECUTABLE,
+    [
+      "--no-replace-objects",
+      `--git-dir=${WIKIDOT_PY_GIT_DIR}`,
+      "grep",
+      "-h",
+      "-o",
+      "-E",
+      '"[A-Za-z0-9_/-]+Module"',
+      WIKIDOT_PY_SOURCE.commit,
+      "--",
+      "src/wikidot/module"
+    ],
+    {
+      encoding: "utf8",
+      env: GIT_ENVIRONMENT
+    }
+  )
+  if (result.status !== 0) {
+    throw new Error(`cannot read pinned wikidot.py modules: ${result.stderr.trim()}`)
+  }
+  const discovered = new Set(
+    result.stdout
+      .trim()
+      .split("\n")
+      .map((value) => value.slice(1, -1))
+      .filter((value) => value.includes("/"))
+  )
+  for (const excluded of WIKIDOT_PY_AMC_MODULE_EXCLUSIONS) {
+    if (!discovered.delete(excluded)) {
+      throw new Error(`pinned wikidot.py no longer declares excluded AMC module: ${excluded}`)
+    }
+  }
+  return [...discovered].sort()
+}
+
+function verifyPinnedWikidotPySource() {
+  const identities = [
+    [`${WIKIDOT_PY_SOURCE.commit}^{tree}`, WIKIDOT_PY_SOURCE.root_tree],
+    ...[...WIKIDOT_PY_SOURCE.objects].map(([objectPath, [, oid]]) => [
+      `${WIKIDOT_PY_SOURCE.commit}:${objectPath}`,
+      oid
+    ])
+  ]
+  for (const [revision, expected] of identities) {
+    let actual
+    try {
+      actual = execFileSync(
+        GIT_EXECUTABLE,
+        ["--no-replace-objects", `--git-dir=${WIKIDOT_PY_GIT_DIR}`, "rev-parse", "--verify", revision],
+        { encoding: "utf8", env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
+      ).trim()
+    } catch {
+      throw new Error(`cannot resolve pinned wikidot.py source object: ${revision}`)
+    }
+    if (actual !== expected) {
+      throw new Error(`pinned wikidot.py source object drift: ${revision}`)
+    }
+  }
 }
 
 const PHASE_STATUSES = {
@@ -948,6 +1026,14 @@ async function discoverWikidotPyAmc(root) {
   if (!Array.isArray(contract.modules)) {
     throw new Error(`${contractPath} modules must be an array`)
   }
+  verifyPinnedWikidotPySource()
+  const moduleNames = contract.modules.map(({ module_name: moduleName }) => moduleName)
+  if (
+    new Set(moduleNames).size !== moduleNames.length ||
+    JSON.stringify([...new Set(moduleNames)].sort()) !== JSON.stringify(pinnedWikidotPyAmcModules())
+  ) {
+    throw new Error(`${contractPath} module denominator drift`)
+  }
 
   return contract.modules.map((module) => {
     if (typeof module.module_name !== "string" || module.module_name === "") {
@@ -1648,7 +1734,8 @@ function validateNestedAuditSources(root, auditPath, audit, sourceRevision) {
         }
         let source
         try {
-          source = execFileSync("git", ["-C", root, "show", `${revision}:${value.path}`], {
+          source = execFileSync(GIT_EXECUTABLE, ["-C", root, "show", `${revision}:${value.path}`], {
+            env: GIT_ENVIRONMENT,
             stdio: ["ignore", "pipe", "ignore"]
           })
         } catch {

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import importlib.metadata
 import inspect
@@ -14,11 +15,11 @@ import wikidot
 from wikidot.module.private_message import PrivateMessage
 
 
-PINNED_COMMIT = "551fe7f05cac0c3322f9c69f43fbd4866d3fdfd2"
-PUBLIC_RUN_SEED = "FW-06-WIKIDOTPY-DM-EVIDENCE:20260810:no-send"
+PINNED_COMMIT = "9f33c0f450de9daf333b068e8d70527e033fc07c"
+PUBLIC_RUN_SEED = "FW-06-WIKIDOTPY-DM-EVIDENCE:9f33c0f:no-send"
 ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_CASES = ROOT / "install/local/wikidot-verification/fixtures/wikidot-py-direct-messages/cases.json"
-DEFAULT_OUTPUT = ROOT / "install/local/wikidot-verification/artifacts/wikidot-py-direct-messages-live-20260810.json"
+DEFAULT_OUTPUT = ROOT / "install/local/wikidot-verification/artifacts/wikidot-py-direct-messages-live-9f33c0f.json"
 SAFE_LIVE_CASES = {"anonymous_inbox_denial", "nonexistent_item", "invalid_page"}
 BLOCKED_REASON = "The pinned wikidot.py private-message API has no public delete, remove, or destroy operation, so a run-created message cannot be safely cleaned up or isolated."
 
@@ -29,9 +30,22 @@ def sha256_bytes(value: bytes) -> str:
 
 def git_value(repo: Path, *arguments: str) -> str:
     return subprocess.run(
-        ["git", "-C", str(repo), *arguments],
+        [
+            "/usr/bin/git",
+            "--no-replace-objects",
+            f"--git-dir={repo / '.git'}",
+            f"--work-tree={repo}",
+            *arguments,
+        ],
         check=True,
         capture_output=True,
+        env={
+            "PATH": "/usr/bin:/bin",
+            "LC_ALL": "C",
+            "GIT_CONFIG_GLOBAL": "/dev/null",
+            "GIT_CONFIG_NOSYSTEM": "1",
+            "GIT_OPTIONAL_LOCKS": "0",
+        },
         text=True,
     ).stdout.strip()
 
@@ -140,7 +154,7 @@ def build_artifact(cases_document: dict[str, Any]) -> dict[str, Any]:
 
     return {
         "schema": "wikijump.wikidot_py_direct_messages_live.v1",
-        "captured_at": "2026-08-10",
+        "captured_at": datetime.now(timezone.utc).isoformat(),
         "status": "blocked",
         "surface_ids": cases_document["surface_ids"],
         "pinned_client": identity,
@@ -189,7 +203,8 @@ def main() -> int:
     cases_document = json.loads(arguments.cases.read_text())
     artifact = build_artifact(cases_document)
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
-    arguments.output.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n")
+    with arguments.output.open("x") as output:
+        output.write(json.dumps(artifact, indent=2, sort_keys=True) + "\n")
     return 0
 
 

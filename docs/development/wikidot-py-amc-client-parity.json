@@ -17,6 +17,36 @@
   },
   "historical_sources": [
     {
+      "commit": "2434bf77744488cb2095327c9e0e4450add78df3",
+      "status": "historical_evidence_only",
+      "references": [
+        {
+          "path": "install/local/wikidot-verification/requirements-2434bf77744488cb2095327c9e0e4450add78df3.txt",
+          "binding": "requirements_snapshot"
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/wikidot-py-sitechanges-shape-live-20260810.json",
+          "binding": "pinned_client"
+        },
+        {
+          "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_sitechanges_shape.py",
+          "binding": "historical_replay_producer"
+        },
+        {
+          "path": "install/local/wikidot-verification/scripts/capture_wikidot_py_membership_applications.py",
+          "binding": "historical_replay_producer"
+        },
+        {
+          "path": "install/local/wikidot-verification/fixtures/wikidot-py-membership-applications/cases.json",
+          "binding": "pinned_client_commit"
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/wikidot-py-membership-applications-live-20260810.json",
+          "binding": "historical_case_manifest"
+        }
+      ]
+    },
+    {
       "commit": "551fe7f05cac0c3322f9c69f43fbd4866d3fdfd2",
       "status": "historical_evidence_only",
       "references": [

@@ -14,6 +14,7 @@ const scriptPath = "install/local/wikidot-verification/scripts/capture_wikidot_f
 const testPath = "install/local/wikidot-verification/tests/open43-q810-featuredsite-global-rotation-evidence-v2.test.mjs";
 const v1ArtifactPath = "install/local/wikidot-verification/artifacts/open43-q810-featuredsite-global-rotation-live.json";
 const requirementsPath = "install/local/wikidot-verification/requirements.txt";
+const historicalRequirementsPath = "install/local/wikidot-verification/requirements-2434bf77744488cb2095327c9e0e4450add78df3.txt";
 const requirementsLockPath = "install/local/wikidot-verification/requirements.lock";
 const producerOffsets = [0, 4, 8, 12, 32, 36, 56, 60];
 const negativeOffsets = [64, 68];
@@ -120,13 +121,13 @@ function validateFixture(fixture) {
   assert.deepEqual(fixture.dependency, {
     requirements_path: requirementsPath,
     requirements_lock_path: requirementsLockPath,
-    requirements_sha256: sha256(readFileSync(requirementsPath)),
+    requirements_sha256: sha256(readFileSync(historicalRequirementsPath)),
     requirements_lock_sha256: sha256(readFileSync(requirementsLockPath)),
     python_version: "3.12.3",
     wikidot_py_commit: "2434bf77744488cb2095327c9e0e4450add78df3",
     wikidot_py_version: "4.4.1",
   });
-  assert.match(readFileSync(requirementsPath, "utf8"), /Rokurolize\/wikidot\.py@2434bf77744488cb2095327c9e0e4450add78df3/);
+  assert.match(readFileSync(historicalRequirementsPath, "utf8"), /Rokurolize\/wikidot\.py@2434bf77744488cb2095327c9e0e4450add78df3/);
   assert.equal("expected_selected_identities" in fixture, false);
   assert.equal(fixture.policies.no_expected_featured_site_identities, true);
   assert.deepEqual(fixture.policies.allowed_hosts, ["sandbox-for-codex.wikidot.com"]);
@@ -161,7 +162,7 @@ function validateArtifact(fixture, artifact) {
     wikidot_py_version: fixture.dependency.wikidot_py_version,
     wikidot_py_commit: fixture.dependency.wikidot_py_commit,
     requirements_path: requirementsPath,
-    requirements_sha256: sha256(readFileSync(requirementsPath)),
+    requirements_sha256: sha256(readFileSync(historicalRequirementsPath)),
     requirements_lock_path: requirementsLockPath,
     requirements_lock_sha256: sha256(readFileSync(requirementsLockPath)),
   });

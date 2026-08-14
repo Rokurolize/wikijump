@@ -15,6 +15,7 @@ const fixturePath = "install/local/wikidot-verification/fixtures/open43-q810-fea
 const artifactPath = "install/local/wikidot-verification/artifacts/open43-q810-featuredsite-global-rotation-live.json";
 const scriptPath = "install/local/wikidot-verification/scripts/capture_wikidot_featuredsite_global_rotation.py";
 const requirementsPath = "install/local/wikidot-verification/requirements.txt";
+const historicalRequirementsPath = "install/local/wikidot-verification/requirements-2434bf77744488cb2095327c9e0e4450add78df3.txt";
 const producerOffsets = [0, 4, 8, 12, 32, 36, 56, 60];
 const negativeOffsets = [64, 68];
 const sensitiveKey = /^(?:password|passwd|cookie|authorization|session[_-]?(?:id|token)|access[_-]?token|api[_-]?key|client[_-]?secret|private[_-]?key|credential)$/i;
@@ -131,7 +132,7 @@ function validateArtifact(fixture, artifact) {
   assert.equal(artifact.dependency.wikidot_py_commit, fixture.dependency.wikidot_py_commit);
   assert.equal(artifact.dependency.wikidot_py_version, fixture.dependency.wikidot_py_version);
   assert.equal(artifact.dependency.requirements_path, requirementsPath);
-  assert.equal(artifact.dependency.requirements_sha256, sha256(readFileSync(requirementsPath)));
+  assert.equal(artifact.dependency.requirements_sha256, sha256(readFileSync(historicalRequirementsPath)));
   assert.deepEqual(artifact.producer_seam, fixture.producer_seam);
   assert.deepEqual(artifact.schedule, {
     producer_offsets_seconds: producerOffsets,

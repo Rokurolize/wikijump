@@ -7,7 +7,8 @@ ROOT = Path(__file__).resolve().parents[4]
 CASES_PATH = ROOT / "install/local/wikidot-verification/fixtures/wikidot-py-direct-messages/cases.json"
 ARTIFACT_PATH = ROOT / "install/local/wikidot-verification/artifacts/wikidot-py-direct-messages-live-20260810.json"
 SCRIPT_PATH = ROOT / "install/local/wikidot-verification/scripts/capture_wikidot_py_direct_messages.py"
-PINNED_COMMIT = "551fe7f05cac0c3322f9c69f43fbd4866d3fdfd2"
+HISTORICAL_COMMIT = "551fe7f05cac0c3322f9c69f43fbd4866d3fdfd2"
+SUPPORTED_COMMIT = "9f33c0f450de9daf333b068e8d70527e033fc07c"
 EXPECTED_CASES = {
     "inbox_omitted_page",
     "inbox_explicit_page_1",
@@ -32,7 +33,7 @@ def test_blocked_direct_message_artifact_is_private_and_complete() -> None:
     assert {case["id"] for case in cases["cases"]} == EXPECTED_CASES
     assert artifact["schema"] == "wikijump.wikidot_py_direct_messages_live.v1"
     assert artifact["status"] == "blocked"
-    assert artifact["pinned_client"]["commit"] == PINNED_COMMIT
+    assert artifact["pinned_client"]["commit"] == HISTORICAL_COMMIT
     assert artifact["pinned_client"]["version"] == "4.4.1"
     assert artifact["run_marker_sha256"] == hashlib.sha256(artifact["run_marker_public_seed"].encode()).hexdigest()
     assert artifact["run_owned_message_ids"] == []
@@ -50,3 +51,14 @@ def test_blocked_direct_message_artifact_is_private_and_complete() -> None:
     serialized = json.dumps(artifact, sort_keys=True)
     for forbidden in ("WIKIDOT_SESSION_ID", "wikidot_token7", "password"):
         assert forbidden not in serialized
+
+
+def test_future_direct_message_capture_uses_the_supported_client() -> None:
+    script = SCRIPT_PATH.read_text()
+    assert f'PINNED_COMMIT = "{SUPPORTED_COMMIT}"' in script
+    assert f'PINNED_COMMIT = "{HISTORICAL_COMMIT}"' not in script
+    assert '"/usr/bin/git"' in script
+    assert '"--no-replace-objects"' in script
+    assert '"GIT_CONFIG_GLOBAL": "/dev/null"' in script
+    assert "wikidot-py-direct-messages-live-9f33c0f.json" in script
+    assert 'open("x")' in script

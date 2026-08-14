@@ -15,6 +15,10 @@ const contractPath = path.join(
   "docs/development/wikidot-py-amc-client-parity.json"
 )
 const contract = JSON.parse(await fs.readFile(contractPath, "utf8"))
+const requirements = await fs.readFile(
+  path.join(repositoryRoot, "install/local/wikidot-verification/requirements.txt"),
+  "utf8"
+)
 
 const targetResponse = async (origin, requestExample) => {
   const response = await handleAjaxModuleConnectorRequest(
@@ -74,6 +78,36 @@ test("client parity contract has one terminal record for every extracted module 
   )
   assert.deepEqual(contract.historical_sources, [
     {
+      commit: "2434bf77744488cb2095327c9e0e4450add78df3",
+      status: "historical_evidence_only",
+      references: [
+        {
+          path: "install/local/wikidot-verification/requirements-2434bf77744488cb2095327c9e0e4450add78df3.txt",
+          binding: "requirements_snapshot"
+        },
+        {
+          path: "install/local/wikidot-verification/artifacts/wikidot-py-sitechanges-shape-live-20260810.json",
+          binding: "pinned_client"
+        },
+        {
+          path: "install/local/wikidot-verification/scripts/capture_wikidot_py_sitechanges_shape.py",
+          binding: "historical_replay_producer"
+        },
+        {
+          path: "install/local/wikidot-verification/scripts/capture_wikidot_py_membership_applications.py",
+          binding: "historical_replay_producer"
+        },
+        {
+          path: "install/local/wikidot-verification/fixtures/wikidot-py-membership-applications/cases.json",
+          binding: "pinned_client_commit"
+        },
+        {
+          path: "install/local/wikidot-verification/artifacts/wikidot-py-membership-applications-live-20260810.json",
+          binding: "historical_case_manifest"
+        }
+      ]
+    },
+    {
       commit: "551fe7f05cac0c3322f9c69f43fbd4866d3fdfd2",
       status: "historical_evidence_only",
       references: [
@@ -110,6 +144,14 @@ test("client parity contract has one terminal record for every extracted module 
       assert.equal(module.request_example, undefined)
     }
   }
+})
+
+test("active verifier requirements use the supported wikidot.py revision", () => {
+  assert.match(
+    requirements,
+    /^wikidot @ git\+https:\/\/github\.com\/Rokurolize\/wikidot\.py@9f33c0f450de9daf333b068e8d70527e033fc07c$/mu
+  )
+  assert.doesNotMatch(requirements, /2434bf77744488cb2095327c9e0e4450add78df3/u)
 })
 
 test("supported wikidot.py request bodies behave identically when only the target changes", async () => {
