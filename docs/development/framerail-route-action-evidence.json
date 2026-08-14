@@ -1,5 +1,10 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
+  "source_revision": "c699ac996a76e05a2e321ac24c329e92183b1686",
+  "inventory": {
+    "path": "docs/development/compatibility-surface-inventory.json",
+    "sha256": "1a1d637dce107a2755dd7b23858ac7a1377ab2c30b2b92fceb518cdeee3eca04"
+  },
   "records": [
     {
       "surface_id": "framerail-route:/",
