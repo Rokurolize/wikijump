@@ -28,6 +28,14 @@ pnpm --dir install/local/wikidot-verification compatibility-inventory
 
 Pass `--root` and `--output` to run the same source-blind discovery against another repository fixture or to write a temporary comparison artifact.
 
+`scripts/build-compatibility-ledger.mjs` projects that inventory into stable opaque raw, assignment, relationship, and public surface identities. It preserves existing IDs across additions, rejects disappearing raw inputs, records FTML aliases without promoting the 295 FTML implementation records into the public denominator, and keeps evidence, source, test, owner, issue, blocker, candidate, standing, and closure stages separate.
+
+```sh
+pnpm --dir install/local/wikidot-verification compatibility-ledger -- \
+  --inventory docs/development/compatibility-surface-inventory.json \
+  --output docs/development/compatibility-ledger.json
+```
+
 ## Driftless sandbox oracle
 
 `fixtures/sandbox-oracle-fixture-registry.json` is the checked-in registry for
