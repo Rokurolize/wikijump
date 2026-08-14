@@ -173,6 +173,31 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn live_html_hash_domain_route_is_currently_unmapped() {
+        let mut secrets = test_secrets();
+        secrets.redis_url = str!("redis://127.0.0.1:1/");
+        let state = build_server_state(false, secrets).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let path = "/local--html/the-significant-others-part-b/ce7f19fcbd96efe6128fc7a5366475fbccde48e5-11264642292013236711/scp-wiki.wikidot.com/";
+
+        let response = client
+            .get(format!("http://{address}{path}"))
+            .header(crate::handler::HEADER_SITE_ID, "1")
+            .send()
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::GATEWAY_TIMEOUT);
+        assert_eq!(response.text().await.unwrap(), "ERROR XF-1003");
+        server.abort();
+    }
+
+    #[tokio::test]
     async fn public_code_routes_default_to_first_block_without_changing_indexed_route() {
         let state = build_server_state(false, test_secrets()).await.unwrap();
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

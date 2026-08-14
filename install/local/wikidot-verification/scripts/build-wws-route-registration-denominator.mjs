@@ -7,15 +7,62 @@ import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
-const SCHEMA = "wikijump.wws_route_registration_denominator.v1"
+const SCHEMA = "wikijump.wws_route_registration_denominator.v2"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/wws-route-registration-denominator.json"
 const ROUTE_REGISTRY = "wws/src/route.rs"
 const HANDLER_DIRECTORY = "wws/src/handler"
+const LIVE_OBSERVATION_NOTE = "docs/development/wws-cache-head-live-observations-20260815.md"
 const HISTORICAL_ARTIFACT = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json"
 const HISTORICAL_FIXTURE = "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
 const EXPECTED_REGISTRATION_COUNT = 30
+const BEHAVIOR_RECORDS = [
+  {
+    id: "wws-behavior:file-cache-head-range",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/file.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/local--files/{page_slug}/{filename}",
+      "wws-route-registration:GET:/-/download/{page_slug}/{filename}",
+      "wws-route-registration:GET:/-/file/{page_slug}/{filename}"
+    ],
+    public_test: "wws/src/handler/file.rs#file_exact_if_none_match_returns_not_modified_without_reading_blob"
+  },
+  {
+    id: "wws-behavior:code-cache-head-range",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/text_block.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/local--code/{page_slug}/{index}",
+      "wws-route-registration:GET:/-/code/{page_slug}/{index}"
+    ],
+    public_test: "wws/src/handler/text_block.rs#code_ignores_range_and_if_range"
+  },
+  {
+    id: "wws-behavior:numeric-html-cache-head-range",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/text_block.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
+      "wws-route-registration:GET:/-/html/{page_slug}/{id}"
+    ],
+    public_test: "wws/src/handler/text_block.rs#html_terminal_matches_evidenced_cache_and_method_behavior"
+  },
+  {
+    id: "wws-behavior:live-html-hash-domain-identity",
+    status: "not_faithfully_mapped",
+    source_paths: [ROUTE_REGISTRY],
+    registration_ids: [
+      "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
+      "wws-route-registration:GET:/-/html/{page_slug}/{id}"
+    ],
+    public_test: "wws/src/route.rs#live_html_hash_domain_route_is_currently_unmapped",
+    preserves_behavior_id: "wws-behavior:numeric-html-cache-head-range",
+    route_pattern: "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$",
+    reason: "Deepwell exposes numeric index or name lookup only; no evidenced hash, nonce, or domain identity maps this live route to a text block."
+  }
+]
 const GIT_EXECUTABLE = "/usr/bin/git"
 const GIT_ENVIRONMENT = Object.freeze({ LANG: "C", LC_ALL: "C", PATH: "/usr/bin:/bin" })
 const DIRECT_METHODS = new Map([
@@ -354,6 +401,24 @@ function gitSourceIdentity(root, commit, relativePath, capturedBytes) {
   return { path: relativePath, git_blob: blob, sha256: sha256(capturedBytes) }
 }
 
+function verifyBehaviorSourceReferences(records, capturedSources) {
+  for (const record of records) {
+    for (const sourcePath of record.source_paths) {
+      if (!capturedSources.has(sourcePath)) throw new Error(`${record.id} references uncaptured source input ${sourcePath}`)
+    }
+    const separator = record.public_test.indexOf("#")
+    const publicTestPath = record.public_test.slice(0, separator)
+    const publicTestAnchor = record.public_test.slice(separator + 1)
+    if (!record.source_paths.includes(publicTestPath)) {
+      throw new Error(`${record.id} public test path is not a declared source input: ${publicTestPath}`)
+    }
+    const publicTestSource = capturedSources.get(publicTestPath)
+    if (!publicTestSource?.toString("utf8").includes(publicTestAnchor)) {
+      throw new Error(`${record.id} public test anchor is missing from captured source: ${record.public_test}`)
+    }
+  }
+}
+
 async function buildDenominator(root) {
   const routeBytes = await fs.readFile(path.join(root, ROUTE_REGISTRY))
   const routeSource = routeBytes.toString("utf8")
@@ -372,9 +437,16 @@ async function buildDenominator(root) {
   const commit = git(root, "rev-parse", "HEAD")
   const inputContent = new Map([[ROUTE_REGISTRY, routeBytes]])
   for (const definition of definitions.values()) inputContent.set(definition.path, bytesByPath.get(definition.path))
+  verifyBehaviorSourceReferences(BEHAVIOR_RECORDS, inputContent)
   const inputs = [...inputContent]
     .sort(([left], [right]) => compareText(left, right))
     .map(([relativePath, content]) => gitSourceIdentity(root, commit, relativePath, content))
+  const behaviorEvidence = gitSourceIdentity(
+    root,
+    commit,
+    LIVE_OBSERVATION_NOTE,
+    await fs.readFile(path.join(root, LIVE_OBSERVATION_NOTE))
+  )
 
   const records = registrations.map((registration, index) => {
     const definition = definitions.get(registration.handler)
@@ -423,6 +495,7 @@ async function buildDenominator(root) {
       registration_count: 27,
       status: "historical_27_route_source_attribution_preserved"
     },
+    behavior_evidence: behaviorEvidence,
     counts: {
       registrations: records.length,
       by_declared_method_class: byMethod,
@@ -431,7 +504,8 @@ async function buildDenominator(root) {
       handler_owner_bindings: records.length + records.filter(({ fallback_handler_symbol: symbol }) => symbol !== null).length,
       duplicate_registration_ids: duplicateIds.length
     },
-    registrations: records
+    registrations: records,
+    behavior_records: BEHAVIOR_RECORDS
   }
 }
 

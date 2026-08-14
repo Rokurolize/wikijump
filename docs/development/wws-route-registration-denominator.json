@@ -1,5 +1,5 @@
 {
-  "schema": "wikijump.wws_route_registration_denominator.v1",
+  "schema": "wikijump.wws_route_registration_denominator.v2",
   "source": {
     "identity": "git_blob_and_sha256_per_captured_input",
     "inputs": [
@@ -45,14 +45,14 @@
       },
       {
         "path": "wws/src/route.rs",
-        "git_blob": "eb001a69c3c4eb4da4938b98af18a75ce5e97c73",
-        "sha256": "f394857e6718bb94dee5f6e8a44d0754674825f30ac336473d97dad265a17a83"
+        "git_blob": "1aee59a9f4a8deebc3cc17c89901a209653234bf",
+        "sha256": "0bc528895f8b75256c72660408ae5bd89a282ad71fe33131e5c6b9d9659212c2"
       }
     ]
   },
   "generator": {
     "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-    "sha256": "0057e2c2fd04002030112f96da61a73a33c35bd3c87849381cc0f430b5485075"
+    "sha256": "54eb84f8c97e39c6a5458b8a283263e09fd7a6e2294d8c99327d7d68c9d005c9"
   },
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",
@@ -61,6 +61,11 @@
     "fixture_sha256": "c5a21d7c1b5bc3af42d325b8bb68e67c78f0dd1cfdc8624e8df884a7110642c2",
     "registration_count": 27,
     "status": "historical_27_route_source_attribution_preserved"
+  },
+  "behavior_evidence": {
+    "path": "docs/development/wws-cache-head-live-observations-20260815.md",
+    "git_blob": "1a8370a5993366b2bfff2a6684efa63f7210fed4",
+    "sha256": "f0619cbd863b1f7cccfee4ea63b00c2a4b1b98211c8d5d283179ab0e1315dd86"
   },
   "counts": {
     "registrations": 30,
@@ -403,6 +408,63 @@
       "handler_definition_reference": "wws/src/handler/redirect.rs#L48",
       "fallback_handler_symbol": "redirect_to_main",
       "fallback_handler_definition_reference": "wws/src/handler/redirect.rs#L29"
+    }
+  ],
+  "behavior_records": [
+    {
+      "id": "wws-behavior:file-cache-head-range",
+      "status": "implemented",
+      "source_paths": [
+        "wws/src/route.rs",
+        "wws/src/handler/file.rs"
+      ],
+      "registration_ids": [
+        "wws-route-registration:ANY:/local--files/{page_slug}/{filename}",
+        "wws-route-registration:GET:/-/download/{page_slug}/{filename}",
+        "wws-route-registration:GET:/-/file/{page_slug}/{filename}"
+      ],
+      "public_test": "wws/src/handler/file.rs#file_exact_if_none_match_returns_not_modified_without_reading_blob"
+    },
+    {
+      "id": "wws-behavior:code-cache-head-range",
+      "status": "implemented",
+      "source_paths": [
+        "wws/src/route.rs",
+        "wws/src/handler/text_block.rs"
+      ],
+      "registration_ids": [
+        "wws-route-registration:ANY:/local--code/{page_slug}/{index}",
+        "wws-route-registration:GET:/-/code/{page_slug}/{index}"
+      ],
+      "public_test": "wws/src/handler/text_block.rs#code_ignores_range_and_if_range"
+    },
+    {
+      "id": "wws-behavior:numeric-html-cache-head-range",
+      "status": "implemented",
+      "source_paths": [
+        "wws/src/route.rs",
+        "wws/src/handler/text_block.rs"
+      ],
+      "registration_ids": [
+        "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
+        "wws-route-registration:GET:/-/html/{page_slug}/{id}"
+      ],
+      "public_test": "wws/src/handler/text_block.rs#html_terminal_matches_evidenced_cache_and_method_behavior"
+    },
+    {
+      "id": "wws-behavior:live-html-hash-domain-identity",
+      "status": "not_faithfully_mapped",
+      "source_paths": [
+        "wws/src/route.rs"
+      ],
+      "registration_ids": [
+        "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
+        "wws-route-registration:GET:/-/html/{page_slug}/{id}"
+      ],
+      "public_test": "wws/src/route.rs#live_html_hash_domain_route_is_currently_unmapped",
+      "preserves_behavior_id": "wws-behavior:numeric-html-cache-head-range",
+      "route_pattern": "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$",
+      "reason": "Deepwell exposes numeric index or name lookup only; no evidenced hash, nonce, or domain identity maps this live route to a text block."
     }
   ]
 }

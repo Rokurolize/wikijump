@@ -72,7 +72,8 @@ function runGit(root, ...arguments_) {
 async function copyHistoricalEvidence(root) {
   for (const relativePath of [
     "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",
-    "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
+    "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json",
+    "docs/development/wws-cache-head-live-observations-20260815.md"
   ]) {
     const target = path.join(root, relativePath)
     await fs.mkdir(path.dirname(target), { recursive: true })
@@ -86,7 +87,7 @@ async function writeCommittedProductionFixture(root) {
   runGit(root, "init", "--quiet")
   runGit(root, "config", "user.email", "denominator-test@example.invalid")
   runGit(root, "config", "user.name", "Denominator Test")
-  runGit(root, "add", "wws/src")
+  runGit(root, "add", "wws/src", "docs/development/wws-cache-head-live-observations-20260815.md")
   runGit(root, "commit", "--quiet", "-m", "fixture")
 }
 
@@ -103,7 +104,7 @@ async function writeNonProductionHandlerFixture(root, symbol, handlerSource) {
   runGit(root, "init", "--quiet")
   runGit(root, "config", "user.email", "denominator-test@example.invalid")
   runGit(root, "config", "user.name", "Denominator Test")
-  runGit(root, "add", "wws/src")
+  runGit(root, "add", "wws/src", "docs/development/wws-cache-head-live-observations-20260815.md")
   runGit(root, "commit", "--quiet", "-m", "fixture")
 }
 
@@ -117,7 +118,7 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stdout, `wrote 30 WWS route registrations to ${output}\n`)
   const manifest = JSON.parse(await fs.readFile(output, "utf8"))
-  assert.equal(manifest.schema, "wikijump.wws_route_registration_denominator.v1")
+  assert.equal(manifest.schema, "wikijump.wws_route_registration_denominator.v2")
   assert.deepEqual(manifest.historical_artifact, {
     path: "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",
     sha256: "356c8b5b3ee063a92e8dac266bd8e0aa32b221ff4e0e2a7d660001da04c0478d",
@@ -155,10 +156,36 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
   for (const input of manifest.source.inputs) {
     assert.equal(input.sha256, await sha256(path.join(repositoryRoot, input.path)))
   }
+  const sourceInputPaths = new Set(manifest.source.inputs.map(({ path: inputPath }) => inputPath))
   for (const registration of manifest.registrations) {
     assert.ok(registration.route_registration_reference.startsWith("wws/src/route.rs#L"))
     assert.ok(registration.handler_definition_reference.startsWith(`${registration.handler_definition_path}#L`))
   }
+  const behaviorRecords = manifest.behavior_records
+  const behaviorIds = behaviorRecords.map(({ id }) => id)
+  const expectedBehaviorIds = new Set([
+    "wws-behavior:file-cache-head-range",
+    "wws-behavior:code-cache-head-range",
+    "wws-behavior:numeric-html-cache-head-range",
+    "wws-behavior:live-html-hash-domain-identity"
+  ])
+  assert.deepEqual(new Set(behaviorIds), expectedBehaviorIds)
+  assert.equal(new Set(behaviorIds).size, behaviorIds.length)
+  const registrationIds = new Set(manifest.registrations.map(({ registration_id }) => registration_id))
+  assert.ok(behaviorRecords.every(({ registration_ids }) => registration_ids.every((id) => registrationIds.has(id))))
+  assert.ok(behaviorRecords.every(({ source_paths, public_test }) => {
+    const [publicTestPath] = public_test.split("#")
+    return source_paths.includes(publicTestPath) && source_paths.every((sourcePath) => sourceInputPaths.has(sourcePath))
+  }))
+  assert.equal(
+    manifest.behavior_evidence.sha256,
+    await sha256(path.join(repositoryRoot, "docs/development/wws-cache-head-live-observations-20260815.md"))
+  )
+  const liveBehavior = behaviorRecords.find(({ id }) => id === "wws-behavior:live-html-hash-domain-identity")
+  assert.equal(liveBehavior.status, "not_faithfully_mapped")
+  assert.equal(liveBehavior.public_test, "wws/src/route.rs#live_html_hash_domain_route_is_currently_unmapped")
+  assert.equal(liveBehavior.route_pattern, "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$")
+  assert.equal(liveBehavior.preserves_behavior_id, "wws-behavior:numeric-html-cache-head-range")
 })
 
 test("CLI reproduces and verifies the exact committed denominator", async (t) => {
@@ -197,6 +224,29 @@ test("CLI verify rejects a byte-drifted denominator", async (t) => {
   assert.match(result.stderr, /denominator\.json is stale/u)
   assert.equal(result.stdout, "")
 })
+
+for (const [label, mutate] of [
+  ["a removed behavior row", (manifest) => manifest.behavior_records.pop()],
+  ["a duplicated behavior row", (manifest) => { manifest.behavior_records[1] = manifest.behavior_records[0] }]
+]) {
+  test(`CLI verify rejects ${label}`, async (t) => {
+    const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-behavior-drift-"))
+    t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
+    const output = path.join(temporaryDirectory, "denominator.json")
+    const manifest = JSON.parse(await fs.readFile(
+      path.join(repositoryRoot, "docs/development/wws-route-registration-denominator.json"),
+      "utf8"
+    ))
+    mutate(manifest)
+    await fs.writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`)
+
+    const result = runCli(repositoryRoot, output, ["--verify"])
+
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /denominator\.json is stale/u)
+    assert.equal(result.stdout, "")
+  })
+}
 
 test("CLI ignores hostile Git process controls while hashing captured source bytes", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-captured-bytes-"))
