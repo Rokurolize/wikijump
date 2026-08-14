@@ -123,7 +123,7 @@ def check_system_methods(
             )
 
     multicall_signature = proxy.system.methodSignature("system.multicall")
-    expected_multicall_signature = [{"returnType": "void", "parameters": ["struct"]}]
+    expected_multicall_signature = [{"returnType": "void", "parameters": ["array"]}]
     if multicall_signature != expected_multicall_signature:
         raise ConformanceError(
             f"system.multicall signature is {multicall_signature!r}, "

@@ -52,7 +52,7 @@ const METHOD_DEFINITIONS: Record<string, MethodDefinition> = {
   },
   "system.multicall": {
     help: "Execute multiple XML-RPC calls and return per-call results or faults.",
-    signatures: [{ returnType: "void", parameters: ["struct"] }]
+    signatures: [{ returnType: "void", parameters: ["array"] }]
   },
   "categories.select": {
     help: "Select categories from a Wikidot-compatible site.",
