@@ -32,10 +32,18 @@
   let toRevisionNumber = $state<Optional<number>>(undefined)
   let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
   let revisionDiffLoading = $state(false)
+  let revisionDiffRequestId = 0
+
+  const SVELTEKIT_ACTION_HEADERS = {
+    accept: "application/json",
+    "content-type": "text/plain;charset=UTF-8",
+    "x-sveltekit-action": "true"
+  }
 
   async function fetchHistory() {
     const res = await fetch("?/history", {
       method: "POST",
+      headers: SVELTEKIT_ACTION_HEADERS,
       body: JSON.stringify({
         siteId: data.site.site_id,
         pageId: data.page?.page_id
@@ -73,15 +81,19 @@
   async function fetchRevisionDiff() {
     if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
 
+    const requestedFromRevisionNumber = fromRevisionNumber
+    const requestedToRevisionNumber = toRevisionNumber
+    const requestId = ++revisionDiffRequestId
     revisionDiffLoading = true
     try {
       const res = await fetch("?/revisionDiff", {
         method: "POST",
+        headers: SVELTEKIT_ACTION_HEADERS,
         body: JSON.stringify({
           siteId: data.site.site_id,
           pageId: data.page?.page_id,
-          fromRevisionNumber,
-          toRevisionNumber
+          fromRevisionNumber: requestedFromRevisionNumber,
+          toRevisionNumber: requestedToRevisionNumber
         })
       }).then((response) => response.text())
 
@@ -89,6 +101,14 @@
         { res: Optional<PageRevisionDiffOutput> },
         { message: string; code: string; data: Record<string, unknown> }
       >(res)
+
+      if (
+        requestId !== revisionDiffRequestId ||
+        requestedFromRevisionNumber !== fromRevisionNumber ||
+        requestedToRevisionNumber !== toRevisionNumber
+      ) {
+        return
+      }
 
       if (result.type === "failure" && result.data?.message) {
         errorPopupState.current = {
@@ -100,15 +120,23 @@
         revisionDiff = result.data?.res
       }
     } finally {
-      revisionDiffLoading = false
+      if (requestId === revisionDiffRequestId) {
+        revisionDiffLoading = false
+      }
     }
+  }
+
+  function clearRevisionDiff() {
+    revisionDiffRequestId += 1
+    revisionDiff = undefined
+    revisionDiffLoading = false
   }
 
   function swapRevisionDiff() {
     const previousFrom = fromRevisionNumber
     fromRevisionNumber = toRevisionNumber
     toRevisionNumber = previousFrom
-    revisionDiff = undefined
+    clearRevisionDiff()
   }
 
   async function getRevision(
@@ -131,6 +159,7 @@
     } else {
       const res = await fetch("?/revision", {
         method: "POST",
+        headers: SVELTEKIT_ACTION_HEADERS,
         body: JSON.stringify({
           siteId: data.site.site_id,
           pageId: data.page?.page_id,
@@ -173,6 +202,7 @@
   async function rollbackRevision(revisionNumber: number, comments?: string) {
     const res = await fetch("?/rollback", {
       method: "POST",
+      headers: SVELTEKIT_ACTION_HEADERS,
       body: JSON.stringify({
         siteId: data.site.site_id,
         pageId: data.page?.page_id,
@@ -411,7 +441,11 @@
       <label for="revision-diff-from">
         {data.internationalization?.["wiki-page-revision-diff.from"]}
       </label>
-      <select id="revision-diff-from" bind:value={fromRevisionNumber}>
+      <select
+        id="revision-diff-from"
+        onchange={clearRevisionDiff}
+        bind:value={fromRevisionNumber}
+      >
         {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber (revisionNumber)}
           <option value={revisionNumber}>{revisionNumber}</option>
         {/each}
@@ -419,7 +453,11 @@
       <label for="revision-diff-to">
         {data.internationalization?.["wiki-page-revision-diff.to"]}
       </label>
-      <select id="revision-diff-to" bind:value={toRevisionNumber}>
+      <select
+        id="revision-diff-to"
+        onchange={clearRevisionDiff}
+        bind:value={toRevisionNumber}
+      >
         {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber (revisionNumber)}
           <option value={revisionNumber}>{revisionNumber}</option>
         {/each}

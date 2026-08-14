@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test"
+import { stringify } from "devalue"
 
 import type { APIResponse } from "@playwright/test"
 
@@ -218,4 +219,148 @@ test("autonumbered page creation follows the assigned slug", async ({ page }) =>
 
   await expect(page).toHaveURL(/\/104$/u)
   await expect(page.locator("#page-content")).toContainText("Assigned page body")
+})
+
+test("history ignores a stale revision diff response", async ({ page }) => {
+  const historyResponse = JSON.stringify({
+    type: "success",
+    status: 200,
+    data: stringify({
+      res: [
+        {
+          revision_id: 9000341,
+          revision_type: "regular",
+          revision_number: 1,
+          created_at: "2026-08-15T00:00:00Z",
+          author: null,
+          comments: "old revision"
+        },
+        {
+          revision_id: 9000342,
+          revision_type: "regular",
+          revision_number: 2,
+          created_at: "2026-08-15T00:00:00Z",
+          author: null,
+          comments: "new revision"
+        }
+      ]
+    })
+  })
+  await page.route(/\/page-workflow-probe\?\/history$/u, async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: historyResponse
+    })
+  })
+
+  const revisionDiffResponses = [
+    JSON.stringify({
+      type: "success",
+      status: 200,
+      data: stringify({
+        res: {
+          site_id: 6000005,
+          page_id: 3000340,
+          from_revision_number: 1,
+          to_revision_number: 2,
+          lines: [{ kind: "removed", text: "OLD STALE DIFF" }]
+        }
+      })
+    }),
+    JSON.stringify({
+      type: "success",
+      status: 200,
+      data: stringify({
+        res: {
+          site_id: 6000005,
+          page_id: 3000340,
+          from_revision_number: 2,
+          to_revision_number: 1,
+          lines: [{ kind: "added", text: "NEW CURRENT DIFF" }]
+        }
+      })
+    })
+  ]
+  type RevisionDiffRequest = {
+    siteId: number
+    pageId: number
+    fromRevisionNumber: number
+    toRevisionNumber: number
+  }
+  const revisionDiffRequests: {
+    body: RevisionDiffRequest
+    headers: Record<string, string>
+  }[] = []
+  let releaseFirstRevisionDiff = () => {}
+  const firstRevisionDiffReleased = new Promise<void>((resolve) => {
+    releaseFirstRevisionDiff = resolve
+  })
+  let resolveFirstRevisionDiffFulfilled = () => {}
+  const firstRevisionDiffFulfilled = new Promise<void>((resolve) => {
+    resolveFirstRevisionDiffFulfilled = resolve
+  })
+  let resolveFirstRevisionDiff = () => {}
+  const firstRevisionDiffSeen = new Promise<void>((resolve) => {
+    resolveFirstRevisionDiff = resolve
+  })
+  let resolveSecondRevisionDiff = () => {}
+  const secondRevisionDiffSeen = new Promise<void>((resolve) => {
+    resolveSecondRevisionDiff = resolve
+  })
+
+  await page.route(/\/page-workflow-probe\?\/revisionDiff$/u, async (route) => {
+    const request = route.request()
+    const requestNumber = revisionDiffRequests.length + 1
+    revisionDiffRequests.push({
+      body: JSON.parse(request.postData() ?? "") as RevisionDiffRequest,
+      headers: request.headers()
+    })
+    const response = revisionDiffResponses[requestNumber - 1]
+    if (requestNumber === 1) {
+      resolveFirstRevisionDiff()
+      await firstRevisionDiffReleased
+    } else {
+      resolveSecondRevisionDiff()
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: response
+    })
+    if (requestNumber === 1) resolveFirstRevisionDiffFulfilled()
+  })
+
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/page-workflow-probe")
+  await page.getByRole("link", { name: "history", exact: true }).click()
+  await expect(page.locator(".revision-diff-controls")).toBeVisible()
+
+  const fromRevision = page.locator("#revision-diff-from")
+  const toRevision = page.locator("#revision-diff-to")
+  await page.locator(".revision-diff-controls button").nth(1).click()
+  await firstRevisionDiffSeen
+  expect(revisionDiffRequests[0]).toMatchObject({
+    body: {
+      siteId: 6000005,
+      pageId: 3000340,
+      fromRevisionNumber: 1,
+      toRevisionNumber: 2
+    },
+    headers: {
+      accept: "application/json",
+      "content-type": "text/plain;charset=UTF-8",
+      "x-sveltekit-action": "true"
+    }
+  })
+
+  await fromRevision.selectOption("2")
+  await toRevision.selectOption("1")
+  await page.locator(".revision-diff-controls button").nth(1).click()
+  await secondRevisionDiffSeen
+  const diff = page.locator(".revision-diff")
+  await expect(diff).toContainText("NEW CURRENT DIFF")
+
+  releaseFirstRevisionDiff()
+  await firstRevisionDiffFulfilled
+  await expect(diff).toContainText("NEW CURRENT DIFF")
+  await expect(diff).not.toContainText("OLD STALE DIFF")
 })

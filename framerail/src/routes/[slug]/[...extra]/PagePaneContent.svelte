@@ -164,7 +164,9 @@
     {/if}
   {:else if pagePaneState === PagePane.History}
     {#if HistoryPane}
-      <HistoryPane {setRevision} {setShowRevision} {...props} />
+      {#key `${data.site.site_id}:${data.page?.page_id ?? ""}`}
+        <HistoryPane {setRevision} {setShowRevision} {...props} />
+      {/key}
     {:else}
       <p class="pane-loading" aria-live="polite">Loading…</p>
     {/if}

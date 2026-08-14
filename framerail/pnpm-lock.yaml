@@ -71,6 +71,9 @@ importers:
       '@types/prismjs':
         specifier: 1.26.6
         version: 1.26.6
+      devalue:
+        specifier: ^5.9.0
+        version: 5.9.0
       eslint:
         specifier: ^10.8.0
         version: 10.8.0(jiti@2.7.0)
