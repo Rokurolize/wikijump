@@ -224,4 +224,21 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
       ),
     /unknown implementation owner/u,
   );
+
+  const duplicateIdentity = structuredClone(first);
+  duplicateIdentity.surface_assignments.push({
+    ...duplicateIdentity.surface_assignments[0],
+    assignment_id: "assignment:00000002",
+  });
+  writeFileSync(output, JSON.stringify(duplicateIdentity));
+  writeFileSync(input, JSON.stringify(initial));
+  assert.throws(
+    () =>
+      execFileSync(
+        process.execPath,
+        [script, "--inventory", input, "--output", output],
+        { stdio: "pipe" },
+      ),
+    /duplicate existing surface identity/u,
+  );
 });

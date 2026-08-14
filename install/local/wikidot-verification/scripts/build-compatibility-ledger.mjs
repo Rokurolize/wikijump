@@ -108,6 +108,23 @@ try {
 }
 if (previous && previous.schema !== "wikijump.compatibility_ledger.v1")
   fail("existing output has an unsupported schema");
+function requireUniqueExisting(rows, field, identity) {
+  const values = (rows ?? []).map((row) => row[field]);
+  if (values.some((value) => typeof value !== "string" || value === ""))
+    fail(`missing existing ${identity}`);
+  if (new Set(values).size !== values.length)
+    fail(`duplicate existing ${identity}`);
+}
+for (const [rows, field, identity] of [
+  [previous?.source_local_identities, "source_local_id", "source local identity"],
+  [previous?.source_local_identities, "raw_record_id", "raw record identity"],
+  [previous?.surface_assignments, "assignment_id", "assignment identity"],
+  [previous?.surface_assignments, "surface_id", "surface identity"],
+  [previous?.surface_assignments, "raw_record_id", "assigned raw record identity"],
+  [previous?.relationships, "relationship_id", "relationship identity"],
+  [previous?.rows, "surface_id", "row surface identity"],
+])
+  requireUniqueExisting(rows, field, identity);
 for (const { source_local_id: localId } of previous?.source_local_identities ??
   []) {
   if (!rawIdSet.has(localId)) fail(`raw source disappeared: ${localId}`);
