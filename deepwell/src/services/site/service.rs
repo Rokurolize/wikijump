@@ -95,9 +95,18 @@ fn path_has_content(path: &str, prefix: &str) -> bool {
 }
 
 fn is_safe_local_file_source(source: &str) -> bool {
-    path_has_content(source, LOCAL_FILE_SOURCE_PREFIX)
-        && !source.contains('?')
-        && !source.contains('#')
+    if !source.starts_with(LOCAL_FILE_SOURCE_PREFIX) {
+        return false;
+    }
+    let Ok(base) = reqwest::Url::parse("https://wikijump.invalid") else {
+        return false;
+    };
+    let Ok(url) = base.join(source) else {
+        return false;
+    };
+    path_has_content(url.path(), LOCAL_FILE_SOURCE_PREFIX)
+        && url.query().is_none()
+        && url.fragment().is_none()
 }
 
 fn is_site_owned_icon_source(

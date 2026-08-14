@@ -42,6 +42,9 @@ test("imported site icons redirect only to site-owned Wikidot resources", () => 
     "https://scp-wiki.wdfiles.com/not-local-files/favicon.png",
     "//evil.example/favicon.png",
     "/local--files/",
+    "/local--files/../admin",
+    "/local--files/%2e%2e/admin",
+    "/local--files/site/../../admin",
     ["java", "script:alert(1)"].join(""),
     "data:image/png;base64,AAAA",
     "https://scp-wiki.wikidot.com/local--favicon/favicon.gif%0d%0aLocation:evil"

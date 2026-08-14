@@ -821,6 +821,9 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
         String::from("//evil.example/favicon.png"),
         String::from("/local--favicon/favicon.gif"),
         String::from("/local--files/"),
+        String::from("/local--files/../admin"),
+        String::from("/local--files/%2e%2e/admin"),
+        String::from("/local--files/site/../../admin"),
         String::from("/local--files/site/favicon.png\r\nLocation: https://evil.example"),
     ];
     for source in invalid_sources {
