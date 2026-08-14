@@ -8,7 +8,8 @@
     "candidate_identity": null,
     "implementation_commits": [
       "726264199ebcd9ccfa2fa43edb1527e8c5c69d29",
-      "8d347148ff025da4d229dba9d5524fa9d036fd4d"
+      "8d347148ff025da4d229dba9d5524fa9d036fd4d",
+      "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127"
     ]
   },
   "evidence": [
@@ -137,8 +138,14 @@
       "issue": 1035,
       "status": "implemented_unverified",
       "owner": "deepwell",
-      "test": "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
-      "result": "The public preview matrix covers exact exists and notexists values, omission, unsupported and empty values, single-quoted and bare values, module-name case, argument-name case, and literal standalone closing marker behavior. Saved anonymous page_view retains the empty wrapper. Central Rust execution remains outstanding."
+      "tests": [
+        "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state",
+        "framerail/tests/listdrafts-route-public-boundary.test.js::the public AMC route wires ListDrafts to its empty renderer",
+        "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC allows only the four observed read shapes",
+        "framerail/tests/site-tools-read-actions.test.js::Site Tools AMC rejects unobserved parameters before Deepwell"
+      ],
+      "implementation_commit": "b7eb2e9b769c34b90e2821b7b9e4fe7a420cd127",
+      "result": "The public preview matrix covers exact exists and notexists values, omission, unsupported and empty values, single-quoted and bare values, module-name case, argument-name case, and literal standalone closing marker behavior. Saved anonymous page_view retains the empty wrapper. The public AMC route source wires the exact ListDrafts branch to the empty renderer; the existing injected-callback and negative-shape tests remain intact. Central Rust execution remains outstanding."
     },
     {
       "case_id": "Q1035_LISTDRAFTS_NONEMPTY_QUERY",
