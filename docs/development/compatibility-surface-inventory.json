@@ -2,6 +2,7 @@
   "schema": "wikijump.compatibility_surface_inventory.v1",
   "sources": {
     "catalog": "docs/wikidot-specifications/catalog.json",
+    "live_observations": "docs/wikidot-specifications/live-observations.json",
     "implementation_ledger": "docs/wikidot-specifications/implementation-ledger.json",
     "deepwell_jsonrpc_registry": "deepwell/src/api.rs",
     "framerail_routes_root": "framerail/src/routes",

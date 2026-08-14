@@ -3681,7 +3681,12 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "newpage-module-live-rendering-and-template-semantics",
+        "newpage-module-live-submit-action-and-navigation",
+        "newpage-module-live-followup-action-errors-and-format",
+        "newpage-module-live-final-action-envelope"
+      ]
     },
     {
       "id": "private-messages",

@@ -1616,7 +1616,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -1662,7 +1662,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -1700,7 +1700,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -1769,7 +1769,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",

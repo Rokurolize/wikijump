@@ -153,8 +153,9 @@ test("Deepwell JSON-RPC generator rejects a duplicate source registration", asyn
   assert.match(result.stderr, /duplicate JSON-RPC registration: ping/u)
 })
 
-test("Deepwell JSON-RPC generator follows sync and qualified or generic local helpers", async () => {
+test("Deepwell JSON-RPC generator follows sync and qualified or generic local helpers", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-helpers-"))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
   const outputPath = path.join(root, "manifest.json")
   await writeSourceFixture(root)
 

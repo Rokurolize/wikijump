@@ -280,9 +280,11 @@ function testReferences(tests) {
 async function discoverCatalogFeatures(root) {
   const catalogPath = "docs/wikidot-specifications/catalog.json"
   const ledgerPath = "docs/wikidot-specifications/implementation-ledger.json"
-  const [catalog, ledger] = await Promise.all([
+  const observationsPath = "docs/wikidot-specifications/live-observations.json"
+  const [catalog, ledger, liveObservations] = await Promise.all([
     readJson(root, catalogPath),
-    readJson(root, ledgerPath)
+    readJson(root, ledgerPath),
+    readJson(root, observationsPath)
   ])
   if (!Array.isArray(catalog.features)) throw new Error(`${catalogPath} features must be an array`)
   if (catalog.feature_count !== undefined && catalog.feature_count !== catalog.features.length) {
@@ -290,6 +292,9 @@ async function discoverCatalogFeatures(root) {
   }
   if (!ledger.features || Array.isArray(ledger.features) || typeof ledger.features !== "object") {
     throw new Error(`${ledgerPath} features must be an object`)
+  }
+  if (!Array.isArray(liveObservations.observations)) {
+    throw new Error(`${observationsPath} observations must be an array`)
   }
 
   const catalogIds = new Set()
@@ -333,6 +338,54 @@ async function discoverCatalogFeatures(root) {
   }
   for (const ledgerId of Object.keys(ledger.features)) {
     if (!catalogIds.has(ledgerId)) throw new Error(`orphan ledger feature: ${ledgerId}`)
+  }
+
+  const observationsById = new Map()
+  for (const observation of liveObservations.observations) {
+    if (!observation || typeof observation.id !== "string" || observation.id === "") {
+      throw new Error(`${observationsPath} contains an observation without an id`)
+    }
+    if (observationsById.has(observation.id)) {
+      throw new Error(`duplicate live observation: ${observation.id}`)
+    }
+    if (!Array.isArray(observation.feature_ids)) {
+      throw new Error(`live observation ${observation.id} feature_ids must be an array`)
+    }
+    const featureIds = new Set()
+    for (const featureId of observation.feature_ids) {
+      if (featureIds.has(featureId)) {
+        throw new Error(`live observation ${observation.id} has duplicate feature link: ${featureId}`)
+      }
+      featureIds.add(featureId)
+      if (!catalogIds.has(featureId)) throw new Error(`unknown catalog feature: ${featureId}`)
+    }
+    observationsById.set(observation.id, featureIds)
+  }
+
+  for (const feature of catalog.features) {
+    if (!Array.isArray(feature.live_observation_ids)) {
+      throw new Error(`catalog feature ${feature.id} live_observation_ids must be an array`)
+    }
+    const observationIds = new Set()
+    for (const observationId of feature.live_observation_ids) {
+      if (observationIds.has(observationId)) {
+        throw new Error(`catalog feature ${feature.id} has duplicate observation link: ${observationId}`)
+      }
+      observationIds.add(observationId)
+      const featureIds = observationsById.get(observationId)
+      if (!featureIds) throw new Error(`unknown live observation: ${observationId}`)
+      if (!featureIds.has(feature.id)) {
+        throw new Error(`catalog ${feature.id} links ${observationId} without a reverse link`)
+      }
+    }
+  }
+  for (const [observationId, featureIds] of observationsById) {
+    for (const featureId of featureIds) {
+      const feature = catalog.features.find(({ id }) => id === featureId)
+      if (!feature.live_observation_ids.includes(observationId)) {
+        throw new Error(`live observation ${observationId} links ${featureId} without a reverse link`)
+      }
+    }
   }
   return records
 }
@@ -498,7 +551,9 @@ function maskTypeScriptCommentsAndLiterals(sourceText, reference) {
 async function declaredPageActions(root, sourcePath) {
   const sourceText = await readText(root, sourcePath)
   const lexicalSource = maskTypeScriptCommentsAndLiterals(sourceText, sourcePath)
-  const declaration = /^\s*export\s+const\s+pageActions\s*=\s*/mu.exec(lexicalSource)
+  const declarations = [...lexicalSource.matchAll(/^\s*export\s+const\s+pageActions\s*=\s*/gmu)]
+  if (declarations.length > 1) throw new Error(`${sourcePath} has duplicate exported pageActions declarations`)
+  const [declaration] = declarations
   if (!declaration) throw new Error(`${sourcePath} has no exported pageActions declaration`)
   const expressionStart = declaration.index + declaration[0].length
   if (lexicalSource[expressionStart] !== "{") {
@@ -1808,6 +1863,7 @@ async function buildInventory(root) {
     schema: SCHEMA,
     sources: {
       catalog: "docs/wikidot-specifications/catalog.json",
+      live_observations: "docs/wikidot-specifications/live-observations.json",
       implementation_ledger: "docs/wikidot-specifications/implementation-ledger.json",
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",

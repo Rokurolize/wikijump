@@ -49,7 +49,16 @@ async function writeRepositoryFixture(root) {
       {
         id: "feature-one",
         documentation_status: "documented",
-        specification: "specifications/core/feature-one.md"
+        specification: "specifications/core/feature-one.md",
+        live_observation_ids: ["observation-one"]
+      }
+    ]
+  })
+  await writeJson(root, "docs/wikidot-specifications/live-observations.json", {
+    observations: [
+      {
+        id: "observation-one",
+        feature_ids: ["feature-one"]
       }
     ]
   })
@@ -364,6 +373,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.equal(result.stdout, "wrote 30 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
+  assert.equal(inventory.sources.live_observations, "docs/wikidot-specifications/live-observations.json")
   assert.deepEqual(inventory.counts, {
     total: 30,
     by_kind: {
@@ -660,6 +670,18 @@ test("CLI ignores pageActions declarations shadowed by TypeScript comments and l
       assert.match(result.stderr, /create edit is not declared by .*#pageActions/u)
     })
   }
+})
+
+test("CLI rejects duplicate pageActions declarations", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-page-actions-duplicate-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  await replacePageActionsFixture(root, `${pageActionsFixtureSource}\nexport const pageActions = {}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /duplicate exported pageActions declarations/u)
 })
 
 test("CLI discovers GET, implicit HEAD, and FALLBACK for the production composite route", async () => {
@@ -984,6 +1006,49 @@ test("CLI rejects an implementation ledger orphan", async () => {
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /orphan ledger feature: orphan-feature/u)
+})
+
+test("CLI rejects invalid catalog live-observation links", async (t) => {
+  const cases = [
+    {
+      name: "unknown feature",
+      mutate: ({ observations }) => observations.observations[0].feature_ids.push("missing-feature"),
+      error: /unknown catalog feature: missing-feature/u
+    },
+    {
+      name: "forward only",
+      mutate: ({ observations }) => observations.observations[0].feature_ids = [],
+      error: /catalog feature-one links observation-one without a reverse link/u
+    },
+    {
+      name: "reverse only",
+      mutate: ({ catalog }) => catalog.features[0].live_observation_ids = [],
+      error: /live observation observation-one links feature-one without a reverse link/u
+    },
+    {
+      name: "duplicate",
+      mutate: ({ observations }) => observations.observations[0].feature_ids.push("feature-one"),
+      error: /live observation observation-one has duplicate feature link: feature-one/u
+    }
+  ]
+
+  for (const fixtureCase of cases) {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-observation-links-"))
+    cleanupFixture(t, root)
+    await writeRepositoryFixture(root)
+    const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
+    const observationsPath = path.join(root, "docs/wikidot-specifications/live-observations.json")
+    const catalog = JSON.parse(await fs.readFile(catalogPath, "utf8"))
+    const observations = JSON.parse(await fs.readFile(observationsPath, "utf8"))
+    fixtureCase.mutate({ catalog, observations })
+    await fs.writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`)
+    await fs.writeFile(observationsPath, `${JSON.stringify(observations, null, 2)}\n`)
+
+    const result = runCli(root, path.join(root, "inventory.json"))
+
+    assert.equal(result.status, 1, fixtureCase.name)
+    assert.match(result.stderr, fixtureCase.error, fixtureCase.name)
+  }
 })
 
 test("CLI rejects an audit case without an issue owner", async () => {
