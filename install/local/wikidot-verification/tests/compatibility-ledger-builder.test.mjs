@@ -79,7 +79,14 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-"));
   const input = path.join(directory, "inventory.json");
   const output = path.join(directory, "ledger.json");
-  writeFileSync(input, JSON.stringify(inventory()));
+  const initial = inventory();
+  initial.surfaces[0].evidence.status = "available";
+  initial.surfaces[0].source.status = "implemented";
+  initial.surfaces[0].existing_refs.tests = [
+    "tests/public.test.js#observed case",
+  ];
+  initial.surfaces[0].existing_refs.issues = [1365];
+  writeFileSync(input, JSON.stringify(initial));
   execFileSync(process.execPath, [
     script,
     "--inventory",
@@ -103,6 +110,16 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
   assert.deepEqual(first.relationships, []);
   assert.equal(first.source_manifests[0].path, input);
   assert.equal(first.rows[0].actor.state, "missing");
+  assert.equal(first.rows[0].source.state, "present");
+  assert.equal(first.rows[0].evidence.state, "present");
+  assert.deepEqual(first.rows[0].tests, {
+    state: "present",
+    references: ["test:tests/public.test.js#observed case"],
+  });
+  assert.deepEqual(first.rows[0].issues, {
+    state: "present",
+    numbers: [1365],
+  });
   assert.equal(first.rows[0].owners.state, "present");
 
   const firstLocalIds = new Map(

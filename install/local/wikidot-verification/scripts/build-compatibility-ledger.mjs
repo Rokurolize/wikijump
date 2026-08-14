@@ -237,6 +237,25 @@ const rawByLocal = new Map(
 );
 const specificationOwners = new Set(inventory.owner_keys.specification);
 const implementationOwners = new Set(inventory.owner_keys.implementation);
+
+function missingReason(status, unwritten = false) {
+  if (status === "blocked" || status === "failed") return "blocked";
+  return unwritten ? "not_written" : "not_observed";
+}
+
+function testReferences(references) {
+  return references
+    .flatMap((reference) => reference.split(/;\s*/u))
+    .filter(Boolean)
+    .map((reference) => {
+      const anchored = reference.includes("#")
+        ? reference
+        : reference.replace("::", "#");
+      return `test:${anchored.includes("#") ? anchored : `${anchored}#file`}`;
+    })
+    .sort(codePointCompare);
+}
+
 const rows = canonicalLocalIds.map((localId) => {
   const record = rawByLocal.get(localId);
   const specification = record.specification_owner
@@ -252,6 +271,14 @@ const rows = canonicalLocalIds.map((localId) => {
   const issues = [...new Set(record.existing_refs?.issues ?? [])].sort(
     (left, right) => left - right,
   );
+  const tests = testReferences(record.existing_refs?.tests ?? []);
+  const blocked = [
+    record.evidence?.status,
+    record.source?.status,
+    record.candidate?.status,
+    record.standing?.status,
+    record.closure?.status,
+  ].some((status) => ["blocked", "failed"].includes(status));
   const owners =
     specification.length === 1 && implementation.length > 0
       ? {
@@ -266,26 +293,57 @@ const rows = canonicalLocalIds.map((localId) => {
     input: { state: "missing", reason: "not_recorded" },
     observable_interval: { state: "missing", reason: "not_recorded" },
     result: { state: "missing", reason: "not_recorded" },
-    source: {
-      state: "present",
-      bindings: [
-        {
-          source_manifest_id: manifestByClass[sourceClassByLocal.get(localId)],
-          raw_record_id: rawRecordIdByLocal.get(localId),
-        },
-      ],
-    },
-    evidence: { state: "missing", reason: "not_recorded" },
-    tests: { state: "missing", reason: "not_recorded" },
+    source:
+      record.source?.status === "implemented"
+        ? {
+            state: "present",
+            bindings: [
+              {
+                source_manifest_id:
+                  manifestByClass[sourceClassByLocal.get(localId)],
+                raw_record_id: rawRecordIdByLocal.get(localId),
+              },
+            ],
+          }
+        : {
+            state: "missing",
+            reason: missingReason(record.source?.status, true),
+          },
+    evidence:
+      record.evidence?.status === "available"
+        ? {
+            state: "present",
+            references: [{ path: inventoryPath, sha256: inventorySha256 }],
+          }
+        : {
+            state: "missing",
+            reason: missingReason(record.evidence?.status),
+          },
+    tests:
+      tests.length > 0
+        ? { state: "present", references: tests }
+        : { state: "missing", reason: "not_written" },
     owners,
     issues:
       issues.length > 0
         ? { state: "present", numbers: issues }
         : { state: "missing", reason: "not_recorded" },
-    blockers: { state: "none", numbers: [] },
-    candidate: { state: "pending", artifacts: [] },
-    standing: { state: "pending", artifacts: [] },
-    closure: { state: "open", references: record.closure?.references ?? [] },
+    blockers:
+      blocked && issues.length > 0
+        ? { state: "present", numbers: issues }
+        : { state: "none", numbers: [] },
+    candidate: {
+      state: record.candidate?.status === "pending" ? "pending" : "blocked",
+      artifacts: [],
+    },
+    standing: {
+      state: record.standing?.status === "pending" ? "pending" : "blocked",
+      artifacts: [],
+    },
+    closure: {
+      state: record.closure?.status === "closed" ? "closed" : "open",
+      references: record.closure?.references ?? [],
+    },
   };
 });
 
