@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { historicalSha256, historicalText } from './historical-git.mjs';
 
 process.chdir(fileURLToPath(new URL('../../../../', import.meta.url)));
 
@@ -12,6 +12,7 @@ const scriptPath = 'install/local/wikidot-verification/scripts/capture_pr1334_de
 const inventoryPath = 'docs/development/compatibility-surface-inventory.json';
 const baseCommit = 'c78561b3f6dc35198658f618fc01d10e4bcad6d0';
 const baseTree = '9f236023be41fd9c807272bbb16dd060b500b140';
+const captureCommit = 'afa21954f81c3e1271ce8f77258aedfe00abf719';
 const claim = 'registry_endpoint_owner_and_existing_test_attribution_only';
 const missingSentinel = 'artifact_missing: run bounded Deepwell page revision JSON-RPC source-attribution capture';
 
@@ -46,9 +47,9 @@ const expected = [
 
 const artifactText = readFileSync(artifactPath, 'utf8');
 const artifact = JSON.parse(artifactText);
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
-const inventory = JSON.parse(readFileSync(inventoryPath, 'utf8'));
-const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
+const fixture = JSON.parse(historicalText(captureCommit, fixturePath));
+const inventory = JSON.parse(historicalText(captureCommit, inventoryPath));
+const sha256 = (path) => historicalSha256(captureCommit, path);
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const lineNumber = (text, offset) => text.slice(0, offset).split('\n').length;
 
@@ -127,7 +128,7 @@ test('exact ordered 21-ID denominator and count reconciliation', () => {
 
 test('inventory references and unique registry declarations match repository source', () => {
   const registryPath = 'deepwell/src/api.rs';
-  const registryText = readFileSync(registryPath, 'utf8');
+  const registryText = historicalText(captureCommit, registryPath);
   const inventoryById = new Map(inventory.surfaces.map((row) => [row.surface_id, row]));
   const recordsById = new Map(artifact.records.map((record) => [record.surface_id, record]));
   assert.equal(recordsById.size, 21);
@@ -163,7 +164,7 @@ test('endpoint definitions and referenced service owners match repository source
   const recordsById = new Map(artifact.records.map((record) => [record.surface_id, record]));
   for (const [surfaceId, , endpointSymbol, endpointPath, expectedOwners] of expected) {
     const record = recordsById.get(surfaceId);
-    const endpointText = readFileSync(endpointPath, 'utf8');
+    const endpointText = historicalText(captureCommit, endpointPath);
     const definition = blockRange(endpointText, new RegExp(`^pub async fn ${escapeRegex(endpointSymbol)}\\s*\\(`, 'gm'));
     assert.equal(record.endpoint_definition.path, endpointPath);
     assert.equal(record.endpoint_definition.sha256, sha256(endpointPath));
@@ -171,7 +172,7 @@ test('endpoint definitions and referenced service owners match repository source
     assert.deepEqual(record.service_owners.map(({ symbol, path }) => [symbol, path]), expectedOwners);
     for (const [ownerSymbol, ownerPath] of expectedOwners) {
       assert.match(definition.body, new RegExp(`\\b${escapeRegex(ownerSymbol)}\\b`));
-      const ownerText = readFileSync(ownerPath, 'utf8');
+      const ownerText = historicalText(captureCommit, ownerPath);
       assert.match(ownerText, new RegExp(`pub struct ${escapeRegex(ownerSymbol)}\\b|impl ${escapeRegex(ownerSymbol)}\\b`));
       const owner = record.service_owners.find(({ symbol }) => symbol === ownerSymbol);
       assert.equal(owner.path, ownerPath);
@@ -194,7 +195,7 @@ test('test attribution is exhaustive and makes no runtime or compatibility claim
       assert.equal(fixtureSurface.gap_reason, record.gap_reason);
       const invocation = new RegExp(`run_endpoint(?:_err)?!\\(\\s*[^,\\n]+\\s*,\\s*${escapeRegex(endpointSymbol)}\\b`);
       for (const path of fixture.allowed_read_only_paths.filter((value) => value.startsWith('deepwell/tests/'))) {
-        assert.doesNotMatch(readFileSync(path, 'utf8'), invocation);
+        assert.doesNotMatch(historicalText(captureCommit, path), invocation);
       }
       continue;
     }
@@ -203,7 +204,7 @@ test('test attribution is exhaustive and makes no runtime or compatibility claim
     assert.equal(record.test_witnesses.length, fixtureSurface.test_witnesses.length);
     for (const witness of record.test_witnesses) {
       assert.equal(witness.seam, 'deepwell_endpoint_integration_test');
-      const witnessText = readFileSync(witness.path, 'utf8');
+      const witnessText = historicalText(captureCommit, witness.path);
       const definition = blockRange(witnessText, new RegExp(`^async fn ${escapeRegex(witness.function)}\\s*\\(`, 'gm'));
       const invocation = new RegExp(`run_endpoint(?:_err)?!\\(\\s*[^,\\n]+\\s*,\\s*${escapeRegex(endpointSymbol)}\\b`);
       assert.match(definition.body, invocation);

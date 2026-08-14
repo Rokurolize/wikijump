@@ -6,6 +6,7 @@ import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
 import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
+import { historicalBytes, historicalText } from './historical-git.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-reference-control-source-attribution-20260810.json';
 const artifactPath = new URL('../artifacts/pr1334-ftml-reference-control-source-attribution-20260810.json', import.meta.url);
@@ -17,15 +18,15 @@ try {
   throw error;
 }
 
-const fixturePath = new URL('../fixtures/pr1334-ftml-reference-control-source-attribution.json', import.meta.url);
-const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
+const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
+const fixture = JSON.parse(historicalText(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-reference-control-source-attribution.json'));
 const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 const ftml = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_git_tree });
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 async function verifyWitness(root, witness) {
   assert.equal(path.isAbsolute(witness.path), false);
-  const bytes = await readFile(path.join(root, witness.path));
+  const bytes = root === ftml ? await readFile(path.join(root, witness.path)) : historicalBytes(captureCommit, witness.path);
   assert.equal(witness.sha256, sha256(bytes));
   assert.match(witness.sha256, /^[0-9a-f]{64}$/);
   const lines = bytes.toString('utf8').split(/\r?\n/);

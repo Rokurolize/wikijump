@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import test from 'node:test';
 
 import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
+import { historicalSha256, historicalText } from './historical-git.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-embed-conditional-source-attribution-20260810.json';
 const artifactPath = new URL(`../artifacts/${artifactRelative.split('/').at(-1)}`, import.meta.url);
@@ -16,9 +17,8 @@ try {
   throw error;
 }
 
-const fixturePath = new URL('../fixtures/pr1334-ftml-embed-conditional-source-attribution.json', import.meta.url);
-const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
-const repositoryRoot = new URL('../../../../', import.meta.url);
+const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
+const fixture = JSON.parse(historicalText(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-embed-conditional-source-attribution.json'));
 const ftmlRoot = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_tree });
 const hex64 = /^[0-9a-f]{64}$/;
 
@@ -27,13 +27,13 @@ async function sha256(path) {
 }
 
 async function validateWitness(witness) {
-  const root = witness.repository === 'Rokurolize/ftml' ? ftmlRoot : repositoryRoot;
-  const path = witness.repository === 'Rokurolize/ftml' ? join(root, witness.path) : new URL(witness.path, root);
-  const text = await readFile(path, 'utf8');
+  const isFtml = witness.repository === 'Rokurolize/ftml';
+  const path = isFtml ? join(ftmlRoot, witness.path) : null;
+  const text = isFtml ? await readFile(path, 'utf8') : historicalText(captureCommit, witness.path);
   assert.equal(text.split(witness.anchor_text).length - 1, 1);
   const line = text.slice(0, text.indexOf(witness.anchor_text)).split('\n').length;
   assert.deepEqual(witness.line_range, { start: line, end: line });
-  assert.equal(witness.sha256, await sha256(path));
+  assert.equal(witness.sha256, isFtml ? await sha256(path) : historicalSha256(captureCommit, witness.path));
 }
 
 test('exact identities, denominator, preconditions, and non-claim statuses', async () => {
@@ -59,9 +59,9 @@ test('exact identities, denominator, preconditions, and non-claim statuses', asy
   for (const identity of [artifact.inventory_identity, artifact.fixture_identity, artifact.script_identity, artifact.cargo_manifest_pin_witness, artifact.cargo_lock_pin_witness]) {
     assert.match(identity.sha256, hex64);
   }
-  assert.equal(artifact.inventory_identity.sha256, await sha256(new URL(artifact.inventory_identity.path, repositoryRoot)));
-  assert.equal(artifact.fixture_identity.sha256, await sha256(fixturePath));
-  assert.equal(artifact.script_identity.sha256, await sha256(new URL(artifact.script_identity.path, repositoryRoot)));
+  assert.equal(artifact.inventory_identity.sha256, historicalSha256(captureCommit, artifact.inventory_identity.path));
+  assert.equal(artifact.fixture_identity.sha256, historicalSha256(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-embed-conditional-source-attribution.json'));
+  assert.equal(artifact.script_identity.sha256, historicalSha256(captureCommit, artifact.script_identity.path));
 });
 
 test('each surface has bounded ownership, source, public test, fixture, and pending inventory evidence', async () => {

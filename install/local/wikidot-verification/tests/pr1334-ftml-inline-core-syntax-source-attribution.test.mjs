@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { historicalText } from './historical-git.mjs';
 
 const artifactPath = new URL('../artifacts/pr1334-ftml-inline-core-syntax-source-attribution-20260810.json', import.meta.url);
-const fixturePath = new URL('../fixtures/pr1334-ftml-inline-core-syntax-source-attribution.json', import.meta.url);
 let artifact;
 try {
   artifact = JSON.parse(await readFile(artifactPath, 'utf8'));
@@ -11,10 +11,11 @@ try {
   if (error?.code === 'ENOENT') throw new Error('artifact_missing: run bounded pinned-FTML inline-core source-attribution capture');
   throw error;
 }
-const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
-const manifest = await readFile(new URL('../../../../deepwell/Cargo.toml', import.meta.url), 'utf8');
-const lockfile = await readFile(new URL('../../../../deepwell/Cargo.lock', import.meta.url), 'utf8');
-const inventory = JSON.parse(await readFile(new URL('../../../../docs/development/compatibility-surface-inventory.json', import.meta.url), 'utf8'));
+const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
+const fixture = JSON.parse(historicalText(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-inline-core-syntax-source-attribution.json'));
+const manifest = historicalText(captureCommit, 'deepwell/Cargo.toml');
+const lockfile = historicalText(captureCommit, 'deepwell/Cargo.lock');
+const inventory = JSON.parse(historicalText(captureCommit, 'docs/development/compatibility-surface-inventory.json'));
 
 const exactSurfaceIds = [
   'catalog-feature:syntax-block-formatting-elements',

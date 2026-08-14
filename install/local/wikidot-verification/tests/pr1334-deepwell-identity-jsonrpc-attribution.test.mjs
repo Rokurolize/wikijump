@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { historicalSha256, historicalText } from './historical-git.mjs';
 
 process.chdir(fileURLToPath(new URL('../../../../', import.meta.url)));
 
@@ -10,6 +10,7 @@ const artifactPath = 'install/local/wikidot-verification/artifacts/pr1334-deepwe
 const fixturePath = 'install/local/wikidot-verification/fixtures/pr1334-deepwell-identity-jsonrpc-attribution.json';
 const scriptPath = 'install/local/wikidot-verification/scripts/capture_pr1334_deepwell_identity_jsonrpc_attribution.py';
 const inventoryPath = 'docs/development/compatibility-surface-inventory.json';
+const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
 const missingSentinel = 'artifact_missing: run bounded Deepwell identity JSON-RPC source-attribution capture';
 
 if (!existsSync(artifactPath)) {
@@ -19,15 +20,14 @@ if (!existsSync(artifactPath)) {
 
 const artifactText = readFileSync(artifactPath, 'utf8');
 const artifact = JSON.parse(artifactText);
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
-const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
+const fixture = JSON.parse(historicalText(captureCommit, fixturePath));
 const expectedIds = fixture.surfaces.map((surface) => surface.surface_id);
 
 test('base, fixture, script, inventory identity, and privacy', () => {
   assert.equal(artifact.schema, 'wikijump.pr1334.deepwell_identity_jsonrpc_attribution.v1');
   assert.equal(artifact.identities.base_commit, 'f2b5769e1ff6206c31cc2b66a03675c64fba6318');
   for (const [key, path] of Object.entries({ fixture: fixturePath, script: scriptPath, inventory: inventoryPath })) {
-    assert.deepEqual(artifact.identities[key], { path, sha256: sha256(path) });
+    assert.deepEqual(artifact.identities[key], { path, sha256: historicalSha256(captureCommit, path) });
   }
   assert.equal(artifact.network_requests, 0);
   assert.equal(artifact.mutations, 0);

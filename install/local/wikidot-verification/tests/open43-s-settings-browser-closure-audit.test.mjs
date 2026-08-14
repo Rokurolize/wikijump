@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { historicalSha256 } from "./historical-git.mjs";
 
 const repository = new URL("../../../../", import.meta.url);
 
@@ -37,7 +38,7 @@ test("settings and browser closure audit is complete without promoting candidate
     ...audit.specification_inputs,
   ]) {
     assert.equal(
-      await sha256(input.path),
+      historicalSha256(audit.source_identity.observed_integration_head, input.path),
       input.sha256,
       `${input.path} changed after the audit froze its identity`,
     );

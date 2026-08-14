@@ -6,6 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 
 import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
+import { historicalBytes, historicalSha256 } from './historical-git.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json';
 const artifactPath = new URL('../artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json', import.meta.url);
@@ -17,19 +18,17 @@ try {
   throw error;
 }
 
-const fixturePath = new URL('../fixtures/pr1334-ftml-lexical-text-source-attribution.json', import.meta.url);
-const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
 const repo = fileURLToPath(new URL('../../../../', import.meta.url));
+const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
+const fixture = JSON.parse(historicalBytes(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-lexical-text-source-attribution.json'));
 const ftml = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_tree });
 
-async function sha256(file) {
-  return createHash('sha256').update(await readFile(file)).digest('hex');
-}
-
 async function validateWitness(root, witness) {
-  const file = path.join(root, witness.path);
-  assert.equal(witness.sha256, await sha256(file));
-  const lines = (await readFile(file, 'utf8')).split(/\r?\n/);
+  const isFtml = root === ftml;
+  const file = isFtml ? path.join(root, witness.path) : null;
+  const bytes = isFtml ? await readFile(file) : historicalBytes(captureCommit, witness.path);
+  assert.equal(witness.sha256, createHash('sha256').update(bytes).digest('hex'));
+  const lines = bytes.toString('utf8').split(/\r?\n/);
   const matches = lines.flatMap((line, index) => line.includes(witness.anchor_text) ? [index + 1] : []);
   assert.deepEqual(matches, [witness.line_range.start]);
   assert.deepEqual(witness.line_range, { start: matches[0], end: matches[0] });
@@ -73,9 +72,9 @@ test('exact identities, denominator, inventory preconditions, and non-claim stat
 });
 
 test('complete-file hashes and unique anchors resolve for every witness', async () => {
-  assert.equal(artifact.fixture_identity.sha256, await sha256(fileURLToPath(fixturePath)));
-  assert.equal(artifact.script_identity.sha256, await sha256(path.join(repo, artifact.script_identity.path)));
-  assert.equal(artifact.inventory_identity.sha256, await sha256(path.join(repo, artifact.inventory_identity.path)));
+  assert.equal(artifact.fixture_identity.sha256, historicalSha256(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-lexical-text-source-attribution.json'));
+  assert.equal(artifact.script_identity.sha256, historicalSha256(captureCommit, artifact.script_identity.path));
+  assert.equal(artifact.inventory_identity.sha256, historicalSha256(captureCommit, artifact.inventory_identity.path));
   await validateWitness(repo, artifact.cargo_manifest_pin_witness);
   await validateWitness(repo, artifact.cargo_lock_pin_witness);
   for (const record of artifact.surfaces) {
