@@ -449,7 +449,10 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
     { cwd: root, encoding: "utf8" }
   )
   assert.equal(commit.status, 0, commit.stderr)
-  const committed = spawnSync("git", ["commit", "-qm", "bind audit revisions"], {
+  const committed = spawnSync("git", [
+    "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+    "commit", "-qm", "bind audit revisions"
+  ], {
     cwd: root,
     encoding: "utf8"
   })
@@ -487,7 +490,10 @@ function runCli(root, outputPath, env = process.env) {
   if (changedTrackedFiles) {
     const added = spawnSync("git", ["add", "-u"], { cwd: root, encoding: "utf8" })
     assert.equal(added.status, 0, added.stderr)
-    const committed = spawnSync("git", ["commit", "-qm", "fixture mutation"], {
+    const committed = spawnSync("git", [
+      "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+      "commit", "-qm", "fixture mutation"
+    ], {
       cwd: root,
       encoding: "utf8"
     })
@@ -879,7 +885,10 @@ test("CLI keeps an explicit source revision across metadata commits and rejects 
     spawnSync("git", ["add", generatorPath, path.basename(firstOutput)], { cwd: root }).status,
     0
   )
-  assert.equal(spawnSync("git", ["commit", "-qm", "metadata only"], { cwd: root }).status, 0)
+  assert.equal(spawnSync("git", [
+    "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+    "commit", "-qm", "metadata only"
+  ], { cwd: root }).status, 0)
   const secondOutput = path.join(root, "second-inventory.json")
   const second = spawnSync(
     process.execPath,
@@ -1789,7 +1798,10 @@ test("CLI rejects ambiguous or mismatched nested Open43 source provenance", asyn
     await fs.appendFile(catalogPath, "\n")
     await refreshCatalogHash(root)
     assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0)
-    assert.equal(spawnSync("git", ["commit", "-qm", "new source"], { cwd: root }).status, 0)
+    assert.equal(spawnSync("git", [
+      "-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid",
+      "commit", "-qm", "new source"
+    ], { cwd: root }).status, 0)
     const currentRevision = spawnSync("git", ["rev-parse", "HEAD"], {
       cwd: root,
       encoding: "utf8"
