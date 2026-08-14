@@ -10,6 +10,10 @@ import { fileURLToPath } from "node:url"
 const toolRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const repositoryRoot = path.resolve(toolRoot, "../../..")
 const cliPath = path.join(toolRoot, "scripts/build-compatibility-surface-inventory.mjs")
+const ftmlRevision = /ftml\s*=\s*\{[^\n]*\brev\s*=\s*"([0-9a-f]{40})"/u.exec(
+  await fs.readFile(path.join(repositoryRoot, "deepwell/Cargo.toml"), "utf8")
+)?.[1]
+assert.ok(ftmlRevision, "deepwell/Cargo.toml must pin a full FTML commit")
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
 const wikidotPySource = {
@@ -163,12 +167,12 @@ async function writeRepositoryFixture(root) {
   await writeText(
     root,
     "deepwell/Cargo.toml",
-    'ftml = { git = "https://github.com/Rokurolize/ftml", rev = "62ebba4efda1f10e82363c23c925061fbe939e49" }\n'
+    `ftml = { git = "https://github.com/Rokurolize/ftml", rev = "${ftmlRevision}" }\n`
   )
   await writeText(
     root,
     "deepwell/Cargo.lock",
-    'source = "git+https://github.com/Rokurolize/ftml?rev=62ebba4efda1f10e82363c23c925061fbe939e49#62ebba4efda1f10e82363c23c925061fbe939e49"\n'
+    `source = "git+https://github.com/Rokurolize/ftml?rev=${ftmlRevision}#${ftmlRevision}"\n`
   )
   await writeJson(root, "docs/development/wikidot-page-action-surfaces.json", {
     schema: "wikijump.wikidot_page_action_surface_registry.v2",
@@ -586,10 +590,8 @@ test("CLI discovers declared public surfaces and writes deterministic completion
     commit: fixtureCommit,
     tree: fixtureTree
   })
-  assert.deepEqual(inventory.provenance.ftml, {
-    commit: "62ebba4efda1f10e82363c23c925061fbe939e49",
-    tree: "ca84a08a46880a67b44cbb9374b4f7bd54d08f10"
-  })
+  assert.equal(inventory.provenance.ftml.commit, ftmlRevision)
+  assert.match(inventory.provenance.ftml.tree, /^[0-9a-f]{40}$/u)
   assert.ok(inventory.provenance.registries.length > 10)
   assert.equal(
     new Set(inventory.provenance.registries.map(({ path: registryPath }) => registryPath)).size,

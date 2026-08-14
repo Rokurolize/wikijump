@@ -5836,8 +5836,8 @@
   "ftml_raw_surface_manifest": {
     "schema": "wikijump.ftml_raw_surface_manifest.v1",
     "source": {
-      "commit": "62ebba4efda1f10e82363c23c925061fbe939e49",
-      "tree": "ca84a08a46880a67b44cbb9374b4f7bd54d08f10"
+      "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
+      "tree": "fc1856286c81ea2a5b5a2c0f73ce68d09fb7d4b4"
     },
     "registries": [
       {
@@ -5892,8 +5892,8 @@
       },
       {
         "path": "src/preproc/parser_functions/mod.rs",
-        "blob": "949c5c1d21131abf6f5252cadec3aecf0ef3b8c8",
-        "sha256": "9f350309f311145f6bab21a0c7cb1d3b441b5281979df8be5ad07ce2ad14746a"
+        "blob": "93408339b102ad7c778e63106a5059db62f66f68",
+        "sha256": "56d45e793749aa72e2bea80fef8668014c418f783aaeb5010e325a5ba6117125"
       },
       {
         "path": "src/render/html/element/audio.rs",
@@ -6046,9 +6046,24 @@
         "sha256": "768efd10eab13b2da41e03427626dadc1b5b8410427f05ed0c0caf7c62c07ee2"
       },
       {
+        "path": "test/align/basic/wikidot.html",
+        "blob": "55f3fd6da259bdfa125c528822175ce3bc42aa49",
+        "sha256": "e80456477c8b8a7bdc30e8634197628fcf221911c3d0a808f35e6cd792979a6f"
+      },
+      {
+        "path": "test/align/fail/wikidot.html",
+        "blob": "08fb5661e8e2c1f53e11fc39ab8f55d57b28523a",
+        "sha256": "89ad7cfe4d2c7d1655d300bb0be185f55e0e7ee60a98813df1c34f5882df8362"
+      },
+      {
         "path": "test/anchor/basic/wikidot.html",
         "blob": "2bd1644906d6eeeff0cd14bfa105bb3fe8ed5e1d",
         "sha256": "3e716e3228ba5cb9dda009768f2d32fbb889c797ea8623d8e3a3ebdc4a90e6b9"
+      },
+      {
+        "path": "test/anchor/fail/wikidot.html",
+        "blob": "67b3b54ec6b38325c4bfcae05acf6ccb9db64ec6",
+        "sha256": "739a43b3eff3b501ad1540b6a5d766712815f7b15c41baea1d7222cc254b1ee2"
       },
       {
         "path": "test/audio/basic/wikidot.html",
@@ -6056,9 +6071,89 @@
         "sha256": "82526de384614cd602547aa689ca4d38463003809e455728a40bbe94a96be01b"
       },
       {
+        "path": "test/audio/fail/wikidot.html",
+        "blob": "98e21de38b8fe5b8d479bf2c58ca8c4417a780e1",
+        "sha256": "1704fd74126bbd7d849baceadc83ee96f56cc8bfd2f24b8037c2649b80f07422"
+      },
+      {
+        "path": "test/blockquote/block/wikidot.html",
+        "blob": "ea80ed6a071a56848fc02b45079606cdd4540d52",
+        "sha256": "96b891b6a61a2137693805fa2e624288143fafd319bbca15c57b7c7552204b01"
+      },
+      {
+        "path": "test/blockquote/native/wikidot.html",
+        "blob": "fd853ed96885ffd87dc0374b8cc78b64837af0e3",
+        "sha256": "5876224e7e0221e89ee128cd8a399e1f64b3fcc2c2cd1b5ddf7d44831caeb874"
+      },
+      {
+        "path": "test/bold/block/wikidot.html",
+        "blob": "769d3c0658efb789ae3f10a266d7a71ce0c270dd",
+        "sha256": "9a92c8aa3e337a9e628c55ef289e0d995386cb6ab00b36b057626df58c820c3b"
+      },
+      {
+        "path": "test/bold/fail/wikidot.html",
+        "blob": "f8baa7ad021b9c5219ede169ffbf9bdda723afa2",
+        "sha256": "6ba64b0cfc381dde54c50fe7103c2630f5b23635b656301d9c7c6e890080bb72"
+      },
+      {
+        "path": "test/bold/native/wikidot.html",
+        "blob": "393be14f4c6ae22402a660a84a16e73f55acc1fa",
+        "sha256": "e5271ce6ccac780ee50001df0347c3aed6d0366642c76560a0259ef2f17e718e"
+      },
+      {
+        "path": "test/checkbox/basic/wikidot.html",
+        "blob": "412dde00507e8dad7dd01f3444cd2e067fded05a",
+        "sha256": "308d971dd331fae8fe897412327099ce0b3446f93f3a4251d2bb31798685e4dc"
+      },
+      {
+        "path": "test/checkbox/fail/wikidot.html",
+        "blob": "0392f4302f24bd07fbcc9b6f96fdc66aab55c5b3",
+        "sha256": "859c57c4ff38399e00b7ef6d2a5a11281d4fd15d9c3484ec2370539b2dba762d"
+      },
+      {
+        "path": "test/code/basic/wikidot.html",
+        "blob": "a22499cba50ab2b281d698bf17d6a3f4e3638eb8",
+        "sha256": "c2708ebf1b4bb32755eb369d7dfe1cbb7d715c6010930ea1a45672d2287808f7"
+      },
+      {
+        "path": "test/code/fail/wikidot.html",
+        "blob": "db64ca5083f84344533ea999ca3509e659b6495f",
+        "sha256": "7f470086b43f306c5f727dc3d196b17cd9314075148201731a4ea8b04dd5c172"
+      },
+      {
+        "path": "test/code/revert/wikidot.html",
+        "blob": "214fe51f55f620b9fbdd1f527018389bdc55feff",
+        "sha256": "d2068fce038643343e9fc4b56d9c4aa570d02659d84e94e89e0d868944b4243f"
+      },
+      {
+        "path": "test/collapsible/basic/wikidot.html",
+        "blob": "dae0c548287b682167de25214c5f1ef94e88b629",
+        "sha256": "342b3410276424a7daaa46bf48c466661868b680add2596a17a0e54273a192de"
+      },
+      {
         "path": "test/collapsible/wikidot-parity/wikidot.html",
         "blob": "2161dfb84ade97d42ba2025b035d25f60029fa6b",
         "sha256": "3f52cc97452ca88fda1af2e25483430da406a90f8a596def16923b4c76da7526"
+      },
+      {
+        "path": "test/color/basic/wikidot.html",
+        "blob": "34017d17d0e335818d8d633bfd1e3e2ed1f89955",
+        "sha256": "e66c3ba81ac633166266e6bed9680c1641542b79e661035c9309d75449fa1e6b"
+      },
+      {
+        "path": "test/color/fail/wikidot.html",
+        "blob": "f64421b522baa5b2e4c46f1781ea85306d8bf4b8",
+        "sha256": "be470f60acbd9e6abbd25a1f51ebf3d315464fc459a51692ff3f1f17ef3c6602"
+      },
+      {
+        "path": "test/color/malformed-nested-footnote-bug/wikidot.html",
+        "blob": "24b871840f4eb37a88b8db40c691791f3ce269eb",
+        "sha256": "328b724073cbf8f0a9b3e9ca0a94b2a857878997b7356e2b63cf0a29e07203c6"
+      },
+      {
+        "path": "test/color/malformed-nested/wikidot.html",
+        "blob": "179e8db9c3c13f3bc0a9d52f761ea30b57da0f2d",
+        "sha256": "d4e4b5cee99b4af2c2dd6e10726f3a014ebadf815f6993ee25894c3d8faecf20"
       },
       {
         "path": "test/date/agohover/wikidot.html",
@@ -6066,14 +6161,29 @@
         "sha256": "639b290a57f891f35dda41766883191bebe33d3a33a992bba17ad812afa02913"
       },
       {
+        "path": "test/date/escaped-agohover-format/wikidot.html",
+        "blob": "3076d9d3681e0d52f906a9a75d9ed228da0b5faf",
+        "sha256": "af896915154fde7d350c47cb70dc45281e97bb48e403086af1c8891b255f44c4"
+      },
+      {
         "path": "test/date/hover/wikidot.html",
         "blob": "be8886dc23654776947ba19a10378ea16ac5a523",
         "sha256": "9937c1c9768a2a8151cec892eff1589ca96625a83d6d104a1198402aa0a75bc5"
       },
       {
+        "path": "test/date/matrix-french/wikidot.html",
+        "blob": "25dfa658955563c5b24f62d4f8cfc50969ab4282",
+        "sha256": "769aa3824b5ec89e77b49d5e94df2f75b9d873c6144412fccaaa3dbf52ef26ee"
+      },
+      {
         "path": "test/date/matrix/wikidot.html",
         "blob": "25dfa658955563c5b24f62d4f8cfc50969ab4282",
         "sha256": "769aa3824b5ec89e77b49d5e94df2f75b9d873c6144412fccaaa3dbf52ef26ee"
+      },
+      {
+        "path": "test/date/timezone-fail/wikidot.html",
+        "blob": "b01131b2b00372f5e6964b75b3ec0bddc09fa4ab",
+        "sha256": "aa91114ed7ee733a58f13dad13b61eb579d59ff9964188ab108e0a478e0c4145"
       },
       {
         "path": "test/date/timezone/wikidot.html",
@@ -6086,9 +6196,39 @@
         "sha256": "1a1bda2711d273eb688eaf8557e018b6b66611c576a9c4f6bab3d9da20ba5b46"
       },
       {
+        "path": "test/definition-list/fail/wikidot.html",
+        "blob": "b901307559c09a3d502ae54f51edee851268ea4d",
+        "sha256": "ca6af60145e04d8a49acde72a672aff93aebefd49ae9b2500d8a2f5ad4911a17"
+      },
+      {
+        "path": "test/definition-list/missing-separator/wikidot.html",
+        "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "test/diff/alias/wikidot.html",
+        "blob": "294f0e6cb18ea3295157ecbbf1e507efcd636123",
+        "sha256": "51cecb0c93d32c760dda8db8f011d68cf76eb8761e749f925fa37dd8f8b41047"
+      },
+      {
+        "path": "test/diff/basic/wikidot.html",
+        "blob": "11f1b9c64a58c87c7960a17d7ea61640d37e6c3b",
+        "sha256": "3707612367c3de1c3e30b9a0b8c63c75c8fd4217b57cc4c81205eb70fe04eab2"
+      },
+      {
+        "path": "test/diff/newlines/wikidot.html",
+        "blob": "5b74386e493ff6178a3ee82fadfb240102875061",
+        "sha256": "1b80c67124c17d5858c2564aa1adf431d7f1a6e26082ba714dbfeadb2d8cd4c5"
+      },
+      {
         "path": "test/div/wikidot-nested-list-boundary/wikidot.html",
         "blob": "12edf4ec8d8fdc456fc9526969ef9b7f24ea36aa",
         "sha256": "39c9f84a6e3a40929273928c5f225cf5993522016f677a58e7b45d64ccb38039"
+      },
+      {
+        "path": "test/embed/basic/wikidot.html",
+        "blob": "bba2d372d388cbaa4f2dba206e942f804ae64518",
+        "sha256": "b9ccab51fafc950dd79c1c602ff758bb2186c9e8f8ba8b675472c0a7e65f2308"
       },
       {
         "path": "test/file/wikidot-attachment/wikidot.html",
@@ -6096,9 +6236,99 @@
         "sha256": "4ed695de91746d57d66b53702246cd7aada7f7dfcb7a06328a857aec277e87bc"
       },
       {
+        "path": "test/footnote/basic/wikidot.html",
+        "blob": "bb5362f7b66262193abe6ced70a9ccd4040b7cce",
+        "sha256": "1e5d3c44968d5c9eaf5200b9ff88bef4e5a8e9399b31bba1558d01c26949600c"
+      },
+      {
+        "path": "test/footnote/block-empty/wikidot.html",
+        "blob": "9f8e8c6eda0e8980c9f6ead534c6dc7cdf55d0d1",
+        "sha256": "8206af590130802332e4b8b4b2dc23151d78c0513d800ccdda617d018af39160"
+      },
+      {
+        "path": "test/footnote/block-hide/wikidot.html",
+        "blob": "5695d5a79e8a589deb7c5adff33cf8d66995b0b1",
+        "sha256": "11557374d571b557ff742e7c5e2187e6656f1b3ea19c75a8fa14c7b96a937934"
+      },
+      {
+        "path": "test/footnote/block-multiple/wikidot.html",
+        "blob": "856a4ff5f2dbf597b6ac0b14cf01ccbcb3320f38",
+        "sha256": "91b308dd6853ea69e1d3ea162d64330b21276557a5d7992d8fba15c4942ff77f"
+      },
+      {
+        "path": "test/footnote/block-title/wikidot.html",
+        "blob": "9042bee7ebc6a1cfa6867fe343d73a5d84fe7881",
+        "sha256": "710894820253f0d69dc90d06b203d5cb6603f1ec4b4c7692bbefbc2cab3cc7fb"
+      },
+      {
+        "path": "test/footnote/revert/wikidot.html",
+        "blob": "1450b53953efd7bb98a5127196184fa5927e242b",
+        "sha256": "55e2d112909620169a91bef64f1cd7d6b376c2771ddc8d508e2cbd2cf84977b1"
+      },
+      {
+        "path": "test/heading/basic/wikidot.html",
+        "blob": "b2dc36618e0fecc8ec7682f72261a50999193d23",
+        "sha256": "753f9d20ab413d11786f50c107bc5e6bdf6de3ee34a3ed3e611b0591dc389fe1"
+      },
+      {
+        "path": "test/heading/fail/wikidot.html",
+        "blob": "13da252b1a7fc05afe2aebe9e1a79c5e7c13af26",
+        "sha256": "edad34e4daff4266f2c947ac773b18c069fb39460858f8e66c6745dd2173ab46"
+      },
+      {
+        "path": "test/hidden/basic/wikidot.html",
+        "blob": "4ed1ae220cb3ffca2acf6e6daf19eb4cec50d61b",
+        "sha256": "feaea87977d6ccc11e259459548c001a5fc0a9d94a3ef92fcfd5df66fc7f38a6"
+      },
+      {
+        "path": "test/html/fail/wikidot.html",
+        "blob": "569217b5c750f052b25ac8760456a417b6345d49",
+        "sha256": "50a3d63de1095beff90476fcde2167069f947651cf4981371dc8a3e4868a2f9e"
+      },
+      {
+        "path": "test/iframe/basic/wikidot.html",
+        "blob": "7a2d502f63686e261764bc67ccf98c6fd1646da1",
+        "sha256": "64b9266d3d97bd55f0c8b03e578fc59da6ae28d2a5c9f1526ac24715e6d53d0f"
+      },
+      {
+        "path": "test/iframe/xss/wikidot.html",
+        "blob": "5284aa1538181583be2947a356a459c18d67b055",
+        "sha256": "1c3378b85debb1a0ea6dbd3afa6467617d572c3065a08810887cd3b4e5ca700a"
+      },
+      {
         "path": "test/image/basic/wikidot.html",
         "blob": "75073365e9cfcf1919ecf7f429e15f90c7ed34f1",
         "sha256": "33dbb2abca3cb6eb612afa70a3978f8892260728cf066f096a47880f5d5926c0"
+      },
+      {
+        "path": "test/invisible/basic/wikidot.html",
+        "blob": "49f2148558c08252cf516f79accd30a3f4725740",
+        "sha256": "41ff3ad672bbed671746f2be9d3258c3a32ac3c4736b04a735d718b4963351da"
+      },
+      {
+        "path": "test/italics/block/wikidot.html",
+        "blob": "1349e2290fb334dfdc1b1d9308cdcabec5c48d4d",
+        "sha256": "55787a2cb4906ef1f4d498d5f55e2d3023a9d4470cebc9162080c819fda463b0"
+      },
+      {
+        "path": "test/later/basic/wikidot.html",
+        "blob": "4fb1509ee18e340b7fd42071aa747351e0513bec",
+        "sha256": "67083ffad5d58a0136115d85f8d3218a4bb0433174fcfd71228a7c34654a755a"
+      },
+      {
+        "path": "test/line-breaks/basic/wikidot.html",
+        "blob": "2d0c8efc78a4af3a0cb97055403de3a9e278ff6a",
+        "sha256": "2225733ed8883285fd7d57f763e491cbc0a4e656ce2dbbda6956654e1f57835d"
+      },
+      {
+        "path": "test/line-breaks/fail/wikidot.html",
+        "blob": "7e841a58697b83b9f25059651306acef2f856061",
+        "sha256": "83ad53257bf2c44bcc144df60c9b229da87742fd6aa34a43e06e6a985970bdcd"
+      },
+      {
+        "path": "test/link/anchor/wikidot.html",
+        "blob": "c57544136d2f0cc8a39c98e82a0c7597694c4bed",
+        "sha256": "5b6d3b5b6e5f9bae78c6cdae676e09916a1941ce01ad78f02daba0900be9cfb7"
       },
       {
         "path": "test/link/canonical-inline/wikidot.html",
@@ -6116,6 +6346,26 @@
         "sha256": "d5ecd92339074699851c0640ad50f6ae3c6710ecb91b8c1f7b60e60e351f0c21"
       },
       {
+        "path": "test/list/block-score-nested/wikidot.html",
+        "blob": "8ee6a4171c0eb2daf3e797e18ad45ed891f07040",
+        "sha256": "b8a45810ebd03b79ffa541a9ebb04720232c25f2382ac24b9d207cc22247209f"
+      },
+      {
+        "path": "test/list/block-spaced-end/wikidot.html",
+        "blob": "89c5e9375541888f9c4e484b84975cd289b86196",
+        "sha256": "df9a7c85ba79f101c85ab6b5cd446fdf72183657f6f4c312d297d5a1377a6718"
+      },
+      {
+        "path": "test/list/block/wikidot.html",
+        "blob": "d845b0af3e4f438a8fcb381e7f228132758f5238",
+        "sha256": "ee218ede268562703689b3c37e7107f8f44afcf2a4eae82817382a790160f605"
+      },
+      {
+        "path": "test/list/native-literal/wikidot.html",
+        "blob": "b996b261a9ec5c6259b555af0ed3cbdbda135ec6",
+        "sha256": "8559fe0d49c1329c69201970584a342f0b670cebdd2b3db652a69e0e0f5198b4"
+      },
+      {
         "path": "test/list/native-skipped-depth-empty-parent/wikidot.html",
         "blob": "c7beb98b60503062cfaa8ba3154cd35aa0bc5037",
         "sha256": "04573cd56c51d4d99f9d1c172eae998ea521e6a7a37bbaea4d9da7b3a0ab94b4"
@@ -6126,9 +6376,59 @@
         "sha256": "afc13f7c190f23cd2bf4c98775b63179d0bcca5790103a33514975644db65fb3"
       },
       {
+        "path": "test/list/native/wikidot.html",
+        "blob": "9c0d1a1e7d5959e142f36d71c8507a57d42c6368",
+        "sha256": "78640956ccb7f9a2afa801d6551a2414904fe54eaf96ddb1cf132f239f996f33"
+      },
+      {
+        "path": "test/mark/basic/wikidot.html",
+        "blob": "27d5a85a7f8522d11db90dafe498919e3b599cb1",
+        "sha256": "910f1ae1cda1756ce5012cf84bf6cf0e545164d2edd83a5416d53fa278165a00"
+      },
+      {
+        "path": "test/math/block/wikidot.html",
+        "blob": "1221c45cca47f118c37b28dbf37ea4cc7ad78627",
+        "sha256": "34e56e36d28660f54bee12c83af635fa53fe39f33e8363baec98bf4c478a3b31"
+      },
+      {
+        "path": "test/media/fail/wikidot.html",
+        "blob": "3d9afbf27aa571a27b1f6c139453c7ad8eef06fa",
+        "sha256": "311c6a342a68ea98693b734f1587810db8ba087ee759ed1b31b91e15eb96d05b"
+      },
+      {
+        "path": "test/media/path-variants/wikidot.html",
+        "blob": "5ee0d3f3e2738f7e0b4d08e77cb95193c39796b3",
+        "sha256": "85bdc49fa91497a61eb4e15f9aff491079307915d31f89124bc01a155c8b7d18"
+      },
+      {
+        "path": "test/misc/bibliography-missing-cite/wikidot.html",
+        "blob": "329e2bb6d814aa2ebf9202f0c0bc46623f802dc4",
+        "sha256": "66dad40192dfd0db053472a239bb706bc7e5bd197f9510e5603cfc6d8db49e13"
+      },
+      {
+        "path": "test/misc/bibliography/wikidot.html",
+        "blob": "6a7a4cece06545df6d2b5b289d63e4817ad15de1",
+        "sha256": "a755a39a48757648b5a71a65bed9fa2037ec9442d1cd71b13370292e634a7b39"
+      },
+      {
+        "path": "test/misc/center/wikidot.html",
+        "blob": "3cab7cb3d69622b6f1d2bc4af459be86908966ba",
+        "sha256": "675a41d779c0a6bb07c6ed2a8ecd264620a1afae79e995d63b220b44a7328e35"
+      },
+      {
+        "path": "test/misc/char/wikidot.html",
+        "blob": "9d3c7ecc2c3cbb0c17c6c4cc51dd8f70ce0827c9",
+        "sha256": "7003764750a7bb2cc88f7493732704905f2179df4f08c4d7696a92d44aed372a"
+      },
+      {
         "path": "test/misc/clear-float/wikidot.html",
         "blob": "6f3ac3e4b4800a4f44573daa5f3e6425c6f7123c",
         "sha256": "cda0c991de61f9c86fd0becf930d9ecb50b00d73a9b76e1b55398e018a3b4b0d"
+      },
+      {
+        "path": "test/misc/comment/wikidot.html",
+        "blob": "c52719e880931b6599cec160290cfad09dc84041",
+        "sha256": "07f131945ebca6f1c0abdf3e1e41ef0d50b6f69c11fc4222f878ecd0bf2b5343"
       },
       {
         "path": "test/misc/dash-edges/wikidot.html",
@@ -6136,14 +6436,69 @@
         "sha256": "c74abf943ff481e13101f62c385d443e565959daf518e9ea7dd09c8d55579404"
       },
       {
+        "path": "test/misc/em-dash/wikidot.html",
+        "blob": "6067803efa22c5eac5a10143493a7dc776908580",
+        "sha256": "8d2689f57ef36d570ebc9c91a706e13c3802370080b34fdf5fafe133e9192c9a"
+      },
+      {
         "path": "test/misc/email/wikidot.html",
         "blob": "5f4ed3447361d8c94c430aa8f42c73cf65c12031",
         "sha256": "8b010dde1ba59fbf902db7c5a48adfeb2a59f71db0a363dffed19039c11545c4"
       },
       {
+        "path": "test/misc/guillemet/wikidot.html",
+        "blob": "f5d5c850b2cce82358b653fbb6cfa517c7f3dcf3",
+        "sha256": "032ec03d03180b99b37673ba957346860f7ee01fdf60c878b3a92622e3c5759f"
+      },
+      {
+        "path": "test/misc/hr/wikidot.html",
+        "blob": "a4a04d86ea18f71135ad2080bdaf5a03ccd3876f",
+        "sha256": "8abc527808a123e73f23eca7e669540d2cb024ae9f82ff782cfba88616e272a2"
+      },
+      {
+        "path": "test/misc/spaces/wikidot.html",
+        "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "test/misc/symbols/wikidot.html",
+        "blob": "2796a2c3400479fc9447a4c6c94bd465d3395be7",
+        "sha256": "249906767084853228581ec3c662c51ba70d7e7c5e41905ac241b50b0aed4bbc"
+      },
+      {
+        "path": "test/module/css/wikidot.html",
+        "blob": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "test/monospace/basic/wikidot.html",
+        "blob": "a2683593c1bb4220fff4f20e46ceed1d98596488",
+        "sha256": "298da6192d4783ad75710677dda36e8de07fa78e43a9d57891f48d8041237805"
+      },
+      {
+        "path": "test/monospace/fail/wikidot.html",
+        "blob": "7df588bd2e66d4c8110bf45a6297933af82cebcc",
+        "sha256": "643547ad2b84dfbc9ede4e226c8df8f5a941f2fe054a60cc6a1923d6886897a8"
+      },
+      {
+        "path": "test/paragraph/basic/wikidot.html",
+        "blob": "2fb4506e2ecd25182d104119f5d53e64f8d16538",
+        "sha256": "42ac70124d44d6c81ebadb2c8578e08604f091ce1ccd3609aa6fa2e907f4726d"
+      },
+      {
         "path": "test/radio/basic/wikidot.html",
         "blob": "2a4b16a8720ed95756324c051550199d8d278ff9",
         "sha256": "87237b2e7df01aae5f363648dddf1abf15d4ecf4fbb5aa03237117be21fa479f"
+      },
+      {
+        "path": "test/radio/fail/wikidot.html",
+        "blob": "1b3fbbf7bcadce47c9f24b6e2e5a18e43b84efe3",
+        "sha256": "9c9e8219d03a0fe7e3b4082b7d0a1d96ae246c4c9ce979464ae18b05da764c05"
+      },
+      {
+        "path": "test/raw/adjacent-empty/wikidot.html",
+        "blob": "86f4ddfa4d8c1b026f053078459901f40fb19014",
+        "sha256": "7bfe524660c7ffed5c73ea3bd04d971f53267b0d3acb3d38d79bd57787acc254"
       },
       {
         "path": "test/raw/basic/wikidot.html",
@@ -6156,14 +6511,174 @@
         "sha256": "95e41b83ba207cff0385fcee97d6247c2287a0a1473222035fcc346fae02820d"
       },
       {
+        "path": "test/raw/disallowed-flags/wikidot.html",
+        "blob": "9ed03f6507af85f8c864e8bd33d207cf50c64a1b",
+        "sha256": "0d1ba42b5d35e08fb2fb41db6af48c68b0d913445ff8d687fb092695e9278c97"
+      },
+      {
+        "path": "test/raw/fail/wikidot.html",
+        "blob": "cdbb3fc131ef2f479152e60fb9fd5ee620ad8886",
+        "sha256": "297d396797b8486f36233bc4057cfd9a82b418564abd543948de3196df90b7d3"
+      },
+      {
+        "path": "test/raw/left-raw-eof/wikidot.html",
+        "blob": "32027b8cb62f13f969dbc069247b981ffaae3f0d",
+        "sha256": "3fd46c312c7e646966328b20f3f1aad74b3f9be57c82d008dadcba88f0581d29"
+      },
+      {
+        "path": "test/ruby/fail/wikidot.html",
+        "blob": "34fd12adf9edd08616ad2fefe80f8fd7a754a0a0",
+        "sha256": "f2f47fd96557527a7dec9c489bf0bcb2d04f75cb8a935bfcee74d6ad3a48f6dc"
+      },
+      {
+        "path": "test/size/basic/wikidot.html",
+        "blob": "b62e7c2f1744c2cc37934922228111c97159f526",
+        "sha256": "e68b946b0343c0f1c022d3f98c76d5d3a014f6d277eea0bc208ec8eca1e36ebf"
+      },
+      {
+        "path": "test/strikethrough/basic/wikidot.html",
+        "blob": "d837e40f3235b50c53925af0ac552ef614bcb9d2",
+        "sha256": "35b37d15cb5c56b6b10079436801870ec432f5bc05c9e9304ed38407f93a6657"
+      },
+      {
+        "path": "test/strikethrough/fail/wikidot.html",
+        "blob": "d42dff7e7e058a18d921eafbc50d27f44c4c1c61",
+        "sha256": "53639fbf2621b18c861aee4d4e19a88fc567b47ca8254fca4dce7a9d7c95ff57"
+      },
+      {
+        "path": "test/subscript/basic/wikidot.html",
+        "blob": "ce8445fd6a34cd6680654dcb835ebae52b4c5c19",
+        "sha256": "dc7cbffdb5f87a4e25bb73416967b587b76a04d0b458d7268cef3a664f02bde0"
+      },
+      {
+        "path": "test/subscript/fail/wikidot.html",
+        "blob": "7da3e43d5f5298f93a77612ce28fc067c3f42b68",
+        "sha256": "e7c6c08c7deb17c0ea626b0df59354f50c45afd6e860da3f22efb0f1abd47718"
+      },
+      {
+        "path": "test/superscript/basic/wikidot.html",
+        "blob": "196dde8b82ef996ef07bf4af1fec2f056e07f927",
+        "sha256": "6dc430ab8d72a3f4ae924ab6d2d33f3056a41f2d4c20f77a7e1f66aa4b39bc19"
+      },
+      {
+        "path": "test/superscript/fail/wikidot.html",
+        "blob": "58756269a22a493f19b2d19adb03288c1759c69e",
+        "sha256": "fe1f569cfcdbd999660544c1c1042baf993e1540a47cafb189c11feacea3dd2f"
+      },
+      {
+        "path": "test/table/advanced-attrs-header-regular/wikidot.html",
+        "blob": "d03829509f2a2ba83111484bc0b8dcd06e57fdf9",
+        "sha256": "10a58eebd2c13e1c90985b2f368581094602cacb8e1488e9f5d132704c6f7d08"
+      },
+      {
+        "path": "test/table/advanced-colspan-fallback/wikidot.html",
+        "blob": "6bf03db4e964d4df1860ec44363ce0f497cc4691",
+        "sha256": "e3a05568644394084d7207756a68374f0e85a9d734137eeff49bcaf0b3eb7ac1"
+      },
+      {
+        "path": "test/table/advanced-colspan/wikidot.html",
+        "blob": "d90493109478dd7968cc46bc0bbd5c4cb72c4f44",
+        "sha256": "76b090aa99c1c5242c5d6edb6979a7e6a50ecefd586585bd832d394d894445ee"
+      },
+      {
+        "path": "test/table/advanced-malformed-arguments/wikidot.html",
+        "blob": "308d67a55f868877e4883713341a002e1100d7a9",
+        "sha256": "c660ab64a475c67ef0770baa76993c57e4676a213136de7e8a80879cd4802050"
+      },
+      {
         "path": "test/table/advanced/wikidot.html",
         "blob": "841b645ccc246ba8bee9e06a23e4a95e32ff0c53",
         "sha256": "5f15c2dcd7a8ab2d3663891607a9d097f844de1da337f0867195f74e5b627d3d"
       },
       {
+        "path": "test/table/fail/wikidot.html",
+        "blob": "bd313aa0312d6c2a267c05283bfa2ca226451d22",
+        "sha256": "7506d4203f354daeca017a5b9ff3e94982cabb6e1041c25477df281700151220"
+      },
+      {
+        "path": "test/table/simple-aligned-colspan/wikidot.html",
+        "blob": "03d6c75a0b673765bacfa7f819b9809a9b10c351",
+        "sha256": "8ba4399b7bc0030eef4d00111f852537e07f28e6f9905c6f4861e33975e51d5c"
+      },
+      {
+        "path": "test/table/simple-eof/wikidot.html",
+        "blob": "3086af199babbf24630d6c1903b0ee58e86355c5",
+        "sha256": "80e3b3d7397efcad298ad1ca3b55626cd48eaa4862ed407fd53905f20218006e"
+      },
+      {
+        "path": "test/table/simple-followed-by-paragraph/wikidot.html",
+        "blob": "f0d01332c6c5042ab070abca1514f0296e1c2fdf",
+        "sha256": "0ddc01f15737da296a476633749ac35280208fd739a401bc58010b3830714604"
+      },
+      {
+        "path": "test/table/simple-spaced-delimiter-next-cell/wikidot.html",
+        "blob": "481176ea0ab45b1a2b3bcffb31974946241010ef",
+        "sha256": "9cd53e0e1ad2dfdec7f033073e4d79d7d82bdd3cad44ca3accea4425c45cf266"
+      },
+      {
+        "path": "test/table/simple-trailing-whitespace/wikidot.html",
+        "blob": "5b31f37969c05c7a97c12dfd33a9f715b8494eea",
+        "sha256": "22874ffe7b3e2ae1e75dbdb84c05bd83e4e1e52da178642ba59d988aa9c16701"
+      },
+      {
         "path": "test/table/simple/wikidot.html",
         "blob": "b9d2ed65aca4d639319e91ad0723ad6ab00807ec",
         "sha256": "aaa2b2a802b119ad703c371eee9952bb93b9a6cd72c10ed209b04377d39fd1f2"
+      },
+      {
+        "path": "test/target/basic/wikidot.html",
+        "blob": "810590299009b347b89f74d1d08a20bb5d2fa9b0",
+        "sha256": "e147096c809aeb1d7373304737da1026bb5d6a45b7f2418a71084baebcd03cd1"
+      },
+      {
+        "path": "test/target/fail/wikidot.html",
+        "blob": "8ad592a2dc0b7651bf0c3acee5b17b0e885643f8",
+        "sha256": "4ab7ee0eb3296045df1810798eac6a2ec0e87506e9c3e7a29934e6c17ebb909e"
+      },
+      {
+        "path": "test/toc/basic/wikidot.html",
+        "blob": "4467323a8ff3547069b3411aca884c02a30e28f7",
+        "sha256": "b4833767753ff02da49fef554cf1be071ff18a26a9127e5d59ddc02e06c98736"
+      },
+      {
+        "path": "test/toc/fail/wikidot.html",
+        "blob": "52df8bfe41a6f817666c4ab01fb4a1d725b420c0",
+        "sha256": "47d1dfd0598bc19a8bc194b33a3ab2706f62c7451a7f566dbc7d9928316bff33"
+      },
+      {
+        "path": "test/toc/multiple-blocks/wikidot.html",
+        "blob": "263999136f98bc25d8bc77e82365cec55c61c278",
+        "sha256": "0936068a722870325e1a0db8f398667b0dfb0fdcc79f73d12dc5f9f692099763"
+      },
+      {
+        "path": "test/toc/revert/wikidot.html",
+        "blob": "4847c62c4043299f4ed9e85725df1640be9d3240",
+        "sha256": "6ec6c2abb78700a3189cf19703e54e989145d5d9197125b3ff054156d900b10e"
+      },
+      {
+        "path": "test/underline/block/wikidot.html",
+        "blob": "7505f625344b5e2290f90c7ceb13eea3763bde4b",
+        "sha256": "a8a172a3f4ff4d51e2dc63f6bb8e0e619c980c8ec47866d593a30a6f648f0b46"
+      },
+      {
+        "path": "test/underline/native/wikidot.html",
+        "blob": "f5c8e13b60e88075d5303cacde6e6f5f2019f569",
+        "sha256": "3c01a12ccce5c51635d9efe62b803fa781709a51c4097b9ae2e1de7fe22f81cd"
+      },
+      {
+        "path": "test/underscore/basic/wikidot.html",
+        "blob": "a6b3537392620d5220144c03ffebae2ad13bf57c",
+        "sha256": "bafffd6b8db323fc0680b215f40450f240cc0f697aa9eb19319ab46ae0960a58"
+      },
+      {
+        "path": "test/underscore/fail/wikidot.html",
+        "blob": "a8650fe5cc210372b5bbdf7135a6b63d5ee750d9",
+        "sha256": "8308bc9d471ce355719fa26a259e2fcd20e8cbec1f1fb27767b868d4409b2809"
+      },
+      {
+        "path": "test/underscore/start-of-line-fail/wikidot.html",
+        "blob": "200a3539f8278b642a951c54a00d29eb9bf9e432",
+        "sha256": "732356eaf7c24c89b2f84df49ea3eda735c6720d06fbe3675eaf3f59eef037e1"
       },
       {
         "path": "test/user/basic/wikidot.html",
@@ -6174,6 +6689,11 @@
         "path": "test/video/basic/wikidot.html",
         "blob": "4302546f8e99013a901af02fe14b400605fe62c9",
         "sha256": "4b3b2a940696019a5b8ec416529d93194815069455357aa483d998bd8e891bf1"
+      },
+      {
+        "path": "test/video/fail/wikidot.html",
+        "blob": "689840185baea9de55f587f63673f3a82171ee7e",
+        "sha256": "d056e66ebb4b688121e23f41463204455058a3934d1e229b9a017a5f76a5ac56"
       }
     ],
     "counts": {
@@ -6186,8 +6706,8 @@
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
       "renderer_modules": 29,
-      "wikidot_fixtures": 26,
-      "total": 295
+      "wikidot_fixtures": 130,
+      "total": 399
     },
     "records": [
       {
@@ -7234,10 +7754,28 @@
         "source_reference": "src/delayed.rs"
       },
       {
+        "surface_id": "ftml.fixture:test/align/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/align/basic",
+        "source_reference": "test/align/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/align/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/align/fail",
+        "source_reference": "test/align/fail/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/anchor/basic",
         "kind": "wikidot_fixture",
         "name": "test/anchor/basic",
         "source_reference": "test/anchor/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/anchor/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/anchor/fail",
+        "source_reference": "test/anchor/fail/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/audio/basic",
@@ -7246,16 +7784,118 @@
         "source_reference": "test/audio/basic/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/audio/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/audio/fail",
+        "source_reference": "test/audio/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/blockquote/block",
+        "kind": "wikidot_fixture",
+        "name": "test/blockquote/block",
+        "source_reference": "test/blockquote/block/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/blockquote/native",
+        "kind": "wikidot_fixture",
+        "name": "test/blockquote/native",
+        "source_reference": "test/blockquote/native/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/bold/block",
+        "kind": "wikidot_fixture",
+        "name": "test/bold/block",
+        "source_reference": "test/bold/block/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/bold/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/bold/fail",
+        "source_reference": "test/bold/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/bold/native",
+        "kind": "wikidot_fixture",
+        "name": "test/bold/native",
+        "source_reference": "test/bold/native/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/checkbox/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/checkbox/basic",
+        "source_reference": "test/checkbox/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/checkbox/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/checkbox/fail",
+        "source_reference": "test/checkbox/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/code/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/code/basic",
+        "source_reference": "test/code/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/code/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/code/fail",
+        "source_reference": "test/code/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/code/revert",
+        "kind": "wikidot_fixture",
+        "name": "test/code/revert",
+        "source_reference": "test/code/revert/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/collapsible/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/collapsible/basic",
+        "source_reference": "test/collapsible/basic/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/collapsible/wikidot-parity",
         "kind": "wikidot_fixture",
         "name": "test/collapsible/wikidot-parity",
         "source_reference": "test/collapsible/wikidot-parity/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/color/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/color/basic",
+        "source_reference": "test/color/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/color/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/color/fail",
+        "source_reference": "test/color/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/color/malformed-nested",
+        "kind": "wikidot_fixture",
+        "name": "test/color/malformed-nested",
+        "source_reference": "test/color/malformed-nested/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/color/malformed-nested-footnote-bug",
+        "kind": "wikidot_fixture",
+        "name": "test/color/malformed-nested-footnote-bug",
+        "source_reference": "test/color/malformed-nested-footnote-bug/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/date/agohover",
         "kind": "wikidot_fixture",
         "name": "test/date/agohover",
         "source_reference": "test/date/agohover/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/date/escaped-agohover-format",
+        "kind": "wikidot_fixture",
+        "name": "test/date/escaped-agohover-format",
+        "source_reference": "test/date/escaped-agohover-format/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/date/hover",
@@ -7270,10 +7910,22 @@
         "source_reference": "test/date/matrix/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/date/matrix-french",
+        "kind": "wikidot_fixture",
+        "name": "test/date/matrix-french",
+        "source_reference": "test/date/matrix-french/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/date/timezone",
         "kind": "wikidot_fixture",
         "name": "test/date/timezone",
         "source_reference": "test/date/timezone/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/date/timezone-fail",
+        "kind": "wikidot_fixture",
+        "name": "test/date/timezone-fail",
+        "source_reference": "test/date/timezone-fail/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/definition-list/basic",
@@ -7282,10 +7934,46 @@
         "source_reference": "test/definition-list/basic/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/definition-list/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/definition-list/fail",
+        "source_reference": "test/definition-list/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/definition-list/missing-separator",
+        "kind": "wikidot_fixture",
+        "name": "test/definition-list/missing-separator",
+        "source_reference": "test/definition-list/missing-separator/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/diff/alias",
+        "kind": "wikidot_fixture",
+        "name": "test/diff/alias",
+        "source_reference": "test/diff/alias/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/diff/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/diff/basic",
+        "source_reference": "test/diff/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/diff/newlines",
+        "kind": "wikidot_fixture",
+        "name": "test/diff/newlines",
+        "source_reference": "test/diff/newlines/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/div/wikidot-nested-list-boundary",
         "kind": "wikidot_fixture",
         "name": "test/div/wikidot-nested-list-boundary",
         "source_reference": "test/div/wikidot-nested-list-boundary/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/embed/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/embed/basic",
+        "source_reference": "test/embed/basic/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/file/wikidot-attachment",
@@ -7294,10 +7982,118 @@
         "source_reference": "test/file/wikidot-attachment/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/footnote/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/footnote/basic",
+        "source_reference": "test/footnote/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-empty",
+        "kind": "wikidot_fixture",
+        "name": "test/footnote/block-empty",
+        "source_reference": "test/footnote/block-empty/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-hide",
+        "kind": "wikidot_fixture",
+        "name": "test/footnote/block-hide",
+        "source_reference": "test/footnote/block-hide/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-multiple",
+        "kind": "wikidot_fixture",
+        "name": "test/footnote/block-multiple",
+        "source_reference": "test/footnote/block-multiple/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/block-title",
+        "kind": "wikidot_fixture",
+        "name": "test/footnote/block-title",
+        "source_reference": "test/footnote/block-title/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/footnote/revert",
+        "kind": "wikidot_fixture",
+        "name": "test/footnote/revert",
+        "source_reference": "test/footnote/revert/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/heading/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/heading/basic",
+        "source_reference": "test/heading/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/heading/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/heading/fail",
+        "source_reference": "test/heading/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/hidden/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/hidden/basic",
+        "source_reference": "test/hidden/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/html/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/html/fail",
+        "source_reference": "test/html/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/iframe/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/iframe/basic",
+        "source_reference": "test/iframe/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/iframe/xss",
+        "kind": "wikidot_fixture",
+        "name": "test/iframe/xss",
+        "source_reference": "test/iframe/xss/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/image/basic",
         "kind": "wikidot_fixture",
         "name": "test/image/basic",
         "source_reference": "test/image/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/invisible/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/invisible/basic",
+        "source_reference": "test/invisible/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/italics/block",
+        "kind": "wikidot_fixture",
+        "name": "test/italics/block",
+        "source_reference": "test/italics/block/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/later/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/later/basic",
+        "source_reference": "test/later/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/line-breaks/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/line-breaks/basic",
+        "source_reference": "test/line-breaks/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/line-breaks/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/line-breaks/fail",
+        "source_reference": "test/line-breaks/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/link/anchor",
+        "kind": "wikidot_fixture",
+        "name": "test/link/anchor",
+        "source_reference": "test/link/anchor/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/link/canonical-inline",
@@ -7318,6 +8114,36 @@
         "source_reference": "test/link/triple/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/list/block",
+        "kind": "wikidot_fixture",
+        "name": "test/list/block",
+        "source_reference": "test/list/block/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/block-score-nested",
+        "kind": "wikidot_fixture",
+        "name": "test/list/block-score-nested",
+        "source_reference": "test/list/block-score-nested/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/block-spaced-end",
+        "kind": "wikidot_fixture",
+        "name": "test/list/block-spaced-end",
+        "source_reference": "test/list/block-spaced-end/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/native",
+        "kind": "wikidot_fixture",
+        "name": "test/list/native",
+        "source_reference": "test/list/native/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/native-literal",
+        "kind": "wikidot_fixture",
+        "name": "test/list/native-literal",
+        "source_reference": "test/list/native-literal/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/list/native-skipped-depth-empty-parent",
         "kind": "wikidot_fixture",
         "name": "test/list/native-skipped-depth-empty-parent",
@@ -7330,10 +8156,64 @@
         "source_reference": "test/list/native-wikidot-structure/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/mark/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/mark/basic",
+        "source_reference": "test/mark/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/math/block",
+        "kind": "wikidot_fixture",
+        "name": "test/math/block",
+        "source_reference": "test/math/block/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/media/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/media/fail",
+        "source_reference": "test/media/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/media/path-variants",
+        "kind": "wikidot_fixture",
+        "name": "test/media/path-variants",
+        "source_reference": "test/media/path-variants/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/bibliography",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/bibliography",
+        "source_reference": "test/misc/bibliography/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/bibliography-missing-cite",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/bibliography-missing-cite",
+        "source_reference": "test/misc/bibliography-missing-cite/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/center",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/center",
+        "source_reference": "test/misc/center/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/char",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/char",
+        "source_reference": "test/misc/char/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/misc/clear-float",
         "kind": "wikidot_fixture",
         "name": "test/misc/clear-float",
         "source_reference": "test/misc/clear-float/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/comment",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/comment",
+        "source_reference": "test/misc/comment/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/misc/dash-edges",
@@ -7342,16 +8222,82 @@
         "source_reference": "test/misc/dash-edges/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/misc/em-dash",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/em-dash",
+        "source_reference": "test/misc/em-dash/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/misc/email",
         "kind": "wikidot_fixture",
         "name": "test/misc/email",
         "source_reference": "test/misc/email/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/misc/guillemet",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/guillemet",
+        "source_reference": "test/misc/guillemet/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/hr",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/hr",
+        "source_reference": "test/misc/hr/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/spaces",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/spaces",
+        "source_reference": "test/misc/spaces/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/misc/symbols",
+        "kind": "wikidot_fixture",
+        "name": "test/misc/symbols",
+        "source_reference": "test/misc/symbols/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/module/css",
+        "kind": "wikidot_fixture",
+        "name": "test/module/css",
+        "source_reference": "test/module/css/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/monospace/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/monospace/basic",
+        "source_reference": "test/monospace/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/monospace/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/monospace/fail",
+        "source_reference": "test/monospace/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/paragraph/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/paragraph/basic",
+        "source_reference": "test/paragraph/basic/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/radio/basic",
         "kind": "wikidot_fixture",
         "name": "test/radio/basic",
         "source_reference": "test/radio/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/radio/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/radio/fail",
+        "source_reference": "test/radio/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/raw/adjacent-empty",
+        "kind": "wikidot_fixture",
+        "name": "test/raw/adjacent-empty",
+        "source_reference": "test/raw/adjacent-empty/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/raw/basic",
@@ -7366,16 +8312,208 @@
         "source_reference": "test/raw/block/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/raw/disallowed-flags",
+        "kind": "wikidot_fixture",
+        "name": "test/raw/disallowed-flags",
+        "source_reference": "test/raw/disallowed-flags/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/raw/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/raw/fail",
+        "source_reference": "test/raw/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/raw/left-raw-eof",
+        "kind": "wikidot_fixture",
+        "name": "test/raw/left-raw-eof",
+        "source_reference": "test/raw/left-raw-eof/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/ruby/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/ruby/fail",
+        "source_reference": "test/ruby/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/size/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/size/basic",
+        "source_reference": "test/size/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/strikethrough/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/strikethrough/basic",
+        "source_reference": "test/strikethrough/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/strikethrough/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/strikethrough/fail",
+        "source_reference": "test/strikethrough/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/subscript/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/subscript/basic",
+        "source_reference": "test/subscript/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/subscript/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/subscript/fail",
+        "source_reference": "test/subscript/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/superscript/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/superscript/basic",
+        "source_reference": "test/superscript/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/superscript/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/superscript/fail",
+        "source_reference": "test/superscript/fail/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/table/advanced",
         "kind": "wikidot_fixture",
         "name": "test/table/advanced",
         "source_reference": "test/table/advanced/wikidot.html"
       },
       {
+        "surface_id": "ftml.fixture:test/table/advanced-attrs-header-regular",
+        "kind": "wikidot_fixture",
+        "name": "test/table/advanced-attrs-header-regular",
+        "source_reference": "test/table/advanced-attrs-header-regular/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/advanced-colspan",
+        "kind": "wikidot_fixture",
+        "name": "test/table/advanced-colspan",
+        "source_reference": "test/table/advanced-colspan/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/advanced-colspan-fallback",
+        "kind": "wikidot_fixture",
+        "name": "test/table/advanced-colspan-fallback",
+        "source_reference": "test/table/advanced-colspan-fallback/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/advanced-malformed-arguments",
+        "kind": "wikidot_fixture",
+        "name": "test/table/advanced-malformed-arguments",
+        "source_reference": "test/table/advanced-malformed-arguments/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/table/fail",
+        "source_reference": "test/table/fail/wikidot.html"
+      },
+      {
         "surface_id": "ftml.fixture:test/table/simple",
         "kind": "wikidot_fixture",
         "name": "test/table/simple",
         "source_reference": "test/table/simple/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-aligned-colspan",
+        "kind": "wikidot_fixture",
+        "name": "test/table/simple-aligned-colspan",
+        "source_reference": "test/table/simple-aligned-colspan/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-eof",
+        "kind": "wikidot_fixture",
+        "name": "test/table/simple-eof",
+        "source_reference": "test/table/simple-eof/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-followed-by-paragraph",
+        "kind": "wikidot_fixture",
+        "name": "test/table/simple-followed-by-paragraph",
+        "source_reference": "test/table/simple-followed-by-paragraph/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-spaced-delimiter-next-cell",
+        "kind": "wikidot_fixture",
+        "name": "test/table/simple-spaced-delimiter-next-cell",
+        "source_reference": "test/table/simple-spaced-delimiter-next-cell/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/table/simple-trailing-whitespace",
+        "kind": "wikidot_fixture",
+        "name": "test/table/simple-trailing-whitespace",
+        "source_reference": "test/table/simple-trailing-whitespace/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/target/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/target/basic",
+        "source_reference": "test/target/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/target/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/target/fail",
+        "source_reference": "test/target/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/toc/basic",
+        "source_reference": "test/toc/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/toc/fail",
+        "source_reference": "test/toc/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/multiple-blocks",
+        "kind": "wikidot_fixture",
+        "name": "test/toc/multiple-blocks",
+        "source_reference": "test/toc/multiple-blocks/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/toc/revert",
+        "kind": "wikidot_fixture",
+        "name": "test/toc/revert",
+        "source_reference": "test/toc/revert/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underline/block",
+        "kind": "wikidot_fixture",
+        "name": "test/underline/block",
+        "source_reference": "test/underline/block/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underline/native",
+        "kind": "wikidot_fixture",
+        "name": "test/underline/native",
+        "source_reference": "test/underline/native/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underscore/basic",
+        "kind": "wikidot_fixture",
+        "name": "test/underscore/basic",
+        "source_reference": "test/underscore/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underscore/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/underscore/fail",
+        "source_reference": "test/underscore/fail/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/underscore/start-of-line-fail",
+        "kind": "wikidot_fixture",
+        "name": "test/underscore/start-of-line-fail",
+        "source_reference": "test/underscore/start-of-line-fail/wikidot.html"
       },
       {
         "surface_id": "ftml.fixture:test/user/basic",
@@ -7388,6 +8526,12 @@
         "kind": "wikidot_fixture",
         "name": "test/video/basic",
         "source_reference": "test/video/basic/wikidot.html"
+      },
+      {
+        "surface_id": "ftml.fixture:test/video/fail",
+        "kind": "wikidot_fixture",
+        "name": "test/video/fail",
+        "source_reference": "test/video/fail/wikidot.html"
       },
       {
         "surface_id": "ftml.generated:PageLink",
@@ -8884,21 +10028,21 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "ae0a5e8a812d09a1b997795904bd5ef88b2492c2",
-      "tree": "e82616fee00a5cc457442b14ff362fbde29c2f44"
+      "commit": "2d4b01e0a28386d8ac65373ea9ac1e57fc19eeb1",
+      "tree": "9eeaa0c7e09504d37df4a8339ddfcc38d390afc2"
     },
     "ftml": {
-      "commit": "62ebba4efda1f10e82363c23c925061fbe939e49",
-      "tree": "ca84a08a46880a67b44cbb9374b4f7bd54d08f10"
+      "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
+      "tree": "fc1856286c81ea2a5b5a2c0f73ce68d09fb7d4b4"
     },
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9"
+        "sha256": "5cd87070bb5c8f646b93cb85507d05bc605743d7a833fb7634733ef6ecb1fe21"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "06040a3504b160fc07302b91ead752e984ffefef1c0fec34172a19373f3d5992"
+        "sha256": "070648109d761b9b3e1327bcce4bb8e93d3d6bbde60fc04181823fff2f032c68"
       },
       {
         "path": "deepwell/src/api.rs",
@@ -8906,7 +10050,7 @@
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
-        "sha256": "e126a3369cda4d59d72c2e01e6ce60be80b413af8351b031ebd7383b30830c44"
+        "sha256": "ed12b79ea7ec20b43693cfc72dc08c2621f4dfa82dc8ba4fe9c9259fa1d86399"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
