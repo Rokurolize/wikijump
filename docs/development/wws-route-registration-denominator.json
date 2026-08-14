@@ -52,7 +52,7 @@
   },
   "generator": {
     "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-    "sha256": "f9783fd17d84e4ef581a3202e27e6536e4db0d57dbcc23963d53f6a1356bfae7"
+    "sha256": "0057e2c2fd04002030112f96da61a73a33c35bd3c87849381cc0f430b5485075"
   },
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",

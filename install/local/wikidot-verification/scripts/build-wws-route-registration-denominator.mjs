@@ -16,6 +16,8 @@ const HANDLER_DIRECTORY = "wws/src/handler"
 const HISTORICAL_ARTIFACT = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json"
 const HISTORICAL_FIXTURE = "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
 const EXPECTED_REGISTRATION_COUNT = 30
+const GIT_EXECUTABLE = "/usr/bin/git"
+const GIT_ENVIRONMENT = Object.freeze({ LANG: "C", LC_ALL: "C", PATH: "/usr/bin:/bin" })
 const DIRECT_METHODS = new Map([
   ["get", "GET"],
   ["post", "POST"],
@@ -71,14 +73,18 @@ function sha256(value) {
 }
 
 function git(root, ...arguments_) {
-  const result = spawnSync("git", ["-C", root, ...arguments_], { encoding: "utf8" })
+  const result = spawnSync(GIT_EXECUTABLE, ["-C", root, ...arguments_], {
+    encoding: "utf8",
+    env: GIT_ENVIRONMENT
+  })
   if (result.status !== 0) throw new Error(result.stderr.trim() || `git ${arguments_.join(" ")} failed`)
   return result.stdout.trim()
 }
 
 function gitWithInput(root, input, ...arguments_) {
-  const result = spawnSync("git", ["-C", root, ...arguments_], {
+  const result = spawnSync(GIT_EXECUTABLE, ["-C", root, ...arguments_], {
     encoding: "utf8",
+    env: GIT_ENVIRONMENT,
     input
   })
   if (result.status !== 0) throw new Error(result.stderr.trim() || `git ${arguments_.join(" ")} failed`)

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { spawnSync } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs/promises"
 import os from "node:os"
@@ -198,7 +198,7 @@ test("CLI verify rejects a byte-drifted denominator", async (t) => {
   assert.equal(result.stdout, "")
 })
 
-test("CLI hashes the same captured source bytes that it parses", async (t) => {
+test("CLI ignores hostile Git process controls while hashing captured source bytes", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-captured-bytes-"))
   t.after(() => fs.rm(root, { recursive: true, force: true }))
   await writeCommittedProductionFixture(root)
@@ -209,15 +209,8 @@ test("CLI hashes the same captured source bytes that it parses", async (t) => {
   await fs.writeFile(
     path.join(shimDirectory, "git"),
     `#!/bin/sh
-repository=""
-if [ "$1" = "-C" ]; then
-  repository="$2"
-  shift 2
-fi
-if [ "$1" = "hash-object" ] && [ "$2" != "--stdin" ]; then
-  printf '\\n// changed after capture\\n' >> "$repository/$2"
-fi
-exec "${realGit}" -C "$repository" "$@"
+printf 'hostile PATH git executed: %s\\n' "${realGit}" >&2
+exit 97
 `
   )
   await fs.chmod(path.join(shimDirectory, "git"), 0o755)
@@ -225,7 +218,11 @@ exec "${realGit}" -C "$repository" "$@"
 
   const result = runCli(root, output, [], {
     ...process.env,
-    PATH: `${shimDirectory}:${process.env.PATH}`
+    PATH: `${shimDirectory}:${process.env.PATH}`,
+    GIT_DIR: path.join(root, "hostile-git-dir"),
+    GIT_WORK_TREE: path.join(root, "hostile-work-tree"),
+    GIT_INDEX_FILE: path.join(root, "hostile-index"),
+    GIT_OBJECT_DIRECTORY: path.join(root, "hostile-objects")
   })
 
   assert.equal(result.status, 0, result.stderr)
@@ -233,6 +230,44 @@ exec "${realGit}" -C "$repository" "$@"
   const manifest = JSON.parse(await fs.readFile(output, "utf8"))
   const routeInput = manifest.source.inputs.find(({ path: inputPath }) => inputPath === "wws/src/route.rs")
   assert.equal(routeInput.sha256, createHash("sha256").update(originalRouteSource).digest("hex"))
+})
+
+test("CLI does not reread a source pathname after capturing its bytes", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-no-reread-"))
+  t.after(() => fs.rm(root, { recursive: true, force: true }))
+  await writeCommittedProductionFixture(root)
+  const routePath = path.join(root, "wws/src/route.rs")
+  const originalRouteSource = await fs.readFile(routePath)
+  await fs.unlink(routePath)
+  const fifoResult = spawnSync("mkfifo", [routePath], { encoding: "utf8" })
+  assert.equal(fifoResult.status, 0, fifoResult.stderr)
+  const output = path.join(root, "denominator.json")
+  const child = spawn(
+    process.execPath,
+    [cliPath, "--root", root, "--output", output],
+    { stdio: ["ignore", "pipe", "pipe"] }
+  )
+  let stdout = ""
+  let stderr = ""
+  child.stdout.setEncoding("utf8")
+  child.stderr.setEncoding("utf8")
+  child.stdout.on("data", (chunk) => { stdout += chunk })
+  child.stderr.on("data", (chunk) => { stderr += chunk })
+  const exit = new Promise((resolve) => child.on("close", (status) => resolve(status)))
+  const writer = await fs.open(routePath, "w")
+  await writer.writeFile(originalRouteSource)
+  await writer.close()
+  await fs.unlink(routePath)
+  await fs.writeFile(routePath, Buffer.from("changed after capture\n"))
+
+  const status = await exit
+
+  assert.equal(status, 0, stderr)
+  assert.equal(stdout, `wrote 30 WWS route registrations to denominator.json\n`)
+  const manifest = JSON.parse(await fs.readFile(output, "utf8"))
+  const routeInput = manifest.source.inputs.find(({ path: inputPath }) => inputPath === "wws/src/route.rs")
+  assert.equal(routeInput.sha256, createHash("sha256").update(originalRouteSource).digest("hex"))
+  assert.notEqual(routeInput.sha256, await sha256(routePath))
 })
 
 for (const [form, symbol, handlerSource] of [
