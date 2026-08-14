@@ -52,7 +52,7 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
     assert.ok(Array.isArray(method.actor_context.requirements))
     assert.ok(["mutating", "read_only"].includes(method.mutation_class.classification))
     assert.ok(["default", "RepeatableRead"].includes(method.transaction_isolation))
-    assert.ok(["endpoint_behavioral", "source_contract_only"].includes(method.test_witness.kind))
+    assert.ok(["rpc_behavioral", "endpoint_behavioral", "source_contract_only"].includes(method.test_witness.kind))
   }
 
   const byMethod = new Map(manifest.methods.map((method) => [method.method, method]))
@@ -65,6 +65,7 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
     "permission_check"
   ])
   assert.deepEqual(byMethod.get("membership_join").actor_context.requirements, [])
+  assert.equal(byMethod.get("membership_join").params_schema.decoder, "parse!(params, SiteMembership)")
   assert.equal(byMethod.get("blob_blacklist_add").params_schema.decoder, "params.parse()")
   for (const method of [
     "blob_blacklist_add",
@@ -76,7 +77,14 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   ]) {
     assert.equal(byMethod.get(method).mutation_class.classification, "mutating")
   }
+  for (const method of ["page_move", "page_rerender", "page_attribution_delete", "vote_action"]) {
+    assert.equal(byMethod.get(method).mutation_class.classification, "mutating")
+  }
+  for (const method of ["blob_blacklist_check", "blob_hard_delete_preview"]) {
+    assert.equal(byMethod.get(method).mutation_class.classification, "read_only")
+  }
   assert.deepEqual(byMethod.get("ping").actor_context.transport_authentication, {
+    header_symbol: "AUTHORIZATION",
     header: "Authorization",
     scheme: "Bearer",
     token_format: "64 lowercase hexadecimal characters",
@@ -89,6 +97,13 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
   ])
   assert.equal(byMethod.get("blob_blacklist_add").test_witness.kind, "endpoint_behavioral")
   assert.match(byMethod.get("blob_blacklist_add").test_witness.reference, /^deepwell\/tests\/blob\.rs#/u)
+  assert.equal(byMethod.get("echo").test_witness.kind, "rpc_behavioral")
+  assert.match(byMethod.get("echo").test_witness.reference, /^deepwell\/tests\/rpc_boundary\.rs#/u)
+  const sourceOnly = manifest.methods.filter(({ test_witness }) => test_witness.kind === "source_contract_only")
+  for (const { test_witness } of sourceOnly) {
+    assert.equal(test_witness.coverage_gap.searched_root, "deepwell/tests")
+    assert.equal(typeof test_witness.coverage_gap.reason, "string")
+  }
 
   const outputDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-inventory-"))
   const inventoryPath = path.join(outputDirectory, "inventory.json")
@@ -157,4 +172,24 @@ test("Deepwell JSON-RPC generator fails closed when middleware contract declarat
   const contextResult = runCli(cliPath, ["--root", root, "--output", path.join(root, "manifest.json")])
   assert.equal(contextResult.status, 1)
   assert.match(contextResult.stderr, /unsupported request context header declaration/u)
+})
+
+test("Deepwell JSON-RPC generator rejects changed authorization aliases or duplicate-header behavior", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-auth-control-flow-"))
+  await writeSourceFixture(root)
+  const authPath = path.join(root, "deepwell/src/middleware/rpc_auth.rs")
+  const authSource = await fs.readFile(authPath, "utf8")
+  await fs.writeFile(authPath, authSource.replace("use http::header::{AUTHORIZATION, HeaderMap, WWW_AUTHENTICATE};", "use http::header::{HeaderMap, WWW_AUTHENTICATE};\nconst AUTHORIZATION: &str = \"X-Alternate-Authorization\";"))
+
+  const aliasResult = runCli(cliPath, ["--root", root, "--output", path.join(root, "manifest.json")])
+  assert.equal(aliasResult.status, 1)
+  assert.match(aliasResult.stderr, /unsupported RPC authentication declaration/u)
+
+  await writeSourceFixture(root)
+  const duplicateSource = await fs.readFile(authPath, "utf8")
+  await fs.writeFile(authPath, duplicateSource.replace("if values.next().is_some() {\n        return false;\n    }", "if values.next().is_some() {\n        return true;\n    }"))
+
+  const duplicateResult = runCli(cliPath, ["--root", root, "--output", path.join(root, "manifest.json")])
+  assert.equal(duplicateResult.status, 1)
+  assert.match(duplicateResult.stderr, /unsupported RPC authentication declaration/u)
 })

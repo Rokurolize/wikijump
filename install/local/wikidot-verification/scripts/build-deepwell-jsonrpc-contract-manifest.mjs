@@ -17,6 +17,33 @@ const HISTORICAL_EVIDENCE = [
   "install/local/wikidot-verification/artifacts/pr1334-deepwell-identity-jsonrpc-attribution-20260810.json",
   "install/local/wikidot-verification/artifacts/pr1334-deepwell-page-revision-jsonrpc-attribution-20260810.json"
 ]
+const MUTATING_SERVICE_CALLS = new Set([
+  "AuthorizationTokenService::create",
+  "BlobService::add_blacklist", "BlobService::cancel_upload", "BlobService::hard_delete_all", "BlobService::remove_blacklist", "BlobService::start_upload",
+  "CategoryService::update",
+  "DomainService::create_custom", "DomainService::remove_custom",
+  "FileRevisionService::update",
+  "FileService::create", "FileService::delete", "FileService::edit", "FileService::r#move", "FileService::restore", "FileService::rollback",
+  "ForumThreadService::get_or_create_page_discussion",
+  "ImportService::add_page", "ImportService::add_page_revision", "ImportService::add_site", "ImportService::add_user",
+  "LegacyActionService::set_tags",
+  "MembershipService::join",
+  "MessageService::create_draft", "MessageService::delete_draft", "MessageService::send", "MessageService::update_draft",
+  "MfaService::disable", "MfaService::reset_recovery_codes", "MfaService::setup",
+  "PageLockService::create", "PageLockService::remove",
+  "PageMetaTagService::delete", "PageMetaTagService::set",
+  "PageRevisionService::rerender", "PageRevisionService::update",
+  "PageService::create", "PageService::delete", "PageService::edit", "PageService::r#move", "PageService::restore", "PageService::rollback", "PageService::set_layout",
+  "ParentService::create", "ParentService::remove",
+  "PermissionService::update_permissions_for_role",
+  "RelationService::clear_page_attributions", "RelationService::create_site_ban", "RelationService::create_site_member", "RelationService::create_user_bot_owner", "RelationService::remove_site_ban_with_audit", "RelationService::remove_site_member", "RelationService::remove_user_bot_owner", "RelationService::set_page_attributions",
+  "RoleService::create", "RoleService::delete", "RoleService::grant_role_to_user", "RoleService::reparent_role", "RoleService::revoke_role_from_user", "RoleService::update",
+  "SessionService::create", "SessionService::invalidate", "SessionService::invalidate_others", "SessionService::renew", "SessionService::renew_restricted",
+  "SiteService::create", "SiteService::update",
+  "TextService::create",
+  "UserService::activate_from_wikidot", "UserService::add_name_change_token", "UserService::create", "UserService::delete", "UserService::import_wikidot", "UserService::update",
+  "VoteService::action", "VoteService::add", "VoteService::remove"
+])
 
 function usage() {
   return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--output JSON] [--verify]\n`
@@ -182,10 +209,34 @@ function localFunctionClosure(entry) {
 }
 
 function parameterDecoder(source) {
-  const macro = /\b(parse(?:_one)?)!\s*\(([\s\S]*?)\)\s*;/u.exec(source)
-  if (macro !== null) return `${macro[1]}!(${normalizeSource(macro[2])})`
+  const macro = /\b(parse(?:_one)?)!\s*\(/u.exec(source)
+  if (macro !== null) {
+    const open = source.indexOf("(", macro.index)
+    const close = matchingParenthesis(source, open, "parameter decoder")
+    return normalizeSource(source.slice(macro.index, close + 1))
+  }
   const method = /\b([A-Za-z_][A-Za-z0-9_]*)\s*\.\s*parse\s*\(\s*\)\s*\.or_raise\s*\(/u.exec(source)
   return method === null ? "not_decoded" : `${method[1]}.parse()`
+}
+
+function matchingParenthesis(source, open, reference) {
+  let depth = 0
+  for (let index = open; index < source.length; index += 1) {
+    if (source[index] === '"') {
+      index += 1
+      while (index < source.length && source[index] !== '"') {
+        if (source[index] === "\\") index += 1
+        index += 1
+      }
+      continue
+    }
+    if (source[index] === "(") depth += 1
+    else if (source[index] === ")") {
+      depth -= 1
+      if (depth === 0) return index
+    }
+  }
+  throw new Error(`${reference} has an unterminated parenthesized expression`)
 }
 
 function sourceRequirements(sources) {
@@ -203,11 +254,11 @@ function sourceRequirements(sources) {
 
 function mutationSignals(sources) {
   const signals = []
-  const serviceCall = /\b([A-Za-z_][A-Za-z0-9_]*Service)::([A-Za-z_][A-Za-z0-9_]*)\b/gu
-  const mutationName = /(?:^|_)(?:create|update|delete|remove|set|edit|move|restore|rollback|upload|cancel|send|invalidate|issue|disable|verify|activate|import|blacklist|hard_delete|add|renew|reset|setup|join)(?:_|$)/u
+  const serviceCall = /\b([A-Za-z_][A-Za-z0-9_]*Service)::(?:(r#)?([A-Za-z_][A-Za-z0-9_]*))\b/gu
   for (const source of sources) {
     for (const match of source.matchAll(serviceCall)) {
-      if (mutationName.test(match[2])) signals.push(`${match[1]}::${match[2]}`)
+      const call = `${match[1]}::${match[2] ?? ""}${match[3]}`
+      if (MUTATING_SERVICE_CALLS.has(call)) signals.push(call)
     }
   }
   return [...new Set(signals)].sort()
@@ -248,9 +299,13 @@ function endpointContract(entry, transport) {
 
 function deriveTransportContract(rpcAuthSource, middlewareSource) {
   const tokenLength = /const\s+TOKEN_HEX_LENGTH\s*:\s*usize\s*=\s*([0-9]+)\s*;/u.exec(rpcAuthSource)
+  const authorizationImport = /use\s+http::header::\{([^}]+)\};/u.exec(rpcAuthSource)
   if (
     tokenLength === null ||
+    authorizationImport === null ||
+    !authorizationImport[1].split(",").map((entry) => entry.trim()).includes("AUTHORIZATION") ||
     !rpcAuthSource.includes("headers.get_all(AUTHORIZATION).iter()") ||
+    !/if\s+values\.next\(\)\.is_some\(\)\s*\{\s*return false;\s*\}/u.test(rpcAuthSource) ||
     !rpcAuthSource.includes('value.strip_prefix("Bearer ")') ||
     !rpcAuthSource.includes("byte.is_ascii_digit() || (b'a'..=b'f').contains(byte)")
   ) {
@@ -277,6 +332,7 @@ function deriveTransportContract(rpcAuthSource, middlewareSource) {
   }
   return {
     authentication: {
+      header_symbol: "AUTHORIZATION",
       header: "Authorization",
       scheme: "Bearer",
       token_format: `${tokenLength[1]} lowercase hexadecimal characters`,
@@ -297,7 +353,8 @@ async function behavioralWitnesses(root) {
     }
   }
   await visit(directory)
-  const witnesses = new Map()
+  const endpointWitnesses = new Map()
+  const rpcWitnesses = new Map()
   for (const file of files.sort()) {
     const source = await fs.readFile(file, "utf8")
     const tests = [...source.matchAll(/#\[(?:tokio::test|test)\]\s*(?:async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)/gu)]
@@ -305,12 +362,23 @@ async function behavioralWitnesses(root) {
       const testName = [...tests].reverse().find(({ index }) => index < match.index)?.[1]
       if (testName === undefined) continue
       const handler = match[1]
-      const references = witnesses.get(handler) ?? []
+      const references = endpointWitnesses.get(handler) ?? []
       references.push(`${toPosix(path.relative(root, file))}#${testName}`)
-      witnesses.set(handler, references)
+      endpointWitnesses.set(handler, references)
+    }
+    for (const match of source.matchAll(/rpc_request\(\s*"([^"]+)"\s*,/gu)) {
+      const testName = [...tests].reverse().find(({ index }) => index < match.index)?.[1]
+      if (testName === undefined) continue
+      const method = match[1]
+      const references = rpcWitnesses.get(method) ?? []
+      references.push(`${toPosix(path.relative(root, file))}#${testName}`)
+      rpcWitnesses.set(method, references)
     }
   }
-  return new Map([...witnesses].map(([handler, references]) => [handler, [...new Set(references)].sort()]))
+  return {
+    endpoint: new Map([...endpointWitnesses].map(([handler, references]) => [handler, [...new Set(references)].sort()])),
+    rpc: new Map([...rpcWitnesses].map(([method, references]) => [method, [...new Set(references)].sort()]))
+  }
 }
 
 async function buildManifest(root) {
@@ -332,7 +400,10 @@ async function buildManifest(root) {
       method: registration.method,
       ...endpointContract(matches[0], transport),
       transaction_isolation: registration.isolation,
-      test_witness: witnessFor(witnesses.get(registration.handler) ?? [])
+      test_witness: witnessFor(
+        witnesses.rpc.get(registration.method) ?? [],
+        witnesses.endpoint.get(registration.handler) ?? []
+      )
     })
   }
   const historicalEvidence = []
@@ -359,19 +430,31 @@ async function buildManifest(root) {
   }
 }
 
-function witnessFor(references) {
-  if (references.length > 0) {
+function witnessFor(rpcReferences, endpointReferences) {
+  if (rpcReferences.length > 0) {
+    return {
+      kind: "rpc_behavioral",
+      reference: rpcReferences[0],
+      alternatives: rpcReferences.slice(1),
+      source_contract_reference: CONTRACT_TEST
+    }
+  }
+  if (endpointReferences.length > 0) {
     return {
       kind: "endpoint_behavioral",
-      reference: references[0],
-      alternatives: references.slice(1),
+      reference: endpointReferences[0],
+      alternatives: endpointReferences.slice(1),
       source_contract_reference: CONTRACT_TEST
     }
   }
   return {
     kind: "source_contract_only",
     reference: CONTRACT_TEST,
-    scope: "no direct run_endpoint witness was found"
+    coverage_gap: {
+      searched_root: "deepwell/tests",
+      reason: "no direct run_endpoint handler invocation or rpc_request method invocation was found",
+      searched_invocations: ["run_endpoint!(runner, handler, ...)", "rpc_request(\"method\", ...)"]
+    }
   }
 }
 
