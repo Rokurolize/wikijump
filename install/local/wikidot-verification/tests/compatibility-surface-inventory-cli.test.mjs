@@ -638,11 +638,12 @@ test("CLI rejects an operation anchor absent from the declared pageActions objec
   assert.match(result.stderr, /create edit is not declared by .*#pageActions/u)
 })
 
-test("CLI ignores pageActions declarations shadowed by TypeScript comments and strings", async (t) => {
+test("CLI ignores pageActions declarations shadowed by TypeScript comments and literals", async (t) => {
   const realDeclaration = pageActionsFixtureSource.replace("edit: editAction,\n", "")
   const shadows = {
     comment: "// export const pageActions = { edit: fake, deletedGet: fake, restore: fake }",
-    string: 'const shadow = "export const pageActions = { edit: fake, deletedGet: fake, restore: fake }"'
+    string: 'const shadow = "export const pageActions = { edit: fake, deletedGet: fake, restore: fake }"',
+    regex: "/export const pageActions = { edit: fake, deletedGet: fake, restore: fake }/"
   }
   for (const [kind, shadow] of Object.entries(shadows)) {
     await t.test(kind, async (t) => {

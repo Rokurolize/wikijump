@@ -498,7 +498,7 @@ function maskTypeScriptCommentsAndLiterals(sourceText, reference) {
 async function declaredPageActions(root, sourcePath) {
   const sourceText = await readText(root, sourcePath)
   const lexicalSource = maskTypeScriptCommentsAndLiterals(sourceText, sourcePath)
-  const declaration = /export\s+const\s+pageActions\s*=\s*/u.exec(lexicalSource)
+  const declaration = /^\s*export\s+const\s+pageActions\s*=\s*/mu.exec(lexicalSource)
   if (!declaration) throw new Error(`${sourcePath} has no exported pageActions declaration`)
   const expressionStart = declaration.index + declaration[0].length
   if (lexicalSource[expressionStart] !== "{") {

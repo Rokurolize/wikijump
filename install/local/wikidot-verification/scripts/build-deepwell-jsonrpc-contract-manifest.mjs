@@ -126,13 +126,13 @@ async function endpointSources(root) {
     const relativePath = `${ENDPOINTS_DIRECTORY}/${file}`
     const source = await readText(root, relativePath)
     const fileFunctions = new Map()
-    for (const match of source.matchAll(/(?:pub\s+)?async\s+fn\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(/gu)) {
+    for (const match of source.matchAll(/^[ \t]*(?:(pub(?:\s*\([^)]*\))?)\s+)?(async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)(?:\s*<[^>{}]*>)?\s*\(/gmu)) {
       const entry = {
-        handler: match[1],
+        handler: match[3],
         source,
         sourcePath: relativePath,
         offset: match.index,
-        body: rustFunctionBody(source, match.index, `${relativePath}#${match[1]}`)
+        body: rustFunctionBody(source, match.index, `${relativePath}#${match[3]}`)
       }
       const localMatches = fileFunctions.get(entry.handler) ?? []
       localMatches.push(entry)
@@ -140,7 +140,7 @@ async function endpointSources(root) {
     }
     for (const entries of fileFunctions.values()) {
       for (const entry of entries) entry.fileFunctions = fileFunctions
-      if (entries[0].source.slice(entries[0].offset).startsWith("pub async fn")) {
+      if (entries[0].source.slice(entries[0].offset).trimStart().startsWith("pub async fn")) {
         const matches = byHandler.get(entries[0].handler) ?? []
         matches.push(...entries)
         byHandler.set(entries[0].handler, matches)

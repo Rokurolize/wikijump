@@ -153,6 +153,27 @@ test("Deepwell JSON-RPC generator rejects a duplicate source registration", asyn
   assert.match(result.stderr, /duplicate JSON-RPC registration: ping/u)
 })
 
+test("Deepwell JSON-RPC generator follows sync and qualified or generic local helpers", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-helpers-"))
+  const outputPath = path.join(root, "manifest.json")
+  await writeSourceFixture(root)
+
+  const result = runCli(cliPath, ["--root", root, "--output", outputPath])
+
+  assert.equal(result.status, 0, result.stderr)
+  const manifest = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const byMethod = new Map(manifest.methods.map((method) => [method.method, method]))
+  for (const method of ["page_create", "page_edit", "file_create"]) {
+    assert.deepEqual(byMethod.get(method).actor_context.requirements, [
+      "authenticated_user",
+      "permission_check"
+    ])
+  }
+  assert.ok(byMethod.get("page_edit").actor_context.requirement_sources.includes(
+    "deepwell/src/endpoints/page.rs#ensure_page_edit_permission"
+  ))
+})
+
 test("Deepwell JSON-RPC generator fails closed when middleware contract declarations drift", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-middleware-"))
   await writeSourceFixture(root)

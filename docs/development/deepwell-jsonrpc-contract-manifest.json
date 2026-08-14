@@ -2247,11 +2247,13 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
           "permission_check"
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
-          "deepwell/src/endpoints/file.rs#file_create"
+          "deepwell/src/endpoints/file.rs#file_create",
+          "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -2310,11 +2312,13 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
           "permission_check"
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
-          "deepwell/src/endpoints/file.rs#file_delete"
+          "deepwell/src/endpoints/file.rs#file_delete",
+          "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -2370,11 +2374,13 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
           "permission_check"
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
-          "deepwell/src/endpoints/file.rs#file_edit"
+          "deepwell/src/endpoints/file.rs#file_edit",
+          "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -2496,11 +2502,13 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
           "permission_check"
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
-          "deepwell/src/endpoints/file.rs#file_move"
+          "deepwell/src/endpoints/file.rs#file_move",
+          "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -2554,11 +2562,13 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
           "permission_check"
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
-          "deepwell/src/endpoints/file.rs#file_restore"
+          "deepwell/src/endpoints/file.rs#file_restore",
+          "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -2836,11 +2846,13 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
           "permission_check"
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/file.rs#ensure_parent_page_permission",
-          "deepwell/src/endpoints/file.rs#file_rollback"
+          "deepwell/src/endpoints/file.rs#file_rollback",
+          "deepwell/src/endpoints/file.rs#require_authenticated_file_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -4503,10 +4515,15 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
           "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#page_create"
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_create",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -4678,9 +4695,15 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#page_delete"
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_delete",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -4754,9 +4777,16 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#page_edit"
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_edit",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -6018,10 +6048,16 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
           "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#page_move"
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_move",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -6080,9 +6116,13 @@
           }
         ],
         "requirements": [
-          "mutation_authorization"
+          "mutation_authorization",
+          "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
           "deepwell/src/endpoints/page.rs#page_rerender"
         ]
       },
@@ -6161,11 +6201,16 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
           "deepwell/src/endpoints/page.rs#ensure_deleted_page_delete_permission",
           "deepwell/src/endpoints/page.rs#ensure_page_create_permission",
-          "deepwell/src/endpoints/page.rs#page_restore"
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_restore",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -6594,9 +6639,16 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#page_rollback"
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_rollback",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -6708,9 +6760,16 @@
             "target": "page_ref"
           }
         ],
-        "requirements": [],
+        "requirements": [
+          "authenticated_user",
+          "permission_check"
+        ],
         "requirement_sources": [
-          "deepwell/src/endpoints/page.rs#page_set_layout"
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#page_set_layout",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor"
         ]
       },
       "mutation_class": {
@@ -7340,9 +7399,11 @@
           }
         ],
         "requirements": [
-          "optional_user"
+          "optional_user",
+          "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/parent.rs#ensure_child_page_edit_permission",
           "deepwell/src/endpoints/parent.rs#parent_remove"
         ]
       },
@@ -7399,9 +7460,11 @@
           }
         ],
         "requirements": [
-          "optional_user"
+          "optional_user",
+          "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/parent.rs#ensure_child_page_edit_permission",
           "deepwell/src/endpoints/parent.rs#parent_set"
         ]
       },
@@ -7459,10 +7522,13 @@
           }
         ],
         "requirements": [
-          "optional_user"
+          "optional_user",
+          "permission_check"
         ],
         "requirement_sources": [
-          "deepwell/src/endpoints/parent.rs#parent_update"
+          "deepwell/src/endpoints/parent.rs#ensure_child_page_edit_permission",
+          "deepwell/src/endpoints/parent.rs#parent_update",
+          "deepwell/src/endpoints/parent.rs#parent_update_exceeds_budget"
         ]
       },
       "mutation_class": {
@@ -9479,6 +9545,7 @@
           "mutation_authorization"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/vote.rs#defer_vote_page_refresh",
           "deepwell/src/endpoints/vote.rs#page_rating_settings",
           "deepwell/src/endpoints/vote.rs#vote_action"
         ]
@@ -9596,6 +9663,7 @@
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/vote.rs#page_rating_settings",
+          "deepwell/src/endpoints/vote.rs#user_history_is_authorized",
           "deepwell/src/endpoints/vote.rs#vote_list_get"
         ]
       },
@@ -9658,6 +9726,7 @@
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/vote.rs#page_rating_settings",
+          "deepwell/src/endpoints/vote.rs#user_history_is_authorized",
           "deepwell/src/endpoints/vote.rs#vote_list_count"
         ]
       },
@@ -9721,7 +9790,9 @@
           "site_context"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/vote.rs#defer_vote_page_refresh",
           "deepwell/src/endpoints/vote.rs#ensure_actor_can_rate",
+          "deepwell/src/endpoints/vote.rs#rating_value_is_valid",
           "deepwell/src/endpoints/vote.rs#vote_remove"
         ]
       },
@@ -9784,7 +9855,9 @@
           "site_context"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/vote.rs#defer_vote_page_refresh",
           "deepwell/src/endpoints/vote.rs#ensure_actor_can_rate",
+          "deepwell/src/endpoints/vote.rs#rating_value_is_valid",
           "deepwell/src/endpoints/vote.rs#vote_set"
         ]
       },
@@ -9905,7 +9978,9 @@
           "site_context"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/vote.rs#defer_vote_page_refresh",
           "deepwell/src/endpoints/vote.rs#ensure_actor_can_rate",
+          "deepwell/src/endpoints/vote.rs#rating_value_is_valid",
           "deepwell/src/endpoints/vote.rs#wikidot_legacy_rate"
         ]
       },
@@ -9963,9 +10038,15 @@
           }
         ],
         "requirements": [
+          "authenticated_user",
+          "permission_check",
           "site_context"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/page.rs#ensure_page_action_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_edit_permission",
+          "deepwell/src/endpoints/page.rs#ensure_page_permission",
+          "deepwell/src/endpoints/page.rs#require_authenticated_mutation_actor",
           "deepwell/src/endpoints/page.rs#wikidot_legacy_set_tags"
         ]
       },
@@ -10078,6 +10159,8 @@
         ],
         "requirements": [],
         "requirement_sources": [
+          "deepwell/src/endpoints/page.rs#normalize_wikidot_list_pages_set_pairs",
+          "deepwell/src/endpoints/page.rs#normalize_wikidot_list_pages_set_spacing",
           "deepwell/src/endpoints/page.rs#wikidot_list_pages_module"
         ]
       },
@@ -10364,6 +10447,7 @@
           "permission_check"
         ],
         "requirement_sources": [
+          "deepwell/src/endpoints/page.rs#wikidot_bounded_word_scalar",
           "deepwell/src/endpoints/page.rs#wikidot_site_changes_module"
         ]
       },
