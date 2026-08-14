@@ -8,7 +8,7 @@ The native execution map is [GitHub issue #1354](https://github.com/Rokurolize/w
 
 | Authority | Purpose | Current verified identity or count |
 | --- | --- | --- |
-| `docs/development/open43-closure-audit-ownership-reconciliation.json` | Acceptance-case state and issue ownership | SHA-256 `f5967a3ef7eeb910bb577b0ae627fc2c11e95f547e528ecb8dd2e06f39b68e81`; 285 cases across 42 product issues |
+| `docs/development/open43-closure-audit-ownership-reconciliation.json` | Acceptance-case state and issue ownership | SHA-256 `76fd6405c8cbc2b3dfd80e765b31f279e0f812a87b740a3898da50afb9782f37`; 285 cases across 42 product issues |
 | `docs/development/open43-concurrency-ledger.json` | Historical source execution lanes | SHA-256 `4732b2d02f0f061df32f4bdd72ce99ffdefadb3e120ee7cb128019d16856c857`; 41 integrated, one completed, one running lane |
 | `docs/wikidot-specifications/catalog.json` and `implementation-ledger.json` | Feature projection | 210 features; not the full compatibility denominator |
 | Historical Open87 artifact | Historical campaign evidence | 87 rows: 42 current product owners, 44 historical-only closed rows, and tracking issue #1089 |

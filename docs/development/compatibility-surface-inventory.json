@@ -8921,11 +8921,11 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "f5967a3ef7eeb910bb577b0ae627fc2c11e95f547e528ecb8dd2e06f39b68e81"
+        "sha256": "76fd6405c8cbc2b3dfd80e765b31f279e0f812a87b740a3898da50afb9782f37"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
-        "sha256": "2d5e4989b6a8f6b2c85d7709319b9f4f1b2c781212cdfd9e60b64699f9f82139"
+        "sha256": "14c2b6ba04be03045a507974930028bf0a99c53bd1d0b2223b21ad5009de3d2c"
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",

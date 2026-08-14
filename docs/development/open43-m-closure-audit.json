@@ -2008,8 +2008,8 @@
     "issue_count": 7,
     "subrow_count": 48,
     "classification_counts": {
-      "source_ready": 21,
-      "needs_source": 3,
+      "source_ready": 24,
+      "needs_source": 0,
       "candidate_required": 11,
       "blocked_evidence": 13
     },
