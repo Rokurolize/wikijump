@@ -6,6 +6,8 @@ The scripts in this directory import frozen Wikidot corpus data, inspect a local
 
 `scripts/build-compatibility-surface-inventory.mjs` generates `docs/development/compatibility-surface-inventory.json` from the feature catalog and implementation ledger, the declared Deepwell JSON-RPC registry, SvelteKit routes and named server actions, the Framerail AMC and XML-RPC registries, WWS routes, and the seven audits listed by `open43-blocked-evidence-routing.json`. Each surface has one stable identifier and independent evidence, source, candidate, standing, and closure fields. The command rejects duplicate identifiers, catalog and ledger orphans, missing ownership references, unsupported registry declarations, and status values outside the closed vocabulary.
 
+`scripts/build-deepwell-jsonrpc-contract-manifest.mjs` generates `docs/development/deepwell-jsonrpc-contract-manifest.json` from the current Deepwell JSON-RPC registry and endpoint sources. It records all registered methods with their handler owner, parameter decoder, observed request context requirements, mutation signals, transaction isolation, source identities, and the source-contract test witness. Use `--verify` in CI or review to reject a stale manifest.
+
 ```sh
 pnpm --dir install/local/wikidot-verification compatibility-inventory
 ```
