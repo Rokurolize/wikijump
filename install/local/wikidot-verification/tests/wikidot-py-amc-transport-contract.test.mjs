@@ -10,13 +10,55 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const cli = path.join(root, "install/local/wikidot-verification/scripts/verify-wikidot-py-amc-transport-contract.mjs")
 const contractPath = path.join(root, "docs/development/wikidot-py-amc-transport-contract.json")
 const sourceRoot = "/home/roku/src/Rokurolize/wikidot.py"
+const gitEnvironment = {
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_NO_LAZY_FETCH: "1",
+  GIT_NO_REPLACE_OBJECTS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  GIT_TERMINAL_PROMPT: "0",
+  LANG: "C",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin"
+}
 
-const run = (contract = contractPath, source = sourceRoot) => spawnSync(process.execPath, [
+const run = (contract = contractPath, source = sourceRoot, env = process.env) => spawnSync(process.execPath, [
   cli, "--contract", contract, "--source-root", source
-], { encoding: "utf8" })
+], { encoding: "utf8", env })
+const git = (directory, ...arguments_) => spawnSync("/usr/bin/git", ["-C", directory, ...arguments_], {
+  encoding: "utf8",
+  env: gitEnvironment
+})
+
+async function copySourceFiles(directory) {
+  for (const relativePath of [
+    "src/wikidot/connector/ajax.py",
+    "src/wikidot/common/exceptions.py",
+    "tests/unit/test_amc_client.py"
+  ]) {
+    const target = path.join(directory, relativePath)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.copyFile(path.join(sourceRoot, relativePath), target)
+  }
+}
 
 test("AMC transport contract is complete and bound to the supported wikidot.py source", () => {
   const result = run()
+  assert.equal(result.status, 0, result.stderr)
+  assert.match(result.stdout, /verified 19 AMC transport records/u)
+})
+
+test("AMC transport verifier ignores inherited Git routing and config poison", () => {
+  const result = run(contractPath, sourceRoot, {
+    ...process.env,
+    GIT_CONFIG_GLOBAL: "/missing/global-config",
+    GIT_CONFIG_SYSTEM: "/missing/system-config",
+    GIT_DIR: "/missing/git-dir",
+    GIT_OBJECT_DIRECTORY: "/missing/object-directory",
+    GIT_REPLACE_REF_BASE: "refs/poisoned-replacements",
+    GIT_WORK_TREE: "/missing/work-tree",
+    PATH: "/missing/bin"
+  })
   assert.equal(result.status, 0, result.stderr)
   assert.match(result.stdout, /verified 19 AMC transport records/u)
 })
@@ -45,18 +87,23 @@ test("AMC transport verifier rejects omitted, duplicate, and unknown records", a
 test("AMC transport verifier rejects source drift", async (t) => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), "wikidot-py-amc-source-"))
   t.after(() => fs.rm(directory, { recursive: true, force: true }))
-  for (const relativePath of [
-    "src/wikidot/connector/ajax.py",
-    "src/wikidot/common/exceptions.py",
-    "tests/unit/test_amc_client.py"
-  ]) {
-    const target = path.join(directory, relativePath)
-    await fs.mkdir(path.dirname(target), { recursive: true })
-    await fs.copyFile(path.join(sourceRoot, relativePath), target)
-  }
+  await copySourceFiles(directory)
   await fs.appendFile(path.join(directory, "src/wikidot/connector/ajax.py"), "\n# drift\n")
 
   const result = run(contractPath, directory)
   assert.equal(result.status, 1)
   assert.match(result.stderr, /source drift/u)
+})
+
+test("AMC transport verifier rejects exact bytes committed under an invented Git identity", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "wikidot-py-amc-invented-source-"))
+  t.after(() => fs.rm(directory, { recursive: true, force: true }))
+  await copySourceFiles(directory)
+  assert.equal(git(directory, "init", "--quiet").status, 0)
+  assert.equal(git(directory, "add", ".").status, 0)
+  assert.equal(git(directory, "-c", "user.name=Test", "-c", "user.email=test@example.invalid", "commit", "--quiet", "-m", "invented").status, 0)
+
+  const result = run(contractPath, directory)
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /source Git identity drift/u)
 })

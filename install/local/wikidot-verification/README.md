@@ -14,6 +14,12 @@ The scripts in this directory import frozen Wikidot corpus data, inspect a local
 node install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs
 ```
 
+`scripts/verify-wikidot-py-amc-transport-contract.mjs` verifies the 19 source-contract-only AMC envelope, cookie, transport, redirect, retry, response-status, and exception records in `docs/development/wikidot-py-amc-transport-contract.json`. It binds the contract to the recorded wikidot.py commit, root tree, object IDs, and file SHA-256 values through absolute `/usr/bin/git` with a fixed minimal environment. It rejects omitted, duplicate, unknown, changed, or source-drifted records. Its explicit authenticated-live gaps remain missing; a pass does not claim live AMC parity or Phase 1E completion.
+
+```sh
+node install/local/wikidot-verification/scripts/verify-wikidot-py-amc-transport-contract.mjs
+```
+
 ```sh
 pnpm --dir install/local/wikidot-verification compatibility-inventory
 ```

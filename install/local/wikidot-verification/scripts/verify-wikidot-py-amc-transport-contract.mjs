@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs/promises"
 import path from "node:path"
@@ -8,6 +9,18 @@ import { fileURLToPath } from "node:url"
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url))
 const repositoryRoot = path.resolve(scriptDirectory, "../../../..")
+const gitExecutable = "/usr/bin/git"
+const gitEnvironment = Object.freeze({
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_NO_LAZY_FETCH: "1",
+  GIT_NO_REPLACE_OBJECTS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  GIT_TERMINAL_PROMPT: "0",
+  LANG: "C",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin"
+})
 const expectedSource = {
   repository: "Rokurolize/wikidot.py",
   commit: "9f33c0f450de9daf333b068e8d70527e033fc07c",
@@ -40,6 +53,15 @@ function parseArgs(argv) {
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex")
 
+function git(root, ...arguments_) {
+  const result = spawnSync(gitExecutable, ["-C", root, ...arguments_], {
+    encoding: "utf8",
+    env: gitEnvironment
+  })
+  if (result.status !== 0) throw new Error("AMC transport source Git identity drift")
+  return result.stdout.trim()
+}
+
 async function main() {
   const { contract: contractPath, sourceRoot } = parseArgs(process.argv.slice(2))
   const contract = JSON.parse(await fs.readFile(contractPath, "utf8"))
@@ -49,6 +71,18 @@ async function main() {
   for (const object of expectedSource.objects) {
     const bytes = await fs.readFile(path.join(sourceRoot, object.path))
     if (sha256(bytes) !== object.sha256) throw new Error(`AMC transport source drift: ${object.path}`)
+  }
+  const gitIdentity = {
+    root: await fs.realpath(sourceRoot),
+    topLevel: await fs.realpath(git(sourceRoot, "rev-parse", "--show-toplevel")),
+    commit: git(sourceRoot, "rev-parse", "--verify", "HEAD"),
+    rootTree: git(sourceRoot, "rev-parse", "HEAD^{tree}"),
+    objects: expectedSource.objects.map(({ path: objectPath }) => git(sourceRoot, "rev-parse", `HEAD:${objectPath}`))
+  }
+  if (gitIdentity.root !== gitIdentity.topLevel || gitIdentity.commit !== expectedSource.commit ||
+      gitIdentity.rootTree !== expectedSource.root_tree ||
+      gitIdentity.objects.some((oid, index) => oid !== expectedSource.objects[index].git_oid)) {
+    throw new Error("AMC transport source Git identity drift")
   }
 
   if (!Array.isArray(contract.records)) throw new Error("AMC transport record coverage must be an array")
