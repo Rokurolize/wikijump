@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import test from "node:test"
@@ -154,6 +155,19 @@ function git(...args) {
   return result.stdout.trim()
 }
 
+function gitBytes(...args) {
+  const result = spawnSync(GIT_EXECUTABLE, ["-C", wikidotPyRoot, ...args], {
+    cwd: "/",
+    env: EXECUTION_ENVIRONMENT
+  })
+  assert.equal(result.status, 0, result.stderr.toString())
+  return result.stdout
+}
+
+function sha256(bytes) {
+  return createHash("sha256").update(bytes).digest("hex")
+}
+
 function scanSource(value) {
   const result = spawnSync(PYTHON_EXECUTABLE, ["-c", pythonScanner], {
     cwd: "/",
@@ -229,7 +243,92 @@ function verifyContract(value, source) {
       [binding.application_type]
     )
   }
+  verifyBehaviorEvidence(value)
   assert.equal(value.authenticated_behavior_gaps, undefined)
+}
+
+function verifyBehaviorEvidence(value) {
+  const evidence = value.authenticated_behavior_evidence
+  const pairIds = value.action_event_pairs.map(({ action, event }) => `${action};${event}`)
+  const sha256Pattern = /^[0-9a-f]{64}$/u
+  assert.equal(evidence.schema, "wikijump.wikidot_py_amc_write_evidence.v1")
+  assert.equal(evidence.current_source_commit, value.source.commit)
+  assert.equal(evidence.client.repository, value.source.repository)
+  assert.equal(evidence.client.commit, value.source.commit)
+  assert.equal(evidence.client.tree, authority.source.root_tree)
+  assert.equal(evidence.client.uv_lock_sha256, sha256(gitBytes("show", `${value.source.commit}:uv.lock`)))
+  assert.deepEqual(evidence.server, {
+    site: "sandbox-for-codex",
+    site_id: 5301522,
+    ssl_supported: false,
+    login_endpoint: "https://www.wikidot.com/default--flow/login__LoginPopupScreen"
+  })
+  assert.deepEqual(Object.keys(evidence.hash_labels).sort(), ["page_edit_lifecycle", "request_hash.scope", "response.body_sha256", "response.sha256"])
+
+  const actorLabels = evidence.actors.map(({ label }) => label)
+  assert.deepEqual(actorLabels, ["A", "B"])
+  assert.equal(new Set(evidence.actors.map(({ user_id }) => user_id)).size, evidence.actors.length)
+  const runIds = evidence.runs.map(({ run_id }) => run_id)
+  assert.equal(new Set(runIds).size, runIds.length)
+  for (const run of evidence.runs) {
+    assert.ok(run.actors.every(actor => actorLabels.includes(actor)))
+    assert.ok(run.page_ids.every(Number.isInteger))
+    assert.ok(run.page_names.every(name => typeof name === "string" && name.length > 0))
+    if (run.page_names.length > 0) assert.equal(run.cleanup.anonymous_absence_verified, true)
+    else assert.equal(run.cleanup.session_cookie_absent, true)
+  }
+
+  const evidenceIds = evidence.pair_evidence.map(({ pair_id }) => pair_id)
+  assert.equal(evidenceIds.length, pairIds.length)
+  assert.equal(new Set(evidenceIds).size, evidenceIds.length)
+  assert.deepEqual([...evidenceIds].sort(), [...pairIds].sort())
+  const counts = { positive: 0, observed_not_ok: 0, blocked: 0 }
+  for (const row of evidence.pair_evidence) {
+    assert.ok(Object.hasOwn(counts, row.classification), row.pair_id)
+    counts[row.classification]++
+    if (row.classification === "blocked") {
+      assert.equal(row.request_sent, false)
+      assert.ok(typeof row.reason === "string" && row.reason.length > 0)
+      for (const forbidden of ["run_id", "request_hash", "response", "readback"]) assert.equal(row[forbidden], undefined)
+      continue
+    }
+    assert.ok(runIds.includes(row.run_id), row.pair_id)
+    assert.ok(["exact_canonical_json", "sanitized_canonical_json"].includes(row.request_hash.scope))
+    assert.match(row.request_hash.sha256, sha256Pattern)
+    assert.ok(row.readback && Object.keys(row.readback).length > 0)
+    if (row.request_hash.scope === "sanitized_canonical_json") assert.equal(row.pair_id, "Login2Action;login")
+    if (row.classification === "positive") {
+      assert.equal(row.response.status, "ok")
+    } else {
+      assert.equal(row.request_hash.scope, "exact_canonical_json")
+      assert.equal(row.response.status, "not_ok")
+      assert.equal(row.readback.unchanged, true)
+      assert.ok(typeof row.reason === "string" && row.reason.length > 0)
+    }
+  }
+  assert.deepEqual(counts, evidence.classification_counts)
+
+  assert.ok(runIds.includes(evidence.page_edit_lifecycle.run_id))
+  assert.deepEqual(evidence.page_edit_lifecycle.steps.map(({ name }) => name), ["initial_lock", "contention", "force_lock", "post_save_lock"])
+  for (const step of evidence.page_edit_lifecycle.steps) {
+    assert.match(step.request_sha256, sha256Pattern)
+    assert.match(step.response_sha256, sha256Pattern)
+    assert.equal(step.status, "ok")
+  }
+  assert.deepEqual(evidence.non_counting_observations.map(({ pair_id }) => pair_id), ["WikiPageAction;setParentPage"])
+  assert.equal(evidence.non_counting_observations[0].counts_as_positive, false)
+  assert.ok(evidence.non_counting_observations[0].readback.parent_was_still)
+
+  const forbiddenSecretKeys = new Set(["username", "password", "cookie", "cookies", "lock_secret", "wikidot_token7"])
+  const inspect = object => {
+    if (Array.isArray(object)) return object.forEach(inspect)
+    if (object === null || typeof object !== "object") return
+    for (const [key, item] of Object.entries(object)) {
+      assert.equal(forbiddenSecretKeys.has(key), false, key)
+      inspect(item)
+    }
+  }
+  inspect(evidence)
 }
 
 const source = scanSource(contract)
@@ -262,6 +361,21 @@ test("wikidot.py AMC write contract rejects incomplete or ambiguous inventories"
     value => value.public_operation_bindings.pop(),
     value => value.public_operation_bindings.push(value.public_operation_bindings[0]),
     value => { value.public_operation_bindings.find(binding => binding.application_type).application_type = "review" }
+  ]) {
+    const invalid = structuredClone(contract)
+    mutate(invalid)
+    assert.throws(() => verifyContract(invalid, source))
+  }
+})
+
+test("wikidot.py AMC write evidence rejects incomplete, stale, unknown, or misclassified rows", () => {
+  for (const mutate of [
+    value => value.authenticated_behavior_evidence.pair_evidence.pop(),
+    value => value.authenticated_behavior_evidence.pair_evidence.push(value.authenticated_behavior_evidence.pair_evidence[0]),
+    value => { value.authenticated_behavior_evidence.pair_evidence[0].pair_id = "UnknownAction;unknown" },
+    value => { value.authenticated_behavior_evidence.pair_evidence.find(row => row.classification === "positive").classification = "blocked" },
+    value => { value.authenticated_behavior_evidence.current_source_commit = "0000000000000000000000000000000000000000" },
+    value => { value.authenticated_behavior_evidence.non_counting_observations[0].counts_as_positive = true }
   ]) {
     const invalid = structuredClone(contract)
     mutate(invalid)
