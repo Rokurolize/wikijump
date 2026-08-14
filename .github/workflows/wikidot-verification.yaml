@@ -75,6 +75,7 @@ jobs:
           ref: ${{ steps.ftml-pin.outputs.revision }}
           path: .verification-ftml
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Bind pinned FTML authority
         run: |

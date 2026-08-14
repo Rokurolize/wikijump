@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
 import test from 'node:test';
 
-import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
-import { historicalSha256, historicalText } from './historical-git.mjs';
+import { pinnedFtmlBytes } from '../src/pinned-ftml-checkout.mjs';
+import { historicalBytes, historicalSha256, historicalText } from './historical-git.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-embed-conditional-source-attribution-20260810.json';
 const artifactPath = new URL(`../artifacts/${artifactRelative.split('/').at(-1)}`, import.meta.url);
@@ -19,21 +18,20 @@ try {
 
 const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
 const fixture = JSON.parse(historicalText(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-embed-conditional-source-attribution.json'));
-const ftmlRoot = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_tree });
 const hex64 = /^[0-9a-f]{64}$/;
 
-async function sha256(path) {
-  return createHash('sha256').update(await readFile(path)).digest('hex');
-}
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 async function validateWitness(witness) {
   const isFtml = witness.repository === 'Rokurolize/ftml';
-  const path = isFtml ? join(ftmlRoot, witness.path) : null;
-  const text = isFtml ? await readFile(path, 'utf8') : historicalText(captureCommit, witness.path);
+  const bytes = isFtml
+    ? pinnedFtmlBytes({ revision: fixture.ftml_revision, tree: fixture.ftml_tree, sourcePath: witness.path })
+    : historicalBytes(captureCommit, witness.path);
+  const text = bytes.toString('utf8');
   assert.equal(text.split(witness.anchor_text).length - 1, 1);
   const line = text.slice(0, text.indexOf(witness.anchor_text)).split('\n').length;
   assert.deepEqual(witness.line_range, { start: line, end: line });
-  assert.equal(witness.sha256, isFtml ? await sha256(path) : historicalSha256(captureCommit, witness.path));
+  assert.equal(witness.sha256, sha256(bytes));
 }
 
 test('exact identities, denominator, preconditions, and non-claim statuses', async () => {
@@ -88,7 +86,7 @@ test('each surface has bounded ownership, source, public test, fixture, and pend
       assert.equal(witness.repository, 'Rokurolize/ftml');
       assert.equal(witness.revision, fixture.ftml_revision);
       assert.match(witness.path, /^test\/(?:embed|video|iframe|html|iftags|include)\//);
-      assert.equal(witness.sha256, await sha256(join(ftmlRoot, witness.path)));
+      assert.equal(witness.sha256, sha256(pinnedFtmlBytes({ revision: fixture.ftml_revision, tree: fixture.ftml_tree, sourcePath: witness.path })));
     }
   }
 });

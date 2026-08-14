@@ -1,11 +1,9 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 import test from 'node:test';
 
-import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
+import { pinnedFtmlBytes } from '../src/pinned-ftml-checkout.mjs';
 import { historicalBytes, historicalSha256 } from './historical-git.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-lexical-text-source-attribution-20260810.json';
@@ -18,15 +16,13 @@ try {
   throw error;
 }
 
-const repo = fileURLToPath(new URL('../../../../', import.meta.url));
 const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
 const fixture = JSON.parse(historicalBytes(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-lexical-text-source-attribution.json'));
-const ftml = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_tree });
 
-async function validateWitness(root, witness) {
-  const isFtml = root === ftml;
-  const file = isFtml ? path.join(root, witness.path) : null;
-  const bytes = isFtml ? await readFile(file) : historicalBytes(captureCommit, witness.path);
+async function validateWitness(repository, witness) {
+  const bytes = repository === 'ftml'
+    ? pinnedFtmlBytes({ revision: fixture.ftml_revision, tree: fixture.ftml_tree, sourcePath: witness.path })
+    : historicalBytes(captureCommit, witness.path);
   assert.equal(witness.sha256, createHash('sha256').update(bytes).digest('hex'));
   const lines = bytes.toString('utf8').split(/\r?\n/);
   const matches = lines.flatMap((line, index) => line.includes(witness.anchor_text) ? [index + 1] : []);
@@ -75,13 +71,13 @@ test('complete-file hashes and unique anchors resolve for every witness', async 
   assert.equal(artifact.fixture_identity.sha256, historicalSha256(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-lexical-text-source-attribution.json'));
   assert.equal(artifact.script_identity.sha256, historicalSha256(captureCommit, artifact.script_identity.path));
   assert.equal(artifact.inventory_identity.sha256, historicalSha256(captureCommit, artifact.inventory_identity.path));
-  await validateWitness(repo, artifact.cargo_manifest_pin_witness);
-  await validateWitness(repo, artifact.cargo_lock_pin_witness);
+  await validateWitness('wikijump', artifact.cargo_manifest_pin_witness);
+  await validateWitness('wikijump', artifact.cargo_lock_pin_witness);
   for (const record of artifact.surfaces) {
-    await validateWitness(repo, record.catalog_specification);
-    for (const witness of record.source_owner_witnesses) await validateWitness(ftml, witness);
-    for (const witness of record.public_integration_test_witnesses) await validateWitness(ftml, witness);
-    for (const witness of record.fixture_witnesses) await validateWitness(ftml, witness);
+    await validateWitness('wikijump', record.catalog_specification);
+    for (const witness of record.source_owner_witnesses) await validateWitness('ftml', witness);
+    for (const witness of record.public_integration_test_witnesses) await validateWitness('ftml', witness);
+    for (const witness of record.fixture_witnesses) await validateWitness('ftml', witness);
   }
 });
 
