@@ -101,6 +101,7 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
     ["surface:00000001"],
   );
   assert.deepEqual(first.relationships, []);
+  assert.equal(first.source_manifests[0].path, input);
   assert.equal(first.rows[0].actor.state, "missing");
   assert.equal(first.rows[0].owners.state, "present");
 

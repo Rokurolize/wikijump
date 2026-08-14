@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 import { readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
 import process from "node:process";
 
 import {
@@ -178,7 +177,7 @@ const source_manifests = [
     repository: "Rokurolize/wikijump",
     commit: inventory.provenance.wikijump.commit,
     tree: inventory.provenance.wikijump.tree,
-    path: path.resolve(inventoryPath),
+    path: inventoryPath,
     sha256: inventorySha256,
   },
   {
@@ -188,7 +187,7 @@ const source_manifests = [
     repository: "Rokurolize/ftml",
     commit: inventory.ftml_raw_surface_manifest.source.commit,
     tree: inventory.ftml_raw_surface_manifest.source.tree,
-    path: path.resolve(inventoryPath),
+    path: inventoryPath,
     sha256: inventorySha256,
   },
 ];
@@ -229,9 +228,7 @@ const relationships = canonicalRelationships
       source_manifest_id: manifestByClass[sourceClassByLocal.get(source)],
       raw_record_id: rawRecordIdByLocal.get(source),
       target_surface_id: targetSurface,
-      evidence: [
-        { path: path.resolve(inventoryPath), sha256: inventorySha256 },
-      ],
+      evidence: [{ path: inventoryPath, sha256: inventorySha256 }],
     };
   });
 
@@ -302,7 +299,7 @@ const ledger = {
     deduplication_relationships: relationships.length,
   },
   inputs: {
-    inventory: { path: path.resolve(inventoryPath), sha256: inventorySha256 },
+    inventory: { path: inventoryPath, sha256: inventorySha256 },
     wikijump: inventory.provenance.wikijump,
     ftml: inventory.provenance.ftml,
   },
