@@ -15,7 +15,8 @@
     "live_authenticated_evidence": "mixed_by_record",
     "gaps": [
       "Each record is authoritative only at the classification and witness IDs in evidence.record_bindings.",
-      "Current authenticated coverage must not be widened beyond a live_current record binding."
+      "Current authenticated coverage must not be widened beyond a live_current record binding.",
+      "Controlled-local fixture observations exercise transport branches only and do not widen live Wikidot evidence."
     ]
   },
   "evidence": {
@@ -27,6 +28,21 @@
       "source_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
       "source_root_tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c"
     },
+    "controlled_local_witness": {
+      "path": "install/local/wikidot-verification/artifacts/issue1374-amc-local-controls-20260815.json",
+      "sha256": "b00acdb25722d164f125ba9146bf652875764f8055f925803637d8263627475d",
+      "classification": "controlled_local_fixture",
+      "source_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+      "source_root_tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+      "test_path": "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py",
+      "test_sha256": "5ba693b4a4a547928c8703168f00a2017b6f0ad031bd4d1906fb376369065e47"
+    },
+    "binding_counts": {
+      "live_current": 4,
+      "controlled_local_fixture": 6,
+      "source_and_unit_only": 9
+    },
+    "controlled_local_observation_count": 7,
     "historical_witnesses": [],
     "record_bindings": [
       { "record_id": "form-envelope", "authority": "live_current", "observation_ids": ["sandbox-success-envelope"] },
@@ -36,13 +52,13 @@
       { "record_id": "http-session-proxy-isolation", "authority": "source_and_unit_only", "missing_control_ids": ["http-session-proxy-isolation"], "reason": "The live run did not inspect trust_env or local loopback transport." },
       { "record_id": "site-transport-probe", "authority": "source_and_unit_only", "missing_control_ids": ["site-probe-failure-branches"], "reason": "One redirect was live, but the probe error and www branches were not." },
       { "record_id": "site-probe-redirect", "authority": "source_and_unit_only", "missing_control_ids": ["site-probe-failure-branches"], "reason": "The same-host HTTP redirect was live, but invalid and missing Location branches were not." },
-      { "record_id": "amc-redirect", "authority": "source_and_unit_only", "missing_control_ids": ["amc-post-redirect"], "reason": "The live endpoint did not produce an AMC POST redirect." },
+      { "record_id": "amc-redirect", "authority": "controlled_local_fixture", "observation_ids": ["amc-post-redirect"] },
       { "record_id": "http-retry", "authority": "source_and_unit_only", "missing_control_ids": ["http-request-error-retry"], "reason": "HTTP 500 exhaustion was live, but request-error, sentinel 999, and capped-backoff branches were not." },
-      { "record_id": "invalid-json-retry", "authority": "source_and_unit_only", "missing_control_ids": ["malformed-or-empty-json-response"], "reason": "No safe live non-JSON or non-object JSON control was available." },
-      { "record_id": "empty-object-retry", "authority": "source_and_unit_only", "missing_control_ids": ["malformed-or-empty-json-response"], "reason": "No safe live empty-object control was available." },
-      { "record_id": "missing-status", "authority": "source_and_unit_only", "missing_control_ids": ["missing-status-response"], "reason": "No safe live response without status was available." },
-      { "record_id": "non-string-status", "authority": "source_and_unit_only", "missing_control_ids": ["non-string-status-response"], "reason": "No safe live response with non-string status was available." },
-      { "record_id": "try-again-status", "authority": "source_and_unit_only", "missing_control_ids": ["try-again-response"], "reason": "No safe live try_again response was available." },
+      { "record_id": "invalid-json-retry", "authority": "controlled_local_fixture", "observation_ids": ["malformed-json-response"] },
+      { "record_id": "empty-object-retry", "authority": "controlled_local_fixture", "observation_ids": ["empty-json-object-response"] },
+      { "record_id": "missing-status", "authority": "controlled_local_fixture", "observation_ids": ["missing-status-response", "missing-status-side-effect-response"] },
+      { "record_id": "non-string-status", "authority": "controlled_local_fixture", "observation_ids": ["non-string-status-response"] },
+      { "record_id": "try-again-status", "authority": "controlled_local_fixture", "observation_ids": ["try-again-response"] },
       { "record_id": "not-ok-status", "authority": "live_current", "observation_ids": ["read-not-ok-retry-exhaustion", "side-effect-classified-not-ok-terminal"] },
       { "record_id": "no-permission-status", "authority": "source_and_unit_only", "missing_control_ids": ["no-permission-action-context"], "reason": "Module context was live, but action and event context was not." },
       { "record_id": "other-status", "authority": "live_current", "observation_ids": ["missing-page-terminal-status", "invalid-thread-terminal-status"] },

@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs/promises"
+import os from "node:os"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -46,14 +47,63 @@ const expectedCurrentWitness = {
   source_commit: expectedSource.commit,
   source_root_tree: expectedSource.root_tree
 }
+const expectedControlledLocalWitness = {
+  path: "install/local/wikidot-verification/artifacts/issue1374-amc-local-controls-20260815.json",
+  sha256: "b00acdb25722d164f125ba9146bf652875764f8055f925803637d8263627475d",
+  classification: "controlled_local_fixture",
+  source_commit: expectedSource.commit,
+  source_root_tree: expectedSource.root_tree,
+  test_path: "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py",
+  test_sha256: "5ba693b4a4a547928c8703168f00a2017b6f0ad031bd4d1906fb376369065e47"
+}
 const expectedLock = {
-  path: "/home/roku/src/Rokurolize/wikidot.py/uv.lock",
   git_oid: "30a21e269683d755c5715cc937e332c8442143aa",
   sha256: "8644ed6c80c8f658549f8eae20c20cbb6ab5873c34c72b61da4fecac294b8def"
 }
 const expectedWrapper = {
-  path: "/home/roku/.codex/skills/wikidot-py-operations/scripts/wikidot-python",
   sha256: "ed912a115469573bbcc9c071be42b97455331d085f84ab1404cd1a75b9ff5a15"
+}
+const expectedControlledLocalSource = {
+  repository: expectedSource.repository,
+  commit: expectedSource.commit,
+  root_tree: expectedSource.root_tree,
+  version: "4.4.1",
+  objects: expectedSource.objects,
+  lock_sha256: expectedLock.sha256
+}
+const expectedControlledLocalFixture = {
+  transport: "http",
+  bind: "127.0.0.1",
+  endpoint_path: "/ajax-module-connector.php",
+  public_connector: "AjaxModuleConnectorClient.request",
+  attempt_limit: 2,
+  post_count_total: 12,
+  get_count: 0,
+  redirects_followed: false,
+  external_requests: 0,
+  persistent_state: false,
+  request_bodies_recorded: false,
+  response_bodies_recorded: false,
+  cookie_values_recorded: false,
+  credential_values_recorded: false
+}
+const expectedControlledLocalObservations = [
+  { id: "amc-post-redirect", http_status: 302, post_count: 1, exception: "WikidotTransportSecurityException" },
+  { id: "malformed-json-response", http_status: 200, post_count: 2, exception: "ResponseDataException" },
+  { id: "empty-json-object-response", http_status: 200, post_count: 2, exception: "ResponseDataException" },
+  { id: "missing-status-response", http_status: 200, post_count: 2, exception: "ResponseDataException" },
+  { id: "missing-status-side-effect-response", http_status: 200, post_count: 1, exception: "ResponseDataException", replayed: false },
+  { id: "non-string-status-response", http_status: 200, post_count: 2, exception: "ResponseDataException" },
+  { id: "try-again-response", http_status: 200, post_count: 2, exception: "WikidotStatusCodeException", exception_status: "try_again" }
+]
+const expectedControlledLocalObservationIds = new Set(expectedControlledLocalObservations.map(({ id }) => id))
+const expectedControlledLocalRecordIds = new Set([
+  "amc-redirect", "invalid-json-retry", "empty-object-retry", "missing-status", "non-string-status", "try-again-status"
+])
+const expectedBindingCounts = {
+  live_current: 4,
+  controlled_local_fixture: 6,
+  source_and_unit_only: 9
 }
 const expectedObservationIds = new Set([
   "authenticated-www-read",
@@ -99,13 +149,13 @@ const expectedSecretClaims = {
   username_recorded: false,
   password_recorded: false
 }
-const expectedContractSha256 = "92b09a5358ee912536d42cc27880e5916b07921376daa287c3f6461aef3bb607"
+const expectedContractSha256 = "f6d6b22de6b69f689e746b198680a5d1ca547d69ac32bb61ccab7092c98a0bdd"
 
 function parseArgs(argv) {
   let contract = path.join(repositoryRoot, "docs/development/wikidot-py-amc-transport-contract.json")
-  let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py"
+  let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../../wikidot.py")
   let evidenceRoot = repositoryRoot
-  let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? expectedWrapper.path
+  let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? path.join(os.homedir(), ".codex/skills/wikidot-py-operations/scripts/wikidot-python")
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--contract") contract = path.resolve(argv[++index] ?? "")
     else if (argv[index] === "--source-root") sourceRoot = path.resolve(argv[++index] ?? "")
@@ -123,6 +173,18 @@ function containsSecretKey(value) {
   if (value === null || typeof value !== "object") return false
   const forbidden = new Set(["username", "password", "token_value", "token_hash", "session_cookie_value", "session_cookie_hash"])
   return Object.entries(value).some(([key, nested]) => forbidden.has(key) || containsSecretKey(nested))
+}
+
+function containsAbsolutePath(value) {
+  if (Array.isArray(value)) return value.some(containsAbsolutePath)
+  if (value === null || typeof value !== "object") return false
+  return Object.entries(value).some(([key, nested]) =>
+    ((key === "path" || key === "test_path") && typeof nested === "string" && path.isAbsolute(nested)) ||
+    containsAbsolutePath(nested))
+}
+
+function hasRecordedPathSuffix(value, suffix) {
+  return typeof value === "string" && path.isAbsolute(value) && value.endsWith(suffix)
 }
 
 function git(root, ...arguments_) {
@@ -180,7 +242,8 @@ async function main() {
     }
   }
   if (contract.evidence_boundary?.live_authenticated_evidence !== "mixed_by_record" ||
-      !contract.evidence_boundary?.gaps?.includes("Current authenticated coverage must not be widened beyond a live_current record binding.")) {
+      !contract.evidence_boundary?.gaps?.includes("Current authenticated coverage must not be widened beyond a live_current record binding.") ||
+      !contract.evidence_boundary?.gaps?.includes("Controlled-local fixture observations exercise transport branches only and do not widen live Wikidot evidence.")) {
     throw new Error("AMC transport evidence boundary is missing")
   }
   const currentWitness = contract.evidence?.current_witness
@@ -198,8 +261,11 @@ async function main() {
   if (evidence.schema !== "wikijump.wikidot_py_amc_authenticated_live.v1" ||
       evidence.classification !== "current" || evidence.run_id !== expectedCurrentWitness.run_id ||
       evidence.source?.commit !== expectedSource.commit || evidence.source?.root_tree !== expectedSource.root_tree ||
-      JSON.stringify(evidence.source?.lock) !== JSON.stringify(expectedLock) ||
-      JSON.stringify(evidence.source?.wrapper) !== JSON.stringify(expectedWrapper)) {
+      evidence.source?.lock?.git_oid !== expectedLock.git_oid ||
+      evidence.source?.lock?.sha256 !== expectedLock.sha256 ||
+      !hasRecordedPathSuffix(evidence.source?.lock?.path, path.join("wikidot.py", "uv.lock")) ||
+      evidence.source?.wrapper?.sha256 !== expectedWrapper.sha256 ||
+      !hasRecordedPathSuffix(evidence.source?.wrapper?.path, path.join(".codex", "skills", "wikidot-py-operations", "scripts", "wikidot-python"))) {
     throw new Error("AMC transport current authenticated witness identity drift")
   }
   if (containsSecretKey(evidence) || JSON.stringify(evidence.secrets) !== JSON.stringify(expectedSecretClaims)) {
@@ -225,17 +291,80 @@ async function main() {
         control.test_witnesses.some((reference) => !reference.startsWith("tests/unit/test_amc_client.py#")))) {
     throw new Error("AMC transport missing live control coverage is incomplete or duplicated")
   }
+  const controlledLocalWitness = contract.evidence?.controlled_local_witness
+  if (JSON.stringify(controlledLocalWitness) !== JSON.stringify(expectedControlledLocalWitness) ||
+      path.isAbsolute(controlledLocalWitness?.path) || path.isAbsolute(controlledLocalWitness?.test_path)) {
+    throw new Error("AMC transport controlled-local witness identity drift")
+  }
+  const controlledLocalEvidenceBytes = await fs.readFile(path.join(evidenceRoot, expectedControlledLocalWitness.path))
+  const controlledLocalEvidence = JSON.parse(controlledLocalEvidenceBytes)
+  const expectedControlledLocalTest = {
+    path: expectedControlledLocalWitness.test_path,
+    sha256: expectedControlledLocalWitness.test_sha256
+  }
+  if (controlledLocalEvidence.schema !== "wikijump.issue1374.amc_local_controls.v1" ||
+      controlledLocalEvidence.issue !== 1374 ||
+      controlledLocalEvidence.classification !== expectedControlledLocalWitness.classification ||
+      JSON.stringify(controlledLocalEvidence.source_identity) !== JSON.stringify(expectedControlledLocalSource) ||
+      JSON.stringify(controlledLocalEvidence.fixture) !== JSON.stringify(expectedControlledLocalFixture) ||
+      JSON.stringify(controlledLocalEvidence.test) !== JSON.stringify(expectedControlledLocalTest) ||
+      JSON.stringify(controlledLocalEvidence.cleanup) !== JSON.stringify({
+        server_stopped: true,
+        thread_joined: true,
+        temporary_paths_retained: []
+      }) ||
+      JSON.stringify(controlledLocalEvidence.redactions) !== JSON.stringify([
+        "credentials",
+        "cookies",
+        "session identifiers",
+        "CSRF tokens",
+        "wikidot_token7 value",
+        "request body values",
+        "response body bytes"
+      ]) || containsSecretKey(controlledLocalEvidence) || containsAbsolutePath(controlledLocalEvidence)) {
+    throw new Error("AMC transport controlled-local evidence redaction or identity drift")
+  }
+  const controlledLocalObservationIds = Array.isArray(controlledLocalEvidence.observations)
+    ? controlledLocalEvidence.observations.map(({ id }) => id)
+    : []
+  if (controlledLocalObservationIds.length !== expectedControlledLocalObservationIds.size ||
+      new Set(controlledLocalObservationIds).size !== controlledLocalObservationIds.length ||
+      controlledLocalObservationIds.some((id) => !expectedControlledLocalObservationIds.has(id)) ||
+      [...expectedControlledLocalObservationIds].some((id) => !controlledLocalObservationIds.includes(id)) ||
+      JSON.stringify(controlledLocalEvidence.observations) !== JSON.stringify(expectedControlledLocalObservations)) {
+    throw new Error("AMC transport controlled-local observation coverage is incomplete or duplicated")
+  }
+  const controlledLocalTestBytes = await fs.readFile(path.join(repositoryRoot, expectedControlledLocalWitness.test_path))
+  if (sha256(controlledLocalEvidenceBytes) !== expectedControlledLocalWitness.sha256 ||
+      sha256(controlledLocalTestBytes) !== expectedControlledLocalWitness.test_sha256) {
+    throw new Error("AMC transport controlled-local evidence bytes drift")
+  }
+  if (JSON.stringify(contract.evidence?.binding_counts) !== JSON.stringify(expectedBindingCounts) ||
+      contract.evidence?.controlled_local_observation_count !== expectedControlledLocalObservationIds.size) {
+    throw new Error("AMC transport evidence binding counts are stale")
+  }
   const bindings = contract.evidence?.record_bindings
   const bindingIds = Array.isArray(bindings) ? bindings.map(({ record_id: recordId }) => recordId) : []
   if (bindingIds.length !== expectedIds.size || new Set(bindingIds).size !== bindingIds.length ||
       bindingIds.some((id) => !expectedIds.has(id)) || [...expectedIds].some((id) => !bindingIds.includes(id))) {
     throw new Error("AMC transport record evidence binding coverage is not a bijection")
   }
+  const actualBindingCounts = {
+    live_current: 0,
+    controlled_local_fixture: 0,
+    source_and_unit_only: 0
+  }
+  const boundControlledLocalObservationIds = []
   for (const binding of bindings) {
     const shouldBeLive = expectedLiveRecordIds.has(binding.record_id)
-    if (binding.authority !== (shouldBeLive ? "live_current" : "source_and_unit_only")) {
+    const shouldBeControlledLocal = expectedControlledLocalRecordIds.has(binding.record_id)
+    const expectedAuthority = shouldBeLive
+      ? "live_current"
+      : shouldBeControlledLocal ? "controlled_local_fixture" : "source_and_unit_only"
+    if (binding.authority !== expectedAuthority) {
       throw new Error(`AMC transport record evidence binding is misclassified: ${binding.record_id}`)
     }
+    actualBindingCounts[binding.authority] += 1
     if (shouldBeLive) {
       if (!Array.isArray(binding.observation_ids) || binding.observation_ids.length === 0 ||
           new Set(binding.observation_ids).size !== binding.observation_ids.length ||
@@ -243,6 +372,14 @@ async function main() {
           "missing_control_ids" in binding) {
         throw new Error(`AMC transport live-current record binding is invalid: ${binding.record_id}`)
       }
+    } else if (shouldBeControlledLocal) {
+      if (!Array.isArray(binding.observation_ids) || binding.observation_ids.length === 0 ||
+          new Set(binding.observation_ids).size !== binding.observation_ids.length ||
+          binding.observation_ids.some((id) => !expectedControlledLocalObservationIds.has(id)) ||
+          "missing_control_ids" in binding || "reason" in binding) {
+        throw new Error(`AMC transport controlled-local record binding is invalid: ${binding.record_id}`)
+      }
+      boundControlledLocalObservationIds.push(...binding.observation_ids)
     } else if (!Array.isArray(binding.missing_control_ids) || binding.missing_control_ids.length === 0 ||
         new Set(binding.missing_control_ids).size !== binding.missing_control_ids.length ||
         binding.missing_control_ids.some((id) => !expectedMissingControlIds.has(id)) ||
@@ -251,9 +388,16 @@ async function main() {
       throw new Error(`AMC transport source-and-unit-only record binding is invalid: ${binding.record_id}`)
     }
   }
+  if (JSON.stringify(actualBindingCounts) !== JSON.stringify(expectedBindingCounts) ||
+      boundControlledLocalObservationIds.length !== expectedControlledLocalObservationIds.size ||
+      new Set(boundControlledLocalObservationIds).size !== boundControlledLocalObservationIds.length ||
+      boundControlledLocalObservationIds.some((id) => !expectedControlledLocalObservationIds.has(id)) ||
+      [...expectedControlledLocalObservationIds].some((id) => !boundControlledLocalObservationIds.includes(id))) {
+    throw new Error("AMC transport controlled-local binding coverage is incomplete or duplicated")
+  }
   if (sha256(evidenceBytes) !== expectedCurrentWitness.sha256) throw new Error("AMC transport current authenticated witness bytes drift")
   if (sha256(JSON.stringify(contract)) !== expectedContractSha256) throw new Error("AMC transport contract drift")
-  process.stdout.write(`verified ${contract.records.length} AMC transport records with ${expectedLiveRecordIds.size} live-current and ${expectedIds.size - expectedLiveRecordIds.size} source-and-unit-only bindings at ${expectedSource.commit}\n`)
+  process.stdout.write(`verified ${contract.records.length} AMC transport records with ${expectedBindingCounts.live_current} live-current, ${expectedBindingCounts.controlled_local_fixture} controlled-local, and ${expectedBindingCounts.source_and_unit_only} source-and-unit-only bindings at ${expectedSource.commit}\n`)
 }
 
 main().catch((error) => {

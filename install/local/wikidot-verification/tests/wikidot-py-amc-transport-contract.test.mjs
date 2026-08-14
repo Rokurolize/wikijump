@@ -10,8 +10,10 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../.
 const cli = path.join(root, "install/local/wikidot-verification/scripts/verify-wikidot-py-amc-transport-contract.mjs")
 const contractPath = path.join(root, "docs/development/wikidot-py-amc-transport-contract.json")
 const evidencePath = path.join(root, "install/local/wikidot-verification/artifacts/wikidot-py-amc-authenticated-live-20260815.json")
-const sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py"
-const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? "/home/roku/.codex/skills/wikidot-py-operations/scripts/wikidot-python"
+const localControlsEvidencePath = path.join(root, "install/local/wikidot-verification/artifacts/issue1374-amc-local-controls-20260815.json")
+const localControlsTestPath = path.join(root, "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py")
+const sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(root, "../../wikidot.py")
+const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? path.join(os.homedir(), ".codex/skills/wikidot-py-operations/scripts/wikidot-python")
 const gitEnvironment = {
   GIT_CONFIG_GLOBAL: "/dev/null",
   GIT_CONFIG_NOSYSTEM: "1",
@@ -45,10 +47,34 @@ async function copySourceFiles(directory) {
   }
 }
 
+async function copyEvidenceFiles(directory) {
+  for (const relativePath of [
+    path.relative(root, evidencePath),
+    path.relative(root, localControlsEvidencePath)
+  ]) {
+    const target = path.join(directory, relativePath)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.copyFile(path.join(root, relativePath), target)
+  }
+}
+
 test("AMC transport contract is complete and bound to the supported wikidot.py source", () => {
   const result = run()
   assert.equal(result.status, 0, result.stderr)
-  assert.match(result.stdout, /verified 19 AMC transport records with 4 live-current and 15 source-and-unit-only bindings/u)
+  assert.match(result.stdout, /verified 19 AMC transport records with 4 live-current, 6 controlled-local, and 9 source-and-unit-only bindings/u)
+})
+
+test("AMC verifier invokes the controlled-local Python regression through the pinned wrapper", () => {
+  const result = spawnSync(wrapperPath, [localControlsTestPath], {
+    cwd: root,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      PYTHONDONTWRITEBYTECODE: "1",
+      WIKIDOT_PY_REPO: sourceRoot
+    }
+  })
+  assert.equal(result.status, 0, result.stderr)
 })
 
 test("AMC transport verifier ignores inherited Git routing and config poison", () => {
@@ -130,6 +156,29 @@ test("AMC transport verifier rejects omitted and duplicate missing live controls
     const result = run(contractPath, sourceRoot, process.env, evidenceRoot)
     assert.equal(result.status, 1)
     assert.match(result.stderr, /missing live control coverage/u)
+  }
+})
+
+test("AMC transport verifier rejects omitted and duplicate controlled-local observations", async (t) => {
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), "wikidot-py-amc-controlled-local-"))
+  t.after(() => fs.rm(directory, { recursive: true, force: true }))
+  const original = JSON.parse(await fs.readFile(localControlsEvidencePath, "utf8"))
+  const relativeEvidencePath = path.relative(root, localControlsEvidencePath)
+  const mutations = [
+    (evidence) => evidence.observations.pop(),
+    (evidence) => evidence.observations.push(structuredClone(evidence.observations[0]))
+  ]
+
+  for (const [index, mutate] of mutations.entries()) {
+    const changed = structuredClone(original)
+    mutate(changed)
+    const evidenceRoot = path.join(directory, `${index}`)
+    await copyEvidenceFiles(evidenceRoot)
+    const changedPath = path.join(evidenceRoot, relativeEvidencePath)
+    await fs.writeFile(changedPath, `${JSON.stringify(changed, null, 2)}\n`)
+    const result = run(contractPath, sourceRoot, process.env, evidenceRoot)
+    assert.equal(result.status, 1)
+    assert.match(result.stderr, /controlled-local observation coverage/u)
   }
 })
 
