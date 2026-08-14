@@ -1,9 +1,302 @@
 {
-  "schema": "wikijump.compatibility_surface_inventory.v1",
+  "schema": "wikijump.compatibility_surface_inventory.v2",
+  "provenance": {
+    "wikijump": {
+      "commit": "2f420d8fdb74811a5a15612d416418fbed817330",
+      "tree": "6cdaf494cc1c0e9e9d0825265dd2645d18b2615a"
+    },
+    "ftml": {
+      "commit": "62ebba4efda1f10e82363c23c925061fbe939e49",
+      "tree": "ca84a08a46880a67b44cbb9374b4f7bd54d08f10"
+    },
+    "registries": [
+      {
+        "path": "deepwell/Cargo.lock",
+        "sha256": "a3c857b33911bd3420f773057fa08e8693170fd3047e6ea7ff3e127b77bb4dd9"
+      },
+      {
+        "path": "deepwell/Cargo.toml",
+        "sha256": "06040a3504b160fc07302b91ead752e984ffefef1c0fec34172a19373f3d5992"
+      },
+      {
+        "path": "deepwell/src/api.rs",
+        "sha256": "32d92a9b01604d4198881ffb27c78585ed30e94f59627db62b5255111b1bee8c"
+      },
+      {
+        "path": "docs/development/framerail-amc-wire-contracts.json",
+        "sha256": "3a3eea1acd70082389625726cb6f859fd587352959df3247a46ee123448e6e7c"
+      },
+      {
+        "path": "docs/development/open43-a-actions-membership-closure-audit.json",
+        "sha256": "60088a25b3ccd35b6c5e5d297b3768aa126db5bc51f754ee87a581e8c37a1060"
+      },
+      {
+        "path": "docs/development/open43-a-authoring-closure-audit.json",
+        "sha256": "0a768538c0def082c9bad30634ce81a277985e7932d8f5d8d2d1c3e39b36e194"
+      },
+      {
+        "path": "docs/development/open43-blocked-evidence-routing.json",
+        "sha256": "5916b62d4be68960b5a01864fb86ff1fe728ae1d01ca52e395a792d90cbbfb30"
+      },
+      {
+        "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
+        "sha256": "f5967a3ef7eeb910bb577b0ae627fc2c11e95f547e528ecb8dd2e06f39b68e81"
+      },
+      {
+        "path": "docs/development/open43-m-closure-audit.json",
+        "sha256": "2d5e4989b6a8f6b2c85d7709319b9f4f1b2c781212cdfd9e60b64699f9f82139"
+      },
+      {
+        "path": "docs/development/open43-q-forum-closure-audit.json",
+        "sha256": "da3e1a1742409d8bb80679b20103e13a7ad1bd329f62c4dcb43394f30084f178"
+      },
+      {
+        "path": "docs/development/open43-q-page-query-closure-audit.json",
+        "sha256": "4853d4ee9bcddf2aa64a9ddeb59e35cd1654f1bb80e671feb2c5fb38cfbd01fb"
+      },
+      {
+        "path": "docs/development/open43-q-search-users-closure-audit.json",
+        "sha256": "52d7a4ba51da9011688358ae9f543aec7edb10427a431701c47654093bd924c7"
+      },
+      {
+        "path": "docs/development/open43-s-settings-browser-closure-audit.json",
+        "sha256": "cbb4745de921496478585fd2f080ef4c4805098c91ff71f1faf17c62fed964f5"
+      },
+      {
+        "path": "docs/development/wikidot-page-action-surfaces.json",
+        "sha256": "c9152e7f37031b60a0923af9bbc2f6e87ea48ff06e3bef7f1d9da3f6c63f18a9"
+      },
+      {
+        "path": "docs/development/wikidot-py-amc-client-parity.json",
+        "sha256": "50af25ad9caefac17510d428b7f4548d028f6feba32828237ec664cc5027e4bb"
+      },
+      {
+        "path": "docs/wikidot-specifications/catalog.json",
+        "sha256": "f79aee6963a4c4428261b1bb0b4b8f0411a39cebc9d944f064f1b118153e5090"
+      },
+      {
+        "path": "docs/wikidot-specifications/implementation-ledger.json",
+        "sha256": "4c27b82f674cb17962fb173eaf0d7d1b12b396b2d907bf1152d8ee2caf3954d6"
+      },
+      {
+        "path": "docs/wikidot-specifications/live-observations.json",
+        "sha256": "1d2182230aa99e7996da77b136160c325c76b720fdafe236061f1205c41ffaa8"
+      },
+      {
+        "path": "docs/wikidot-specifications/source-coverage.json",
+        "sha256": "2d448ed28b541fbce93780e82f69297f51a82f14ad0865f0fc47e657c69cd7ff"
+      },
+      {
+        "path": "framerail/src/lib/server/ajax-module-connector.js",
+        "sha256": "d15f64a3c750dc603f2473f71e7f4d12063d37429c2c94da5ad8bca695ae8af6"
+      },
+      {
+        "path": "framerail/src/lib/server/load/page/page-actions.ts",
+        "sha256": "c70af3d435e123cef92bf02b9a499af3a5c59548a5130efd4e292b16d214b34e"
+      },
+      {
+        "path": "framerail/src/lib/server/load/page/page-revision-actions.ts",
+        "sha256": "cc3482139a394c68d30f4a9204fb64b9671d9a07e44305bc92e5a991a167f98c"
+      },
+      {
+        "path": "framerail/src/lib/server/wikidot-site-changes.js",
+        "sha256": "369ec920aa73ac85c9072c3ce0e3422598e404e34fe3ce431188974b5e1ce070"
+      },
+      {
+        "path": "framerail/src/lib/server/xmlrpc/methods.ts",
+        "sha256": "878e04e8704d85efd2b052a76d86b62efd5f54cf851877936dff1e04f2169735"
+      },
+      {
+        "path": "framerail/src/routes/_admin/+page.server.ts",
+        "sha256": "8d11000949c306d862895e914d97451db4a6f4960ceedd5c1626c89e06f5ee8e"
+      },
+      {
+        "path": "framerail/src/routes/_admin/+page.svelte",
+        "sha256": "a18c88379f35746d48053577c8be2d89a195d34033d2a8002d5fbac6a3ce60e3"
+      },
+      {
+        "path": "framerail/src/routes/[...fallback]/+page.svelte",
+        "sha256": "6af5256f1dd382412c8992851cd4b6ae16c58349567a92ef1276a698512e672d"
+      },
+      {
+        "path": "framerail/src/routes/[slug]/[...extra]/+page.server.ts",
+        "sha256": "b6e639fb9a4ce03321e61e963e7d3607cae56fb686e2daf3fb05425dfc8295e7"
+      },
+      {
+        "path": "framerail/src/routes/[slug]/[...extra]/+page.svelte",
+        "sha256": "429c73e8f3f22d8591ad7c01adb96e43e67b9d4c887a57246261e2f0c1190299"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/[slug]/[...extra]/+page.svelte",
+        "sha256": "b31d199a2874bc9cb56f43a7415e502ef0e41e40e704f011447d17dbe521f1eb"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/+page.svelte",
+        "sha256": "68e7bfc723846a85421253857f8bcafd2f1ea5bda1e23e6d3a16111c59fa2064"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/about/+page.server.ts",
+        "sha256": "ad5fcf7f3af9c8564629d82faec49062c32a9efd6efea598b4319255f973092e"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/about/+page.svelte",
+        "sha256": "ff294afedab50478b5efd269ef7e328c134964b2dbf111cef4807c12409b87c6"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/admin/+page.server.ts",
+        "sha256": "70072f029d2ca846c4ad6754bbf1df612e8be1f2bac70199a28f045b878d2399"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/admin/+page.svelte",
+        "sha256": "36ce552349dc828f0aeb2f5e51fe67d754397870413671ced58b440a98e77f4b"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/login/+page.server.ts",
+        "sha256": "59bc7764c36b34a46983fa99c354cb6bb57a643358cd97a8e6ff65f3f2eb8b64"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/login/+page.svelte",
+        "sha256": "788ebf1495732352f81731a3f67f5fbba5bec62e43c69a419efe2c7b78879232"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/logout/+page.server.ts",
+        "sha256": "a8b10c63f4874ce0948e6bba97aec4725473ed7fb3745476299ac5535afc7942"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/logout/+page.svelte",
+        "sha256": "170fe295da3907a30254e347abb0915d53468d3fdb25bb3ad39af7a873685c84"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/register/+page.server.ts",
+        "sha256": "4fb13974345ab4246d257c475b285477ed431b8207852bf17c2db796900ce904"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/register/+page.svelte",
+        "sha256": "79d04ea2f001dafebd5455896f6c8b6899039defa1a84798160ba71b971ad229"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/settings/+page.server.ts",
+        "sha256": "8680e1ec7232676a33bcd4dd468746828a763d8f98e73150f388e00232b9edb2"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/settings/+page.svelte",
+        "sha256": "6b283f71967e8d0b4c53a8b5feea409e967074f0c792906d3c29ac35e6d286ba"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
+        "sha256": "02a8baadedcf5e56dff41cb6c1d3d30f1cc853115e9104d501d2269ff3a0d848"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.svelte",
+        "sha256": "74b5ede23d12f3555ba5b2c93d79f9ae3c5256c0780578bc16c72887d8cc5fc9"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/user/+page.server.ts",
+        "sha256": "8bef169289fb3b54fd9abbfbb97d1a449b066070b9d509c6715f1fbf797533e6"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/user/+page.svelte",
+        "sha256": "c0cebb2394f1391182fdf4bc304870b228803cbe10cf3faf3403973a99a9ff30"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/interwikiFrame.html/+server.ts",
+        "sha256": "b0025db979490806c326bf01ec3ca693da5adc2ec1639c7dca1f9a802e69ffc2"
+      },
+      {
+        "path": "framerail/src/routes/[x+2d]/wikidot-interwiki/styleFrame.html/+server.ts",
+        "sha256": "2c743324e9669dc788681752a965932b1ab552b8a5f7088dbf07cafa95eec8c7"
+      },
+      {
+        "path": "framerail/src/routes/[x+2e]well-known/+server.ts",
+        "sha256": "19e8a31e26f65e4dcd2df4523e2a1901b1c0bca50b4cbfcd2e2212c1d4c4c6a2"
+      },
+      {
+        "path": "framerail/src/routes/+error.svelte",
+        "sha256": "f364c6e19d96bbb2def049bfdc1ce8efc1d32c276eee6266e6e31de107bab2d8"
+      },
+      {
+        "path": "framerail/src/routes/+page.server.ts",
+        "sha256": "a5a6abf82179bd42e6bde3b3359b5c9d7579827e1ac1eabd93a5fae137067e69"
+      },
+      {
+        "path": "framerail/src/routes/+page.svelte",
+        "sha256": "9ddcf2d1c06d70db362d301cb04514b9d2a21c1cd087711dadcbd97f50fb7323"
+      },
+      {
+        "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
+        "sha256": "a98c0baea9a4c3c8c456b02f2784c9b7af0fb30f185495c526259efbf373becd"
+      },
+      {
+        "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
+        "sha256": "58243be691e16e0f6a075f6a4aa1214fe057e3fa886c0871d1a6e029c599e372"
+      },
+      {
+        "path": "framerail/src/routes/feed/pages/[argument]/[...extra]/+server.ts",
+        "sha256": "0fb5289871a2e6df93f6418afe3f2dfd682e1281f31c55e5e54d665921bc0c22"
+      },
+      {
+        "path": "framerail/src/routes/forum/[fallback]/[...extra]/+page.server.ts",
+        "sha256": "cffadee6ab175ee6b0dcb6145749822b9bca6c8e201505254dc97ba4d0760ccd"
+      },
+      {
+        "path": "framerail/src/routes/forum/[fallback]/[...extra]/+page.svelte",
+        "sha256": "8cd1a3519308a05f55611a940c6e79e6af82ba45095abd3825b82f7362a63dc0"
+      },
+      {
+        "path": "framerail/src/routes/forum/c-[category=id]/[...name]/+page.server.ts",
+        "sha256": "678dc279afca060c8fcf5feefa91152440fc1787b6af8e9de63534cedc9e3fa4"
+      },
+      {
+        "path": "framerail/src/routes/forum/c-[category=id]/[...name]/+page.svelte",
+        "sha256": "653dbf2a58012de8ee9a9361ffddbe440f3472d9f57496f8c9e546d53c8dde0c"
+      },
+      {
+        "path": "framerail/src/routes/forum/start/[...extra]/+page.server.ts",
+        "sha256": "613049851e3fad0d034cd6687449abe0c84f73d7a04eb9f2e6f0bcd29f67da7b"
+      },
+      {
+        "path": "framerail/src/routes/forum/start/[...extra]/+page.svelte",
+        "sha256": "653dbf2a58012de8ee9a9361ffddbe440f3472d9f57496f8c9e546d53c8dde0c"
+      },
+      {
+        "path": "framerail/src/routes/forum/t-[thread=id]/[...name]/+page.server.ts",
+        "sha256": "416852723a04b471984061cf1f24e45c0cf6f54e0fa87eb49e5ffd094357f800"
+      },
+      {
+        "path": "framerail/src/routes/forum/t-[thread=id]/[...name]/+page.svelte",
+        "sha256": "653dbf2a58012de8ee9a9361ffddbe440f3472d9f57496f8c9e546d53c8dde0c"
+      },
+      {
+        "path": "framerail/src/routes/local--favicon/[filename]/+server.ts",
+        "sha256": "24736c9ddd3ed65195ad15d011c75ff75b1c8f594929e63a0c5597357239b28b"
+      },
+      {
+        "path": "framerail/src/routes/local--iosicon/[filename]/+server.ts",
+        "sha256": "9c5542121551d475bd64195ade3ef4b3cab7a08c6f0f6b6ee956f62dbc688ae6"
+      },
+      {
+        "path": "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
+        "sha256": "8b19f2be3aaf05717b90b1707fc234aef18f155b493f3f1356c10257e1158740"
+      },
+      {
+        "path": "framerail/src/routes/user[x+3a]info/[target]/+page.svelte",
+        "sha256": "23d70bc26fa0419b82642b0f2c9cce9740f3e5afb53955f086b6546aa1ad20cb"
+      },
+      {
+        "path": "framerail/src/routes/xml-rpc-api.php/+server.ts",
+        "sha256": "33e6d044d549a792911a3bde08a43da9915461b139c3036782c43189c1d465c1"
+      },
+      {
+        "path": "wws/src/route.rs",
+        "sha256": "f394857e6718bb94dee5f6e8a44d0754674825f30ac336473d97dad265a17a83"
+      }
+    ]
+  },
   "sources": {
     "catalog": "docs/wikidot-specifications/catalog.json",
     "live_observations": "docs/wikidot-specifications/live-observations.json",
     "implementation_ledger": "docs/wikidot-specifications/implementation-ledger.json",
+    "source_coverage": "docs/wikidot-specifications/source-coverage.json",
     "deepwell_jsonrpc_registry": "deepwell/src/api.rs",
     "framerail_routes_root": "framerail/src/routes",
     "framerail_amc_registry": "framerail/src/lib/server/ajax-module-connector.js",

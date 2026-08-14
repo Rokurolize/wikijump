@@ -80,17 +80,24 @@ async function writeText(root, relativePath, value) {
 }
 
 async function writeRepositoryFixture(root) {
-  await writeJson(root, "docs/wikidot-specifications/catalog.json", {
+  const catalog = {
     feature_count: 1,
     features: [
       {
         id: "feature-one",
         documentation_status: "documented",
         specification: "specifications/core/feature-one.md",
+        sources: [
+          {
+            path: "fixture/feature-one.txt",
+            source_sha256: "1".repeat(64)
+          }
+        ],
         live_observation_ids: ["observation-one"]
       }
     ]
-  })
+  }
+  await writeJson(root, "docs/wikidot-specifications/catalog.json", catalog)
   await writeJson(root, "docs/wikidot-specifications/live-observations.json", {
     observations: [
       {
@@ -99,7 +106,23 @@ async function writeRepositoryFixture(root) {
       }
     ]
   })
+  await writeJson(root, "docs/wikidot-specifications/source-coverage.json", {
+    page_count: 1,
+    listed_page_count: 1,
+    excluded_data_record_count: 0,
+    unclassified_count: 0,
+    classification_counts: { documentation: 1 },
+    pages: [
+      {
+        source_path: "fixture/feature-one.txt",
+        source_sha256: "1".repeat(64),
+        classification: "documentation",
+        feature_ids: ["feature-one"]
+      }
+    ]
+  })
   await writeJson(root, "docs/wikidot-specifications/implementation-ledger.json", {
+    catalog_sha256: sha256(`${JSON.stringify(catalog, null, 2)}\n`),
     features: {
       "feature-one": {
         status: "pending",
@@ -113,6 +136,16 @@ async function writeRepositoryFixture(root) {
     root,
     "deepwell/src/api.rs",
     'register!("ping", ping);\n'
+  )
+  await writeText(
+    root,
+    "deepwell/Cargo.toml",
+    'ftml = { git = "https://github.com/Rokurolize/ftml", rev = "62ebba4efda1f10e82363c23c925061fbe939e49" }\n'
+  )
+  await writeText(
+    root,
+    "deepwell/Cargo.lock",
+    'source = "git+https://github.com/Rokurolize/ftml?rev=62ebba4efda1f10e82363c23c925061fbe939e49#62ebba4efda1f10e82363c23c925061fbe939e49"\n'
   )
   await writeJson(root, "docs/development/wikidot-page-action-surfaces.json", {
     schema: "wikijump.wikidot_page_action_surface_registry.v2",
@@ -387,6 +420,17 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
   const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
   for (const audit of reconciliation.closure_audits) audit.source_revision = sourceRevision
   await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
+  const commit = spawnSync(
+    "git",
+    ["add", "."],
+    { cwd: root, encoding: "utf8" }
+  )
+  assert.equal(commit.status, 0, commit.stderr)
+  const committed = spawnSync("git", ["commit", "-qm", "bind audit revisions"], {
+    cwd: root,
+    encoding: "utf8"
+  })
+  assert.equal(committed.status, 0, committed.stderr)
 }
 
 async function replacePageActionsFixture(root, actionSource) {
@@ -403,8 +447,42 @@ async function replacePageActionsFixture(root, actionSource) {
   await fs.writeFile(registryPath, `${JSON.stringify(registry, null, 2)}\n`)
 }
 
+async function refreshCatalogHash(root) {
+  const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
+  const ledgerPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
+  const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
+  ledger.catalog_sha256 = sha256(await fs.readFile(catalogPath))
+  await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+}
+
 function runCli(root, outputPath, env = process.env) {
-  return spawnSync(process.execPath, [cliPath, "--root", root, "--output", outputPath], {
+  const changedTrackedFiles = spawnSync(
+    "git",
+    ["status", "--short", "--untracked-files=no"],
+    { cwd: root, encoding: "utf8" }
+  ).stdout.trim()
+  if (changedTrackedFiles) {
+    const added = spawnSync("git", ["add", "-u"], { cwd: root, encoding: "utf8" })
+    assert.equal(added.status, 0, added.stderr)
+    const committed = spawnSync("git", ["commit", "-qm", "fixture mutation"], {
+      cwd: root,
+      encoding: "utf8"
+    })
+    assert.equal(committed.status, 0, committed.stderr)
+  }
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8"
+  }).stdout.trim()
+  return spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    root,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], {
     encoding: "utf8",
     env
   })
@@ -464,8 +542,46 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stdout, "wrote 50 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
-  assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v1")
+  assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v2")
   assert.equal(inventory.sources.live_observations, "docs/wikidot-specifications/live-observations.json")
+  assert.equal(inventory.sources.source_coverage, "docs/wikidot-specifications/source-coverage.json")
+  const fixtureCommit = spawnSync("git", ["rev-parse", "HEAD^{commit}"], {
+    cwd: root,
+    encoding: "utf8"
+  }).stdout.trim()
+  const fixtureTree = spawnSync("git", ["rev-parse", "HEAD^{tree}"], {
+    cwd: root,
+    encoding: "utf8"
+  }).stdout.trim()
+  assert.deepEqual(inventory.provenance.wikijump, {
+    commit: fixtureCommit,
+    tree: fixtureTree
+  })
+  assert.deepEqual(inventory.provenance.ftml, {
+    commit: "62ebba4efda1f10e82363c23c925061fbe939e49",
+    tree: "ca84a08a46880a67b44cbb9374b4f7bd54d08f10"
+  })
+  assert.ok(inventory.provenance.registries.length > 10)
+  assert.equal(
+    new Set(inventory.provenance.registries.map(({ path: registryPath }) => registryPath)).size,
+    inventory.provenance.registries.length
+  )
+  assert.ok(inventory.provenance.registries.every(({ sha256: digest }) => /^[0-9a-f]{64}$/u.test(digest)))
+  for (const registry of inventory.provenance.registries) {
+    assert.equal(registry.sha256, sha256(await fs.readFile(path.join(root, registry.path))))
+  }
+  for (const requiredPath of [
+    "docs/wikidot-specifications/catalog.json",
+    "docs/wikidot-specifications/implementation-ledger.json",
+    "docs/wikidot-specifications/live-observations.json",
+    "docs/wikidot-specifications/source-coverage.json",
+    "deepwell/src/api.rs",
+    "framerail/src/lib/server/ajax-module-connector.js",
+    "framerail/src/lib/server/xmlrpc/methods.ts",
+    "wws/src/route.rs"
+  ]) {
+    assert.ok(inventory.provenance.registries.some(({ path: registryPath }) => registryPath === requiredPath))
+  }
   assert.deepEqual(inventory.sources.wikidot_py_source, wikidotPySource)
   assert.deepEqual(inventory.counts, {
     total: 50,
@@ -616,6 +732,151 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const secondResult = runCli(root, outputPath)
   assert.equal(secondResult.status, 0, secondResult.stderr)
   assert.equal(await fs.readFile(outputPath, "utf8"), firstOutput)
+})
+
+test("CLI rejects Catalog provenance, record, and source-edge drift", async (t) => {
+  const cases = [
+    {
+      name: "catalog hash",
+      mutate: async (root) => {
+        const ledgerPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
+        const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
+        ledger.catalog_sha256 = "0".repeat(64)
+        await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+      },
+      error: /catalog_sha256 does not match/u
+    },
+    {
+      name: "missing ledger record",
+      mutate: async (root) => {
+        const ledgerPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
+        const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
+        delete ledger.features["feature-one"]
+        await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+      },
+      error: /catalog feature has no ledger entry: feature-one/u
+    },
+    {
+      name: "duplicate catalog record",
+      mutate: async (root) => {
+        const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
+        const catalog = JSON.parse(await fs.readFile(catalogPath, "utf8"))
+        catalog.features.push(structuredClone(catalog.features[0]))
+        catalog.feature_count += 1
+        await fs.writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`)
+        await refreshCatalogHash(root)
+      },
+      error: /duplicate catalog feature: feature-one/u
+    },
+    {
+      name: "duplicate source edge",
+      mutate: async (root) => {
+        const coveragePath = path.join(root, "docs/wikidot-specifications/source-coverage.json")
+        const coverage = JSON.parse(await fs.readFile(coveragePath, "utf8"))
+        coverage.pages[0].feature_ids.push("feature-one")
+        await fs.writeFile(coveragePath, `${JSON.stringify(coverage, null, 2)}\n`)
+      },
+      error: /has duplicate feature edges/u
+    },
+    {
+      name: "missing source record",
+      mutate: async (root) => {
+        const coveragePath = path.join(root, "docs/wikidot-specifications/source-coverage.json")
+        const coverage = JSON.parse(await fs.readFile(coveragePath, "utf8"))
+        coverage.pages = []
+        coverage.page_count = 0
+        coverage.listed_page_count = 0
+        coverage.classification_counts.documentation = 0
+        await fs.writeFile(coveragePath, `${JSON.stringify(coverage, null, 2)}\n`)
+      },
+      error: /source coverage drift/u
+    }
+  ]
+
+  for (const fixtureCase of cases) {
+    await t.test(fixtureCase.name, async (t) => {
+      const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-catalog-provenance-"))
+      cleanupFixture(t, root)
+      await writeRepositoryFixture(root)
+      await fixtureCase.mutate(root)
+
+      const result = runCli(root, path.join(root, "inventory.json"))
+
+      assert.equal(result.status, 1, result.stderr)
+      assert.match(result.stderr, fixtureCase.error)
+    })
+  }
+})
+
+test("CLI rejects FTML identity drift and ignores inherited Git controls", async (t) => {
+  const driftRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-ftml-drift-"))
+  cleanupFixture(t, driftRoot)
+  await writeRepositoryFixture(driftRoot)
+  await writeText(
+    driftRoot,
+    "deepwell/Cargo.lock",
+    'source = "git+https://github.com/Rokurolize/ftml?rev=0000000000000000000000000000000000000000#0000000000000000000000000000000000000000"\n'
+  )
+  const drift = runCli(driftRoot, path.join(driftRoot, "inventory.json"))
+  assert.equal(drift.status, 1, drift.stderr)
+  assert.match(drift.stderr, /FTML manifest and lock identities do not match/u)
+
+  const isolatedRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-git-isolation-"))
+  cleanupFixture(t, isolatedRoot)
+  await writeRepositoryFixture(isolatedRoot)
+  const isolated = runCli(isolatedRoot, path.join(isolatedRoot, "inventory.json"), {
+    ...process.env,
+    GIT_DIR: path.join(isolatedRoot, "missing.git"),
+    GIT_WORK_TREE: path.join(isolatedRoot, "missing-worktree"),
+    PATH: path.join(isolatedRoot, "missing-bin")
+  })
+  assert.equal(isolated.status, 0, isolated.stderr)
+})
+
+test("CLI keeps an explicit source revision across metadata commits and rejects registry drift", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-source-revision-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: root,
+    encoding: "utf8"
+  }).stdout.trim()
+  const firstOutput = path.join(root, "first-inventory.json")
+  const first = spawnSync(
+    process.execPath,
+    [cliPath, "--root", root, "--output", firstOutput, "--source-revision", sourceRevision],
+    { encoding: "utf8" }
+  )
+  assert.equal(first.status, 0, first.stderr)
+
+  const generatorPath = "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs"
+  await writeText(root, generatorPath, "// generator metadata only\n")
+  assert.equal(
+    spawnSync("git", ["add", generatorPath, path.basename(firstOutput)], { cwd: root }).status,
+    0
+  )
+  assert.equal(spawnSync("git", ["commit", "-qm", "metadata only"], { cwd: root }).status, 0)
+  const secondOutput = path.join(root, "second-inventory.json")
+  const second = spawnSync(
+    process.execPath,
+    [cliPath, "--root", root, "--output", secondOutput, "--source-revision", sourceRevision],
+    { encoding: "utf8" }
+  )
+  assert.equal(second.status, 0, second.stderr)
+  assert.equal(await fs.readFile(secondOutput, "utf8"), await fs.readFile(firstOutput, "utf8"))
+  assert.equal(
+    JSON.parse(await fs.readFile(secondOutput, "utf8")).provenance.wikijump.commit,
+    sourceRevision
+  )
+
+  await fs.appendFile(path.join(root, "deepwell/src/api.rs"), 'register!("drift", drift);\n')
+  const drift = spawnSync(
+    process.execPath,
+    [cliPath, "--root", root, "--output", path.join(root, "drift.json"), "--source-revision", sourceRevision],
+    { encoding: "utf8" }
+  )
+  assert.equal(drift.status, 1, drift.stderr)
+  assert.match(drift.stderr, /registry blob drift: deepwell\/src\/api\.rs/u)
 })
 
 test("CLI rejects an omitted or duplicate missing-page control", async (t) => {
@@ -1147,6 +1408,7 @@ test("CLI rejects invalid catalog live-observation links", async (t) => {
     fixtureCase.mutate({ catalog, observations })
     await fs.writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`)
     await fs.writeFile(observationsPath, `${JSON.stringify(observations, null, 2)}\n`)
+    await refreshCatalogHash(root)
 
     const result = runCli(root, path.join(root, "inventory.json"))
 
@@ -1292,6 +1554,7 @@ test("CLI rejects ambiguous or mismatched nested Open43 source provenance", asyn
     const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
     const historicalRevision = reconciliation.closure_audits[0].source_revision
     await fs.appendFile(catalogPath, "\n")
+    await refreshCatalogHash(root)
     assert.equal(spawnSync("git", ["add", "."], { cwd: root }).status, 0)
     assert.equal(spawnSync("git", ["commit", "-qm", "new source"], { cwd: root }).status, 0)
     const currentRevision = spawnSync("git", ["rev-parse", "HEAD"], {

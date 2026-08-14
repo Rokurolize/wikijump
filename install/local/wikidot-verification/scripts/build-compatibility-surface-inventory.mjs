@@ -7,11 +7,12 @@ import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
-const SCHEMA = "wikijump.compatibility_surface_inventory.v1"
+const SCHEMA = "wikijump.compatibility_surface_inventory.v2"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
 const WIKIDOT_PY_GIT_DIR = "/home/roku/src/Rokurolize/wikidot.py/.git"
+const FTML_GIT_DIR = "/home/roku/src/Rokurolize/ftml/.git"
 const GIT_EXECUTABLE = "/usr/bin/git"
 const GIT_ENVIRONMENT = Object.freeze({
   GIT_CONFIG_GLOBAL: "/dev/null",
@@ -39,6 +40,7 @@ const WIKIDOT_PY_SOURCE = {
   ])
 }
 const WIKIDOT_PY_AMC_MODULE_EXCLUSIONS = new Set(["edit/PageEditModule"])
+const SOURCE_INPUTS = new Map()
 
 function pinnedWikidotPyAmcModules() {
   const result = spawnSync(
@@ -182,18 +184,21 @@ const MISSING_PAGE_CONTROL_CONTRACTS = new Map([
 ])
 
 function usage() {
-  return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--output JSON]\n`
+  return `Usage: node ${path.basename(process.argv[1])} [--root REPOSITORY] [--output JSON] [--source-revision COMMIT]\n`
 }
 
 function parseArgs(argv) {
   let root = DEFAULT_ROOT
   let output
+  let sourceRevision
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index]
     if (argument === "--root") {
       root = path.resolve(requireValue(argv, ++index, "--root"))
     } else if (argument === "--output") {
       output = path.resolve(requireValue(argv, ++index, "--output"))
+    } else if (argument === "--source-revision") {
+      sourceRevision = requireValue(argv, ++index, "--source-revision")
     } else if (argument === "--help" || argument === "-h") {
       process.stdout.write(usage())
       process.exit(0)
@@ -203,7 +208,8 @@ function parseArgs(argv) {
   }
   return {
     root,
-    output: output ?? path.join(root, DEFAULT_OUTPUT)
+    output: output ?? path.join(root, DEFAULT_OUTPUT),
+    sourceRevision
   }
 }
 
@@ -233,6 +239,7 @@ async function readJson(root, relativePath) {
   } catch (error) {
     throw new Error(`cannot read ${relativePath}: ${error.message}`)
   }
+  SOURCE_INPUTS.set(toPosix(relativePath), source)
   try {
     return JSON.parse(source)
   } catch (error) {
@@ -242,10 +249,16 @@ async function readJson(root, relativePath) {
 
 async function readText(root, relativePath) {
   try {
-    return await fs.readFile(path.join(root, relativePath), "utf8")
+    const source = await fs.readFile(path.join(root, relativePath), "utf8")
+    SOURCE_INPUTS.set(toPosix(relativePath), source)
+    return source
   } catch (error) {
     throw new Error(`cannot read ${relativePath}: ${error.message}`)
   }
+}
+
+async function readAbsoluteText(root, absolutePath) {
+  return readText(root, relativeReference(root, absolutePath))
 }
 
 function phase(status, references = []) {
@@ -342,6 +355,79 @@ function sha256(value) {
   return createHash("sha256").update(value).digest("hex")
 }
 
+function resolveGitObject(gitArguments, revision, label) {
+  let value
+  try {
+    value = execFileSync(
+      GIT_EXECUTABLE,
+      ["--no-replace-objects", ...gitArguments, "rev-parse", "--verify", revision],
+      { encoding: "utf8", env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
+    ).trim()
+  } catch {
+    throw new Error(`cannot resolve ${label}: ${revision}`)
+  }
+  if (!/^[0-9a-f]{40}$/u.test(value)) throw new Error(`${label} is not a Git object`)
+  return value
+}
+
+async function sourceProvenance(root, sourceRevision) {
+  const manifestPath = "deepwell/Cargo.toml"
+  const lockPath = "deepwell/Cargo.lock"
+  const [manifest, lock] = await Promise.all([
+    readText(root, manifestPath),
+    readText(root, lockPath)
+  ])
+  const manifestRevision = /ftml\s*=\s*\{[^\n]*\brev\s*=\s*"([0-9a-f]{40})"/u.exec(manifest)?.[1]
+  const lockRevision = /git\+https:\/\/github\.com\/Rokurolize\/ftml\?rev=([0-9a-f]{40})#([0-9a-f]{40})/u.exec(lock)
+  if (!manifestRevision || !lockRevision || lockRevision[1] !== manifestRevision || lockRevision[2] !== manifestRevision) {
+    throw new Error("Deepwell FTML manifest and lock identities do not match")
+  }
+  if (!/^[0-9a-f]{40}$/u.test(sourceRevision ?? "")) {
+    throw new Error("Wikijump source revision must be an exact commit")
+  }
+  const wikijumpCommit = resolveGitObject(
+    ["-C", root],
+    `${sourceRevision}^{commit}`,
+    "Wikijump commit"
+  )
+  if (wikijumpCommit !== sourceRevision) {
+    throw new Error("Wikijump source revision does not resolve to itself")
+  }
+  const wikijumpTree = resolveGitObject(["-C", root], `${wikijumpCommit}^{tree}`, "Wikijump tree")
+  const ftmlCommit = resolveGitObject(
+    [`--git-dir=${FTML_GIT_DIR}`],
+    `${manifestRevision}^{commit}`,
+    "FTML commit"
+  )
+  const ftmlTree = resolveGitObject(
+    [`--git-dir=${FTML_GIT_DIR}`],
+    `${ftmlCommit}^{tree}`,
+    "FTML tree"
+  )
+  return {
+    wikijump: { commit: wikijumpCommit, tree: wikijumpTree },
+    ftml: { commit: ftmlCommit, tree: ftmlTree }
+  }
+}
+
+function verifyRegistryBlobs(root, sourceRevision) {
+  for (const [registryPath, source] of SOURCE_INPUTS) {
+    let pinnedSource
+    try {
+      pinnedSource = execFileSync(
+        GIT_EXECUTABLE,
+        ["--no-replace-objects", "-C", root, "show", `${sourceRevision}:${registryPath}`],
+        { env: GIT_ENVIRONMENT, stdio: ["ignore", "pipe", "ignore"] }
+      )
+    } catch {
+      throw new Error(`registry is missing from pinned revision: ${registryPath}`)
+    }
+    if (sha256(pinnedSource) !== sha256(source)) {
+      throw new Error(`registry blob drift: ${registryPath}`)
+    }
+  }
+}
+
 function classificationCounts(rows) {
   return Object.fromEntries(
     [...AUDIT_CLASSIFICATIONS].map((classification) => [
@@ -373,11 +459,16 @@ async function discoverCatalogFeatures(root) {
   const catalogPath = "docs/wikidot-specifications/catalog.json"
   const ledgerPath = "docs/wikidot-specifications/implementation-ledger.json"
   const observationsPath = "docs/wikidot-specifications/live-observations.json"
-  const [catalog, ledger, liveObservations] = await Promise.all([
+  const coveragePath = "docs/wikidot-specifications/source-coverage.json"
+  const [catalog, ledger, liveObservations, sourceCoverage] = await Promise.all([
     readJson(root, catalogPath),
     readJson(root, ledgerPath),
-    readJson(root, observationsPath)
+    readJson(root, observationsPath),
+    readJson(root, coveragePath)
   ])
+  if (ledger.catalog_sha256 !== sha256(SOURCE_INPUTS.get(catalogPath))) {
+    throw new Error(`${ledgerPath} catalog_sha256 does not match ${catalogPath}`)
+  }
   if (!Array.isArray(catalog.features)) throw new Error(`${catalogPath} features must be an array`)
   if (catalog.feature_count !== undefined && catalog.feature_count !== catalog.features.length) {
     throw new Error(`${catalogPath} feature_count does not match its feature denominator`)
@@ -387,6 +478,9 @@ async function discoverCatalogFeatures(root) {
   }
   if (!Array.isArray(liveObservations.observations)) {
     throw new Error(`${observationsPath} observations must be an array`)
+  }
+  if (!Array.isArray(sourceCoverage.pages)) {
+    throw new Error(`${coveragePath} pages must be an array`)
   }
 
   const catalogIds = new Set()
@@ -430,6 +524,67 @@ async function discoverCatalogFeatures(root) {
   }
   for (const ledgerId of Object.keys(ledger.features)) {
     if (!catalogIds.has(ledgerId)) throw new Error(`orphan ledger feature: ${ledgerId}`)
+  }
+
+  const coveragePages = new Map()
+  for (const page of sourceCoverage.pages) {
+    if (!page || typeof page.source_path !== "string" || page.source_path === "") {
+      throw new Error(`${coveragePath} contains a page without source_path`)
+    }
+    if (coveragePages.has(page.source_path)) {
+      throw new Error(`${coveragePath} contains duplicate page: ${page.source_path}`)
+    }
+    if (!/^[0-9a-f]{64}$/u.test(page.source_sha256 ?? "")) {
+      throw new Error(`${coveragePath} has invalid source hash: ${page.source_path}`)
+    }
+    if (!Array.isArray(page.feature_ids)) {
+      throw new Error(`${coveragePath} ${page.source_path} feature_ids must be an array`)
+    }
+    if (new Set(page.feature_ids).size !== page.feature_ids.length) {
+      throw new Error(`${coveragePath} ${page.source_path} has duplicate feature edges`)
+    }
+    for (const featureId of page.feature_ids) {
+      if (!catalogIds.has(featureId)) throw new Error(`${coveragePath} links unknown feature: ${featureId}`)
+    }
+    coveragePages.set(page.source_path, page)
+  }
+  if (sourceCoverage.listed_page_count !== sourceCoverage.pages.length) {
+    throw new Error(`${coveragePath} listed_page_count does not match its page denominator`)
+  }
+  if (
+    sourceCoverage.page_count !==
+    sourceCoverage.listed_page_count + sourceCoverage.excluded_data_record_count
+  ) {
+    throw new Error(`${coveragePath} page_count does not match listed and excluded pages`)
+  }
+  const classifiedPageCount = Object.values(sourceCoverage.classification_counts ?? {}).reduce(
+    (sum, count) => sum + count,
+    0
+  )
+  if (classifiedPageCount !== sourceCoverage.page_count || sourceCoverage.unclassified_count !== 0) {
+    throw new Error(`${coveragePath} classification denominator does not match`)
+  }
+  for (const feature of catalog.features) {
+    const sourceEdges = new Set()
+    for (const source of feature.sources ?? []) {
+      const sourceEdge = JSON.stringify([
+        source.path,
+        source.start_line ?? null,
+        source.end_line ?? null,
+        source.role ?? null
+      ])
+      if (sourceEdges.has(sourceEdge)) {
+        throw new Error(`catalog feature ${feature.id} has duplicate source edge: ${source.path}`)
+      }
+      sourceEdges.add(sourceEdge)
+      const coveragePage = coveragePages.get(source.path)
+      if (!coveragePage || coveragePage.source_sha256 !== source.source_sha256) {
+        throw new Error(`catalog feature ${feature.id} source coverage drift: ${source.path}`)
+      }
+      if (!coveragePage.feature_ids.includes(feature.id)) {
+        throw new Error(`catalog feature ${feature.id} source edge is missing from coverage: ${source.path}`)
+      }
+    }
   }
 
   const observationsById = new Map()
@@ -697,7 +852,7 @@ async function resolveNamedActionObject(root, filePath, exportName, visited) {
   const visitKey = `${filePath}:${exportName}`
   if (visited.has(visitKey)) throw new Error(`cyclic action registry export: ${visitKey}`)
   visited.add(visitKey)
-  const sourceText = await fs.readFile(filePath, "utf8")
+  const sourceText = await readAbsoluteText(root, filePath)
   const declaration = new RegExp(`export\\s+const\\s+${exportName}\\s*=\\s*`, "u").exec(sourceText)
   if (declaration) {
     const expressionStart = declaration.index + declaration[0].length
@@ -714,7 +869,7 @@ async function resolveNamedActionObject(root, filePath, exportName, visited) {
 }
 
 async function resolveRouteActions(root, filePath, visited = new Set()) {
-  const sourceText = await fs.readFile(filePath, "utf8")
+  const sourceText = await readAbsoluteText(root, filePath)
   const direct = /export\s+const\s+actions\s*=\s*/u.exec(sourceText)
   if (direct) {
     const expressionStart = direct.index + direct[0].length
@@ -765,6 +920,7 @@ async function discoverFramerailRoutes(root) {
   const routes = new Map()
   const actionRecords = []
   for (const filePath of routeFiles.sort()) {
+    const sourceText = await readAbsoluteText(root, filePath)
     const directory = path.dirname(filePath)
     const routePath = routePathFromDirectory(routesRoot, directory)
     const reference = relativeReference(root, filePath)
@@ -780,7 +936,6 @@ async function discoverFramerailRoutes(root) {
     }
     route.references.push(reference)
     if (/\+server\.(?:ts|js)$/u.test(filePath)) {
-      const sourceText = await fs.readFile(filePath, "utf8")
       for (const method of serverRouteMethods(sourceText, reference)) route.methods.add(method)
     } else {
       route.methods.add("GET")
@@ -1980,8 +2135,10 @@ function validateInventory(surfaces) {
   }
 }
 
-async function buildInventory(root) {
+async function buildInventory(root, sourceRevision) {
+  SOURCE_INPUTS.clear()
   const [
+    provenance,
     catalog,
     deepwell,
     framerailRoutes,
@@ -1993,6 +2150,7 @@ async function buildInventory(root) {
     open43
   ] =
     await Promise.all([
+      sourceProvenance(root, sourceRevision),
       discoverCatalogFeatures(root),
       discoverDeepwellJsonRpc(root),
       discoverFramerailRoutes(root),
@@ -2003,6 +2161,7 @@ async function buildInventory(root) {
       discoverWwsRoutes(root),
       discoverOpen43AuditCases(root)
     ])
+  verifyRegistryBlobs(root, provenance.wikijump.commit)
   const surfaces = [
     ...catalog,
     ...deepwell,
@@ -2021,10 +2180,17 @@ async function buildInventory(root) {
   }
   return {
     schema: SCHEMA,
+    provenance: {
+      ...provenance,
+      registries: [...SOURCE_INPUTS]
+        .map(([registryPath, source]) => ({ path: registryPath, sha256: sha256(source) }))
+        .sort((left, right) => left.path.localeCompare(right.path, "en"))
+    },
     sources: {
       catalog: "docs/wikidot-specifications/catalog.json",
       live_observations: "docs/wikidot-specifications/live-observations.json",
       implementation_ledger: "docs/wikidot-specifications/implementation-ledger.json",
+      source_coverage: "docs/wikidot-specifications/source-coverage.json",
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",
@@ -2050,9 +2216,22 @@ async function buildInventory(root) {
   }
 }
 
+async function pinnedSourceRevision(root, requestedRevision) {
+  if (requestedRevision) return requestedRevision
+  const inventoryPath = path.join(root, DEFAULT_OUTPUT)
+  let inventory
+  try {
+    inventory = JSON.parse(await fs.readFile(inventoryPath, "utf8"))
+  } catch {
+    throw new Error("--source-revision is required when no tracked inventory pin exists")
+  }
+  return inventory.provenance?.wikijump?.commit
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2))
-  const inventory = await buildInventory(options.root)
+  const sourceRevision = await pinnedSourceRevision(options.root, options.sourceRevision)
+  const inventory = await buildInventory(options.root, sourceRevision)
   await fs.mkdir(path.dirname(options.output), { recursive: true })
   await fs.writeFile(options.output, `${JSON.stringify(inventory, null, 2)}\n`)
   const outputReference = path.relative(options.root, options.output)
