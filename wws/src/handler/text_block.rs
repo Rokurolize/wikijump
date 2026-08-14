@@ -229,6 +229,14 @@ async fn handle_text_block(
     };
 
     let Headers { content_type, etag } = get_headers(s3_response.headers());
+    if matches!(block_type, TextBlockType::Code)
+        && headers
+            .get(header::IF_NONE_MATCH)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|value| value.trim() == etag)
+    {
+        return StatusCode::NOT_MODIFIED.into_response();
+    }
     let body = Body::from(text_block_response_body(block_type, s3_response.to_vec()));
     let result = Response::builder()
         .header(header::CONTENT_TYPE, &content_type)
@@ -365,7 +373,7 @@ mod tests {
     use axum::Router;
     use axum::body::Bytes;
     use axum::extract::State;
-    use axum::http::{HeaderValue, StatusCode};
+    use axum::http::{HeaderName, HeaderValue, Method, StatusCode};
     use axum::routing::{get, post};
     use jsonrpsee::core::ClientError;
     use jsonrpsee_types::ErrorObjectOwned;
@@ -458,12 +466,23 @@ mod tests {
         }
 
         async fn get(&self, path: &str) -> reqwest::Response {
-            self.client
-                .get(format!("{}{path}", self.base_url))
-                .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID.to_string())
-                .send()
-                .await
-                .unwrap()
+            self.request(Method::GET, path, &[]).await
+        }
+
+        async fn request(
+            &self,
+            method: Method,
+            path: &str,
+            headers: &[(HeaderName, &str)],
+        ) -> reqwest::Response {
+            let mut request = self
+                .client
+                .request(method, format!("{}{path}", self.base_url))
+                .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID.to_string());
+            for (name, value) in headers {
+                request = request.header(name, *value);
+            }
+            request.send().await.unwrap()
         }
     }
 
@@ -563,6 +582,113 @@ mod tests {
                     .contains("moved content")
             );
         }
+    }
+
+    #[tokio::test]
+    async fn code_exact_if_none_match_returns_bare_not_modified() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app
+            .request(
+                Method::GET,
+                "/-/code/old-page/1",
+                &[(header::IF_NONE_MATCH, "\"text-block\"")],
+            )
+            .await;
+
+        assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
+        assert!(response.headers().get(header::ETAG).is_none());
+        assert!(response.headers().get(header::CONTENT_TYPE).is_none());
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn code_wrong_if_none_match_returns_full_response_without_cache_control() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app
+            .request(
+                Method::GET,
+                "/-/code/old-page/1",
+                &[(header::IF_NONE_MATCH, "\"wrong\"")],
+            )
+            .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(header::ETAG).unwrap(),
+            "\"text-block\""
+        );
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/plain"
+        );
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert_eq!(response.bytes().await.unwrap(), &b"moved content\n"[..]);
+    }
+
+    #[tokio::test]
+    async fn code_ignores_range_and_if_range() {
+        let app = TextBlockTestApp::spawn().await;
+
+        for headers in [
+            vec![(header::RANGE, "bytes=0-4")],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"text-block\""),
+            ],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"wrong\""),
+            ],
+        ] {
+            let response = app
+                .request(Method::GET, "/-/code/old-page/1", &headers)
+                .await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(!response.headers().contains_key(header::CONTENT_RANGE));
+            assert_eq!(response.bytes().await.unwrap(), &b"moved content\n"[..]);
+        }
+    }
+
+    #[tokio::test]
+    async fn code_head_returns_metadata_without_a_body() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app.request(Method::HEAD, "/-/code/old-page/1", &[]).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(header::ETAG).unwrap(),
+            "\"text-block\""
+        );
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/plain"
+        );
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn code_head_exact_if_none_match_returns_bare_not_modified() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app
+            .request(
+                Method::HEAD,
+                "/-/code/old-page/1",
+                &[(header::IF_NONE_MATCH, "\"text-block\"")],
+            )
+            .await;
+
+        assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
+        assert!(response.headers().get(header::ETAG).is_none());
+        assert!(response.headers().get(header::CONTENT_TYPE).is_none());
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
     }
 
     #[test]
