@@ -1,0 +1,111 @@
+{
+  "schema": "wikijump.comments_hideform_browser_run.v1",
+  "issue": 1367,
+  "status": "blocked_authority",
+  "source_revision": "c41c1a61b232873debc601872523020a7255e98a",
+  "inputs": {
+    "cases": {
+      "path": "install/local/wikidot-verification/fixtures/comments-hideform-actor/cases.json",
+      "sha256": "1e626dcfa067a937b970a3ca83defdf9455db249f0331635eb77c72e7f8c6b39"
+    },
+    "historical_artifact": {
+      "path": "install/local/wikidot-verification/artifacts/forum-comments-hideform-actor-live-20260810.json",
+      "sha256": "b4a39e93a739b575aac7cf2d1e57877b852995459dd396b497bcf2e92790fd4c",
+      "classification": "non_closing_historical"
+    }
+  },
+  "authority": {
+    "required": [
+      "authenticated-denied-actor",
+      "authenticated-permitted-actor",
+      "browser",
+      "run-owned-sandbox-page-mutation"
+    ],
+    "current": "not_authorized",
+    "source": "/home/roku/wjlab/state/current.json"
+  },
+  "browser_interface": "authenticated served Wikidot page",
+  "preflight_required": [
+    "actor_a_identity",
+    "actor_b_identity",
+    "authority_state_sha256",
+    "browser_identity",
+    "evidence_output_path",
+    "fixture_fullname",
+    "run_id"
+  ],
+  "fixture": {
+    "site": "sandbox-for-codex",
+    "page_fullname_prefix": "codex-comments-hideform-browser-",
+    "preexisting_page_forbidden": true
+  },
+  "actors": [
+    {
+      "label": "A",
+      "authentication": "session",
+      "permission": "comment-permitted"
+    },
+    {
+      "label": "B",
+      "authentication": "session",
+      "permission": "comment-denied"
+    }
+  ],
+  "sources": [
+    {
+      "case_id": "hideform-omitted",
+      "source": "[[module Comments]]",
+      "source_sha256": "e09c90638380ce3894a446a0ceeb6c1861f3451bcaa10bf58f3c3c0e6d0a98b5"
+    },
+    {
+      "case_id": "hideform-false",
+      "source": "[[module Comments hideForm=\"false\"]]",
+      "source_sha256": "30792871d3543193b56100b48767d8c92c6d7f91fc9381c09e25a77f72f03a32"
+    },
+    {
+      "case_id": "hideform-true",
+      "source": "[[module Comments hideForm=\"true\"]]",
+      "source_sha256": "cbeaff52456a754879c45dd88bb0340765654dc7c6b1608e6b32bc679b0974d0"
+    },
+    {
+      "case_id": "hideform-yes",
+      "source": "[[module Comments hideForm=\"yes\"]]",
+      "source_sha256": "40a85aed012ef3e6b17760db7a6d8a95aed1018b9435ed08d364629f00e56ac2"
+    }
+  ],
+  "required_intervals": [
+    "domcontentloaded",
+    "settled"
+  ],
+  "evidence_fields": [
+    "actor",
+    "browser_identity",
+    "case_id",
+    "console_errors",
+    "dom",
+    "failed_requests",
+    "form_present",
+    "http_errors",
+    "interval",
+    "new_post_button_present",
+    "page_errors",
+    "screenshot",
+    "source_sha256",
+    "timestamp",
+    "url"
+  ],
+  "cleanup": {
+    "required": true,
+    "original_source_restored_when_reused": true,
+    "created_fixture_removed": true,
+    "page_absent_after_removal": true,
+    "browser_state_removed": true
+  },
+  "redactions": [
+    "credentials",
+    "cookies",
+    "session identifiers",
+    "CSRF tokens",
+    "page edit lock fields"
+  ]
+}
