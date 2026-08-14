@@ -12,10 +12,6 @@ const options = {
   repositories: {
     "scp-wiki-translation": translationRoot,
     wikijump: wikijumpRoot
-  },
-  repositoryRevisions: {
-    "scp-wiki-translation": "58b996999930e88dec937db5eaa6363c94b48b8e",
-    wikijump: "acb51c30120317936e7da8a52c89d4ae062310eb"
   }
 }
 
@@ -44,16 +40,19 @@ test("issue #1375 XML-RPC protocol contract is exact and source-bound", async ()
     )
   }
 
+  const inventedRevision = structuredClone(contract)
+  inventedRevision.repositories.find(({ repository_id }) => repository_id === "wikijump").revision =
+    "f".repeat(40)
   await assert.rejects(
-    verifyIssue1375XmlRpcProtocolSurfaceContract(contract, {
-      ...options,
-      readFile: async (url) => {
-        const bytes = await readFile(url)
-        return url.pathname.endsWith("authentication.ts")
-          ? Buffer.concat([bytes, Buffer.from("\n// drift\n")])
-          : bytes
-      }
-    }),
+    verifyIssue1375XmlRpcProtocolSurfaceContract(inventedRevision, options),
+    /source revision is unavailable: wikijump/
+  )
+
+  const sourceDrift = structuredClone(contract)
+  sourceDrift.sources.find(({ source_id }) => source_id === "framerail-authentication").sha256 =
+    "0".repeat(64)
+  await assert.rejects(
+    verifyIssue1375XmlRpcProtocolSurfaceContract(sourceDrift, options),
     /source drift: framerail-authentication/
   )
 })

@@ -1,5 +1,17 @@
 import { createHash } from "node:crypto"
-import { readFile as nodeReadFile } from "node:fs/promises"
+import { execFile } from "node:child_process"
+import { fileURLToPath } from "node:url"
+import { promisify } from "node:util"
+
+const execFileAsync = promisify(execFile)
+const GIT_ENV = Object.freeze({
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  HOME: "/nonexistent",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin"
+})
 
 const EXPECTED_RECORD_IDS = [
   "xmlrpc-protocol:authentication-boundary:http-basic",
@@ -67,7 +79,7 @@ function sha256(bytes) {
 
 export async function verifyIssue1375XmlRpcProtocolSurfaceContract(
   contract,
-  { repositories, repositoryRevisions, readFile = nodeReadFile }
+  { repositories }
 ) {
   exactKeys(
     contract,
@@ -101,18 +113,31 @@ export async function verifyIssue1375XmlRpcProtocolSurfaceContract(
   ) {
     throw new Error("contract repositories are invalid")
   }
+  const resolvedRepositories = new Map()
   for (const repository of contract.repositories) {
     exactKeys(repository, ["repository_id", "revision"], `repository ${repository.repository_id}`)
     if (
       !/^[a-f0-9]{40}$/u.test(repository.revision) ||
-      repositoryRevisions?.[repository.repository_id] !== repository.revision ||
       !(repository.repository_id in repositories)
     ) {
-      throw new Error(`source revision drift: ${repository.repository_id}`)
+      throw new Error(`source revision is unavailable: ${repository.repository_id}`)
     }
+    const root = fileURLToPath(repositories[repository.repository_id])
+    try {
+      const { stdout } = await execFileAsync(
+        "/usr/bin/git",
+        ["-C", root, "-c", "safe.directory=*", "rev-parse", "--verify", `${repository.revision}^{commit}`],
+        { encoding: "utf8", env: GIT_ENV, maxBuffer: 1024 }
+      )
+      if (stdout.trim() !== repository.revision) throw new Error("revision mismatch")
+    } catch {
+      throw new Error(`source revision is unavailable: ${repository.repository_id}`)
+    }
+    resolvedRepositories.set(repository.repository_id, { revision: repository.revision, root })
   }
 
   const sources = new Map(contract.sources.map((source) => [source.source_id, source]))
+  const sourceBytes = new Map()
   for (const source of contract.sources) {
     exactKeys(
       source,
@@ -131,10 +156,21 @@ export async function verifyIssue1375XmlRpcProtocolSurfaceContract(
     ) {
       throw new Error(`source declaration is invalid: ${source.source_id}`)
     }
-    const bytes = await readFile(new URL(source.path, repositories[source.repository_id]))
+    const repository = resolvedRepositories.get(source.repository_id)
+    let bytes
+    try {
+      ;({ stdout: bytes } = await execFileAsync(
+        "/usr/bin/git",
+        ["-C", repository.root, "-c", "safe.directory=*", "cat-file", "blob", `${repository.revision}:${source.path}`],
+        { encoding: "buffer", env: GIT_ENV, maxBuffer: 8 * 1024 * 1024 }
+      ))
+    } catch {
+      throw new Error(`source blob is unavailable: ${source.source_id}`)
+    }
     if (sha256(bytes) !== source.sha256 || !bytes.toString("utf8").includes(source.anchor)) {
       throw new Error(`source drift: ${source.source_id}`)
     }
+    sourceBytes.set(source.source_id, bytes)
   }
 
   for (const record of contract.protocol_records) {
@@ -158,10 +194,7 @@ export async function verifyIssue1375XmlRpcProtocolSurfaceContract(
     "historical attribution"
   )
   const historical = contract.historical_attribution
-  const historicalSource = sources.get(historical.source_id)
-  const historicalArtifact = JSON.parse(
-    await readFile(new URL(historicalSource.path, repositories[historicalSource.repository_id]), "utf8")
-  )
+  const historicalArtifact = JSON.parse(sourceBytes.get(historical.source_id).toString("utf8"))
   if (
     historical.role !== "historical-source-attribution-only" ||
     historical.method_count !== 17 ||
