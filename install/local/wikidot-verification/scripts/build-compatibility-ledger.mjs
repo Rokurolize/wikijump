@@ -108,6 +108,10 @@ try {
 }
 if (previous && previous.schema !== "wikijump.compatibility_ledger.v1")
   fail("existing output has an unsupported schema");
+for (const { source_local_id: localId } of previous?.source_local_identities ??
+  []) {
+  if (!rawIdSet.has(localId)) fail(`raw source disappeared: ${localId}`);
+}
 
 const previousLocalByRaw = new Map(
   previous?.source_local_identities?.map((row) => [

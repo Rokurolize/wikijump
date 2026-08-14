@@ -163,6 +163,18 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
   assert.equal(retained.surface_id, prior["catalog-feature:b"]);
   assert.equal(retained.assignment_id, priorAssignment);
 
+  writeFileSync(input, JSON.stringify(inventory()));
+  assert.throws(
+    () =>
+      execFileSync(
+        process.execPath,
+        [script, "--inventory", input, "--output", output],
+        { stdio: "pipe" },
+      ),
+    /raw source disappeared: catalog-feature:a/u,
+  );
+  writeFileSync(output, JSON.stringify(first));
+
   const deduplicated = inventory([
     surface("catalog-feature:alias"),
     surface("catalog-feature:b"),
@@ -199,6 +211,7 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
     /alias target is missing/u,
   );
 
+  writeFileSync(output, JSON.stringify(first));
   const unknownOwner = inventory();
   unknownOwner.surfaces[0].implementation_owners = ["impl:unknown"];
   writeFileSync(input, JSON.stringify(unknownOwner));
