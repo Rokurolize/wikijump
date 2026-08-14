@@ -14,6 +14,10 @@ const options = {
 }
 
 test("issue #1375 XML-RPC protocol contract is exact and source-bound", async () => {
+  assert.deepEqual(contract.repositories, [{
+    repository_id: "wikijump",
+    revision: "c41c1a61b232873debc601872523020a7255e98a"
+  }])
   const result = await verifyIssue1375XmlRpcProtocolSurfaceContract(contract, options)
   assert.deepEqual(result, {
     authority_gap_count: 3,

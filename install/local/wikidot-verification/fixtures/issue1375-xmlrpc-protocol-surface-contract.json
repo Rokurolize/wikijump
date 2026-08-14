@@ -203,7 +203,7 @@
   "repositories": [
     {
       "repository_id": "wikijump",
-      "revision": "acb51c30120317936e7da8a52c89d4ae062310eb"
+      "revision": "c41c1a61b232873debc601872523020a7255e98a"
     }
   ],
   "sources": [
@@ -225,7 +225,7 @@
       "source_id": "framerail-methods",
       "repository_id": "wikijump",
       "path": "framerail/src/lib/server/xmlrpc/methods.ts",
-      "sha256": "878e04e8704d85efd2b052a76d86b62efd5f54cf851877936dff1e04f2169735",
+      "sha256": "c580941033831c02e20b1c650eab389c00b7675f90a74e09fc1e4d40fb1f3f83",
       "anchor": "const MAX_XML_RPC_MULTICALLS = 100"
     },
     {
