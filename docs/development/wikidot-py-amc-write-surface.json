@@ -1,0 +1,75 @@
+{
+  "schema": "wikijump.wikidot_py_amc_write_surface.v1",
+  "source": {
+    "repository": "Rokurolize/wikidot.py",
+    "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+    "revision_authority": "docs/development/wikidot-py-amc-client-parity.json#source",
+    "objects": [
+      { "path": "src/wikidot/module/auth.py", "type": "blob", "oid": "39d02d5c0949303bbd6886006de0e5d3b8ae539b" },
+      { "path": "src/wikidot/module/forum_category.py", "type": "blob", "oid": "9fa0a17eff052d3b94788a1889a4cf29bda5cac3" },
+      { "path": "src/wikidot/module/forum_post.py", "type": "blob", "oid": "b6f70f3e50f1b98fc9437224cc7a2af1ca013285" },
+      { "path": "src/wikidot/module/forum_thread.py", "type": "blob", "oid": "7c073a06edcff016ed103fe773b6887e65b6aa06" },
+      { "path": "src/wikidot/module/page.py", "type": "blob", "oid": "3c0e96053580e97b38a2bad5b8c0d7dbe4d2292b" },
+      { "path": "src/wikidot/module/private_message.py", "type": "blob", "oid": "c8f16ff34f274dcb96e396c8a7cd40b5e4f563f1" },
+      { "path": "src/wikidot/module/site.py", "type": "blob", "oid": "c07c20430dc575ae997ae77b473234741cb14663" },
+      { "path": "src/wikidot/module/site_application.py", "type": "blob", "oid": "0c27b12e7cb525d0b4a9f27d2785012c5b361c53" },
+      { "path": "src/wikidot/module/site_member.py", "type": "blob", "oid": "e01db16e315012240f35683d41698273b2884d60" }
+    ]
+  },
+  "scope": "Static wikidot.py write request inventory only; authenticated behavior evidence and implementation gaps are separate concerns.",
+  "page_edit_lock_shapes": [
+    {
+      "module_name": "edit/PageEditModule",
+      "required_fields": ["mode", "moduleName", "wiki_page"],
+      "conditional_fields": ["force_lock"],
+      "source_reference": "src/wikidot/module/page.py#Page.create_or_edit"
+    }
+  ],
+  "action_event_pairs": [
+    { "action": "DashboardMessageAction", "event": "send", "source_reference": "src/wikidot/module/private_message.py#PrivateMessage.send" },
+    { "action": "ForumAction", "event": "newThread", "source_reference": "src/wikidot/module/forum_category.py#ForumCategory.create_thread" },
+    { "action": "ForumAction", "event": "saveEditPost", "source_reference": "src/wikidot/module/forum_post.py#ForumPost.edit" },
+    { "action": "ForumAction", "event": "savePost", "source_reference": "src/wikidot/module/forum_thread.py#ForumThread.reply" },
+    { "action": "Login2Action", "event": "login", "source_reference": "src/wikidot/module/auth.py#HTTPAuthentication.login" },
+    { "action": "Login2Action", "event": "logout", "source_reference": "src/wikidot/module/auth.py#HTTPAuthentication.logout" },
+    { "action": "ManageSiteMembershipAction", "event": "acceptApplication", "source_reference": "src/wikidot/module/site_application.py#SiteApplication._process" },
+    { "action": "ManageSiteMembershipAction", "event": "inviteMember", "source_reference": "src/wikidot/module/site.py#Site.invite_user" },
+    { "action": "ManageSiteMembershipAction", "event": "removeAdmin", "source_reference": "src/wikidot/module/site_member.py#SiteMember._change_group" },
+    { "action": "ManageSiteMembershipAction", "event": "removeModerator", "source_reference": "src/wikidot/module/site_member.py#SiteMember._change_group" },
+    { "action": "ManageSiteMembershipAction", "event": "toAdmins", "source_reference": "src/wikidot/module/site_member.py#SiteMember._change_group" },
+    { "action": "ManageSiteMembershipAction", "event": "toModerators", "source_reference": "src/wikidot/module/site_member.py#SiteMember._change_group" },
+    { "action": "RateAction", "event": "cancelVote", "source_reference": "src/wikidot/module/page.py#Page.cancel_vote" },
+    { "action": "RateAction", "event": "ratePage", "source_reference": "src/wikidot/module/page.py#Page.vote" },
+    { "action": "WikiPageAction", "event": "deleteMetaTag", "source_reference": "src/wikidot/module/page.py#Page._meta_update_request_bodies" },
+    { "action": "WikiPageAction", "event": "deletePage", "source_reference": "src/wikidot/module/page.py#Page.destroy" },
+    { "action": "WikiPageAction", "event": "renamePage", "source_reference": "src/wikidot/module/page.py#Page.rename" },
+    { "action": "WikiPageAction", "event": "saveMetaTag", "source_reference": "src/wikidot/module/page.py#Page._meta_update_request_bodies" },
+    { "action": "WikiPageAction", "event": "savePage", "source_reference": "src/wikidot/module/page.py#Page.create_or_edit" },
+    { "action": "WikiPageAction", "event": "saveTags", "source_reference": "src/wikidot/module/page.py#Page.commit_tags" },
+    { "action": "WikiPageAction", "event": "setParentPage", "source_reference": "src/wikidot/module/page.py#Page.set_parent" }
+  ],
+  "public_operation_bindings": [
+    { "operation_id": "HTTPAuthentication.login", "source_reference": "src/wikidot/module/auth.py#HTTPAuthentication.login", "action_event_ids": ["Login2Action;login"] },
+    { "operation_id": "HTTPAuthentication.logout", "source_reference": "src/wikidot/module/auth.py#HTTPAuthentication.logout", "action_event_ids": ["Login2Action;logout"] },
+    { "operation_id": "ForumCategory.create_thread", "source_reference": "src/wikidot/module/forum_category.py#ForumCategory.create_thread", "action_event_ids": ["ForumAction;newThread"] },
+    { "operation_id": "ForumPost.edit", "source_reference": "src/wikidot/module/forum_post.py#ForumPost.edit", "action_event_ids": ["ForumAction;saveEditPost"] },
+    { "operation_id": "ForumThread.reply", "source_reference": "src/wikidot/module/forum_thread.py#ForumThread.reply", "action_event_ids": ["ForumAction;savePost"] },
+    { "operation_id": "Page.cancel_vote", "source_reference": "src/wikidot/module/page.py#Page.cancel_vote", "action_event_ids": ["RateAction;cancelVote"] },
+    { "operation_id": "Page.commit_tags", "source_reference": "src/wikidot/module/page.py#Page.commit_tags", "action_event_ids": ["WikiPageAction;saveTags"] },
+    { "operation_id": "Page.create_or_edit", "source_reference": "src/wikidot/module/page.py#Page.create_or_edit", "action_event_ids": ["WikiPageAction;savePage"] },
+    { "operation_id": "Page.destroy", "source_reference": "src/wikidot/module/page.py#Page.destroy", "action_event_ids": ["WikiPageAction;deletePage"] },
+    { "operation_id": "Page.metas.setter", "source_reference": "src/wikidot/module/page.py#Page.metas.setter", "action_event_ids": ["WikiPageAction;deleteMetaTag", "WikiPageAction;saveMetaTag"] },
+    { "operation_id": "Page.rename", "source_reference": "src/wikidot/module/page.py#Page.rename", "action_event_ids": ["WikiPageAction;renamePage"] },
+    { "operation_id": "Page.set_metadata", "source_reference": "src/wikidot/module/page.py#Page.set_metadata", "action_event_ids": ["WikiPageAction;deleteMetaTag", "WikiPageAction;saveMetaTag", "WikiPageAction;saveTags", "WikiPageAction;setParentPage"] },
+    { "operation_id": "Page.set_parent", "source_reference": "src/wikidot/module/page.py#Page.set_parent", "action_event_ids": ["WikiPageAction;setParentPage"] },
+    { "operation_id": "Page.vote", "source_reference": "src/wikidot/module/page.py#Page.vote", "action_event_ids": ["RateAction;ratePage"] },
+    { "operation_id": "PrivateMessage.send", "source_reference": "src/wikidot/module/private_message.py#PrivateMessage.send", "action_event_ids": ["DashboardMessageAction;send"] },
+    { "operation_id": "Site.invite_user", "source_reference": "src/wikidot/module/site.py#Site.invite_user", "action_event_ids": ["ManageSiteMembershipAction;inviteMember"] },
+    { "operation_id": "SiteApplication.accept", "source_reference": "src/wikidot/module/site_application.py#SiteApplication.accept", "action_event_ids": ["ManageSiteMembershipAction;acceptApplication"], "application_type": "accept" },
+    { "operation_id": "SiteApplication.decline", "source_reference": "src/wikidot/module/site_application.py#SiteApplication.decline", "action_event_ids": ["ManageSiteMembershipAction;acceptApplication"], "application_type": "decline" },
+    { "operation_id": "SiteMember.remove_admin", "source_reference": "src/wikidot/module/site_member.py#SiteMember.remove_admin", "action_event_ids": ["ManageSiteMembershipAction;removeAdmin"] },
+    { "operation_id": "SiteMember.remove_moderator", "source_reference": "src/wikidot/module/site_member.py#SiteMember.remove_moderator", "action_event_ids": ["ManageSiteMembershipAction;removeModerator"] },
+    { "operation_id": "SiteMember.to_admin", "source_reference": "src/wikidot/module/site_member.py#SiteMember.to_admin", "action_event_ids": ["ManageSiteMembershipAction;toAdmins"] },
+    { "operation_id": "SiteMember.to_moderator", "source_reference": "src/wikidot/module/site_member.py#SiteMember.to_moderator", "action_event_ids": ["ManageSiteMembershipAction;toModerators"] }
+  ]
+}
