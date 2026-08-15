@@ -2443,6 +2443,145 @@ async function discoverWwsRoutes(root) {
   )
 }
 
+async function applyWwsContractEvidence(root, records, sourceRevision) {
+  const denominatorPath = "docs/development/wws-route-registration-denominator.json"
+  const denominator = await readJson(root, denominatorPath)
+  if (
+    denominator.schema !== "wikijump.wws_route_registration_denominator.v2" ||
+    !Array.isArray(denominator.registrations) ||
+    denominator.counts?.registrations !== denominator.registrations.length ||
+    !Array.isArray(denominator.behavior_records)
+  ) {
+    throw new Error(`${denominatorPath} has an invalid denominator contract`)
+  }
+  if (!Array.isArray(denominator.source?.inputs) || denominator.source.inputs.length === 0) {
+    throw new Error(`${denominatorPath} has no source identities`)
+  }
+  for (const input of denominator.source.inputs) {
+    if (
+      typeof input?.path !== "string" ||
+      !isCanonicalRepositoryReference(input.path) ||
+      !/^[0-9a-f]{40}$/u.test(input.git_blob ?? "") ||
+      !/^[0-9a-f]{64}$/u.test(input.sha256 ?? "")
+    ) {
+      throw new Error(`${denominatorPath} has an invalid source identity`)
+    }
+    const sourceBytes = await fs.readFile(path.join(root, input.path))
+    if (sha256(sourceBytes) !== input.sha256) {
+      throw new Error(`${denominatorPath} source identity drift: ${input.path}`)
+    }
+    if (
+      resolveGitObject(["-C", root], `${sourceRevision}:${input.path}`, "WWS source blob") !==
+      input.git_blob
+    ) {
+      throw new Error(`${denominatorPath} pinned source identity drift: ${input.path}`)
+    }
+  }
+  if (
+    typeof denominator.generator?.path !== "string" ||
+    !/^[0-9a-f]{64}$/u.test(denominator.generator.sha256 ?? "") ||
+    sha256(await readText(root, denominator.generator.path)) !== denominator.generator.sha256
+  ) {
+    throw new Error(`${denominatorPath} generator identity drift`)
+  }
+  if (
+    typeof denominator.behavior_evidence?.path !== "string" ||
+    !/^[0-9a-f]{64}$/u.test(denominator.behavior_evidence.sha256 ?? "") ||
+    sha256(await readText(root, denominator.behavior_evidence.path)) !==
+      denominator.behavior_evidence.sha256
+  ) {
+    throw new Error(`${denominatorPath} behavior evidence identity drift`)
+  }
+
+  const registrations = new Map()
+  for (const registration of denominator.registrations) {
+    const expectedId =
+      `wws-route-registration:${registration.declared_method_class}:${registration.path}`
+    if (
+      registration.registration_id !== expectedId ||
+      !["ANY", "GET"].includes(registration.declared_method_class) ||
+      registrations.has(registration.registration_id)
+    ) {
+      throw new Error(`${denominatorPath} has an invalid or duplicate registration`)
+    }
+    registrations.set(registration.registration_id, registration)
+  }
+  const behaviorsByRegistration = new Map()
+  for (const behavior of denominator.behavior_records) {
+    if (
+      typeof behavior?.id !== "string" ||
+      !["implemented", "not_faithfully_mapped"].includes(behavior.status) ||
+      !Array.isArray(behavior.registration_ids) ||
+      typeof behavior.public_test !== "string" ||
+      behavior.public_test === ""
+    ) {
+      throw new Error(`${denominatorPath} has an invalid behavior record`)
+    }
+    for (const registrationId of behavior.registration_ids) {
+      if (!registrations.has(registrationId)) {
+        throw new Error(`${denominatorPath} behavior references an unknown registration`)
+      }
+      const behaviors = behaviorsByRegistration.get(registrationId) ?? []
+      behaviors.push(behavior)
+      behaviorsByRegistration.set(registrationId, behaviors)
+    }
+    if (behavior.historical_evidence_receipt) {
+      const receipt = await readText(root, behavior.historical_evidence_receipt)
+      if (
+        !/^[0-9a-f]{64}$/u.test(behavior.historical_evidence_sha256 ?? "") ||
+        sha256(receipt) !== behavior.historical_evidence_sha256
+      ) {
+        throw new Error(`${denominatorPath} historical evidence identity drift for ${behavior.id}`)
+      }
+    }
+  }
+
+  const registrationForSurface = (surfaceId) => {
+    const match = /^wws-route:(ANY|GET|HEAD|FALLBACK):(.*)$/u.exec(surfaceId)
+    if (!match) throw new Error(`invalid WWS dispatch surface: ${surfaceId}`)
+    const [, method, routePath] = match
+    if (method === "ANY") return `wws-route-registration:ANY:${routePath}`
+    if (method === "GET" || method === "HEAD") {
+      return `wws-route-registration:GET:${routePath}`
+    }
+    const anyId = `wws-route-registration:ANY:${routePath}`
+    return registrations.has(anyId)
+      ? anyId
+      : `wws-route-registration:GET:${routePath}`
+  }
+
+  const usedRegistrations = new Set()
+  const projected = records.map((record) => {
+    const registrationId = registrationForSurface(record.surface_id)
+    if (!registrations.has(registrationId)) {
+      throw new Error(`${denominatorPath} has no registration for ${record.surface_id}`)
+    }
+    usedRegistrations.add(registrationId)
+    const behaviors = behaviorsByRegistration.get(registrationId) ?? []
+    const partial = behaviors.some(({ status }) => status === "not_faithfully_mapped")
+    const evidenceReferences = [
+      denominatorPath,
+      ...behaviors.flatMap((behavior) =>
+        behavior.status === "implemented"
+          ? [denominator.behavior_evidence.path]
+          : [behavior.historical_evidence_receipt]
+      )
+    ]
+    return {
+      ...record,
+      existing_refs: {
+        ...record.existing_refs,
+        tests: uniqueSortedStrings(behaviors.map(({ public_test: publicTest }) => publicTest))
+      },
+      evidence: phase(partial ? "partial" : "available", evidenceReferences)
+    }
+  })
+  if ([...registrations.keys()].some((registrationId) => !usedRegistrations.has(registrationId))) {
+    throw new Error(`${denominatorPath} has a registration without a dispatch surface`)
+  }
+  return projected
+}
+
 function auditTests(row) {
   return uniqueSortedStrings([
     ...testReferences(row.tests),
@@ -3096,6 +3235,9 @@ async function buildInventory(root, sourceRevision) {
   )
   const auditedOwnershipActive =
     sha256(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")) === AUDITED_CATALOG_SHA256
+  const projectedWws = auditedOwnershipActive
+    ? await applyWwsContractEvidence(root, wws, provenance.wikijump.commit)
+    : wws
   verifyRegistryBlobs(root, provenance.wikijump.commit)
   const surfaces = normalizeSurfaceOwners(applyAuditedIssueOwnership([
     ...catalog,
@@ -3105,7 +3247,7 @@ async function buildInventory(root, sourceRevision) {
     ...wikidotPyAmc,
     ...xmlRpc,
     ...pageActions,
-    ...wws,
+    ...projectedWws,
     ...open43.records
   ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")), auditedOwnershipActive), ftmlRawSurfaceManifest.catalog_crosswalk, semantics, auditedOwnershipActive)
   const relationshipModel = buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics)

@@ -1179,6 +1179,47 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   )
 })
 
+test("CLI projects WWS route-contract evidence while keeping hash-domain evidence partial", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-contract-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const rows = inventory.surfaces.filter((record) => record.kind === "wws_route")
+  assert.equal(rows.length, 47)
+  assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 44)
+  assert.equal(rows.filter(({ evidence }) => evidence.status === "partial").length, 3)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 14)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 33)
+  assert.equal(rows.every(({ evidence }) =>
+    evidence.references.includes("docs/development/wws-route-registration-denominator.json")
+  ), true)
+  for (const surfaceId of [
+    "wws-route:FALLBACK:/local--html/{page_slug}/{id}/{domain}",
+    "wws-route:GET:/local--html/{page_slug}/{id}/{domain}",
+    "wws-route:HEAD:/local--html/{page_slug}/{id}/{domain}"
+  ]) {
+    const row = rows.find(({ surface_id: candidate }) => candidate === surfaceId)
+    assert.equal(row.evidence.status, "partial", surfaceId)
+    assert.deepEqual(row.existing_refs.tests, [
+      "wws/src/handler/text_block.rs#html_terminal_hash_verifies_fetched_bytes"
+    ])
+  }
+})
+
 test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift", async (t) => {
   const cases = [
     {
