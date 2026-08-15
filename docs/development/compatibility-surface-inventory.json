@@ -6103,6 +6103,11 @@
       "target": "wikijump.wws"
     },
     {
+      "source": "wws-route:FALLBACK:/local--html/{page_slug}/{id}/{domain}",
+      "type": "implemented_by",
+      "target": "wikijump.wws"
+    },
+    {
       "source": "wws-route:FALLBACK:/local--resized-images/{page_slug}/{filename}/{variant}",
       "type": "implemented_by",
       "target": "wikijump.wws"
@@ -6159,6 +6164,11 @@
     },
     {
       "source": "wws-route:GET:/common--theme/base/css/html-block.css",
+      "type": "implemented_by",
+      "target": "wikijump.wws"
+    },
+    {
+      "source": "wws-route:GET:/local--html/{page_slug}/{id}/{domain}",
       "type": "implemented_by",
       "target": "wikijump.wws"
     },
@@ -6224,6 +6234,11 @@
     },
     {
       "source": "wws-route:HEAD:/common--theme/base/css/html-block.css",
+      "type": "implemented_by",
+      "target": "wikijump.wws"
+    },
+    {
+      "source": "wws-route:HEAD:/local--html/{page_slug}/{id}/{domain}",
       "type": "implemented_by",
       "target": "wikijump.wws"
     },
@@ -10433,8 +10448,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "fddff89fe1d76a0426ab83def4ee03edbfbb3301",
-      "tree": "bc5857c98d48eb303833aad4854022ebecb8d11b"
+      "commit": "bc9e0561cfdda83e8495cf6d27071106f4c8a3f4",
+      "tree": "a699fcb124b079dfb7c8982278bb79ffeb09f1ab"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -10443,15 +10458,15 @@
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "5cd87070bb5c8f646b93cb85507d05bc605743d7a833fb7634733ef6ecb1fe21"
+        "sha256": "a75b4894689daccc64d12251b1e6562fce09332ec9d36363bc6d7619be1b12f5"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "070648109d761b9b3e1327bcce4bb8e93d3d6bbde60fc04181823fff2f032c68"
+        "sha256": "682194e4791c0654176c1bf82cdcf91d195c46fc992287de894c708eaabf45c8"
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "32d92a9b01604d4198881ffb27c78585ed30e94f59627db62b5255111b1bee8c"
+        "sha256": "f59987c694f32f3c1612532fa82c0d0f605ebd07816f302ff07767bd9656dc63"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -10727,7 +10742,7 @@
       },
       {
         "path": "wws/src/route.rs",
-        "sha256": "f394857e6718bb94dee5f6e8a44d0754674825f30ac336473d97dad265a17a83"
+        "sha256": "8ed5b5b4571cc121771d708bceac9bfb53fbdcbb39cc22866503f095b3078d66"
       }
     ]
   },
@@ -10794,7 +10809,7 @@
     ]
   },
   "counts": {
-    "total": 921,
+    "total": 924,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 163,
@@ -10807,7 +10822,7 @@
       "open43_audit_case": 285,
       "page_action": 25,
       "wikidot_py_amc_module_shape": 22,
-      "wws_route": 44
+      "wws_route": 47
     }
   },
   "surfaces": [
@@ -46177,6 +46192,42 @@
       ]
     },
     {
+      "surface_id": "wws-route:FALLBACK:/local--html/{page_slug}/{id}/{domain}",
+      "kind": "wws_route",
+      "public_reference": [
+        "wws/src/route.rs#any:/local--html/{page_slug}/{id}/{domain}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:wws-route",
+      "implementation_owners": [
+        "wikijump.wws"
+      ]
+    },
+    {
       "surface_id": "wws-route:FALLBACK:/local--resized-images/{page_slug}/{filename}/{variant}",
       "kind": "wws_route",
       "public_reference": [
@@ -46577,6 +46628,42 @@
       "kind": "wws_route",
       "public_reference": [
         "wws/src/route.rs#get:/common--theme/base/css/html-block.css:handle_html_block_css"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:wws-route",
+      "implementation_owners": [
+        "wikijump.wws"
+      ]
+    },
+    {
+      "surface_id": "wws-route:GET:/local--html/{page_slug}/{id}/{domain}",
+      "kind": "wws_route",
+      "public_reference": [
+        "wws/src/route.rs#get:/local--html/{page_slug}/{id}/{domain}:handle_html_terminal"
       ],
       "existing_refs": {
         "issues": [],
@@ -47045,6 +47132,42 @@
       "kind": "wws_route",
       "public_reference": [
         "wws/src/route.rs#get:/common--theme/base/css/html-block.css:handle_html_block_css:implicit-head"
+      ],
+      "existing_refs": {
+        "issues": [],
+        "cases": [],
+        "tests": []
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:wws-route",
+      "implementation_owners": [
+        "wikijump.wws"
+      ]
+    },
+    {
+      "surface_id": "wws-route:HEAD:/local--html/{page_slug}/{id}/{domain}",
+      "kind": "wws_route",
+      "public_reference": [
+        "wws/src/route.rs#get:/local--html/{page_slug}/{id}/{domain}:handle_html_terminal:implicit-head"
       ],
       "existing_refs": {
         "issues": [],
