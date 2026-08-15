@@ -178,6 +178,36 @@ export class CandidateHttpSession {
     return payload.result;
   }
 
+  async ajaxModuleConnector(fields, { actor = "editor", cleanup = false } = {}) {
+    if (!["editor", "anonymous"].includes(actor)) throw new Error("candidate AMC actor is invalid");
+    const body = Buffer.from(new URLSearchParams(fields).toString());
+    const response = await this.#send("framerail", "ajax-module-connector", {
+      url: new URL("/ajax-module-connector.php", this.pageOrigin),
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+        origin: this.pageOrigin,
+        ...(actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {}),
+      },
+      body,
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup);
+    let json;
+    try {
+      json = JSON.parse(response.body.toString("utf8"));
+    } catch {
+      throw new Error("ajax-module-connector.php returned non-JSON at the public seam");
+    }
+    return {
+      http_status: response.status,
+      content_type: response.headers["content-type"] ?? null,
+      response_body_sha256: sha256(response.body),
+      json,
+    };
+  }
+
   async filesRequest(pathname, { method = "GET", actor = "editor", cleanup = false, operation = pathname } = {}) {
     const url = new URL(pathname, this.filesOrigin);
     if (url.origin !== this.filesOrigin) throw new Error("file request escaped the sealed origin");
