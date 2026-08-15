@@ -16,6 +16,42 @@ export const OPEN43_SETTINGS_BROWSER_CASE_IDS = Object.freeze([
   "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
 ]);
 
+const SETTINGS_SITE_FIELDS = Object.freeze([
+  "site_id",
+  "slug",
+  "name",
+  "tagline",
+  "description",
+  "locale",
+  "default_page",
+  "welcome_page",
+  "google_analytics_enabled",
+  "google_analytics_profile",
+  "show_top_toolbar",
+  "show_bottom_toolbar",
+]);
+
+const SETTINGS_CATEGORY_FIELDS = Object.freeze([
+  "category_id",
+  "slug",
+  "theme_kind",
+  "theme_builtin_id",
+  "theme_external_url",
+  "theme_custom_css",
+]);
+
+function requireSettingsSnapshot(value, label) {
+  const settings = requirePlainObject(value, label);
+  const site = requirePlainObject(settings.site, `${label}.site`);
+  for (const field of SETTINGS_SITE_FIELDS) if (!Object.hasOwn(site, field)) throw new Error(`${label}.site is missing ${field}`);
+  if (!Array.isArray(settings.categories) || settings.categories.length !== 2) throw new Error(`${label}.categories must contain the two fixed candidate categories`);
+  for (const [index, categoryValue] of settings.categories.entries()) {
+    const category = requirePlainObject(categoryValue, `${label}.categories[${index}]`);
+    for (const field of SETTINGS_CATEGORY_FIELDS) if (!Object.hasOwn(category, field)) throw new Error(`${label}.categories[${index}] is missing ${field}`);
+  }
+  return settings;
+}
+
 function requireTemporal(value, phase, sequence, label) {
   const temporal = requirePlainObject(value, `${label} temporal observation`);
   if (temporal.phase !== phase || temporal.sequence !== sequence) {
@@ -447,8 +483,8 @@ export function verifyOpen43SettingsBrowserCase(caseId, rawObservations, rawPlan
 
 export function verifyOpen43SettingsBrowserCleanup(rawProof, resources) {
   const proof = requirePlainObject(rawProof, "settings cleanup proof");
-  const before = requirePlainObject(proof.before, "pre-run public settings");
-  const after = requirePlainObject(proof.after, "restored public settings");
+  const before = requireSettingsSnapshot(proof.before, "pre-run public settings");
+  const after = requireSettingsSnapshot(proof.after, "restored public settings");
   if (sha256Value(before) !== sha256Value(after)) {
     throw new Error("public settings were not restored to their exact pre-run values");
   }

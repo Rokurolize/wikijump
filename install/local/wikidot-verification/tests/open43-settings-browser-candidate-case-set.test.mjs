@@ -713,19 +713,37 @@ test("permission matrix rejects actor mutation, expired-session 500, and CSRF wi
 test("settings cleanup requires exact public restoration without page cleanup authority", () => {
   const settings = {
     site: {
+      site_id: 17,
+      slug: "scpaiueouiuiuiui",
       name: "Before",
       tagline: "Before tagline",
+      description: "Before description",
+      locale: "en",
+      default_page: "home",
+      welcome_page: "welcome",
       google_analytics_enabled: false,
       google_analytics_profile: null,
       show_top_toolbar: true,
       show_bottom_toolbar: false,
     },
-    category: {
-      theme_kind: "built_in",
-      theme_builtin_id: 1,
-      theme_external_url: null,
-      theme_custom_css: null,
-    },
+    categories: [
+      {
+        category_id: 11,
+        slug: "_default",
+        theme_kind: "built_in",
+        theme_builtin_id: 1,
+        theme_external_url: null,
+        theme_custom_css: null,
+      },
+      {
+        category_id: 12,
+        slug: "article",
+        theme_kind: "built_in",
+        theme_builtin_id: 1,
+        theme_external_url: null,
+        theme_custom_css: null,
+      },
+    ],
   };
   const proof = {
     before: settings,
@@ -753,5 +771,9 @@ test("settings cleanup requires exact public restoration without page cleanup au
   assert.throws(
     () => verifyOpen43SettingsBrowserCleanup({ ...proof, pages: [] }, resources),
     /page cleanup proof/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCleanup({ before: {}, after: {} }, resources),
+    /pre-run public settings\.site/u,
   );
 });
