@@ -58,6 +58,17 @@ const handleDiagnosticRequest = (request, response) => {
     sendJson(response, snapshot)
     return true
   }
+  if (request.url === "/page-revision-diff-requests") {
+    sendJson(response, fixtureState.pageReadRequests.pageRevisionDiff)
+    return true
+  }
+  if (request.url === "/release-page-revision-diff") {
+    const release = fixtureState.pendingPageRevisionDiffResponse
+    fixtureState.pendingPageRevisionDiffResponse = null
+    release?.()
+    sendJson(response, { released: release !== null })
+    return true
+  }
   if (request.url === "/last-article-read-requests") {
     const snapshot = structuredClone(fixtureState.articleReadRequests)
     resetRequestGroups(fixtureState.articleReadRequests)

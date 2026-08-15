@@ -5,6 +5,7 @@
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
 
   import { Layout } from "$lib/types"
+  import { onDestroy } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
 
   import type { PageProps } from "./$types"
@@ -33,6 +34,12 @@
   let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
   let revisionDiffLoading = $state(false)
   let revisionDiffRequestId = 0
+  let active = true
+
+  onDestroy(() => {
+    active = false
+    revisionDiffRequestId += 1
+  })
 
   const SVELTEKIT_ACTION_HEADERS = {
     accept: "application/json",
@@ -54,6 +61,8 @@
       { res: PageRevisionModelFiltered[] },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
+
+    if (!active) return
 
     if (result.type === "failure" && result.data?.message) {
       errorPopupState.current = {
@@ -103,6 +112,7 @@
       >(res)
 
       if (
+        !active ||
         requestId !== revisionDiffRequestId ||
         requestedFromRevisionNumber !== fromRevisionNumber ||
         requestedToRevisionNumber !== toRevisionNumber

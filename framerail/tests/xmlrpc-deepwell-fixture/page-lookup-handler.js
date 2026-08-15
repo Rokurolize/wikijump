@@ -1,13 +1,15 @@
 import { fixtureState, hasExactKeys, pageById } from "./context.js"
 import { pages, toPageResult } from "./data.js"
+import { sendRpcError } from "./response.js"
 
 /**
  * @param {{
  *   rpcRequest: any
  *   request: import("node:http").IncomingMessage
+ *   response: import("node:http").ServerResponse
  * }} input
  */
-export const handlePageLookupRpc = ({ rpcRequest, request }) => {
+export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
   const { pageReadRequests } = fixtureState
   let result
 
@@ -116,7 +118,58 @@ export const handlePageLookupRpc = ({ rpcRequest, request }) => {
     typeof rpcRequest.params.revision_number === "number" &&
     typeof rpcRequest.params.limit === "number"
   ) {
-    result = []
+    result = [
+      {
+        revision_id: 9000341,
+        revision_type: "regular",
+        revision_number: 1,
+        created_at: "2026-08-15T00:00:00Z",
+        author: null,
+        comments: "old revision"
+      },
+      {
+        revision_id: 9000342,
+        revision_type: "regular",
+        revision_number: 2,
+        created_at: "2026-08-15T00:00:00Z",
+        author: null,
+        comments: "new revision"
+      }
+    ]
+  } else if (
+    rpcRequest.method === "page_revision_diff" &&
+    hasExactKeys(rpcRequest.params, [
+      "from_revision_number",
+      "page_id",
+      "site_id",
+      "to_revision_number"
+    ]) &&
+    rpcRequest.params.site_id === 6000005 &&
+    pageById(rpcRequest.params.page_id) &&
+    typeof rpcRequest.params.from_revision_number === "number" &&
+    typeof rpcRequest.params.to_revision_number === "number"
+  ) {
+    pageReadRequests.pageRevisionDiff.push(rpcRequest.params)
+    result = {
+      site_id: 6000005,
+      page_id: rpcRequest.params.page_id,
+      from_revision_number: rpcRequest.params.from_revision_number,
+      to_revision_number: rpcRequest.params.to_revision_number,
+      lines: [
+        {
+          kind: rpcRequest.params.from_revision_number === 1 ? "removed" : "added",
+          text:
+            rpcRequest.params.from_revision_number === 1
+              ? "OLD STALE DIFF"
+              : "NEW CURRENT DIFF"
+        }
+      ]
+    }
+    if (rpcRequest.params.from_revision_number === 1) {
+      fixtureState.pendingPageRevisionDiffResponse = () =>
+        sendRpcError(response, rpcRequest.id, -32603, "OLD STALE ERROR")
+      return { responded: true }
+    }
   } else if (
     rpcRequest.method === "page_revision_get" &&
     hasExactKeys(rpcRequest.params, [

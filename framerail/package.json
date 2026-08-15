@@ -31,7 +31,6 @@
     "@types/accept-language-parser": "^1.5.8",
     "@types/node": "^26.1.2",
     "@types/prismjs": "1.26.6",
-    "devalue": "^5.9.0",
     "eslint": "^10.8.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.22.0",

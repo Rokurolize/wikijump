@@ -37,6 +37,7 @@ export const fixtureState = {
     pageGet: [],
     pageGetDirect: [],
     pageLifecycleIdentity: [],
+    pageRevisionDiff: [],
     pageRevisionGet: [],
     pageView: [],
     pageViewPermission: [],
@@ -46,6 +47,8 @@ export const fixtureState = {
     siteGet: [],
     voteList: []
   },
+  /** @type {null | (() => void)} */
+  pendingPageRevisionDiffResponse: null,
   /** @type {Record<string, unknown[]>} */
   articleReadRequests: {
     articleView: [],
