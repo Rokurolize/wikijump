@@ -1,4 +1,7 @@
-import { STANDING_BROWSER_CANARIES } from "./standing-browser-canaries.mjs";
+import {
+  DEFAULT_SETTLE_MS,
+  STANDING_BROWSER_CANARIES,
+} from "./standing-browser-canaries.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import {
@@ -8,6 +11,13 @@ import {
 } from "./standing-browser-parity-util.mjs";
 
 export const OPEN43_B689_TABVIEW_INITIAL_CASE_ID = "B689_TABVIEW_INITIAL";
+export const OPEN43_B689_TABVIEW_SETTLED_CASE_ID = "B689_TABVIEW_SETTLED";
+export const OPEN43_B689_SCP8980_NAVIGATION_CASE_ID = "B689_SCP8980_AND_NAVIGATION_LIFECYCLE";
+export const OPEN43_B689_CASE_IDS = Object.freeze([
+  OPEN43_B689_TABVIEW_INITIAL_CASE_ID,
+  OPEN43_B689_TABVIEW_SETTLED_CASE_ID,
+  OPEN43_B689_SCP8980_NAVIGATION_CASE_ID,
+]);
 
 export const OPEN43_B689_TABVIEW_FIXTURE = Object.freeze({
   fixture_id: "open43-standing-browser-tabview-canaries",
@@ -28,7 +38,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
     Object.freeze({
       path: "/home/roku/wjlab/evidence/standing-promotion-20260721-f0099338/host-live-reference-v1/standing-browser-live-reference.json",
       sha256: "1967c4de664f3b7535629cd6622152076a0320d18239c19e0716a0f69a7c7332",
-      role: "theme:basalt initial live geometry and DOM",
+      role: "theme:basalt initial and settled live geometry and DOM",
     }),
     Object.freeze({
       path: "/home/roku/wjlab/evidence/standing-browser-20260715/scp8980-local-live-structural-diff-20260715T061801Z/capture.json",
@@ -38,7 +48,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
     Object.freeze({
       path: "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/browser-diagnostics/issue-690-scp8980-first-divergence-20260809.json",
       sha256: "f3755f5abaebb7b07c3a21d2eab3f9cfe89c1d4ffcccfb1ca4245c631067afe4",
-      role: "scp-8980 live DOM and diagnostic identity",
+      role: "scp-8980 settled live DOM, tabview geometry, and diagnostic identity",
     }),
   ]),
   pages: Object.freeze({
@@ -59,6 +69,9 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       content_styles: LIVE_CONTENT_STYLES,
       panel_styles: LIVE_CONTENT_STYLES,
       resource_state: Object.freeze({ document_ready_state: "interactive", rendered_image_count: 7, broken_image_count: 2 }),
+      settled: Object.freeze({
+        tabview_rectangle: Object.freeze({ x: 123, y: 4001.97, width: 1120, height: 188.69 }),
+      }),
     }),
     "scp-8980": Object.freeze({
       live_url: "https://scp-wiki.wikidot.com/scp-8980",
@@ -77,6 +90,11 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       content_styles: LIVE_CONTENT_STYLES,
       panel_styles: LIVE_CONTENT_STYLES,
       resource_state: Object.freeze({ document_ready_state: "interactive", rendered_image_count: 3, broken_image_count: 0 }),
+      settled: Object.freeze({
+        tabview_y: 193.9375,
+        tabview_height: 58623.375,
+        first_panel_id: "wiki-tab-0-0",
+      }),
     }),
   }),
 });
@@ -156,6 +174,7 @@ async function observeTabviews(page) {
           selected_title: selected?.getAttribute("title") ?? null,
           label_wrapper: selected?.querySelector("a em")?.tagName.toLowerCase() ?? null,
           panel_ids_present: panels.length > 0 && panels.every((panel) => panel.id.length > 0),
+          first_panel_id: panels[0]?.id ?? null,
           nav_styles: nav ? styles(nav) : null,
           content_styles: content ? styles(content) : null,
           first_panel_styles: panels[0] ? styles(panels[0]) : null,
@@ -298,6 +317,221 @@ export function verifyOpen43B689TabviewInitial(observations, plan) {
   };
 }
 
+const TAB_ANCHOR_SELECTOR = "#page-content .yui-navset > .yui-nav > li > a";
+
+async function readSelectionState(page) {
+  return await page.evaluate(() => {
+    const view = document.querySelector("#page-content .yui-navset");
+    const tabs = [...(view?.querySelector(":scope > .yui-nav")?.children ?? [])]
+      .filter((item) => item.tagName === "LI");
+    const panels = [...(view?.querySelector(":scope > .yui-content")?.children ?? [])];
+    return {
+      tabview_count: view === null ? 0 : 1,
+      tab_count: tabs.length,
+      selected_index: tabs.findIndex((tab) => tab.classList.contains("selected")),
+      selected_title: tabs.find((tab) => tab.classList.contains("selected"))?.querySelector("a")?.getAttribute("title") ?? null,
+      visible_panel_index: panels.findIndex((panel) => getComputedStyle(panel).display !== "none"),
+    };
+  });
+}
+
+async function runInteractionSequence(page) {
+  const anchors = await page.$$(TAB_ANCHOR_SELECTOR);
+  if (anchors.length < 2) throw new Error("B689 interaction fixture needs at least two tabs");
+  const initial = await readSelectionState(page);
+  await anchors[1].click();
+  const focusedClickedAnchor = await page.evaluate((selector) => {
+    const anchor = document.querySelectorAll(selector)[1];
+    return anchor !== undefined && document.activeElement === anchor;
+  }, TAB_ANCHOR_SELECTOR);
+  const afterClick = { ...(await readSelectionState(page)), focused_clicked_anchor: focusedClickedAnchor };
+  await anchors[0].focus();
+  await anchors[0].press("Enter");
+  const afterEnter = await readSelectionState(page);
+  await anchors[0].press("ArrowRight");
+  const afterArrowRight = await readSelectionState(page);
+  await anchors[0].press("Space");
+  const afterSpace = await readSelectionState(page);
+  return Object.freeze({ initial, after_click: afterClick, after_enter: afterEnter, after_arrow_right: afterArrowRight, after_space: afterSpace });
+}
+
+async function runNavigationLifecycle(page, awayUrl) {
+  const anchors = await page.$$(TAB_ANCHOR_SELECTOR);
+  if (anchors.length < 2) throw new Error("B689 navigation fixture needs at least two tabs");
+  await anchors[1].click();
+  const selectedAfterClick = await readSelectionState(page);
+  const away = await page.goto(awayUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
+  const awayStatus = away?.status() ?? 0;
+  const awayUrlAfter = page.url();
+  await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
+  const afterBack = await readSelectionState(page);
+  const backUrl = page.url();
+  await page.goForward({ waitUntil: "domcontentloaded", timeout: 300_000 });
+  const forwardUrl = page.url();
+  await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
+  const afterSecondBack = await readSelectionState(page);
+  return Object.freeze({
+    selected_after_click: selectedAfterClick,
+    away_navigation_status: awayStatus,
+    away_url: awayUrlAfter,
+    back_url: backUrl,
+    after_back: afterBack,
+    forward_url: forwardUrl,
+    after_second_back: afterSecondBack,
+  });
+}
+
+function requireSettledResources(value, label) {
+  const resource = requirePlainObject(value, `${label} resource completion`);
+  if (
+    resource.status !== "complete" ||
+    resource.load_ready_state !== "complete" ||
+    resource.font_status !== "loaded" ||
+    resource.incomplete_image_count !== 0
+  ) throw new Error(`${label} resources did not settle`);
+  return resource;
+}
+
+function requireArtifacts(value, label) {
+  const artifacts = requirePlainObject(value, `${label} artifacts`);
+  const viewport = requirePlainObject(artifacts.settled_viewport, `${label} settled viewport artifact`);
+  const fullPage = requirePlainObject(artifacts.full_page, `${label} full page artifact`);
+  requireSha256(viewport.sha256, `${label} settled viewport SHA-256`);
+  requireSha256(fullPage.sha256, `${label} full page SHA-256`);
+  if (viewport.path === fullPage.path) throw new Error(`${label} reused one screenshot artifact`);
+  return { viewport, fullPage };
+}
+
+function verifySettledPage(page, plan) {
+  if (
+    page.navigation_status !== 200 ||
+    page.input_url !== page.expected_url ||
+    page.final_url !== page.expected_url ||
+    page.console_error_count !== 0 ||
+    page.request_failure_count !== 0 ||
+    page.http_error_count !== 0
+  ) {
+    throw new Error(`B689 settled browser page mismatched: ${page.slug}`);
+  }
+  requireSettledResources(page.resource_completion, `${page.slug} settled`);
+  requireArtifacts(page.artifacts, `${page.slug} settled`);
+  const oracle = OPEN43_B689_TABVIEW_LIVE_ORACLE.pages[page.slug];
+  if (!oracle?.settled) throw new Error(`B689 page has no settled live oracle: ${page.slug}`);
+  const observation = requirePlainObject(page.observation, `${page.slug} settled tabview observation`);
+  if (observation.tabview_count !== oracle.tabview.count || !Array.isArray(observation.tabviews) || observation.tabviews.length !== oracle.tabview.count) {
+    throw new Error(`B689 settled tabview is missing: ${page.slug}`);
+  }
+  for (const [index, tabview] of observation.tabviews.entries()) {
+    if (
+      tabview.tab_count < 1 ||
+      tabview.tab_count !== tabview.panel_count ||
+      tabview.selected_count !== 1 ||
+      tabview.visible_panel_count !== 1 ||
+      tabview.styles?.visibility !== "visible" ||
+      tabview.id_present !== true ||
+      tabview.class_name !== oracle.tabview.class_name ||
+      tabview.selected_title !== oracle.tabview.selected_title ||
+      tabview.label_wrapper !== oracle.tabview.label_wrapper ||
+      tabview.panel_ids_present !== oracle.tabview.panel_ids_present
+    ) {
+      throw new Error(`B689 settled tabview structure mismatched: ${page.slug} #${index}`);
+    }
+    if (page.slug === "theme:basalt") {
+      compareRectangle(tabview.rectangle, oracle.settled.tabview_rectangle, `${page.slug} settled tabview #${index}`);
+    } else {
+      const rectangle = positiveRectangle(tabview.rectangle, `${page.slug} settled tabview #${index}`);
+      if (Math.abs(rectangle.y - oracle.settled.tabview_y) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.position) {
+        throw new Error(`${page.slug} settled tabview y drift`);
+      }
+      if (Math.abs(rectangle.height - oracle.settled.tabview_height) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.size) {
+        throw new Error(`${page.slug} settled tabview height drift`);
+      }
+      if (tabview.first_panel_id !== oracle.settled.first_panel_id) {
+        throw new Error(`${page.slug} settled first panel id mismatched`);
+      }
+    }
+    compareStyles(tabview.styles, oracle.tabview.styles, `${page.slug} settled tabview #${index}`);
+    compareStyles(tabview.nav_styles, oracle.nav_styles, `${page.slug} settled nav`);
+    compareStyles(tabview.content_styles, oracle.content_styles, `${page.slug} settled content`);
+    compareStyles(tabview.first_panel_styles, oracle.panel_styles, `${page.slug} settled first panel`);
+  }
+  if (page.slug === "scp-8980") {
+    const interactions = requirePlainObject(page.interactions, "scp-8980 interaction observation");
+    const requireSelected = (state, index, label) => {
+      const value = requirePlainObject(state, label);
+      if (value.tab_count < 2 || value.selected_index !== index || value.visible_panel_index !== index) {
+        throw new Error(`B689 ${label} selected state mismatched`);
+      }
+    };
+    requireSelected(interactions.initial, 0, "interaction initial");
+    requireSelected(interactions.after_click, 1, "interaction after click");
+    if (interactions.after_click.focused_clicked_anchor !== true) {
+      throw new Error("B689 interaction click did not preserve focus on the clicked anchor");
+    }
+    requireSelected(interactions.after_enter, 0, "interaction after Enter");
+    requireSelected(interactions.after_arrow_right, 0, "interaction after ArrowRight");
+    requireSelected(interactions.after_space, 0, "interaction after Space");
+  }
+}
+
+export function verifyOpen43B689TabviewSettled(observations, plan) {
+  const value = requirePlainObject(observations, "B689_TABVIEW_SETTLED observations");
+  if (
+    value.fixture_identity_sha256 !== plan.fixture_identity_sha256 ||
+    value.live_oracle_identity_sha256 !== plan.live_oracle_identity_sha256 ||
+    value.phase !== "settled" ||
+    value.sequence !== 2 ||
+    !Array.isArray(value.pages) ||
+    value.pages.length !== OPEN43_B689_TABVIEW_FIXTURE.canary_slugs.length
+  ) {
+    throw new Error("B689 settled tabview denominator or phase mismatched");
+  }
+  requireSha256(value.browser_environment.executable_sha256, "B689 browser executable SHA-256");
+  const observedSlugs = value.pages.map((page) => page.slug);
+  if (new Set(observedSlugs).size !== observedSlugs.length) throw new Error("B689 duplicate settled page rows");
+  if (observedSlugs.some((slug) => !OPEN43_B689_TABVIEW_FIXTURE.canary_slugs.includes(slug))) throw new Error("B689 extra settled page row");
+  const pages = new Map(value.pages.map((page) => [page.slug, page]));
+  for (const slug of OPEN43_B689_TABVIEW_FIXTURE.canary_slugs) {
+    const page = pages.get(slug);
+    if (!page) throw new Error(`B689 settled page is missing: ${slug}`);
+    verifySettledPage({ ...page, expected_url: new URL(`/${encodeURI(slug)}`, plan.page_origin).href }, plan);
+  }
+  return { verified: true, phase: value.phase, settled_pages: value.pages.length, interactions_checked: true, screenshots_checked: true };
+}
+
+export function verifyOpen43B689Scp8980Navigation(observations, plan) {
+  const value = requirePlainObject(observations, "B689_SCP8980_AND_NAVIGATION_LIFECYCLE observations");
+  if (
+    value.fixture_identity_sha256 !== plan.fixture_identity_sha256 ||
+    value.live_oracle_identity_sha256 !== plan.live_oracle_identity_sha256 ||
+    value.phase !== "navigation_lifecycle" ||
+    value.sequence !== 3
+  ) {
+    throw new Error("B689 navigation denominator or phase mismatched");
+  }
+  requireSha256(value.browser_environment.executable_sha256, "B689 browser executable SHA-256");
+  const scp8980Url = new URL("/scp-8980", plan.page_origin).href;
+  const basaltUrl = new URL("/theme%3Abasalt", plan.page_origin).href;
+  const page = requirePlainObject(value.page, "scp-8980 navigation page");
+  verifyPage(page, scp8980Url);
+  const navigation = requirePlainObject(value.navigation, "scp-8980 navigation lifecycle");
+  const requireState = (state, selectedIndex, label) => {
+    const stateValue = requirePlainObject(state, label);
+    if (stateValue.tabview_count !== 1 || stateValue.tab_count < 2 || stateValue.selected_index !== selectedIndex || stateValue.visible_panel_index !== selectedIndex) {
+      throw new Error(`B689 ${label} navigation tab state mismatched`);
+    }
+  };
+  requireState(navigation.selected_after_click, 1, "selected after click");
+  if (navigation.away_navigation_status !== 200 || navigation.away_url !== basaltUrl) {
+    throw new Error("B689 navigation away did not bind the other canary");
+  }
+  if (navigation.back_url !== scp8980Url) throw new Error("B689 back navigation did not return to SCP-8980");
+  requireState(navigation.after_back, 0, "after back");
+  if (navigation.forward_url !== basaltUrl) throw new Error("B689 forward navigation did not return to the other canary");
+  requireState(navigation.after_second_back, 0, "after second back");
+  return { verified: true, phase: value.phase, return_to_first_tab_proven: true, back_forward_proven: true };
+}
+
 function verifyCleanup(proof, resources) {
   const value = requirePlainObject(proof, "B689 cleanup proof");
   if (
@@ -318,7 +552,7 @@ function verifyCleanup(proof, resources) {
 export function createOpen43B689TabviewCandidateCaseSet() {
   return Object.freeze({
     id: "open43-689-tabview",
-    caseIds: Object.freeze([OPEN43_B689_TABVIEW_INITIAL_CASE_ID]),
+    caseIds: OPEN43_B689_CASE_IDS,
     prepareRun({ candidateIdentity, privateInput, candidateBrowserContexts }) {
       const fixture = exactFixture(privateInput);
       const pageOrigin = candidatePageOrigin(candidateIdentity);
@@ -334,8 +568,8 @@ export function createOpen43B689TabviewCandidateCaseSet() {
         },
         browserCredentialPolicy: "none",
         plan: {
-          schema: "wikijump.open43_b689_tabview_candidate_plan.v1",
-          case_ids: [OPEN43_B689_TABVIEW_INITIAL_CASE_ID],
+          schema: "wikijump.open43_b689_tabview_candidate_plan.v2",
+          case_ids: [...OPEN43_B689_CASE_IDS],
           page_origin: pageOrigin,
           viewport: VIEWPORT,
           fixture,
@@ -348,11 +582,7 @@ export function createOpen43B689TabviewCandidateCaseSet() {
         async execute() {
           await candidateBrowserContexts.setActiveFixture(OPEN43_B689_TABVIEW_INITIAL_CASE_ID);
           const browser = await candidateBrowserContexts.newCandidateContext({ viewport: VIEWPORT });
-          const pages = [];
-          for (const canary of CANARIES) {
-            const slug = canary.slug;
-            const url = new URL(`/${encodeURI(slug)}`, pageOrigin).href;
-            const page = await browser.context.newPage();
+          const attachErrors = (page) => {
             const consoleErrors = [];
             let requestFailureCount = 0;
             let httpErrorCount = 0;
@@ -362,34 +592,113 @@ export function createOpen43B689TabviewCandidateCaseSet() {
             page.on("pageerror", (error) => consoleErrors.push(error.message));
             page.on("requestfailed", () => { requestFailureCount += 1; });
             page.on("response", (response) => { if (response.status() >= 400) httpErrorCount += 1; });
+            return { consoleErrors, counts: () => ({ console_error_count: consoleErrors.length, console_error_sha256: sha256Value(consoleErrors), request_failure_count: requestFailureCount, http_error_count: httpErrorCount }) };
+          };
+          const initialPages = [];
+          const settledPages = [];
+          for (const [index, canary] of CANARIES.entries()) {
+            const slug = canary.slug;
+            const url = new URL(`/${encodeURI(slug)}`, pageOrigin).href;
+            const page = await browser.context.newPage();
+            const errors = attachErrors(page);
             try {
               const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
-              pages.push({
+              initialPages.push({
                 slug,
                 input_url: url,
                 final_url: page.url(),
                 navigation_status: response?.status() ?? 0,
-                console_error_count: consoleErrors.length,
-                console_error_sha256: sha256Value(consoleErrors),
-                request_failure_count: requestFailureCount,
-                http_error_count: httpErrorCount,
+                ...errors.counts(),
                 observation: await observeTabviews(page),
               });
+              await candidateBrowserContexts.setActiveFixture(OPEN43_B689_TABVIEW_SETTLED_CASE_ID);
+              const capture = await candidateBrowserContexts.captureCandidateObservation({
+                context: browser.context,
+                page,
+                url,
+                label: "b689-settled",
+                index,
+                contract: canary,
+                viewport: VIEWPORT,
+                timeoutMs: 300_000,
+                settleMs: DEFAULT_SETTLE_MS,
+              });
+              const settledRow = {
+                slug,
+                input_url: capture.input_url,
+                final_url: capture.final_url,
+                navigation_status: capture.navigation_status,
+                ...errors.counts(),
+                resource_completion: capture.document?.resource_completion ?? null,
+                artifacts: {
+                  settled_viewport: { path: capture.settled_viewport_screenshot?.path ?? "", sha256: capture.settled_viewport_screenshot?.sha256 ?? null },
+                  full_page: { path: capture.screenshot?.path ?? "", sha256: capture.screenshot?.sha256 ?? null },
+                },
+                observation: await observeTabviews(page),
+              };
+              if (slug === "scp-8980") {
+                settledRow.interactions = await runInteractionSequence(page);
+              }
+              settledPages.push(settledRow);
             } finally {
               await page.close();
             }
           }
-          return [{
-            case_id: OPEN43_B689_TABVIEW_INITIAL_CASE_ID,
-            observations: {
-              fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
-              live_oracle_identity_sha256: LIVE_ORACLE_IDENTITY_SHA256,
-              phase: "domcontentloaded_immediate_observation",
-              sequence: 1,
-              browser_environment: browser.environment,
-              pages,
-            },
-          }];
+          const scp8980Url = new URL("/scp-8980", pageOrigin).href;
+          const basaltUrl = new URL("/theme%3Abasalt", pageOrigin).href;
+          const navigationPage = await browser.context.newPage();
+          const navigationErrors = attachErrors(navigationPage);
+          let navigationRow;
+          try {
+            const response = await navigationPage.goto(scp8980Url, { waitUntil: "domcontentloaded", timeout: 300_000 });
+            navigationRow = {
+              slug: "scp-8980",
+              input_url: scp8980Url,
+              final_url: navigationPage.url(),
+              navigation_status: response?.status() ?? 0,
+              ...navigationErrors.counts(),
+              observation: await observeTabviews(navigationPage),
+            };
+            const navigation = await runNavigationLifecycle(navigationPage, basaltUrl);
+            return [
+              {
+                case_id: OPEN43_B689_TABVIEW_INITIAL_CASE_ID,
+                observations: {
+                  fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
+                  live_oracle_identity_sha256: LIVE_ORACLE_IDENTITY_SHA256,
+                  phase: "domcontentloaded_immediate_observation",
+                  sequence: 1,
+                  browser_environment: browser.environment,
+                  pages: initialPages,
+                },
+              },
+              {
+                case_id: OPEN43_B689_TABVIEW_SETTLED_CASE_ID,
+                observations: {
+                  fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
+                  live_oracle_identity_sha256: LIVE_ORACLE_IDENTITY_SHA256,
+                  phase: "settled",
+                  sequence: 2,
+                  browser_environment: browser.environment,
+                  pages: settledPages,
+                },
+              },
+              {
+                case_id: OPEN43_B689_SCP8980_NAVIGATION_CASE_ID,
+                observations: {
+                  fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
+                  live_oracle_identity_sha256: LIVE_ORACLE_IDENTITY_SHA256,
+                  phase: "navigation_lifecycle",
+                  sequence: 3,
+                  browser_environment: browser.environment,
+                  page: navigationRow,
+                  navigation,
+                },
+              },
+            ];
+          } finally {
+            await navigationPage.close();
+          }
         },
         async cleanup() {
           return {
@@ -398,8 +707,16 @@ export function createOpen43B689TabviewCandidateCaseSet() {
           };
         },
         verifyCase(caseId, observations) {
-          if (caseId !== OPEN43_B689_TABVIEW_INITIAL_CASE_ID) throw new Error(`unknown B689 case: ${caseId}`);
-          return verifyOpen43B689TabviewInitial(observations, this.plan);
+          if (caseId === OPEN43_B689_TABVIEW_INITIAL_CASE_ID) {
+            return verifyOpen43B689TabviewInitial(observations, this.plan);
+          }
+          if (caseId === OPEN43_B689_TABVIEW_SETTLED_CASE_ID) {
+            return verifyOpen43B689TabviewSettled(observations, this.plan);
+          }
+          if (caseId === OPEN43_B689_SCP8980_NAVIGATION_CASE_ID) {
+            return verifyOpen43B689Scp8980Navigation(observations, this.plan);
+          }
+          throw new Error(`unknown B689 case: ${caseId}`);
         },
         verifyCleanup,
       };
