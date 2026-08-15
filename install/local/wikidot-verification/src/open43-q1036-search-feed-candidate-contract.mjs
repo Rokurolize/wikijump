@@ -65,7 +65,10 @@ function verifyPreviewCases(value) {
     const observed = object(value[index], `${expected.case_id} observation`);
     expect(observed.case_id === expected.case_id, `Q1036 preview order changed at ${expected.case_id}`);
     requireSha256(observed.body_sha256, `${expected.case_id} body SHA-256`);
-    expect(Number.isSafeInteger(observed.body_length) && observed.body_length > 0, `${expected.case_id} body length is invalid`);
+    expect(
+      observed.body_sha256 === bodyHash(expected.expected) && observed.body_length === Buffer.byteLength(expected.expected),
+      `${expected.case_id} did not equal its exact live error boundary`,
+    );
     expect(observed.expected_fragment_present === true, `${expected.case_id} did not match its live error boundary`);
     expect(observed.module_consumed === true, `${expected.case_id} leaked the module source`);
   }

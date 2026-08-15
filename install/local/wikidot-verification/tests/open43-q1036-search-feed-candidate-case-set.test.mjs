@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import test from "node:test";
 
 import {
@@ -70,6 +71,16 @@ test("Q1036 candidate case exercises preview and saved public RPC boundaries", a
   assert.equal(calls.filter(({ method }) => method === "wikidot_page_preview").length, 12);
   assert.deepEqual(calls.slice(-2).map(({ method }) => method), ["page_get", "page_view"]);
   assert.equal(prepared.verifyCase(rows[0].case_id, rows[0].observations).verified, true);
+
+  const extraBody = `${SEARCH_ERROR}<p>unexpected</p>`;
+  const observationsWithExtraPreviewMarkup = structuredClone(rows[0].observations);
+  observationsWithExtraPreviewMarkup.previews[0].body_sha256 = createHash("sha256").update(extraBody).digest("hex");
+  observationsWithExtraPreviewMarkup.previews[0].body_length = Buffer.byteLength(extraBody);
+  assert.throws(
+    () => prepared.verifyCase(rows[0].case_id, observationsWithExtraPreviewMarkup),
+    /search-bare did not equal its exact live error boundary/,
+  );
+
   assert.equal((await prepared.verifyCleanup(await prepared.cleanup(), [])).public_absence_verified, true);
 });
 
