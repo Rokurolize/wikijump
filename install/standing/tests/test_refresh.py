@@ -246,6 +246,12 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertIn("WWS_BUILD_PROFILE: release", compose)
         self.assertIn("DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}", compose)
 
+    def test_only_corpus_runtime_volumes_are_protected(self) -> None:
+        self.assertEqual(
+            REFRESH.PROTECTED_VOLUMES,
+            ("runtime50x-postgres-data", "runtime50x-files-data"),
+        )
+
     def test_standing_runtime_labels_include_lifecycle_provenance(self) -> None:
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
         self.assertIn(
