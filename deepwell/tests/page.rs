@@ -12417,8 +12417,28 @@ async fn recent_threads_matches_live_placeholder_and_owner_boundaries() {
     );
 }
 
-#[tokio::test]
-async fn forum_comments_list_resolves_only_visible_page_discussions() {
+#[test]
+fn forum_comments_list_resolves_only_visible_page_discussions() {
+    // The imported-depth fixture exceeds the test harness's 2 MiB async poll
+    // stack. Keep it on the bounded runtime used by the adjacent forum fixture.
+    std::thread::Builder::new()
+        .name("forum-comments-list-test".to_owned())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("forum comments list test runtime should build")
+                .block_on(
+                    forum_comments_list_resolves_only_visible_page_discussions_impl(),
+                );
+        })
+        .expect("forum comments list test thread should spawn")
+        .join()
+        .expect("forum comments list test thread should complete");
+}
+
+async fn forum_comments_list_resolves_only_visible_page_discussions_impl() {
     async fn create_comment(
         runner: &TestRunner,
         forum_thread_id: i64,
