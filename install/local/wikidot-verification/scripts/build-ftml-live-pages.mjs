@@ -6,6 +6,7 @@ import {runCliIfMain} from '../src/cli-entry.mjs';
 import {
   buildSavedPagePlans,
   collectFtmlFixtureCases,
+  loadClassificationOverrides,
   summarizeLiveCases,
 } from '../src/ftml-live-cases.mjs';
 
@@ -18,6 +19,7 @@ function optionValue(argv, index, name) {
 export function parseArgs(argv) {
   const args = {
     ftmlRoot: null,
+    classificationOverrides: null,
     casesOutput: null,
     pagesOutput: null,
     slugPrefix: null,
@@ -27,6 +29,7 @@ export function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === '--ftml-root') args.ftmlRoot = optionValue(argv, index++, arg);
+    else if (arg === '--classification-overrides') args.classificationOverrides = optionValue(argv, index++, arg);
     else if (arg === '--cases-output') args.casesOutput = optionValue(argv, index++, arg);
     else if (arg === '--pages-output') args.pagesOutput = optionValue(argv, index++, arg);
     else if (arg === '--slug-prefix') args.slugPrefix = optionValue(argv, index++, arg);
@@ -34,7 +37,9 @@ export function parseArgs(argv) {
     else if (arg === '--hard-characters') args.hardCharacters = Number(optionValue(argv, index++, arg));
     else throw new Error(`Unknown argument: ${arg}`);
   }
-  for (const [name, value] of Object.entries(args).filter(([name]) => !name.endsWith('Characters'))) {
+  for (const [name, value] of Object.entries(args).filter(
+    ([name]) => name !== 'classificationOverrides' && !name.endsWith('Characters'),
+  )) {
     if (!value) throw new Error(`--${name.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)} is required`);
   }
   if (!Number.isSafeInteger(args.targetCharacters) || args.targetCharacters <= 0) {
@@ -52,7 +57,12 @@ function writeJsonLines(path, values) {
 
 export async function main(argv) {
   const args = parseArgs(argv);
-  const cases = collectFtmlFixtureCases(args.ftmlRoot);
+  const classificationOverrides = args.classificationOverrides
+    ? loadClassificationOverrides(args.classificationOverrides)
+    : null;
+  const cases = collectFtmlFixtureCases(args.ftmlRoot, {
+    classificationOverrides,
+  });
   const pages = buildSavedPagePlans(cases, {
     slugPrefix: args.slugPrefix,
     targetCharacters: args.targetCharacters,
@@ -60,7 +70,10 @@ export async function main(argv) {
   });
   writeJsonLines(args.casesOutput, cases);
   writeJsonLines(args.pagesOutput, pages);
-  console.log(JSON.stringify(summarizeLiveCases(cases, pages)));
+  console.log(JSON.stringify({
+    ...summarizeLiveCases(cases, pages),
+    classification_overrides: classificationOverrides?.identity ?? null,
+  }));
   return 0;
 }
 
