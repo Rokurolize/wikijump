@@ -25,7 +25,7 @@ const MAILFORM_UNAVAILABLE_MODULE_HTML =
   '<div class="error-block">[[module <em>MailForm</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank" rel="noopener noreferrer">check available modules</a> and fix this page.</div>';
 
 function pageSlug(runId) {
-  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-case-".length)}`;
+  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-run-".length)}`;
 }
 
 function sourceFor(marker) {

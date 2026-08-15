@@ -526,7 +526,7 @@ class EmbedVideoBrowserRun {
       throw new Error(`editable candidate site ${SITE_SLUG} is missing`);
     }
     this.#siteId = site.site_id;
-    const suffix = this.#runId.slice("candidate-case-".length);
+    const suffix = this.#runId.slice("candidate-run-".length);
     const positiveSlug = `open43-embedvideo-${suffix}-positive`;
     const negativeSlug = `open43-embedvideo-${suffix}-negative`;
     const [positivePreview, negativePreview] = await Promise.all([

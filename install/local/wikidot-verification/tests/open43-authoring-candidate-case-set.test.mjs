@@ -12,8 +12,8 @@ const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const CAPTURE_SCHEMA = "wikijump_local_lab.standing_browser_parity_capture.v2";
 const RED = "rgb(255, 0, 0)";
 const BLUE = "rgb(0, 0, 255)";
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
+const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
 
 function candidateIdentity() {
   return {
@@ -211,7 +211,6 @@ function candidateDependencies(browser) {
     assertStableRuntimeIdentity(before, after) {
       assert.deepEqual(before, after);
     },
-    runId: () => "candidate-case-0123456789ab",
     now: () => "2026-08-20T00:00:00.000Z",
   };
 }
@@ -232,6 +231,7 @@ test("authoring candidate executes the public component CSS slice before passing
     privateInputSha256: hash("b"),
     outputDir,
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: candidateDependencies(browser),
   });
 
@@ -277,6 +277,7 @@ test("authoring candidate rejects CSS that remains stale on the first normal rel
       privateInputSha256: hash("b"),
       outputDir: path.join(tempRoot, "evidence"),
       caseSet,
+      runId: "candidate-run-0123456789ab",
       dependencies: candidateDependencies(browser),
     }),
     /first normal reload style did not expose the exact computed color/u,

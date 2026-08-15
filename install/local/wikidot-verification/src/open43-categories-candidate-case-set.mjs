@@ -177,8 +177,8 @@ class Open43CategoriesRun {
     this.#siteId = site.site_id;
     const defaultCategory = await this.#category(this.#session.fixtureIdentity.default_category.slug);
     const visibleCategory = await this.#category(this.#session.fixtureIdentity.transition_category.slug);
-    const hiddenSlug = `_open43-q1028-${this.#runId.slice("candidate-case-".length)}-hidden`;
-    const holderSlug = `open43-q1028-${this.#runId.slice("candidate-case-".length)}-holder`;
+    const hiddenSlug = `_open43-q1028-${this.#runId.slice("candidate-run-".length)}-hidden`;
+    const holderSlug = `open43-q1028-${this.#runId.slice("candidate-run-".length)}-holder`;
     const hiddenPage = this.#entry("hidden", `${hiddenSlug}:page`, "Open43 Q1028 hidden category page", "Q1028 hidden category page", null);
     const holderPage = this.#entry("holder", holderSlug, "Open43 Q1028 Categories holder", MODULE_SOURCE, defaultCategory.id);
     await this.#create(hiddenPage);

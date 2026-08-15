@@ -12,8 +12,8 @@ import {
   createIssue1373AmcNewPageCandidateCaseSet,
 } from "../src/issue1373-amc-new-page-candidate-case-set.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
+const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
 
 function fabricatedCandidateIdentity() {
   return {
@@ -134,6 +134,7 @@ test("issue 1373 candidate runner rejects fabricated source identity before netw
       privateInputSha256: sha256Value(input),
       outputDir: path.join(root, "evidence"),
       caseSet: createIssue1373AmcNewPageCandidateCaseSet(),
+      runId: "candidate-run-1373ac000001",
     }),
     /does not bind the sealed candidate source identity/u,
   );

@@ -205,7 +205,7 @@ class Open43Issue777PrintRun {
     this.#session = session;
     this.#browser = browser;
     this.#resources = resources;
-    this.#pageSlug = `open43-issue777-${runId.slice("candidate-case-".length)}`;
+    this.#pageSlug = `open43-issue777-${runId.slice("candidate-run-".length)}`;
   }
 
   async #rpc(method, params = {}, { cleanup = false } = {}) {

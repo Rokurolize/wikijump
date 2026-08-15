@@ -8,8 +8,8 @@ import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import { createOpen43NextPreviousCandidateCaseSet } from "../src/open43-nextprevious-candidate-case-set.mjs";
 
-const git = (character) => character.repeat(40);
-const hash = (character) => character.repeat(64);
+const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
+const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
 const PRINTUSER = '<span class="printuser avatarhover"><a href="http://www.wikidot.com/user:info/scpaiueouiuiuiui" onclick="WIKIDOT.page.listeners.userInfo(8955132); return false;"><img class="small" src="http://www.wikidot.com/avatar.php?userid=8955132&amp;amp;size=small&amp;amp;timestamp=1784947979" alt="scpaiueouiuiuiui" style="background-image:url(http://www.wikidot.com/userkarma.php?u=8955132)" /></a><a href="http://www.wikidot.com/user:info/scpaiueouiuiuiui" onclick="WIKIDOT.page.listeners.userInfo(8955132); return false;">scpaiueouiuiuiui</a></span>';
 
 function candidateIdentity() {
@@ -136,11 +136,11 @@ test("the canonical runner executes the Q811 public PreviousPage case and seals 
     privateInputSha256: hash("b"),
     outputDir: output,
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       collectExecutionIdentity: async (_identity, sourceFiles) => ({ source_files: sourceFiles }),
       observeRuntimeIdentity: async () => ({ runtime: "fixed" }),
       assertStableRuntimeIdentity: () => {},
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });
@@ -154,7 +154,6 @@ test("the canonical runner executes the Q811 public PreviousPage case and seals 
   const receipt = JSON.parse(await fs.readFile(path.join(output, "candidate-case-receipt.json"), "utf8"));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.candidate_identity_sha256, hash("a"));
-  assert.match(result.run_plan.sha256, /^[0-9a-f]{64}$/u);
 });
 
 test("the Q811 verifier rejects a printuser DOM for the wrong public actor", async (t) => {
@@ -170,11 +169,11 @@ test("the Q811 verifier rejects a printuser DOM for the wrong public actor", asy
     privateInputSha256: hash("b"),
     outputDir: path.join(tempRoot, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       collectExecutionIdentity: async (_identity, sourceFiles) => ({ source_files: sourceFiles }),
       observeRuntimeIdentity: async () => ({ runtime: "fixed" }),
       assertStableRuntimeIdentity: () => {},
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   }), (error) => error instanceof AggregateError

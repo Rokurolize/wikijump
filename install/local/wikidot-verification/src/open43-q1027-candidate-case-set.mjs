@@ -83,7 +83,7 @@ const SOURCE_FILES = Object.freeze([...new Set([
 ])]);
 
 function pageSlug(runId, role) {
-  return `open43-q1027-${runId.slice("candidate-case-".length)}-${role}`;
+  return `open43-q1027-${runId.slice("candidate-run-".length)}-${role}`;
 }
 
 function requireCandidateSite(candidateIdentity) {
@@ -113,7 +113,7 @@ class Open43Q1027Run {
   #pageResources = new Map();
 
   constructor({ session, browserContexts, resources, runId }) {
-    const fixtureId = runId.slice("candidate-case-".length);
+    const fixtureId = runId.slice("candidate-run-".length);
     this.#session = session;
     this.#browserContexts = browserContexts;
     this.#resources = resources;

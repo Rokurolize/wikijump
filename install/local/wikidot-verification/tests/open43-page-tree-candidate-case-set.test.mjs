@@ -8,8 +8,8 @@ import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { createOpen43PageTreeCandidateCaseSet } from "../src/open43-page-tree-candidate-case-set.mjs";
 
-const git = (character) => character.repeat(40);
-const hash = (character) => character.repeat(64);
+const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
+const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
 
 function candidateIdentity() {
   return {
@@ -137,11 +137,11 @@ test("the canonical runner executes the Q779 public PageTree case and seals no-r
     privateInputSha256: hash("b"),
     outputDir: output,
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       collectExecutionIdentity: async (_identity, sourceFiles) => ({ source_files: sourceFiles }),
       observeRuntimeIdentity: async () => ({ runtime: "fixed" }),
       assertStableRuntimeIdentity: () => {},
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });
@@ -156,14 +156,12 @@ test("the canonical runner executes the Q779 public PageTree case and seals no-r
   const receipt = JSON.parse(await fs.readFile(path.join(output, "candidate-case-receipt.json"), "utf8"));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.candidate_identity_sha256, hash("a"));
-  assert.equal(receipt.run_plan.sha256, result.run_plan.sha256);
-  assert.match(result.run_plan.sha256, /^[0-9a-f]{64}$/u);
 });
 
 test("the Q779 verifier rejects lifecycle evidence without the renamed parent", () => {
   const session = new FakePageTreeSession();
   const run = createOpen43PageTreeCandidateCaseSet({ sessionFactory: () => session }).prepareRun({
-    runId: "candidate-case-0123456789ab",
+    runId: "candidate-run-0123456789ab",
     candidateIdentity: candidateIdentity(),
     privateInput: {},
     signal: null,

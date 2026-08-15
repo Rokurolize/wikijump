@@ -106,7 +106,7 @@ function stackMock(value, {report = runtimeReport(value), cleanupReceipt = clean
     calls.push({command, args, options});
     mutate?.();
     if (report !== null) fsSync.writeFileSync(value.runtimeOutput, `${JSON.stringify(report)}\n`);
-    if (cleanupReceipt !== null) fsSync.writeFileSync(`${value.runtimeOutput}.cleanup.json`, `${JSON.stringify({...cleanupReceipt, run_id: args[args.indexOf("--run-id") + 1]})}\n`);
+    if (cleanupReceipt !== null) fsSync.writeFileSync(`${value.runtimeOutput}.cleanup.json`, `${JSON.stringify({...cleanupReceipt, run_id: args[args.indexOf("--run-id") + 1], candidate_receipt: cleanupReceipt.candidate_receipt ?? value.manifest.candidate_manifest})}\n`);
     const retainedLog = stackLog === undefined && cleanupReceipt?.compose_started === true ? "bound stack log\n" : stackLog;
     if (retainedLog != null) fsSync.writeFileSync(`${value.runtimeOutput}.stack.log`, retainedLog);
     return {status, signal: null, stdout: "runtime summary\n", stderr: ""};

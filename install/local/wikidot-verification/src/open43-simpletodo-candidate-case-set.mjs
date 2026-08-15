@@ -36,7 +36,7 @@ const ACTIVE_MARKERS = Object.freeze([
 ]);
 
 function pageSlug(runId) {
-  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-case-".length)}`;
+  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-run-".length)}`;
 }
 
 function sourceFor(marker) {

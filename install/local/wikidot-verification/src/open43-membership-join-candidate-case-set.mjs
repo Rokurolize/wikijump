@@ -46,7 +46,7 @@ const EXPECTED_REQUESTS = Object.freeze([
 ]);
 
 function runSlugs(runId) {
-  const suffix = runId.slice("candidate-case-".length);
+  const suffix = runId.slice("candidate-run-".length);
   return {
     join: `open43-membership-join-${suffix}`,
     content: `component:open43-member-${suffix}`,

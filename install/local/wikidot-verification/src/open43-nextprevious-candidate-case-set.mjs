@@ -341,7 +341,7 @@ export function createOpen43NextPreviousCandidateCaseSet({ sessionFactory = (opt
     caseIds: OPEN43_NEXT_PREVIOUS_CASE_IDS,
     prepareRun({ runId, candidateIdentity, privateInput, signal, resources }) {
       requireCandidateSite(candidateIdentity);
-      const prefix = `open43-nextprev-${runId.slice("candidate-case-".length)}`;
+      const prefix = `open43-nextprev-${runId.slice("candidate-run-".length)}`;
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       const pages = Object.fromEntries(Object.values(PAGE_NAMES).map((name) => [name, { slug: pageSlug(prefix, name), title: pageTitle(prefix, name) }]));
       const execution = new Open43NextPreviousRun({ session, resources, prefix });

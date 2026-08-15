@@ -37,7 +37,7 @@ const CAPTURE_CONTRACT = Object.freeze({
 const LISTPAGES_WRAPPER = '<div class="list-pages-box">';
 
 function pageSlug(runId, role) {
-  return `open43-q1040-${runId.slice("candidate-case-".length)}-${role}`;
+  return `open43-q1040-${runId.slice("candidate-run-".length)}-${role}`;
 }
 
 function requireCandidateSite(candidateIdentity) {
@@ -65,7 +65,7 @@ class Q1040Run {
   #pageResources = new Map();
 
   constructor({ session, browserContexts, resources, runId }) {
-    const fixtureId = runId.slice("candidate-case-".length);
+    const fixtureId = runId.slice("candidate-run-".length);
     this.#session = session;
     this.#browserContexts = browserContexts;
     this.#resources = resources;

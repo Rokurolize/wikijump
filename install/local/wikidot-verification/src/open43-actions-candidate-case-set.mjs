@@ -44,7 +44,7 @@ const CONTENTION_OPERATIONS = Object.freeze([
 ]);
 
 function pageSlug(runId) {
-  return `open43-actions-runtime-${runId.slice("candidate-case-".length)}`;
+  return `open43-actions-runtime-${runId.slice("candidate-run-".length)}`;
 }
 
 function requireCandidateSite(candidateIdentity) {

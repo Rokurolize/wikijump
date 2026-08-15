@@ -32,7 +32,7 @@ class Open43Issue775EditRun {
     this.#resources = resources;
     this.#runId = runId;
     this.#pageOrigin = session.pageOrigin;
-    this.#pageSlug = `open43-issue775-${runId.slice("candidate-case-".length)}`;
+    this.#pageSlug = `open43-issue775-${runId.slice("candidate-run-".length)}`;
   }
 
   async #rpc(method, params = {}, { actor = "administrator", cleanup = false } = {}) {

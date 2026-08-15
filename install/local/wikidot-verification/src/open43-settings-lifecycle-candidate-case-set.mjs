@@ -38,7 +38,7 @@ export function createOpen43SettingsLifecycleCandidateCaseSet({
       if (candidateIdentity.candidate.endpoint.host !== SITE_HOST || candidateIdentity.candidate.endpoint.port === 443 || candidateIdentity.candidate.port_443_published !== false) throw new Error(`Open43 S758 cases require exact non-standing ${SITE_HOST}`);
       const session = await sessionFactory({ candidateIdentity, privateInput, signal });
       if (session.pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("S758 session did not bind the sealed editable candidate origin");
-      const suffix = runId.slice("candidate-case-".length);
+      const suffix = runId.slice("candidate-run-".length);
       const fixture = session.fixtureIdentity;
       const category = fixture.transition_category;
       const plan = Object.freeze({

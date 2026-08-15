@@ -12,8 +12,8 @@ import {
   createOpen43MembershipCandidateCaseSet,
 } from "../src/open43-membership-candidate-case-set.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
+const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
 const JOIN_ACTION = Object.freeze({
   type: "join",
   page_id: 5,
@@ -190,11 +190,11 @@ test("the membership candidate proves ordinary page creation and the #1033 stati
     privateInputSha256: hash("b"),
     outputDir: path.join(root, "evidence"),
     caseSet: createOpen43MembershipCandidateCaseSet(),
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       collectExecutionIdentity: async () => ({ schema: "fixture.execution.v1", source_clean: true }),
       observeRuntimeIdentity: async () => ({ schema: "fixture.runtime.v1", stable: true }),
       assertStableRuntimeIdentity() {},
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });

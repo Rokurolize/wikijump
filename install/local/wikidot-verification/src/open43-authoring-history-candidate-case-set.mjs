@@ -39,7 +39,7 @@ const BROWSER_CONTRACTS = Object.freeze({
 });
 
 function pageSlug(runId) {
-  return `open43-history-${runId.slice("candidate-case-".length)}`;
+  return `open43-history-${runId.slice("candidate-run-".length)}`;
 }
 
 function servedUrl(origin, slug, hash = "") {

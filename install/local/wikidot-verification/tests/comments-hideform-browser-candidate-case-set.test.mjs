@@ -9,8 +9,8 @@ import { createCommentsHideformBrowserCandidateCaseSet } from "../src/comments-h
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (letter) => letter.repeat(64);
-const git = (letter) => letter.repeat(40);
+const hash = (letter) => (letter + "0123456789abcdef".replace(letter, "")[0]).repeat(32);
+const git = (letter) => (letter + "0123456789abcdef".replace(letter, "")[0]).repeat(20);
 const identity = {
   schema: "wikijump.standing_candidate_parity_identity.v1",
   status: "sealed",
@@ -111,12 +111,12 @@ test("Comments hideForm is registered as one executable candidate case with both
     privateInputSha256: hash("7"),
     outputDir: path.join(root, "receipt"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       createBrowserContexts: () => browserContexts,
       collectExecutionIdentity: async () => ({ schema: "fixture.execution.v1", source_clean: true, module_manifest_sha256: hash("q") }),
       observeRuntimeIdentity: async () => ({ schema: "fixture.runtime.v1", identity: "stable" }),
       assertStableRuntimeIdentity(before, after) { assert.deepEqual(before, after); },
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });

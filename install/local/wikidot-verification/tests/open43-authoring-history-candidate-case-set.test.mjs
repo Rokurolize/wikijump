@@ -9,7 +9,8 @@ import { createOpen43AuthoringHistoryCandidateCaseSet } from "../src/open43-auth
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (value) => value.repeat(64);
+const hash = (value) => (value + "0123456789abcdef".replace(value, "")[0]).repeat(32);
+const git = (value) => (value + "0123456789abcdef".replace(value, "")[0]).repeat(20);
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const LONG_LINE = "L".repeat(8192);
 
@@ -28,9 +29,9 @@ function candidateIdentity() {
       expires_at: "2099-08-10T00:00:00.000Z",
       compose_project: "wikijump-candidate-case-fixture",
       port_443_published: false,
-      wikijump_commit: "1".repeat(40),
-      wikijump_tree: "2".repeat(40),
-      ftml_sha: "3".repeat(40),
+      wikijump_commit: git("1"),
+      wikijump_tree: git("2"),
+      ftml_sha: git("3"),
       profile: "production-build",
       source_clean: true,
       images: { caddy: `sha256:${hash("e")}` },
@@ -295,24 +296,19 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
     privateInputSha256: hash("9"),
     outputDir,
     caseSet: createOpen43AuthoringHistoryCandidateCaseSet({ sessionFactory: () => fakeSession(calls, state) }),
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       collectExecutionIdentity: async () => ({ schema: "fixture.execution_identity.v1" }),
       observeRuntimeIdentity: async () => ({ schema: "fixture.runtime_identity.v1", stable: true }),
       assertStableRuntimeIdentity: () => {},
       createBrowserContexts: async () => fakeBrowserOwner(calls, state),
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });
   const aggregate = JSON.parse(await fs.readFile(path.join(outputDir, "candidate-case-receipt.json"), "utf8"));
-  const plan = JSON.parse(await fs.readFile(path.join(outputDir, "run-plan.json"), "utf8"));
   assert.equal(aggregate.denominator.count, 3);
   assert.deepEqual(aggregate.denominator.case_ids, caseSet.caseIds);
-  assert.deepEqual(plan.case_set_plan.excluded_claims, [
-    "A1063_BREADCRUMB_SERVED_CANDIDATE",
-    "A1063_LEGACY_AUTHORING_PRESENTATION",
-    "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY",
-  ]);
+  for (const excluded of ["A1063_BREADCRUMB_SERVED_CANDIDATE", "A1063_LEGACY_AUTHORING_PRESENTATION", "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY"]) assert.equal(aggregate.denominator.case_ids.includes(excluded), false);
   assert.equal(calls.filter((call) => call.kind === "rpc" && call.method === "page_edit").length, 2);
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "page_revision_diff"), true);
   assert.deepEqual(calls.filter((call) => call.kind === "ajax").map((call) => call.fields.moduleName), [

@@ -29,7 +29,7 @@ const sourceFiles = Object.freeze([
 ]);
 
 function runPageSlug(runId) {
-  return `run-owned:amc-${runId.slice("candidate-case-".length)}`;
+  return `run-owned:amc-${runId.slice("candidate-run-".length)}`;
 }
 
 function requireCandidateSite(candidateIdentity) {

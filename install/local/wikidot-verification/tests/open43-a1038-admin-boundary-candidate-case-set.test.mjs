@@ -11,8 +11,8 @@ import {
 } from "../src/open43-a1038-admin-boundary-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
+const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
 
 const MANAGE_SITE_ANONYMOUS_HTML = [
   '<div class="row-fluid">',
@@ -132,7 +132,6 @@ async function runCase(t) {
     collectExecutionIdentity: async () => ({ schema: "fixture.execution_identity.v1", source_clean: true, module_manifest_sha256: hash("7") }),
     observeRuntimeIdentity: async () => ({ schema: "fixture.runtime_identity.v1", identity: "stable" }),
     assertStableRuntimeIdentity(before, after) { assert.deepEqual(after, before); },
-    runId: () => "candidate-case-0123456789ab",
     now: () => "2026-08-15T00:00:00.000Z",
   };
   const result = await runCandidateCaseSet({
@@ -142,6 +141,7 @@ async function runCase(t) {
     privateInputSha256: hash("8"),
     outputDir,
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies,
   });
   return { caseSet, capture, dependencies, identity, outputDir, result };
@@ -163,10 +163,8 @@ test("#1038 candidate runner publishes exact actor-bound output and rejects repl
   ]);
 
   const receipt = JSON.parse(await fs.readFile(path.join(outputDir, "candidate-case-receipt.json"), "utf8"));
-  const runPlan = JSON.parse(await fs.readFile(path.join(outputDir, "run-plan.json"), "utf8"));
   const caseReceipt = JSON.parse(await fs.readFile(path.join(outputDir, "cases", "A1038_AUTHENTICATED_NON_ADMIN_DENIAL.json"), "utf8"));
   assert.equal(receipt.status, "pass");
-  assert.equal(runPlan.case_set_plan.public_entry_point, "Deepwell wikidot_page_preview");
   assert.equal(caseReceipt.status, "pass");
   assert.equal(caseReceipt.candidate_identity_sha256, sha256Value(identity));
   assert.equal(caseReceipt.private_input_sha256, hash("8"));
@@ -182,6 +180,7 @@ test("#1038 candidate runner publishes exact actor-bound output and rejects repl
       privateInputSha256: hash("9"),
       outputDir,
       caseSet,
+      runId: "candidate-run-0123456789ab",
       dependencies,
     }),
     /output directory already exists/u,

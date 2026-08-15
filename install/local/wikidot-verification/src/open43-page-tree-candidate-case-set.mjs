@@ -345,7 +345,7 @@ export function createOpen43PageTreeCandidateCaseSet({ sessionFactory = (options
     caseIds: OPEN43_PAGE_TREE_CASE_IDS,
     prepareRun({ runId, candidateIdentity, privateInput, signal, resources }) {
       requireCandidateSite(candidateIdentity);
-      const suffix = runId.slice("candidate-case-".length);
+      const suffix = runId.slice("candidate-run-".length);
       const prefix = `open43-pagetree-${suffix}`;
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       const pages = Object.fromEntries(Object.values(PAGE_NAMES).map((name) => [name, { slug: pageSlug(prefix, name), title: pageTitle(prefix, name) }]));

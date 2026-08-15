@@ -114,7 +114,7 @@ class CommentsHideformRun {
     this.#browserContexts = browserContexts;
     this.#resources = resources;
     this.#runId = runId;
-    this.#pageSlug = `run-owned:comments-hideform-${runId.slice("candidate-case-".length)}`;
+    this.#pageSlug = `run-owned:comments-hideform-${runId.slice("candidate-run-".length)}`;
     this.#pageTitle = `Candidate Comments hideForm ${this.#pageSlug}`;
   }
 
@@ -268,7 +268,7 @@ export function createCommentsHideformBrowserCandidateCaseSet({ sessionFactory =
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: session.privateInputIdentity,
         browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: ACTORS.length, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
-        plan: { schema: "wikijump.comments_hideform_browser_candidate_plan.v1", issue: 1367, site_slug: SITE_SLUG, page_slug: `run-owned:comments-hideform-${runId.slice("candidate-case-".length)}`, source_fixture: CASE_FIXTURE_PATH, source_fixture_sha256: CASE_FIXTURE_SHA256, source_cases: CASES.map(({ case_id, source, documented_form_state }) => ({ case_id, source_sha256: sha256Text(source), documented_form_state })), actor_matrix: ACTORS.map(({ label, fixtureActor }) => ({ label, fixture_actor: fixtureActor })), intervals: ["domcontentloaded", "settled"], browser_contract_sha256: sha256Value(BROWSER_CONTRACT) },
+        plan: { schema: "wikijump.comments_hideform_browser_candidate_plan.v1", issue: 1367, site_slug: SITE_SLUG, page_slug: `run-owned:comments-hideform-${runId.slice("candidate-run-".length)}`, source_fixture: CASE_FIXTURE_PATH, source_fixture_sha256: CASE_FIXTURE_SHA256, source_cases: CASES.map(({ case_id, source, documented_form_state }) => ({ case_id, source_sha256: sha256Text(source), documented_form_state })), actor_matrix: ACTORS.map(({ label, fixtureActor }) => ({ label, fixture_actor: fixtureActor })), intervals: ["domcontentloaded", "settled"], browser_contract_sha256: sha256Value(BROWSER_CONTRACT) },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
         verifyCase: (caseId, observations) => execution.verifyCase(caseId, observations),

@@ -156,7 +156,7 @@ class Open43MembershipCandidateSession {
 }
 
 function pageSlug(runId) {
-  return `component:membership-candidate-${runId.slice("candidate-case-".length)}`;
+  return `component:membership-candidate-${runId.slice("candidate-run-".length)}`;
 }
 
 function found(value, name) {

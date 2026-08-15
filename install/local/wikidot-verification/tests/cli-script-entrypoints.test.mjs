@@ -193,6 +193,9 @@ test("report CLIs expose structural exit rules without reading artifacts", () =>
     "--pr-head", "0123456789abcdef0123456789abcdef01234567",
     "--candidate-review-freeze", "identity.json",
     "--validator", "static=verdict.json",
+    "--validator", "candidate=candidate.json",
+    "--validator", "browser=browser.json",
+    "--validator", "cleanup=cleanup.json",
   ]).runId, "run");
   assert.equal(parseImportHealthArgs(["--log", "import.log", "--output", "verdict.json", "--threshold", "0.9"]).threshold, 0.9);
   assert.equal(parseDependencyArgs([

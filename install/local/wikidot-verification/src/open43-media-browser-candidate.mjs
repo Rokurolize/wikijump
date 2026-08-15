@@ -333,7 +333,7 @@ class Open43MediaBrowserRun {
   }
 
   async #pageCreate(casePlan, side, index) {
-    const suffix = this.#runId.slice("candidate-case-".length);
+    const suffix = this.#runId.slice("candidate-run-".length);
     const slug = `open43-media-browser-${suffix}-${index}-${side}`;
     const marker = `candidate-case-owner:${slug}`;
     const page = await this.#session.rpc("page_create", { site_id: this.#siteId, slug, title: marker, alt_title: null, wikitext: side === "positive" ? casePlan.positive_source : casePlan.negative_source, layout: "wikidot", user_id: this.#session.editorUserId, ip_address: "127.0.0.1", tags: [], revision_comments: "Open43 media browser candidate fixture" });

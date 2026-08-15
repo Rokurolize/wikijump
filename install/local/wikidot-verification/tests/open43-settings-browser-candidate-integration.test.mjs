@@ -383,6 +383,7 @@ test("the #754 analytics group executes its cases through the shared runner", as
     privateInputSha256: sha256Value("private-input"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: dependencies(events, sourceFiles),
   });
 
@@ -412,6 +413,7 @@ test("the #755 theme group changes only category themes", async (t) => {
     privateInputSha256: sha256Value("private-input"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: dependencies(events, []),
   });
 
@@ -571,6 +573,7 @@ test("the real toolbar candidate group runs through the canonical runner with an
     privateInputSha256: sha256Value("private-input"),
     outputDir,
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: dependencies(events, []),
   };
   const result = await runCandidateCaseSet(options);
@@ -632,6 +635,7 @@ test("#1046 runs its three public cases without changing unrelated settings", as
     privateInputSha256: sha256Value("private-input"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: dependencies(events, []),
   });
 

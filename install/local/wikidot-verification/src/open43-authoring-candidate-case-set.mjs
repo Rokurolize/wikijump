@@ -34,7 +34,7 @@ const BROWSER_CONTRACT = Object.freeze({
 });
 
 function pageSlugs(runId) {
-  const suffix = runId.slice("candidate-case-".length);
+  const suffix = runId.slice("candidate-run-".length);
   return {
     component: `component:open43-authoring-${suffix}`,
     dependent: `open43-authoring-dependent-${suffix}`,
