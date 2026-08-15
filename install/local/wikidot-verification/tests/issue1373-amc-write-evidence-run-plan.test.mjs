@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -8,8 +9,6 @@ import { fileURLToPath } from "node:url"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..")
 const contract = JSON.parse(fs.readFileSync(path.join(root, "docs/development/wikidot-py-amc-write-surface.json"), "utf8"))
 const plan = JSON.parse(fs.readFileSync(new URL("../fixtures/issue1373-amc-write-evidence-run-plan.json", import.meta.url), "utf8"))
-const evidencePath = path.join(root, plan.evidence.path)
-const evidence = JSON.parse(fs.readFileSync(evidencePath, "utf8"))
 
 const unresolvedRows = contract.authenticated_behavior_evidence.pair_evidence
   .filter(({ classification }) => classification !== "positive")
@@ -36,6 +35,9 @@ const relativePath = value => {
   assert.equal(value.includes(".."), false, value)
   return value
 }
+const readJsonAtTrustedPath = value => JSON.parse(fs.readFileSync(path.join(root, relativePath(value)), "utf8"))
+const evidence = readJsonAtTrustedPath(plan.evidence.path)
+const evidencePath = path.join(root, relativePath(plan.evidence.path))
 const fileSha256 = value => sha256(path.join(root, relativePath(value)))
 
 const verifyIdentityBindings = (planValue, evidenceValue) => {
@@ -49,6 +51,12 @@ const verifyIdentityBindings = (planValue, evidenceValue) => {
   assert.equal(planValue.source.commit, contract.source.commit)
   assert.equal(planValue.source.commit, contract.authenticated_behavior_evidence.current_source_commit)
   assert.equal(planValue.source.tree, contract.authenticated_behavior_evidence.client.tree)
+  const expectedSite = {
+    unix_name: contract.authenticated_behavior_evidence.server.site,
+    site_id: contract.authenticated_behavior_evidence.server.site_id,
+    origin: `http://${contract.authenticated_behavior_evidence.server.site}.wikidot.com`
+  }
+  assert.deepEqual(planValue.source.site, expectedSite)
   assert.deepEqual(planValue.source.client_lock, {
     path: "uv.lock",
     repository: "Rokurolize/wikidot.py",
@@ -78,6 +86,7 @@ const verifyIdentityBindings = (planValue, evidenceValue) => {
   assert.equal(fileSha256(planValue.evidence.path), planValue.evidence.sha256)
   assert.equal(path.isAbsolute(evidenceValue.source_identity.contract.path), false)
   assert.deepEqual(evidenceValue.source_identity.repository, planValue.source.repository)
+  assert.deepEqual(evidenceValue.source_identity.site, planValue.source.site)
   assert.deepEqual(evidenceValue.source_identity.pinned_files, pinnedFiles)
   assert.deepEqual(evidenceValue.source_identity.contract, {
     path: planValue.source.contract_path,
@@ -222,6 +231,9 @@ test("issue #1373 verifier rejects identity drift", () => {
     ["requirements lock", value => { value.source.pinned_files.requirements_lock.sha256 = "0".repeat(64) }],
     ["contract", value => { value.source.contract_sha256 = "0".repeat(64) }],
     ["client lock", value => { value.source.client_lock.sha256 = "0".repeat(64) }],
+    ["site name", value => { value.source.site.unix_name = "other-site" }],
+    ["site id", value => { value.source.site.site_id += 1 }],
+    ["site origin", value => { value.source.site.origin = "https://sandbox-for-codex.wikidot.com" }],
     ["evidence", value => { value.evidence.sha256 = "0".repeat(64) }]
   ]
   for (const [, mutate] of driftCases) {
@@ -234,7 +246,10 @@ test("issue #1373 verifier rejects identity drift", () => {
     value => { value.source_identity.repository = "other/repository" },
     value => { value.source_identity.pinned_files.requirements.sha256 = "0".repeat(64) },
     value => { value.source_identity.contract.sha256 = "0".repeat(64) },
-    value => { value.source_identity.client.lock_sha256 = "0".repeat(64) }
+    value => { value.source_identity.client.lock_sha256 = "0".repeat(64) },
+    value => { value.source_identity.site.unix_name = "other-site" },
+    value => { value.source_identity.site.site_id += 1 },
+    value => { value.source_identity.site.origin = "https://sandbox-for-codex.wikidot.com" }
   ]
   for (const mutate of evidenceDriftCases) {
     const drifted = structuredClone(evidence)
@@ -260,4 +275,17 @@ test("issue #1373 verifier rejects duplicate, missing, and unrelated witness pai
   roleClaim.page_edit_controls.find(({ control_id }) => control_id === "role_boundaries").classification = "observed"
   roleClaim.page_edit_controls.find(({ control_id }) => control_id === "role_boundaries").record_case_id = "role-boundary"
   assert.throws(() => verifyPartialEvidence(roleClaim))
+})
+
+test("issue #1373 verifier rejects traversal before reading outside the root", () => {
+  const outsideDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "issue1373-outside-"))
+  const outsideEvidence = path.join(outsideDirectory, "evidence.json")
+  fs.writeFileSync(outsideEvidence, JSON.stringify({ outside: true }))
+  try {
+    const drifted = structuredClone(plan)
+    drifted.evidence.path = path.relative(root, outsideEvidence)
+    assert.throws(() => readJsonAtTrustedPath(drifted.evidence.path))
+  } finally {
+    fs.rmSync(outsideDirectory, { recursive: true, force: true })
+  }
 })

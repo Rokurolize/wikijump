@@ -15,6 +15,11 @@
     "tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
     "contract_path": "docs/development/wikidot-py-amc-write-surface.json",
     "contract_sha256": "cc77d68ab2226bf944fd08fa6171034de9883558759ec92b10072f86e805b183",
+    "site": {
+      "unix_name": "sandbox-for-codex",
+      "site_id": 5301522,
+      "origin": "http://sandbox-for-codex.wikidot.com"
+    },
     "client_lock": {
       "path": "uv.lock",
       "repository": "Rokurolize/wikidot.py",
