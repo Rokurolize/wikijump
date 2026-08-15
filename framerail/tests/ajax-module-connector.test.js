@@ -397,6 +397,42 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
   assert.equal(calls, 1)
 })
 
+const forumResponseBody = async (output) => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "forum/ForumViewCategoryModule",
+      c: "8503559",
+      p: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderForumModule: async () => output
+    }
+  )
+  return response.json()
+}
+
+test("fails closed when an AMC renderer returns a malformed status", async () => {
+  assert.equal((await forumResponseBody({ status: {}, body: "" })).status, "not_ok")
+})
+
+test("fails closed when an AMC renderer returns an empty status", async () => {
+  assert.equal((await forumResponseBody({ status: "", body: "" })).status, "not_ok")
+})
+
+test("fails closed when an AMC renderer omits status", async () => {
+  assert.equal((await forumResponseBody({ body: "" })).status, "not_ok")
+})
+
+test("fails closed when an AMC renderer returns a non-string status", async () => {
+  assert.equal((await forumResponseBody({ status: 503, body: "" })).status, "not_ok")
+})
+
+test("passes through a non-empty AMC try_again status", async () => {
+  assert.equal((await forumResponseBody({ status: "try_again", body: "" })).status, "try_again")
+})
+
 test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikidot metadata", async () => {
   const cases = [
     { page: "1", categoryId: "", options: '{"all":true}' },
