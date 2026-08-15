@@ -1,7 +1,6 @@
 {
-  "schema": "wikijump.issue1373_amc_write_evidence_run_plan.v1",
+  "schema": "wikijump.issue1373_amc_write_evidence_run_plan.v2",
   "issue": 1373,
-  "execution_authorized": false,
   "source": {
     "repository": "Rokurolize/wikidot.py",
     "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
@@ -9,26 +8,22 @@
     "contract_path": "docs/development/wikidot-py-amc-write-surface.json",
     "contract_sha256": "cc77d68ab2226bf944fd08fa6171034de9883558759ec92b10072f86e805b183"
   },
-  "authority": {
-    "state_path": "/home/roku/wjlab/state/current.json",
-    "state_sha256": "1781ccb83d816e96e5f59eb1dd0cec54302ce7dd7ebbe4e9a561cb24f3f45617",
-    "phase": "BUILDING",
-    "status": "blocked",
-    "reason": "The current state does not authorize authenticated Wikidot work, sandbox mutation, or authority changes."
+  "evidence": {
+    "path": "install/local/wikidot-verification/artifacts/issue1373-pageedit-live-20260814t230239Z.json",
+    "sha256": "be81e5e5be64d0980cd711ac777f6b6fcc6dde15e86289f99cd54a01427e639c",
+    "classification": "partial"
   },
   "action_event_cases": [
     {
       "group_id": "private_message",
-      "required_authority": "A run-owned mailbox fixture and exact message deletion authority.",
-      "cleanup_proof": "The created message is absent and no mailbox state outside the run-owned fixture changed.",
+      "cleanup_fact": "The created message is absent and no mailbox state outside the run-owned fixture changed.",
       "cases": [
         { "pair_id": "DashboardMessageAction;send", "current_classification": "blocked" }
       ]
     },
     {
       "group_id": "forum",
-      "required_authority": "A run-owned forum fixture with exact thread and post deletion authority.",
-      "cleanup_proof": "Every created thread and post is absent and the containing forum state matches its pre-run snapshot.",
+      "cleanup_fact": "Every created thread and post is absent and the containing forum state matches its pre-run snapshot.",
       "cases": [
         { "pair_id": "ForumAction;newThread", "current_classification": "blocked" },
         { "pair_id": "ForumAction;saveEditPost", "current_classification": "blocked" },
@@ -37,8 +32,7 @@
     },
     {
       "group_id": "membership",
-      "required_authority": "Run-owned ordinary actors, a pending application, an invitation target, and exact role and application restoration authority.",
-      "cleanup_proof": "Applications, invitations, membership, moderator state, and administrator state match the recorded pre-run snapshot.",
+      "cleanup_fact": "Applications, invitations, membership, moderator state, and administrator state match the recorded pre-run snapshot.",
       "cases": [
         { "pair_id": "ManageSiteMembershipAction;acceptApplication", "current_classification": "blocked" },
         { "pair_id": "ManageSiteMembershipAction;inviteMember", "current_classification": "blocked" },
@@ -50,59 +44,49 @@
     },
     {
       "group_id": "rating",
-      "required_authority": "A run-owned page in a category whose rating mode permits both voting and cancellation without changing site settings.",
-      "cleanup_proof": "The run-owned vote and page are absent and the category rating configuration is unchanged.",
+      "cleanup_fact": "The run-owned vote and page are absent and the category rating configuration is unchanged.",
       "cases": [
         { "pair_id": "RateAction;cancelVote", "current_classification": "observed_not_ok" },
         { "pair_id": "RateAction;ratePage", "current_classification": "observed_not_ok" }
       ]
     }
   ],
-  "page_edit_cases": [
+  "page_edit_controls": [
     {
-      "case_id": "stale_lock",
-      "required_authority": "Two controlled actors and a run-owned page revision changed after lock acquisition.",
-      "cleanup_proof": "The run-owned page and every acquired lock are absent."
+      "control_id": "stale_lock",
+      "cleanup_fact": "The run-owned page and every acquired lock are absent."
     },
     {
-      "case_id": "wrong_lock",
-      "required_authority": "Two controlled actors and a run-owned page with non-secret mismatched lock material generated inside the run.",
-      "cleanup_proof": "The run-owned page and every acquired lock are absent."
+      "control_id": "wrong_lock",
+      "cleanup_fact": "The run-owned page and every acquired lock are absent."
     },
     {
-      "case_id": "cancellation_release",
-      "required_authority": "A controlled actor, a run-owned page, and the exact PageEdit cancellation operation.",
-      "cleanup_proof": "A second actor can acquire the released lock and the run-owned page is absent."
+      "control_id": "cancellation_release",
+      "cleanup_fact": "A second request can acquire the released lock and the run-owned page is absent."
     },
     {
-      "case_id": "expiry_release",
-      "required_authority": "A controlled actor, a run-owned page, and an observed lock-expiry interval bounded by the run lease.",
-      "cleanup_proof": "A second actor can acquire the expired lock and the run-owned page is absent."
+      "control_id": "expiry_release",
+      "cleanup_fact": "A second request can acquire the expired lock and the run-owned page is absent."
     },
     {
-      "case_id": "other_locks",
-      "required_authority": "One controlled actor and at least two run-owned pages locked within the same session.",
-      "cleanup_proof": "All run-owned pages and locks are absent."
+      "control_id": "other_locks",
+      "cleanup_fact": "All run-owned pages and locks are absent."
     },
     {
-      "case_id": "save_conflict",
-      "required_authority": "Two controlled actors and a run-owned page with a revision conflict created inside the run.",
-      "cleanup_proof": "The accepted revision is identified and the run-owned page and locks are absent."
+      "control_id": "save_conflict",
+      "cleanup_fact": "The accepted revision is identified and the run-owned page and locks are absent."
     },
     {
-      "case_id": "save_failure",
-      "required_authority": "A controlled actor and a run-owned page with a safely reversible, evidenced save rejection.",
-      "cleanup_proof": "The rejected save changed no revision and the run-owned page and lock are absent."
+      "control_id": "save_failure",
+      "cleanup_fact": "The rejected save changed no revision and the run-owned page and lock are absent."
     },
     {
-      "case_id": "save_noop",
-      "required_authority": "A controlled actor and a run-owned page saved without a source or metadata change.",
-      "cleanup_proof": "The revision outcome is read back and the run-owned page and lock are absent."
+      "control_id": "save_noop",
+      "cleanup_fact": "The revision outcome is read back and the run-owned page and lock are absent."
     },
     {
-      "case_id": "role_boundaries",
-      "required_authority": "Controlled ordinary, denied, and privileged actors whose roles are fixed before the run.",
-      "cleanup_proof": "Every run-owned page and lock is absent and all actor roles match the pre-run snapshot."
+      "control_id": "role_boundaries",
+      "cleanup_fact": "Every run-owned page and lock is absent and the pre-run role snapshot is unchanged."
     }
   ]
 }
