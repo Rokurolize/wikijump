@@ -184,7 +184,17 @@ test("report CLIs expose structural exit rules without reading artifacts", () =>
   assert.equal(verdictExitCode({aggregate: {unclassified: 1}}), 2);
   assert.equal(verdictExitCode({aggregate: {regressions: ["x"]}}), 1);
   assert.equal(verdictExitCode({aggregate: {fail: 0}}), 0);
-  assert.equal(parseMergeReadinessArgs(["--output", "report.json", "--run-id", "run", "--validator", "static=verdict.json"]).runId, "run");
+  assert.equal(verdictExitCode({}), 2);
+  assert.equal(verdictExitCode({aggregate: {}}), 2);
+  assert.equal(parseMergeReadinessArgs([
+    "--output", "report.json",
+    "--run-id", "run",
+    "--frozen-candidate-commit", "0123456789abcdef0123456789abcdef01234567",
+    "--pr-head", "0123456789abcdef0123456789abcdef01234567",
+    "--allowed-status", "status.json",
+    "--candidate-review-freeze", "identity.json",
+    "--validator", "static=verdict.json",
+  ]).runId, "run");
   assert.equal(parseImportHealthArgs(["--log", "import.log", "--output", "verdict.json", "--threshold", "0.9"]).threshold, 0.9);
   assert.equal(parseDependencyArgs([
     "--inventory", "inventory.json",

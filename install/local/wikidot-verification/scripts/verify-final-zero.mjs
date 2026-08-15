@@ -1,24 +1,13 @@
 #!/usr/bin/env node
 
+import {execFileSync} from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import denominatorContract from "../../../../docs/development/compatibility-denominator-contract.json" with {type: "json"};
+
 import {runCliIfMain} from "../src/cli-entry.mjs";
 import {sealJsonNoReplace, sha256File} from "../src/standing-browser-parity-util.mjs";
-
-export const FINAL_ZERO_CLASSES = Object.freeze([
-  "complete_product_rows_open_or_unreconciled",
-  "duplicate_or_ambiguous_canonical_identities",
-  "missing_independent_standards_or_spec_reviews",
-  "missing_or_failing_candidate_proofs",
-  "missing_or_failing_standing_proofs",
-  "missing_or_stale_source_provenance",
-  "missing_public_surfaces",
-  "unimplemented_source_required_rows",
-  "unknown_owners_or_untyped_edges",
-  "unrepresented_charter_requirements",
-  "unresolved_wikidot_evidence_requirements",
-]);
 
 const GIT = /^[0-9a-f]{40}$/u;
 const SHA256 = /^[0-9a-f]{64}$/u;
@@ -31,6 +20,49 @@ const DEFERRED_PREFIXES = Object.freeze([
   "framerail-xmlrpc:",
   "wikidot-py-",
 ]);
+export const DEFERRED_SCOPE_ROWS = Object.freeze([
+  ["framerail-xmlrpc:categories.select", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:files.get_meta", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:files.get_one", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:files.save_one", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:files.select", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:pages.get_meta", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:pages.get_one", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:pages.save_one", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:pages.select", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:posts.get", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:posts.select", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:system.listMethods", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:system.methodHelp", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:system.methodSignature", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:system.multicall", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:tags.select", "framerail_xmlrpc_method"],
+  ["framerail-xmlrpc:users.get_me", "framerail_xmlrpc_method"],
+  ["wikidot-py-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:dashboard/messages/DMInboxModule:parameters=page?", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:dashboard/messages/DMSentModule:parameters=page?", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:dashboard/messages/DMViewMessageModule:parameters=item", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:edit/EditMetaModule:parameters=pageId", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:files/PageFilesModule:parameters=page_id", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/ForumCommentsListModule:parameters=pageId", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/ForumStartModule:parameters=hidden", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/ForumViewCategoryModule:parameters=c,p", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/ForumViewThreadModule:parameters=t", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/ForumViewThreadPostsModule:parameters=pageNo,t", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/sub/ForumEditPostFormModule:parameters=postId,threadId", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/sub/ForumPostRevisionModule:parameters=revisionId", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:forum/sub/ForumPostRevisionsModule:parameters=postId", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:history/PageRevisionListModule:parameters=options,page_id,perpage", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:history/PageSourceModule:parameters=revision_id", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:history/PageVersionModule:parameters=revision_id", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:list/ListPagesModule:parameters=module_body,p,pagetype,page_type,page-type,category,tags,tag,parent,created_at,createdat,updated_at,updatedat,created_by,createdby,rating,score,name,fullname,full_slug,fullslug,range,order,offset,limit,perpage,per_page,separate,wrapper,rss,rsstitle,rssdescription,rsshome,rsslimit,rssonly", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:managesite/ManageSiteMembersApplicationsModule:parameters=(none)", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:membership/MembersListModule:parameters=group,page", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:pagerate/WhoRatedPageModule:parameters=pageId", "wikidot_py_amc_module_shape"],
+  ["wikidot-py-amc-module:viewsource/ViewSourceModule:parameters=page_id", "wikidot_py_amc_module_shape"],
+]);
+const DEFERRED_SCOPE_KINDS = new Map(DEFERRED_SCOPE_ROWS);
+const FINAL_ZERO_CLASSES = Object.freeze(denominatorContract.vocabularies.final_zero_nonzero_classes);
 
 function fail(message) {
   throw new Error(message);
@@ -168,16 +200,9 @@ function validateScopeRow(value, index, name) {
   if (typeof row.source_local_id !== "string" || row.source_local_id === "") {
     fail(`${name} row ${index}.source_local_id is invalid`);
   }
-  if (!DEFERRED_PREFIXES.some((prefix) => row.source_local_id.startsWith(prefix))) {
-    fail(`${name} row ${index} has an unsupported source-local identity`);
-  }
-  if (!DEFERRED_KINDS.includes(row.kind)) fail(`${name} row ${index} has an unsupported kind`);
-  const expectedKind = row.source_local_id.startsWith("wikidot-py-")
-    ? "wikidot_py_amc_module_shape"
-    : "framerail_xmlrpc_method";
-  if (row.kind !== expectedKind) {
-    fail(`${name} row ${index} has an invalid kind for its source-local identity`);
-  }
+  const expectedKind = DEFERRED_SCOPE_KINDS.get(row.source_local_id);
+  if (expectedKind === undefined) fail(`${name} row ${index} has an unknown deferred source-local identity`);
+  if (row.kind !== expectedKind) fail(`${name} row ${index} has an invalid kind for its source-local identity`);
   return row;
 }
 
@@ -191,12 +216,15 @@ function validateDeferredDenominator(value) {
   if (denominator.schema !== "wikijump.compatibility_deferred_denominator.v1") {
     fail("deferred denominator has an unsupported schema");
   }
-  if (!Array.isArray(denominator.rows) || denominator.rows.length === 0) {
-    fail("deferred denominator rows must be non-empty");
+  if (!Array.isArray(denominator.rows) || denominator.rows.length !== DEFERRED_SCOPE_ROWS.length) {
+    fail(`deferred denominator must contain the frozen ${DEFERRED_SCOPE_ROWS.length}-row union`);
   }
   const rows = denominator.rows.map((row, index) => validateScopeRow(row, index, "deferred denominator"));
   if (new Set(rows.map(({source_local_id}) => source_local_id)).size !== rows.length) {
     fail("deferred denominator has duplicate source-local identities");
+  }
+  if (JSON.stringify(rows.map(scopeKey).sort()) !== JSON.stringify(DEFERRED_SCOPE_ROWS.map(([source_local_id, kind]) => `${source_local_id}\u0000${kind}`).sort())) {
+    fail("deferred denominator does not match the frozen canonical union");
   }
   return rows;
 }
@@ -247,11 +275,13 @@ async function validateDeferredLedger(filePath, expectedRows) {
   return ledger;
 }
 
-async function validateStandingMatrix(filePath, denominatorIds) {
+async function validateStandingMatrix(filePath, denominatorIds, repository) {
   const matrix = object(JSON.parse(await fs.readFile(filePath, "utf8")), "standing matrix");
   exactKeys(matrix, ["schema", "merge_commit", "rows"], "standing matrix");
   if (matrix.schema !== "wikijump.compatibility_standing_matrix.v1") fail("standing matrix has an unsupported schema");
   gitObject(matrix.merge_commit, "standing matrix merge_commit");
+  const actualHead = execFileSync("git", ["-C", path.resolve(repository), "rev-parse", "HEAD^{commit}"], {encoding: "utf8"}).trim();
+  if (actualHead !== matrix.merge_commit) fail("standing matrix merge_commit does not match the post-merge repository HEAD");
   if (!Array.isArray(matrix.rows)) fail("standing matrix rows must be an array");
   const rows = matrix.rows;
   const ids = rows.map((value, index) => {
@@ -277,7 +307,7 @@ async function validateStandingMatrix(filePath, denominatorIds) {
 
 function finalZeroCounts(denominator) {
   const rows = denominator.rows;
-  return {
+  const counts = {
     complete_product_rows_open_or_unreconciled: count((row) => row.closure !== "closed" || row.issue !== "reconciled", rows),
     duplicate_or_ambiguous_canonical_identities: denominator.duplicateIds + count((row) => row.identity !== "canonical", rows),
     missing_independent_standards_or_spec_reviews: count((row) => row.standards_review !== "pass" || row.spec_review !== "pass", rows),
@@ -290,11 +320,13 @@ function finalZeroCounts(denominator) {
     unrepresented_charter_requirements: count((row) => row.charter !== "represented", rows) + count((requirement) => requirement.status !== "represented", denominator.charterRequirements),
     unresolved_wikidot_evidence_requirements: count((row) => row.evidence !== "resolved", rows),
   };
+  exactKeys(counts, FINAL_ZERO_CLASSES, "final-zero counts");
+  return counts;
 }
 
 export function parseArgs(argv) {
   const args = {};
-  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "output"]);
+  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "repository", "output"]);
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
     if (flag === "--help" || flag === "-h") return {help: true};
@@ -308,15 +340,15 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --repository DIR --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix}) {
+export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, repository}) {
   const denominatorValue = validateDenominator(JSON.parse(await fs.readFile(denominator, "utf8")));
   await validateLedger(ledger, denominatorValue);
   const deferredDenominatorRows = validateDeferredDenominator(JSON.parse(await fs.readFile(deferredDenominator, "utf8")));
   await validateDeferredLedger(deferredLedger, deferredDenominatorRows);
-  const matrix = await validateStandingMatrix(standingMatrix, denominatorValue.ids);
+  const matrix = await validateStandingMatrix(standingMatrix, denominatorValue.ids, repository);
   const counts = finalZeroCounts(denominatorValue);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
@@ -352,6 +384,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     deferredDenominator: args["deferred-denominator"],
     deferredLedger: args["deferred-ledger"],
     standingMatrix: args["standing-matrix"],
+    repository: args.repository,
   });
   const sealed = await sealJsonNoReplace(args.output, receipt);
   stdout(JSON.stringify({schema: receipt.schema, status: receipt.status, output: sealed.path, sha256: sealed.sha256}));

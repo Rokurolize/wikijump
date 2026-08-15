@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,6 +13,40 @@ SPEC = importlib.util.spec_from_file_location("standing_prepare", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 PREPARE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(PREPARE)
+
+
+def candidate_proof(root: Path, identity: dict[str, str]) -> dict[str, object]:
+    identity_path = root / "candidate-identity.json"
+    identity_path.write_text(
+        json.dumps({
+            "schema": "wikijump.standing_candidate_parity_identity.v1",
+            "status": "sealed",
+            "candidate": {
+                "run_id": "candidate-test-01",
+                "wikijump_commit": identity["wikijump_sha"],
+                "wikijump_tree": identity["wikijump_tree"],
+                "ftml_sha": identity["ftml_sha"],
+            },
+        }),
+        encoding="utf-8",
+    )
+    identity_sha = hashlib.sha256(identity_path.read_bytes()).hexdigest()
+    proof_path = root / "activation-receipt.json"
+    proof_path.write_text(
+        json.dumps({
+            "schema": "wikijump.merge_build_candidate_activation.v1",
+            "status": "pass",
+            "run_id": "candidate-test-01",
+            "candidate_identity": {"path": str(identity_path), "sha256": identity_sha},
+        }),
+        encoding="utf-8",
+    )
+    return {
+        "path": str(proof_path),
+        "sha256": hashlib.sha256(proof_path.read_bytes()).hexdigest(),
+        "run_id": "candidate-test-01",
+        "candidate_identity": {"path": str(identity_path), "sha256": identity_sha},
+    }
 
 
 class PrepareStandingImagesTest(unittest.TestCase):
@@ -52,11 +87,13 @@ class PrepareStandingImagesTest(unittest.TestCase):
                     "id": "sha256:" + "e" * 64,
                     "profile": PREPARE.BUILD_PROFILES[service],
                 }
+            proof = candidate_proof(root, identity)
             receipt = {
                 "schema_version": 1,
                 "kind": "standing-image-preparation",
                 "status": "pass",
                 **identity,
+                "candidate_proof": proof,
                 "dockerfiles": dockerfiles,
                 "images": images,
             }
@@ -83,12 +120,14 @@ class PrepareStandingImagesTest(unittest.TestCase):
                     "id": "sha256:" + "e" * 64,
                     "profile": PREPARE.BUILD_PROFILES[service],
                 }
+            proof = candidate_proof(root, identity)
             images["deepwell"]["reference"] += ":latest"
             receipt = {
                 "schema_version": 1,
                 "kind": "standing-image-preparation",
                 "status": "pass",
                 **identity,
+                "candidate_proof": proof,
                 "dockerfiles": dockerfiles,
                 "images": images,
             }

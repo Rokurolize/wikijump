@@ -11,7 +11,9 @@
 // exit_code 0 or (for V3) zero regressions / (for V1-V2) meets its own gate.
 // Exit codes: 0 merge-ready, 1 blockers present, 2 structural failure.
 
+import crypto from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 
 import {runCliIfMain} from '../src/cli-entry.mjs';
 import {sealJsonNoReplace} from '../src/standing-browser-parity-util.mjs';
@@ -25,6 +27,10 @@ export function parseArgs(argv) {
     deviationLog: null,
     validators: [],
     runId: null,
+    frozenCandidateCommit: null,
+    prHead: null,
+    allowedStatus: null,
+    candidateReviewFreeze: null,
   };
   const seen = new Set();
   for (let i = 0; i < argv.length; i += 1) {
@@ -34,14 +40,18 @@ export function parseArgs(argv) {
       if (!value || value.startsWith('--')) throw new Error(`${arg} requires a value`);
       return value;
     };
-    if (arg === '--output' || arg === '--branch' || arg === '--deviation-log' || arg === '--run-id') {
+    if (arg === '--output' || arg === '--branch' || arg === '--deviation-log' || arg === '--run-id' || arg === '--frozen-candidate-commit' || arg === '--pr-head' || arg === '--allowed-status' || arg === '--candidate-review-freeze') {
       if (seen.has(arg)) throw new Error(`${arg} may be supplied only once`);
       seen.add(arg);
       const value = next();
       if (arg === '--output') args.output = value;
       else if (arg === '--branch') args.branch = value;
       else if (arg === '--deviation-log') args.deviationLog = value;
-      else args.runId = value;
+      else if (arg === '--run-id') args.runId = value;
+      else if (arg === '--frozen-candidate-commit') args.frozenCandidateCommit = value;
+      else if (arg === '--pr-head') args.prHead = value;
+      else if (arg === '--allowed-status') args.allowedStatus = value;
+      else args.candidateReviewFreeze = value;
     }
     else if (arg === '--validator') {
       const value = next();
@@ -57,22 +67,66 @@ export function parseArgs(argv) {
   }
   if (!args.output) throw new Error('--output is required');
   if (!args.runId) throw new Error('--run-id is required');
+  for (const [name, value] of [["--frozen-candidate-commit", args.frozenCandidateCommit], ["--pr-head", args.prHead]]) {
+    if (!/^[0-9a-f]{40}$/u.test(value ?? "") || /^(.)\1+$/u.test(value)) throw new Error(`${name} must be a real full Git commit`);
+  }
+  if (!args.allowedStatus) throw new Error('--allowed-status is required');
+  if (!args.candidateReviewFreeze) throw new Error('--candidate-review-freeze is required');
   if (args.validators.length === 0) throw new Error('at least one --validator is required');
   return args;
 }
 
 // Derive an effective exit code from a verdict file's own aggregate.
 export function verdictExitCode(verdict) {
-  if (typeof verdict.exit_code === 'number') return verdict.exit_code;
-  const aggregate = verdict.aggregate ?? {};
-  if (typeof aggregate.unclassified === 'number' && aggregate.unclassified > 0) return 2;
-  if (Array.isArray(aggregate.regressions)) return aggregate.regressions.length > 0 ? 1 : 0;
-  if (typeof aggregate.fail === 'number') return aggregate.fail > 0 ? 1 : 0;
-  return 0;
+  if (Object.hasOwn(verdict ?? {}, 'exit_code')) {
+    return Number.isInteger(verdict.exit_code) && verdict.exit_code >= 0 ? verdict.exit_code : 2;
+  }
+  const aggregate = verdict?.aggregate;
+  if (aggregate !== null && typeof aggregate === 'object' && !Array.isArray(aggregate)) {
+    if (Object.hasOwn(aggregate, 'unclassified') && (!Number.isInteger(aggregate.unclassified) || aggregate.unclassified < 0)) return 2;
+    if (Object.hasOwn(aggregate, 'regressions') && !Array.isArray(aggregate.regressions)) return 2;
+    if (Object.hasOwn(aggregate, 'fail') && (!Number.isInteger(aggregate.fail) || aggregate.fail < 0)) return 2;
+    if (Number.isInteger(aggregate.unclassified) || Array.isArray(aggregate.regressions) || Number.isInteger(aggregate.fail)) {
+      if (aggregate.unclassified > 0) return 2;
+      return (aggregate.regressions?.length ?? 0) > 0 || aggregate.fail > 0 ? 1 : 0;
+    }
+  }
+  return 2;
+}
+
+function inputReference(file) {
+  const absolute = path.resolve(file);
+  const bytes = fs.readFileSync(absolute);
+  return {path: absolute, sha256: crypto.createHash('sha256').update(bytes).digest('hex')};
+}
+
+function readAllowedStatus(file, prHead) {
+  const reference = inputReference(file);
+  const value = JSON.parse(fs.readFileSync(reference.path, 'utf8'));
+  if (value?.schemaVersion !== 1 || value?.state !== 'OPEN' || value?.mergeable !== 'MERGEABLE' || value?.mergeStateStatus !== 'CLEAN' || value?.overall !== 'passing' || value?.subject?.headSha !== prHead) {
+    throw new Error('allowed status is missing, stale, or not mergeable for the PR head');
+  }
+  return {...reference, head_sha: value.subject.headSha, status: value.overall};
+}
+
+function readCandidateReviewFreeze(file, frozenCandidateCommit) {
+  const reference = inputReference(file);
+  const value = JSON.parse(fs.readFileSync(reference.path, 'utf8'));
+  const candidate = value?.candidate;
+  if (value?.schema !== 'wikijump.standing_candidate_parity_identity.v1' || value?.status !== 'sealed' || typeof candidate?.run_id !== 'string' || candidate.run_id === '' || candidate.wikijump_commit !== frozenCandidateCommit || !/^[0-9a-f]{40}$/u.test(candidate.wikijump_tree ?? '') || /^(.)\1+$/u.test(candidate.wikijump_tree)) {
+    throw new Error('candidate review freeze is missing or does not bind the frozen candidate');
+  }
+  return {...reference, run_id: candidate.run_id, candidate_commit: candidate.wikijump_commit, candidate_tree: candidate.wikijump_tree};
+}
+
+function validatorInput(file) {
+  const absolute = path.resolve(file);
+  const bytes = fs.readFileSync(absolute);
+  return {path: absolute, sha256: crypto.createHash('sha256').update(bytes).digest('hex')};
 }
 
 export function usage() {
-  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <id> --validator name=verdict.json [--validator name=verdict.json ...] [--branch name] [--deviation-log <jsonl>]';
+  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <id> --frozen-candidate-commit <commit> --pr-head <commit> --allowed-status <status.json> --candidate-review-freeze <identity.json> --validator name=verdict.json [--validator name=verdict.json ...] [--branch name] [--deviation-log <jsonl>]';
 }
 
 export async function main(argv) {
@@ -81,9 +135,11 @@ export async function main(argv) {
     console.log(usage());
     return 0;
   }
+  const allowedStatus = readAllowedStatus(args.allowedStatus, args.prHead);
+  const candidateReviewFreeze = readCandidateReviewFreeze(args.candidateReviewFreeze, args.frozenCandidateCommit);
   const validators = args.validators.map(({ name, file }) => {
     const verdict = JSON.parse(fs.readFileSync(file, 'utf8'));
-    return { name, exitCode: verdictExitCode(verdict) };
+    return {name, exitCode: verdictExitCode(verdict), ...validatorInput(file)};
   });
   const parsed = args.deviationLog
     ? parseDeviationLog(fs.readFileSync(args.deviationLog, 'utf8'))
@@ -94,6 +150,10 @@ export async function main(argv) {
     validators,
     deviations: parsed.entries,
     logErrors: parsed.errors,
+    frozenCandidateCommit: args.frozenCandidateCommit,
+    prHead: args.prHead,
+    allowedStatus,
+    candidateReviewFreeze,
   });
   await sealJsonNoReplace(args.output, report);
   console.log(JSON.stringify(report, null, 2));

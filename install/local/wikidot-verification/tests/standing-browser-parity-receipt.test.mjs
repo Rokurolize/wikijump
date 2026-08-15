@@ -10,9 +10,8 @@ import {
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "../src/standing-browser-execution-identity.mjs";
 
-const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
-const hash = (character) => mixedHex(character, 64);
-const git = (character) => mixedHex(character, 40);
+const hash = (character) => sha256Value(character);
+const git = (character) => hash(character).slice(0, 40);
 
 function identity() {
   const endpoint = {

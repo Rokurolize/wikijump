@@ -47,6 +47,7 @@ test('freeze CLI exposes deterministic argument validation', () => {
     output: '/tmp/snapshot.json',
     branches: ['en'],
     repositories: ['wikijump=/tmp/wikijump#develop'],
+    files: [],
     hashWorkers: 2,
   });
   assert.deepEqual(parseFreezeArgs(['--help']), { help: true });
@@ -265,4 +266,32 @@ test('freeze CLI hashes canonical files with a worker pool', () => {
     '--output', output,
     '--hash-workers', '2',
   ], {stdio: 'pipe'}), /freeze output already exists/u);
+});
+
+test('freeze CLI records repository trees and explicit source file identities', () => {
+  const root = fixtureCorpus();
+  const source = path.join(root, 'dependency.lock');
+  write(source, 'locked\n');
+  const output = path.join(root, 'source-freeze.json');
+  execFileSync(process.execPath, [
+    FREEZE_SCRIPT,
+    '--corpus-root', root,
+    '--output', output,
+    '--file', `dependency-lock=${source}`,
+  ]);
+  const snapshot = JSON.parse(fs.readFileSync(output, 'utf8'));
+  assert.equal(snapshot.source_files.length, 1);
+  assert.deepEqual(snapshot.source_files[0], {
+    name: 'dependency-lock',
+    path: source,
+    bytes: 7,
+    sha256: '3a52732e0c98263090a2cd2509e7d2244d7194bd65f78b29e6ef6448e8143666',
+  });
+  assert.throws(() => execFileSync(process.execPath, [
+    FREEZE_SCRIPT,
+    '--corpus-root', root,
+    '--output', path.join(root, 'duplicate.json'),
+    '--file', `dependency-lock=${source}`,
+    '--file', `dependency-lock=${source}`,
+  ], {stdio: 'pipe'}), /duplicate --file name/u);
 });

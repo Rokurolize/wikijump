@@ -70,3 +70,21 @@ test('rejected deviations and invalid log lines block', () => {
   assert.ok(report.blockers.some((b) => b.kind === 'deviation-rejected'));
   assert.ok(report.blockers.some((b) => b.kind === 'deviation-log-invalid'));
 });
+
+test('merge readiness binds the frozen candidate to the reviewed PR head', () => {
+  const report = buildMergeReadiness({
+    runId: 'r',
+    branch: 'b',
+    frozenCandidateCommit: '0123456789abcdef0123456789abcdef01234567',
+    prHead: 'fedcba9876543210fedcba9876543210fedcba98',
+    validators: [{name: 'v1', exitCode: 0}],
+    deviations: [],
+  });
+  assert.equal(report.merge_ready, false);
+  assert.ok(report.blockers.some((blocker) => blocker.kind === 'candidate-pr-head-mismatch'));
+  assert.deepEqual(report.candidate_pr_binding, {
+    frozen_candidate_commit: '0123456789abcdef0123456789abcdef01234567',
+    pr_head: 'fedcba9876543210fedcba9876543210fedcba98',
+    matched: false,
+  });
+});

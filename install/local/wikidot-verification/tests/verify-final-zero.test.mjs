@@ -1,26 +1,19 @@
 import assert from "node:assert/strict";
+import {execFileSync} from "node:child_process";
 import {createHash} from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import {parseArgs, verifyFinalZero} from "../scripts/verify-final-zero.mjs";
+import {DEFERRED_SCOPE_ROWS, parseArgs, verifyFinalZero} from "../scripts/verify-final-zero.mjs";
 
 const surfaceId = "surface:00000001";
-const mergeCommit = "0123456789abcdef0123456789abcdef01234567";
+const repository = path.resolve(new URL("../../../..", import.meta.url).pathname);
+const mergeCommit = execFileSync("git", ["-C", repository, "rev-parse", "HEAD^{commit}"], {encoding: "utf8"}).trim();
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const currentSourceId = "catalog-feature:phase-4-6";
-const deferredRows = [
-  {
-    source_local_id: "wikidot-py-amc-module:edit/EditMetaModule:parameters=pageId",
-    kind: "wikidot_py_amc_module_shape",
-  },
-  {
-    source_local_id: "framerail-xmlrpc:pages.get_one",
-    kind: "framerail_xmlrpc_method",
-  },
-];
+const deferredRows = DEFERRED_SCOPE_ROWS.map(([source_local_id, kind]) => ({source_local_id, kind}));
 
 function denominator() {
   return {
@@ -80,7 +73,7 @@ async function fixtures() {
       artifacts: [{path: artifact, sha256: sha256("standing proof\n")}],
     }],
   }));
-  return {root, ledgerPath, denominatorPath, deferredDenominatorPath, deferredLedgerPath, matrixPath};
+  return {root, repository, ledgerPath, denominatorPath, deferredDenominatorPath, deferredLedgerPath, matrixPath};
 }
 
 test("final-zero CLI requires the exact direct input set", () => {
@@ -90,6 +83,7 @@ test("final-zero CLI requires the exact direct input set", () => {
     "--deferred-denominator", "deferred-denominator.json",
     "--deferred-ledger", "deferred-ledger.json",
     "--standing-matrix", "standing.json",
+    "--repository", repository,
     "--output", "receipt.json",
   ]), {
     ledger: path.resolve("ledger.json"),
@@ -97,6 +91,7 @@ test("final-zero CLI requires the exact direct input set", () => {
     "deferred-denominator": path.resolve("deferred-denominator.json"),
     "deferred-ledger": path.resolve("deferred-ledger.json"),
     "standing-matrix": path.resolve("standing.json"),
+    repository,
     output: path.resolve("receipt.json"),
   });
   assert.throws(() => parseArgs(["--ledger", "a", "--ledger", "b"]), /duplicate/u);
@@ -111,6 +106,7 @@ test("final-zero verification independently reconciles the ledger and standing m
     deferredDenominator: inputs.deferredDenominatorPath,
     deferredLedger: inputs.deferredLedgerPath,
     standingMatrix: inputs.matrixPath,
+    repository: inputs.repository,
   });
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.merge_commit, mergeCommit);
@@ -131,6 +127,7 @@ test("final-zero verification independently reconciles the ledger and standing m
       deferredDenominator: inputs.deferredDenominatorPath,
       deferredLedger: inputs.deferredLedgerPath,
       standingMatrix: inputs.matrixPath,
+      repository: inputs.repository,
     }),
     /mismatched SHA-256/u,
   );
@@ -147,6 +144,7 @@ test("final-zero verification independently reconciles the ledger and standing m
       deferredDenominator: inputs.deferredDenominatorPath,
       deferredLedger: inputs.deferredLedgerPath,
       standingMatrix: inputs.matrixPath,
+      repository: inputs.repository,
     }),
     /missing_or_failing_candidate_proofs=1/u,
   );
@@ -170,6 +168,7 @@ test("final-zero scope admission rejects deferred rows in the current ledger", a
         deferredDenominator: inputs.deferredDenominatorPath,
         deferredLedger: inputs.deferredLedgerPath,
         standingMatrix: inputs.matrixPath,
+        repository: inputs.repository,
       }),
       /current compatibility ledger contains deferred scope row/u,
     );
@@ -186,6 +185,7 @@ test("final-zero scope admission rejects deferred rows in the current ledger", a
       deferredDenominator: inputs.deferredDenominatorPath,
       deferredLedger: inputs.deferredLedgerPath,
       standingMatrix: inputs.matrixPath,
+      repository: inputs.repository,
     }),
     /source-local identities and kinds differ from the current denominator/u,
   );
@@ -193,12 +193,14 @@ test("final-zero scope admission rejects deferred rows in the current ledger", a
 
 test("final-zero scope admission requires the deferred ledger exact union", async () => {
   const inputs = await fixtures();
+  assert.equal(deferredRows.length, 39);
   const verify = () => verifyFinalZero({
     ledger: inputs.ledgerPath,
     denominator: inputs.denominatorPath,
     deferredDenominator: inputs.deferredDenominatorPath,
     deferredLedger: inputs.deferredLedgerPath,
     standingMatrix: inputs.matrixPath,
+    repository: inputs.repository,
   });
   const deferred = JSON.parse(await fs.readFile(inputs.deferredLedgerPath, "utf8"));
 
@@ -211,14 +213,40 @@ test("final-zero scope admission requires the deferred ledger exact union", asyn
   await assert.rejects(verify(), /duplicate source-local identities/u);
 
   deferred.rows = structuredClone(deferredRows);
-  deferred.rows[0].kind = "framerail_xmlrpc_method";
+  deferred.rows[17].kind = "framerail_xmlrpc_method";
   await fs.writeFile(inputs.deferredLedgerPath, JSON.stringify(deferred));
   await assert.rejects(verify(), /invalid kind for its source-local identity/u);
 
   deferred.rows = [...deferredRows, {
-    source_local_id: "wikidot-py-amc-module:unknown",
+    source_local_id: "wikidot-py-amc-module:fake-matching-prefix",
     kind: "wikidot_py_amc_module_shape",
   }];
   await fs.writeFile(inputs.deferredLedgerPath, JSON.stringify(deferred));
-  await assert.rejects(verify(), /does not exactly own the deferred denominator/u);
+  await assert.rejects(verify(), /unknown deferred source-local identity/u);
+
+  const deferredDenominator = JSON.parse(await fs.readFile(inputs.deferredDenominatorPath, "utf8"));
+  deferredDenominator.rows[0] = {
+    source_local_id: "framerail-xmlrpc:fake-matching-prefix",
+    kind: "framerail_xmlrpc_method",
+  };
+  await fs.writeFile(inputs.deferredDenominatorPath, JSON.stringify(deferredDenominator));
+  await assert.rejects(verify(), /unknown deferred source-local identity/u);
+});
+
+test("final-zero rejects a merge commit that is not the repository HEAD", async () => {
+  const inputs = await fixtures();
+  const matrix = JSON.parse(await fs.readFile(inputs.matrixPath, "utf8"));
+  matrix.merge_commit = "0123456789abcdef0123456789abcdef01234567";
+  await fs.writeFile(inputs.matrixPath, JSON.stringify(matrix));
+  await assert.rejects(
+    verifyFinalZero({
+      ledger: inputs.ledgerPath,
+      denominator: inputs.denominatorPath,
+      deferredDenominator: inputs.deferredDenominatorPath,
+      deferredLedger: inputs.deferredLedgerPath,
+      standingMatrix: inputs.matrixPath,
+      repository: inputs.repository,
+    }),
+    /post-merge repository HEAD/u,
+  );
 });

@@ -19,6 +19,7 @@ BUILD_PROFILES = {"deepwell": "release", "framerail": "built", "wws": "release"}
 FTML_SOURCE = re.compile(
     r'source = "git\+https://github\.com/Rokurolize/ftml[^\"]*#([0-9a-f]{40})"'
 )
+HEX40 = re.compile(r"^[0-9a-f]{40}$")
 
 
 def command(*args: str, cwd: Path, capture: bool = True) -> str:
@@ -30,6 +31,34 @@ def command(*args: str, cwd: Path, capture: bool = True) -> str:
 
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def validate_candidate_proof(path: Path, identity: dict[str, str]) -> dict[str, object]:
+    path = path.resolve()
+    proof = json.loads(path.read_text(encoding="utf-8"))
+    if proof.get("schema") != "wikijump.merge_build_candidate_activation.v1" or proof.get("status") != "pass":
+        raise ValueError("candidate proof is not a successful activation receipt")
+    run_id = proof.get("run_id")
+    reference = proof.get("candidate_identity")
+    if not isinstance(run_id, str) or not run_id or not isinstance(reference, dict):
+        raise ValueError("candidate proof has no candidate identity")
+    candidate_path = Path(reference.get("path", "")).resolve()
+    if reference != {"path": str(candidate_path), "sha256": reference.get("sha256")}:
+        raise ValueError("candidate proof identity path is not absolute")
+    if not isinstance(reference.get("sha256"), str) or file_sha256(candidate_path) != reference["sha256"]:
+        raise ValueError("candidate proof identity digest is stale")
+    candidate_identity = json.loads(candidate_path.read_text(encoding="utf-8"))
+    candidate = candidate_identity.get("candidate")
+    if candidate_identity.get("schema") != "wikijump.standing_candidate_parity_identity.v1" or candidate_identity.get("status") != "sealed" or not isinstance(candidate, dict):
+        raise ValueError("candidate identity is not sealed")
+    if candidate.get("run_id") != run_id:
+        raise ValueError("candidate proof run ID does not match candidate identity")
+    for candidate_key, identity_key in (("wikijump_commit", "wikijump_sha"), ("ftml_sha", "ftml_sha")):
+        if candidate.get(candidate_key) != identity[identity_key] or not isinstance(candidate.get(candidate_key), str) or not HEX40.fullmatch(candidate[candidate_key]):
+            raise ValueError(f"candidate proof {candidate_key} does not match the source checkout")
+    if candidate.get("wikijump_tree") != identity["wikijump_tree"] or not HEX40.fullmatch(str(candidate.get("wikijump_tree"))):
+        raise ValueError("candidate proof wikijump tree does not match the source checkout")
+    return {"path": str(path), "sha256": file_sha256(path), "run_id": run_id, "candidate_identity": reference}
 
 
 def repository_identity(source_root: Path) -> dict[str, str]:
@@ -106,6 +135,11 @@ def validate_prepared_receipt(
         raise ValueError("prepared receipt is not a standing image preparation receipt")
     if receipt.get("status") != "pass":
         raise ValueError("prepared receipt is not successful")
+    proof = receipt.get("candidate_proof")
+    if not isinstance(proof, dict):
+        raise ValueError("prepared receipt has no candidate proof")
+    if validate_candidate_proof(Path(proof.get("path", "")), identity) != proof:
+        raise ValueError("prepared receipt candidate proof is stale")
     for key in ("wikijump_sha", "wikijump_tree", "ftml_sha", "dependency_lock_sha256"):
         if receipt.get(key) != identity[key]:
             raise ValueError(f"prepared receipt {key} does not match the source checkout")
@@ -149,6 +183,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, default=Path(__file__).resolve().parents[2])
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--candidate-proof", type=Path, required=True)
     parser.add_argument("--expiry-days", type=int, default=30)
     return parser.parse_args()
 
@@ -163,6 +198,7 @@ def main() -> int:
     started_monotonic = time.monotonic()
     expiry = (started_at + timedelta(days=args.expiry_days)).isoformat()
     identity = repository_identity(source_root)
+    candidate_proof = validate_candidate_proof(args.candidate_proof, identity)
     images: dict[str, dict[str, object]] = {}
     for service in SERVICES:
         reference = image_reference(identity["wikijump_sha"], service)
@@ -187,6 +223,7 @@ def main() -> int:
         "completed_at": datetime.now(UTC).isoformat(),
         "duration_seconds": time.monotonic() - started_monotonic,
         **identity,
+        "candidate_proof": candidate_proof,
         "build_profiles": BUILD_PROFILES,
         "feature_set": {"deepwell": "default", "framerail": "FRAMERAIL_ENV=local", "wws": "default"},
         "rust_toolchain": (source_root / "rust-toolchain.toml").read_text(encoding="utf-8").strip(),

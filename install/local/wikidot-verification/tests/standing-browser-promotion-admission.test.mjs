@@ -55,9 +55,8 @@ test("standing admission CLI binds all evidence paths before sealing", async () 
 });
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
-const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
-const git = (character) => mixedHex(character, 40);
-const image = (character) => `sha256:${mixedHex(character, 64)}`;
+const git = (character) => hash(character).slice(0, 40);
+const image = (character) => `sha256:${hash(character)}`;
 const viewport = { width: 1366, height: 900 };
 const PROMOTION_ROLES = Object.freeze([
   "cache",
