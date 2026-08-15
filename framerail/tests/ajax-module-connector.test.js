@@ -1254,13 +1254,10 @@ test("deletePage fails closed for invalid controls and Deepwell failures", async
   }
   assert.equal(calls, 0)
 
-  const missingDependency = await handleAjaxModuleConnectorRequest(
-    request(canonical),
-    {
-      siteId: 6000006,
-      renderListPages: async () => assert.fail("must not render ListPages")
-    }
-  )
+  const missingDependency = await handleAjaxModuleConnectorRequest(request(canonical), {
+    siteId: 6000006,
+    renderListPages: async () => assert.fail("must not render ListPages")
+  })
   assert.equal((await missingDependency.json()).status, "not_ok")
 
   const originalConsoleError = console.error

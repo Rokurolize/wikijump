@@ -7,10 +7,7 @@ export const isGoogleAnalyticsProfile = (value) =>
 
 export const normalizeGoogleAnalyticsSettings = (settings) => ({
   enabled: settings?.enabled === true,
-  profile:
-    isGoogleAnalyticsProfile(settings?.profile)
-      ? settings.profile
-      : null
+  profile: isGoogleAnalyticsProfile(settings?.profile) ? settings.profile : null
 })
 
 export const googleAnalyticsQueueScript = (settings) => {

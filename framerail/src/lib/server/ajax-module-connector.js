@@ -211,7 +211,10 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     name: string
  *     allPages: boolean
  *   }) => Promise<void>
- *   deletePage?: (input: { siteId: number; pageId: number }) => Promise<void>
+ *   deletePage?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *   }) => Promise<void>
  * }} AjaxModuleConnectorOptions
  */
 
@@ -1078,7 +1081,9 @@ export const handleAjaxModuleConnectorRequest = async (
       return jsonResponse({
         status: "no_page",
         message: "The page does not exist",
-        callbackIndex: fields.has("callbackIndex") ? fieldValue(fields, "callbackIndex") : null,
+        callbackIndex: fields.has("callbackIndex")
+          ? fieldValue(fields, "callbackIndex")
+          : null,
         CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
       })
     }
