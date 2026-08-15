@@ -58,6 +58,13 @@ test("candidate case registry exposes the executable issue 1029 Join adapter", a
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 
+test("candidate case registry exposes the executable issue 1041 lifecycle adapter", async () => {
+  const caseSet = await candidateCaseSet("open43-issue1041-action-lifecycle");
+  assert.equal(caseSet.id, "open43-issue1041-action-lifecycle");
+  assert.deepEqual(caseSet.caseIds, ["A1041_EXACT_BROWSER_LIFECYCLE"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case registry exposes all issue #1372 temporal intervals from its existing contract", async () => {
   const caseSet = await candidateCaseSet("framerail-route-action-browser");
   assert.equal(caseSet.id, "framerail-route-action-browser");
@@ -280,7 +287,7 @@ test("issue #1372 candidate seam verifyCleanup requires the public absence proof
 test("candidate case registry exposes the real #1026 user identity adapter", async () => {
   const caseSet = await candidateCaseSet("open43-q1026-user-identity");
   assert.equal(caseSet.id, "open43-q1026-user-identity");
-  assert.deepEqual(caseSet.caseIds, ["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY"]);
+  assert.deepEqual(caseSet.caseIds, ["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY", "Q1026_BROWSER_PRINTUSER_INTERVALS"]);
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 

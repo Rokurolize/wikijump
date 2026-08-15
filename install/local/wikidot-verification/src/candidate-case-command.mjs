@@ -11,6 +11,7 @@ import {
   OPEN43_SETTINGS_THEME_CASE_IDS,
   OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
 } from "./open43-settings-browser-candidate-contract.mjs";
+import { OPEN43_SETTINGS_LIFECYCLE_CASE_IDS } from "./open43-settings-lifecycle-candidate-contract.mjs";
 import {
   canonicalJson,
   readJsonObject,
@@ -93,6 +94,7 @@ export const CANDIDATE_CASE_SETS = Object.freeze({
   "open43-settings-theme": entry(OPEN43_SETTINGS_THEME_CASE_IDS, () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "theme"}))),
   "open43-settings-toolbar": entry(OPEN43_SETTINGS_TOOLBAR_CASE_IDS, () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "toolbar"}))),
   "open43-settings-admin": entry(["S1046_ADMIN_INITIAL", "S1046_ADMIN_SETTLED", "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX"], () => import("./open43-settings-browser-candidate-case-set.mjs").then(({ createOpen43SettingsGroupCandidateCaseSet }) => createOpen43SettingsGroupCandidateCaseSet({"group": "admin"}))),
+  "open43-settings-lifecycle": entry(OPEN43_SETTINGS_LIFECYCLE_CASE_IDS, () => import("./open43-settings-lifecycle-candidate-case-set.mjs").then(({ createOpen43SettingsLifecycleCandidateCaseSet }) => createOpen43SettingsLifecycleCandidateCaseSet())),
   "open43-settings-page-tags": entry(["B822_PAGE_TAGS_INITIAL", "B822_PAGE_TAGS_SETTLED"], () => import("./open43-page-tags-browser-candidate-case-set.mjs").then(({ createOpen43PageTagsBrowserCandidateCaseSet }) => createOpen43PageTagsBrowserCandidateCaseSet())),
   "open43-mailform-fail-closed": entry(["A1037_MAILFORM_FAIL_CLOSED_SERVED"], () => import("./open43-mailform-candidate-case-set.mjs").then(({ createOpen43MailformCandidateCaseSet }) => createOpen43MailformCandidateCaseSet())),
   "open43-simpletodo-read-only": entry(["A1037_SIMPLETODO_READ_ONLY_SERVED"], () => import("./open43-simpletodo-candidate-case-set.mjs").then(({ createOpen43SimpletodoCandidateCaseSet }) => createOpen43SimpletodoCandidateCaseSet())),
@@ -100,6 +102,7 @@ export const CANDIDATE_CASE_SETS = Object.freeze({
   "open43-issue775-edit": entry(["A775_ACTOR_NAVIGATION_BROWSER"], () => import("./open43-issue775-edit-candidate-case-set.mjs").then(({ createOpen43Issue775EditCandidateCaseSet }) => createOpen43Issue775EditCandidateCaseSet())),
   "open43-issue777-print": entry(["A777_BROWSER_PRINT_LIFECYCLE"], () => import("./open43-issue777-print-candidate-case-set.mjs").then(({ createOpen43Issue777PrintCandidateCaseSet }) => createOpen43Issue777PrintCandidateCaseSet())),
   "open43-issue1029-join": entry(["A1029_EXACT_BROWSER_TRANSITIONS"], () => import("./open43-issue1029-join-candidate-case-set.mjs").then(({ createOpen43Issue1029JoinCandidateCaseSet }) => createOpen43Issue1029JoinCandidateCaseSet())),
+  "open43-issue1041-action-lifecycle": entry(["A1041_EXACT_BROWSER_LIFECYCLE"], () => import("./open43-issue1041-lifecycle-candidate-case-set.mjs").then(({ createOpen43Issue1041LifecycleCandidateCaseSet }) => createOpen43Issue1041LifecycleCandidateCaseSet())),
   "open43-searchall": entry(["Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER"], () => import("./open43-q807-searchall-candidate-case-set.mjs").then(({ createOpen43Q807SearchAllCandidateCaseSet }) => createOpen43Q807SearchAllCandidateCaseSet())),
   "open43-q748-topbar-search": entry(["Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT", "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION"], () => import("./open43-q748-topbar-search-candidate-case-set.mjs").then(({ createOpen43Q748TopBarSearchCandidateCaseSet }) => createOpen43Q748TopBarSearchCandidateCaseSet())),
   "open43-a1038-admin-boundary": entry(["A1038_AUTHENTICATED_NON_ADMIN_DENIAL"], () => import("./open43-a1038-admin-boundary-candidate-case-set.mjs").then(({ createOpen43A1038AdminBoundaryCandidateCaseSet }) => createOpen43A1038AdminBoundaryCandidateCaseSet())),
@@ -107,7 +110,7 @@ export const CANDIDATE_CASE_SETS = Object.freeze({
   "open43-q1034-forum": entry(["Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS", "Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX", "Q1034_EXACT_CANDIDATE_RECENTTHREADS"], () => import("./open43-q1034-forum-candidate-case-set.mjs").then(({ createOpen43Q1034ForumCandidateCaseSet }) => createOpen43Q1034ForumCandidateCaseSet())),
   "open43-q1035-sitechanges": entry(["Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT", "Q1035_SITECHANGES_PERMISSION_BEFORE_LIMIT", "Q1035_SITECHANGES_FILTER_AND_AJAX_PAGER", "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX"], () => import("./open43-q1035-sitechanges-candidate-case-set.mjs").then(({ createOpen43Q1035SiteChangesCandidateCaseSet }) => createOpen43Q1035SiteChangesCandidateCaseSet())),
   "open43-q809": entry(["Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE", "Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE"], () => import("./open43-q809-candidate-case-set.mjs").then(({ createOpen43Q809CandidateCaseSet }) => createOpen43Q809CandidateCaseSet())),
-  "open43-q1026-user-identity": entry(["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY"], () => import("./open43-q1026-user-identity-candidate-case-set.mjs").then(({ createOpen43Q1026UserIdentityCandidateCaseSet }) => createOpen43Q1026UserIdentityCandidateCaseSet())),
+  "open43-q1026-user-identity": entry(["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY", "Q1026_BROWSER_PRINTUSER_INTERVALS"], () => import("./open43-q1026-user-identity-candidate-case-set.mjs").then(({ createOpen43Q1026UserIdentityCandidateCaseSet }) => createOpen43Q1026UserIdentityCandidateCaseSet())),
   "open43-q1027": entry(["Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE"], () => import("./open43-q1027-candidate-case-set.mjs").then(({ createOpen43Q1027CandidateCaseSet }) => createOpen43Q1027CandidateCaseSet())),
   "open43-q1032-members-userinfo": entry(["Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX"], () => import("./open43-q1032-members-userinfo-candidate-case-set.mjs").then(({ createOpen43Q1032CandidateCaseSet }) => createOpen43Q1032CandidateCaseSet())),
   "open43-q1036-search-feed": entry(["Q1036_EXACT_CANDIDATE_PREVIEW_SAVED_BOUNDARIES"], () => import("./open43-q1036-search-feed-candidate-case-set.mjs").then(({ createOpen43Q1036CandidateCaseSet }) => createOpen43Q1036CandidateCaseSet())),

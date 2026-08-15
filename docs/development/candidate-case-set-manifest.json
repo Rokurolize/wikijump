@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.candidate_case_set_manifest.v1",
   "registry": "install/local/wikidot-verification/src/candidate-case-command.mjs#candidateCaseSet",
-  "case_set_count": 43,
-  "execution_case_set_count": 42,
+  "case_set_count": 45,
+  "execution_case_set_count": 44,
   "alias_case_set_count": 1,
   "case_sets": [
     {
@@ -192,6 +192,12 @@
       ]
     },
     {
+      "name": "open43-issue1041-action-lifecycle",
+      "case_ids": [
+        "A1041_EXACT_BROWSER_LIFECYCLE"
+      ]
+    },
+    {
       "name": "open43-issue775-edit",
       "case_ids": [
         "A775_ACTOR_NAVIGATION_BROWSER"
@@ -257,7 +263,8 @@
     {
       "name": "open43-q1026-user-identity",
       "case_ids": [
-        "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY"
+        "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
+        "Q1026_BROWSER_PRINTUSER_INTERVALS"
       ]
     },
     {
@@ -342,6 +349,13 @@
       "case_ids": [
         "S754_ANALYTICS_INITIAL",
         "S754_ANALYTICS_SETTLED"
+      ]
+    },
+    {
+      "name": "open43-settings-lifecycle",
+      "case_ids": [
+        "S758_CREATE_INITIAL",
+        "S758_CREATE_SETTLED"
       ]
     },
     {

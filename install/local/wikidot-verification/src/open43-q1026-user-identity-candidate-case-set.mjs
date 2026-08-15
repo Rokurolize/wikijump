@@ -4,9 +4,11 @@ import net from "node:net";
 import { requestCandidateCaseHttp } from "./candidate-case-http.mjs";
 import { deepwellRpcAuthorization } from "./deepwell-rpc-auth.mjs";
 import {
+  verifyOpen43Q1026PrintuserIntervalsCase,
   verifyOpen43Q1026UserIdentityCase,
   verifyOpen43Q1026UserIdentityCleanup,
 } from "./open43-q1026-user-identity-candidate-contract.mjs";
+import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import {
   requireNonEmptyString,
   requirePlainObject,
@@ -16,7 +18,13 @@ import {
 
 export const OPEN43_Q1026_USER_IDENTITY_CASE_IDS = Object.freeze([
   "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY",
+  "Q1026_BROWSER_PRINTUSER_INTERVALS",
 ]);
+
+const SITE_HOST = "scpaiueouiuiuiui.wikijump.localhost";
+const FIXTURE_ID = "Q1026_PRINTUSER_INTERVALS";
+const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
+const CAPTURE_TIMEOUT_MS = 300_000;
 
 const FIXTURE_PROVENANCE = Object.freeze({
   path: "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
@@ -173,6 +181,7 @@ export class Open43Q1026UserIdentityCandidateSession {
 
 const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
+  "install/local/wikidot-verification/src/candidate-browser-contexts.mjs",
   "install/local/wikidot-verification/src/candidate-case-command.mjs",
   "install/local/wikidot-verification/src/candidate-case-http.mjs",
   "install/local/wikidot-verification/src/candidate-case-runner.mjs",
@@ -188,14 +197,83 @@ const SOURCE_FILES = Object.freeze([
   FIXTURE_PROVENANCE.source_file,
 ]);
 
+class Open43Q1026PrintuserBrowserAdapter {
+  #browserContexts;
+  #pageOrigin;
+  #slug;
+
+  constructor({ browserContexts, pageOrigin, slug }) {
+    if (typeof browserContexts?.newCandidateContext !== "function" || typeof browserContexts?.setActiveFixture !== "function") {
+      throw new Error("#1026 browser contexts are required");
+    }
+    this.#browserContexts = browserContexts;
+    this.#pageOrigin = pageOrigin;
+    this.#slug = slug;
+  }
+
+  async capturePrintuser() {
+    await this.#browserContexts.setActiveFixture(FIXTURE_ID);
+    const owned = await this.#browserContexts.newCandidateContext({ storageState: { cookies: [], origins: [] }, viewport: DEFAULT_VIEWPORT });
+    const page = await owned.context.newPage();
+    const requestMethods = [];
+    const failedRequests = [];
+    const onRequest = (request) => requestMethods.push(request.method());
+    const onFailed = (request) => failedRequests.push({ url: request.url(), method: request.method(), failure: request.failure()?.errorText ?? null });
+    page.on("request", onRequest);
+    page.on("requestfailed", onFailed);
+    const url = new URL(`/${this.#slug}`, this.#pageOrigin).href;
+    const readState = () => page.evaluate(() => {
+      const printusers = [...document.querySelectorAll("span.printuser")];
+      const errors = [...document.querySelectorAll("span.error-inline")];
+      return {
+        printuser_count: printusers.length,
+        avatarhover_count: printusers.filter((span) => span.classList.contains("avatarhover")).length,
+        anchors: printusers.flatMap((span) => [...span.querySelectorAll("a")].map((a) => ({ href: a.getAttribute("href"), onclick: a.getAttribute("onclick") }))),
+        avatar_images: printusers.flatMap((span) => [...span.querySelectorAll("img")].map((img) => ({ class: img.getAttribute("class"), alt: img.getAttribute("alt"), style: img.getAttribute("style") }))),
+        error_count: errors.length,
+        error_em_html: errors.map((span) => span.querySelector("em")?.textContent ?? null),
+        error_texts: errors.map((span) => span.textContent ?? ""),
+        error_anchor_counts: errors.map((span) => span.querySelectorAll("a").length),
+      };
+    });
+    try {
+      const navigation = await page.goto(url, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      const initial = await readState();
+      const settled = await readState();
+      return {
+        saved_page: { slug: this.#slug, url, status: navigation?.status() ?? 0 },
+        initial,
+        settled,
+        request_methods: requestMethods,
+        failed_requests: failedRequests,
+        mutation_detected: requestMethods.some((method) => !["GET", "HEAD", "OPTIONS"].includes(method)),
+      };
+    } finally {
+      page.off("request", onRequest);
+      page.off("requestfailed", onFailed);
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+}
+
 export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory = (options) => new Open43Q1026UserIdentityCandidateSession(options) } = {}) {
   return Object.freeze({
     id: "open43-q1026-user-identity",
     caseIds: OPEN43_Q1026_USER_IDENTITY_CASE_IDS,
-    prepareRun({ privateInput, signal }) {
+    prepareRun({ candidateIdentity, privateInput, signal, candidateBrowserContexts }) {
+      const endpoint = candidateIdentity?.candidate?.endpoint;
+      if (endpoint?.host !== SITE_HOST || endpoint.port === 443 || candidateIdentity.candidate.port_443_published !== false) {
+        throw new Error(`#1026 requires exact non-standing ${SITE_HOST}`);
+      }
+      const pageOrigin = candidatePageOrigin(candidateIdentity);
       const session = sessionFactory({ privateInput, signal });
       const fixture = session.fixtureIdentity;
       const privateInputIdentity = session.privateInputIdentity;
+      const browser = new Open43Q1026PrintuserBrowserAdapter({
+        browserContexts: candidateBrowserContexts,
+        pageOrigin,
+        slug: fixture.page_slug,
+      });
       const execute = async () => {
         const page = await session.pageGet();
         if (page?.page_id !== fixture.page_id || page?.revision_id !== fixture.revision_id || page?.slug !== fixture.page_slug || page?.wikitext !== fixture.source) throw new Error("#1026 candidate saved fixture does not match the exact existing source identity");
@@ -213,12 +291,26 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
           saved_surface_sha256: sha256Value(savedBody),
           rpc_events: { methods: session.events.map(({ method }) => method), statuses: session.events.map(({ response_status }) => response_status) },
         };
-        return [{ case_id: OPEN43_Q1026_USER_IDENTITY_CASE_IDS[0], observations }];
+        const printuser = await browser.capturePrintuser();
+        return [
+          { case_id: OPEN43_Q1026_USER_IDENTITY_CASE_IDS[0], observations },
+          { case_id: OPEN43_Q1026_USER_IDENTITY_CASE_IDS[1], observations: printuser },
+        ];
+      };
+      const verifyPlan = {
+        site_id: fixture.site_id,
+        page_id: fixture.page_id,
+        revision_id: fixture.revision_id,
+        page_slug: fixture.page_slug,
+        source_sha256: fixture.source_sha256,
+        fixture: { visible_user: fixture.visible_user, deleted_user: fixture.deleted_user },
+        page_origin: pageOrigin,
       };
       return Object.freeze({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity,
+        browserCredentialPolicy: "none",
         plan: {
           schema: "wikijump.open43_q1026_user_identity_candidate_plan.v1",
           case_ids: OPEN43_Q1026_USER_IDENTITY_CASE_IDS,
@@ -227,19 +319,15 @@ export function createOpen43Q1026UserIdentityCandidateCaseSet({ sessionFactory =
           revision_id: fixture.revision_id,
           page_slug: fixture.page_slug,
           source_sha256: fixture.source_sha256,
+          page_origin: pageOrigin,
           fixture: { provenance: fixture.provenance, visible_user: fixture.visible_user, deleted_user: fixture.deleted_user },
-          candidate_observation_scope: "anonymous-read-only-public-deepwell-rpc",
+          candidate_observation_scope: "anonymous-read-only-public-deepwell-rpc-and-browser",
         },
         execute,
         cleanup: async () => structuredClone(NO_MUTATION_CLEANUP),
-        verifyCase: (caseId, observations) => verifyOpen43Q1026UserIdentityCase(caseId, observations, {
-          site_id: fixture.site_id,
-          page_id: fixture.page_id,
-          revision_id: fixture.revision_id,
-          page_slug: fixture.page_slug,
-          source_sha256: fixture.source_sha256,
-          fixture: { visible_user: fixture.visible_user, deleted_user: fixture.deleted_user },
-        }),
+        verifyCase: (caseId, observations) => caseId === OPEN43_Q1026_USER_IDENTITY_CASE_IDS[0]
+          ? verifyOpen43Q1026UserIdentityCase(caseId, observations, verifyPlan)
+          : verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, verifyPlan),
         verifyCleanup: verifyOpen43Q1026UserIdentityCleanup,
       });
     },

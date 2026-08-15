@@ -75,3 +75,81 @@ export function verifyOpen43Q1026UserIdentityCleanup(proof, resources) {
   }
   return { verified: true, public_absence_verified: true, mutation_count: 0 };
 }
+
+export const OPEN43_Q1026_EXPECTED_EM_CONTENTS = Object.freeze([
+  "Deleted User",
+  "v7ws=\"alpha beta\u00a0gamma\"",
+  "v7ser=\"serialized body\"",
+  "v7text=\"visible text\"",
+  "v7arg=\"one\" v7arg=\"two\"",
+  "v7arg=\"\"",
+  "v7UnknownArgument=\"x\"",
+  "v7arg='single quoted' data-v7=unquoted",
+]);
+
+function verifyPrintuserState(state, fixture, label) {
+  const value = object(state, `#1026 ${label}`);
+  if (value.printuser_count !== 2 || value.avatarhover_count !== 1) {
+    throw new Error(`#1026 ${label} printuser wrapper counts differ from the sealed live matrix`);
+  }
+  const profile = `http://www.wikidot.com/user:info/${fixture.visible_user.slug}`;
+  const onclick = `WIKIDOT.page.listeners.userInfo(${fixture.visible_user.user_id}); return false;`;
+  if (!Array.isArray(value.anchors) || value.anchors.length !== 3) {
+    throw new Error(`#1026 ${label} printuser links differ from the sealed live matrix`);
+  }
+  for (const anchor of value.anchors) {
+    if (anchor.href !== profile || anchor.onclick !== onclick) {
+      throw new Error(`#1026 ${label} printuser link identity is wrong`);
+    }
+  }
+  if (!Array.isArray(value.avatar_images) || value.avatar_images.length !== 1) {
+    throw new Error(`#1026 ${label} avatar image count is wrong`);
+  }
+  const image = value.avatar_images[0];
+  if (image.class !== "small" || image.alt !== fixture.visible_user.name || typeof image.style !== "string" || !image.style.includes(`userkarma.php?u=${fixture.visible_user.user_id}`)) {
+    throw new Error(`#1026 ${label} avatar identity is wrong`);
+  }
+  if (value.error_count !== OPEN43_Q1026_EXPECTED_EM_CONTENTS.length) {
+    throw new Error(`#1026 ${label} missing-user error count differs from the sealed live matrix`);
+  }
+  if (JSON.stringify(value.error_em_html) !== JSON.stringify(OPEN43_Q1026_EXPECTED_EM_CONTENTS)) {
+    throw new Error(`#1026 ${label} missing-user em contents differ from the sealed live matrix`);
+  }
+  if (!Array.isArray(value.error_texts) || value.error_texts.some((text) => typeof text !== "string" || !text.endsWith(" does not match any existing user name"))) {
+    throw new Error(`#1026 ${label} missing-user error text is wrong`);
+  }
+  if (!Array.isArray(value.error_anchor_counts) || value.error_anchor_counts.some((count) => count !== 0)) {
+    throw new Error(`#1026 ${label} missing-user error leaked a link or avatar authority`);
+  }
+  return {
+    printuser_count: value.printuser_count,
+    avatarhover_count: value.avatarhover_count,
+    error_count: value.error_count,
+    profile,
+  };
+}
+
+export function verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, plan) {
+  if (caseId !== "Q1026_BROWSER_PRINTUSER_INTERVALS") throw new Error(`unsupported Open43 #1026 case: ${caseId}`);
+  const value = object(observations, `${caseId} observations`);
+  const saved = object(value.saved_page, "#1026 printuser saved page");
+  if (saved.slug !== plan.page_slug || saved.status !== 200 || saved.url !== `${plan.page_origin}/${plan.page_slug}`) {
+    throw new Error("#1026 printuser saved fixture identity is wrong");
+  }
+  const initial = verifyPrintuserState(value.initial, plan.fixture, "initial printuser state");
+  const settled = verifyPrintuserState(value.settled, plan.fixture, "settled printuser state");
+  if (!Array.isArray(value.request_methods) || value.request_methods.some((method) => !["GET", "HEAD", "OPTIONS"].includes(method))) {
+    throw new Error("#1026 printuser candidate issued a mutating request");
+  }
+  if (!Array.isArray(value.failed_requests) || value.failed_requests.length !== 0) {
+    throw new Error("#1026 printuser candidate observed failed requests");
+  }
+  if (value.mutation_detected !== false) throw new Error("#1026 printuser candidate mutation was detected");
+  return {
+    verified: true,
+    saved_page_slug: saved.slug,
+    initial,
+    settled,
+    request_methods: value.request_methods,
+  };
+}
