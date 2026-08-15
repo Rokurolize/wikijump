@@ -1580,6 +1580,101 @@ async function discoverFramerailRoutes(root) {
   return [...routeRecords, ...actionRecords]
 }
 
+function gitRevisionContains(root, revision, sourcePath, literal) {
+  const result = spawnSync(
+    GIT_EXECUTABLE,
+    [
+      "--no-replace-objects",
+      "-C",
+      root,
+      "grep",
+      "-F",
+      "-q",
+      "-e",
+      literal,
+      revision,
+      "--",
+      sourcePath
+    ],
+    { env: GIT_ENVIRONMENT, stdio: "ignore" }
+  )
+  return result.status === 0
+}
+
+async function applyFramerailRouteActionEvidence(root, records, sourceRevision) {
+  const registryPath = "docs/development/framerail-route-action-evidence.json"
+  const registry = await readJson(root, registryPath)
+  if (
+    registry.schema !== "wikijump.framerail_route_action_evidence.v1" ||
+    !/^[0-9a-f]{40}$/u.test(registry.source_revision ?? "") ||
+    !Array.isArray(registry.records) ||
+    registry.records.length !== records.length
+  ) {
+    throw new Error(`${registryPath} has an invalid route/action evidence contract`)
+  }
+  const recordIds = records.map(({ surface_id: surfaceId }) => surfaceId).sort()
+  const evidenceIds = registry.records.map(({ surface_id: surfaceId }) => surfaceId).sort()
+  if (
+    new Set(evidenceIds).size !== evidenceIds.length ||
+    JSON.stringify(evidenceIds) !== JSON.stringify(recordIds)
+  ) {
+    throw new Error(`${registryPath} does not exactly match the current route/action denominator`)
+  }
+  const evidenceById = new Map(
+    registry.records.map((record) => [record.surface_id, record])
+  )
+  let linked = 0
+  let gaps = 0
+  const projected = []
+  for (const record of records) {
+    const evidenceRecord = evidenceById.get(record.surface_id)
+    if (
+      !Array.isArray(evidenceRecord.tests) ||
+      !Array.isArray(evidenceRecord.tracking) ||
+      evidenceRecord.tracking.length === 0 ||
+      !Array.isArray(evidenceRecord.temporal)
+    ) {
+      throw new Error(`${registryPath} has an invalid row for ${record.surface_id}`)
+    }
+    if (
+      evidenceRecord.tracking.some(
+        ({ issue }) => !Number.isSafeInteger(issue) || issue <= 0
+      )
+    ) {
+      throw new Error(`${registryPath} has invalid tracking for ${record.surface_id}`)
+    }
+    const tests = []
+    for (const reference of evidenceRecord.tests) {
+      const separator = reference.indexOf("::")
+      if (separator <= 0 || separator === reference.length - 2) {
+        throw new Error(`${registryPath} has an invalid test reference for ${record.surface_id}`)
+      }
+      const testPath = reference.slice(0, separator)
+      const testName = reference.slice(separator + 2)
+      if (
+        !isCanonicalRepositoryReference(testPath) ||
+        !gitRevisionContains(root, sourceRevision, testPath, testName)
+      ) {
+        throw new Error(`${registryPath} has a stale current test reference: ${reference}`)
+      }
+      tests.push(`${testPath}#${testName}`)
+    }
+    if (tests.length > 0) linked += 1
+    else gaps += 1
+    projected.push({
+      ...record,
+      existing_refs: {
+        ...record.existing_refs,
+        tests: uniqueSortedStrings(tests)
+      }
+    })
+  }
+  if (linked !== 108 || gaps !== 17) {
+    throw new Error(`${registryPath} current test-link counts drifted`)
+  }
+  return projected
+}
+
 function stringConstant(sourceText, name, reference) {
   const match = new RegExp(`const\\s+${name}\\s*=\\s*["']([^"']+)["']`, "u").exec(sourceText)
   if (!match) throw new Error(`missing ${name} in ${reference}`)
@@ -3235,6 +3330,13 @@ async function buildInventory(root, sourceRevision) {
   )
   const auditedOwnershipActive =
     sha256(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")) === AUDITED_CATALOG_SHA256
+  const projectedFramerailRoutes = auditedOwnershipActive
+    ? await applyFramerailRouteActionEvidence(
+        root,
+        framerailRoutes,
+        provenance.wikijump.commit
+      )
+    : framerailRoutes
   const projectedWws = auditedOwnershipActive
     ? await applyWwsContractEvidence(root, wws, provenance.wikijump.commit)
     : wws
@@ -3242,7 +3344,7 @@ async function buildInventory(root, sourceRevision) {
   const surfaces = normalizeSurfaceOwners(applyAuditedIssueOwnership([
     ...catalog,
     ...deepwell,
-    ...framerailRoutes,
+    ...projectedFramerailRoutes,
     ...amc,
     ...wikidotPyAmc,
     ...xmlRpc,

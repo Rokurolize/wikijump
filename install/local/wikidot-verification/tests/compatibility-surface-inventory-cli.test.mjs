@@ -1220,6 +1220,43 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
   }
 })
 
+test("CLI projects current Framerail route-action tests without inventing browser evidence", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-framerail-route-action-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const rows = inventory.surfaces.filter(({ kind }) =>
+    kind === "framerail_route" || kind === "framerail_server_action"
+  )
+  assert.equal(rows.length, 125)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 108)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 17)
+  assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "framerail-route:/").existing_refs.tests,
+    ["framerail/tests/page-workflows.spec.ts#article routes carry load and mutation context through Deepwell"]
+  )
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "framerail-server-action:/?/layout")
+      .existing_refs.tests,
+    []
+  )
+})
+
 test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift", async (t) => {
   const cases = [
     {
