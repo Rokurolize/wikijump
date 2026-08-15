@@ -13,6 +13,8 @@ const FIXTURE_PATH = "install/local/wikidot-verification/artifacts/searchall-liv
 const FIXTURE_URL = new URL("../artifacts/searchall-live-preview-routes-20260809.json", import.meta.url);
 const FIXTURE_BYTES = readFileSync(FIXTURE_URL);
 const FIXTURE_SHA256 = createHash("sha256").update(FIXTURE_BYTES).digest("hex");
+const SEALED_FIXTURE_SHA256 = "378ddb0e93d5d20709f857d17dc7cb538f6e393f68c0f68016bb370ff60c4c67";
+if (FIXTURE_SHA256 !== SEALED_FIXTURE_SHA256) throw new Error("Q807 SearchAll live evidence artifact changed");
 const FIXTURE = freeze(JSON.parse(FIXTURE_BYTES));
 const ROUTE_CASE_IDS = Object.freeze([
   "searchall-browser-pf-spaced-query",
@@ -231,6 +233,7 @@ export function verifyOpen43Q807SearchAllCase(rawObservations, plan) {
   const observations = object(rawObservations, "Q807 observations");
   const fixedPlan = object(plan, "Q807 plan");
   requireSha256(fixedPlan.fixture_sha256, "Q807 fixture SHA-256");
+  if (fixedPlan.fixture_sha256 !== SEALED_FIXTURE_SHA256) throw new Error("Q807 fixture digest differs from sealed live evidence");
   requireSha256(fixedPlan.candidate_identity_sha256, "Q807 candidate identity SHA-256");
   const saved = object(observations.saved_page, "Q807 saved page");
   if (saved.slug !== fixedPlan.saved_page_slug || saved.source !== fixedPlan.saved_page_source || saved.status !== 200 || saved.url !== new URL("/search:all", fixedPlan.page_origin).href) throw new Error("Q807 saved SearchAll fixture identity is wrong");

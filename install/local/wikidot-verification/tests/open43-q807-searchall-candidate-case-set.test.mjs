@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
+import { verifyOpen43Q807SearchAllCase } from "../src/open43-q807-searchall-candidate-case-set.mjs";
 
 test("Q807 candidate case reaches prepare through the public command path with JSON input", async () => {
   const caseSet = await candidateCaseSet("open43-searchall");
@@ -33,4 +34,11 @@ test("Q807 candidate case reaches prepare through the public command path with J
   assert.equal(prepared.plan.saved_page_slug, "search:all");
   assert.equal(prepared.browserCredentialPolicy, "none");
   assert.equal(typeof prepared.execute, "function");
+
+  const changedEvidencePlan = structuredClone(prepared.plan);
+  changedEvidencePlan.fixture_sha256 = "b".repeat(64);
+  assert.throws(
+    () => verifyOpen43Q807SearchAllCase({}, changedEvidencePlan),
+    /Q807 fixture digest differs from sealed live evidence/,
+  );
 });
