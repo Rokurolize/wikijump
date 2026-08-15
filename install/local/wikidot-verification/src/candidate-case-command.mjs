@@ -14,7 +14,7 @@ import {
 const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set issue1373-amc-new-page|framerail-route-action-browser|comments-hideform-browser|open43-backlinks|open43-media-files|open43-media-browser|open43-authoring-history|open43-page-tree|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-mailform-fail-closed|open43-b610-shell|open43-issue775-edit|open43-searchall --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set issue1373-amc-new-page|framerail-route-action-browser|comments-hideform-browser|open43-backlinks|open43-media-files|open43-media-browser|open43-authoring-history|open43-page-tree|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-mailform-fail-closed|open43-b610-shell|open43-issue775-edit|open43-searchall|open43-a1038-admin-boundary --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
 
 Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
@@ -112,6 +112,10 @@ export async function candidateCaseSet(name) {
   if (name === "comments-hideform-browser") {
     const { createCommentsHideformBrowserCandidateCaseSet } = await import("./comments-hideform-browser-candidate-case-set.mjs");
     return createCommentsHideformBrowserCandidateCaseSet();
+  }
+  if (name === "open43-a1038-admin-boundary") {
+    const { createOpen43A1038AdminBoundaryCandidateCaseSet } = await import("./open43-a1038-admin-boundary-candidate-case-set.mjs");
+    return createOpen43A1038AdminBoundaryCandidateCaseSet();
   }
   throw new Error(`unknown source-owned candidate case set: ${name}`);
 }
