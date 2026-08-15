@@ -26,7 +26,6 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const ownershipPinReceiptFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
@@ -124,6 +123,10 @@ function parseFtmlLockSource(source) {
   return ftmlPackages[0].source;
 }
 
+const candidateFtml = parseActiveFtmlDependency(
+  readFileSync(path.join(repositoryRoot, "deepwell/Cargo.toml"), "utf8"),
+).rev;
+
 const sanitizedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(
     ([key]) =>
@@ -145,7 +148,7 @@ const sanitizedEnvironment = Object.fromEntries(
   ),
 );
 
-test("active FTML pin matches the committed merged marker canary", () => {
+test("active FTML pin and retained marker canary evidence match", () => {
   const manifest = readFileSync(
     path.join(repositoryRoot, "deepwell/Cargo.toml"),
     "utf8",
