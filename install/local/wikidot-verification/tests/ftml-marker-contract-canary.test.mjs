@@ -38,6 +38,11 @@ const retainedCanarySummary = {
   sha256:
     "3019488859c69be2fe18e8061c2cbc0614c88af2a07614d04497aca6c397bb0c",
 };
+const committedCanarySummaryPath = path.join(
+  repositoryRoot,
+  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary",
+  "canary-summary-324ac373.json",
+);
 
 function parseActiveFtmlDependency(source) {
   let section = null;
@@ -140,7 +145,7 @@ const sanitizedEnvironment = Object.fromEntries(
   ),
 );
 
-test("active FTML pin matches the retained merged marker canary when available", () => {
+test("active FTML pin matches the committed merged marker canary", () => {
   const manifest = readFileSync(
     path.join(repositoryRoot, "deepwell/Cargo.toml"),
     "utf8",
@@ -158,8 +163,7 @@ test("active FTML pin matches the retained merged marker canary when available",
     `git+https://github.com/Rokurolize/ftml?rev=${candidateFtml}#${candidateFtml}`,
   );
 
-  if (!existsSync(retainedCanarySummary.path)) return;
-  const canaryBytes = readFileSync(retainedCanarySummary.path);
+  const canaryBytes = readFileSync(committedCanarySummaryPath);
   assert.equal(
     createHash("sha256").update(canaryBytes).digest("hex"),
     retainedCanarySummary.sha256,
@@ -169,6 +173,28 @@ test("active FTML pin matches the retained merged marker canary when available",
   assert.equal(canary.baseline_ftml, ownershipPinReceiptFtml);
   assert.equal(canary.candidate_ftml, candidateFtml);
   assert.deepEqual(canary.required_surfaces, requiredSurfaces);
+
+  if (existsSync(retainedCanarySummary.path)) {
+    const labCanaryBytes = readFileSync(retainedCanarySummary.path);
+    assert.equal(
+      createHash("sha256").update(labCanaryBytes).digest("hex"),
+      retainedCanarySummary.sha256,
+    );
+    assert.equal(Buffer.compare(labCanaryBytes, canaryBytes), 0);
+  }
+});
+
+test("committed FTML canary fixture rejects tampered bytes", () => {
+  const fixtureBytes = readFileSync(committedCanarySummaryPath);
+  const tamperedBytes = Buffer.concat([fixtureBytes, Buffer.from("tampered")]);
+  assert.throws(
+    () =>
+      assert.equal(
+        createHash("sha256").update(tamperedBytes).digest("hex"),
+        retainedCanarySummary.sha256,
+      ),
+    /Expected values to be strictly equal/u,
+  );
 });
 
 test("FTML pin parsing rejects comments and unrelated packages", () => {
