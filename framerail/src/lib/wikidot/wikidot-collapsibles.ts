@@ -30,7 +30,9 @@ function activateCollapsible(link: HTMLAnchorElement): boolean {
 function accordionControl(node: HTMLElement, target: EventTarget | null) {
   if (!(target instanceof Element)) return null
 
-  const link = target.closest<HTMLAnchorElement>('a.accordion-toggle[data-toggle="collapse"]')
+  const link = target.closest<HTMLAnchorElement>(
+    'a.accordion-toggle[data-toggle="collapse"]'
+  )
   if (!link || !node.contains(link)) return null
 
   const href = link.getAttribute("href")
