@@ -47,7 +47,7 @@ export const fixtureState = {
     siteGet: [],
     voteList: []
   },
-  /** @type {null | (() => void)} */
+  /** @type {null | ((outcome?: "success" | "failure") => void)} */
   pendingPageRevisionDiffResponse: null,
   /** @type {Record<string, unknown[]>} */
   articleReadRequests: {

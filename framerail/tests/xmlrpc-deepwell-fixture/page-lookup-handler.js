@@ -1,6 +1,6 @@
 import { fixtureState, hasExactKeys, pageById } from "./context.js"
 import { pages, toPageResult } from "./data.js"
-import { sendRpcError } from "./response.js"
+import { sendRpcError, sendRpcResult } from "./response.js"
 
 /**
  * @param {{
@@ -166,8 +166,13 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
       ]
     }
     if (rpcRequest.params.from_revision_number === 1) {
-      fixtureState.pendingPageRevisionDiffResponse = () =>
-        sendRpcError(response, rpcRequest.id, -32603, "OLD STALE ERROR")
+      fixtureState.pendingPageRevisionDiffResponse = (outcome = "failure") => {
+        if (outcome === "success") {
+          sendRpcResult(response, rpcRequest.id, result)
+        } else {
+          sendRpcError(response, rpcRequest.id, -32603, "OLD STALE ERROR")
+        }
+      }
       return { responded: true }
     }
   } else if (

@@ -277,7 +277,8 @@ x^2 + y^2 = z^2
     tags: ["fixture"],
     rating: 0,
     wikitext: "Page workflow probe",
-    compiled_body_html: "<p>Page workflow probe</p>"
+    compiled_body_html:
+      '<p>Page workflow probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
   },
   "navigation-style-a": {
     page_id: 3000360,
