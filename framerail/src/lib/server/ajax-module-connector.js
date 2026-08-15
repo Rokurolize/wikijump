@@ -218,7 +218,8 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  * }} AjaxModuleConnectorOptions
  */
 
-const isValidAjaxModuleStatus = (status) => typeof status === "string" && status.length > 0
+const isValidAjaxModuleStatus = (status) =>
+  typeof status === "string" && status.length > 0
 
 /**
  * @param {Record<string, unknown>} body

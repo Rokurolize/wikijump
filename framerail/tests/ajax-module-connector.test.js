@@ -430,7 +430,10 @@ test("fails closed when an AMC renderer returns a non-string status", async () =
 })
 
 test("passes through a non-empty AMC try_again status", async () => {
-  assert.equal((await forumResponseBody({ status: "try_again", body: "" })).status, "try_again")
+  assert.equal(
+    (await forumResponseBody({ status: "try_again", body: "" })).status,
+    "try_again"
+  )
 })
 
 test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikidot metadata", async () => {
