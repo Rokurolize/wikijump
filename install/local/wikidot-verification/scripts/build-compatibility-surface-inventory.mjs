@@ -1179,19 +1179,87 @@ async function discoverCatalogFeatures(root) {
 
 async function discoverDeepwellJsonRpc(root) {
   const registryPath = "deepwell/src/api.rs"
-  const sourceText = await readText(root, registryPath)
+  const manifestPath = "docs/development/deepwell-jsonrpc-contract-manifest.json"
+  const [sourceText, manifest] = await Promise.all([
+    readText(root, registryPath),
+    readJson(root, manifestPath)
+  ])
   const methods = [...sourceText.matchAll(/register!\s*\(\s*"([^"]+)"\s*,/gu)].map(
     (match) => match[1]
   )
   if (methods.length === 0) throw new Error(`${registryPath} declares no JSON-RPC methods`)
-  return methods.map((method) =>
-    surface({
+  if (
+    manifest.schema !== "wikijump.deepwell_jsonrpc_contract_manifest.v1" ||
+    manifest.method_count !== methods.length ||
+    !Array.isArray(manifest.methods) ||
+    manifest.methods.length !== methods.length
+  ) {
+    throw new Error(`${manifestPath} does not match the Deepwell method denominator`)
+  }
+  if (
+    manifest.source_identities?.jsonrpc_registry?.path !== registryPath ||
+    manifest.source_identities.jsonrpc_registry.sha256 !== sha256(sourceText)
+  ) {
+    throw new Error(`${manifestPath} JSON-RPC registry identity drift`)
+  }
+  const contractByMethod = new Map()
+  for (const contract of manifest.methods) {
+    if (!contract || typeof contract.method !== "string" || contract.method === "") {
+      throw new Error(`${manifestPath} contains a method without an identity`)
+    }
+    if (contractByMethod.has(contract.method)) {
+      throw new Error(`${manifestPath} contains duplicate method ${contract.method}`)
+    }
+    contractByMethod.set(contract.method, contract)
+  }
+  if (
+    contractByMethod.size !== methods.length ||
+    methods.some((method) => !contractByMethod.has(method))
+  ) {
+    throw new Error(`${manifestPath} method identities do not match ${registryPath}`)
+  }
+  const sourceCache = new Map()
+  const readOwnerSource = async (sourceReference) => {
+    const sourcePath = sourceReference.split("#", 1)[0]
+    if (!sourceCache.has(sourcePath)) sourceCache.set(sourcePath, await readText(root, sourcePath))
+    return sourceCache.get(sourcePath)
+  }
+  const records = []
+  for (const method of methods) {
+    const contract = contractByMethod.get(method)
+    const owner = contract.endpoint_owner
+    if (
+      owner?.component !== "deepwell" ||
+      typeof owner.source !== "string" ||
+      !isCanonicalRepositoryReference(owner.source) ||
+      !/^[0-9a-f]{64}$/u.test(owner.source_sha256 ?? "")
+    ) {
+      throw new Error(`${manifestPath} has invalid endpoint ownership for ${method}`)
+    }
+    if (sha256(await readOwnerSource(owner.source)) !== owner.source_sha256) {
+      throw new Error(`${manifestPath} endpoint source identity drift for ${method}`)
+    }
+    const witness = contract.test_witness
+    if (
+      !witness ||
+      !["source_contract_only", "endpoint_behavioral", "rpc_behavioral"].includes(witness.kind) ||
+      typeof witness.reference !== "string" ||
+      witness.reference === ""
+    ) {
+      throw new Error(`${manifestPath} has invalid test witness for ${method}`)
+    }
+    const behavioralTests = witness.kind === "source_contract_only" ? [] : [witness.reference]
+    records.push(surface({
       surfaceId: `deepwell-jsonrpc:${method}`,
       kind: "deepwell_jsonrpc_method",
       publicOwner: "deepwell",
-      publicReference: [`${registryPath}#register:${method}`]
-    })
-  )
+      publicReference: [`${registryPath}#register:${method}`, owner.source],
+      tests: behavioralTests,
+      evidence: phase("available", [manifestPath]),
+      source: phase("implemented", [owner.source.split("#", 1)[0]])
+    }))
+  }
+  return records
 }
 
 async function listFiles(directory) {

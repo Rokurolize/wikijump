@@ -170,11 +170,32 @@ async function writeRepositoryFixture(root) {
     }
   }
   await writeImplementationLedgerMirrors(root, implementationLedger)
-  await writeText(
-    root,
-    "deepwell/src/api.rs",
-    'register!("ping", ping);\n'
-  )
+  const deepwellApiSource = 'register!("ping", ping);\n'
+  await writeText(root, "deepwell/src/api.rs", deepwellApiSource)
+  await writeJson(root, "docs/development/deepwell-jsonrpc-contract-manifest.json", {
+    schema: "wikijump.deepwell_jsonrpc_contract_manifest.v1",
+    source_identities: {
+      jsonrpc_registry: {
+        path: "deepwell/src/api.rs",
+        sha256: sha256(deepwellApiSource)
+      }
+    },
+    method_count: 1,
+    methods: [
+      {
+        method: "ping",
+        endpoint_owner: {
+          component: "deepwell",
+          source: "deepwell/src/api.rs#ping",
+          source_sha256: sha256(deepwellApiSource)
+        },
+        test_witness: {
+          kind: "source_contract_only",
+          reference: "fixture/deepwell-contract.test.mjs#ping"
+        }
+      }
+    ]
+  })
   await writeText(
     root,
     "deepwell/Cargo.toml",
@@ -1116,6 +1137,45 @@ test("CLI projects the audited registry issue owners and catalog implementation 
   assert.deepEqual(
     byId.get("wikidot-py-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage").existing_refs.issues,
     [1376]
+  )
+})
+
+test("CLI projects the current Deepwell contract evidence without promoting source-only test gaps", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-deepwell-contract-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const rows = inventory.surfaces.filter((record) => record.kind === "deepwell_jsonrpc_method")
+  assert.equal(rows.length, 163)
+  assert.equal(rows.every(({ evidence }) => evidence.status === "available"), true)
+  assert.equal(rows.every(({ evidence }) =>
+    evidence.references.includes("docs/development/deepwell-jsonrpc-contract-manifest.json")
+  ), true)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 136)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 27)
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:authorization_token_issue")
+      .existing_refs.tests,
+    ["deepwell/tests/auth.rs#authorization_token_issue_requires_admin_request_context"]
+  )
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:admin_view")
+      .existing_refs.tests,
+    []
   )
 })
 
