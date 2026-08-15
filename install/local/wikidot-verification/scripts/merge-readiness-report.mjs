@@ -152,6 +152,8 @@ function requireCandidate(value, candidateRunId, frozenCandidateCommit, candidat
 
 export function requireCleanup(value, candidateRunId, candidateVerdict) {
   if (value?.schema !== 'wikijump_syntax_differential.runtime_stack_cleanup.v1' || value.status !== 'pass' || value.run_id !== candidateRunId || value.run_root_removed !== true || value.public_absence_verified !== true || value.resources_released !== true || value.vacant !== true || value.browser_closed !== true || (value.compose_started === true && (value.compose_down_exit_code !== 0 || value.compose_down_signal !== null))) throw new Error('cleanup validator is not the passing runtime stack cleanup receipt for the candidate run');
+  const after = value.resource_observation?.after;
+  if (!after || Object.values(after).some((items) => !Array.isArray(items) || items.length !== 0)) throw new Error('cleanup validator does not prove resource absence after cleanup');
   const candidateReceipt = verifyArtifactReference(value.candidate_receipt, 'cleanup candidate receipt');
   if (candidateVerdict?.binding?.candidate_manifest?.path !== candidateReceipt.path || candidateVerdict.binding.candidate_manifest.sha256 !== candidateReceipt.sha256) throw new Error('cleanup receipt is not cryptographically bound to the candidate producer receipt');
   return value;

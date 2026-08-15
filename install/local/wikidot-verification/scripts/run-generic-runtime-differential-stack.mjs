@@ -107,24 +107,31 @@ function run(command, args, options = {}) {
   return result.stdout.trim();
 }
 
-export function resourcesAbsent(project, env, inspect = spawnSync) {
+export function resourceSnapshot(project, env, inspect = spawnSync) {
   const resources = [
-    ["ps", "--all"],
-    ["volume", "ls"],
-    ["network", "ls"],
+    ["containers", ["ps", "--all"]],
+    ["volumes", ["volume", "ls"]],
+    ["networks", ["network", "ls"]],
+    ["images", ["image", "ls"]],
   ];
   try {
-    return resources.every(([kind, ...args]) => {
-      const result = inspect(DOCKER, [kind, ...args, "--quiet", "--filter", `label=com.rokurolize.wikijump.run_id=${project}`], {
+    return Object.fromEntries(resources.map(([name, command]) => {
+      const result = inspect(DOCKER, [...command, "--quiet", "--filter", `label=com.rokurolize.wikijump.run_id=${project}`], {
         encoding: "utf8",
         env,
         stdio: "pipe",
       });
-      return !result.error && result.status === 0 && result.signal === null && (result.stdout ?? "").trim() === "";
-    });
+      if (result.error || result.status !== 0 || result.signal !== null) throw result.error ?? new Error(`${name} inspection failed`);
+      return [name, (result.stdout ?? "").trim() ? result.stdout.trim().split(/\s+/u) : []];
+    }));
   } catch {
-    return false;
+    return null;
   }
+}
+
+export function resourcesAbsent(project, env, inspect = spawnSync) {
+  const snapshot = resourceSnapshot(project, env, inspect);
+  return snapshot !== null && Object.values(snapshot).every((items) => items.length === 0);
 }
 
 export function requireOutputAbsent(target, name) {
@@ -669,6 +676,9 @@ export async function main(argv) {
       vacant: false,
       browser_closed: true,
       candidate_receipt: candidateReceipt,
+      resource_observation: {
+        after: composeStarted ? resourceSnapshot(project, localDockerEnv) : {containers: [], volumes: [], networks: [], images: []},
+      },
     };
     cleanup.public_absence_verified = cleanup.status === "pass";
     cleanup.vacant = cleanup.status === "pass" && cleanup.run_root_removed;

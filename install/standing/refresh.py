@@ -22,6 +22,7 @@ RUNTIME_SERVICES = (
     "wws",
     "caddy",
 )
+PROMOTION_PRECONDITION_SCHEMA = "wikijump.standing_promotion_precondition.v1"
 DEFAULT_RUNTIME_HOME = Path("/home/roku/wjlab/runtime/wikijump-standing")
 RUNTIME_DIFFERENTIAL_IDENTITY = "runtime-differential-identity.json"
 CANARY_URL = "http://scp-wiki.wikijump.localhost/scp-9506"
@@ -92,7 +93,9 @@ def write_environment(path: Path, values: dict[str, str]) -> None:
         if not isinstance(key, str) or ENVIRONMENT_KEY.fullmatch(key) is None:
             raise ValueError(f"invalid environment key: {key!r}")
         if not isinstance(value, str) or not value.isprintable():
-            raise ValueError(f"{key} must contain one printable, single-line environment value")
+            raise ValueError(
+                f"{key} must contain one printable, single-line environment value"
+            )
     contents = "".join(f"{key}={value}\n" for key, value in sorted(values.items()))
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", delete=False
@@ -225,7 +228,11 @@ def normalize_container_identity(value: object) -> dict[str, object]:
                 raise ValueError("Docker container port binding is invalid")
             host_ip = binding.get("HostIp")
             host_port = binding.get("HostPort")
-            if not isinstance(host_ip, str) or not isinstance(host_port, str) or not host_port:
+            if (
+                not isinstance(host_ip, str)
+                or not isinstance(host_port, str)
+                or not host_port
+            ):
                 raise ValueError("Docker container port binding is invalid")
             published_ports.append(
                 {
@@ -323,7 +330,9 @@ def restore_parked_containers(
             current["container_id"] != entry["container"]["container_id"]
             or current["image_id"] != entry["container"]["image_id"]
         ):
-            raise RuntimeError(f"parked container identity changed before restore for {service}")
+            raise RuntimeError(
+                f"parked container identity changed before restore for {service}"
+            )
         command(
             "docker",
             "rename",
@@ -333,14 +342,22 @@ def restore_parked_containers(
             capture=False,
         )
         if entry["was_running"]:
-            command("docker", "start", entry["original_name"], cwd=runtime_home, capture=False)
+            command(
+                "docker",
+                "start",
+                entry["original_name"],
+                cwd=runtime_home,
+                capture=False,
+            )
         after = container_identity(entry["original_name"], runtime_home)
         if (
             after["container_id"] != entry["container"]["container_id"]
             or after["image_id"] != entry["container"]["image_id"]
             or after["running"] != entry["was_running"]
         ):
-            raise RuntimeError(f"rollback did not restore container identity for {service}")
+            raise RuntimeError(
+                f"rollback did not restore container identity for {service}"
+            )
         restored[service] = after
     return restored
 
@@ -355,7 +372,14 @@ def park_containers(
             parked_name = parked_container_name(run_id, service)
             if resource_exists("container", parked_name, runtime_home):
                 raise RuntimeError(f"rollback container already exists: {parked_name}")
-            command("docker", "rename", old["container_id"], parked_name, cwd=runtime_home, capture=False)
+            command(
+                "docker",
+                "rename",
+                old["container_id"],
+                parked_name,
+                cwd=runtime_home,
+                capture=False,
+            )
             renamed = container_identity(parked_name, runtime_home)
             if renamed["container_id"] != old["container_id"]:
                 raise RuntimeError(f"parked container identity changed for {service}")
@@ -375,7 +399,9 @@ def park_containers(
         try:
             restore_parked_containers(parked, runtime_home)
         except Exception as restore_error:
-            raise RuntimeError("failed to restore partially parked containers") from restore_error
+            raise RuntimeError(
+                "failed to restore partially parked containers"
+            ) from restore_error
         raise
     return parked
 
@@ -391,9 +417,13 @@ def remove_candidate_resources(
     removed_containers = []
     for service in SERVICES:
         container_id = candidate[service]["container_id"]
-        command("docker", "rm", "--force", container_id, cwd=runtime_home, capture=False)
+        command(
+            "docker", "rm", "--force", container_id, cwd=runtime_home, capture=False
+        )
         if resource_exists("container", container_id, runtime_home):
-            raise RuntimeError(f"candidate container remains after cleanup for {service}")
+            raise RuntimeError(
+                f"candidate container remains after cleanup for {service}"
+            )
         removed_containers.append({"service": service, "container_id": container_id})
     rollback_ids = {image["id"] for image in rollback_images.values()}
     removed_images = []
@@ -406,7 +436,11 @@ def remove_candidate_resources(
         processed_images.add(image_id)
         if image_id in rollback_ids:
             retained_images.append(
-                {"service": service, "image_id": image_id, "disposition": "rollback-image"}
+                {
+                    "service": service,
+                    "image_id": image_id,
+                    "disposition": "rollback-image",
+                }
             )
             continue
         command("docker", "image", "rm", image_id, cwd=runtime_home, capture=False)
@@ -423,10 +457,6 @@ def remove_candidate_resources(
 
 def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def image_reference(wikijump_sha: str, service: str) -> str:
-    return f"local/wikijump-standing-{wikijump_sha[:12]}-{service}"
 
 
 def prepared_resource_expiry(receipt: dict[str, object]) -> str:
@@ -447,16 +477,61 @@ def load_prepared_receipt(
     path: Path, source_root: Path, identity: dict[str, str]
 ) -> tuple[dict[str, object], str]:
     receipt = json.loads(path.read_text(encoding="utf-8"))
-    if receipt.get("schema_version") != 1 or receipt.get("kind") != "standing-image-preparation":
+    if (
+        receipt.get("schema_version") != 1
+        or receipt.get("kind") != "standing-image-preparation"
+    ):
         raise ValueError("prepared receipt is not a standing image preparation receipt")
     if receipt.get("status") != "pass":
         raise ValueError("prepared receipt is not successful")
+    proof_ref = receipt.get("promotion_precondition")
+    if (
+        not isinstance(proof_ref, dict)
+        or not isinstance(proof_ref.get("path"), str)
+        or not isinstance(proof_ref.get("sha256"), str)
+    ):
+        raise ValueError("prepared receipt has no promotion precondition")
+    proof_path = Path(proof_ref["path"])
+    if (
+        not proof_path.is_file()
+        or proof_path.is_symlink()
+        or file_sha256(proof_path) != proof_ref["sha256"]
+    ):
+        raise ValueError("prepared receipt promotion precondition is stale")
+    proof = json.loads(proof_path.read_text(encoding="utf-8"))
+    if (
+        proof.get("schema") != PROMOTION_PRECONDITION_SCHEMA
+        or proof.get("status") != "pass"
+        or not isinstance(proof.get("run_id"), str)
+    ):
+        raise ValueError(
+            "prepared receipt promotion precondition is not a passing canonical receipt"
+        )
+    if receipt.get("run_id") != proof.get("run_id"):
+        raise ValueError(
+            "prepared receipt run ID does not match its promotion precondition"
+        )
+    for section in ("candidate", "build"):
+        values = proof.get(section)
+        if (
+            not isinstance(values, dict)
+            or values.get("wikijump_commit") != identity["wikijump_sha"]
+            or values.get("wikijump_tree") != identity["wikijump_tree"]
+            or values.get("ftml_sha") != identity["ftml_sha"]
+        ):
+            raise ValueError(
+                f"prepared receipt promotion precondition {section} identity is stale"
+            )
     for key in ("wikijump_sha", "wikijump_tree", "ftml_sha", "dependency_lock_sha256"):
         if receipt.get(key) != identity[key]:
-            raise ValueError(f"prepared receipt {key} does not match the source checkout")
+            raise ValueError(
+                f"prepared receipt {key} does not match the source checkout"
+            )
     images = receipt.get("images")
     if not isinstance(images, dict) or set(images) != set(SERVICES):
-        raise ValueError("prepared receipt must contain exactly the three application images")
+        raise ValueError(
+            "prepared receipt must contain exactly the three application images"
+        )
     profiles = {"deepwell": "release", "framerail": "built", "wws": "release"}
     dockerfiles = receipt.get("dockerfiles")
     for service in SERVICES:
@@ -465,14 +540,24 @@ def load_prepared_receipt(
             raise ValueError(f"prepared receipt image {service} is invalid")
         reference = image.get("reference")
         image_id = image.get("id")
-        if reference != image_reference(identity["wikijump_sha"], service):
-            raise ValueError(f"prepared image {service} is not an exact SHA-derived reference")
-        if not isinstance(image_id, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", image_id):
-            raise ValueError(f"prepared image {service} is not bound to an image digest")
+        if not isinstance(image_id, str) or not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", image_id
+        ):
+            raise ValueError(
+                f"prepared image {service} is not bound to an image digest"
+            )
+        if reference != image_id:
+            raise ValueError(
+                f"prepared image {service} does not use its immutable image ID"
+            )
         if image.get("profile") != profiles[service]:
-            raise ValueError(f"prepared image {service} profile is not {profiles[service]}")
+            raise ValueError(
+                f"prepared image {service} profile is not {profiles[service]}"
+            )
         dockerfile = source_root / "install" / "prod" / service / "Dockerfile"
-        if not isinstance(dockerfiles, dict) or dockerfiles.get(service) != file_sha256(dockerfile):
+        if not isinstance(dockerfiles, dict) or dockerfiles.get(service) != file_sha256(
+            dockerfile
+        ):
             raise ValueError(f"prepared image {service} Dockerfile identity is stale")
     prepared_resource_expiry(receipt)
     return receipt, file_sha256(path)
@@ -568,7 +653,10 @@ def main() -> int:
     started_at = datetime.now(UTC)
     activation_started = time.monotonic()
     identity = repository_identity(source_root)
-    receipt_path = requested_receipt_path or runtime_home / f"refresh-receipt-{identity['wikijump_sha']}.json"
+    receipt_path = (
+        requested_receipt_path
+        or runtime_home / f"refresh-receipt-{identity['wikijump_sha']}.json"
+    )
     failure_receipt_path = receipt_path.with_name(
         f"{receipt_path.stem}-failure{receipt_path.suffix}"
     )
@@ -578,7 +666,9 @@ def main() -> int:
         or failure_receipt_path.exists()
         or failure_receipt_path.is_symlink()
     ):
-        raise ValueError("promotion receipt path already exists; use a fresh receipt path")
+        raise ValueError(
+            "promotion receipt path already exists; use a fresh receipt path"
+        )
     prepared_receipt_path = args.prepared_receipt.resolve()
     prepared_receipt, prepared_receipt_sha256 = load_prepared_receipt(
         prepared_receipt_path, source_root, identity
@@ -617,8 +707,13 @@ def main() -> int:
                 f"prepared image {service} changed: expected {expected}, got {images[service]['id']}"
             )
         labels = images[service].get("labels")
-        if not isinstance(labels, dict) or labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]:
-            raise RuntimeError(f"prepared image {service} is not labelled for this source")
+        if (
+            not isinstance(labels, dict)
+            or labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]
+        ):
+            raise RuntimeError(
+                f"prepared image {service} is not labelled for this source"
+            )
 
     expiry = prepared_resource_expiry(prepared_receipt)
     activation_verified = time.monotonic()
@@ -635,7 +730,9 @@ def main() -> int:
     differential_identity_published = False
     switched = False
     try:
-        parked = park_containers(previous_runtime, runtime_home, prepared_receipt_sha256)
+        parked = park_containers(
+            previous_runtime, runtime_home, prepared_receipt_sha256
+        )
         environment.update(
             {
                 "STANDING_DEEPWELL_IMAGE": prepared_images["deepwell"]["reference"],
@@ -663,7 +760,9 @@ def main() -> int:
             capture=False,
         )
         health_started = time.monotonic()
-        health = wait_for_health(runtime_home, override_file, args.health_timeout_seconds)
+        health = wait_for_health(
+            runtime_home, override_file, args.health_timeout_seconds
+        )
         health_completed = time.monotonic()
         canary_started = time.monotonic()
         body = command(
@@ -679,12 +778,19 @@ def main() -> int:
             cwd=runtime_home,
         )
         if "scp-9506" not in body.lower() or "page-content" not in body:
-            raise RuntimeError("standing scp-9506 canary returned an unexpected document")
+            raise RuntimeError(
+                "standing scp-9506 canary returned an unexpected document"
+            )
         canary_completed = time.monotonic()
         candidate_runtime = runtime_containers(runtime_home)
         for service in SERVICES:
-            if candidate_runtime[service]["container_id"] == previous_runtime[service]["container_id"]:
-                raise RuntimeError(f"promotion did not create a new container for {service}")
+            if (
+                candidate_runtime[service]["container_id"]
+                == previous_runtime[service]["container_id"]
+            ):
+                raise RuntimeError(
+                    f"promotion did not create a new container for {service}"
+                )
             if candidate_runtime[service]["image_id"] != images[service]["id"]:
                 raise RuntimeError(f"candidate container image changed for {service}")
         candidate_runtime_images = runtime_images(candidate_runtime, runtime_home)
@@ -705,7 +811,8 @@ def main() -> int:
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(UTC).isoformat(),
             "activation_duration_seconds": time.monotonic() - activation_started,
-            "image_verification_duration_seconds": activation_verified - activation_started,
+            "image_verification_duration_seconds": activation_verified
+            - activation_started,
             "compose_activation_duration_seconds": health_started - compose_started,
             "health_duration_seconds": health_completed - health_started,
             "canary_duration_seconds": canary_completed - canary_started,
@@ -820,12 +927,22 @@ def main() -> int:
                 restored_runtime = restore_parked_containers(parked, runtime_home)
                 final_runtime = runtime_containers(runtime_home)
                 for service in RUNTIME_SERVICES:
-                    if final_runtime[service]["container_id"] != previous_runtime[service]["container_id"]:
-                        raise RuntimeError(f"rollback changed container identity for {service}")
+                    if (
+                        final_runtime[service]["container_id"]
+                        != previous_runtime[service]["container_id"]
+                    ):
+                        raise RuntimeError(
+                            f"rollback changed container identity for {service}"
+                        )
                 restored_port_443_owner = port_443_owner(final_runtime)
-                if restored_port_443_owner["container_id"] != previous_port_443_owner["container_id"]:
+                if (
+                    restored_port_443_owner["container_id"]
+                    != previous_port_443_owner["container_id"]
+                ):
                     raise RuntimeError("rollback changed the port-443 owner")
-                rollback_health = wait_for_health(runtime_home, override_file, args.health_timeout_seconds)
+                rollback_health = wait_for_health(
+                    runtime_home, override_file, args.health_timeout_seconds
+                )
                 rollback_body = command(
                     "curl",
                     "--silent",
@@ -838,8 +955,13 @@ def main() -> int:
                     CANARY_URL,
                     cwd=runtime_home,
                 )
-                if "scp-9506" not in rollback_body.lower() or "page-content" not in rollback_body:
-                    raise RuntimeError("restored standing scp-9506 canary returned an unexpected document")
+                if (
+                    "scp-9506" not in rollback_body.lower()
+                    or "page-content" not in rollback_body
+                ):
+                    raise RuntimeError(
+                        "restored standing scp-9506 canary returned an unexpected document"
+                    )
                 rollback_canary = {
                     "url": CANARY_URL,
                     "status": "pass",

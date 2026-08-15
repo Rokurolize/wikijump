@@ -1650,7 +1650,7 @@ test("stack cleanup requires actual absence of containers, volumes, and networks
     return {status: 0, signal: null, stdout: "", stderr: ""};
   };
   assert.equal(resourcesAbsent("candidate-run-abcdef123456", {DOCKER_HOST: "test"}, inspect), true);
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 4);
   assert.match(calls[0][1].at(-1), /candidate-run-abcdef123456/u);
   assert.equal(resourcesAbsent("candidate-run-abcdef123456", {}, () => ({status: 0, signal: null, stdout: "leftover\n", stderr: ""})), false);
   assert.equal(resourcesAbsent("candidate-run-abcdef123456", {}, () => ({status: 1, signal: null, stdout: "", stderr: "inspect failed"})), false);

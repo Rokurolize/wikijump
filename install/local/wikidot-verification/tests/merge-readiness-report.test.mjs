@@ -86,7 +86,9 @@ test("merge readiness binds cleanup to the candidate producer receipt", async (t
     vacant: true,
     browser_closed: true,
     candidate_receipt: candidate,
+    resource_observation: {after: {containers: [], volumes: [], networks: [], images: []}},
   };
   assert.equal(requireCleanup(cleanup, cleanup.run_id, {binding: {candidate_manifest: candidate}, artifacts: [candidate]}), cleanup);
   assert.throws(() => requireCleanup({...cleanup, candidate_receipt: {...candidate, sha256: "0".repeat(64)}}, cleanup.run_id, {artifacts: [candidate]}), /identity moved/u);
+  assert.throws(() => requireCleanup({...cleanup, resource_observation: {after: {containers: ["leftover"], volumes: [], networks: [], images: []}}}, cleanup.run_id, {binding: {candidate_manifest: candidate}, artifacts: [candidate]}), /resource absence/u);
 });

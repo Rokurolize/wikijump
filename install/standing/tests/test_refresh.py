@@ -33,7 +33,9 @@ class RefreshStandingTest(unittest.TestCase):
     def test_image_identity_rejects_mutable_image_id(self) -> None:
         original_command = REFRESH.command
         try:
-            REFRESH.command = lambda *args, cwd, capture=True: json.dumps({"Id": "latest"})
+            REFRESH.command = lambda *args, cwd, capture=True: json.dumps(
+                {"Id": "latest"}
+            )
             with self.assertRaisesRegex(ValueError, "immutable SHA-256 image ID"):
                 REFRESH.image_identity("candidate", Path("/runtime"))
         finally:
@@ -45,13 +47,19 @@ class RefreshStandingTest(unittest.TestCase):
             "name": "wikijump-standing-caddy-1",
             "image_id": "sha256:" + "b" * 64,
             "published_ports": [
-                {"container_port": "443/tcp", "host_ip": "127.0.0.1", "host_port": "443"}
+                {
+                    "container_port": "443/tcp",
+                    "host_ip": "127.0.0.1",
+                    "host_port": "443",
+                }
             ],
         }
         with self.assertRaisesRegex(ValueError, "exactly one"):
             REFRESH.port_443_owner({})
         with self.assertRaisesRegex(ValueError, "exactly one"):
-            REFRESH.port_443_owner({"one": owner, "two": {**owner, "container_id": "c" * 64}})
+            REFRESH.port_443_owner(
+                {"one": owner, "two": {**owner, "container_id": "c" * 64}}
+            )
 
     def test_atomic_receipt_does_not_replace_existing_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
@@ -83,7 +91,11 @@ class RefreshStandingTest(unittest.TestCase):
         original_command = REFRESH.command
 
         def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
-            if args[:2] == ("docker", "inspect") or args[:3] == ("docker", "image", "inspect"):
+            if args[:2] == ("docker", "inspect") or args[:3] == (
+                "docker",
+                "image",
+                "inspect",
+            ):
                 reference = args[-1]
                 if reference in containers or reference in images:
                     return "present"
@@ -195,11 +207,16 @@ class RefreshStandingTest(unittest.TestCase):
             REFRESH.command = original_command
             REFRESH.container_identity = original_identity
         self.assertEqual(
-            {service: entry["container"]["container_id"] for service, entry in parked.items()},
+            {
+                service: entry["container"]["container_id"]
+                for service, entry in parked.items()
+            },
             {service: value["container_id"] for service, value in previous.items()},
         )
         self.assertTrue(all(entry["parked_name"] in state for entry in parked.values()))
-        self.assertTrue(all(not entry["container"]["running"] for entry in parked.values()))
+        self.assertTrue(
+            all(not entry["container"]["running"] for entry in parked.values())
+        )
 
     def prepared_receipt_fixture(
         self, root: Path, *, expiry: object = "2026-09-05T12:34:56.123456+00:00"
@@ -214,21 +231,44 @@ class RefreshStandingTest(unittest.TestCase):
             "ftml_sha": "c" * 40,
             "dependency_lock_sha256": "d" * 64,
         }
+        proof_path = root / "promotion-precondition.json"
+        proof_path.write_text(
+            json.dumps(
+                {
+                    "schema": REFRESH.PROMOTION_PRECONDITION_SCHEMA,
+                    "status": "pass",
+                    "run_id": "candidate-run-001122334455",
+                    "candidate": {
+                        "wikijump_commit": identity["wikijump_sha"],
+                        "wikijump_tree": identity["wikijump_tree"],
+                        "ftml_sha": identity["ftml_sha"],
+                    },
+                    "build": {
+                        "wikijump_commit": identity["wikijump_sha"],
+                        "wikijump_tree": identity["wikijump_tree"],
+                        "ftml_sha": identity["ftml_sha"],
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
         receipt: dict[str, object] = {
             "schema_version": 1,
             "kind": "standing-image-preparation",
             "status": "pass",
-            "run_id": proof["run_id"],
+            "run_id": "candidate-run-001122334455",
             **identity,
+            "promotion_precondition": {
+                "path": str(proof_path),
+                "sha256": hashlib.sha256(proof_path.read_bytes()).hexdigest(),
+            },
             "dockerfiles": {
                 service: hashlib.sha256(service.encode()).hexdigest()
                 for service in REFRESH.SERVICES
             },
             "images": {
                 service: {
-                    "reference": REFRESH.image_reference(
-                        identity["wikijump_sha"], service
-                    ),
+                    "reference": "sha256:" + "e" * 64,
                     "id": "sha256:" + "e" * 64,
                     "profile": "release" if service != "framerail" else "built",
                 }
@@ -245,12 +285,9 @@ class RefreshStandingTest(unittest.TestCase):
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
         self.assertIn("DEEPWELL_BUILD_PROFILE: release", compose)
         self.assertIn("WWS_BUILD_PROFILE: release", compose)
-        self.assertIn("DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}", compose)
-
-    def test_only_corpus_runtime_volumes_are_protected(self) -> None:
-        self.assertEqual(
-            REFRESH.PROTECTED_VOLUMES,
-            ("runtime50x-postgres-data", "runtime50x-files-data"),
+        self.assertIn(
+            "DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}",
+            compose,
         )
 
     def test_standing_runtime_labels_include_lifecycle_provenance(self) -> None:
@@ -294,7 +331,13 @@ class RefreshStandingTest(unittest.TestCase):
         for forbidden in ("-v", "--volumes", "--remove-volumes"):
             with self.subTest(forbidden=forbidden):
                 result = subprocess.run(
-                    (sys.executable, str(SCRIPT), "--prepared-receipt", "/tmp/absent", forbidden),
+                    (
+                        sys.executable,
+                        str(SCRIPT),
+                        "--prepared-receipt",
+                        "/tmp/absent",
+                        forbidden,
+                    ),
                     text=True,
                     capture_output=True,
                 )
@@ -303,20 +346,22 @@ class RefreshStandingTest(unittest.TestCase):
 
     def test_activation_has_no_build_path_and_uses_prepared_references(self) -> None:
         source = SCRIPT.read_text(encoding="utf-8")
-        self.assertNotIn("docker\", \"build", source)
+        self.assertNotIn('docker", "build', source)
         self.assertIn("--prepared-receipt", source)
         self.assertIn("--no-build", source)
         prepare = (SCRIPT.parent / "prepare.py").read_text(encoding="utf-8")
         self.assertIn('"install" / "prod" / service / "Dockerfile"', prepare)
 
     def test_local_development_still_uses_watch_mode(self) -> None:
-        deepwell_start = (SCRIPT.parents[1] / "local/deepwell/deepwell-start").read_text(
+        deepwell_start = (
+            SCRIPT.parents[1] / "local/deepwell/deepwell-start"
+        ).read_text(encoding="utf-8")
+        wws_start = (SCRIPT.parents[1] / "local/wws/wws-start").read_text(
             encoding="utf-8"
         )
-        wws_start = (SCRIPT.parents[1] / "local/wws/wws-start").read_text(encoding="utf-8")
-        framerail_start = (SCRIPT.parents[1] / "local/framerail/framerail-start").read_text(
-            encoding="utf-8"
-        )
+        framerail_start = (
+            SCRIPT.parents[1] / "local/framerail/framerail-start"
+        ).read_text(encoding="utf-8")
         self.assertIn("cargo watch", deepwell_start)
         self.assertIn("cargo watch", wws_start)
         self.assertIn("pnpm dev", framerail_start)
@@ -355,13 +400,13 @@ class RefreshStandingTest(unittest.TestCase):
             assert isinstance(images, dict)
             deepwell = images["deepwell"]
             assert isinstance(deepwell, dict)
-            deepwell["reference"] = f'{deepwell["reference"]}:latest'
+            deepwell["reference"] = "sha256:" + "f" * 64
             path = root / "prepared.json"
             path.write_text(json.dumps(receipt), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "exact SHA-derived reference"):
+            with self.assertRaisesRegex(ValueError, "immutable image ID"):
                 REFRESH.load_prepared_receipt(path, root, identity)
 
-    def test_prepared_receipt_binds_the_candidate_run_id(self) -> None:
+    def test_prepared_receipt_binds_the_promotion_precondition_run_id(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
             receipt, identity = self.prepared_receipt_fixture(root)
@@ -385,7 +430,10 @@ class RefreshStandingTest(unittest.TestCase):
             7,
         )
         for expiry in invalid_expiries:
-            with self.subTest(expiry=expiry), tempfile.TemporaryDirectory() as temporary_dir:
+            with (
+                self.subTest(expiry=expiry),
+                tempfile.TemporaryDirectory() as temporary_dir,
+            ):
                 root = Path(temporary_dir)
                 receipt, identity = self.prepared_receipt_fixture(root, expiry=expiry)
                 path = root / "prepared.json"
@@ -439,32 +487,12 @@ class RefreshStandingTest(unittest.TestCase):
                     {
                         "KEEP": "value",
                         "STANDING_RESOURCE_EXPIRY": (
-                            "2026-09-05T12:34:56+00:00\n"
-                            "STANDING_DEEPWELL_IMAGE=evil"
+                            "2026-09-05T12:34:56+00:00\nSTANDING_DEEPWELL_IMAGE=evil"
                         ),
                     },
                 )
             self.assertEqual(path.read_text(encoding="utf-8"), original)
             self.assertEqual(list(root.glob("..env.*")), [])
-
-    def test_rollback_restores_captured_image_references(self) -> None:
-        previous = {
-            "KEEP": "value",
-            "STANDING_DEEPWELL_IMAGE": "old-deepwell",
-            "STANDING_FRAMERAIL_IMAGE": "old-framerail",
-            "STANDING_WWS_IMAGE": "old-wws",
-        }
-        rollback = {
-            service: {"reference": f"rollback-{service}", "id": "sha256:" + "a" * 64}
-            for service in REFRESH.SERVICES
-        }
-        restored = REFRESH.rollback_environment(previous, rollback)
-        self.assertEqual(restored["KEEP"], "value")
-        for service in REFRESH.SERVICES:
-            self.assertEqual(
-                restored[f"STANDING_{service.upper()}_IMAGE"],
-                f"rollback-{service}",
-            )
 
     def test_runtime_differential_identity_binds_lock_image_and_compose_config(
         self,
