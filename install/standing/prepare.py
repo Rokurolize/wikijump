@@ -234,7 +234,9 @@ def main() -> int:
         "images": images,
         "resource_disposition": {"owner": "standing-image-preparation", "expiry": expiry},
     }
-    atomic_json(output, receipt)
+    with output.open("x", encoding="utf-8") as stream:
+        json.dump(receipt, stream, indent=2, sort_keys=True)
+        stream.write("\n")
     print(json.dumps({"status": "pass", "receipt": str(output), **identity}, sort_keys=True))
     return 0
 

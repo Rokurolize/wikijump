@@ -92,7 +92,7 @@ function runtimeReport(value, overrides = {}) {
 }
 
 function cleanup(overrides = {}) {
-  return {schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1", run_id: "runtime-diff-test", project: "runtime-diff-test", status: "pass", compose_started: true, compose_down_exit_code: 0, compose_down_signal: null, run_root_removed: true, ...overrides};
+  return {schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1", run_id: "runtime-diff-test", project: "runtime-diff-test", status: "pass", compose_started: true, compose_down_exit_code: 0, compose_down_signal: null, run_root_removed: true, public_absence_verified: true, resources_released: true, vacant: true, browser_closed: true, ...overrides};
 }
 
 function stackMock(value, {report = runtimeReport(value), cleanupReceipt = cleanup(), stackLog = undefined, status = 0, mutate = null} = {}) {
@@ -101,7 +101,7 @@ function stackMock(value, {report = runtimeReport(value), cleanupReceipt = clean
     calls.push({command, args, options});
     mutate?.();
     if (report !== null) fsSync.writeFileSync(value.runtimeOutput, `${JSON.stringify(report)}\n`);
-    if (cleanupReceipt !== null) fsSync.writeFileSync(`${value.runtimeOutput}.cleanup.json`, `${JSON.stringify(cleanupReceipt)}\n`);
+    if (cleanupReceipt !== null) fsSync.writeFileSync(`${value.runtimeOutput}.cleanup.json`, `${JSON.stringify({...cleanupReceipt, run_id: args[args.indexOf("--run-id") + 1]})}\n`);
     const retainedLog = stackLog === undefined && cleanupReceipt?.compose_started === true ? "bound stack log\n" : stackLog;
     if (retainedLog != null) fsSync.writeFileSync(`${value.runtimeOutput}.stack.log`, retainedLog);
     return {status, signal: null, stdout: "runtime summary\n", stderr: ""};
@@ -115,7 +115,9 @@ test("one public command runs the candidate-bound generic runtime stack and prov
   assert.equal(await main(["--case-manifest", value.manifestPath], {spawn: mock.spawn}), 0);
   assert.equal(mock.calls.length, 1);
   assert.equal(mock.calls[0].command, NODE);
-  assert.deepEqual(mock.calls[0].args, [STACK, "--repository", REPOSITORY, "--candidate-manifest", value.candidatePath, "--cases", value.casesPath, "--captures", value.capturesPath, "--state-fixture", value.statePath, "--site", "sandbox-for-codex", "--output", value.runtimeOutput]);
+  assert.deepEqual(mock.calls[0].args.slice(0, -4), [STACK, "--repository", REPOSITORY, "--candidate-manifest", value.candidatePath, "--cases", value.casesPath, "--captures", value.capturesPath, "--state-fixture", value.statePath, "--site", "sandbox-for-codex"]);
+  assert.match(mock.calls[0].args.at(-3), /^candidate-run-[0-9a-f]{12}$/u);
+  assert.deepEqual(mock.calls[0].args.slice(-2), ["--output", value.runtimeOutput]);
   assert.equal(value.liveCase.case_id, "listpages-error-range-others-unsaved");
   assert.equal(value.liveCase.source, value.syntaxCase.source);
   assert.equal(value.liveCase.source_sha256, createHash("sha256").update(value.syntaxCase.source).digest("hex"));

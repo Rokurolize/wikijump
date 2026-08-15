@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFile, rename, rm, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
@@ -9,18 +9,14 @@ import {
   sha256Hex,
   stableStringify,
 } from "../src/canonical-json.mjs";
+import {publishBytesNoReplace} from "../src/atomic-no-replace.mjs";
 
-const [inventoryFlag, inventoryPathArgument, outputFlag, outputPath] =
-  process.argv.slice(2);
-if (
-  process.argv.length !== 6 ||
-  inventoryFlag !== "--inventory" ||
-  outputFlag !== "--output"
-) {
-  throw new Error(
-    "usage: build-compatibility-ledger.mjs --inventory PATH --output PATH",
-  );
-}
+const argumentsList = process.argv.slice(2);
+if (![4, 6].includes(argumentsList.length) || argumentsList[0] !== "--inventory" || argumentsList[2] !== "--output") throw new Error("usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH]");
+const [, inventoryPathArgument, , outputPathArgument, previousFlag, previousPathArgument] = argumentsList;
+if (argumentsList.length === 6 && previousFlag !== "--previous") throw new Error("usage: build-compatibility-ledger.mjs --inventory PATH --output PATH [--previous PATH]");
+const outputPath = path.resolve(outputPathArgument);
+const previousPath = previousPathArgument ? path.resolve(previousPathArgument) : outputPath;
 
 const inventoryPath = path.resolve(inventoryPathArgument);
 const inventoryBytes = await readFile(inventoryPath);
@@ -202,7 +198,7 @@ if (relationshipSources.size !== canonicalRelationships.length)
 
 let previous = null;
 try {
-  previous = JSON.parse(await readFile(outputPath, "utf8"));
+  previous = JSON.parse(await readFile(previousPath, "utf8"));
 } catch (error) {
   if (error.code !== "ENOENT") throw error;
 }
@@ -534,13 +530,8 @@ const ledger = {
   rows,
 };
 
-const temporaryOutput = `${outputPath}.tmp-${process.pid}`;
-try {
-  await writeFile(temporaryOutput, `${JSON.stringify(ledger, null, 2)}\n`);
-  await rename(temporaryOutput, outputPath);
-} catch (error) {
-  await rm(temporaryOutput, { force: true });
-  throw error;
+if (await publishBytesNoReplace(outputPath, `${JSON.stringify(ledger, null, 2)}\n`) !== "created") {
+  throw new Error(`ledger output already exists: ${outputPath}`);
 }
 process.stdout.write(
   `${ledger.counts.canonical_surfaces} canonical compatibility surfaces\n`,

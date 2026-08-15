@@ -42,6 +42,7 @@ export function parseDeviationLog(text) {
  * @param {object[]} [input.logErrors] deviation-log parse errors
  */
 export function buildMergeReadiness({ runId, branch, validators, deviations, logErrors = [], frozenCandidateCommit = null, prHead = null, allowedStatus = null, candidateReviewFreeze = null }) {
+  const candidateRunId = candidateReviewFreeze?.run_id ?? null;
   const blockers = [];
   for (const validator of validators) {
     if (validator.exitCode !== 0) {
@@ -69,15 +70,11 @@ export function buildMergeReadiness({ runId, branch, validators, deviations, log
       detail: `frozen candidate ${frozenCandidateCommit} differs from PR head ${prHead}`,
     });
   }
-  if (candidateReviewFreeze?.run_id !== undefined && candidateReviewFreeze.run_id !== runId) {
-    blockers.push({
-      kind: 'candidate-run-id-mismatch',
-      detail: `merge run ${runId} differs from candidate run ${candidateReviewFreeze.run_id}`,
-    });
-  }
   return {
     schema: MERGE_READINESS_SCHEMA,
     run_id: runId,
+    merge_run_id: runId,
+    candidate_run_id: candidateRunId,
     branch,
     merge_ready: blockers.length === 0,
     blockers,

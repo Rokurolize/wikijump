@@ -12,6 +12,8 @@ import {sealJsonNoReplace, sha256File} from "../src/standing-browser-parity-util
 const GIT = /^[0-9a-f]{40}$/u;
 const SHA256 = /^[0-9a-f]{64}$/u;
 const SURFACE = /^surface:[0-9]{8}$/u;
+const INVENTORY_SCHEMA = "wikijump.compatibility_surface_inventory.v2";
+const LEDGER_SCHEMA = "wikijump.compatibility_ledger.v1";
 const DEFERRED_KINDS = Object.freeze([
   "framerail_xmlrpc_method",
   "wikidot_py_amc_module_shape",
@@ -229,33 +231,37 @@ function validateDeferredDenominator(value) {
   return rows;
 }
 
-async function validateLedger(filePath, denominator) {
+function reference(value, name) {
+  const record = object(value, name);
+  exactKeys(record, ["path", "sha256"], name);
+  if (typeof record.path !== "string" || !path.isAbsolute(record.path)) fail(`${name}.path must be absolute`);
+  digest(record.sha256, `${name}.sha256`);
+  return record;
+}
+
+async function validateLedger(filePath, inventoryPath, denominatorRows) {
+  const inventory = object(JSON.parse(await fs.readFile(inventoryPath, "utf8")), "frozen compatibility inventory");
+  if (inventory.schema !== INVENTORY_SCHEMA) fail("frozen compatibility inventory has an unsupported schema");
+  const inventoryRecords = [...(inventory.surfaces ?? []), ...(inventory.ftml_raw_surface_manifest?.records ?? [])];
+  const inventoryByLocal = new Map(inventoryRecords.map((record) => [record.surface_id, record]));
+  for (const row of denominatorRows) {
+    const record = inventoryByLocal.get(row.source_local_id);
+    if (record?.kind !== row.kind) fail(`final-zero denominator row ${row.surface_id} does not bind the frozen inventory ID/kind`);
+  }
+  const inventorySha256 = await sha256File(inventoryPath);
   const ledger = object(JSON.parse(await fs.readFile(filePath, "utf8")), "compatibility ledger");
-  exactKeys(ledger, ["schema", "counts", "rows"], "compatibility ledger");
-  if (ledger.schema !== "wikijump.compatibility_ledger.v1") fail("compatibility ledger has an unsupported schema");
-  if (!Array.isArray(ledger.rows)) fail("compatibility ledger rows must be an array");
-  object(ledger.counts, "compatibility ledger counts");
-  exactKeys(ledger.counts, ["canonical_surfaces"], "compatibility ledger counts");
-  const ids = ledger.rows.map((row, index) => {
-    object(row, `compatibility ledger row ${index}`);
-    exactKeys(row, ["surface_id", "source_local_id", "kind"], `compatibility ledger row ${index}`);
+  if (ledger.schema !== LEDGER_SCHEMA || !Array.isArray(ledger.rows) || !ledger.inputs) fail("compatibility ledger has an unsupported shape");
+  const input = reference(ledger.inputs.inventory, "compatibility ledger inventory input");
+  if (path.resolve(input.path) !== path.resolve(inventoryPath) || input.sha256 !== inventorySha256) fail("compatibility ledger does not bind the frozen inventory");
+  const rows = ledger.rows.map((value, index) => {
+    const row = object(value, `compatibility ledger row ${index}`);
     if (!SURFACE.test(row.surface_id ?? "")) fail(`compatibility ledger row ${index} has an invalid surface_id`);
-    if (typeof row.source_local_id !== "string" || row.source_local_id === "") fail(`compatibility ledger row ${index} has an invalid source_local_id`);
-    if (typeof row.kind !== "string" || row.kind === "") fail(`compatibility ledger row ${index} has an invalid kind`);
-    if (isDeferredScopeRow(row)) {
-      fail(`current compatibility ledger contains deferred scope row ${row.source_local_id}`);
-    }
-    return row.surface_id;
+    return row;
   });
-  if (new Set(ids).size !== ids.length) fail("compatibility ledger has duplicate surface ids");
-  const sourceLocalIds = ledger.rows.map(({source_local_id}) => source_local_id);
-  if (new Set(sourceLocalIds).size !== sourceLocalIds.length) fail("compatibility ledger has duplicate source-local identities");
-  if (JSON.stringify([...ids].sort()) !== JSON.stringify([...denominator.ids].sort())) fail("ledger surface ids differ from the final-zero denominator");
-  const scope = ledger.rows.map(({source_local_id, kind}) => `${source_local_id}\u0000${kind}`);
-  const expectedScope = denominator.rows.map(({source_local_id, kind}) => `${source_local_id}\u0000${kind}`);
-  if (JSON.stringify(scope.sort()) !== JSON.stringify(expectedScope.sort())) fail("ledger source-local identities and kinds differ from the current denominator");
+  const ids = rows.map(({surface_id}) => surface_id);
+  if (new Set(ids).size !== ids.length || JSON.stringify([...ids].sort()) !== JSON.stringify(denominatorRows.map(({surface_id}) => surface_id).sort())) fail("ledger surface IDs differ from the final-zero denominator");
   if (ledger.counts?.canonical_surfaces !== ids.length) fail("ledger canonical surface count is not exact");
-  return ledger;
+  return {ledger, rows, bySurface: new Map(rows.map((row) => [row.surface_id, row]))};
 }
 
 async function validateDeferredLedger(filePath, expectedRows) {
@@ -275,7 +281,7 @@ async function validateDeferredLedger(filePath, expectedRows) {
   return ledger;
 }
 
-async function validateStandingMatrix(filePath, denominatorIds, repository) {
+async function validateStandingMatrix(filePath, denominatorIds, canonical, repository) {
   const matrix = object(JSON.parse(await fs.readFile(filePath, "utf8")), "standing matrix");
   exactKeys(matrix, ["schema", "merge_commit", "rows"], "standing matrix");
   if (matrix.schema !== "wikijump.compatibility_standing_matrix.v1") fail("standing matrix has an unsupported schema");
@@ -293,7 +299,7 @@ async function validateStandingMatrix(filePath, denominatorIds, repository) {
     return row.surface_id;
   });
   if (new Set(ids).size !== ids.length) fail("standing matrix has duplicate surface ids");
-  if (JSON.stringify([...ids].sort()) !== JSON.stringify([...denominatorIds].sort())) fail("standing matrix surface ids differ from the final-zero denominator");
+  if (JSON.stringify([...ids].sort()) !== JSON.stringify(denominatorIds.sort())) fail("standing matrix surface ids differ from the final-zero denominator");
   await Promise.all(rows.flatMap((row, index) => row.artifacts.map(async (artifact, artifactIndex) => {
     const record = object(artifact, `standing matrix row ${index} artifact ${artifactIndex}`);
     exactKeys(record, ["path", "sha256"], `standing matrix row ${index} artifact ${artifactIndex}`);
@@ -302,6 +308,11 @@ async function validateStandingMatrix(filePath, denominatorIds, repository) {
     const actual = await sha256File(record.path);
     if (actual !== expected) fail(`standing matrix row ${index} artifact ${artifactIndex} has a mismatched SHA-256`);
   })));
+  for (const row of rows) {
+    const canonicalRow = canonical.bySurface.get(row.surface_id);
+    const expected = canonicalRow?.standing;
+    if (expected?.state !== "pass" || !Array.isArray(expected.artifacts) || JSON.stringify(row.artifacts) !== JSON.stringify(expected.artifacts)) fail(`standing matrix row ${row.surface_id} artifacts do not bind the canonical ledger row`);
+  }
   return matrix;
 }
 
@@ -326,7 +337,7 @@ function finalZeroCounts(denominator) {
 
 export function parseArgs(argv) {
   const args = {};
-  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "repository", "output"]);
+  const names = new Set(["ledger", "inventory", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "repository", "output"]);
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
     if (flag === "--help" || flag === "-h") return {help: true};
@@ -340,15 +351,15 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --repository DIR --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --inventory FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --repository DIR --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, repository}) {
+export async function verifyFinalZero({ledger, inventory, denominator, deferredDenominator, deferredLedger, standingMatrix, repository}) {
   const denominatorValue = validateDenominator(JSON.parse(await fs.readFile(denominator, "utf8")));
-  await validateLedger(ledger, denominatorValue);
+  const canonical = await validateLedger(ledger, inventory, denominatorValue.rows);
   const deferredDenominatorRows = validateDeferredDenominator(JSON.parse(await fs.readFile(deferredDenominator, "utf8")));
   await validateDeferredLedger(deferredLedger, deferredDenominatorRows);
-  const matrix = await validateStandingMatrix(standingMatrix, denominatorValue.ids, repository);
+  const matrix = await validateStandingMatrix(standingMatrix, denominatorValue.ids, canonical, repository);
   const counts = finalZeroCounts(denominatorValue);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
@@ -364,6 +375,7 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
     },
     inputs: {
       ledger: {path: path.resolve(ledger), sha256: await sha256File(ledger)},
+      inventory: {path: path.resolve(inventory), sha256: await sha256File(inventory)},
       denominator: {path: path.resolve(denominator), sha256: await sha256File(denominator)},
       deferred_denominator: {path: path.resolve(deferredDenominator), sha256: await sha256File(deferredDenominator)},
       deferred_ledger: {path: path.resolve(deferredLedger), sha256: await sha256File(deferredLedger)},
@@ -380,6 +392,7 @@ export async function main(argv, {stdout = console.log} = {}) {
   }
   const receipt = await verifyFinalZero({
     ledger: args.ledger,
+    inventory: args.inventory,
     denominator: args.denominator,
     deferredDenominator: args["deferred-denominator"],
     deferredLedger: args["deferred-ledger"],

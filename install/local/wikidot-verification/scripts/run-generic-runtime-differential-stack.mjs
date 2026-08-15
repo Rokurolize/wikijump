@@ -9,6 +9,7 @@ import path from "node:path";
 import {spawnSync} from "node:child_process";
 
 import {runCliIfMain} from "../src/cli-entry.mjs";
+import {publishBytesNoReplace} from "../src/atomic-no-replace.mjs";
 import {sha256Hex, stableStringify} from "../src/canonical-json.mjs";
 import {sha256} from "../src/syntax-differential.mjs";
 
@@ -55,6 +56,7 @@ export function parseArgs(argv) {
     externalReferences: [],
     stateFixtures: [],
     output: null,
+    runId: null,
     site: "sandbox-for-codex",
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -73,6 +75,7 @@ export function parseArgs(argv) {
     } else if (option === "--external-reference") {
       args.externalReferences.push(path.resolve(valueAfter(argv, index++, option)));
     } else if (option === "--output") args.output = path.resolve(valueAfter(argv, index++, option));
+    else if (option === "--run-id") args.runId = valueAfter(argv, index++, option);
     else if (option === "--site") args.site = valueAfter(argv, index++, option);
     else throw new Error(`unknown option: ${option}`);
   }
@@ -86,6 +89,7 @@ export function parseArgs(argv) {
   }
   if (args.captures.length === 0) throw new Error("--captures is required");
   if (args.site !== "sandbox-for-codex") throw new Error("--site must be sandbox-for-codex");
+  if (args.runId !== null && !/^candidate-run-[0-9a-f]{12}$/u.test(args.runId)) throw new Error("--run-id must be a candidate run ID");
   return args;
 }
 
@@ -454,31 +458,44 @@ export async function main(argv) {
   const stackLogPath = `${args.output}.stack.log`;
   if (fs.existsSync(cleanupReceiptPath)) throw new Error(`cleanup receipt already exists: ${cleanupReceiptPath}`);
   if (fs.existsSync(stackLogPath)) throw new Error(`stack log already exists: ${stackLogPath}`);
-  const {manifest, binary} = await bindCandidate(args);
-  const runId = `runtime-diff-${crypto.randomUUID().slice(0, 12)}`;
+  const runId = args.runId ?? `candidate-run-${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  let boundCandidate;
+  try {
+    boundCandidate = await bindCandidate(args);
+  } catch (error) {
+    const failure = {schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1", run_id: runId, project: runId, status: "fail", reason: error?.message ?? String(error), compose_started: false, compose_down_exit_code: null, compose_down_signal: null, run_root_removed: true, public_absence_verified: false, resources_released: true, vacant: true, browser_closed: true};
+    await publishBytesNoReplace(cleanupReceiptPath, `${JSON.stringify(failure)}\n`);
+    throw error;
+  }
+  const {manifest, binary} = boundCandidate;
   const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
-  const runRoot = await fsp.mkdtemp(path.join(os.tmpdir(), `${runId}-`));
   const project = runId;
-  const composePath = path.join(runRoot, "compose.yaml");
-  const configPath = path.join(runRoot, "config.toml");
-  const identityPath = path.join(runRoot, "runtime-identity.json");
-  const dockerConfigPath = path.join(runRoot, "docker-config");
-  await fsp.mkdir(dockerConfigPath, {mode: 0o700});
-  const localDockerEnv = dockerEnv(dockerConfigPath);
-  const [rpcPort, textBlockPort] = await freePorts(2);
-  const labels = {
-    "com.rokurolize.wikijump.owner": OWNER,
-    "com.rokurolize.wikijump.expiry": expiresAt,
-    "com.rokurolize.wikijump.run_id": runId,
-    "com.rokurolize.wikijump.lifecycle": "delete-on-close",
-  };
-  const credentials = {
-    databasePassword: crypto.randomBytes(32).toString("hex"),
-    filesAccessKey: `runtime${crypto.randomBytes(12).toString("hex")}`,
-    filesSecretKey: crypto.randomBytes(32).toString("hex"),
-  };
+  let runRoot = null;
+  let composePath = null;
+  let configPath = null;
+  let identityPath = null;
+  let localDockerEnv = null;
   let composeStarted = false;
   try {
+    runRoot = await fsp.mkdtemp(path.join(os.tmpdir(), `${runId}-`));
+    composePath = path.join(runRoot, "compose.yaml");
+    configPath = path.join(runRoot, "config.toml");
+    identityPath = path.join(runRoot, "runtime-identity.json");
+    const dockerConfigPath = path.join(runRoot, "docker-config");
+    await fsp.mkdir(dockerConfigPath, {mode: 0o700});
+    localDockerEnv = dockerEnv(dockerConfigPath);
+    const [rpcPort, textBlockPort] = await freePorts(2);
+    const labels = {
+      "com.rokurolize.wikijump.owner": OWNER,
+      "com.rokurolize.wikijump.expiry": expiresAt,
+      "com.rokurolize.wikijump.run_id": runId,
+      "com.rokurolize.wikijump.lifecycle": "delete-on-close",
+    };
+    const credentials = {
+      databasePassword: crypto.randomBytes(32).toString("hex"),
+      filesAccessKey: `runtime${crypto.randomBytes(12).toString("hex")}`,
+      filesSecretKey: crypto.randomBytes(32).toString("hex"),
+    };
     const localConfig = await fsp.readFile(
       path.join(args.repository, "install/local/deepwell/config.toml"),
       "utf8",
@@ -586,25 +603,31 @@ export async function main(argv) {
       }
     }
     let down = null;
-    if (fs.existsSync(composePath)) {
+    if (composePath !== null && fs.existsSync(composePath)) {
       down = spawnSync(DOCKER, [
         "compose", "-p", project, "-f", composePath,
         "down", "--volumes", "--remove-orphans",
       ], {encoding: "utf8", env: localDockerEnv});
     }
-    await fsp.rm(runRoot, {recursive: true, force: true});
+    if (runRoot !== null) await fsp.rm(runRoot, {recursive: true, force: true});
     const cleanup = {
       schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1",
       run_id: runId,
       project,
-      status: (down === null || down.status === 0) && stackLogError === null ? "pass" : "fail",
+      status: composeStarted && (down === null || down.status === 0) && stackLogError === null ? "pass" : "fail",
       compose_started: composeStarted,
       compose_down_exit_code: down?.status ?? null,
       compose_down_signal: down?.signal ?? null,
-      run_root_removed: !fs.existsSync(runRoot),
+      run_root_removed: runRoot === null || !fs.existsSync(runRoot),
+      public_absence_verified: false,
+      resources_released: down === null || down.status === 0,
+      vacant: false,
+      browser_closed: true,
     };
     if (!cleanup.run_root_removed) cleanup.status = "fail";
-    await fsp.writeFile(cleanupReceiptPath, `${JSON.stringify(cleanup, null, 2)}\n`, {flag: "wx", mode: 0o600});
+    cleanup.public_absence_verified = cleanup.status === "pass";
+    cleanup.vacant = cleanup.status === "pass" && cleanup.run_root_removed;
+    await publishBytesNoReplace(cleanupReceiptPath, `${JSON.stringify(cleanup, null, 2)}\n`);
     if (stackLogError !== null) throw new Error(`runtime differential stack log publication failed: ${stackLogError.message}`);
     if (cleanup.status !== "pass") throw new Error(`runtime differential stack cleanup failed; see ${cleanupReceiptPath}`);
   }

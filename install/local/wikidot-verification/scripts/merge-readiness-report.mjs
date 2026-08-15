@@ -17,6 +17,7 @@ import path from 'node:path';
 
 import {runCliIfMain} from '../src/cli-entry.mjs';
 import {sealJsonNoReplace} from '../src/standing-browser-parity-util.mjs';
+import {validateCandidateParityReceipt} from '../src/standing-browser-parity-receipt.mjs';
 
 import { buildMergeReadiness, parseDeviationLog } from '../src/deviation-log.mjs';
 
@@ -72,12 +73,16 @@ export function parseArgs(argv) {
   }
   if (!args.allowedStatus) throw new Error('--allowed-status is required');
   if (!args.candidateReviewFreeze) throw new Error('--candidate-review-freeze is required');
-  if (args.validators.length === 0) throw new Error('at least one --validator is required');
+  const names = args.validators.map(({name}) => name);
+  if (args.validators.length !== 4 || JSON.stringify([...names].sort()) !== JSON.stringify(['browser', 'candidate', 'cleanup', 'static'])) throw new Error('validators must be exactly static,candidate,browser,cleanup');
   return args;
 }
 
 // Derive an effective exit code from a verdict file's own aggregate.
 export function verdictExitCode(verdict) {
+  if (['wikijump.compatibility_final_zero_receipt.v1', 'wikijump_syntax_differential.identity_bound_verdict.v1', 'wikijump_syntax_differential.runtime_stack_cleanup.v1', 'wikijump.standing_candidate_parity_receipt.v1'].includes(verdict?.schema)) {
+    return verdict.status === 'pass' ? 0 : verdict.status === 'fail' ? 1 : 2;
+  }
   if (Object.hasOwn(verdict ?? {}, 'exit_code')) {
     return Number.isInteger(verdict.exit_code) && verdict.exit_code >= 0 ? verdict.exit_code : 2;
   }
@@ -119,6 +124,36 @@ function readCandidateReviewFreeze(file, frozenCandidateCommit) {
   return {...reference, run_id: candidate.run_id, candidate_commit: candidate.wikijump_commit, candidate_tree: candidate.wikijump_tree};
 }
 
+function requirePassingStatic(value, frozenCandidateCommit) {
+  if (value?.schema !== 'wikijump.compatibility_final_zero_receipt.v1' || value.status !== 'pass' || value.merge_commit !== frozenCandidateCommit || !value.counts || Object.values(value.counts).some((count) => count !== 0)) throw new Error('static validator is not a passing final-zero receipt bound to the frozen PR head');
+  return value;
+}
+
+function requireCandidate(value, candidateRunId, frozenCandidateCommit) {
+  const runtime = value?.binding?.runtime_identity;
+  if (value?.schema !== 'wikijump_syntax_differential.identity_bound_verdict.v1' || value.status !== 'pass' || value.run_id !== candidateRunId || runtime?.wikijump_sha !== frozenCandidateCommit || !/^[0-9a-f]{40}$/u.test(runtime?.ftml_sha ?? '') || /^(.)\1+$/u.test(runtime.ftml_sha) || !/^[0-9a-f]{64}$/u.test(runtime?.dependency_lock_sha256 ?? '') || /^(.)\1+$/u.test(runtime.dependency_lock_sha256) || !/^[0-9a-f]{64}$/u.test(runtime?.executable_sha256 ?? '') || /^(.)\1+$/u.test(runtime.executable_sha256) || !/^[0-9a-f]{64}$/u.test(runtime?.runtime_config_sha256 ?? '') || /^(.)\1+$/u.test(runtime.runtime_config_sha256)) throw new Error('candidate validator is not a passing identity-bound receipt for the candidate run, source, dependencies, and PR head');
+  return value;
+}
+
+function requireCleanup(value, candidateRunId) {
+  if (value?.schema !== 'wikijump_syntax_differential.runtime_stack_cleanup.v1' || value.status !== 'pass' || value.run_id !== candidateRunId || value.run_root_removed !== true || value.public_absence_verified !== true || value.resources_released !== true || value.vacant !== true || value.browser_closed !== true || (value.compose_started === true && (value.compose_down_exit_code !== 0 || value.compose_down_signal !== null))) throw new Error('cleanup validator is not the passing runtime stack cleanup receipt for the candidate run');
+  return value;
+}
+
+function requireBrowser(value, candidateRunId, frozenCandidateCommit) {
+  validateCandidateParityReceipt(value, {requirePass: true});
+  if (value.candidate?.run_id !== candidateRunId || value.candidate?.wikijump_commit !== frozenCandidateCommit) throw new Error('browser validator is not bound to the candidate run and frozen PR head');
+  return value;
+}
+
+function validateValidator(name, value, {candidateRunId, frozenCandidateCommit}) {
+  if (name === 'static') return requirePassingStatic(value, frozenCandidateCommit);
+  if (name === 'candidate') return requireCandidate(value, candidateRunId, frozenCandidateCommit);
+  if (name === 'browser') return requireBrowser(value, candidateRunId, frozenCandidateCommit);
+  if (name === 'cleanup') return requireCleanup(value, candidateRunId);
+  throw new Error(`unknown validator: ${name}`);
+}
+
 function validatorInput(file) {
   const absolute = path.resolve(file);
   const bytes = fs.readFileSync(absolute);
@@ -126,7 +161,7 @@ function validatorInput(file) {
 }
 
 export function usage() {
-  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <id> --frozen-candidate-commit <commit> --pr-head <commit> --allowed-status <status.json> --candidate-review-freeze <identity.json> --validator name=verdict.json [--validator name=verdict.json ...] [--branch name] [--deviation-log <jsonl>]';
+  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <merge-id> --frozen-candidate-commit <commit> --pr-head <commit> --allowed-status <status.json> --candidate-review-freeze <identity.json> --validator static=FILE --validator candidate=FILE --validator browser=FILE --validator cleanup=FILE [--branch name] [--deviation-log <jsonl>]';
 }
 
 export async function main(argv) {
@@ -137,8 +172,9 @@ export async function main(argv) {
   }
   const allowedStatus = readAllowedStatus(args.allowedStatus, args.prHead);
   const candidateReviewFreeze = readCandidateReviewFreeze(args.candidateReviewFreeze, args.frozenCandidateCommit);
-  const validators = args.validators.map(({ name, file }) => {
+  const validators = args.validators.sort(({name: left}, {name: right}) => left.localeCompare(right)).map(({ name, file }) => {
     const verdict = JSON.parse(fs.readFileSync(file, 'utf8'));
+    validateValidator(name, verdict, {candidateRunId: candidateReviewFreeze.run_id, frozenCandidateCommit: args.frozenCandidateCommit});
     return {name, exitCode: verdictExitCode(verdict), ...validatorInput(file)};
   });
   const parsed = args.deviationLog

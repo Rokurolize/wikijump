@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+import crypto from "node:crypto";
 import {spawnSync} from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
+import {publishBytesNoReplace} from "../src/atomic-no-replace.mjs";
 import {sha256Hex} from "../src/canonical-json.mjs";
 import {runCliIfMain} from "../src/cli-entry.mjs";
 
@@ -73,13 +76,7 @@ async function assertAbsent(target, label) {
 }
 
 async function publishNoReplace(filePath, value) {
-  const temporary = `${filePath}.tmp-${process.pid}`;
-  await fs.writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, {flag: "wx", mode: 0o600});
-  try {
-    await fs.link(temporary, filePath);
-  } finally {
-    await fs.unlink(temporary).catch(() => {});
-  }
+  await publishBytesNoReplace(filePath, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function readJsonLines(bytes, label) {
@@ -148,14 +145,10 @@ async function validateManifest(value, manifestPath) {
   const stackLog = `${runtimeOutput}.stack.log`;
   requireValue(path.dirname(runtimeOutput) === path.dirname(manifestPath) && path.dirname(output) === path.dirname(manifestPath), "runtime_output and output must be run-owned siblings of the case manifest");
   requireValue(new Set([manifestPath, runtimeOutput, output, `${runtimeOutput}.cleanup.json`, stackLog]).size === 5, "runner paths collide");
-  await assertAbsent(runtimeOutput, "runtime_output");
-  await assertAbsent(`${runtimeOutput}.cleanup.json`, "runtime cleanup receipt");
-  await assertAbsent(stackLog, "runtime stack log");
-  await assertAbsent(output, "output");
-  return {caseId: value.case_id, candidateManifest, candidate, source, stateFixtures, captures, externalReferences, actor: value.actor, context: value.context, site: value.site, url: url.href, executables: {node, git, docker}, channels: value.channels, runtimeOutput, stackLog, output};
+  return {caseId: value.case_id, candidateManifest, candidate, source, stateFixtures, captures, externalReferences, actor: value.actor, context: value.context, site: value.site, url: url.href, executables: {node, git, docker}, channels: value.channels, runtimeOutput, stackLog, output, cleanupReceipt: `${runtimeOutput}.cleanup.json`};
 }
 
-function evaluateReport(run, report, cleanup) {
+function evaluateReport(run, report, cleanup, runId) {
   requireValue(report?.schema === REPORT_SCHEMA, "runtime differential returned an unsupported report");
   requireValue(report.comparisons?.length === 1 && report.comparisons[0]?.case_id === run.caseId, "runtime differential returned an incomplete case result");
   const expectedInputs = {cases: run.source, captures: run.captures, external_references: run.externalReferences, state_fixtures: run.stateFixtures};
@@ -165,7 +158,7 @@ function evaluateReport(run, report, cleanup) {
   }
   const identity = report.runtime_identity;
   requireValue(identity?.wikijump_sha === run.candidate.source.wikijump_sha && identity?.ftml_sha === run.candidate.source.ftml_sha && identity?.dependency_lock_sha256 === run.candidate.build.cargo_lock_sha256 && identity?.executable_sha256 === run.candidate.build.binary_sha256 && SHA256.test(identity?.runtime_config_sha256), "runtime identity does not match the candidate build");
-  requireValue(cleanup?.schema === CLEANUP_SCHEMA && cleanup.status === "pass" && cleanup.run_root_removed === true && (!cleanup.compose_started || (cleanup.compose_down_exit_code === 0 && cleanup.compose_down_signal === null)), "runtime stack cleanup did not pass");
+  requireValue(cleanup?.schema === CLEANUP_SCHEMA && cleanup.status === "pass" && cleanup.run_id === runId && cleanup.run_root_removed === true && cleanup.public_absence_verified === true && cleanup.resources_released === true && cleanup.vacant === true && cleanup.browser_closed === true && (!cleanup.compose_started || (cleanup.compose_down_exit_code === 0 && cleanup.compose_down_signal === null)), "runtime stack cleanup did not pass");
   requireValue(Array.isArray(report.page_receipts) && report.page_receipts.length === 1 && report.page_receipts[0]?.cleanup?.status === "removed", "saved runtime page cleanup is incomplete");
   const comparison = report.comparisons[0];
   requireValue(run.captures.some((capture) => capture.path === comparison.identities?.capture_file) && Number.isSafeInteger(comparison.identities?.page_identity), "runtime result is not bound to saved Wikidot capture evidence");
@@ -191,8 +184,28 @@ export async function main(argv, {spawn = spawnSync} = {}) {
   const {manifestPath} = parseArgs(argv);
   const manifestIdentity = await artifact(manifestPath, "case manifest");
   const run = await validateManifest(JSON.parse(await fs.readFile(manifestPath, "utf8")), manifestPath);
+  const runId = `candidate-run-${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  const globalLockPath = path.join(os.tmpdir(), "wikijump-candidate-run.lock");
+  const globalLock = await fs.open(globalLockPath, "wx", 0o600);
+  await globalLock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_global_lock.v1", run_id: runId, evidence_directory: path.dirname(manifestPath)})}\n`);
+  await globalLock.sync();
+  await globalLock.close();
+  const lockPath = path.join(path.dirname(manifestPath), ".candidate-run.lock");
+  let lock = null;
+  try {
+    lock = await fs.open(lockPath, "wx", 0o600);
+    await lock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_run_lock.v1", run_id: runId, case_id: run.caseId})}\n`);
+    await lock.sync();
+    await lock.close();
+  } catch (error) {
+    await lock?.close().catch(() => {});
+    await fs.unlink(globalLockPath).catch(() => {});
+    throw error;
+  }
+  try {
+  for (const [target, label] of [[run.runtimeOutput, "runtime_output"], [run.cleanupReceipt, "runtime cleanup receipt"], [run.stackLog, "runtime stack log"], [run.output, "output"]]) await assertAbsent(target, label);
   const startedAt = new Date().toISOString();
-  const stackArgs = [STACK, "--repository", REPOSITORY, "--candidate-manifest", run.candidateManifest.path, "--cases", run.source.path, ...run.captures.flatMap((value) => ["--captures", value.path]), ...run.externalReferences.flatMap((value) => ["--external-reference", value.path]), ...run.stateFixtures.flatMap((value) => ["--state-fixture", value.path]), "--site", run.site, "--output", run.runtimeOutput];
+  const stackArgs = [STACK, "--repository", REPOSITORY, "--candidate-manifest", run.candidateManifest.path, "--cases", run.source.path, ...run.captures.flatMap((value) => ["--captures", value.path]), ...run.externalReferences.flatMap((value) => ["--external-reference", value.path]), ...run.stateFixtures.flatMap((value) => ["--state-fixture", value.path]), "--site", run.site, "--run-id", runId, "--output", run.runtimeOutput];
   const command = spawn(NODE, stackArgs, {cwd: REPOSITORY, encoding: "utf8", env: COMMAND_ENV, maxBuffer: 16 * 1024 * 1024});
   let report = null;
   let cleanup = null;
@@ -207,7 +220,7 @@ export async function main(argv, {spawn = spawnSync} = {}) {
     reason ??= error.message;
   }
   try {
-    cleanupArtifact = await artifact(`${run.runtimeOutput}.cleanup.json`, "runtime cleanup receipt");
+    cleanupArtifact = await artifact(run.cleanupReceipt, "runtime cleanup receipt");
     cleanup = JSON.parse(await fs.readFile(cleanupArtifact.path, "utf8"));
   } catch (error) {
     reason ??= error.message;
@@ -228,7 +241,7 @@ export async function main(argv, {spawn = spawnSync} = {}) {
   }
   let evaluation = null;
   try {
-    evaluation = evaluateReport(run, report, cleanup);
+    evaluation = evaluateReport(run, report, cleanup, runId);
   } catch (error) {
     reason ??= error.message;
   }
@@ -238,12 +251,13 @@ export async function main(argv, {spawn = spawnSync} = {}) {
   const verdict = {
     schema: VERDICT_SCHEMA,
     adapter: ADAPTER,
+    run_id: runId,
     case_id: run.caseId,
     status: passed ? "pass" : "fail",
     reason,
     binding: {candidate_manifest: run.candidateManifest, runtime_identity: report?.runtime_identity ?? null, source: run.source, site_data: {state_fixtures: run.stateFixtures}, wikidot_evidence: {captures: run.captures, external_references: run.externalReferences}, actor: run.actor, context: run.context, site: run.site, url: run.url, executables: run.executables},
     channels: evaluation?.channels ?? {raw_html: {status: "fail"}, parsed_dom: {status: "fail"}, visible_text: {status: "fail"}, browser_intervals: {status: "not_applicable", basis: run.channels.browser_intervals.basis, reason: run.channels.browser_intervals.reason}},
-    cleanup: cleanup ?? {schema: CLEANUP_SCHEMA, status: "fail", reason: "the runtime stack published no cleanup receipt"},
+    cleanup: cleanup ?? {schema: CLEANUP_SCHEMA, status: "fail", run_id: runId, public_absence_verified: false, resources_released: false, vacant: false, browser_closed: false, reason: "the runtime stack published no cleanup receipt"},
     command: {path: NODE, arguments: stackArgs, exit_code: command.status, signal: command.signal, stdout_sha256: sha256Hex(command.stdout ?? ""), stderr_sha256: sha256Hex(command.stderr ?? "")},
     artifacts: [...new Map(artifacts.map((value) => [value.path, value])).values()],
     started_at: startedAt,
@@ -252,6 +266,10 @@ export async function main(argv, {spawn = spawnSync} = {}) {
   await publishNoReplace(run.output, verdict);
   console.log(JSON.stringify({case_id: verdict.case_id, status: verdict.status, output: run.output}));
   return passed ? 0 : 1;
+  } finally {
+    await fs.unlink(lockPath).catch(() => {});
+    await fs.unlink(globalLockPath).catch(() => {});
+  }
 }
 
 await runCliIfMain(import.meta.url, main, {onError: (error) => {

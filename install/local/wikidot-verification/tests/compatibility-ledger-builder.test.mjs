@@ -134,6 +134,9 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-"));
   const input = path.join(directory, "inventory.json");
   const output = path.join(directory, "ledger.json");
+  const secondOutput = path.join(directory, "ledger-second.json");
+  const thirdOutput = path.join(directory, "ledger-third.json");
+  const missingOutput = path.join(directory, "ledger-missing.json");
   const initial = inventory();
   initial.surfaces[0].evidence.status = "available";
   initial.surfaces[0].source.status = "implemented";
@@ -203,9 +206,11 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
     "--inventory",
     input,
     "--output",
+    secondOutput,
+    "--previous",
     output,
   ]);
-  const second = JSON.parse(readFileSync(output));
+  const second = JSON.parse(readFileSync(secondOutput));
   const secondLocalIds = new Map(
     second.source_local_identities.map((row) => [
       row.raw_record_id,
@@ -223,7 +228,7 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
     () =>
       execFileSync(
         process.execPath,
-        [script, "--inventory", input, "--output", output],
+        [script, "--inventory", input, "--output", missingOutput, "--previous", secondOutput],
         { stdio: "pipe" },
       ),
     /raw source disappeared: catalog-feature:a/u,
@@ -246,9 +251,11 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
     "--inventory",
     input,
     "--output",
+    thirdOutput,
+    "--previous",
     output,
   ]);
-  const third = JSON.parse(readFileSync(output));
+  const third = JSON.parse(readFileSync(thirdOutput));
   assert.equal(third.counts.canonical_surfaces, 1);
   assert.equal(third.counts.deduplication_relationships, 1);
   assert.equal(third.relationships[0].relationship_type, "equivalence");
@@ -426,6 +433,7 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-real-"));
   const input = path.join(directory, "inventory.json");
   const output = path.join(directory, "ledger.json");
+  const guardedOutput = path.join(directory, "ledger-guarded.json");
   const inventoryPath = path.join(
     root,
     "docs/development/compatibility-surface-inventory.json",
@@ -500,9 +508,11 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
       "--inventory",
       input,
       "--output",
+      guardedOutput,
+      "--previous",
       output,
     ]);
-    const guardedLedger = JSON.parse(readFileSync(output));
+    const guardedLedger = JSON.parse(readFileSync(guardedOutput));
     assert.equal(guardedLedger.deferred_exclusions.count, 54);
     assert.equal(
       guardedLedger.source_local_identities.some(
@@ -520,6 +530,8 @@ test("compatibility ledger builder projects recorded proof claims without erasin
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-proof-"));
   const input = path.join(directory, "inventory.json");
   const output = path.join(directory, "ledger.json");
+  const failedOutput = path.join(directory, "ledger-failed.json");
+  const blockedOutput = path.join(directory, "ledger-blocked.json");
 
   const pendingFixture = inventory();
   pendingFixture.surfaces[0].candidate.status = "pending";
@@ -551,9 +563,11 @@ test("compatibility ledger builder projects recorded proof claims without erasin
     "--inventory",
     input,
     "--output",
+    failedOutput,
+    "--previous",
     output,
   ]);
-  const projected = JSON.parse(readFileSync(output));
+  const projected = JSON.parse(readFileSync(failedOutput));
   const boundArtifact = {
     path: input,
     sha256: createHash("sha256").update(readFileSync(input)).digest("hex"),
@@ -576,9 +590,11 @@ test("compatibility ledger builder projects recorded proof claims without erasin
     "--inventory",
     input,
     "--output",
-    output,
+    blockedOutput,
+    "--previous",
+    failedOutput,
   ]);
-  const blocked = JSON.parse(readFileSync(output));
+  const blocked = JSON.parse(readFileSync(blockedOutput));
   assert.deepEqual(blocked.rows[0].candidate, {
     state: "blocked",
     artifacts: [],

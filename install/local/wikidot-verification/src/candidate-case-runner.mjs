@@ -16,6 +16,7 @@ import {
 
 export const CANDIDATE_CASE_RECEIPT_SCHEMA = "wikijump.candidate_case_receipt.v1";
 export const CANDIDATE_CASE_AGGREGATE_SCHEMA = "wikijump.candidate_case_aggregate.v1";
+export const CANDIDATE_CASE_TERMINAL_SCHEMA = "wikijump.candidate_case_terminal_receipt.v1";
 
 const CASE_ID = /^[A-Z][A-Z0-9_]+$/u;
 const RUN_ID = /^candidate-case-[0-9a-f]{12}$/u;
@@ -135,6 +136,14 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   if (!RUN_ID.test(runId)) throw new Error("candidate case run ID is invalid");
 
   const output = path.resolve(outputDir);
+  const evidenceRoot = path.dirname(output);
+  const lockPath = path.join(evidenceRoot, ".candidate-run.lock");
+  const terminalFailurePath = path.join(evidenceRoot, `${path.basename(output)}.terminal-failure.json`);
+  const lock = await fs.open(lockPath, "wx", 0o600);
+  await lock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_run_lock.v1", run_id: runId, candidate_case_set: caseSet.id})}\n`);
+  await lock.sync();
+  await lock.close();
+  try {
   await createPrivateEmptyDirectory(output);
   const caseDirectory = path.join(output, "cases");
   await fs.mkdir(caseDirectory, { mode: 0o700 });
@@ -215,7 +224,6 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   }
 
   const resourceSnapshot = resources.snapshot();
-  if (cleanupProof !== null) await seal(path.join(output, "cleanup.json"), { schema: "wikijump.candidate_case_cleanup.v1", run_id: runId, proof: cleanupProof, resources: resourceSnapshot });
   let verifiedCleanup = null;
   let cleanupVerificationError = null;
   try {
@@ -225,6 +233,19 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   } catch (error) {
     cleanupVerificationError = error;
   }
+  const cleanupReceipt = {
+    schema: "wikijump.candidate_case_cleanup.v1",
+    status: cleanupError === null && cleanupVerificationError === null && browserCleanupError === null && cleanupProof !== null ? "pass" : "fail",
+    run_id: runId,
+    proof: cleanupProof,
+    resources: resourceSnapshot,
+    public_absence_verified: verifiedCleanup?.public_absence_verified === true,
+    resources_released: resourceSnapshot.every((resource) => resource.released),
+    vacant: resourceSnapshot.every((resource) => resource.released) && browserCleanupError === null,
+    browser_closed: browserCleanupError === null,
+    reason: cleanupError?.message ?? cleanupVerificationError?.message ?? null,
+  };
+  await seal(path.join(output, "cleanup.json"), cleanupReceipt);
 
   let runtimeAfter = null;
   let runtimeError = null;
@@ -285,10 +306,27 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     execution_identity: executionIdentity,
     runtime_identity: { before: runtimeBefore, after: runtimeAfter, stable: true },
     cleanup: verifiedCleanup,
+    cleanup_receipt: "cleanup.json",
     browser_cleanup: browserCleanup,
     resources: resourceSnapshot,
     cases,
   };
   await seal(path.join(output, "candidate-case-receipt.json"), aggregate);
   return aggregate;
+  } catch (error) {
+    await sealFailure(terminalFailurePath, runId, output, error);
+    throw error;
+  } finally {
+    await fs.unlink(lockPath).catch(() => {});
+  }
+}
+
+async function sealFailure(destination, runId, output, error) {
+  await seal(destination, {
+    schema: CANDIDATE_CASE_TERMINAL_SCHEMA,
+    status: "fail",
+    run_id: runId,
+    output_dir: output,
+    error: error?.message ?? String(error),
+  });
 }
