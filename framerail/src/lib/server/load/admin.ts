@@ -3,6 +3,7 @@ import { discussionUpdateValue } from "$lib/admin-forum.js"
 import { licenseUpdateValue } from "$lib/admin/admin-license.js"
 import { navigationUpdateValues } from "$lib/admin/admin-navigation.js"
 import { isWikidotSiteLanguage } from "$lib/admin/wikidot-site-languages.js"
+import { isGoogleAnalyticsProfile } from "$lib/site-settings.js"
 
 import { authGetSession } from "$lib/server/auth/get-session"
 import {
@@ -735,7 +736,7 @@ const analyticsSchema = object({
   profile: pipe(
     string(),
     custom(
-      (value) => value === "" || /^UA-[0-9]+-[0-9]+$/u.test(value),
+      (value) => value === "" || isGoogleAnalyticsProfile(value),
       "Wrong analytics key"
     )
   )

@@ -174,7 +174,11 @@
 <svelte:head>
   <title>{viewData?.site?.name}</title>
   {#if analyticsProfile}
-    <meta name="wikidot-site-analytics-profile" content={analyticsProfile} />
+    <meta
+      name="wikidot-site-analytics-profile"
+      content={analyticsProfile}
+      data-wikidot-site-analytics-valid="true"
+    />
   {/if}
   {#if siteFavicon}
     <link href={siteFavicon.href} rel="shortcut icon" />

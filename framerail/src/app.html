@@ -10,9 +10,9 @@
     %sveltekit.head%
     <script nonce="%sveltekit.nonce%">
       const analyticsProfile = document.querySelector(
-        'meta[name="wikidot-site-analytics-profile"]'
+        'meta[name="wikidot-site-analytics-profile"][data-wikidot-site-analytics-valid="true"]'
       )?.content
-      if (/^UA-[0-9]+-[0-9]+$/u.test(analyticsProfile ?? "")) {
+      if (analyticsProfile) {
         var _gaq = (globalThis._gaq = globalThis._gaq || [])
         _gaq.push(["userTracker._setAccount", analyticsProfile])
         _gaq.push(["userTracker._trackPageview"])

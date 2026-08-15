@@ -1,8 +1,10 @@
 // @ts-nocheck
 import assert from "node:assert/strict"
 import { once } from "node:events"
+import { readFile } from "node:fs/promises"
 import { createServer as createHttpServer } from "node:http"
 import { fileURLToPath } from "node:url"
+import vm from "node:vm"
 import { after, before, describe, it } from "node:test"
 
 import { createServer as createViteServer } from "vite"
@@ -230,7 +232,10 @@ describe("Wikidot site settings public boundaries", () => {
       {},
       requestContext(enabledData, { routeId: "/[slug]/[...extra]" })
     )
-    assert.match(enabled.head, /name="wikidot-site-analytics-profile" content="UA-1-2"/u)
+    assert.match(
+      enabled.head,
+      /name="wikidot-site-analytics-profile" content="UA-1-2" data-wikidot-site-analytics-valid="true"/u
+    )
     assert.match(
       enabled.head,
       /data-wikidot-site-theme="" href="https:\/\/themes\.example\/site\.css"/u
@@ -262,6 +267,43 @@ describe("Wikidot site settings public boundaries", () => {
     }).body
     assert.match(analyticsBody, />Profile key<\/label>/u)
     assert.match(analyticsBody, />Use Google Analytics<\/label>/u)
+  })
+
+  it("rejects analytics profiles with trailing line terminators", () => {
+    const data = {
+      site: {
+        name: "Line terminator fixture",
+        slug: "line-terminator-fixture",
+        locale: "en",
+        layout: "wikidot"
+      },
+      site_settings: {
+        google_analytics: { enabled: true, profile: "UA-1-2" }
+      },
+      theme: { type: "built_in", id: 1 },
+      license_name: "CC BY-SA 3.0",
+      license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
+      license_kind: "standard",
+      license_html: null,
+      user_session: null,
+      internationalization: {}
+    }
+    for (const [name, terminator] of [
+      ["CR", "\r"],
+      ["LF", "\n"],
+      ["U+2028", "\u2028"],
+      ["U+2029", "\u2029"]
+    ]) {
+      data.site_settings.google_analytics.profile = `UA-1-2${terminator}`
+      const rendered = renderComponent(
+        rootLayoutComponent,
+        {},
+        requestContext(data, { routeId: "/[slug]/[...extra]" })
+      )
+
+      assert.doesNotMatch(rendered.head, /wikidot-site-analytics-profile/u, name)
+      assert.doesNotMatch(rendered.head, /UA-1-2/u, name)
+    }
   })
 
   it("serves analytics through nonce-protected full-document SSR without a remote loader", async () => {
@@ -345,12 +387,43 @@ describe("Wikidot site settings public boundaries", () => {
         document.slice(analyticsScriptIndex, analyticsOpeningTagEnd + 1),
         `<script nonce="${analyticsNonce}">`
       )
+      assert.match(
+        document,
+        /name="wikidot-site-analytics-profile" content="UA-1-2" data-wikidot-site-analytics-valid="true"/u
+      )
     } finally {
       await new Promise((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()))
       })
       client.request = originalClientRequest
     }
+  })
+
+  it("does not bootstrap analytics from an invalid unmarked meta", async () => {
+    const template = await readFile(new URL("../src/app.html", import.meta.url), "utf8")
+    const scriptStart = template.indexOf("      const analyticsProfile")
+    const scriptEnd = template.indexOf("    </script>", scriptStart)
+    assert.ok(scriptStart >= 0)
+    assert.ok(scriptEnd > scriptStart)
+
+    const selectors = []
+    const context = {
+      document: {
+        querySelector(selector) {
+          selectors.push(selector)
+          return selector === 'meta[name="wikidot-site-analytics-profile"]'
+            ? { content: "UA-1-2\n" }
+            : null
+        }
+      },
+      globalThis: {}
+    }
+    vm.runInNewContext(template.slice(scriptStart, scriptEnd), context)
+
+    assert.deepEqual(selectors, [
+      'meta[name="wikidot-site-analytics-profile"][data-wikidot-site-analytics-valid="true"]'
+    ])
+    assert.equal(context.globalThis._gaq, undefined)
   })
 
   it("routes settings writes through the trusted site and revision-bound action seam", async () => {
@@ -473,6 +546,25 @@ describe("Wikidot site settings public boundaries", () => {
         for (const [name, value] of Object.entries(expected)) {
           assert.deepEqual(calls[1].params[name], value, `${action}: ${name}`)
         }
+      }
+
+      for (const [name, terminator] of [
+        ["CR", "\r"],
+        ["LF", "\n"],
+        ["U+2028", "\u2028"],
+        ["U+2029", "\u2029"]
+      ]) {
+        calls.length = 0
+        const invalid = await canonicalAdminServer.actions.analytics(
+          actionEvent("analytics", {
+            siteId,
+            expectedSettingsRevision: settingsRevision,
+            enabled: true,
+            profile: `UA-1-2${terminator}`
+          })
+        )
+        assert.equal(invalid.status, 400, name)
+        assert.deepEqual(calls, [], name)
       }
 
       calls.length = 0

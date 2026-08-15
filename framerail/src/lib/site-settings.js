@@ -1,12 +1,14 @@
-const GOOGLE_ANALYTICS_PROFILE = /^UA-[0-9]+-[0-9]+$/u
+const GOOGLE_ANALYTICS_PROFILE = /^UA-[0-9]+-[0-9]+$(?![\s\S])/u
+
+export const isGoogleAnalyticsProfile = (value) =>
+  typeof value === "string" && GOOGLE_ANALYTICS_PROFILE.test(value)
 
 /** @typedef {import("./types").ThemeSetting} ThemeSetting */
 
 export const normalizeGoogleAnalyticsSettings = (settings) => ({
   enabled: settings?.enabled === true,
   profile:
-    typeof settings?.profile === "string" &&
-    GOOGLE_ANALYTICS_PROFILE.test(settings.profile)
+    isGoogleAnalyticsProfile(settings?.profile)
       ? settings.profile
       : null
 })
