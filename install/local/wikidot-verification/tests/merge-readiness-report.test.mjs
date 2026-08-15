@@ -15,10 +15,11 @@ test("merge readiness rejects unknown verdict shapes", () => {
 });
 
 test("merge readiness requires exactly the four named validators", () => {
-  const parsed = parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--allowed-status", "status.json", "--candidate-review-freeze", "freeze.json", ...validatorArgs]);
+  const parsed = parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--candidate-review-freeze", "freeze.json", ...validatorArgs]);
   assert.equal(parsed.runId, "merge-run");
-  assert.throws(() => parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--allowed-status", "status.json", "--candidate-review-freeze", "freeze.json", ...validatorArgs.slice(0, -2)]), /exactly static,candidate,browser,cleanup/u);
-  assert.throws(() => parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--allowed-status", "status.json", "--candidate-review-freeze", "freeze.json", ...validatorArgs, "--validator", "other=other.json"]), /exactly static,candidate,browser,cleanup/u);
+  assert.throws(() => parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--candidate-review-freeze", "freeze.json", ...validatorArgs.slice(0, -2)]), /exactly static,candidate,browser,cleanup/u);
+  assert.throws(() => parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--candidate-review-freeze", "freeze.json", ...validatorArgs, "--validator", "other=other.json"]), /exactly static,candidate,browser,cleanup/u);
+  assert.throws(() => parseArgs(["--output", "report.json", "--run-id", "merge-run", "--frozen-candidate-commit", commit, "--pr-head", commit, "--allowed-status", "status.json", "--candidate-review-freeze", "freeze.json", ...validatorArgs]), /Unknown argument/u);
 });
 
 test("merge readiness reports the sealed candidate run separately from the merge run", () => {

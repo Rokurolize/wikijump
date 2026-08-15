@@ -191,7 +191,6 @@ test("report CLIs expose structural exit rules without reading artifacts", () =>
     "--run-id", "run",
     "--frozen-candidate-commit", "0123456789abcdef0123456789abcdef01234567",
     "--pr-head", "0123456789abcdef0123456789abcdef01234567",
-    "--allowed-status", "status.json",
     "--candidate-review-freeze", "identity.json",
     "--validator", "static=verdict.json",
   ]).runId, "run");

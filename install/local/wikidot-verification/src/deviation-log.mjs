@@ -41,7 +41,7 @@ export function parseDeviationLog(text) {
  * @param {object[]} input.deviations  parsed deviation entries
  * @param {object[]} [input.logErrors] deviation-log parse errors
  */
-export function buildMergeReadiness({ runId, branch, validators, deviations, logErrors = [], frozenCandidateCommit = null, prHead = null, allowedStatus = null, candidateReviewFreeze = null }) {
+export function buildMergeReadiness({ runId, branch, validators, deviations, logErrors = [], frozenCandidateCommit = null, prHead = null, candidateReviewFreeze = null }) {
   const candidateRunId = candidateReviewFreeze?.run_id ?? null;
   const blockers = [];
   for (const validator of validators) {
@@ -87,7 +87,6 @@ export function buildMergeReadiness({ runId, branch, validators, deviations, log
     candidate_pr_binding: frozenCandidateCommit === null && prHead === null
       ? null
       : {frozen_candidate_commit: frozenCandidateCommit, pr_head: prHead, matched: frozenCandidateCommit === prHead},
-    allowed_status: allowedStatus,
     candidate_review_freeze: candidateReviewFreeze,
   };
 }

@@ -30,7 +30,6 @@ export function parseArgs(argv) {
     runId: null,
     frozenCandidateCommit: null,
     prHead: null,
-    allowedStatus: null,
     candidateReviewFreeze: null,
   };
   const seen = new Set();
@@ -41,7 +40,7 @@ export function parseArgs(argv) {
       if (!value || value.startsWith('--')) throw new Error(`${arg} requires a value`);
       return value;
     };
-    if (arg === '--output' || arg === '--branch' || arg === '--deviation-log' || arg === '--run-id' || arg === '--frozen-candidate-commit' || arg === '--pr-head' || arg === '--allowed-status' || arg === '--candidate-review-freeze') {
+    if (arg === '--output' || arg === '--branch' || arg === '--deviation-log' || arg === '--run-id' || arg === '--frozen-candidate-commit' || arg === '--pr-head' || arg === '--candidate-review-freeze') {
       if (seen.has(arg)) throw new Error(`${arg} may be supplied only once`);
       seen.add(arg);
       const value = next();
@@ -51,7 +50,6 @@ export function parseArgs(argv) {
       else if (arg === '--run-id') args.runId = value;
       else if (arg === '--frozen-candidate-commit') args.frozenCandidateCommit = value;
       else if (arg === '--pr-head') args.prHead = value;
-      else if (arg === '--allowed-status') args.allowedStatus = value;
       else args.candidateReviewFreeze = value;
     }
     else if (arg === '--validator') {
@@ -71,7 +69,6 @@ export function parseArgs(argv) {
   for (const [name, value] of [["--frozen-candidate-commit", args.frozenCandidateCommit], ["--pr-head", args.prHead]]) {
     if (!/^[0-9a-f]{40}$/u.test(value ?? "") || /^(.)\1+$/u.test(value)) throw new Error(`${name} must be a real full Git commit`);
   }
-  if (!args.allowedStatus) throw new Error('--allowed-status is required');
   if (!args.candidateReviewFreeze) throw new Error('--candidate-review-freeze is required');
   const names = args.validators.map(({name}) => name);
   if (args.validators.length !== 4 || JSON.stringify([...names].sort()) !== JSON.stringify(['browser', 'candidate', 'cleanup', 'static'])) throw new Error('validators must be exactly static,candidate,browser,cleanup');
@@ -112,12 +109,20 @@ function readJsonInput(file, name) {
   }
 }
 
-function readAllowedStatus(file, prHead) {
-  const {value, reference} = readJsonInput(file, 'allowed status');
-  if (value?.schemaVersion !== 1 || value?.state !== 'OPEN' || value?.mergeable !== 'MERGEABLE' || value?.mergeStateStatus !== 'CLEAN' || value?.overall !== 'passing' || value?.subject?.headSha !== prHead) {
-    throw new Error('allowed status is missing, stale, or not mergeable for the PR head');
+function verifyArtifactReference(value, name) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value) || typeof value.path !== 'string' || !path.isAbsolute(value.path) || !/^[0-9a-f]{64}$/u.test(value.sha256 ?? '')) {
+    throw new Error(`${name} is not a named SHA-256 artifact`);
   }
-  return {...reference, head_sha: value.subject.headSha, status: value.overall};
+  const stat = fs.lstatSync(value.path);
+  if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`${name} is not a regular file`);
+  const bytes = fs.readFileSync(value.path);
+  if (sha256Hex(bytes) !== value.sha256 || (value.bytes !== undefined && value.bytes !== bytes.length)) throw new Error(`${name} identity moved`);
+  return {path: value.path, sha256: value.sha256};
+}
+
+function verifyArtifactList(value, name) {
+  if (!Array.isArray(value) || value.length === 0) throw new Error(`${name} must name producer artifacts`);
+  return value.map((artifact, index) => verifyArtifactReference(artifact, `${name}[${index}]`));
 }
 
 function readCandidateReviewFreeze(file, frozenCandidateCommit) {
@@ -130,13 +135,16 @@ function readCandidateReviewFreeze(file, frozenCandidateCommit) {
 }
 
 function requirePassingStatic(value, frozenCandidateCommit) {
-  if (value?.schema !== 'wikijump.compatibility_final_zero_receipt.v1' || value.status !== 'pass' || value.merge_commit !== frozenCandidateCommit || !value.counts || Object.values(value.counts).some((count) => count !== 0)) throw new Error('static validator is not a passing final-zero receipt bound to the frozen PR head');
+  if (value?.schema !== 'wikijump.compatibility_final_zero_receipt.v1' || value.status !== 'pass' || value.merge_commit !== frozenCandidateCommit || !value.counts || Object.values(value.counts).some((count) => count !== 0) || !value.inputs?.ledger || !value.inputs?.standing_matrix) throw new Error('static validator is not a passing final-zero receipt bound to the frozen PR head');
+  verifyArtifactReference(value.inputs.ledger, 'final-zero ledger');
+  verifyArtifactReference(value.inputs.standing_matrix, 'final-zero standing output');
   return value;
 }
 
 function requireCandidate(value, candidateRunId, frozenCandidateCommit) {
   const runtime = value?.binding?.runtime_identity;
   if (value?.schema !== 'wikijump_syntax_differential.identity_bound_verdict.v1' || value.status !== 'pass' || value.run_id !== candidateRunId || runtime?.wikijump_sha !== frozenCandidateCommit || !/^[0-9a-f]{40}$/u.test(runtime?.ftml_sha ?? '') || /^(.)\1+$/u.test(runtime.ftml_sha) || !/^[0-9a-f]{64}$/u.test(runtime?.dependency_lock_sha256 ?? '') || /^(.)\1+$/u.test(runtime.dependency_lock_sha256) || !/^[0-9a-f]{64}$/u.test(runtime?.executable_sha256 ?? '') || /^(.)\1+$/u.test(runtime.executable_sha256) || !/^[0-9a-f]{64}$/u.test(runtime?.runtime_config_sha256 ?? '') || /^(.)\1+$/u.test(runtime.runtime_config_sha256)) throw new Error('candidate validator is not a passing identity-bound receipt for the candidate run, source, dependencies, and PR head');
+  verifyArtifactList(value.artifacts, 'candidate producer artifacts');
   return value;
 }
 
@@ -160,7 +168,7 @@ function validateValidator(name, value, {candidateRunId, frozenCandidateCommit})
 }
 
 export function usage() {
-  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <merge-id> --frozen-candidate-commit <commit> --pr-head <commit> --allowed-status <status.json> --candidate-review-freeze <identity.json> --validator static=FILE --validator candidate=FILE --validator browser=FILE --validator cleanup=FILE [--branch name] [--deviation-log <jsonl>]';
+  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <merge-id> --frozen-candidate-commit <commit> --pr-head <commit> --candidate-review-freeze <identity.json> --validator static=FILE --validator candidate=FILE --validator browser=FILE --validator cleanup=FILE [--branch name] [--deviation-log <jsonl>]';
 }
 
 export async function main(argv) {
@@ -169,7 +177,6 @@ export async function main(argv) {
     console.log(usage());
     return 0;
   }
-  const allowedStatus = readAllowedStatus(args.allowedStatus, args.prHead);
   const candidateReviewFreeze = readCandidateReviewFreeze(args.candidateReviewFreeze, args.frozenCandidateCommit);
   const validators = args.validators.sort(({name: left}, {name: right}) => left.localeCompare(right)).map(({ name, file }) => {
     const {value: verdict, reference} = readJsonInput(file, `${name} validator`);
@@ -187,7 +194,6 @@ export async function main(argv) {
     logErrors: parsed.errors,
     frozenCandidateCommit: args.frozenCandidateCommit,
     prHead: args.prHead,
-    allowedStatus,
     candidateReviewFreeze,
   });
   await sealJsonNoReplace(args.output, report);
