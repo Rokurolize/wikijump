@@ -148,17 +148,20 @@ async function writeRepositoryFixture(root) {
       }
     ]
   })
-  await writeJson(root, "docs/wikidot-specifications/implementation-ledger.json", {
+  const implementationLedger = {
     catalog_sha256: sha256(`${JSON.stringify(catalog, null, 2)}\n`),
     features: {
       "feature-one": {
         status: "pending",
         tests: [],
+        implementation_files: [],
         documentation_evidence: ["specifications/core/feature-one.md"],
         live_oracle_evidence: []
       }
     }
-  })
+  }
+  await writeJson(root, "docs/wikidot-specifications/implementation-ledger.json", implementationLedger)
+  await writeJson(root, "scripts/data/wikidot-implementation-ledger.json", implementationLedger)
   await writeText(
     root,
     "deepwell/src/api.rs",
@@ -479,10 +482,68 @@ async function replacePageActionsFixture(root, actionSource) {
 
 async function refreshCatalogHash(root) {
   const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
-  const ledgerPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
-  const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
-  ledger.catalog_sha256 = sha256(await fs.readFile(catalogPath))
-  await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+  const catalogHash = sha256(await fs.readFile(catalogPath))
+  for (const ledgerPath of [
+    "docs/wikidot-specifications/implementation-ledger.json",
+    "scripts/data/wikidot-implementation-ledger.json"
+  ]) {
+    const absolutePath = path.join(root, ledgerPath)
+    const ledger = JSON.parse(await fs.readFile(absolutePath, "utf8"))
+    ledger.catalog_sha256 = catalogHash
+    await fs.writeFile(absolutePath, `${JSON.stringify(ledger, null, 2)}\n`)
+  }
+}
+
+async function writeCatalogOwnerFixture(root, ownerManifest = {
+  issue_scope: { status: "unresolved", references: [] },
+  owners: [{
+    owner: "wikijump.deepwell",
+    source_references: ["deepwell/src/api.rs"],
+    test_references: ["tests/data-form.test.js#fixture"]
+  }]
+}, specification = "specifications/data-forms/fixture.md", featureId = "data-forms-fixture") {
+  await writeRepositoryFixture(root)
+  const catalogPath = path.join(root, "docs/wikidot-specifications/catalog.json")
+  const coveragePath = path.join(root, "docs/wikidot-specifications/source-coverage.json")
+  const semanticsPath = path.join(root, "docs/development/compatibility-surface-semantics.json")
+  const observationsPath = path.join(root, "docs/wikidot-specifications/live-observations.json")
+  const catalog = JSON.parse(await fs.readFile(catalogPath, "utf8"))
+  const feature = catalog.features[0]
+  feature.id = featureId
+  feature.specification = specification
+  const semantics = JSON.parse(await fs.readFile(semanticsPath, "utf8"))
+  semantics.specification_owner_keys = semantics.specification_owner_keys
+    .map((owner) => owner === "catalog.feature:feature-one" ? `catalog.feature:${featureId}` : owner)
+    .sort()
+  const coverage = JSON.parse(await fs.readFile(coveragePath, "utf8"))
+  coverage.pages[0].feature_ids = [feature.id]
+  const observations = JSON.parse(await fs.readFile(observationsPath, "utf8"))
+  observations.observations[0].feature_ids = [feature.id]
+  const ledger = {
+    catalog_sha256: "",
+    features: {
+      [feature.id]: {
+        status: "implemented",
+        tests: [{ path: "tests/data-form.test.js", name: "fixture" }],
+        implementation_files: ["deepwell/src/api.rs"],
+        documentation_evidence: [specification],
+        live_oracle_evidence: []
+      }
+    },
+    implementation_owner_records: { [feature.id]: ownerManifest }
+  }
+  await fs.writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`)
+  await fs.writeFile(semanticsPath, `${JSON.stringify(semantics, null, 2)}\n`)
+  await fs.writeFile(coveragePath, `${JSON.stringify(coverage, null, 2)}\n`)
+  await fs.writeFile(observationsPath, `${JSON.stringify(observations, null, 2)}\n`)
+  for (const ledgerPath of [
+    "docs/wikidot-specifications/implementation-ledger.json",
+    "scripts/data/wikidot-implementation-ledger.json"
+  ]) {
+    await writeJson(root, ledgerPath, ledger)
+  }
+  await writeText(root, "tests/data-form.test.js", "export function fixture() {}\n")
+  await refreshCatalogHash(root)
 }
 
 function runCli(root, outputPath, env = process.env) {
@@ -604,6 +665,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   for (const requiredPath of [
     "docs/wikidot-specifications/catalog.json",
     "docs/wikidot-specifications/implementation-ledger.json",
+    "scripts/data/wikidot-implementation-ledger.json",
     "docs/wikidot-specifications/live-observations.json",
     "docs/wikidot-specifications/source-coverage.json",
     "deepwell/src/api.rs",
@@ -1069,10 +1131,11 @@ test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift",
 test("CLI emits closed owner keys and typed edges without double-counting FTML records", async (t) => {
   const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-owner-edges-"))
   cleanupFixture(t, outputRoot)
-  const trackedInventory = JSON.parse(
-    await fs.readFile(path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json"), "utf8")
-  )
   const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
   const result = spawnSync(process.execPath, [
     cliPath,
     "--root",
@@ -1080,11 +1143,34 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
     "--output",
     outputPath,
     "--source-revision",
-    trackedInventory.provenance.wikijump.commit
+    sourceRevision
   ], { encoding: "utf8" })
 
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  assert.deepEqual(
+    inventory.surfaces.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:page-tags").implementation_owners,
+    ["wikijump.framerail"]
+  )
+  const siteStructureFeatures = inventory.surfaces.filter(({ kind, public_reference }) =>
+    kind === "catalog_feature" && public_reference.some((reference) =>
+      reference.startsWith("docs/wikidot-specifications/specifications/site-structure/")
+    )
+  )
+  assert.equal(siteStructureFeatures.length, 13)
+  assert.deepEqual(
+    siteStructureFeatures.filter(({ implementation_owners: owners }) => owners.length > 0)
+      .map(({ surface_id: surfaceId }) => surfaceId),
+    ["catalog-feature:page-tags"]
+  )
+  assert.equal(
+    siteStructureFeatures.filter(({ implementation_owners: owners }) => owners.length === 0).length,
+    12
+  )
+  assert.deepEqual(
+    inventory.surfaces.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:page-parent-relations").implementation_owners,
+    []
+  )
   assert.deepEqual(inventory.relationship_edge_types, [
     "alias",
     "equivalence",
@@ -1121,6 +1207,238 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
       inventory.relationship_edge_types.includes(type)
     )
   )
+})
+
+test("CLI rejects a canonical implementation ledger mirror mismatch before discovery", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-ledger-mismatch-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const mirrorPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
+  const mirror = JSON.parse(await fs.readFile(mirrorPath, "utf8"))
+  mirror.features["feature-one"].status = "implemented"
+  await fs.writeFile(mirrorPath, `${JSON.stringify(mirror, null, 2)}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(result.stderr, /scripts\/data\/wikidot-implementation-ledger\.json and docs\/wikidot-specifications\/implementation-ledger\.json must be byte-identical/u)
+})
+
+test("CLI binds cited data-form owners and leaves unrelated rows unresolved", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-data-form-owners-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const rows = inventory.surfaces.filter(({ public_reference }) =>
+    public_reference[0]?.startsWith("docs/wikidot-specifications/specifications/data-forms/")
+  )
+  const expectedBound = new Map([
+    ["catalog-feature:data-forms-checkbox-field", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-creating-new-page", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-dataforms-and-listpages", ["wikijump.deepwell"]],
+    ["catalog-feature:data-forms-displaying", ["wikijump.deepwell"]],
+    ["catalog-feature:data-forms-field-properties", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-hidden-field", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-hints", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-select-field", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-selecting-and-sorting", ["wikijump.deepwell"]],
+    ["catalog-feature:data-forms-tags", ["wikijump.framerail"]],
+    ["catalog-feature:data-forms-text-field", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-wiki-field", ["wikijump.deepwell", "wikijump.framerail"]]
+  ])
+  const expectedUnresolved = [
+    "catalog-feature:data-forms-css-styling",
+    "catalog-feature:data-forms-date-field",
+    "catalog-feature:data-forms-deleting-form",
+    "catalog-feature:data-forms-file-field",
+    "catalog-feature:data-forms-howto",
+    "catalog-feature:data-forms-images",
+    "catalog-feature:data-forms-links",
+    "catalog-feature:data-forms-output-style",
+    "catalog-feature:data-forms-overview",
+    "catalog-feature:data-forms-pagepath",
+    "catalog-feature:data-forms-pagepath-field",
+    "catalog-feature:data-forms-password-field",
+    "catalog-feature:data-forms-static-field",
+    "catalog-feature:data-forms-url-field",
+    "catalog-feature:data-forms-youtube"
+  ]
+  assert.equal(rows.length, 27)
+  assert.deepEqual(rows.map(({ surface_id }) => surface_id), [...expectedBound.keys(), ...expectedUnresolved].sort())
+  for (const row of rows) {
+    assert.deepEqual(row.implementation_owners, expectedBound.get(row.surface_id) ?? [], row.surface_id)
+  }
+  assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length > 0).length, 12)
+  assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length === 0).length, 15)
+  const canonicalLedger = JSON.parse(
+    await fs.readFile(path.join(repositoryRoot, "scripts/data/wikidot-implementation-ledger.json"), "utf8")
+  )
+  assert.equal(Object.keys(canonicalLedger.implementation_owner_records).length, 114)
+  assert.ok(Object.values(canonicalLedger.implementation_owner_records).every(({ issue_scope }) =>
+    issue_scope.status === "unresolved" && issue_scope.references.length === 0
+  ))
+})
+
+test("CLI binds module owners from canonical records and keeps unsupported modules unresolved", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-module-owners-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const moduleRows = inventory.surfaces.filter(({ public_reference }) =>
+    public_reference[0]?.startsWith("docs/wikidot-specifications/specifications/module/")
+  )
+  const canonicalLedger = JSON.parse(
+    await fs.readFile(path.join(repositoryRoot, "scripts/data/wikidot-implementation-ledger.json"), "utf8")
+  )
+  const unresolved = [
+    "module-admoduleabovecontent",
+    "module-admoduleabovesidebar",
+    "module-admodulebelowcontent",
+    "module-admodulebelowfooter",
+    "module-admodulebelowsidebar",
+    "module-childpages",
+    "module-clone",
+    "module-createaccount",
+    "module-currencyconvert",
+    "module-dashboard",
+    "module-deleteaccount",
+    "module-featuredsite",
+    "module-files",
+    "module-flickrgallery",
+    "module-footerbar",
+    "module-frontspecialmini",
+    "module-join",
+    "module-loginstatus",
+    "module-mailform",
+    "module-membershipapply",
+    "module-navibar",
+    "module-newsite",
+    "module-nextpreviouspage",
+    "module-pageoptionsbottom",
+    "module-sitegrid",
+    "module-sitestagcloud",
+    "module-themepreviewer",
+    "module-watchers"
+  ].map((id) => `catalog-feature:${id}`)
+  assert.equal(moduleRows.length, 74)
+  assert.deepEqual(
+    moduleRows.filter(({ implementation_owners }) => implementation_owners.length === 0)
+      .map(({ surface_id: surfaceId }) => surfaceId),
+    unresolved
+  )
+  for (const row of moduleRows) {
+    const featureId = row.surface_id.slice("catalog-feature:".length)
+    const expectedOwners = canonicalLedger.implementation_owner_records[featureId].owners
+      .map(({ owner }) => owner)
+    assert.deepEqual(row.implementation_owners, expectedOwners, row.surface_id)
+  }
+  assert.deepEqual(
+    moduleRows.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:module-comments").implementation_owners,
+    ["wikijump.deepwell", "wikijump.framerail"]
+  )
+  assert.deepEqual(
+    moduleRows.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:module-listpages").implementation_owners,
+    ["wikijump.deepwell", "wikijump.framerail"]
+  )
+})
+
+test("CLI does not infer a data-form owner from a cited source path", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-data-form-owner-negative-"))
+  cleanupFixture(t, root)
+  await writeCatalogOwnerFixture(root, {
+    issue_scope: { status: "unresolved", references: [] },
+    owners: []
+  })
+  const outputPath = path.join(root, "inventory.json")
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const row = inventory.surfaces.find(({ surface_id }) => surface_id === "catalog-feature:data-forms-fixture")
+  assert.deepEqual(row.implementation_owners, [])
+})
+
+test("CLI does not infer a site-structure owner from a cited source path", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-site-structure-owner-negative-"))
+  cleanupFixture(t, root)
+  await writeCatalogOwnerFixture(root, {
+    issue_scope: { status: "unresolved", references: [] },
+    owners: []
+  }, "specifications/site-structure/fixture.md")
+  const outputPath = path.join(root, "inventory.json")
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const row = inventory.surfaces.find(({ surface_id }) => surface_id === "catalog-feature:data-forms-fixture")
+  assert.deepEqual(row.implementation_owners, [])
+})
+
+test("CLI does not infer a module owner from a cited source path", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-module-owner-negative-"))
+  cleanupFixture(t, root)
+  await writeCatalogOwnerFixture(root, {
+    issue_scope: { status: "unresolved", references: [] },
+    owners: []
+  }, "specifications/module/fixture.md", "module-fixture")
+  const outputPath = path.join(root, "inventory.json")
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const row = inventory.surfaces.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:module-fixture")
+  assert.deepEqual(row.implementation_owners, [])
+})
+
+test("tracked compatibility inventory exactly matches one generator run", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-byte-compare-"))
+  cleanupFixture(t, outputRoot)
+  const trackedPath = path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json")
+  const trackedBytes = await fs.readFile(trackedPath)
+  const trackedInventory = JSON.parse(trackedBytes)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    trackedInventory.provenance.wikijump.commit
+  ], { encoding: "utf8" })
+
+  assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(await fs.readFile(outputPath), trackedBytes)
 })
 
 test("CLI rejects an omitted or duplicate missing-page control", async (t) => {

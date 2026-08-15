@@ -12,6 +12,9 @@ const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
 const SEMANTICS_REGISTRY = "docs/development/compatibility-surface-semantics.json"
+const CANONICAL_IMPLEMENTATION_LEDGER = "scripts/data/wikidot-implementation-ledger.json"
+const DATA_FORM_SPECIFICATION_PREFIX = "docs/wikidot-specifications/specifications/data-forms/"
+const MODULE_SPECIFICATION_PREFIX = "docs/wikidot-specifications/specifications/module/"
 const WIKIDOT_PY_GIT_DIR = path.join(process.env.WIKIDOT_PY_CHECKOUT ?? "/home/roku/src/Rokurolize/wikidot.py", ".git")
 const FTML_GIT_DIR = path.join(process.env.WIKIJUMP_FTML_CHECKOUT ?? "/home/roku/src/Rokurolize/ftml", ".git")
 const GIT_EXECUTABLE = "/usr/bin/git"
@@ -281,7 +284,8 @@ function surface({
   source = phase("implemented"),
   candidate = phase("pending"),
   standing = phase("pending"),
-  closure = phase("open")
+  closure = phase("open"),
+  implementationOwnerRecords = []
 }) {
   return {
     surface_id: surfaceId,
@@ -297,7 +301,8 @@ function surface({
     source,
     candidate,
     standing,
-    closure
+    closure,
+    implementation_owner_records: implementationOwnerRecords
   }
 }
 
@@ -777,32 +782,115 @@ function testReferences(tests) {
   })
 }
 
+async function validateCatalogOwnerRecords(root, featureId, ledgerEntry, ownerManifest, ledgerPath) {
+  assertExactKeys(ownerManifest, ["issue_scope", "owners"], `${ledgerPath} ${featureId}`)
+  assertExactKeys(ownerManifest.issue_scope, ["status", "references"], `${ledgerPath} ${featureId} issue_scope`)
+  if (!(ownerManifest.issue_scope.status === "resolved" || ownerManifest.issue_scope.status === "unresolved")) {
+    throw new Error(`${ledgerPath} ${featureId} has an unknown issue scope status`)
+  }
+  const issueReferences = ownerManifest.issue_scope.references
+  if (
+    !Array.isArray(issueReferences) ||
+    JSON.stringify(issueReferences) !== JSON.stringify([...new Set(issueReferences)].sort((left, right) => left - right)) ||
+    issueReferences.some((issue) => !Number.isSafeInteger(issue) || issue <= 0) ||
+    (ownerManifest.issue_scope.status === "unresolved" && issueReferences.length !== 0) ||
+    (ownerManifest.issue_scope.status === "resolved" && issueReferences.length === 0)
+  ) {
+    throw new Error(`${ledgerPath} ${featureId} has invalid issue scope references`)
+  }
+  if (!Array.isArray(ownerManifest.owners)) {
+    throw new Error(`${ledgerPath} ${featureId} owners must be an array`)
+  }
+  const sourceReferences = new Set(ledgerEntry.implementation_files ?? [])
+  const testReferenceSet = new Set(testReferences(ledgerEntry.tests))
+  const owners = new Set()
+  for (const ownerRecord of ownerManifest.owners) {
+    assertExactKeys(ownerRecord, ["owner", "source_references", "test_references"], `${ledgerPath} ${featureId} owner`)
+    if (typeof ownerRecord.owner !== "string" || ownerRecord.owner === "" || owners.has(ownerRecord.owner)) {
+      throw new Error(`${ledgerPath} ${featureId} has a missing or duplicate owner`)
+    }
+    owners.add(ownerRecord.owner)
+    assertCanonicalStrings(ownerRecord.source_references, `${ledgerPath} ${featureId} ${ownerRecord.owner} source_references`)
+    assertCanonicalStrings(ownerRecord.test_references, `${ledgerPath} ${featureId} ${ownerRecord.owner} test_references`)
+    if (ownerRecord.source_references.length === 0 || ownerRecord.test_references.length === 0) {
+      throw new Error(`${ledgerPath} ${featureId} ${ownerRecord.owner} must cite source and test identities`)
+    }
+    for (const sourceReference of ownerRecord.source_references) {
+      if (!sourceReferences.has(sourceReference)) {
+        throw new Error(`${ledgerPath} ${featureId} ${ownerRecord.owner} cites an unlisted source: ${sourceReference}`)
+      }
+      try {
+        await fs.access(path.join(root, sourceReference))
+      } catch {
+        throw new Error(`${ledgerPath} ${featureId} cites a missing source: ${sourceReference}`)
+      }
+    }
+    for (const testReference of ownerRecord.test_references) {
+      if (!testReferenceSet.has(testReference)) {
+        throw new Error(`${ledgerPath} ${featureId} ${ownerRecord.owner} cites an unlisted test: ${testReference}`)
+      }
+      for (const testPath of testReference.split("; ")
+        .map((reference) => reference.split(/#|::/u, 1)[0])
+        .filter((reference, index) => index === 0 || reference.includes("/"))) {
+        try {
+          await fs.access(path.join(root, testPath))
+        } catch {
+          throw new Error(`${ledgerPath} ${featureId} cites a missing test: ${testPath}`)
+        }
+      }
+    }
+  }
+  return ownerManifest
+}
+
 async function discoverCatalogFeatures(root) {
   const catalogPath = "docs/wikidot-specifications/catalog.json"
   const ledgerPath = "docs/wikidot-specifications/implementation-ledger.json"
   const observationsPath = "docs/wikidot-specifications/live-observations.json"
   const coveragePath = "docs/wikidot-specifications/source-coverage.json"
-  const [catalog, ledger, liveObservations, sourceCoverage] = await Promise.all([
+  const [catalog, mirrorLedger, canonicalLedger, liveObservations, sourceCoverage] = await Promise.all([
     readJson(root, catalogPath),
     readJson(root, ledgerPath),
+    readJson(root, CANONICAL_IMPLEMENTATION_LEDGER),
     readJson(root, observationsPath),
     readJson(root, coveragePath)
   ])
+  if (SOURCE_INPUTS.get(ledgerPath) !== SOURCE_INPUTS.get(CANONICAL_IMPLEMENTATION_LEDGER)) {
+    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} and ${ledgerPath} must be byte-identical`)
+  }
+  const ledger = canonicalLedger
   if (ledger.catalog_sha256 !== sha256(SOURCE_INPUTS.get(catalogPath))) {
-    throw new Error(`${ledgerPath} catalog_sha256 does not match ${catalogPath}`)
+    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} catalog_sha256 does not match ${catalogPath}`)
   }
   if (!Array.isArray(catalog.features)) throw new Error(`${catalogPath} features must be an array`)
   if (catalog.feature_count !== undefined && catalog.feature_count !== catalog.features.length) {
     throw new Error(`${catalogPath} feature_count does not match its feature denominator`)
   }
   if (!ledger.features || Array.isArray(ledger.features) || typeof ledger.features !== "object") {
-    throw new Error(`${ledgerPath} features must be an object`)
+    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} features must be an object`)
   }
   if (!Array.isArray(liveObservations.observations)) {
     throw new Error(`${observationsPath} observations must be an array`)
   }
   if (!Array.isArray(sourceCoverage.pages)) {
     throw new Error(`${coveragePath} pages must be an array`)
+  }
+
+  const ownerFeaturePrefixes = [
+    DATA_FORM_SPECIFICATION_PREFIX,
+    MODULE_SPECIFICATION_PREFIX,
+    "docs/wikidot-specifications/specifications/site-structure/"
+  ]
+  const ownerFeatures = catalog.features.filter(({ specification }) =>
+    ownerFeaturePrefixes.some((prefix) =>
+      path.posix.join("docs/wikidot-specifications", specification).startsWith(prefix)
+    )
+  )
+  const ownerManifests = ledger.implementation_owner_records ?? {}
+  const ownerManifestIds = Object.keys(ownerManifests).sort()
+  const ownerFeatureIds = ownerFeatures.map(({ id }) => id).sort()
+  if (JSON.stringify(ownerManifestIds) !== JSON.stringify(ownerFeatureIds)) {
+    throw new Error(`${CANONICAL_IMPLEMENTATION_LEDGER} implementation_owner_records must exactly cover owned catalog groups`)
   }
 
   const catalogIds = new Set()
@@ -832,15 +920,26 @@ async function discoverCatalogFeatures(root) {
         ? entry
         : path.posix.join("docs/wikidot-specifications", entry)
     )
+    const ownerManifest = ownerFeaturePrefixes.some((prefix) => specification.startsWith(prefix))
+      ? await validateCatalogOwnerRecords(
+        root,
+        feature.id,
+        ledgerEntry,
+        ownerManifests[feature.id],
+        CANONICAL_IMPLEMENTATION_LEDGER
+      )
+      : null
     records.push(
       surface({
         surfaceId: `catalog-feature:${feature.id}`,
         kind: "catalog_feature",
         publicOwner: "docs/wikidot-specifications",
         publicReference: [specification],
+        issues: ownerManifest?.issue_scope.references ?? [],
         tests: testReferences(ledgerEntry.tests),
         evidence: phase("available", [specification, ...documentationEvidence, ...(ledgerEntry.live_oracle_evidence ?? [])]),
-        source: phase(ledgerEntry.status, ledgerEntry.implementation_files ?? [])
+        source: phase(ledgerEntry.status, ledgerEntry.implementation_files ?? []),
+        implementationOwnerRecords: ownerManifest?.owners ?? []
       })
     )
   }
@@ -2457,17 +2556,33 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics) {
   const crosswalkByFeature = new Map(
     catalogCrosswalk.map((row) => [row.feature_id, row])
   )
+  const catalogOwnerPrefixes = [
+    DATA_FORM_SPECIFICATION_PREFIX,
+    MODULE_SPECIFICATION_PREFIX,
+    "docs/wikidot-specifications/specifications/site-structure/"
+  ]
   return surfaces.map((record) => {
-    const { public_owner: legacyOwner, ...normalized } = record
+    const {
+      public_owner: legacyOwner,
+      implementation_owner_records: implementationOwnerRecords,
+      ...normalized
+    } = record
     let specificationOwner
     let implementationOwners
     if (record.kind === "catalog_feature") {
       const featureId = record.surface_id.slice("catalog-feature:".length)
       const crosswalk = crosswalkByFeature.get(featureId)
       specificationOwner = `catalog.feature:${featureId}`
-      implementationOwners = crosswalk
-        ? uniqueSortedStrings(["ftml", crosswalk.runtime_owner])
-        : []
+      const hasCanonicalOwnerManifest = record.public_reference.some((reference) =>
+        catalogOwnerPrefixes.some((prefix) => reference.startsWith(prefix))
+      )
+      if (crosswalk) {
+        implementationOwners = uniqueSortedStrings(["ftml", crosswalk.runtime_owner])
+      } else if (hasCanonicalOwnerManifest) {
+        implementationOwners = uniqueSortedStrings(implementationOwnerRecords.map(({ owner }) => owner))
+      } else {
+        implementationOwners = []
+      }
     } else if (record.kind === "open43_audit_case") {
       const caseId = record.surface_id.slice("open43-audit-case:".length)
       specificationOwner = `open43.case:${caseId}`
@@ -2694,7 +2809,8 @@ async function buildInventory(root, sourceRevision) {
     sources: {
       catalog: "docs/wikidot-specifications/catalog.json",
       live_observations: "docs/wikidot-specifications/live-observations.json",
-      implementation_ledger: "docs/wikidot-specifications/implementation-ledger.json",
+      implementation_ledger: CANONICAL_IMPLEMENTATION_LEDGER,
+      implementation_ledger_mirror: "docs/wikidot-specifications/implementation-ledger.json",
       source_coverage: "docs/wikidot-specifications/source-coverage.json",
       compatibility_surface_semantics: SEMANTICS_REGISTRY,
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",

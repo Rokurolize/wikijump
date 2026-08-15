@@ -4904,5 +4904,1965 @@
         ]
       }
     }
+  },
+  "implementation_owner_records": {
+  "data-forms-checkbox-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/page_query/structs.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#checkbox_and_wiki_fields_follow_live_control_and_storage_contracts",
+          "deepwell/src/services/data_form.rs#checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#data-form checkbox and wiki controls match live DOM and storage",
+          "framerail/tests/wikidot-data-form.test.js#checkbox and wiki state and source match live Wikidot"
+        ]
+      }
+    ]
+  },
+  "data-forms-creating-new-page": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/category/service.rs",
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/view/service.rs",
+          "deepwell/src/services/view/structs.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#empty_and_unselected_selects_round_trip_as_null",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_category_data_form_definition_in_template_order",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/page.ts",
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/lib/server/load/page/page-edit-actions.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/+error.svelte",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
+          "framerail/src/routes/[slug]/[...extra]/EditorPane.svelte",
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#data-form create and edit browser flow",
+          "framerail/tests/data-form-create-flow.spec.ts#data-form text and select controls match live validation and storage",
+          "framerail/tests/data-form-create-flow.spec.ts#pathological data-form match patterns fail closed without blocking the editor",
+          "framerail/tests/wikidot-data-form.test.js#data-form source serialization unit tests",
+          "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts#checkbox/wiki source serialization and public create/edit browser flow"
+        ]
+      }
+    ]
+  },
+  "data-forms-css-styling": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-dataforms-and-listpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/page_query",
+          "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/render/list_pages/rendering.rs",
+          "deepwell/src/services/render/list_pages/substitution.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page.rs#listpages_data_form_variables_match_live_wikidot",
+          "deepwell/tests/page.rs#listpages_missing_data_form_variables_stay_literal_without_blocking_rows",
+          "deepwell/tests/page.rs#listpages_template_selectors_can_use_current_page_data_form_values"
+        ]
+      }
+    ]
+  },
+  "data-forms-date-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-deleting-form": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-displaying": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract"
+        ]
+      }
+    ]
+  },
+  "data-forms-field-properties": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules; unknown_or_ambiguous_definition_shapes_fail_closed_for_create_edit; stored_values_must_match_the_complete_observed_record_shape",
+          "deepwell/src/services/data_form.rs; deepwell/tests/page_template_assignment.rs; framerail/tests/data-form-create-flow.spec.ts#checkbox/wiki common properties and public rendering flow",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; pathological data-form match patterns fail closed without blocking the editor; invalid data-form match patterns use a host-owned diagnostic"
+        ]
+      }
+    ]
+  },
+  "data-forms-file-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-hidden-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#scalar_fields_follow_live_storage_and_display_contracts",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_hidden_password_static_url_scalar_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#hidden-configured-value-create ignores injected submissions",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#hidden-configured-value-edit-reload remains configured and has no control"
+        ]
+      }
+    ]
+  },
+  "data-forms-hints": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
+          "deepwell/src/services/data_form.rs; deepwell/tests/page_template_assignment.rs; framerail/tests/data-form-create-flow.spec.ts#checkbox/wiki hint parsing and public control rendering",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage"
+        ]
+      }
+    ]
+  },
+  "data-forms-howto": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-images": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-links": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-output-style": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-overview": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-pagepath": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-pagepath-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-password-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-select-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/page_query",
+          "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/render/list_pages/rendering.rs",
+          "deepwell/src/services/render/list_pages/substitution.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#empty_and_unselected_selects_round_trip_as_null",
+          "deepwell/tests/page.rs#listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage; empty and unselected select fields save and restore as Wikidot null",
+          "framerail/tests/wikidot-data-form.test.js#a five-option select without a default starts at its first option; empty and unselected select values serialize as Wikidot null scalars; data-form source uses Wikidot text and select scalar encoding"
+        ]
+      }
+    ]
+  },
+  "data-forms-selecting-and-sorting": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/page_query/service.rs",
+          "deepwell/src/services/page_query/structs.rs",
+          "deepwell/src/services/render/list_pages/rendering.rs",
+          "deepwell/src/services/render/list_pages/substitution.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/service/tests.rs#parses_static_data_form_selectors",
+          "deepwell/tests/page.rs#listpages_template_selectors_can_use_current_page_data_form_values",
+          "deepwell/tests/page.rs#page_query_data_form_field_ordering_uses_static_form_values"
+        ]
+      }
+    ]
+  },
+  "data-forms-static-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-tags": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/routes/+error.svelte",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#data-form create rejects NewPage tags without creating a page"
+        ]
+      }
+    ]
+  },
+  "data-forms-text-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/page_query",
+          "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/render/list_pages/rendering.rs",
+          "deepwell/src/services/render/list_pages/substitution.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#parses_and_renders_live_field_property_contract; applies_live_scalar_truthiness_comments_and_empty_match_rules",
+          "deepwell/tests/page.rs#listpages_data_form_variables_match_live_wikidot; listpages_template_selectors_can_use_current_page_data_form_values",
+          "deepwell/tests/page_template_assignment.rs#empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/views.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form-match.worker.ts",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/data-form-create-flow.spec.ts#a new data-form submission cancels stale validation and saves its own snapshot",
+          "framerail/tests/data-form-create-flow.spec.ts#data-form field properties and PCRE-style match behavior follow live Wikidot; data-form text and select controls match live validation and storage",
+          "framerail/tests/data-form-create-flow.spec.ts#invalid data-form match patterns use a host-owned diagnostic",
+          "framerail/tests/data-form-create-flow.spec.ts#pathological data-form match patterns fail closed without blocking the editor",
+          "framerail/tests/wikidot-data-form.test.js#data-form source uses Wikidot text and select scalar encoding"
+        ]
+      }
+    ]
+  },
+  "data-forms-url-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "data-forms-wiki-field": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/page_query/structs.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#checkbox_and_wiki_fields_follow_live_control_and_storage_contracts; checkbox_defaults_and_wiki_dimensions_cover_live_boundaries",
+          "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-data-form.test.js; framerail/tests/data-form-create-flow.spec.ts#checkbox/wiki source serialization and public create/edit browser flow"
+        ]
+      }
+    ]
+  },
+  "data-forms-youtube": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "content-pages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "forum-categories": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "forum-category-groups": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "forum-posts": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "forum-threads": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "forums-overview": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "page-categories": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "page-forum-integration": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "page-inclusions": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "page-links": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "page-parent-relations": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "page-tags": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-page-tags.js",
+          "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
+          "framerail/src/routes/[slug]/[...extra]/page.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
+          "framerail/tests/wikidot-page-tags.test.js"
+        ]
+      }
+    ]
+  },
+  "site-identity": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-ad": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::ad_module_page_source_matches_live_empty_output"
+        ]
+      }
+    ]
+  },
+  "module-admoduleabovecontent": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-admoduleabovesidebar": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-admodulebelowcontent": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-admodulebelowfooter": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-admodulebelowsidebar": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-adsenseunit": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::adsenseunit_module_matches_live_deprecated_empty_output"
+        ]
+      }
+    ]
+  },
+  "module-anonymousnotificationsunsubscribe": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+        ]
+      }
+    ]
+  },
+  "module-backlinks": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/backlinks.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links"
+        ]
+      }
+    ]
+  },
+  "module-categories": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/categories.rs",
+          "deepwell/src/services/render/page_tree.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/tests/page.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/categories.rs::tests::categories_name_must_end_before_arguments",
+          "deepwell/src/services/render/categories.rs::tests::category_dom_matches_wikidot_and_escapes_the_slug",
+          "deepwell/src/services/render/categories.rs::tests::category_order_ignores_hyphens_like_wikidot",
+          "deepwell/src/services/render/categories.rs::tests::default_category_is_visible_even_when_hidden_categories_are_not",
+          "deepwell/src/services/render/categories.rs::tests::include_hidden_categories_emit_live_options_marker",
+          "deepwell/src/services/render/categories.rs::tests::include_hidden_matches_live_exact_quoted_argument",
+          "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden",
+          "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor"
+        ]
+      }
+    ]
+  },
+  "module-childpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-clone": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-comments": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_comments.rs",
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_read_routes.rs",
+          "deepwell/src/services/render/runtime_modules.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/deepwell/forum.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
+        ]
+      }
+    ]
+  },
+  "module-countpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/page/service.rs",
+          "deepwell/src/services/page_revision/service.rs",
+          "deepwell/src/services/render/count_pages_recognition.rs",
+          "deepwell/src/services/render/list_pages/rendering.rs",
+          "deepwell/src/services/render/list_pages/rendering_support.rs",
+          "deepwell/src/services/render/list_pages/scanner.rs",
+          "deepwell/src/services/render/list_pages/substitution.rs",
+          "deepwell/src/services/render/list_pages/substitution/selectors.rs",
+          "deepwell/src/services/render/mod.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/article_cache.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/service/tests.rs",
+          "deepwell/tests/page.rs",
+          "deepwell/tests/page.rs#restore_rerender_failure_rolls_back_resurrection_identity_and_revision",
+          "deepwell/tests/page.rs#restored_countpages_page_stores_and_serves_its_current_self_count; restored_page_uses_destination_template_countpages_after_explicit_restore; restored_literal_and_unsupported_countpages_shapes_stay_inert"
+        ]
+      }
+    ]
+  },
+  "module-createaccount": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-css": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/compat/preparation.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html"
+        ]
+      }
+    ]
+  },
+  "module-currencyconvert": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-dashboard": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-deleteaccount": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-featuredsite": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-feed": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/search_feed.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/search_feed.rs#distinguishes_feed_source_recognition_from_missing_source; leaves_search_and_feed_literal_inside_literal_regions",
+          "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-files": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-flickrgallery": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-footerbar": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-forumcategory": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_read_routes.rs",
+          "deepwell/src/services/render/forum_visibility.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/forum-routes.js",
+          "framerail/src/routes/forum/c-[category=id]/[...name]/+page.server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
+          "framerail/tests/forum-routes.test.js#the observed category pager suffix reaches the exact AMC page"
+        ]
+      }
+    ]
+  },
+  "module-forumnewthread": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/runtime_modules.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-forumstart": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_read_routes.rs",
+          "deepwell/src/services/render/forum_visibility.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/forum-routes.js",
+          "framerail/src/routes/forum/start/[...extra]/+page.server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
+          "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests"
+        ]
+      }
+    ]
+  },
+  "module-forumthread": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_read_routes.rs",
+          "deepwell/src/services/render/forum_visibility.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/forum-routes.js",
+          "framerail/src/routes/forum/t-[thread=id]/[...name]/+page.server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata",
+          "framerail/tests/forum-routes.test.js#forum route loads use the exact sealed read-only module requests"
+        ]
+      }
+    ]
+  },
+  "module-frontforum": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_front.rs",
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_visibility.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/forum_front.rs#frontforum_custom_body_alias_offset_multi_public_render",
+          "deepwell/src/services/render/forum_front.rs#frontforum_custom_body_canonical_public_render",
+          "deepwell/src/services/render/forum_front.rs#frontforum_custom_body_unknown_stays_literal",
+          "deepwell/src/services/render/forum_modules.rs#frontforum_custom_body_malformed_category_suppresses_body",
+          "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/page.rs#frontforum_custom_body_matches_observed_public_preview_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-frontspecialmini": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-join": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-listdrafts": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering",
+          "deepwell/tests/page.rs::listdrafts_module_matches_live_empty_draft_state"
+        ]
+      }
+    ]
+  },
+  "module-listpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/page_query",
+          "deepwell/src/services/render/list_pages",
+          "deepwell/src/services/render/list_pages/data_forms.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/runtime_page_queries.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/module_arguments.rs",
+          "deepwell/src/services/view/module_render.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/list_pages.rs",
+          "deepwell/tests/list_pages.rs#delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
+          "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
+          "deepwell/tests/list_pages.rs#imported_revision_count_current_page_only_adds_local_revisions",
+          "deepwell/tests/list_pages.rs#random_listpages_reuses_the_same_idle_cached_order_for_one_invocation; wikidot_ajax_listpages_p_parameter_selects_the_rendered_page",
+          "deepwell/tests/page.rs",
+          "deepwell/tests/page.rs#listpages_checkbox_and_wiki_variables_match_live_wikidot",
+          "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls",
+          "deepwell/tests/page.rs#listpages_imported_creator_identity_uses_structured_corpus_provenance; listpages_imported_editor_identity_uses_structured_corpus_provenance; listpages_imported_commenter_identity_uses_structured_corpus_provenance; wikidot_listpages_feed_uses_imported_creator_identity_provenance",
+          "deepwell/tests/page.rs#listpages_template_body_over_the_render_budget_remains_literal; listpages_aggregate_generated_output_budget_preserves_overflowing_module; listpages_following_paragraph_boundary_counts_toward_generated_output_budget; listpages_module_count_over_the_render_budget_remains_literal; listpages_module_source_over_the_render_budget_remains_literal; listpages_current_page_content_shares_the_module_work_budget",
+          "deepwell/tests/page.rs#listpages_template_parser_functions_run_after_row_variable_substitution",
+          "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
+          "deepwell/tests/page.rs#random_countpages_capped_sample_does_not_reveal_private_matches"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/list-pages-feed.ts",
+          "framerail/src/routes/feed"
+        ],
+        "test_references": [
+          "framerail/tests/feed-pages-route.test.js#empty selector feeds retain the Wikidot root separator",
+          "framerail/tests/list-pages-feed.test.ts",
+          "framerail/tests/list-pages-navigation.spec.ts"
+        ]
+      }
+    ]
+  },
+  "module-listusers": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/page_preview.rs",
+          "deepwell/src/services/render/render_options.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/module_render.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering",
+          "deepwell/tests/page.rs::listusers_module_matches_live_preview_and_runtime_viewer"
+        ]
+      }
+    ]
+  },
+  "module-loginstatus": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-mailform": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-managesite": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/site_utility_modules.rs",
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/wikidot-manage-site-general.js",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral accepts the exact parameter-free administrator read",
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral preserves the fail-closed envelope for non-administrators",
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral rejects unobserved fields and duplicates before rendering",
+          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral escapes every site-owned value",
+          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral renders the exact captured administrator read model"
+        ]
+      }
+    ]
+  },
+  "module-members": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/api.rs",
+          "deepwell/src/endpoints/page.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/render/user_directory.rs",
+          "deepwell/src/services/view/article_cache.rs",
+          "deepwell/tests/members_freshness.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/members_freshness.rs#imported_members_sources_preserve_runtime_cache_boundaries",
+          "deepwell/tests/members_freshness.rs#saved_members_pages_refresh_after_membership_changes_without_mutating_revision_html",
+          "deepwell/tests/page.rs#members_list_ajax_paginates_only_filtered_site_identities",
+          "deepwell/tests/page.rs#members_module_queries_only_visible_site_members_and_roles"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/deepwell/membership.ts",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches only the observed MembersListModule read shape",
+          "framerail/tests/ajax-module-connector.test.js#fails closed before Deepwell for unobserved MembersListModule shapes"
+        ]
+      }
+    ]
+  },
+  "module-membershipapply": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-membershipbypassword": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_viewer_module_is_viewer_dependent",
+          "deepwell/src/services/render/url_arguments.rs::tests::a_pages_module_always_requires_runtime_rendering",
+          "deepwell/tests/page.rs::membership_by_password_module_matches_live_anonymous_and_member_output"
+        ]
+      }
+    ]
+  },
+  "module-membershipemailinvitation": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+        ]
+      }
+    ]
+  },
+  "module-miniactivethreads": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_mini.rs",
+          "deepwell/src/services/render/forum_visibility.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-minirecentposts": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_mini.rs",
+          "deepwell/src/services/render/forum_visibility.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-minirecentthreads": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_mini.rs",
+          "deepwell/src/services/render/forum_visibility.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-navibar": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-newpage": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/compat/preparation.rs",
+          "deepwell/src/services/render/new_page_module.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/new_page_module.rs::tests::extracts_comma_separated_template_names",
+          "deepwell/src/services/render/new_page_module.rs::tests::renders_existing_template_selector_options",
+          "deepwell/src/services/render/service/tests.rs::protects_wikidot_new_page_module_html_before_parsing",
+          "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_documented_hidden_fields",
+          "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_placeholder",
+          "deepwell/src/services/render/service/tests.rs::renders_wikidot_new_page_module_uses_live_argument_quirks",
+          "deepwell/src/services/render/url_arguments.rs::tests::only_executable_template_backed_newpage_modules_require_runtime_rendering",
+          "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
+          "deepwell/tests/page.rs::saved_newpage_views_resolve_templates_from_current_anonymous_state"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/deepwell/page.ts",
+          "framerail/src/lib/wikidot/wikidot-new-page-helper.js",
+          "framerail/src/routes/+layout.svelte",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js::NewPage template autosave creates an empty page and ignores parent",
+          "framerail/tests/ajax-module-connector.test.js::allows NewPage edit routing without page creation permission",
+          "framerail/tests/ajax-module-connector.test.js::dispatches NewPage autosave modes through the injected create callback",
+          "framerail/tests/ajax-module-connector.test.js::dispatches NewPage helper default action with Wikidot edit-routing fields",
+          "framerail/tests/ajax-module-connector.test.js::dispatches NewPage template and category action fields like Wikidot",
+          "framerail/tests/ajax-module-connector.test.js::ignores malformed NewPage format strings but enforces valid patterns",
+          "framerail/tests/ajax-module-connector.test.js::rejects NewPage autosave without page creation permission",
+          "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests when the target already exists",
+          "framerail/tests/ajax-module-connector.test.js::rejects NewPage helper requests without a page name like Wikidot",
+          "framerail/tests/ajax-module-connector.test.js::rejects NewPage template autosave when tags are submitted",
+          "framerail/tests/new-page-helper.spec.ts::NewPage anonymous default submit still navigates to edit URL",
+          "framerail/tests/new-page-helper.spec.ts::NewPage default submit posts Wikidot helper action and navigates to edit URL",
+          "framerail/tests/new-page-helper.spec.ts::NewPage save-and-go creates an empty page and navigates to it",
+          "framerail/tests/new-page-helper.spec.ts::NewPage template submit includes template, tags, and parent in edit URL"
+        ]
+      }
+    ]
+  },
+  "module-newsite": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-nextpreviouspage": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-orphanedpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/link_modules.rs",
+          "deepwell/src/services/render/mod.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/module_render.rs",
+          "deepwell/src/services/view/site_tools.rs",
+          "deepwell/tests/page.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/link_modules.rs::tests::orphaned_pages_box_matches_live_wikidot_rows",
+          "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_query_module_is_query_dependent",
+          "deepwell/src/services/render/url_arguments.rs::tests::link_listing_modules_require_runtime_rendering",
+          "deepwell/tests/page.rs::orphanedpages_module_lists_pages_without_incoming_internal_links",
+          "deepwell/tests/page.rs::orphanedpages_module_refreshes_after_linker_soft_delete",
+          "deepwell/tests/page.rs::site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules"
+        ]
+      }
+    ]
+  },
+  "module-pagecalendar": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/diagnostics.rs",
+          "deepwell/src/services/render/module_arguments.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/url_arguments.rs::tests::a_page_calendar_module_reads_url_arguments_and_requires_runtime_rendering",
+          "deepwell/tests/page.rs::pagecalendar_module_matches_live_tag_url_and_current_category_quirks",
+          "deepwell/tests/page.rs::pagecalendar_module_renders_live_category_links_and_counts"
+        ]
+      }
+    ]
+  },
+  "module-pageoptionsbottom": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-pages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/list_pages/mod.rs",
+          "deepwell/src/services/render/pages.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/pages.rs",
+          "deepwell/tests/page.rs"
+        ]
+      }
+    ]
+  },
+  "module-pagesbytag": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/pages.rs",
+          "deepwell/src/services/render/pages_by_tag.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/module_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/pages_by_tag.rs",
+          "deepwell/tests/page.rs"
+        ]
+      }
+    ]
+  },
+  "module-pagetree": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/page_tree.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/tests/page.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/page_tree.rs::tests::arguments_match_live_case_sensitive_semantics",
+          "deepwell/src/services/render/page_tree.rs::tests::live_dom_depth_and_cycle_boundaries_are_preserved",
+          "deepwell/src/services/render/page_tree.rs::tests::url_and_cross_site_root_forms_fail_closed",
+          "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+          "deepwell/tests/page.rs::page_tree_resource_bounds_fail_closed_without_partial_visible_rows"
+        ]
+      }
+    ]
+  },
+  "module-petitionadmin": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/site_utility_modules.rs",
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor"
+        ]
+      }
+    ]
+  },
+  "module-rate": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/endpoints/vote.rs",
+          "deepwell/src/services/render/literal_regions/wikidot.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/service/tests.rs",
+          "deepwell/tests/page.rs",
+          "deepwell/tests/vote.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/service/tests.rs#rate_module_plusminus_body_is_consumed_like_live_wikidot",
+          "deepwell/src/services/render/service/tests.rs#renders_japanese_wikidot_read_only_rate_module_labels",
+          "deepwell/src/services/render/service/tests.rs#renders_wikidot_plus_only_rate_module_without_downvote",
+          "deepwell/src/services/render/service/tests.rs#renders_wikidot_read_only_rate_module_with_downvote",
+          "deepwell/src/services/render/service/tests.rs#wikidot_compatibility_fallback_centers_read_only_rate_module",
+          "deepwell/tests/page.rs#page_render_basalt_rate_does_not_claim_active_iftags_through_eof",
+          "deepwell/tests/page.rs#page_render_emits_wikidot_rate_widget_structure",
+          "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
+          "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
+          "deepwell/tests/vote.rs#registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count"
+        ]
+      }
+    ]
+  },
+  "module-ratedpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/diagnostics.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/rated_pages.rs#ratedpages_renders_live_top_rated_box_and_rating_filters"
+        ]
+      }
+    ]
+  },
+  "module-recentposts": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_read_routes.rs",
+          "deepwell/src/services/render/forum_visibility.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed read-only forum modules with Wikidot metadata"
+        ]
+      }
+    ]
+  },
+  "module-recentthreads": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#recent_threads_matches_live_placeholder_and_owner_boundaries"
+        ]
+      }
+    ]
+  },
+  "module-redirect": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/view/options.rs",
+          "deepwell/src/services/view/redirect.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/view/redirect.rs::tests::invalid_or_unsupported_destinations_remain_literal",
+          "deepwell/src/services/view/redirect.rs::tests::literal_regions_do_not_create_redirects",
+          "deepwell/src/services/view/redirect.rs::tests::noredirect_notice_escapes_destination_text",
+          "deepwell/src/services/view/redirect.rs::tests::noredirect_option_preserves_the_page_instead_of_redirecting",
+          "deepwell/src/services/view/redirect.rs::tests::noredirect_view_replaces_preserved_module_with_wikidot_notice",
+          "deepwell/src/services/view/redirect.rs::tests::ordinary_and_ambiguous_pages_do_not_redirect",
+          "deepwell/src/services/view/redirect.rs::tests::preserves_destination_query_and_fragment",
+          "deepwell/src/services/view/redirect.rs::tests::resolves_all_forty_provenance_backed_redirect_destinations",
+          "deepwell/src/services/view/redirect.rs::tests::self_redirects_fail_closed",
+          "deepwell/src/services/view/service.rs::wikidot_redirect_module_allowed_tests::allows_only_imported_page_and_imported_revision",
+          "deepwell/tests/page.rs::imported_redirect_noredirect_renders_live_error_block"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/page-redirect.ts"
+        ],
+        "test_references": [
+          "framerail/tests/page-redirect.test.ts"
+        ]
+      }
+    ]
+  },
+  "module-search": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/search_feed.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/search_feed.rs#renders_the_live_search_unavailable_contract; leaves_search_and_feed_literal_inside_literal_regions",
+          "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-search.js",
+          "framerail/src/routes/+layout.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-search.test.js; framerail/tests/wikidot-chrome.spec.ts#top search path encoding and browser submission"
+        ]
+      }
+    ]
+  },
+  "module-searchall": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/search_feed.rs",
+          "deepwell/src/services/render/url_arguments.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-search.js",
+          "framerail/src/routes/+layout.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-chrome.spec.ts#SearchAll module submits the selected live area route",
+          "framerail/tests/wikidot-search.test.js#Wikidot SearchAll preserves its area and path-encodes the submitted query; Wikidot SearchAll submit listener navigates rendered module forms"
+        ]
+      }
+    ]
+  },
+  "module-searchusers": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/service/tests.rs::registry_module_expansion_does_not_match_name_prefixes",
+          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+        ]
+      }
+    ]
+  },
+  "module-sendinvitations": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+        ]
+      }
+    ]
+  },
+  "module-simpletodo": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+        ]
+      }
+    ]
+  },
+  "module-sitechanges": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/api.rs",
+          "deepwell/src/endpoints/page.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/site_changes.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/tests/page.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/site_changes.rs::tests::site_changes_accepts_only_the_evidenced_standalone_default_shape",
+          "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority",
+          "deepwell/src/services/render/site_changes.rs::tests::site_changes_options_accept_only_the_observed_read_filters",
+          "deepwell/src/services/render/url_arguments.rs::tests::actor_sensitive_page_graph_modules_require_runtime_rendering",
+          "deepwell/tests/page.rs::sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads",
+          "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/deepwell/page.ts",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ],
+        "test_references": [
+          "framerail/tests/ajax-module-connector.test.js::dispatches the sealed SiteChanges read matrix with Wikidot metadata",
+          "framerail/tests/ajax-module-connector.test.js::fails closed for unobserved SiteChanges shapes before Deepwell"
+        ]
+      }
+    ]
+  },
+  "module-sitegrid": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-sitestagcloud": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-tagcloud": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/list_pages/mod.rs",
+          "deepwell/src/services/render/list_pages/presentation.rs",
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/service/tests.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/src/services/view/article_cache.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::saved_tagcloud_page_view_follows_independent_tag_mutations",
+          "deepwell/tests/page.rs::tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags",
+          "deepwell/tests/page.rs::tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
+          "deepwell/tests/page.rs::tagcloud_module_renders_live_sitewide_skip_3d_and_color_error"
+        ]
+      }
+    ]
+  },
+  "module-themepreviewer": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-userinfo": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/user/service.rs",
+          "deepwell/src/services/user/structs.rs",
+          "deepwell/src/services/view/service.rs",
+          "deepwell/src/services/view/structs.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics",
+          "deepwell/tests/user.rs::user_view_resolves_only_active_imported_slugs_without_changing_local_lookup"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/server/deepwell/user.ts",
+          "framerail/src/lib/server/load/user.ts",
+          "framerail/src/lib/server/wikidot-user-info.js",
+          "framerail/src/lib/types.ts",
+          "framerail/src/routes/user[x+3a]info/[target]/+page.server.ts",
+          "framerail/src/routes/user[x+3a]info/[target]/+page.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/account-route-boundaries.test.js#legacy user slug route fails closed for imported profiles",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo keeps an imported Pro profile without inventing an account-type label",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo omits unobserved imported karma labels",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo projects imported free accounts and the observed none/high karma labels",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo calls the typed user view with the route target and no session",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target -1 stays HTTP 200 with the exact missing body data",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo target 0 stays HTTP 200 with the exact missing body data"
+        ]
+      }
+    ]
+  },
+  "module-wantedpages": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/link_modules.rs",
+          "deepwell/src/services/render/mod.rs",
+          "deepwell/src/services/render/render_dependency.rs",
+          "deepwell/src/services/render/service.rs",
+          "deepwell/src/services/render/url_arguments.rs",
+          "deepwell/tests/page.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/render/link_modules.rs::tests::wanted_pages_box_matches_live_wikidot_table",
+          "deepwell/src/services/render/render_dependency.rs::tests::render_dependency_query_module_is_query_dependent",
+          "deepwell/src/services/render/url_arguments.rs::tests::link_listing_modules_require_runtime_rendering",
+          "deepwell/tests/page.rs::wantedpages_module_groups_missing_internal_links_by_target"
+        ]
+      }
+    ]
+  },
+  "module-watchers": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": []
+  },
+  "module-whoinvited": {
+    "issue_scope": {
+      "status": "unresolved",
+      "references": []
+    },
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page.rs::static_account_modules_match_live_preview_and_page_view_basics"
+        ]
+      }
+    ]
   }
+}
 }
