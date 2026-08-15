@@ -209,9 +209,14 @@ class Open43SettingsRun {
       await this.#action("site", siteFields(site), { expectSuccess: true });
       return;
     }
-    await this.#action("analytics", { siteId: site.site_id, expectedSettingsRevision: site.settings_revision, enabled: false, profile: "" }, { expectSuccess: true });
-    const afterAnalytics = await this.#site();
-    await this.#action("toolbar", { siteId: site.site_id, expectedSettingsRevision: afterAnalytics.settings_revision, top: false, bottom: afterAnalytics.show_bottom_toolbar }, { expectSuccess: true });
+    if (this.#group === "all" || this.#group === "analytics") {
+      await this.#action("analytics", { siteId: site.site_id, expectedSettingsRevision: site.settings_revision, enabled: false, profile: "" }, { expectSuccess: true });
+    }
+    if (this.#group === "all" || this.#group === "toolbar") {
+      const beforeToolbar = await this.#site();
+      await this.#action("toolbar", { siteId: site.site_id, expectedSettingsRevision: beforeToolbar.settings_revision, top: false, bottom: beforeToolbar.show_bottom_toolbar }, { expectSuccess: true });
+    }
+    if (this.#group !== "all" && this.#group !== "theme") return;
     const beforeTheme = await this.#category("default_category");
     await this.#action("theme", themeFields(site.site_id, beforeTheme, { theme_kind: "custom", theme_builtin_id: null, theme_external_url: null, theme_custom_css: this.#fixedPlan.theme_css }), { expectSuccess: true });
     const afterTheme = await this.#category("default_category");
@@ -477,13 +482,18 @@ class Open43SettingsRun {
     if (this.#before !== null) {
       const defaultBefore = this.#before.categories.find(({ slug }) => slug === this.#fixture.default_category.slug);
       const transitionBefore = this.#before.categories.find(({ slug }) => slug === this.#fixture.transition_category.slug);
-      const restores = [
+      const restores = [];
+      if (this.#group === "all" || this.#group === "admin") restores.push(
         async () => { const site = await this.#site(true); await this.#action("site", siteFields({ ...site, ...this.#before.site }), { cleanup: true, expectSuccess: true }); },
-      ];
-      if (this.#group !== "admin") restores.push(
+      );
+      if (this.#group === "all" || this.#group === "theme") restores.push(
         async () => { const category = await this.#category("default_category", true); await this.#action("theme", themeFields(this.#siteId, category, defaultBefore), { cleanup: true, expectSuccess: true }); },
         async () => { const category = await this.#category("transition_category", true); await this.#action("theme", themeFields(this.#siteId, category, transitionBefore), { cleanup: true, expectSuccess: true }); },
+      );
+      if (this.#group === "all" || this.#group === "toolbar") restores.push(
         async () => { const site = await this.#site(true); await this.#action("toolbar", { siteId: this.#siteId, expectedSettingsRevision: site.settings_revision, top: this.#before.site.show_top_toolbar, bottom: this.#before.site.show_bottom_toolbar }, { cleanup: true, expectSuccess: true }); },
+      );
+      if (this.#group === "all" || this.#group === "analytics") restores.push(
         async () => { const site = await this.#site(true); await this.#action("analytics", { siteId: this.#siteId, expectedSettingsRevision: site.settings_revision, enabled: this.#before.site.google_analytics_enabled, profile: this.#before.site.google_analytics_profile ?? "" }, { cleanup: true, expectSuccess: true }); },
       );
       for (const restore of restores) await restore().catch((error) => failures.push(error));

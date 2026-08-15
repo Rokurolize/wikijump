@@ -9,6 +9,7 @@ import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
   OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
+  OPEN43_SETTINGS_THEME_CASE_IDS,
   OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
   createOpen43SettingsBrowserCandidateCaseSet,
   createOpen43SettingsGroupCandidateCaseSet,
@@ -391,6 +392,40 @@ test("the #754 analytics group executes its cases through the shared runner", as
   assert.equal(events.some(({ seam, label }) => seam === "browser-adapter" && label === "S754_ANALYTICS"), true);
   assert.equal(events.some(({ seam, operation }) => seam === "browser-adapter" && operation === "analytics-save"), true);
   assert.equal(events.some(({ seam, label }) => seam === "browser-adapter" && label === "S755_THEME"), false);
+});
+
+test("the #755 theme group changes only category themes", async (t) => {
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "theme",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-theme-group-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  const result = await runCandidateCaseSet({
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: {},
+    privateInputSha256: sha256Value("private-input"),
+    outputDir: path.join(root, "evidence"),
+    caseSet,
+    dependencies: dependencies(events, []),
+  });
+
+  assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_THEME_CASE_IDS);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(state.site.google_analytics_enabled, false);
+  assert.equal(state.site.show_top_toolbar, false);
+  assert.equal(state.categories.get("_default").theme_kind, "built_in");
+  assert.equal(state.categories.get("corpus").theme_kind, "built_in");
+  const actions = events.filter(({ seam }) => seam === "action").map(({ name }) => name);
+  assert.equal(actions.includes("analytics"), false);
+  assert.equal(actions.includes("toolbar"), false);
+  assert.equal(actions.every((name) => name === "theme"), true);
+  assert.equal(events.filter(({ seam, label }) => seam === "browser-adapter" && label === "S755_THEME").length, 2);
 });
 
 test("the real Settings CandidateCaseSet runs all nine configured cases exactly once through the shared runner", async (t) => {
