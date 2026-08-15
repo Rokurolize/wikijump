@@ -313,7 +313,7 @@ function verifyCase(caseId, observations, plan) {
   }
   const events = observations.adapter_events;
   if (observations.event_scope !== "adapter-issued-external-requests-only" || !Array.isArray(events) || events.filter((event) => event.operation === "page_view" && event.method === "POST" && event.response_status === 200).length < 4) throw new Error("Q779 evidence does not prove public page_view execution");
-  if (!observations.after_move.lifecycle_output.includes(plan.beta_slug) || !observations.after_restore.lifecycle_output.includes(plan.beta_slug) || observations.after_delete.lifecycle_output.includes(plan.beta_slug)) throw new Error("Q779 lifecycle evidence does not bind move, delete, and restore to the next public read");
+  if (!observations.after_move.lifecycle_output.includes(plan.beta_slug) || !observations.after_move.lifecycle_output.includes(plan.alpha_renamed_title) || !observations.after_restore.lifecycle_output.includes(plan.beta_slug) || !observations.after_restore.lifecycle_output.includes(plan.alpha_renamed_title) || observations.after_delete.lifecycle_output.includes(plan.beta_slug)) throw new Error("Q779 lifecycle evidence does not bind move, delete, restore, and the renamed parent to the next public read");
   return { verified: true, exact_public_module_output: true, negative_inline_boundary: true, actors: ["anonymous", "editor"], lifecycle_next_read: true, public_seam: "deepwell.page_view" };
 }
 
@@ -364,12 +364,13 @@ export function createOpen43PageTreeCandidateCaseSet({ sessionFactory = (options
           source_fixture: { path: LIVE_FIXTURE_PATH, case_id: LIVE_PAGE_TREE_CASE.case_id },
           source_fixture_test: SOURCE_FIXTURE_PATH,
           expected_initial_output: expectedInitialOutput,
+          alpha_renamed_title: `${pages.alpha.title} renamed`,
           beta_slug: pages.beta.slug,
           event_scope: "adapter-issued-external-requests-only",
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase: (caseId, observations) => verifyCase(caseId, observations, { expected_initial_output: expectedInitialOutput, beta_slug: pages.beta.slug }),
+        verifyCase: (caseId, observations) => verifyCase(caseId, observations, { expected_initial_output: expectedInitialOutput, alpha_renamed_title: `${pages.alpha.title} renamed`, beta_slug: pages.beta.slug }),
         verifyCleanup,
       });
     },

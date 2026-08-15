@@ -159,3 +159,28 @@ test("the canonical runner executes the Q779 public PageTree case and seals no-r
   assert.equal(receipt.run_plan.sha256, result.run_plan.sha256);
   assert.match(result.run_plan.sha256, /^[0-9a-f]{64}$/u);
 });
+
+test("the Q779 verifier rejects lifecycle evidence without the renamed parent", () => {
+  const session = new FakePageTreeSession();
+  const run = createOpen43PageTreeCandidateCaseSet({ sessionFactory: () => session }).prepareRun({
+    runId: "candidate-case-0123456789ab",
+    candidateIdentity: candidateIdentity(),
+    privateInput: {},
+    signal: null,
+    resources: {},
+  });
+  const initial = (actor) => ({
+    actor,
+    exact_output: run.plan.expected_initial_output,
+    negative_boundary: "\nstart-[[module PageTree]]-middle\n",
+  });
+  assert.throws(() => run.verifyCase("Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE", {
+    initial_anonymous: initial("anonymous"),
+    initial_editor: initial("editor"),
+    after_move: { lifecycle_output: run.plan.beta_slug },
+    after_delete: { lifecycle_output: "" },
+    after_restore: { lifecycle_output: run.plan.beta_slug },
+    adapter_events: Array.from({ length: 4 }, () => ({ operation: "page_view", method: "POST", response_status: 200 })),
+    event_scope: "adapter-issued-external-requests-only",
+  }), /renamed parent/u);
+});
