@@ -89,7 +89,8 @@ export function parseArgs(argv) {
   }
   if (args.captures.length === 0) throw new Error("--captures is required");
   if (args.site !== "sandbox-for-codex") throw new Error("--site must be sandbox-for-codex");
-  if (args.runId !== null && !/^candidate-run-[0-9a-f]{12}$/u.test(args.runId)) throw new Error("--run-id must be a candidate run ID");
+  if (!args.runId) throw new Error("--run-id is required");
+  if (!/^candidate-run-[0-9a-f]{12}$/u.test(args.runId)) throw new Error("--run-id must be a candidate run ID");
   return args;
 }
 
@@ -478,7 +479,7 @@ export async function main(argv) {
   const stackLogPath = `${args.output}.stack.log`;
   if (fs.existsSync(cleanupReceiptPath)) throw new Error(`cleanup receipt already exists: ${cleanupReceiptPath}`);
   if (fs.existsSync(stackLogPath)) throw new Error(`stack log already exists: ${stackLogPath}`);
-  const runId = args.runId ?? `candidate-run-${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  const runId = args.runId;
   let boundCandidate;
   try {
     boundCandidate = await bindCandidate(args);

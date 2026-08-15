@@ -1567,6 +1567,7 @@ test("disposable stack controller binds resources and candidate identity", () =>
     "--captures", "/tmp/first.jsonl",
     "--captures", "/tmp/second.jsonl",
     "--state-fixture", "/tmp/state.json",
+    "--run-id", "candidate-run-abcdef123456",
     "--output", "/tmp/report.json",
   ]);
   assert.deepEqual(args.captures, ["/tmp/first.jsonl", "/tmp/second.jsonl"]);
@@ -1589,6 +1590,7 @@ test("disposable stack controller binds resources and candidate identity", () =>
       "--binary", "candidate/debug/deepwell",
       "--cases", "/tmp/cases.jsonl",
       "--captures", "/tmp/captures.jsonl",
+      "--run-id", "candidate-run-abcdef123456",
       "--output", "/tmp/report.json",
     ]),
     /--binary must be an absolute path/u,
@@ -1835,6 +1837,7 @@ test("stack cleanup does not remove reusable candidate assets", async (t) => {
       "--candidate-manifest", fixture.candidateManifest,
       "--cases", path.join(path.dirname(fixture.repository), "cases.jsonl"),
       "--captures", path.join(path.dirname(fixture.repository), "captures.jsonl"),
+      "--run-id", "candidate-run-abcdef123456",
       "--output", output,
     ]),
     /install\/local\/deepwell\/config\.toml/u,
