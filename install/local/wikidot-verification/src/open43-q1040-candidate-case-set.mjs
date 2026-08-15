@@ -54,7 +54,7 @@ class Q1040Run {
     this.#resources = resources;
     this.#pages = [
       { role: "previous", slug: pageSlug(runId, "previous"), title: `Q1040 ${runId.slice("candidate-case-".length)} previous`, wikitext: "Q1040 previous" },
-      { role: "current", slug: pageSlug(runId, "current"), title: `Q1040 ${runId.slice("candidate-case-".length)} current`, wikitext: "Q1040_CURRENT\n[[module NextPage by=\"title\"]]\nNEXT=%%linked_title%%|%%title%%\n[[/module]]\n[[module PreviousPage]]\nPREVIOUS=%%linked_title%%|%%title%%\n[[/module]]" },
+      { role: "current", slug: pageSlug(runId, "current"), title: `Q1040 ${runId.slice("candidate-case-".length)} current`, wikitext: "Q1040_CURRENT\nQ1040_DEFAULT_START\n[[module NextPage by=\"title\"]]\nQ1040_DEFAULT_END\n[[module NextPage by=\"title\"]]\nNEXT=%%linked_title%%|%%title%%\n[[/module]]\n[[module PreviousPage]]\nPREVIOUS=%%linked_title%%|%%title%%\n[[/module]]" },
       { role: "next", slug: pageSlug(runId, "next"), title: `Q1040 ${runId.slice("candidate-case-".length)} next`, wikitext: "Q1040 next" },
     ];
   }
@@ -112,8 +112,19 @@ class Q1040Run {
         settleMs: 0,
         navigate: ({ page: targetPage, url: targetUrl, timeoutMs }) => targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs }),
       });
-      const links = await page.evaluate(() => [...document.querySelectorAll("#page-content a")].map((link) => ({ href: new URL(link.href).pathname, text: link.textContent.trim() })));
-      return [{ case_id: OPEN43_Q1040_CASE_IDS[0], observations: { url, capture, links } }];
+      const dom = await page.evaluate(() => {
+        const content = document.querySelector("#page-content");
+        const markers = [...content.querySelectorAll("p")];
+        const start = markers.find((node) => node.textContent.trim() === "Q1040_DEFAULT_START");
+        const end = markers.find((node) => node.textContent.trim() === "Q1040_DEFAULT_END");
+        const wrappers = [];
+        for (let node = start?.nextElementSibling; node && node !== end; node = node.nextElementSibling) if (node.matches("div.list-pages-box")) wrappers.push(node);
+        return {
+          links: [...content.querySelectorAll("a")].map((link) => ({ href: new URL(link.href).pathname, text: link.textContent.trim() })),
+          default_row: wrappers.length === 1 ? wrappers[0].outerHTML : null,
+        };
+      });
+      return [{ case_id: OPEN43_Q1040_CASE_IDS[0], observations: { url, capture, ...dom } }];
     } finally {
       await page.close();
     }
@@ -145,6 +156,17 @@ class Q1040Run {
     const next = this.#pages[2];
     const previous = this.#pages[0];
     if (observations.capture?.navigation_status !== 200 || observations.capture?.failures?.length !== 0 || observations.capture?.capture_error) throw new Error("Q1040 served capture was not a clean HTTP 200");
+    const defaultRow = observations.default_row;
+    if (
+      typeof defaultRow !== "string" ||
+      !defaultRow.startsWith('<div class="list-pages-box">') ||
+      !defaultRow.includes('<div class="list-pages-item">') ||
+      !defaultRow.includes(`<h1><span><a href="/${next.slug}">${next.title}</a></span></h1>`) ||
+      !defaultRow.includes('<p>by <span class="printuser avatarhover">') ||
+      !/<span class="odate time_-?\d+ format_[^"]+">[^<]+<\/span>/u.test(defaultRow) ||
+      !defaultRow.includes("<p>Q1040 next</p>") ||
+      defaultRow.includes("data-wikijump-compat-")
+    ) throw new Error("Q1040 served page did not expose the exact default NextPage row");
     const links = observations.links ?? [];
     const nextLink = links.find((link) => link.href === `/${next.slug}` && link.text === next.title);
     const previousLink = links.find((link) => link.href === `/${previous.slug}` && link.text === previous.title);

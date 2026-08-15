@@ -97,7 +97,11 @@ function fakeBrowserContexts(state) {
         url: () => PAGE_ORIGIN,
         async evaluate() {
           const pages = [...state.pages.values()];
-          return pages.filter((candidate) => candidate.title.endsWith(" next") || candidate.title.endsWith(" previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title }));
+          const next = pages.find((candidate) => candidate.title.endsWith(" next"));
+          return {
+            links: pages.filter((candidate) => candidate.title.endsWith(" next") || candidate.title.endsWith(" previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title })),
+            default_row: `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by <span class="printuser avatarhover">editor</span> <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`,
+          };
         },
         async close() {},
       };
@@ -138,4 +142,24 @@ test("Q1040 has one executable candidate case through the canonical runner", asy
   assert.equal(receipt.cases[0].case_id, CASE_ID);
   assert.equal(state.pages.size, 0);
   assert.equal(receipt.resources.every((resource) => resource.released), true);
+});
+
+test("Q1040 rejects directional links without the default NextPage row", () => {
+  const { session } = fakeCandidateSession();
+  const run = createOpen43Q1040CandidateCaseSet({ sessionFactory: () => session }).prepareRun({
+    runId: "candidate-case-0123456789ab",
+    candidateIdentity: candidateIdentity(),
+    privateInput: {},
+    signal: null,
+    resources: {},
+    candidateBrowserContexts: {},
+  });
+  assert.throws(() => run.verifyCase(CASE_ID, {
+    capture: { navigation_status: 200, failures: [] },
+    links: [
+      { href: "/open43-q1040-0123456789ab-next", text: "Q1040 0123456789ab next" },
+      { href: "/open43-q1040-0123456789ab-previous", text: "Q1040 0123456789ab previous" },
+    ],
+    default_row: null,
+  }), /default NextPage row/u);
 });
