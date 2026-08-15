@@ -553,7 +553,7 @@ export function createOpen43SettingsGroupCandidateCaseSet({
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       if (session.pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("settings session did not bind the sealed editable candidate origin");
       const privateInputIdentity = session.privateInputIdentity;
-      const suffix = runId.slice("candidate-case-".length);
+      const suffix = runId.slice("candidate-run-".length);
       const fixedPlan = Object.freeze({
         analytics_profile: "UA-754-1",
         analytics_stale_profile: "UA-754-2",

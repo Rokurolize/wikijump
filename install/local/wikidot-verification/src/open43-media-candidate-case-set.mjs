@@ -37,7 +37,7 @@ const INPUTS = Object.freeze({
 });
 
 function runPageSlug(runId) {
-  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-case-".length)}`;
+  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-run-".length)}`;
 }
 
 function requireCandidateSite(candidateIdentity) {

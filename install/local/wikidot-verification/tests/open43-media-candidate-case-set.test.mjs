@@ -454,6 +454,7 @@ async function runFixture(
     privateInputSha256: hash("e"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     signal,
     dependencies: {
       collectExecutionIdentity: async () => ({
@@ -469,7 +470,6 @@ async function runFixture(
       assertStableRuntimeIdentity(before, after) {
         assert.deepEqual(after, before);
       },
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-10T00:00:00.000Z",
     },
   });

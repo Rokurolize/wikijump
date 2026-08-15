@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import { runCandidateCaseSet } from "./candidate-case-runner.mjs";
@@ -11,12 +12,13 @@ import {
   sha256File,
 } from "./standing-browser-parity-util.mjs";
 
-const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
+const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir", "run-id"];
+const RUN_ID = /^candidate-run-[0-9a-f]{12}$/u;
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set ftml-marker-contract|issue1373-amc-new-page|framerail-route-action-browser|comments-hideform-browser|open43-actions|open43-membership|open43-membership-join|open43-backlinks|open43-authoring|open43-categories|open43-media-files|open43-media-browser|open43-embedvideo-browser|open43-authoring-history|open43-page-tree|open43-page-query-nextprevious|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-settings-toolbar|open43-settings-admin|open43-settings-page-tags|open43-mailform-fail-closed|open43-simpletodo-read-only|open43-b610-shell|open43-issue775-edit|open43-issue777-print|open43-searchall|open43-a1038-admin-boundary|open43-q778-forum-mini|open43-q1034-forum|open43-q1035-sitechanges|open43-q809|open43-q1026-user-identity|open43-q1032-members-userinfo|open43-q1036-search-feed|open43-q1040|open43-featuredsite|open43-689-tabview|open43-690-geometry --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set ftml-marker-contract|issue1373-amc-new-page|framerail-route-action-browser|comments-hideform-browser|open43-actions|open43-membership|open43-membership-join|open43-backlinks|open43-authoring|open43-categories|open43-media-files|open43-media-browser|open43-embedvideo-browser|open43-authoring-history|open43-page-tree|open43-page-query-nextprevious|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-settings-toolbar|open43-settings-admin|open43-settings-page-tags|open43-mailform-fail-closed|open43-simpletodo-read-only|open43-b610-shell|open43-issue775-edit|open43-issue777-print|open43-searchall|open43-a1038-admin-boundary|open43-q778-forum-mini|open43-q1034-forum|open43-q1035-sitechanges|open43-q809|open43-q1026-user-identity|open43-q1032-members-userinfo|open43-q1036-search-feed|open43-q1040|open43-featuredsite|open43-689-tabview|open43-690-geometry --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY --run-id candidate-run-<12 hex>
 
-Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
+Runs under the propagated candidate lease. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
 
 export function parseCandidateCaseArgs(argv) {
@@ -31,6 +33,7 @@ export function parseCandidateCaseArgs(argv) {
     args[name] = value;
   }
   for (const name of OPTIONS) if (!args[name]) throw new Error(`missing --${name}\n${candidateCaseUsage()}`);
+  if (!RUN_ID.test(args["run-id"])) throw new Error(`invalid --run-id\n${candidateCaseUsage()}`);
   return args;
 }
 
@@ -227,6 +230,11 @@ export async function runCandidateCaseCommand(args) {
   ]);
   const outputDir = path.resolve(args["output-dir"]);
   await fs.mkdir(path.dirname(outputDir), { recursive: true, mode: 0o700 });
+  const globalLockPath = path.join(os.tmpdir(), "wikijump-candidate-run.lock");
+  const globalLock = await fs.open(globalLockPath, "wx", 0o600);
+  await globalLock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_global_lock.v1", run_id: args["run-id"], evidence_directory: path.dirname(outputDir)})}\n`);
+  await globalLock.sync();
+  await globalLock.close();
   const signals = interruption();
   try {
     return await runCandidateCaseSet({
@@ -236,10 +244,12 @@ export async function runCandidateCaseCommand(args) {
       privateInputSha256: privateInput.sha256,
       outputDir,
       caseSet: selectedCaseSet,
+      runId: args["run-id"],
       signal: signals.signal,
     });
   } finally {
     signals.close();
+    await fs.unlink(globalLockPath).catch(() => {});
   }
 }
 

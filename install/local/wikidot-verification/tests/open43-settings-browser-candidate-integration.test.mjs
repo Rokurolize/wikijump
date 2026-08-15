@@ -334,7 +334,6 @@ function dependencies(events, sourceFilesSeen) {
     },
     observeRuntimeIdentity: async () => ({ schema: "fixture.runtime.v1", identity: "stable" }),
     assertStableRuntimeIdentity(before, after) { assert.equal(before.identity, after.identity); },
-    runId: () => "candidate-case-0123456789ab",
     now: () => "2026-08-10T00:00:00.000Z",
     createBrowserContexts(options) {
       assert.equal(options.credentialPolicy.mode, "private-actor-storage-states");
@@ -447,6 +446,7 @@ test("the real Settings CandidateCaseSet runs all nine configured cases exactly 
     privateInputSha256: sha256Value("private-input"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: dependencies(events, sourceFiles),
   });
 
@@ -666,7 +666,7 @@ test("the real Settings CaseSet verifies direct and client theme evidence indepe
     t.after(() => fs.rm(root, { recursive: true, force: true }));
     const identity = candidateIdentity();
     await assert.rejects(
-      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, dependencies: dependencies(events, []) }),
+      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies(events, []) }),
       pattern,
     );
   }
@@ -678,7 +678,7 @@ test("Settings rejects any sealed candidate identity outside the exact editable 
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wrong-open43-settings-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await assert.rejects(
-    runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, dependencies: dependencies([], []) }),
+    runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies([], []) }),
     /exact non-standing scpaiueouiuiuiui\.wikijump\.localhost/u,
   );
 });

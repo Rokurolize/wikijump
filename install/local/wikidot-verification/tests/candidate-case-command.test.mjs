@@ -296,12 +296,15 @@ test("candidate case command accepts only the fixed explicit attachment options"
       "private.json",
       "--output-dir",
       "evidence",
+      "--run-id",
+      "candidate-run-0123456789ab",
     ]),
     {
       "case-set": "open43-media-files",
       "candidate-identity": "candidate.json",
       "private-input": "private.json",
       "output-dir": "evidence",
+      "run-id": "candidate-run-0123456789ab",
     },
   );
   assert.throws(
@@ -311,6 +314,16 @@ test("candidate case command accepts only the fixed explicit attachment options"
   assert.throws(
     () => parseCandidateCaseArgs(["--plan", "dynamic.json"]),
     /unknown or duplicate option/u,
+  );
+  assert.throws(
+    () => parseCandidateCaseArgs([
+      "--case-set", "open43-media-files",
+      "--candidate-identity", "candidate.json",
+      "--private-input", "private.json",
+      "--output-dir", "evidence",
+      "--run-id", "candidate-case-0123456789ab",
+    ]),
+    /invalid --run-id/u,
   );
 });
 

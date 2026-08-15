@@ -75,11 +75,6 @@ function oneCaseSet(
         sourceFiles: [],
         runtimeBindings: [],
         privateInputIdentity: { editor_session_sha256: hash("8") },
-        plan: {
-          schema: "fixture.candidate_case_plan.v1",
-          run_id: runId,
-          fixed_input_sha256: hash("7"),
-        },
         async execute() {
           page = resources.register("page", {
             site_slug: "scpaiueouiuiuiui",
@@ -144,7 +139,6 @@ function fixtureDependencies({ drift = false } = {}) {
     assertStableRuntimeIdentity(before, after) {
       assert.equal(before.identity, after.identity, "runtime identity drifted");
     },
-    runId: () => "candidate-case-0123456789ab",
     now: () => "2026-08-10T00:00:00.000Z",
   };
 }
@@ -164,6 +158,7 @@ async function runOne(t, caseSet, options = {}) {
     privateInputSha256: hash("b"),
     outputDir: options.outputDir ?? (await temporaryOutput(t)),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: options.dependencies ?? fixtureDependencies(),
   });
 }
@@ -186,6 +181,7 @@ test("CandidateCaseRunner publishes one exact case only after public cleanup and
     privateInputSha256: hash("b"),
     outputDir,
     caseSet: oneCaseSet(events),
+    runId: "candidate-run-0123456789ab",
     dependencies: {
       collectExecutionIdentity: async () => ({
         schema: "fixture.execution_identity.v1",
@@ -200,7 +196,6 @@ test("CandidateCaseRunner publishes one exact case only after public cleanup and
       assertStableRuntimeIdentity(before, after) {
         assert.equal(before.identity, after.identity);
       },
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-10T00:00:00.000Z",
     },
   });
@@ -215,6 +210,8 @@ test("CandidateCaseRunner publishes one exact case only after public cleanup and
   assert.deepEqual(aggregate.denominator.case_ids, [
     "M1062_SERIALIZABLE_ACTION_RESPONSE",
   ]);
+  assert.equal("run_plan" in aggregate, false);
+  await assert.rejects(fs.stat(path.join(outputDir, "run-plan.json")), { code: "ENOENT" });
   assert.equal(JSON.stringify(aggregate).includes("never-publish-me"), false);
   const caseReceipt = JSON.parse(
     await fs.readFile(
@@ -223,6 +220,7 @@ test("CandidateCaseRunner publishes one exact case only after public cleanup and
     ),
   );
   assert.equal(caseReceipt.status, "pass");
+  assert.equal("run_plan_sha256" in caseReceipt, false);
   assert.equal(caseReceipt.cleanup.public_absence_verified, true);
 });
 

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -19,7 +18,7 @@ export const CANDIDATE_CASE_AGGREGATE_SCHEMA = "wikijump.candidate_case_aggregat
 export const CANDIDATE_CASE_TERMINAL_SCHEMA = "wikijump.candidate_case_terminal_receipt.v1";
 
 const CASE_ID = /^[A-Z][A-Z0-9_]+$/u;
-const RUN_ID = /^candidate-case-[0-9a-f]{12}$/u;
+const RUN_ID = /^candidate-run-[0-9a-f]{12}$/u;
 
 function validateCaseSet(value) {
   const caseSet = requirePlainObject(value, "CandidateCaseSet");
@@ -36,7 +35,6 @@ function validatePreparedRun(value) {
   if (run.browserCredentialPolicy !== undefined && run.browserCredentialPolicy !== "none") {
     requirePlainObject(run.browserCredentialPolicy, "prepared run browserCredentialPolicy");
   }
-  requirePlainObject(run.plan, "prepared run plan");
   for (const method of ["execute", "cleanup", "verifyCase", "verifyCleanup"]) if (typeof run[method] !== "function") throw new Error(`prepared run ${method} must be a function`);
   return run;
 }
@@ -121,28 +119,21 @@ function defaultDependencies() {
       const { createCandidateBrowserContexts } = await import("./candidate-browser-contexts.mjs");
       return createCandidateBrowserContexts(options);
     },
-    runId: () => `candidate-case-${randomUUID().replaceAll("-", "").slice(0, 12)}`,
     now: () => new Date().toISOString(),
   };
 }
 
-export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir, caseSet: rawCaseSet, signal = null, dependencies: overrides = {} }) {
+export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir, caseSet: rawCaseSet, runId, signal = null, dependencies: overrides = {} }) {
   const identity = assertCandidateIdentityFresh(validateCandidateParityIdentity(rawIdentity));
   requireSha256(candidateIdentitySha256, "candidate identity SHA-256");
   requireSha256(privateInputSha256, "private input SHA-256");
   const caseSet = validateCaseSet(rawCaseSet);
   const dependencies = { ...defaultDependencies(), ...overrides };
-  const runId = dependencies.runId();
   if (!RUN_ID.test(runId)) throw new Error("candidate case run ID is invalid");
 
   const output = path.resolve(outputDir);
   const evidenceRoot = path.dirname(output);
-  const lockPath = path.join(evidenceRoot, ".candidate-run.lock");
   const terminalFailurePath = path.join(evidenceRoot, `${path.basename(output)}.terminal-failure.json`);
-  const lock = await fs.open(lockPath, "wx", 0o600);
-  await lock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_run_lock.v1", run_id: runId, candidate_case_set: caseSet.id})}\n`);
-  await lock.sync();
-  await lock.close();
   try {
   await createPrivateEmptyDirectory(output);
   const caseDirectory = path.join(output, "cases");
@@ -186,18 +177,6 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };
-  const plan = {
-    schema: "wikijump.candidate_case_run_plan.v1",
-    run_id: runId,
-    candidate_case_set: caseSet.id,
-    denominator,
-    candidate_identity_sha256: candidateIdentitySha256,
-    private_input_sha256: privateInputSha256,
-    private_input_identity: run.privateInputIdentity,
-    execution_identity_sha256: sha256Value(executionIdentity),
-    case_set_plan: run.plan,
-  };
-  const planSeal = await seal(path.join(output, "run-plan.json"), plan);
   const runtimeOptions = { identity, identitySha256: candidateIdentitySha256, requiredServiceBindings: run.runtimeBindings };
   const runtimeBefore = await dependencies.observeRuntimeIdentity(runtimeOptions);
 
@@ -273,7 +252,6 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
       case_id: caseId,
       candidate_identity_sha256: candidateIdentitySha256,
       private_input_sha256: privateInputSha256,
-      run_plan_sha256: planSeal.sha256,
       execution_identity_sha256: sha256Value(executionIdentity),
       runtime_before_sha256: sha256Value(runtimeBefore),
       runtime_after_sha256: sha256Value(runtimeAfter),
@@ -302,7 +280,6 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     candidate_identity_sha256: candidateIdentitySha256,
     private_input_sha256: privateInputSha256,
     denominator,
-    run_plan: planSeal,
     execution_identity: executionIdentity,
     runtime_identity: { before: runtimeBefore, after: runtimeAfter, stable: true },
     cleanup: verifiedCleanup,
@@ -316,8 +293,6 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   } catch (error) {
     await sealFailure(terminalFailurePath, runId, output, error);
     throw error;
-  } finally {
-    await fs.unlink(lockPath).catch(() => {});
   }
 }
 
