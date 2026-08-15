@@ -11,6 +11,14 @@ const script = path.join(
   root,
   "install/local/wikidot-verification/scripts/build-compatibility-ledger.mjs",
 );
+const contractVerifier = path.join(
+  root,
+  "install/local/wikidot-verification/scripts/verify-compatibility-denominator-contract.mjs",
+);
+const denominatorContract = path.join(
+  root,
+  "docs/development/compatibility-denominator-contract.json",
+);
 
 const surface = (surfaceId) => ({
   surface_id: surfaceId,
@@ -314,5 +322,49 @@ test("compatibility ledger builder projects recorded proof claims without erasin
   assert.deepEqual(blocked.rows[0].standing, {
     state: "blocked",
     artifacts: [],
+  });
+});
+
+test("ledger builder resolves a relative inventory path before emitting proof artifacts", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-relative-"));
+  const relativeInput = "inventory.json";
+  const input = path.join(directory, relativeInput);
+  const output = path.join(directory, "ledger.json");
+
+  const fixture = inventory();
+  fixture.surfaces[0].candidate.status = "passed";
+  fixture.surfaces[0].standing.status = "failed";
+  writeFileSync(input, JSON.stringify(fixture));
+  execFileSync(
+    process.execPath,
+    [script, "--inventory", relativeInput, "--output", output],
+    { cwd: directory },
+  );
+  const ledger = JSON.parse(readFileSync(output));
+  const resolvedPath = path.resolve(directory, relativeInput);
+  const resolvedSha256 = createHash("sha256")
+    .update(readFileSync(resolvedPath))
+    .digest("hex");
+  for (const dimension of ["candidate", "standing"]) {
+    const [artifact] = ledger.rows[0][dimension].artifacts;
+    assert.ok(path.isAbsolute(artifact.path), `${dimension} artifact path`);
+    assert.equal(artifact.path, resolvedPath);
+    assert.equal(artifact.sha256, resolvedSha256);
+  }
+
+  const contract = JSON.parse(readFileSync(denominatorContract));
+  const row = contract.structural_examples.rows[0];
+  row.candidate = {
+    state: "pass",
+    artifacts: [ledger.rows[0].candidate.artifacts[0]],
+  };
+  row.standing = {
+    state: "fail",
+    artifacts: [ledger.rows[0].standing.artifacts[0]],
+  };
+  const contractPath = path.join(directory, "contract.json");
+  writeFileSync(contractPath, JSON.stringify(contract));
+  execFileSync(process.execPath, [contractVerifier, "--contract", contractPath], {
+    cwd: directory,
   });
 });

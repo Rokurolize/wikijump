@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { readFile, rename, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import process from "node:process";
 
 import {
@@ -9,7 +10,7 @@ import {
   stableStringify,
 } from "../src/canonical-json.mjs";
 
-const [inventoryFlag, inventoryPath, outputFlag, outputPath] =
+const [inventoryFlag, inventoryPathArgument, outputFlag, outputPath] =
   process.argv.slice(2);
 if (
   process.argv.length !== 6 ||
@@ -21,6 +22,7 @@ if (
   );
 }
 
+const inventoryPath = path.resolve(inventoryPathArgument);
 const inventoryBytes = await readFile(inventoryPath);
 const inventory = JSON.parse(inventoryBytes);
 
