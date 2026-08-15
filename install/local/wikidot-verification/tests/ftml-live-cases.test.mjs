@@ -11,8 +11,10 @@ import {
   collectFtmlFixtureCases,
   collectFtmlRecordedCases,
   isolateBatchInteractions,
+  loadClassificationOverrides,
   sha256,
 } from '../src/ftml-live-cases.mjs';
+import {parseArgs as parseBuildArgs} from '../scripts/build-ftml-live-pages.mjs';
 import {extractMarkedFragments} from '../scripts/verify-ftml-live-pages.mjs';
 import {compareFragment} from '../scripts/compare-wikidot-live-pages.mjs';
 
@@ -121,6 +123,85 @@ test('fixture collector reads both FTML fixture roots with source identities', a
   assert.equal(cases.length, 2);
   assert.deepEqual(cases.map((value) => value.case_id), ['test--bold--basic', 'tests--fixtures--article--source']);
   assert.ok(cases.every((value) => value.source_sha256.length === 64));
+});
+
+test('fixture collector applies only exact hash-pinned classification overrides', async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ftml-live-overrides-'));
+  const fixtures = [
+    ['tests/fixtures/parity-gaps/autolink-email/input.ftml', 'support@wikidot.com\n', 'reviewed-context-free-email-obfuscation'],
+    ['tests/fixtures/parity-gaps/autolink-mailto/input.ftml', 'BEGIN|mailto:User@example.com|END\n', 'reviewed-context-free-mailto'],
+    ['tests/fixtures/parity-gaps/autolink-triple-owner/input.ftml', '[[[https://example.com/a|Label]]]\n', 'reviewed-context-free-external-triple-link'],
+    ['tests/fixtures/parity-gaps/runtime-email/input.ftml', 'runtime@example.com\n', null],
+  ];
+  for (const [relativePath, source] of fixtures) {
+    const target = path.join(root, relativePath);
+    await fs.mkdir(path.dirname(target), {recursive: true});
+    await fs.writeFile(target, source);
+  }
+  const manifestPath = path.join(root, 'classification-overrides.json');
+  const overrides = fixtures.slice(0, 3).map(([relativePath, source, reason]) => ({
+    path: relativePath,
+    source_sha256: sha256(source),
+    execution_class: 'page-preview-isolated',
+    page_scope: 'isolated',
+    reason,
+  }));
+  const writeManifest = (rows, extra = {}) => fs.writeFile(manifestPath, JSON.stringify({
+    schema: 'ftml.wikidot_parity.classification_overrides.v1',
+    overrides: rows,
+    ...extra,
+  }));
+
+  await writeManifest(overrides);
+  const manifestBytes = await fs.readFile(manifestPath);
+  const classificationOverrides = loadClassificationOverrides(manifestPath);
+  await writeManifest([]);
+  const cases = collectFtmlFixtureCases(root, {classificationOverrides});
+  assert.deepEqual(cases.slice(0, 3).map(({execution_class, page_scope, reasons}) => ({
+    execution_class,
+    page_scope,
+    reasons,
+  })), overrides.map(({execution_class, page_scope, reason}) => ({
+    execution_class,
+    page_scope,
+    reasons: [reason],
+  })));
+  assert.equal(cases[3].execution_class, 'wikijump-runtime');
+  assert.deepEqual(classificationOverrides.identity, {
+    path: path.resolve(manifestPath),
+    sha256: sha256(manifestBytes),
+  });
+
+  await writeManifest([{...overrides[0], source_sha256: '0'.repeat(64)}]);
+  assert.throws(
+    () => collectFtmlFixtureCases(root, {classificationOverrides: loadClassificationOverrides(manifestPath)}),
+    /stale source hash/u,
+  );
+
+  await writeManifest([{...overrides[0], path: 'tests/fixtures/parity-gaps/missing/input.ftml'}]);
+  assert.throws(
+    () => collectFtmlFixtureCases(root, {classificationOverrides: loadClassificationOverrides(manifestPath)}),
+    /unused classification override/u,
+  );
+
+  await writeManifest(overrides, {unexpected: true});
+  assert.throws(
+    () => loadClassificationOverrides(manifestPath),
+    /unknown field/u,
+  );
+});
+
+test('FTML live-page builder accepts optional identified classification overrides', async () => {
+  const args = [
+    '--ftml-root', '.',
+    '--classification-overrides', 'overrides.json',
+    '--cases-output', 'cases.jsonl',
+    '--pages-output', 'pages.jsonl',
+    '--slug-prefix', 'ftml-parity',
+  ];
+  assert.equal(parseBuildArgs(args).classificationOverrides, 'overrides.json');
+  const withoutOverrides = args.filter((value) => !['--classification-overrides', 'overrides.json'].includes(value));
+  assert.equal(parseBuildArgs(withoutOverrides).classificationOverrides, null);
 });
 
 test('record collector splits only on LF and deduplicates runtime sources', async () => {
@@ -433,99 +514,4 @@ test('live fragment comparison requires parsed DOM and visible text parity', () 
   assert.equal(compareFragment('same', '<p>alpha</p>', '<p>alpha</p>').status, 'match');
   assert.equal(compareFragment('different-tag', '<p><b>alpha</b></p>', '<p><strong>alpha</strong></p>').status, 'mismatch');
   assert.equal(compareFragment('different-text', '<p>alpha</p>', '<p>beta</p>').status, 'mismatch');
-});
-
-function sortedOverrides(rows) {
-  return {
-    schema: 'ftml.classification_overrides.v1',
-    overrides: rows
-      .map((row) => structuredClone(row))
-      .sort((left, right) => left.path.localeCompare(right.path)),
-  };
-}
-
-async function fixtureRoot(sources) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ftml-overrides-'));
-  for (const [relative, source] of Object.entries(sources)) {
-    const target = path.join(root, relative);
-    await fs.mkdir(path.dirname(target), {recursive: true});
-    await fs.writeFile(target, source);
-  }
-  return root;
-}
-
-const isolatedOverride = (relative, source, reason) => ({
-  path: relative,
-  source_sha256: sha256(source),
-  execution_class: 'page-preview-isolated',
-  page_scope: 'isolated',
-  reason,
-});
-
-test('fixture collector keeps generic email and internal triple link runtime without overrides', async () => {
-  const root = await fixtureRoot({
-    'test/email/basic/input.ftml': 'abc@example.com',
-    'test/link/internal/input.ftml': '[[[target-page|Label]]]',
-  });
-  const byId = new Map(collectFtmlFixtureCases(root).map((value) => [value.case_id, value]));
-  assert.equal(byId.get('test--email--basic').execution_class, 'wikijump-runtime');
-  assert.equal(byId.get('test--link--internal').execution_class, 'wikijump-runtime');
-});
-
-test('classification overrides isolate the exact email, mailto, and external-link rows', async () => {
-  const sources = {
-    'test/email/basic/input.ftml': 'abc@example.com',
-    'test/email/mailto/input.ftml': '[mailto:abc@example.com label]',
-    'test/link/external/input.ftml': '[[[https://example.com label]]]',
-  };
-  const root = await fixtureRoot(sources);
-  const overrides = sortedOverrides([
-    isolatedOverride('test/email/basic/input.ftml', sources['test/email/basic/input.ftml'], 'context-free-email-obfuscation'),
-    isolatedOverride('test/email/mailto/input.ftml', sources['test/email/mailto/input.ftml'], 'context-free-mailto-autolink'),
-    isolatedOverride('test/link/external/input.ftml', sources['test/link/external/input.ftml'], 'context-free-external-url'),
-  ]);
-  const byId = new Map(collectFtmlFixtureCases(root, overrides).map((value) => [value.case_id, value]));
-  for (const caseId of ['test--email--basic', 'test--email--mailto', 'test--link--external']) {
-    assert.equal(byId.get(caseId).execution_class, 'page-preview-isolated');
-    assert.equal(byId.get(caseId).page_scope, 'isolated');
-    assert.equal(byId.get(caseId).reasons.length, 1);
-  }
-  assert.deepEqual(byId.get('test--email--basic').reasons, ['context-free-email-obfuscation']);
-  assert.deepEqual(byId.get('test--email--mailto').reasons, ['context-free-mailto-autolink']);
-  assert.deepEqual(byId.get('test--link--external').reasons, ['context-free-external-url']);
-});
-
-test('classification overrides leave a nearby non-overridden runtime row runtime', async () => {
-  const sources = {
-    'test/link/external/input.ftml': '[[[https://example.com label]]]',
-    'test/link/internal/input.ftml': '[[[target-page|Label]]]',
-  };
-  const root = await fixtureRoot(sources);
-  const overrides = sortedOverrides([
-    isolatedOverride('test/link/external/input.ftml', sources['test/link/external/input.ftml'], 'context-free-external-url'),
-  ]);
-  const byId = new Map(collectFtmlFixtureCases(root, overrides).map((value) => [value.case_id, value]));
-  assert.equal(byId.get('test--link--external').execution_class, 'page-preview-isolated');
-  assert.equal(byId.get('test--link--internal').execution_class, 'wikijump-runtime');
-});
-
-test('classification overrides reject stale hashes and unused paths', async () => {
-  const sources = {'test/email/basic/input.ftml': 'abc@example.com'};
-  const root = await fixtureRoot(sources);
-
-  const stale = sortedOverrides([
-    isolatedOverride('test/email/basic/input.ftml', 'changed@example.com', 'context-free-email-obfuscation'),
-  ]);
-  assert.throws(
-    () => collectFtmlFixtureCases(root, stale),
-    /source SHA-256 does not match/u,
-  );
-
-  const unused = sortedOverrides([
-    isolatedOverride('test/email/absent/input.ftml', 'abc@example.com', 'context-free-email-obfuscation'),
-  ]);
-  assert.throws(
-    () => collectFtmlFixtureCases(root, unused),
-    /was not collected/u,
-  );
 });
