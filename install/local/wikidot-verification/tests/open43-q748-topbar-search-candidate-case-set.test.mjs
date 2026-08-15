@@ -14,30 +14,54 @@ import {
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const BASE_URL = `${PAGE_ORIGIN}/search:site`;
 const SEARCH_ERROR = '<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>';
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const FIXTURE_RUN_ID = "candidate-run-3a7f2e9c1b8d";
+const REAL_SHA256 = Object.freeze({
+  artifact_key: "5e0e9f525ef08f5f1043248ca4646c87ae9b7f691be18bd86730b1f03ab36c32",
+  build_seal: "dfa02455ddaa0b4615a9c66b679efef90f30097efb5f9b1729f04834b5a5d04e",
+  build_verdict: "c804173c74d9afa5d859e0509b75f02c57750fe02648c7289f488c3d0822135d",
+  final_images: "e00f9d6f544de0c42f71c31fefcd02152b18dff6d61e5eb9730b83e4085c382d",
+  isolated_overlay: "1d26d8f330eee483f92e0579f5e41f12fdda16aa70f8d642b443c396a759e91c",
+  promotion_manifest: "04a12cbbb3ef559ca1e6c18a647d6b0ab9bb81e1a1fbae6496faabc559d7fb7b",
+  runtime_services: "57db2d25a2f30878e1d3d188e9f6bb367014d3996f95b9b4c9f32f82734f0c48",
+  evidence_manifest: "691ab4d1c22fedd5dae2a85ff24b2d0a3725b4e3c9f593e82bc00fb1e9b2d61e",
+  evidence_seal: "22f3df1806020f66dd736a05f724a9e4530780fb6390c557be43ed09f4536237",
+  private_input: "2b8211349f3b0d580c4824c7e7e47d42f242089dc1766cdb68bfb1dd7fd4b279",
+  identity: "c8ad4e5e04a63f22e61b9a6841f8034ad9a34f27f726ba5035bb7e0a2656cd14",
+  fixture: "5c750191d9ebaacdfb1b33fd6060bf6b481a70f88640f32a14bdbd3704bc5411",
+  content_d: "d6ded7053330811855c0087c356a9a23a6d34946c9455edc7506d64c01af55ec",
+  content_e: "f8aa343a73b63eb5a83b825495f1cc016bc70ac80991fc149f6688010a57a69b",
+});
+const REAL_GIT_OBJECT = Object.freeze({
+  wikijump_commit: "1895e9b6303c238582bdf05969bf4edb79af115f",
+  wikijump_tree: "2d392fb219fca8f26fcba69ab9ec0db01e323629",
+  ftml_sha: "cca0ed1f0a67fe9f589705965fe1182a5a61498f",
+});
 
 function candidateIdentity() {
   return {
     schema: "wikijump.standing_candidate_parity_identity.v1",
     status: "sealed",
-    artifact_key: hash("a"),
-    build: { seal_sha256: hash("b"), verdict_sha256: hash("c"), final_images_sha256: hash("d") },
+    artifact_key: REAL_SHA256.artifact_key,
+    build: {
+      seal_sha256: REAL_SHA256.build_seal,
+      verdict_sha256: REAL_SHA256.build_verdict,
+      final_images_sha256: REAL_SHA256.final_images,
+    },
     candidate: {
       owner: "open43-q748-fixture",
       expires_at: "2099-08-20T00:00:00.000Z",
       compose_project: "wikijump-open43-q748-fixture",
       port_443_published: false,
-      wikijump_commit: git("1"),
-      wikijump_tree: git("2"),
-      ftml_sha: git("3"),
+      wikijump_commit: REAL_GIT_OBJECT.wikijump_commit,
+      wikijump_tree: REAL_GIT_OBJECT.wikijump_tree,
+      ftml_sha: REAL_GIT_OBJECT.ftml_sha,
       profile: "production-build",
       source_clean: true,
-      images: { deepwell: `sha256:${hash("4")}` },
+      images: { deepwell: `sha256:${REAL_SHA256.final_images}` },
       config: {
-        isolated_overlay_sha256: hash("5"),
-        promotion_base_manifest_sha256: hash("6"),
-        effective_runtime_services_sha256: hash("7"),
+        isolated_overlay_sha256: REAL_SHA256.isolated_overlay,
+        promotion_base_manifest_sha256: REAL_SHA256.promotion_manifest,
+        effective_runtime_services_sha256: REAL_SHA256.runtime_services,
       },
       endpoint: {
         scheme: "https",
@@ -48,7 +72,11 @@ function candidateIdentity() {
         local_connect_address: "127.0.0.1",
       },
     },
-    evidence: { status: "sealed", manifest_sha256: hash("8"), seal_sha256: hash("9") },
+    evidence: {
+      status: "sealed",
+      manifest_sha256: REAL_SHA256.evidence_manifest,
+      seal_sha256: REAL_SHA256.evidence_seal,
+    },
   };
 }
 
@@ -148,7 +176,6 @@ function candidateDependencies(browser) {
     assertStableRuntimeIdentity(before, after) {
       assert.deepEqual(before, after);
     },
-    runId: () => "candidate-case-0123456789ab",
     now: () => "2026-08-20T00:00:00.000Z",
   };
 }
@@ -185,10 +212,11 @@ test("Q748 candidate set executes both submission rows over fake browser boundar
 
   const result = await runCandidateCaseSet({
     candidateIdentity: candidateIdentity(),
-    candidateIdentitySha256: hash("a"),
+    candidateIdentitySha256: REAL_SHA256.identity,
     privateInput: {},
-    privateInputSha256: hash("b"),
+    privateInputSha256: REAL_SHA256.private_input,
     outputDir,
+    runId: FIXTURE_RUN_ID,
     caseSet,
     dependencies: candidateDependencies(browser),
   });
@@ -220,9 +248,9 @@ test("Q748 prepare is side-effect-free and reaches only the exact non-standing h
   const prepared = await caseSet.prepareRun({
     runId: "candidate-case-0123456789ab",
     candidateIdentity: candidateIdentity(),
-    candidateIdentitySha256: hash("a"),
+    candidateIdentitySha256: REAL_SHA256.identity,
     privateInput: {},
-    privateInputSha256: hash("b"),
+    privateInputSha256: REAL_SHA256.private_input,
     signal: null,
     resources: { register() { throw new Error("prepare must not register resources"); } },
     candidateBrowserContexts: {
@@ -241,9 +269,9 @@ test("Q748 prepare is side-effect-free and reaches only the exact non-standing h
     caseSet.prepareRun({
       runId: "candidate-case-0123456789ab",
       candidateIdentity: wrongHost,
-      candidateIdentitySha256: hash("a"),
+      candidateIdentitySha256: REAL_SHA256.identity,
       privateInput: {},
-      privateInputSha256: hash("b"),
+      privateInputSha256: REAL_SHA256.private_input,
       signal: null,
       resources: { register() {} },
       candidateBrowserContexts: {},
@@ -256,9 +284,9 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   const prepared = await createOpen43Q748TopBarSearchCandidateCaseSet().prepareRun({
     runId: "candidate-case-0123456789ab",
     candidateIdentity: candidateIdentity(),
-    candidateIdentitySha256: hash("a"),
+    candidateIdentitySha256: REAL_SHA256.identity,
     privateInput: {},
-    privateInputSha256: hash("b"),
+    privateInputSha256: REAL_SHA256.private_input,
     signal: null,
     resources: { register() {} },
     candidateBrowserContexts: {
@@ -271,14 +299,14 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   const base = {
     saved_page: { slug: "search:site", url: BASE_URL, status: 200 },
     initial_form: { ...FORM_MODEL },
-    initial_result: { content_sha256: hash("c"), error_boundary_present: false },
+    initial_result: { content_sha256: REAL_SHA256.content_d, error_boundary_present: false },
     live_query: {
       query: "codex search probe",
       encoded_path: "codex%20search%20probe",
       input_url: BASE_URL,
       final_url: `${BASE_URL}/q/codex%20search%20probe`,
       navigation_delta: 1,
-      result: { content_sha256: hash("d"), error_boundary_present: true },
+      result: { content_sha256: REAL_SHA256.content_e, error_boundary_present: true },
     },
     exact_query: {
       query: "  a/b? c  ",
@@ -286,7 +314,7 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
       input_url: BASE_URL,
       final_url: `${BASE_URL}/q/%20%20a%2Fb%3F%20c%20%20`,
       navigation_delta: 1,
-      result: { content_sha256: hash("e"), error_boundary_present: true },
+      result: { content_sha256: REAL_SHA256.fixture, error_boundary_present: true },
     },
     request_methods: ["GET", "GET", "GET", "GET"],
     failed_requests: [],
