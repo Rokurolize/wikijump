@@ -26,12 +26,19 @@ export const OPEN43_SETTINGS_THEME_CASE_IDS = Object.freeze([
   "S755_THEME_SETTLED",
 ]);
 
+export const OPEN43_SETTINGS_TOOLBAR_CASE_IDS = Object.freeze([
+  "S757_TOOLBAR_INITIAL",
+  "S757_TOOLBAR_SETTLED",
+]);
+
 export const OPEN43_SETTINGS_UNAVAILABLE_CASE_IDS = Object.freeze([
   "S754_IMPORT_EXPORT_REPRESENTATION",
   "S754_LIVE_BEACON_PAYLOAD_AND_TIMING",
   "S755_BUILT_IN_ASSET_MAPPING",
   "S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
   "S755_EXTERNAL_RESOURCE_FAILURE_POLICY",
+  "S757_BOTTOM_TOOLBAR_DOM",
+  "S757_PROMOTION_FLAG_EFFECT",
 ]);
 
 const SETTINGS_SITE_FIELDS = Object.freeze([
@@ -101,7 +108,7 @@ function requireTemporal(value, phase, sequence, label) {
 }
 
 function requireGroupFailedRequestIdentity(value, label, plan) {
-  if (plan.group === "analytics" || plan.group === "theme") {
+  if (plan.group === "analytics" || plan.group === "theme" || plan.group === "toolbar") {
     requireSha256(value?.failed_request_identity_sha256, `${label} failed-request identity SHA-256`);
   }
 }
@@ -277,6 +284,7 @@ function verifyToolbar(observations, plan, settled) {
     ) {
       throw new Error("toolbar observation is stale or has the wrong viewport state");
     }
+    requireGroupFailedRequestIdentity(capture, `toolbar ${widths[index]}`, plan);
     requireTemporal(
       capture.temporal,
       settled ? "settled" : "domcontentloaded_immediate_observation",
@@ -311,6 +319,7 @@ function verifyToolbar(observations, plan, settled) {
       transition.client_navigation_preserved_document !== true || transition.client_resource_completion !== "complete" ||
       [...captures, ...disabledCaptures].some(({ temporal }) => [transitionInitial.artifact.path, transitionSettled.artifact.path].includes(temporal.artifact.path))
     ) throw new Error("toolbar observation is stale across the public setting transition");
+    if (plan.group === "toolbar") requireSha256(transition.failed_request_identity_sha256, "toolbar setting transition failed-request identity SHA-256");
     const interactions = requirePlainObject(observations.interactions, "toolbar interactions");
     if (
       JSON.stringify(Object.keys(interactions).sort()) !==

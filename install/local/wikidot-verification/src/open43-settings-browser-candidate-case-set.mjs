@@ -3,6 +3,7 @@ import {
   OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   OPEN43_SETTINGS_THEME_CASE_IDS,
+  OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
   verifyOpen43SettingsBrowserCase,
   verifyOpen43SettingsBrowserCleanup,
 } from "./open43-settings-browser-candidate-contract.mjs";
@@ -15,6 +16,7 @@ export {
   OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   OPEN43_SETTINGS_THEME_CASE_IDS,
+  OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
 } from "./open43-settings-browser-candidate-contract.mjs";
 
 const SITE_SLUG = "scpaiueouiuiuiui";
@@ -285,6 +287,31 @@ class Open43SettingsRun {
         { case_id: "S754_ANALYTICS_SETTLED", observations: { temporal: temporal(enabled, true), admin_lifecycle: lifecycle, analytics: { profile: enabled.settled.analytics.profile, queue: enabled.settled.analytics.queue, reload_queue: enabled.reload.analytics.queue, reload_url: enabled.reload_url, client_navigation_queue: enabled.client.analytics.queue, client_navigation_preserved_document: enabled.client_navigation_preserved_document, client_resource_completion: enabled.client_resource_completion, remote_request_count: enabled.remote_analytics_request_count, initial_navigation_csp_header_sha256: enabled.initial_navigation_csp_header_sha256, csp_nonce_matches_initial_navigation_header: enabled.csp_nonce_matches_initial_navigation_header, console_errors: enabled.console_errors, failed_request_identity_sha256: failedRequestIdentity(enabled) } } },
       ];
     }
+    if (this.#group === "toolbar") {
+      const disabledToolbar = [];
+      const toolbarTransition = await this.#browser.capturePagePair({
+        url: pageUrl, label: "S757_TOOLBAR", index: 0, viewport: { width: VIEWPORTS[0], height: 900 }, navigationFromUrl: transitionUrl,
+        beforeClientNavigation: async () => {
+          const before = await this.#site();
+          await this.#action("toolbar", { siteId: this.#siteId, expectedSettingsRevision: before.settings_revision, top: true, bottom: before.show_bottom_toolbar }, { expectSuccess: true });
+          const after = await this.#site();
+          this.#settingChanges.toolbar = { before_sha256: sha256Value(siteSettings(before)), after_sha256: sha256Value(siteSettings(after)) };
+        },
+      });
+      disabledToolbar.push(toolbarTransition);
+      for (const [offset, width] of VIEWPORTS.slice(1).entries()) disabledToolbar.push(await this.#browser.capturePagePair({ url: pageUrl, label: "S757_TOOLBAR", index: offset + 1, viewport: { width, height: 900 } }));
+      const toolbar = [];
+      for (const [offset, width] of VIEWPORTS.entries()) toolbar.push(await this.#browser.capturePagePair({ url: pageUrl, label: "S757_TOOLBAR", index: offset + 3, viewport: { width, height: 900 } }));
+      const toolbarRows = (pairs, settled, enabled) => pairs.map((pair, index) => {
+        const observed = settled ? pair.settled.toolbar : pair.initial.toolbar;
+        return { viewport: { width: VIEWPORTS[index], height: 900 }, ...observed, stale_previous_setting_present: enabled ? observed.top_toolbar_count === 0 : observed.top_toolbar_count > 0, failed_request_identity_sha256: failedRequestIdentity(pair), reload_url: pair.reload_url, temporal: temporal(pair, settled) };
+      });
+      const toolbarSettingTransition = { before_top_toolbar_count: toolbarTransition.navigation_source.toolbar.top_toolbar_count, client_immediate_top_toolbar_count: toolbarTransition.client_initial.toolbar.top_toolbar_count, client_settled_top_toolbar_count: toolbarTransition.client.toolbar.top_toolbar_count, client_immediate_stale_previous_setting_present: toolbarTransition.client_initial.toolbar.top_toolbar_count !== 1, client_settled_stale_previous_setting_present: toolbarTransition.client.toolbar.top_toolbar_count !== 1, navigation_from_url: toolbarTransition.navigation_from_url, navigation_to_url: pageUrl, client_navigation_preserved_document: toolbarTransition.client_navigation_preserved_document, client_resource_completion: toolbarTransition.client_resource_completion, failed_request_identity_sha256: failedRequestIdentity(toolbarTransition), initial_temporal: clientTransitionTemporal(toolbarTransition, false), settled_temporal: clientTransitionTemporal(toolbarTransition, true) };
+      return [
+        { case_id: "S757_TOOLBAR_INITIAL", observations: { disabled_captures: toolbarRows(disabledToolbar, false, false), captures: toolbarRows(toolbar, false, true) } },
+        { case_id: "S757_TOOLBAR_SETTLED", observations: { disabled_captures: toolbarRows(disabledToolbar, true, false), captures: toolbarRows(toolbar, true, true), setting_transition: toolbarSettingTransition, setting_change: this.#settingChanges.toolbar, interactions: { ...toolbarTransition.toolbar_interactions, client_navigation_preserved_document: toolbarTransition.client_navigation_preserved_document, client_resource_completion: toolbarTransition.client_resource_completion } } },
+      ];
+    }
     const defaultTheme = await this.#browser.capturePagePair({ url: pageUrl, label: "S755_THEME", index: 0 });
     const transitionTheme = await this.#browser.capturePagePair({ url: transitionUrl, label: "S755_THEME", index: 1, navigationFromUrl: pageUrl });
     const themeState = (observed, expectedMarker, transition, pair, capture) => ({
@@ -454,6 +481,8 @@ export function createOpen43SettingsGroupCandidateCaseSet({
     ? OPEN43_SETTINGS_ANALYTICS_CASE_IDS
     : group === "theme"
       ? OPEN43_SETTINGS_THEME_CASE_IDS
+      : group === "toolbar"
+        ? OPEN43_SETTINGS_TOOLBAR_CASE_IDS
       : group === "all"
         ? OPEN43_SETTINGS_BROWSER_CASE_IDS
         : null;

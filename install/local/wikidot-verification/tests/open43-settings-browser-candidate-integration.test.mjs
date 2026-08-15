@@ -7,6 +7,8 @@ import test from "node:test";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
+  OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
+  createOpen43SettingsGroupCandidateCaseSet,
   createOpen43SettingsBrowserCandidateCaseSet,
 } from "../src/open43-settings-browser-candidate-case-set.mjs";
 import { parityBrowserThrottleConfig } from "../src/standing-browser-parity-browser-session.mjs";
@@ -480,6 +482,61 @@ test("the real Settings CandidateCaseSet runs all nine configured cases exactly 
   assert.equal(toolbarSettled.observations.setting_transition.client_immediate_top_toolbar_count, 1);
   assert.equal(toolbarSettled.observations.setting_transition.client_settled_top_toolbar_count, 1);
   assert.notEqual(toolbarSettled.observations.setting_transition.initial_temporal.artifact.path, toolbarSettled.observations.setting_transition.settled_temporal.artifact.path);
+});
+
+test("the real toolbar candidate group runs through the canonical runner with an identity-bound no-replace receipt", async (t) => {
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "toolbar",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-toolbar-candidate-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const outputDir = path.join(root, "evidence");
+  const identity = candidateIdentity();
+  const options = {
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
+    privateInputSha256: sha256Value("private-input"),
+    outputDir,
+    caseSet,
+    dependencies: dependencies(events, []),
+  };
+  const result = await runCandidateCaseSet(options);
+
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_TOOLBAR_CASE_IDS);
+  assert.deepEqual(result.cases.map(({ case_id }) => case_id), OPEN43_SETTINGS_TOOLBAR_CASE_IDS);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(state.site.show_top_toolbar, false);
+  assert.equal(state.site.show_bottom_toolbar, true);
+  assert.equal(events.filter(({ seam, label }) => seam === "browser-adapter" && label === "S757_TOOLBAR").length, 6);
+  assert.equal(events.some(({ seam, name, cleanup }) => seam === "action" && name === "toolbar" && cleanup === true), true);
+
+  const initial = JSON.parse(await fs.readFile(path.join(outputDir, "cases", "S757_TOOLBAR_INITIAL.json"), "utf8"));
+  const settled = JSON.parse(await fs.readFile(path.join(outputDir, "cases", "S757_TOOLBAR_SETTLED.json"), "utf8"));
+  assert.deepEqual(initial.observations.disabled_captures.map(({ top_toolbar_count }) => top_toolbar_count), [0, 0, 0]);
+  assert.deepEqual(initial.observations.captures.map(({ top_toolbar_count }) => top_toolbar_count), [1, 1, 1]);
+  assert.deepEqual(settled.observations.captures.map(({ geometry }) => geometry), [{ width: 500, height: 42 }, { width: 0, height: 0 }, { width: 0, height: 0 }]);
+  assert.equal(settled.observations.setting_transition.before_top_toolbar_count, 0);
+  assert.equal(settled.observations.setting_transition.client_immediate_top_toolbar_count, 1);
+  assert.equal(settled.observations.setting_transition.client_settled_top_toolbar_count, 1);
+  const failedRequestIdentity = sha256Value({ failures: [], request_gate_aborts: [], client_failures: [], client_request_gate_aborts: [] });
+  for (const row of [...initial.observations.disabled_captures, ...initial.observations.captures]) assert.equal(row.failed_request_identity_sha256, failedRequestIdentity);
+  assert.equal(settled.observations.setting_transition.failed_request_identity_sha256, failedRequestIdentity);
+  for (const receipt of [initial, settled]) {
+    assert.equal(receipt.status, "pass");
+    assert.equal(receipt.candidate_identity_sha256, sha256Value(identity));
+    assert.equal(receipt.private_input_sha256, sha256Value("private-input"));
+    assert.equal(receipt.evidence_identity.fixture_sha256, sha256Value(FIXTURE));
+    assert.match(receipt.evidence_identity.source_sha256, /^[0-9a-f]{64}$/u);
+    assert.match(receipt.evidence_identity.cleanup_sha256, /^[0-9a-f]{64}$/u);
+  }
+  await assert.rejects(runCandidateCaseSet(options), /output directory already exists/u);
+  assert.deepEqual((await fs.readdir(path.join(outputDir, "cases"))).sort(), ["S757_TOOLBAR_INITIAL.json", "S757_TOOLBAR_SETTLED.json"]);
 });
 
 test("the real Settings CaseSet verifies direct and client theme evidence independently", async (t) => {
