@@ -122,6 +122,7 @@ export class CandidateHttpSession {
   }
 
   get editorUserId() { return this.#input.actor.userId; }
+  get editorSessionToken() { return this.#input.actor.sessionToken; }
   get pageOrigin() { return candidatePageOrigin(this.#candidate); }
   get privateInputIdentity() {
     return {
