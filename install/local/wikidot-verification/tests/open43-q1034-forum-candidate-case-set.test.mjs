@@ -158,7 +158,9 @@ function fakeSession(currentFixture, options = {}) {
     },
     async ajaxModuleRequest(fields) {
       calls.push({ seam: "ajax", fields: structuredClone(fields) });
-      const { moduleName, callbackIndex: _callbackIndex, wikidot_token7: _token, ...parameters } = fields;
+      const { moduleName, ...parameters } = fields;
+      delete parameters.callbackIndex;
+      delete parameters.wikidot_token7;
       const keys = Object.keys(parameters).sort().join(",");
       const supported =
         (moduleName === "forum/ForumStartModule" && ["", "hidden"].includes(keys)) ||
