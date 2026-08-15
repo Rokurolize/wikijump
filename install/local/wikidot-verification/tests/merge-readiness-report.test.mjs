@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
-import {parseArgs, verdictExitCode} from "../scripts/merge-readiness-report.mjs";
+import {parseArgs, verdictExitCode, verifyArtifactReference} from "../scripts/merge-readiness-report.mjs";
+import {sha256Hex} from "../src/canonical-json.mjs";
 import {buildMergeReadiness} from "../src/deviation-log.mjs";
 
 const commit = "0123456789abcdef0123456789abcdef01234567";
@@ -27,4 +31,16 @@ test("merge readiness reports the sealed candidate run separately from the merge
   assert.equal(report.merge_ready, true);
   assert.equal(report.merge_run_id, "merge-run");
   assert.equal(report.candidate_run_id, "candidate-run");
+});
+
+test("merge readiness rehashes named producer artifacts", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "merge-readiness-artifact-"));
+  t.after(() => fs.rm(root, {recursive: true, force: true}));
+  const file = path.join(root, "producer.json");
+  const bytes = Buffer.from('{"status":"pass"}\n');
+  await fs.writeFile(file, bytes);
+  const reference = {path: file, sha256: sha256Hex(bytes), bytes: bytes.length};
+  assert.deepEqual(verifyArtifactReference(reference, "producer"), {path: file, sha256: reference.sha256});
+  await fs.writeFile(file, '{"status":"fail"}\n');
+  assert.throws(() => verifyArtifactReference(reference, "producer"), /identity moved/u);
 });

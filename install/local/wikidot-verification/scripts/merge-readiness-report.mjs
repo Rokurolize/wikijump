@@ -109,7 +109,7 @@ function readJsonInput(file, name) {
   }
 }
 
-function verifyArtifactReference(value, name) {
+export function verifyArtifactReference(value, name) {
   if (value === null || typeof value !== 'object' || Array.isArray(value) || typeof value.path !== 'string' || !path.isAbsolute(value.path) || !/^[0-9a-f]{64}$/u.test(value.sha256 ?? '')) {
     throw new Error(`${name} is not a named SHA-256 artifact`);
   }
