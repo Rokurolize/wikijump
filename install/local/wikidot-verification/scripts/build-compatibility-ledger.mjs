@@ -26,8 +26,75 @@ const inventoryPath = path.resolve(inventoryPathArgument);
 const inventoryBytes = await readFile(inventoryPath);
 const inventory = JSON.parse(inventoryBytes);
 
+const DEFERRED_CATALOG_FEATURE_OWNERS = new Map([
+  ["catalog-feature:api-categories-select", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-deleted-methods", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-files-get-meta", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-files-get-one", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-files-save-one", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-files-select", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-overview", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-pages-get-meta", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-pages-get-one", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-pages-save-one", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-pages-select", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-posts-get", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-posts-select", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-tags-select", "wikijump.xmlrpc-api"],
+  ["catalog-feature:api-users-get-me", "wikijump.xmlrpc-api"],
+]);
+const DEFERRED_KIND_OWNERS = new Map([
+  [
+    "framerail_xmlrpc_method",
+    { inventory_owner: "wikijump.framerail", deferred_owner: "wikijump.xmlrpc-api" },
+  ],
+  [
+    "wikidot_py_amc_module_shape",
+    { inventory_owner: "external.wikidot-py", deferred_owner: "external.wikidot-py" },
+  ],
+]);
 function fail(message) {
   throw new Error(message);
+}
+
+function deferredOwner(sourceClass, record) {
+  if (sourceClass !== "wikijump") return null;
+
+  const catalogOwner = DEFERRED_CATALOG_FEATURE_OWNERS.get(record.surface_id);
+  if (catalogOwner !== undefined) {
+    const expectedSpecification = record.surface_id.replace(
+      "catalog-feature:",
+      "catalog.feature:",
+    );
+    if (
+      record.kind !== "catalog_feature" ||
+      record.specification_owner !== expectedSpecification ||
+      !Array.isArray(record.implementation_owners) ||
+      record.implementation_owners.length !== 0
+    ) {
+      fail(`unknown deferred ownership: ${record.surface_id}`);
+    }
+    return catalogOwner;
+  }
+
+  const kindOwner = DEFERRED_KIND_OWNERS.get(record.kind);
+  if (kindOwner === undefined) return null;
+  if (
+    !Array.isArray(record.implementation_owners) ||
+    record.implementation_owners.length !== 1 ||
+    record.implementation_owners[0] !== kindOwner.inventory_owner
+  ) {
+    fail(`unknown deferred ownership: ${record.surface_id}`);
+  }
+  return kindOwner.deferred_owner;
+}
+
+function countBy(rows, field) {
+  return Object.fromEntries(
+    [...new Set(rows.map((row) => row[field]))]
+      .sort(codePointCompare)
+      .map((value) => [value, rows.filter((row) => row[field] === value).length]),
+  );
 }
 
 function nextId(prefix, used) {
@@ -64,6 +131,28 @@ if (rawIds.some((value) => typeof value !== "string" || value === ""))
   fail("raw source identity is missing");
 if (new Set(rawIds).size !== rawIds.length)
   fail("duplicate raw source identity");
+const deferredEntries = rawEntries.flatMap(({ source_class: sourceClass, record }) => {
+  const owner = deferredOwner(sourceClass, record);
+  return owner === null
+    ? []
+    : [{ source_class: sourceClass, record, deferred_owner: owner }];
+});
+const deferredIdentityIds = deferredEntries.map(({ record }) => record.surface_id);
+if (new Set(deferredIdentityIds).size !== deferredIdentityIds.length)
+  fail("duplicate deferred exclusion identity");
+const deferredIdentityById = new Map(
+  deferredEntries.map(({ record, deferred_owner: deferredOwnerValue }) => [
+    record.surface_id,
+    { kind: record.kind, deferred_owner: deferredOwnerValue },
+  ]),
+);
+const deferredIdentitySet = new Set(deferredIdentityIds);
+const currentRawEntries = rawEntries.filter(
+  ({ record }) => !deferredIdentitySet.has(record.surface_id),
+);
+const currentPublicEntries = currentRawEntries.filter(
+  ({ source_class: sourceClass }) => sourceClass === "wikijump",
+);
 const rawIdSet = new Set(rawIds);
 const sourceClassByLocal = new Map(
   rawEntries.map(({ source_class: sourceClass, record }) => [
@@ -72,7 +161,7 @@ const sourceClassByLocal = new Map(
   ]),
 );
 const publicIds = new Set(
-  inventory.surfaces.map(({ surface_id: surfaceId }) => surfaceId),
+  currentPublicEntries.map(({ record }) => record.surface_id),
 );
 
 for (const edge of inventory.relationship_edges) {
@@ -110,6 +199,24 @@ try {
 }
 if (previous && previous.schema !== "wikijump.compatibility_ledger.v1")
   fail("existing output has an unsupported schema");
+const previousDeferredRecords = previous?.deferred_exclusions?.records ?? [];
+if (previous?.deferred_exclusions && !Array.isArray(previousDeferredRecords))
+  fail("existing deferred exclusions must be an array");
+if (
+  new Set(previousDeferredRecords.map(({ source_local_id: sourceLocalId }) => sourceLocalId)).size !==
+  previousDeferredRecords.length
+)
+  fail("duplicate existing deferred exclusion identity");
+for (const record of previousDeferredRecords) {
+  const expected = deferredIdentityById.get(record.source_local_id);
+  if (
+    expected === undefined ||
+    record.kind !== expected.kind ||
+    record.deferred_owner !== expected.deferred_owner
+  ) {
+    fail("unknown deferred ownership");
+  }
+}
 function requireUniqueExisting(rows, field, identity) {
   const values = (rows ?? []).map((row) => row[field]);
   if (values.some((value) => typeof value !== "string" || value === ""))
@@ -159,8 +266,8 @@ const previousSurfaceByLocal = new Map(
   ]),
 );
 const usedSurfaceIds = new Set(previousSurfaceByLocal.values());
-const canonicalLocalIds = inventory.surfaces
-  .map(({ surface_id: surfaceId }) => surfaceId)
+const canonicalLocalIds = currentPublicEntries
+  .map(({ record }) => record.surface_id)
   .filter((localId) => !relationshipSources.has(localId));
 const surfaceIdByLocal = new Map(
   canonicalLocalIds.map((localId) => [
@@ -215,13 +322,13 @@ const source_manifests = [
   },
 ];
 
-const raw_source_records = rawEntries.map(({ record }) => ({
+const raw_source_records = currentRawEntries.map(({ record }) => ({
   source_manifest_id:
     manifestByClass[sourceClassByLocal.get(record.surface_id)],
   raw_record_id: rawRecordIdByLocal.get(record.surface_id),
   record_sha256: sha256Hex(stableStringify(record)),
 }));
-const source_local_identities = rawEntries.map(({ record }) => ({
+const source_local_identities = currentRawEntries.map(({ record }) => ({
   source_manifest_id:
     manifestByClass[sourceClassByLocal.get(record.surface_id)],
   raw_record_id: rawRecordIdByLocal.get(record.surface_id),
@@ -384,8 +491,8 @@ const rows = canonicalLocalIds.map((localId) => {
 const ledger = {
   schema: "wikijump.compatibility_ledger.v1",
   counts: {
-    raw_records: rawEntries.length,
-    public_inventory_records: inventory.surfaces.length,
+    raw_records: currentRawEntries.length,
+    public_inventory_records: currentPublicEntries.length,
     canonical_surfaces: canonicalLocalIds.length,
     input_alias_edges: aliases.length,
     deduplication_relationships: relationships.length,
@@ -400,6 +507,19 @@ const ledger = {
   source_local_identities,
   surface_assignments,
   relationships,
+  deferred_exclusions: {
+    count: deferredEntries.length,
+    by_kind: countBy(
+      deferredEntries.map(({ record }) => record),
+      "kind",
+    ),
+    by_owner: countBy(deferredEntries, "deferred_owner"),
+    records: deferredEntries.map(({ record, deferred_owner: deferredOwnerValue }) => ({
+      source_local_id: record.surface_id,
+      kind: record.kind,
+      deferred_owner: deferredOwnerValue,
+    })),
+  },
   rows,
 };
 

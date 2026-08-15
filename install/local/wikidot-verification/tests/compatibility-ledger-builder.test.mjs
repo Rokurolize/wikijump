@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -20,7 +20,7 @@ const denominatorContract = path.join(
   "docs/development/compatibility-denominator-contract.json",
 );
 
-const surface = (surfaceId) => ({
+const surface = (surfaceId, overrides = {}) => ({
   surface_id: surfaceId,
   kind: "catalog_feature",
   public_reference: [],
@@ -32,6 +32,7 @@ const surface = (surfaceId) => ({
   closure: { status: "open", references: [] },
   specification_owner: "spec:a",
   implementation_owners: ["impl:a"],
+  ...overrides,
 });
 
 function inventory(surfaces = [surface("catalog-feature:b")]) {
@@ -82,6 +83,51 @@ function inventory(surfaces = [surface("catalog-feature:b")]) {
       catalog_crosswalk: [],
     },
   };
+}
+
+function deferredScopeInventory() {
+  const surfaces = [
+    surface("catalog-feature:api-pages-get-one", {
+      specification_owner: "catalog.feature:api-pages-get-one",
+      implementation_owners: [],
+    }),
+    surface("catalog-feature:api-not-xmlrpc"),
+    surface("framerail-amc-action:ForumAction:createPageDiscussionThread", {
+      kind: "framerail_amc_action_shape",
+      specification_owner: "wikijump.registry:framerail-amc",
+      implementation_owners: ["wikijump.framerail"],
+    }),
+    surface("framerail-amc-module:forum/ForumStartModule:parameters=hidden", {
+      kind: "framerail_amc_module_shape",
+      specification_owner: "wikijump.registry:framerail-amc",
+      implementation_owners: ["wikijump.framerail"],
+    }),
+    surface("framerail-xmlrpc:pages.get_one", {
+      kind: "framerail_xmlrpc_method",
+      specification_owner: "wikijump.registry:framerail-xmlrpc",
+      implementation_owners: ["wikijump.framerail"],
+    }),
+    surface("wikidot-py-amc-module:edit/EditMetaModule:parameters=pageId", {
+      kind: "wikidot_py_amc_module_shape",
+      specification_owner: "wikijump.registry:wikidot-py-amc",
+      implementation_owners: ["external.wikidot-py"],
+    }),
+  ];
+  const value = inventory(surfaces);
+  value.owner_keys.specification = [
+    "catalog.feature:api-pages-get-one",
+    "spec:a",
+    "wikijump.registry:framerail-amc",
+    "wikijump.registry:framerail-xmlrpc",
+    "wikijump.registry:wikidot-py-amc",
+  ];
+  value.owner_keys.implementation = [
+    "external.wikidot-py",
+    "ftml",
+    "impl:a",
+    "wikijump.framerail",
+  ];
+  return value;
 }
 
 test("compatibility ledger builder preserves opaque identities and rejects broken inputs", () => {
@@ -250,6 +296,186 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
       ),
     /duplicate existing surface identity/u,
   );
+});
+
+test("compatibility ledger builder admits only the current scope and audits deferred exclusions", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-scope-"));
+  const input = path.join(directory, "inventory.json");
+  const output = path.join(directory, "ledger.json");
+  const deferred = deferredScopeInventory();
+  writeFileSync(input, JSON.stringify(deferred));
+  execFileSync(process.execPath, [
+    script,
+    "--inventory",
+    input,
+    "--output",
+    output,
+  ]);
+  const ledger = JSON.parse(readFileSync(output));
+
+  assert.deepEqual(ledger.deferred_exclusions, {
+    count: 3,
+    by_kind: {
+      catalog_feature: 1,
+      framerail_xmlrpc_method: 1,
+      wikidot_py_amc_module_shape: 1,
+    },
+    by_owner: {
+      "external.wikidot-py": 1,
+      "wikijump.xmlrpc-api": 2,
+    },
+    records: [
+      {
+        source_local_id: "catalog-feature:api-pages-get-one",
+        kind: "catalog_feature",
+        deferred_owner: "wikijump.xmlrpc-api",
+      },
+      {
+        source_local_id: "framerail-xmlrpc:pages.get_one",
+        kind: "framerail_xmlrpc_method",
+        deferred_owner: "wikijump.xmlrpc-api",
+      },
+      {
+        source_local_id: "wikidot-py-amc-module:edit/EditMetaModule:parameters=pageId",
+        kind: "wikidot_py_amc_module_shape",
+        deferred_owner: "external.wikidot-py",
+      },
+    ],
+  });
+  const sourceLocalIds = new Set(
+    ledger.source_local_identities.map(({ source_local_id: sourceLocalId }) => sourceLocalId),
+  );
+  for (const excluded of ledger.deferred_exclusions.records) {
+    assert.equal(sourceLocalIds.has(excluded.source_local_id), false);
+  }
+  for (const included of [
+    "catalog-feature:api-not-xmlrpc",
+    "framerail-amc-action:ForumAction:createPageDiscussionThread",
+    "framerail-amc-module:forum/ForumStartModule:parameters=hidden",
+  ]) {
+    assert.equal(sourceLocalIds.has(included), true);
+  }
+  assert.equal(ledger.counts.canonical_surfaces, 3);
+
+  const unknownOwner = deferredScopeInventory();
+  unknownOwner.surfaces.find(({ kind }) => kind === "wikidot_py_amc_module_shape").implementation_owners = ["impl:a"];
+  writeFileSync(input, JSON.stringify(unknownOwner));
+  assert.throws(
+    () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
+    /unknown deferred ownership/u,
+  );
+
+  const duplicateExclusion = JSON.parse(readFileSync(output));
+  duplicateExclusion.deferred_exclusions.records.push(duplicateExclusion.deferred_exclusions.records[0]);
+  writeFileSync(output, JSON.stringify(duplicateExclusion));
+  writeFileSync(input, JSON.stringify(deferred));
+  assert.throws(
+    () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
+    /duplicate existing deferred exclusion identity/u,
+  );
+
+  writeFileSync(output, JSON.stringify(ledger));
+  const changedOwnership = JSON.parse(readFileSync(output));
+  changedOwnership.deferred_exclusions.records[0].deferred_owner = "external.wikidot-py";
+  writeFileSync(output, JSON.stringify(changedOwnership));
+  assert.throws(
+    () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
+    /unknown deferred ownership/u,
+  );
+});
+
+test("compatibility ledger builder partitions the pinned inventory without FTML leakage", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-real-"));
+  const input = path.join(directory, "inventory.json");
+  const output = path.join(directory, "ledger.json");
+  const inventoryPath = path.join(
+    root,
+    "docs/development/compatibility-surface-inventory.json",
+  );
+  try {
+    execFileSync(process.execPath, [
+      script,
+      "--inventory",
+      inventoryPath,
+      "--output",
+      output,
+    ]);
+    const inventory = JSON.parse(readFileSync(inventoryPath));
+    const ledger = JSON.parse(readFileSync(output));
+    const rawIds = new Set([
+      ...inventory.surfaces.map(({ surface_id: surfaceId }) => surfaceId),
+      ...inventory.ftml_raw_surface_manifest.records.map(
+        ({ surface_id: surfaceId }) => surfaceId,
+      ),
+    ]);
+    const currentIds = new Set(
+      ledger.source_local_identities.map(
+        ({ source_local_id: sourceLocalId }) => sourceLocalId,
+      ),
+    );
+    const excludedIds = new Set(
+      ledger.deferred_exclusions.records.map(
+        ({ source_local_id: sourceLocalId }) => sourceLocalId,
+      ),
+    );
+
+    assert.deepEqual(ledger.deferred_exclusions.by_kind, {
+      catalog_feature: 15,
+      framerail_xmlrpc_method: 17,
+      wikidot_py_amc_module_shape: 22,
+    });
+    assert.equal(ledger.counts.public_inventory_records, 867);
+    assert.equal(ledger.counts.raw_records, 1266);
+    assert.equal(excludedIds.size, 54);
+    assert.equal(currentIds.size + excludedIds.size, 1320);
+    assert.deepEqual(new Set([...currentIds, ...excludedIds]), rawIds);
+    assert(
+      [...ledger.deferred_exclusions.records].every(({ source_local_id: sourceLocalId }) =>
+        inventory.surfaces.some(({ surface_id: id }) => id === sourceLocalId),
+      ),
+    );
+    for (const sourceLocalId of excludedIds) {
+      for (const [name, value] of [
+        ["rows", ledger.rows],
+        ["source identities", ledger.source_local_identities],
+        ["relationships", ledger.relationships],
+      ]) {
+        assert.equal(
+          JSON.stringify(value).includes(sourceLocalId),
+          false,
+          `${sourceLocalId} leaked through ${name}`,
+        );
+      }
+    }
+
+    const ftmlMatch = structuredClone(inventory);
+    ftmlMatch.ftml_raw_surface_manifest.records.push({
+      surface_id: "ftml.raw:matching-deferred-kind",
+      kind: "framerail_xmlrpc_method",
+      implementation_owners: ["wikijump.framerail"],
+      source_reference: "test",
+    });
+    ftmlMatch.ftml_raw_surface_manifest.counts.total += 1;
+    writeFileSync(input, JSON.stringify(ftmlMatch));
+    execFileSync(process.execPath, [
+      script,
+      "--inventory",
+      input,
+      "--output",
+      output,
+    ]);
+    const guardedLedger = JSON.parse(readFileSync(output));
+    assert.equal(guardedLedger.deferred_exclusions.count, 54);
+    assert.equal(
+      guardedLedger.source_local_identities.some(
+        ({ source_local_id: sourceLocalId }) =>
+          sourceLocalId === "ftml.raw:matching-deferred-kind",
+      ),
+      true,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
 
 test("compatibility ledger builder projects recorded proof claims without erasing failures", () => {
