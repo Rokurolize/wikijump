@@ -39323,6 +39323,46 @@ async fn pagecalendar_module_renders_live_category_links_and_counts() {
         "duplicate PageCalendar category attributes should use the last category value observed on live Wikidot:\n{html}",
     );
 
+    let selected_month_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": holder, "extra": "/date/2026.7"},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let selected_month_html = match selected_month_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found PageCalendar date view, got {other:?}"),
+    };
+    let selected_explicit =
+        section(&selected_month_html, "EXPLICIT_START", "EXPLICIT_END");
+    let month_link = format!(r#"<a href="/{holder}/date/2026.7">July (4)</a>"#);
+    let month_link_start = selected_explicit
+        .find(&month_link)
+        .expect("the routed PageCalendar month should render");
+    let month_row_start = selected_explicit[..month_link_start]
+        .rfind("<li")
+        .expect("the selected month should have a list row");
+    let year_link = format!(r#"<a href="/{holder}/date/2026">2026 (4)</a>"#);
+    let year_link_start = selected_explicit
+        .find(&year_link)
+        .expect("the routed PageCalendar year should render");
+    let year_row_start = selected_explicit[..year_link_start]
+        .rfind("<li")
+        .expect("the selected year should have a list row");
+    assert!(
+        selected_explicit[month_row_start..month_link_start]
+            .contains(r#"class="selected""#)
+            && !selected_explicit[year_row_start..year_link_start]
+                .contains(r#"class="selected""#),
+        "PageCalendar month URL should select only the month row:\n{selected_month_html}",
+    );
+
     assert!(!html.contains("[[module PageCalendar"), "{html}");
 }
 
