@@ -61,6 +61,64 @@ test("typed standalone actions call only their fixed browser behavior", async ()
   ])
 })
 
+test("standalone edit clicks use the exact control set and fail closed on extras", async () => {
+  const selector = 'a.wiki-standalone-button[href="javascript:;"]'
+  const exact = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [exact] : [])
+  }
+  exact.parentElement = root
+  let editCalls = 0
+
+  wikidotLegacyActions(root, {
+    actions: [{ type: "edit" }],
+    runtime: { edit: () => (editCalls += 1) }
+  })
+  let prevented = false
+  let stopped = false
+  assert.equal(
+    await listeners.get("click")({
+      target: exact,
+      preventDefault: () => (prevented = true),
+      stopPropagation: () => (stopped = true)
+    }),
+    true
+  )
+  assert.equal(prevented, true)
+  assert.equal(stopped, true)
+  assert.equal(editCalls, 1)
+
+  const extra = actionElement()
+  const mismatch = actionElement()
+  const mismatchListeners = new Map()
+  const mismatchRoot = {
+    addEventListener: (name, listener) => mismatchListeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [mismatch, extra] : [])
+  }
+  mismatch.parentElement = mismatchRoot
+  wikidotLegacyActions(mismatchRoot, {
+    actions: [{ type: "edit" }],
+    runtime: { edit: () => (editCalls += 1) }
+  })
+  prevented = false
+  stopped = false
+  assert.equal(
+    await mismatchListeners.get("click")({
+      target: mismatch,
+      preventDefault: () => (prevented = true),
+      stopPropagation: () => (stopped = true)
+    }),
+    undefined
+  )
+  assert.equal(prevented, false)
+  assert.equal(stopped, false)
+  assert.equal(editCalls, 1)
+})
+
 test("Rate actions pass only registry-owned vote values", async () => {
   const calls = []
   const runtime = {
