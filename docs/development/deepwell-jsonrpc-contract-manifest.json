@@ -3,7 +3,7 @@
   "source_identities": {
     "jsonrpc_registry": {
       "path": "deepwell/src/api.rs",
-      "sha256": "32d92a9b01604d4198881ffb27c78585ed30e94f59627db62b5255111b1bee8c"
+      "sha256": "f59987c694f32f3c1612532fa82c0d0f605ebd07816f302ff07767bd9656dc63"
     },
     "request_context_middleware": {
       "path": "deepwell/src/middleware.rs",
@@ -4637,6 +4637,7 @@
           "deepwell/tests/page.rs#restored_page_uses_destination_template_countpages_after_explicit_restore",
           "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source",
           "deepwell/tests/page.rs#site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules",
+          "deepwell/tests/page.rs#startup_backfills_legacy_html_sha1_and_validates_constraint",
           "deepwell/tests/page.rs#text_block_get_index_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#unbound_include_variables_remain_literal_in_attributes_and_text",
           "deepwell/tests/page.rs#wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them",
@@ -4942,7 +4943,9 @@
           "deepwell/tests/media.rs#source_less_local_images_keep_original_and_resized_asset_identities",
           "deepwell/tests/page.rs#article_cache_and_include_dependencies_use_exact_template_source",
           "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
           "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
           "deepwell/tests/page.rs#basic_edit",
           "deepwell/tests/page.rs#basic_move",
@@ -6922,6 +6925,7 @@
           "deepwell/tests/page.rs#page_tree_resource_bounds_fail_closed_without_partial_visible_rows",
           "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
           "deepwell/tests/page.rs#page_view_separates_generated_css_modules_from_compiled_body_html",
+          "deepwell/tests/page.rs#pagecalendar_module_renders_live_category_links_and_counts",
           "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state",
           "deepwell/tests/page.rs#pages_module_renders_the_site_index_and_clamps_pagination",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
@@ -8345,7 +8349,9 @@
           "deepwell/tests/page.rs#authored_listpages_user_marker_cannot_forge_trusted_html",
           "deepwell/tests/page.rs#autonumber_allocator_holds_the_category_lock_until_request_completion",
           "deepwell/tests/page.rs#backlinks_module_ignores_arguments_like_live_wikidot",
+          "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
           "deepwell/tests/page.rs#backlinks_module_renders_current_page_incoming_links",
+          "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page.rs#basalt_runtime_state_users_rerender_identity_profile_subtrees",
           "deepwell/tests/page.rs#basic_edit",
           "deepwell/tests/page.rs#basic_move",
@@ -8866,8 +8872,8 @@
         "component": "deepwell",
         "handler": "text_block_get_index",
         "source": "deepwell/src/endpoints/text_block.rs#text_block_get_index",
-        "source_sha256": "df4ef2c35594222958d53a312d07e63c26b1d27cdaf123b7c0f26fd0098cf233",
-        "function_sha256": "2069333dfd6a7dc5fee51d7035b35f091b824642fd959ba71980b52d984fb11f"
+        "source_sha256": "89afa023b8b4ae5bb4577c542f0183f203073f58aa5c2b0e8f45892055329e1f",
+        "function_sha256": "b4d708a67807b557b4ceef5eb933320c73d669ea46e7445aee86fb1a66ebea6e"
       },
       "params_schema": {
         "transport": "jsonrpsee::types::params::Params<'static>",
@@ -8901,6 +8907,7 @@
         ],
         "requirement_sources": [
           "deepwell/src/endpoints/text_block.rs#ensure_parent_page_view_permission",
+          "deepwell/src/endpoints/text_block.rs#parse_wikidot_sha1",
           "deepwell/src/endpoints/text_block.rs#text_block_get_index"
         ]
       },
@@ -10367,6 +10374,8 @@
           "deepwell/tests/page.rs#anonymous_page_and_site_utility_modules_match_frozen_safe_states",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
           "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
+          "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
           "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
           "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",

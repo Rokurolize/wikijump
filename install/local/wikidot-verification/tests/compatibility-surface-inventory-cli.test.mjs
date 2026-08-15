@@ -78,6 +78,15 @@ async function writeJson(root, relativePath, value) {
   await fs.writeFile(target, `${JSON.stringify(value, null, 2)}\n`)
 }
 
+async function writeImplementationLedgerMirrors(root, value) {
+  for (const ledgerPath of [
+    "docs/wikidot-specifications/implementation-ledger.json",
+    "scripts/data/wikidot-implementation-ledger.json"
+  ]) {
+    await writeJson(root, ledgerPath, value)
+  }
+}
+
 async function writeText(root, relativePath, value) {
   const target = path.join(root, relativePath)
   await fs.mkdir(path.dirname(target), { recursive: true })
@@ -160,8 +169,7 @@ async function writeRepositoryFixture(root) {
       }
     }
   }
-  await writeJson(root, "docs/wikidot-specifications/implementation-ledger.json", implementationLedger)
-  await writeJson(root, "scripts/data/wikidot-implementation-ledger.json", implementationLedger)
+  await writeImplementationLedgerMirrors(root, implementationLedger)
   await writeText(
     root,
     "deepwell/src/api.rs",
@@ -836,7 +844,7 @@ test("CLI rejects Catalog provenance, record, and source-edge drift", async (t) 
         const ledgerPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
         const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
         ledger.catalog_sha256 = "0".repeat(64)
-        await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+        await writeImplementationLedgerMirrors(root, ledger)
       },
       error: /catalog_sha256 does not match/u
     },
@@ -846,7 +854,7 @@ test("CLI rejects Catalog provenance, record, and source-edge drift", async (t) 
         const ledgerPath = path.join(root, "docs/wikidot-specifications/implementation-ledger.json")
         const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
         delete ledger.features["feature-one"]
-        await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+        await writeImplementationLedgerMirrors(root, ledger)
       },
       error: /catalog feature has no ledger entry: feature-one/u
     },
@@ -1927,7 +1935,7 @@ test("CLI rejects an implementation ledger orphan", async () => {
   )
   const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
   ledger.features["orphan-feature"] = { status: "pending", tests: [] }
-  await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+  await writeImplementationLedgerMirrors(root, ledger)
 
   const result = runCli(root, path.join(root, "inventory.json"))
 
@@ -2010,7 +2018,7 @@ test("CLI rejects a status outside the closed vocabulary", async () => {
   )
   const ledger = JSON.parse(await fs.readFile(ledgerPath, "utf8"))
   ledger.features["feature-one"].status = "mostly-done"
-  await fs.writeFile(ledgerPath, `${JSON.stringify(ledger, null, 2)}\n`)
+  await writeImplementationLedgerMirrors(root, ledger)
 
   const result = runCli(root, path.join(root, "inventory.json"))
 

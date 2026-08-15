@@ -16,6 +16,10 @@ const inventoryCliPath = path.join(
   "install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs"
 )
 const manifestPath = path.join(repositoryRoot, "docs/development/deepwell-jsonrpc-contract-manifest.json")
+const currentSourceRevision = spawnSync("git", ["rev-parse", "HEAD^{commit}"], {
+  cwd: repositoryRoot,
+  encoding: "utf8"
+}).stdout.trim()
 const historicalEvidencePaths = [
   "install/local/wikidot-verification/artifacts/pr1334-deepwell-identity-jsonrpc-attribution-20260810.json",
   "install/local/wikidot-verification/artifacts/pr1334-deepwell-page-revision-jsonrpc-attribution-20260810.json"
@@ -107,7 +111,11 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
 
   const outputDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-inventory-"))
   const inventoryPath = path.join(outputDirectory, "inventory.json")
-  const inventoryResult = runCli(inventoryCliPath, ["--root", repositoryRoot, "--output", inventoryPath])
+  const inventoryResult = runCli(inventoryCliPath, [
+    "--root", repositoryRoot,
+    "--output", inventoryPath,
+    "--source-revision", currentSourceRevision
+  ])
   assert.equal(inventoryResult.status, 0, inventoryResult.stderr)
   const inventory = JSON.parse(await fs.readFile(inventoryPath, "utf8"))
   const inventoryMethods = inventory.surfaces
