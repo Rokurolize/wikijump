@@ -22,14 +22,15 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::wikidot_user::{
     self, Entity as WikidotUser, Model as WikidotUserModel,
 };
+use crate::services::ServiceContext;
 use crate::services::page_query::{
     normalize_wikidot_author_name, wikidot_author_name_sql,
 };
 use crate::services::user::User;
-use crate::services::ServiceContext;
 use ftml::data::UserInfo;
 use ftml::render::UserInfoResolver;
-use sea_orm::{ColumnTrait, Condition, EntityTrait, Expr, ExprTrait, QueryFilter};
+use sea_orm::sea_query::Expr;
+use sea_orm::{ColumnTrait, Condition, EntityTrait, ExprTrait, QueryFilter};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Default)]
