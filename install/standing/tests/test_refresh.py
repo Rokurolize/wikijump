@@ -18,6 +18,189 @@ SPEC.loader.exec_module(REFRESH)
 
 
 class RefreshStandingTest(unittest.TestCase):
+    def test_container_identity_rejects_mutable_identity(self) -> None:
+        with self.assertRaisesRegex(ValueError, "immutable container ID"):
+            REFRESH.normalize_container_identity(
+                {
+                    "Id": "container",
+                    "Image": "sha256:" + "a" * 64,
+                    "Name": "/wikijump-standing-caddy-1",
+                    "State": {"Status": "running"},
+                    "NetworkSettings": {"Ports": {}},
+                }
+            )
+
+    def test_image_identity_rejects_mutable_image_id(self) -> None:
+        original_command = REFRESH.command
+        try:
+            REFRESH.command = lambda *args, cwd, capture=True: json.dumps({"Id": "latest"})
+            with self.assertRaisesRegex(ValueError, "immutable SHA-256 image ID"):
+                REFRESH.image_identity("candidate", Path("/runtime"))
+        finally:
+            REFRESH.command = original_command
+
+    def test_port_443_owner_rejects_zero_or_two_owners(self) -> None:
+        owner = {
+            "container_id": "a" * 64,
+            "name": "wikijump-standing-caddy-1",
+            "image_id": "sha256:" + "b" * 64,
+            "published_ports": [
+                {"container_port": "443/tcp", "host_ip": "127.0.0.1", "host_port": "443"}
+            ],
+        }
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            REFRESH.port_443_owner({})
+        with self.assertRaisesRegex(ValueError, "exactly one"):
+            REFRESH.port_443_owner({"one": owner, "two": {**owner, "container_id": "c" * 64}})
+
+    def test_atomic_receipt_does_not_replace_existing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            path = Path(temporary_dir) / "receipt.json"
+            REFRESH.atomic_json_no_replace(path, {"status": "pass"})
+            original = path.read_text(encoding="utf-8")
+            with self.assertRaises(FileExistsError):
+                REFRESH.atomic_json_no_replace(path, {"status": "changed"})
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
+
+    def test_candidate_cleanup_proves_container_and_image_absence(self) -> None:
+        candidate = {
+            service: {"container_id": chr(99 + index) * 64}
+            for index, service in enumerate(REFRESH.SERVICES)
+        }
+        candidate_images = {
+            service: {"id": "sha256:" + chr(100 + index) * 64}
+            for index, service in enumerate(REFRESH.SERVICES)
+        }
+        rollback_images = {
+            service: {"id": "sha256:" + "a" * 64} for service in REFRESH.SERVICES
+        }
+        containers = {value["container_id"] for value in candidate.values()}
+        images = {value["id"] for value in candidate_images.values()}
+        with self.assertRaisesRegex(RuntimeError, "inventory is unavailable"):
+            REFRESH.remove_candidate_resources(
+                None, candidate_images, rollback_images, Path("/runtime")
+            )
+        original_command = REFRESH.command
+
+        def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
+            if args[:2] == ("docker", "inspect") or args[:3] == ("docker", "image", "inspect"):
+                reference = args[-1]
+                if reference in containers or reference in images:
+                    return "present"
+                raise subprocess.CalledProcessError(1, args)
+            if args[:3] == ("docker", "rm", "--force"):
+                containers.remove(args[3])
+                return ""
+            if args[:3] == ("docker", "image", "rm"):
+                images.remove(args[3])
+                return ""
+            raise AssertionError(args)
+
+        try:
+            REFRESH.command = fake_command
+            result = REFRESH.remove_candidate_resources(
+                candidate, candidate_images, rollback_images, Path("/runtime")
+            )
+        finally:
+            REFRESH.command = original_command
+        self.assertEqual(result["status"], "pass")
+        self.assertEqual(len(result["containers_removed"]), 3)
+        self.assertEqual(len(result["images_removed"]), 3)
+        self.assertEqual(containers, set())
+        self.assertEqual(images, set())
+
+    def test_rollback_restores_parked_container_identity(self) -> None:
+        service = REFRESH.SERVICES[0]
+        original_name = f"wikijump-standing-{service}-1"
+        parked_name = REFRESH.parked_container_name("run", service)
+        state = {
+            parked_name: {
+                "container_id": "a" * 64,
+                "name": parked_name,
+                "image_id": "sha256:" + "b" * 64,
+                "running": False,
+            }
+        }
+        parked = {
+            service: {
+                "parked_name": parked_name,
+                "original_name": original_name,
+                "was_running": True,
+                "container": state[parked_name],
+            }
+        }
+        original_command = REFRESH.command
+        original_identity = REFRESH.container_identity
+
+        def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
+            if args[:2] == ("docker", "rename"):
+                current, target = args[2:4]
+                state[target] = {**state.pop(current), "name": target, "running": False}
+                return ""
+            if args[:2] == ("docker", "start"):
+                state[args[2]]["running"] = True
+                return ""
+            raise AssertionError(args)
+
+        def fake_identity(reference: str, cwd: Path) -> dict[str, object]:
+            return state[reference]
+
+        try:
+            REFRESH.command = fake_command
+            REFRESH.container_identity = fake_identity
+            restored = REFRESH.restore_parked_containers(parked, Path("/runtime"))
+        finally:
+            REFRESH.command = original_command
+            REFRESH.container_identity = original_identity
+        self.assertEqual(restored[service]["container_id"], "a" * 64)
+        self.assertTrue(restored[service]["running"])
+        self.assertEqual(restored[service]["name"], original_name)
+
+    def test_parking_records_old_container_ids_and_names(self) -> None:
+        state = {}
+        previous = {}
+        for index, service in enumerate(REFRESH.SERVICES):
+            container_id = chr(97 + index) * 64
+            name = f"wikijump-standing-{service}-1"
+            state[container_id] = {
+                "container_id": container_id,
+                "name": name,
+                "image_id": "sha256:" + chr(100 + index) * 64,
+                "running": True,
+            }
+            previous[service] = state[container_id]
+        original_command = REFRESH.command
+        original_identity = REFRESH.container_identity
+
+        def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
+            if args[:2] == ("docker", "inspect"):
+                reference = args[-1]
+                if reference in state:
+                    return "present"
+                raise subprocess.CalledProcessError(1, args)
+            if args[:2] == ("docker", "rename"):
+                current, target = args[2:4]
+                state[target] = {**state.pop(current), "name": target}
+                return ""
+            if args[:2] == ("docker", "stop"):
+                state[args[2]]["running"] = False
+                return ""
+            raise AssertionError(args)
+
+        try:
+            REFRESH.command = fake_command
+            REFRESH.container_identity = lambda reference, _cwd: state[reference]
+            parked = REFRESH.park_containers(previous, Path("/runtime"), "run")
+        finally:
+            REFRESH.command = original_command
+            REFRESH.container_identity = original_identity
+        self.assertEqual(
+            {service: entry["container"]["container_id"] for service, entry in parked.items()},
+            {service: value["container_id"] for service, value in previous.items()},
+        )
+        self.assertTrue(all(entry["parked_name"] in state for entry in parked.values()))
+        self.assertTrue(all(not entry["container"]["running"] for entry in parked.values()))
+
     def prepared_receipt_fixture(
         self, root: Path, *, expiry: object = "2026-09-05T12:34:56.123456+00:00"
     ) -> tuple[dict[str, object], dict[str, str]]:
