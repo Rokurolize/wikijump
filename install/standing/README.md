@@ -17,6 +17,7 @@ git fetch origin develop
 /home/roku/.local/bin/roku-resource-lease run exclusive -- \
   python install/standing/prepare.py \
     --source-root "$PWD" \
+    --promotion-precondition /secure/promotion/candidate-parity-admission.json \
     --output /home/roku/wjlab/runtime/wikijump-standing/prepared-<wikijump-sha>.json
 ```
 

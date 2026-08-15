@@ -6,65 +6,65 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import sys
 
 
 SCRIPT = Path(__file__).parents[1] / "prepare.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("standing_prepare", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 PREPARE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(PREPARE)
 
 
-def candidate_proof(root: Path, identity: dict[str, str]) -> dict[str, object]:
-    identity_path = root / "candidate-identity.json"
-    identity_path.write_text(
-        json.dumps({
-            "schema": "wikijump.standing_candidate_parity_identity.v1",
-            "status": "sealed",
-            "candidate": {
-                "run_id": "candidate-test-01",
-                "wikijump_commit": identity["wikijump_sha"],
-                "wikijump_tree": identity["wikijump_tree"],
-                "ftml_sha": identity["ftml_sha"],
-            },
-        }),
-        encoding="utf-8",
-    )
-    identity_sha = hashlib.sha256(identity_path.read_bytes()).hexdigest()
-    proof_path = root / "activation-receipt.json"
-    proof_path.write_text(
-        json.dumps({
-            "schema": "wikijump.merge_build_candidate_activation.v1",
-            "status": "pass",
-            "run_id": "candidate-test-01",
-            "candidate_identity": {"path": str(identity_path), "sha256": identity_sha},
-        }),
-        encoding="utf-8",
-    )
-    return {
-        "path": str(proof_path),
-        "sha256": hashlib.sha256(proof_path.read_bytes()).hexdigest(),
+def promotion_precondition(root: Path, identity: dict[str, str]) -> dict[str, object]:
+    proof_path = root / "promotion-precondition.json"
+    proof_path.write_text(json.dumps({
+        "schema": PREPARE.PROMOTION_PRECONDITION_SCHEMA,
+        "status": "pass",
         "run_id": "candidate-test-01",
-        "candidate_identity": {"path": str(identity_path), "sha256": identity_sha},
-    }
+        "candidate": {"artifact_key": "a" * 64, "wikijump_commit": identity["wikijump_sha"], "wikijump_tree": identity["wikijump_tree"], "ftml_sha": identity["ftml_sha"]},
+        "build": {"wikijump_commit": identity["wikijump_sha"], "wikijump_tree": identity["wikijump_tree"], "ftml_sha": identity["ftml_sha"], "images": {service: "sha256:" + "e" * 64 for service in ("deepwell", "framerail", "wws")}},
+    }), encoding="utf-8")
+    return {"path": str(proof_path), "sha256": hashlib.sha256(proof_path.read_bytes()).hexdigest()}
 
 
 class PrepareStandingImagesTest(unittest.TestCase):
-    def test_build_command_uses_production_image_tier_and_exact_sha_reference(self) -> None:
+    def test_prepare_rejects_existing_output_before_identity_or_build(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            original_argv = sys.argv
+            original_identity = PREPARE.repository_identity
+            try:
+                PREPARE.repository_identity = lambda _root: (_ for _ in ()).throw(AssertionError("identity was read"))
+                for kind in ("file", "broken symlink"):
+                    with self.subTest(kind=kind):
+                        output = Path(temporary_dir) / f"prepared-{kind.replace(' ', '-')}.json"
+                        if kind == "file":
+                            output.write_text("existing", encoding="utf-8")
+                        else:
+                            output.symlink_to(Path(temporary_dir) / "missing.json")
+                        sys.argv = [str(SCRIPT), "--output", str(output), "--promotion-precondition", str(output)]
+                        with self.assertRaisesRegex(ValueError, "output already exists"):
+                            PREPARE.main()
+            finally:
+                PREPARE.repository_identity = original_identity
+                sys.argv = original_argv
+
+    def test_build_command_uses_production_image_tier_and_iidfile(self) -> None:
         source = Path("/src/wikijump")
+        iidfile = Path("/tmp/deepwell.iid")
         identity = {"wikijump_sha": "a" * 40, "ftml_sha": "b" * 40}
         for service in PREPARE.SERVICES:
             with self.subTest(service=service):
-                reference = PREPARE.image_reference(identity["wikijump_sha"], service)
                 command = PREPARE.build_command(
-                    source, service, reference, identity, "2026-08-22T00:00:00+00:00"
+                    source, service, iidfile, identity, "2026-08-22T00:00:00+00:00"
                 )
                 self.assertIn(
                     str(source / "install" / "prod" / service / "Dockerfile"), command
                 )
-                self.assertIn("--tag", command)
-                self.assertIn(reference, command)
-                self.assertNotIn(":latest", command)
+                self.assertIn("--iidfile", command)
+                self.assertIn(str(iidfile), command)
+                self.assertNotIn("--tag", command)
 
     def test_prepared_receipt_binds_profiles_and_dockerfiles(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
@@ -83,18 +83,18 @@ class PrepareStandingImagesTest(unittest.TestCase):
                 path.write_text(service, encoding="utf-8")
                 dockerfiles[service] = hashlib.sha256(service.encode()).hexdigest()
                 images[service] = {
-                    "reference": PREPARE.image_reference(identity["wikijump_sha"], service),
                     "id": "sha256:" + "e" * 64,
+                    "reference": "sha256:" + "e" * 64,
                     "profile": PREPARE.BUILD_PROFILES[service],
                 }
-            proof = candidate_proof(root, identity)
+            proof = promotion_precondition(root, identity)
             receipt = {
                 "schema_version": 1,
                 "kind": "standing-image-preparation",
                 "status": "pass",
-                "run_id": proof["run_id"],
+                "run_id": "candidate-test-01",
                 **identity,
-                "candidate_proof": proof,
+                "promotion_precondition": proof,
                 "dockerfiles": dockerfiles,
                 "images": images,
             }
@@ -117,18 +117,18 @@ class PrepareStandingImagesTest(unittest.TestCase):
                 path.write_text(service, encoding="utf-8")
                 dockerfiles[service] = hashlib.sha256(service.encode()).hexdigest()
                 images[service] = {
-                    "reference": PREPARE.image_reference(identity["wikijump_sha"], service),
                     "id": "sha256:" + "e" * 64,
+                    "reference": "sha256:" + "e" * 64,
                     "profile": PREPARE.BUILD_PROFILES[service],
                 }
-            proof = candidate_proof(root, identity)
+            proof = promotion_precondition(root, identity)
             receipt = {
                 "schema_version": 1,
                 "kind": "standing-image-preparation",
                 "status": "pass",
                 "run_id": "candidate-run-other",
                 **identity,
-                "candidate_proof": proof,
+                "promotion_precondition": proof,
                 "dockerfiles": dockerfiles,
                 "images": images,
             }
@@ -152,23 +152,23 @@ class PrepareStandingImagesTest(unittest.TestCase):
                 path.write_text(service, encoding="utf-8")
                 dockerfiles[service] = hashlib.sha256(service.encode()).hexdigest()
                 images[service] = {
-                    "reference": PREPARE.image_reference(identity["wikijump_sha"], service),
                     "id": "sha256:" + "e" * 64,
+                    "reference": "sha256:" + "e" * 64,
                     "profile": PREPARE.BUILD_PROFILES[service],
                 }
-            proof = candidate_proof(root, identity)
-            images["deepwell"]["reference"] += ":latest"
+            proof = promotion_precondition(root, identity)
+            images["deepwell"]["reference"] = "local/replaceable:latest"
             receipt = {
                 "schema_version": 1,
                 "kind": "standing-image-preparation",
                 "status": "pass",
-                "run_id": proof["run_id"],
+                "run_id": "candidate-test-01",
                 **identity,
-                "candidate_proof": proof,
+                "promotion_precondition": proof,
                 "dockerfiles": dockerfiles,
                 "images": images,
             }
-            with self.assertRaisesRegex(ValueError, "exact SHA-derived reference"):
+            with self.assertRaisesRegex(ValueError, "immutable image ID"):
                 PREPARE.validate_prepared_receipt(receipt, root, identity)
 
 

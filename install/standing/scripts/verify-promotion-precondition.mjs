@@ -399,6 +399,7 @@ async function readBuildBinding(buildEvidenceRoot) {
     evidence_manifest_sha256: manifestFile.sha256,
     verdict_sha256: verdictFile.sha256,
     final_images_sha256: imagesFile.sha256,
+    run_id: seal.run_id,
     wikijump_commit: verdict.wikijump_commit,
     wikijump_tree: verdict.wikijump_tree,
     ftml_sha: verdict.ftml_sha,
@@ -595,6 +596,7 @@ export async function verifyStandingPromotionPrecondition({
   const result = Object.freeze({
     schema: STANDING_PROMOTION_PRECONDITION_SCHEMA,
     status: "pass",
+    run_id: binding.build.run_id,
     verified_at: new Date().toISOString(),
     admission: {
       candidate_parity_receipt_sha256:

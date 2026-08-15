@@ -24,8 +24,8 @@ const REQUIRED_ROLES = Object.freeze([
 const ROLE_CHARACTERS = Object.freeze(["0", "1", "2", "3", "4", "5", "6"]);
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
-const git = (character) => character.repeat(40);
-const image = (character) => `sha256:${character.repeat(64)}`;
+const git = (character) => character.repeat(39) + String.fromCharCode(character.charCodeAt(0) + 1);
+const image = (character) => `sha256:${hash(`image-${character}`)}`;
 
 async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value)}\n`, { mode: 0o600 });
@@ -257,7 +257,7 @@ async function createFixture(t) {
   const identity = {
     schema: "wikijump.standing_candidate_parity_identity.v1",
     status: "sealed",
-    artifact_key: "d".repeat(64),
+    artifact_key: hash("artifact-key"),
     build: {
       seal_sha256: await sha256File(fixture.sealPath),
       verdict_sha256: await sha256File(fixture.verdictPath),
@@ -275,9 +275,9 @@ async function createFixture(t) {
       source_clean: true,
       images: imageMap(images),
       config: {
-        isolated_overlay_sha256: "f".repeat(64),
+        isolated_overlay_sha256: hash("isolated-overlay"),
         promotion_base_manifest_sha256: manifestSha256,
-        effective_runtime_services_sha256: "0".repeat(64),
+        effective_runtime_services_sha256: hash("effective-runtime"),
       },
       endpoint: {
         scheme: "https",
@@ -293,8 +293,8 @@ async function createFixture(t) {
     },
     evidence: {
       status: "sealed",
-      manifest_sha256: "1".repeat(64),
-      seal_sha256: "2".repeat(64),
+      manifest_sha256: hash("manifest"),
+      seal_sha256: hash("seal"),
     },
   };
   const candidateIdentityPath = path.join(root, "candidate-identity.json");
