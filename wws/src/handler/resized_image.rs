@@ -769,7 +769,15 @@ mod tests {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[CONTENT_TYPE], "text/html; charset=utf-8");
+        assert!(
+            response
+                .text()
+                .await
+                .unwrap()
+                .contains("The file does not exist."),
+        );
         let requests = app.mock.rpc_requests.lock().unwrap();
         assert_eq!(requests[0]["method"], "page_get");
         assert_eq!(requests[1]["method"], "basic_error_missing_page_slug");
