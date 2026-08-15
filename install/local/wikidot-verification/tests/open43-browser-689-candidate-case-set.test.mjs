@@ -11,6 +11,7 @@ import {
 } from "../src/open43-browser-689-candidate-case-set.mjs";
 import { sha256File, sha256Value } from "../src/standing-browser-parity-util.mjs";
 
+const repositoryRoot = new URL("../../../../", import.meta.url);
 const candidateIdentity = {
   candidate: {
     endpoint: {
@@ -66,7 +67,7 @@ test("B689 is an executable candidate case bound to the existing canary fixture"
   assert.deepEqual(caseSet.caseIds, [OPEN43_B689_TABVIEW_INITIAL_CASE_ID]);
   assert.equal((await candidateCaseSet("open43-689-tabview")).id, caseSet.id);
   assert.equal(
-    await sha256File(OPEN43_B689_TABVIEW_FIXTURE.source_path),
+    await sha256File(new URL(OPEN43_B689_TABVIEW_FIXTURE.source_path, repositoryRoot)),
     OPEN43_B689_TABVIEW_FIXTURE.source_sha256,
   );
 
