@@ -1,16 +1,39 @@
 {
-  "schema": "wikijump.issue1373_amc_write_evidence_run_plan.v2",
+  "schema": "wikijump.issue1373_amc_write_evidence_run_plan.v3",
   "issue": 1373,
+  "execution": {
+    "enabled": false,
+    "mode": "static"
+  },
+  "run_safety": {
+    "authority_gate": "safety_only",
+    "cleanup_gate": "required_before_live_execution"
+  },
   "source": {
     "repository": "Rokurolize/wikidot.py",
     "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
     "tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
     "contract_path": "docs/development/wikidot-py-amc-write-surface.json",
-    "contract_sha256": "cc77d68ab2226bf944fd08fa6171034de9883558759ec92b10072f86e805b183"
+    "contract_sha256": "cc77d68ab2226bf944fd08fa6171034de9883558759ec92b10072f86e805b183",
+    "client_lock": {
+      "path": "uv.lock",
+      "repository": "Rokurolize/wikidot.py",
+      "sha256": "8644ed6c80c8f658549f8eae20c20cbb6ab5873c34c72b61da4fecac294b8def"
+    },
+    "pinned_files": {
+      "requirements": {
+        "path": "install/local/wikidot-verification/requirements.txt",
+        "sha256": "456c74d295e7de9265cbd6a088c285b1739f84902c65d224cb5daf44d99bf151"
+      },
+      "requirements_lock": {
+        "path": "install/local/wikidot-verification/requirements.lock",
+        "sha256": "8f2ec862f6f0358b5f0aea8ca6edd40c1ef043c2f0391701217fd907c2ae82e1"
+      }
+    }
   },
   "evidence": {
     "path": "install/local/wikidot-verification/artifacts/issue1373-pageedit-live-20260814t230239Z.json",
-    "sha256": "be81e5e5be64d0980cd711ac777f6b6fcc6dde15e86289f99cd54a01427e639c",
+    "sha256": "6f97dec26a632fd5762296e1030a93daba345f3a3994cdb45bc7d7d8626bb07d",
     "classification": "partial"
   },
   "action_event_cases": [

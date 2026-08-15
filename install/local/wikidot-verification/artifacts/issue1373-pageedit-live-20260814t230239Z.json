@@ -1,9 +1,10 @@
 {
-  "schema": "wikijump.issue1373.pageedit_live_controls.v2",
+  "schema": "wikijump.issue1373.pageedit_live_controls.v3",
   "issue": 1373,
   "classification": "partial",
   "source_identity": {
     "run_id": "20260814t230239Z",
+    "repository": "Rokurolize/wikidot.py",
     "site": {
       "unix_name": "sandbox-for-codex",
       "origin": "http://sandbox-for-codex.wikidot.com",
@@ -13,17 +14,29 @@
       "repository": "Rokurolize/wikidot.py",
       "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
       "tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+      "lock_path": "uv.lock",
       "lock_sha256": "8644ed6c80c8f658549f8eae20c20cbb6ab5873c34c72b61da4fecac294b8def"
     },
     "contract": {
       "path": "docs/development/wikidot-py-amc-write-surface.json",
       "sha256": "cc77d68ab2226bf944fd08fa6171034de9883558759ec92b10072f86e805b183",
       "schema": "wikijump.wikidot_py_amc_write_surface.v1"
+    },
+    "pinned_files": {
+      "requirements": {
+        "path": "install/local/wikidot-verification/requirements.txt",
+        "sha256": "456c74d295e7de9265cbd6a088c285b1739f84902c65d224cb5daf44d99bf151"
+      },
+      "requirements_lock": {
+        "path": "install/local/wikidot-verification/requirements.lock",
+        "sha256": "8f2ec862f6f0358b5f0aea8ca6edd40c1ef043c2f0391701217fd907c2ae82e1"
+      }
     }
   },
   "records": [
     {
       "case_id": "contention-force-lock",
+      "witness_control_id": null,
       "page_fullname": "codex-amc-pageedit-20260814t230239z-contention-force-lock",
       "page_id": 1469168952,
       "source_sha256": "c954c9a3b11efdd805d320d2bae4cf6ba14c468a7e4b042c27ab1d930e367365",
@@ -101,6 +114,7 @@
     },
     {
       "case_id": "wrong-lock",
+      "witness_control_id": "wrong_lock",
       "page_fullname": "codex-amc-pageedit-20260814t230239z-wrong-lock",
       "page_id": 1469168955,
       "source_sha256": "3e7c09ba9c6b1d33338cbce812962b5ce33ba29fd65da5432991c9f25c7dce5d",
@@ -152,6 +166,7 @@
     },
     {
       "case_id": "stale-lock",
+      "witness_control_id": "stale_lock",
       "page_fullname": "codex-amc-pageedit-20260814t230239z-stale-lock",
       "page_id": 1469168957,
       "source_sha256": "aea5c133a1b417998b7d3aa0743fd0edc0aac90cd75feb9d89d1a409476ce8e4",
@@ -214,6 +229,7 @@
     },
     {
       "case_id": "save-noop",
+      "witness_control_id": "save_noop",
       "page_fullname": "codex-amc-pageedit-20260814t230239z-save-noop",
       "page_id": 1469168960,
       "source_sha256": "9653315e674273ccd21f19b9844ade9a3e9132cad9fa847bc4928fc654f9f1ba",
@@ -255,6 +271,7 @@
     },
     {
       "case_id": "role-boundary",
+      "witness_control_id": null,
       "page_fullname": "codex-amc-pageedit-20260814t230239z-role-boundary",
       "page_id": 1469168962,
       "source_sha256": "1b7030a2bfffc1f231541c2dfdaed71a52e884ddb9d54eb5bb671db8dbf76c3c",
@@ -313,12 +330,23 @@
     { "control_id": "cancellation_release", "classification": "not_observed" },
     { "control_id": "expiry_release", "classification": "not_observed" },
     { "control_id": "other_locks", "classification": "not_observed" },
-    { "control_id": "role_boundaries", "classification": "observed", "record_case_id": "role-boundary" },
+    { "control_id": "role_boundaries", "classification": "not_observed" },
     { "control_id": "save_conflict", "classification": "not_observed" },
     { "control_id": "save_failure", "classification": "not_observed" },
     { "control_id": "save_noop", "classification": "observed", "record_case_id": "save-noop" },
     { "control_id": "stale_lock", "classification": "observed", "record_case_id": "stale-lock" },
     { "control_id": "wrong_lock", "classification": "observed", "record_case_id": "wrong-lock" }
+  ],
+  "role_boundaries": {
+    "classification": "not_observed",
+    "denied_actor_observed": false,
+    "observed_actor": "B",
+    "status": "blocked"
+  },
+  "witness_bindings": [
+    { "control_id": "save_noop", "record_case_id": "save-noop" },
+    { "control_id": "stale_lock", "record_case_id": "stale-lock" },
+    { "control_id": "wrong_lock", "record_case_id": "wrong-lock" }
   ],
   "cleanup": {
     "all_run_owned_pages_absent": true,
