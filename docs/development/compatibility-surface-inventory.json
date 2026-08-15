@@ -10448,8 +10448,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "bc9e0561cfdda83e8495cf6d27071106f4c8a3f4",
-      "tree": "a699fcb124b079dfb7c8982278bb79ffeb09f1ab"
+      "commit": "ad35b91640d2290080049dde4582beac6de3fa7e",
+      "tree": "7f4db4d16d978cf6732e01a7efceb519b442e8d8"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -10490,7 +10490,7 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "d4fe75e4f9fd060425746a47d771f4046d9c33d7bde10bec90e7ded10b735cf5"
+        "sha256": "78d419139b833a6cdc6f5198c3429a3710d327b9c9b9a5a2c3d5792b896de37d"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
@@ -10498,7 +10498,7 @@
       },
       {
         "path": "docs/development/open43-q-forum-closure-audit.json",
-        "sha256": "da3e1a1742409d8bb80679b20103e13a7ad1bd329f62c4dcb43394f30084f178"
+        "sha256": "1d34c30ab1f23fa3d3990996d4f013c7625ff547ad036059a904a5f8ea05fa9c"
       },
       {
         "path": "docs/development/open43-q-page-query-closure-audit.json",
@@ -10526,7 +10526,7 @@
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "77476708b3ca52a1d7d6de13c84df8a88d134f42bff8a19250cbdd7184b6164a"
+        "sha256": "0eaaa3f86004e81e21ef340518f09950ab5f82ad027c116244a90fa9f289ebad"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
@@ -10738,7 +10738,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "77476708b3ca52a1d7d6de13c84df8a88d134f42bff8a19250cbdd7184b6164a"
+        "sha256": "0eaaa3f86004e81e21ef340518f09950ab5f82ad027c116244a90fa9f289ebad"
       },
       {
         "path": "wws/src/route.rs",
@@ -14079,7 +14079,9 @@
         "tests": [
           "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
-          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority"
+          "framerail/tests/ajax-module-connector.test.js#dispatches the sealed page comments reads without adding mutation authority",
+          "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs#authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
+          "install/local/wikidot-verification/tests/comments-hideform-browser-candidate-case-set.test.mjs#Comments hideForm is registered as one executable candidate case with both actor controls"
         ]
       },
       "evidence": {
@@ -14087,19 +14089,25 @@
         "references": [
           "/mnt/oracle-store/wjlab/issue-scout-20260731/module-own-line-smoke/live-references.jsonl#module-own-line-comments",
           "docs/wikidot-specifications/specifications/module/module-comments.md",
+          "install/local/wikidot-verification/artifacts/forum-comments-hideform-actor-live-20260810.json",
           "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json",
           "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-forward",
           "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-missing-page",
-          "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-reverse"
+          "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-reverse",
+          "install/local/wikidot-verification/artifacts/issue1367-comments-hideform-browser-live-20260815-r7.json"
         ]
       },
       "source": {
         "status": "in_progress",
         "references": [
+          "deepwell/src/services/permission/resolvers.rs",
           "deepwell/src/services/render/forum_comments.rs",
           "deepwell/src/services/render/forum_modules.rs",
           "deepwell/src/services/render/forum_read_routes.rs",
+          "deepwell/src/services/render/forum_visibility.rs",
           "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/types/enums/permission.rs",
+          "deepwell/src/types/permissions.rs",
           "framerail/src/lib/server/ajax-module-connector.js",
           "framerail/src/lib/server/deepwell/forum.ts"
         ]
@@ -39332,14 +39340,18 @@
         "cases": [
           "Q1034_COMMENTS_HIDEFORM_ACTOR_AND_FORM_STATE"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
+          "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs#authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
+          "install/local/wikidot-verification/tests/comments-hideform-browser-candidate-case-set.test.mjs#Comments hideForm is registered as one executable candidate case with both actor controls"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": []
       },
       "source": {
-        "status": "pending",
+        "status": "implemented",
         "references": []
       },
       "candidate": {
