@@ -14,7 +14,7 @@ import {
 const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set open43-media-files|open43-settings-browser --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set open43-media-files|open43-settings-browser|open43-settings-analytics|open43-settings-theme --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
 
 Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
@@ -64,6 +64,10 @@ export async function candidateCaseSet(name) {
   if (name === "open43-settings-browser") {
     const { createOpen43SettingsBrowserCandidateCaseSet } = await import("./open43-settings-browser-candidate-case-set.mjs");
     return createOpen43SettingsBrowserCandidateCaseSet();
+  }
+  if (name === "open43-settings-analytics" || name === "open43-settings-theme") {
+    const { createOpen43SettingsGroupCandidateCaseSet } = await import("./open43-settings-browser-candidate-case-set.mjs");
+    return createOpen43SettingsGroupCandidateCaseSet({ group: name === "open43-settings-analytics" ? "analytics" : "theme" });
   }
   throw new Error(`unknown source-owned candidate case set: ${name}`);
 }

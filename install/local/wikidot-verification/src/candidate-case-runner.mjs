@@ -81,6 +81,29 @@ function reconcile(caseIds, rows) {
   return result;
 }
 
+const FAILED_REQUEST_KEYS = new Set(["failures", "failed_requests", "request_gate_aborts", "capture_failures"]);
+
+function failedRequestEvidence(value, path = []) {
+  if (Array.isArray(value)) return value.flatMap((entry, index) => failedRequestEvidence(entry, [...path, index]));
+  if (value === null || typeof value !== "object") return [];
+  return Object.entries(value).flatMap(([key, child]) => {
+    if (FAILED_REQUEST_KEYS.has(key) && Array.isArray(child)) return [{ path: [...path, key], values: structuredClone(child) }];
+    return failedRequestEvidence(child, [...path, key]);
+  });
+}
+
+function caseEvidenceIdentity({ executionIdentity, privateInputIdentity, browserCleanup, runtimeBefore, runtimeAfter, cleanup, resources, observations }) {
+  return {
+    source_sha256: sha256Value(executionIdentity),
+    fixture_sha256: privateInputIdentity.fixture_identity_sha256 ?? sha256Value(privateInputIdentity),
+    browser_sha256: sha256Value(browserCleanup),
+    runtime_before_sha256: sha256Value(runtimeBefore),
+    runtime_after_sha256: sha256Value(runtimeAfter),
+    cleanup_sha256: sha256Value({ proof: cleanup, resources }),
+    failed_requests_sha256: sha256Value(failedRequestEvidence(observations)),
+  };
+}
+
 function verifiedCase(value, caseId) {
   const verification = requirePlainObject(value, `${caseId} verification`);
   if (verification.verified !== true) throw new Error(`${caseId} verification must explicitly set verified true`);
@@ -228,6 +251,16 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
       runtime_before_sha256: sha256Value(runtimeBefore),
       runtime_after_sha256: sha256Value(runtimeAfter),
       cleanup: verifiedCleanup,
+      evidence_identity: caseEvidenceIdentity({
+        executionIdentity,
+        privateInputIdentity: run.privateInputIdentity,
+        browserCleanup,
+        runtimeBefore,
+        runtimeAfter,
+        cleanup: verifiedCleanup,
+        resources: resourceSnapshot,
+        observations: caseObservations,
+      }),
       observations: caseObservations,
       verification,
     };

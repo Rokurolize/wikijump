@@ -16,6 +16,24 @@ export const OPEN43_SETTINGS_BROWSER_CASE_IDS = Object.freeze([
   "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
 ]);
 
+export const OPEN43_SETTINGS_ANALYTICS_CASE_IDS = Object.freeze([
+  "S754_ANALYTICS_INITIAL",
+  "S754_ANALYTICS_SETTLED",
+]);
+
+export const OPEN43_SETTINGS_THEME_CASE_IDS = Object.freeze([
+  "S755_THEME_INITIAL",
+  "S755_THEME_SETTLED",
+]);
+
+export const OPEN43_SETTINGS_UNAVAILABLE_CASE_IDS = Object.freeze([
+  "S754_IMPORT_EXPORT_REPRESENTATION",
+  "S754_LIVE_BEACON_PAYLOAD_AND_TIMING",
+  "S755_BUILT_IN_ASSET_MAPPING",
+  "S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
+  "S755_EXTERNAL_RESOURCE_FAILURE_POLICY",
+]);
+
 const SETTINGS_SITE_FIELDS = Object.freeze([
   "site_id",
   "slug",
@@ -82,11 +100,19 @@ function requireTemporal(value, phase, sequence, label) {
   return temporal;
 }
 
+function requireGroupFailedRequestIdentity(value, label, plan) {
+  if (plan.group === "analytics" || plan.group === "theme") {
+    requireSha256(value?.failed_request_identity_sha256, `${label} failed-request identity SHA-256`);
+  }
+}
+
 function verifyAnalyticsInitial(observations, plan) {
   requireTemporal(observations.disabled_temporal, "domcontentloaded_immediate_observation", 1, "disabled analytics initial");
   requireTemporal(observations.enabled_temporal, "domcontentloaded_immediate_observation", 1, "enabled analytics initial");
   const disabled = requirePlainObject(observations.disabled, "disabled analytics initial state");
   const analytics = requirePlainObject(observations.enabled, "enabled analytics initial state");
+  requireGroupFailedRequestIdentity(disabled, "disabled analytics initial", plan);
+  requireGroupFailedRequestIdentity(analytics, "enabled analytics initial", plan);
   const expectedQueue = [["_setAccount", plan.analytics_profile], ["_trackPageview"]];
   requireSha256(disabled.initial_navigation_csp_header_sha256, "disabled initial navigation CSP header SHA-256");
   requireSha256(analytics.initial_navigation_csp_header_sha256, "enabled initial navigation CSP header SHA-256");
@@ -126,6 +152,7 @@ function verifyAnalyticsSettled(observations, plan) {
   }
   const analytics = requirePlainObject(observations.analytics, "analytics settled state");
   const lifecycle = requirePlainObject(observations.admin_lifecycle, "analytics admin lifecycle");
+  requireGroupFailedRequestIdentity(analytics, "analytics settled", plan);
   const queue = [["_setAccount", plan.analytics_profile], ["_trackPageview"]];
   requireSha256(analytics.initial_navigation_csp_header_sha256, "analytics initial navigation CSP header SHA-256");
   if (
@@ -166,6 +193,9 @@ function verifyTheme(observations, plan, settled) {
   const defaultTheme = requirePlainObject(observations.default_theme, "default theme observation");
   const transitionTheme = requirePlainObject(observations.transition_theme, "direct target theme observation");
   const categoryTransitionTheme = requirePlainObject(observations.category_transition_theme, "client transition theme observation");
+  requireGroupFailedRequestIdentity(defaultTheme, "default theme", plan);
+  requireGroupFailedRequestIdentity(transitionTheme, "direct target theme", plan);
+  requireGroupFailedRequestIdentity(categoryTransitionTheme, "client transition theme", plan);
   if (
     defaultTemporal.input_url !== plan.default_page_url ||
     transitionTemporal.input_url !== plan.transition_page_url ||
