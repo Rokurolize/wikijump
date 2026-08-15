@@ -15,6 +15,7 @@ import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
 import { adminView, preloadView } from "$lib/server/deepwell/views"
 import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
+  pageDelete,
   pageEdit,
   pageGet,
   pageHistory,
@@ -189,6 +190,46 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         ...requestContext,
         page: pageId
       }),
+    deletePage: async ({
+      siteId: requestSiteId,
+      pageId
+    }: {
+      siteId: number
+      pageId: number
+    }) => {
+      const userId = await resolveNewPageUserId()
+      if (userId === undefined) {
+        throw new Error("deletePage requires a page mutation actor")
+      }
+      const page = (await pageGet(requestSiteId, pageId, {
+        ...requestContext,
+        page: pageId
+      })) as { slug?: string; revision_id?: number } | null
+      const revisionId = page?.revision_id
+      if (
+        page === null ||
+        typeof page.slug !== "string" ||
+        revisionId === undefined ||
+        !Number.isSafeInteger(revisionId)
+      ) {
+        throw new Error("deletePage target is unavailable")
+      }
+      await pageDelete(
+        {
+          siteId: requestSiteId,
+          pageId,
+          userId,
+          userIpAddr: getClientAddress(),
+          slug: page.slug,
+          lastRevisionId: revisionId,
+          revisionComments: ""
+        },
+        {
+          ...requestContext,
+          page: pageId
+        }
+      )
+    },
     renderListPages: ({
       siteId,
       moduleBody,

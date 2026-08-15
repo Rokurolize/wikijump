@@ -1170,6 +1170,27 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
   }
 })
 
+test("dispatches the observed WikiPageAction deletePage request", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "WikiPageAction",
+      event: "deletePage",
+      page_id: "1469167148",
+      moduleName: "Empty",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      deletePage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.deepEqual(await response.json(), { status: "ok" })
+  assert.deepEqual(calls, [{ siteId: 6000006, pageId: 1469167148 }])
+})
+
 test("dispatches NewPage helper default action with Wikidot edit-routing fields", async () => {
   const pageName = `run-owned:${"x".repeat(51)}`
   const response = await handleAjaxModuleConnectorRequest(

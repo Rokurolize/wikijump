@@ -83,6 +83,15 @@ const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
 const EDIT_META_MODULE = "edit/EditMetaModule"
 const EDIT_META_ACTION = "WikiPageAction"
 const EDIT_META_EVENTS = new Set(["saveMetaTag", "deleteMetaTag"])
+const PAGE_DELETE_EVENT = "deletePage"
+const PAGE_DELETE_MODULE = "Empty"
+const PAGE_DELETE_ACTION_FIELDS = new Set([
+  "action",
+  "event",
+  "page_id",
+  "moduleName",
+  "wikidot_token7"
+])
 const EDIT_META_READ_FIELDS = new Set(["moduleName", "pageId", "wikidot_token7"])
 const EDIT_META_ACTION_FIELDS = new Set([
   "action",
@@ -202,6 +211,7 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     name: string
  *     allPages: boolean
  *   }) => Promise<void>
+ *   deletePage?: (input: { siteId: number; pageId: number }) => Promise<void>
  * }} AjaxModuleConnectorOptions
  */
 
@@ -595,7 +605,8 @@ export const handleAjaxModuleConnectorRequest = async (
     createPageDiscussion,
     renderEditMetaModule,
     saveMetaTag,
-    deleteMetaTag
+    deleteMetaTag,
+    deletePage
   }
 ) => {
   if (request.method !== "POST") {
@@ -666,6 +677,32 @@ export const handleAjaxModuleConnectorRequest = async (
         cssInclude: [],
         jsInclude: []
       })
+    }
+  }
+
+  if (
+    fields.get("action") === EDIT_META_ACTION &&
+    fields.get("event") === PAGE_DELETE_EVENT
+  ) {
+    const pageIdValue = fieldValue(fields, "page_id")
+    const shapeIsSupported =
+      fields.get("moduleName") === PAGE_DELETE_MODULE &&
+      [...fields.keys()].every((field) => PAGE_DELETE_ACTION_FIELDS.has(field)) &&
+      isPositiveSafeDecimal(pageIdValue)
+    if (!shapeIsSupported) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${fields.get("moduleName") ?? ""}`
+      })
+    }
+
+    if (!deletePage) return jsonResponse({ status: "not_ok" })
+    try {
+      await deletePage({ siteId, pageId: Number.parseInt(pageIdValue, 10) })
+      return jsonResponse({ status: "ok" })
+    } catch (error) {
+      console.error("AJAX deletePage action failed", error)
+      return jsonResponse({ status: "not_ok" })
     }
   }
 
