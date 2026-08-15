@@ -138,6 +138,8 @@ def validate_prepared_receipt(
     proof = receipt.get("candidate_proof")
     if not isinstance(proof, dict):
         raise ValueError("prepared receipt has no candidate proof")
+    if receipt.get("run_id") != proof.get("run_id"):
+        raise ValueError("prepared receipt run ID does not match its candidate proof")
     if validate_candidate_proof(Path(proof.get("path", "")), identity) != proof:
         raise ValueError("prepared receipt candidate proof is stale")
     for key in ("wikijump_sha", "wikijump_tree", "ftml_sha", "dependency_lock_sha256"):
@@ -219,6 +221,7 @@ def main() -> int:
         "schema_version": 1,
         "kind": "standing-image-preparation",
         "status": "pass",
+        "run_id": candidate_proof["run_id"],
         "started_at": started_at.isoformat(),
         "completed_at": datetime.now(UTC).isoformat(),
         "duration_seconds": time.monotonic() - started_monotonic,

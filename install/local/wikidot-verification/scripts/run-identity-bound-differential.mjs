@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import crypto from "node:crypto";
 import {spawnSync} from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -176,15 +175,15 @@ function evaluateReport(run, report, cleanup, runId) {
 }
 
 export function parseArgs(argv) {
-  requireValue(argv.length === 2 && argv[0] === "--case-manifest" && argv[1], "Usage: run-identity-bound-differential.mjs --case-manifest /absolute/case-manifest.json");
-  return {manifestPath: absolutePath(argv[1], "--case-manifest")};
+  requireValue(argv.length === 4 && argv[0] === "--case-manifest" && argv[1] && argv[2] === "--run-id" && argv[3], "Usage: run-identity-bound-differential.mjs --case-manifest /absolute/case-manifest.json --run-id candidate-run-<12 hex>");
+  requireValue(/^candidate-run-[0-9a-f]{12}$/u.test(argv[3]), "--run-id must be a candidate run ID");
+  return {manifestPath: absolutePath(argv[1], "--case-manifest"), runId: argv[3]};
 }
 
 export async function main(argv, {spawn = spawnSync} = {}) {
-  const {manifestPath} = parseArgs(argv);
+  const {manifestPath, runId} = parseArgs(argv);
   const manifestIdentity = await artifact(manifestPath, "case manifest");
   const run = await validateManifest(JSON.parse(await fs.readFile(manifestPath, "utf8")), manifestPath);
-  const runId = `candidate-run-${crypto.randomUUID().replaceAll("-", "").slice(0, 12)}`;
   const globalLockPath = path.join(os.tmpdir(), "wikijump-candidate-run.lock");
   const globalLock = await fs.open(globalLockPath, "wx", 0o600);
   await globalLock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_global_lock.v1", run_id: runId, evidence_directory: path.dirname(manifestPath)})}\n`);

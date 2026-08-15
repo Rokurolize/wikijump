@@ -218,6 +218,7 @@ class RefreshStandingTest(unittest.TestCase):
             "schema_version": 1,
             "kind": "standing-image-preparation",
             "status": "pass",
+            "run_id": proof["run_id"],
             **identity,
             "dockerfiles": {
                 service: hashlib.sha256(service.encode()).hexdigest()
@@ -358,6 +359,16 @@ class RefreshStandingTest(unittest.TestCase):
             path = root / "prepared.json"
             path.write_text(json.dumps(receipt), encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "exact SHA-derived reference"):
+                REFRESH.load_prepared_receipt(path, root, identity)
+
+    def test_prepared_receipt_binds_the_candidate_run_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            receipt, identity = self.prepared_receipt_fixture(root)
+            receipt["run_id"] = "candidate-run-other"
+            path = root / "prepared.json"
+            path.write_text(json.dumps(receipt), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "run ID"):
                 REFRESH.load_prepared_receipt(path, root, identity)
 
     def test_prepared_receipt_rejects_unsafe_resource_expiry(self) -> None:

@@ -36,6 +36,7 @@ async function fixture(t) {
   const statePath = path.join(root, "state.json");
   const runtimeOutput = path.join(root, "runtime-report.json");
   const output = path.join(root, "verdict.json");
+  const runId = "candidate-run-abcdef123456";
   const syntaxCase = JSON.parse((await fs.readFile(EXISTING_CASES, "utf8")).split("\n").find((line) => line.trim()));
   assert.equal(syntaxCase.local_execution_tier, "wikijump-runtime");
   const liveCase = {
@@ -74,7 +75,11 @@ async function fixture(t) {
     output,
   };
   await fs.writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-  return {root, manifestPath, candidatePath, casesPath, capturesPath, statePath, runtimeOutput, output, manifest, syntaxCase, liveCase};
+  return {root, manifestPath, candidatePath, casesPath, capturesPath, statePath, runtimeOutput, output, manifest, syntaxCase, liveCase, runId};
+}
+
+function runArgs(value) {
+  return ["--case-manifest", value.manifestPath, "--run-id", value.runId];
 }
 
 function runtimeReport(value, overrides = {}) {
@@ -112,7 +117,7 @@ function stackMock(value, {report = runtimeReport(value), cleanupReceipt = clean
 test("one public command runs the candidate-bound generic runtime stack and proves all applicable channels and cleanup", async (t) => {
   const value = await fixture(t);
   const mock = stackMock(value);
-  assert.equal(await main(["--case-manifest", value.manifestPath], {spawn: mock.spawn}), 0);
+  assert.equal(await main(runArgs(value), {spawn: mock.spawn}), 0);
   assert.equal(mock.calls.length, 1);
   assert.equal(mock.calls[0].command, NODE);
   assert.deepEqual(mock.calls[0].args.slice(0, -4), [STACK, "--repository", REPOSITORY, "--candidate-manifest", value.candidatePath, "--cases", value.casesPath, "--captures", value.capturesPath, "--state-fixture", value.statePath, "--site", "sandbox-for-codex"]);
@@ -146,7 +151,7 @@ test("the public seam ignores poisoned Git, Docker, and PATH routing", async (t)
   const saved = Object.fromEntries(["PATH", "GIT_DIR", "DOCKER_HOST", "DOCKER_CONTEXT", "DOCKER_TLS_VERIFY", "DOCKER_CONFIG"].map((name) => [name, process.env[name]]));
   Object.assign(process.env, {PATH: "/poison", GIT_DIR: "/poison", DOCKER_HOST: "tcp://poison:2376", DOCKER_CONTEXT: "poison", DOCKER_TLS_VERIFY: "1", DOCKER_CONFIG: "/poison"});
   try {
-    assert.equal(await main(["--case-manifest", value.manifestPath], {spawn: mock.spawn}), 0);
+  assert.equal(await main(runArgs(value), {spawn: mock.spawn}), 0);
   } finally {
     for (const [name, previous] of Object.entries(saved)) {
       if (previous === undefined) delete process.env[name];
@@ -168,7 +173,7 @@ test("raw HTML, DOM, and visible text are mandatory fail-closed channels", async
     const value = await fixture(t);
     const report = runtimeReport(value);
     mutate(report);
-    assert.equal(await main(["--case-manifest", value.manifestPath], {spawn: stackMock(value, {report}).spawn}), 1);
+    assert.equal(await main(runArgs(value), {spawn: stackMock(value, {report}).spawn}), 1);
     const verdict = JSON.parse(await fs.readFile(value.output, "utf8"));
     assert.equal(verdict.status, "fail");
     assert.equal(Object.values(verdict.channels).some((channel) => channel.status === "fail"), true);
@@ -179,7 +184,7 @@ test("the selected saved capture must match the manifest URL", async (t) => {
   const value = await fixture(t);
   const report = runtimeReport(value);
   report.comparisons[0].identities.wikidot_batch_slug = "run-owned:ftml-diff-20260815-999";
-  assert.equal(await main(["--case-manifest", value.manifestPath], {spawn: stackMock(value, {report}).spawn}), 1);
+  assert.equal(await main(runArgs(value), {spawn: stackMock(value, {report}).spawn}), 1);
   const verdict = JSON.parse(await fs.readFile(value.output, "utf8"));
   assert.equal(verdict.status, "fail");
   assert.match(verdict.reason, /does not bind the declared saved-page URL/u);
@@ -188,7 +193,7 @@ test("the selected saved capture must match the manifest URL", async (t) => {
 test("missing or failed stack cleanup makes a partial runtime result fail closed", async (t) => {
   for (const cleanupReceipt of [null, cleanup({status: "fail", compose_down_exit_code: 1})]) {
     const value = await fixture(t);
-    assert.equal(await main(["--case-manifest", value.manifestPath], {spawn: stackMock(value, {cleanupReceipt}).spawn}), 1);
+    assert.equal(await main(runArgs(value), {spawn: stackMock(value, {cleanupReceipt}).spawn}), 1);
     const verdict = JSON.parse(await fs.readFile(value.output, "utf8"));
     assert.equal(verdict.status, "fail");
     assert.equal(verdict.cleanup.status, "fail");
@@ -197,11 +202,11 @@ test("missing or failed stack cleanup makes a partial runtime result fail closed
 
 test("moving inputs and partial child output publish a failed no-replace verdict", async (t) => {
   const moved = await fixture(t);
-  assert.equal(await main(["--case-manifest", moved.manifestPath], {spawn: stackMock(moved, {mutate: () => fsSync.appendFileSync(moved.capturesPath, "{}\n")}).spawn}), 1);
+  assert.equal(await main(runArgs(moved), {spawn: stackMock(moved, {mutate: () => fsSync.appendFileSync(moved.capturesPath, "{}\n")}).spawn}), 1);
   assert.match(JSON.parse(await fs.readFile(moved.output, "utf8")).reason, /capture identity moved/u);
 
   const partial = await fixture(t);
-  assert.equal(await main(["--case-manifest", partial.manifestPath], {spawn: stackMock(partial, {report: null, cleanupReceipt: null, stackLog: "partial crash log\n", status: 2}).spawn}), 1);
+  assert.equal(await main(runArgs(partial), {spawn: stackMock(partial, {report: null, cleanupReceipt: null, stackLog: "partial crash log\n", status: 2}).spawn}), 1);
   const verdict = JSON.parse(await fs.readFile(partial.output, "utf8"));
   assert.equal(verdict.status, "fail");
   assert.match(verdict.reason, /runtime stack exited 2/u);
@@ -220,21 +225,21 @@ test("unknown interfaces and an existing verdict are rejected before the stack s
     mutate(value.manifest);
     await fs.writeFile(value.manifestPath, `${JSON.stringify(value.manifest)}\n`);
     let calls = 0;
-    await assert.rejects(main(["--case-manifest", value.manifestPath], {spawn: () => { calls += 1; }}), error);
+    await assert.rejects(main(runArgs(value), {spawn: () => { calls += 1; }}), error);
     assert.equal(calls, 0);
   }
 
   const value = await fixture(t);
   await fs.writeFile(value.output, "keep\n");
   let calls = 0;
-  await assert.rejects(main(["--case-manifest", value.manifestPath], {spawn: () => { calls += 1; }}), /output already exists/u);
+  await assert.rejects(main(runArgs(value), {spawn: () => { calls += 1; }}), /output already exists/u);
   assert.equal(calls, 0);
   assert.equal(await fs.readFile(value.output, "utf8"), "keep\n");
 
   const preexistingLog = await fixture(t);
   await fs.writeFile(`${preexistingLog.runtimeOutput}.stack.log`, "keep log\n");
   calls = 0;
-  await assert.rejects(main(["--case-manifest", preexistingLog.manifestPath], {spawn: () => { calls += 1; }}), /runtime stack log already exists/u);
+  await assert.rejects(main(runArgs(preexistingLog), {spawn: () => { calls += 1; }}), /runtime stack log already exists/u);
   assert.equal(calls, 0);
   assert.equal(await fs.readFile(`${preexistingLog.runtimeOutput}.stack.log`, "utf8"), "keep log\n");
 });
