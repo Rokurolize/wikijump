@@ -6161,6 +6161,20 @@ async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl()
         "explicit Gallery selection should retain authored order and skip non-images:\n{explicit}",
     );
     assert!(explicit.contains("image-b.png"), "{explicit}");
+    assert!(
+        explicit.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/fixture-gallery-current-page/image-b.png/thumbnail.jpg" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "explicit filename entries must use the selected resized asset:
+{explicit}",
+    );
+    assert!(
+        !explicit.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--files/fixture-gallery-current-page/image-b.png" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "explicit filename entries must not use the original asset as the image source:
+{explicit}",
+    );
     assert!(!explicit.contains("image-a.png"), "{explicit}");
     assert!(!explicit.contains("notes.txt"), "{explicit}");
 
@@ -6539,6 +6553,13 @@ async fn wikidot_gallery_explicit_entries_resolve_only_owned_visible_files() {
         preview.body,
     );
     assert!(
+        preview.body.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--files/fixture-gallery-explicit-target/gallery%20image.png" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "an explicit owned URL must remain the image source:\n{}",
+        preview.body,
+    );
+    assert!(
         !preview.body.contains("example.invalid"),
         "{}",
         preview.body
@@ -6690,10 +6711,19 @@ async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix(
         );
         assert!(
             preview.body.contains(&format!(
+                r#"<img src="https://scp-wiki.wjfiles.com/local--files/{TARGET_SLUG}/{FILE_NAME}" alt="" class="gallery-image-size-{}""#,
+                case.expected_size,
+            )),
+            "{} should preserve the original asset for an owned explicit URL:\n{}",
+            case.case_id,
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains(&format!(
                 "/local--resized-images/{TARGET_SLUG}/{FILE_NAME}/{}.jpg",
                 case.expected_size,
             )),
-            "{} should bind the expected resized variant:\n{}",
+            "{} must not replace an owned explicit URL with a resized asset:\n{}",
             case.case_id,
             preview.body,
         );
