@@ -1,10 +1,32 @@
 import assert from "node:assert/strict"
 import { execFile } from "node:child_process"
 import { createHash } from "node:crypto"
-import { readFile } from "node:fs/promises"
+import { lstat, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import test from "node:test"
+
+import {
+  buildTemporalCapturePlan,
+  captureUrlsSha256,
+  assertLoadingBoundaryPresent,
+  assertByteLimit,
+  copyRunOwnedStorageStates,
+  closeCaptureEgressProxies,
+  DOM_MAX_BYTES,
+  DIAGNOSTIC_MAX_BYTES,
+  runOwnedStorageStatePaths,
+  SCREENSHOT_MAX_BYTES,
+  SHUTDOWN_TIMEOUT_MS,
+  assertRunOwnedStorageStatesAbsent,
+  removeRunOwnedStorageStates,
+  validateCaptureInputBindings,
+  validateSourceIdentity,
+  validateTemporalRunContract,
+  validateOutputPreflight,
+  verifyHistoricalEvidence,
+  requireNavigationResponse,
+} from "../scripts/capture-framerail-route-action-temporal.mjs"
 
 const root = new URL("../../../../", import.meta.url)
 const registryPath = new URL("docs/development/framerail-route-action-evidence.json", root)
@@ -40,6 +62,34 @@ const temporalIds = [
   "pane:watchers"
 ]
 const missingIntervals = ["denial", "failure", "loading", "selection", "settled", "success"]
+
+function validCaptureInputs(contract, urls) {
+  const oracle = {type: "event", event: {kind: "response", method: "POST", status: 200, url_suffix: "/fixture-result"}}
+  const bySubject = Object.fromEntries(contract.subjects.map(({id}) => [id, oracle]))
+  const urlsSha256 = captureUrlsSha256(urls)
+  return {
+    fixture: {
+      descriptor: {
+        schema: "wikijump.framerail_route_action_fixture_identity.v1",
+        evidence_registry: contract.evidence_registry,
+        urls,
+        urls_sha256: urlsSha256,
+        run_owned_fixture: {
+          restored: [{path: "/tmp/run-owned-fixture", sha256: "a".repeat(64)}],
+          removed: []
+        }
+      }
+    },
+    failureControl: {
+      descriptor: {
+        schema: "wikijump.framerail_route_action_failure_control_identity.v1",
+        evidence_registry: contract.evidence_registry,
+        urls_sha256: urlsSha256,
+        result_oracles: {denial: bySubject, failure: bySubject}
+      }
+    }
+  }
+}
 
 const uniqueSorted = (values) =>
   values.length === new Set(values).size &&
@@ -186,12 +236,15 @@ test("Framerail evidence verifier rejects invented and poisoned source identitie
   await assert.rejects(verifyRegistry(staleInventory))
 })
 
-test("issue #1372 browser run contract is complete, source-bound, and blocked", async () => {
+test("issue #1372 browser run contract is complete, source-bound, and executable", async () => {
   const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
   assert.equal(contract.schema, "wikijump.framerail_route_action_browser_run.v1")
   assert.equal(contract.issue, 1372)
-  assert.equal(contract.status, "blocked_authority")
+  assert.equal(contract.status, "ready_for_capture")
+  assert.equal(contract.repository, "Rokurolize/wikijump")
   assert.match(contract.source_revision, /^[0-9a-f]{40}$/u)
+  const currentRegistry = JSON.parse(await readFile(registryPath, "utf8"))
+  assert.equal(contract.source_revision, currentRegistry.source_revision)
 
   const registryBytes = await gitBlob(contract.source_revision, contract.evidence_registry.path)
   assert.equal(
@@ -205,37 +258,243 @@ test("issue #1372 browser run contract is complete, source-bound, and blocked", 
   assert.deepEqual(contract.required_intervals, missingIntervals)
   assert.equal(contract.subjects.length * contract.required_intervals.length, 84)
   for (const subject of contract.subjects) {
+    assert.ok(["missing_page", "saved_page"].includes(subject.kind))
     assert.ok(subject.trigger_selectors.length > 0, `${subject.id} has no trigger`)
-    assert.match(subject.settled_selector, /^[#.]/u)
+    assert.match(subject.settled_predicate.selector, /^[#.]/u)
+    assert.equal(subject.settled_predicate.state, "visible")
   }
 
   assert.deepEqual(contract.actor_classes, ["denied", "permitted"])
   assert.deepEqual(contract.result_controls, ["denial", "failure", "success"])
   assert.equal(contract.layout, "wikidot")
   assert.deepEqual(contract.preflight_required, [
-    "authority_state_sha256",
     "browser_identity",
+    "capture_script_identity",
     "evidence_output_path",
     "failure_control_identity",
     "fixture_identity",
+    "historical_evidence_identity",
+    "cleanup_proof",
+    "run_contract_identity",
     "run_id",
+    "repository_identity",
+    "scenario_storage_state_identity",
     "runtime_identity"
   ])
   assert.deepEqual(contract.evidence_fields, [
-    "actor_class", "browser_identity", "console_errors", "dom", "failed_requests",
-    "http_errors", "interval", "page_errors", "runtime_identity", "screenshot",
-    "source_revision", "subject_id", "timestamp", "url"
+    "actor_class", "browser_identity", "capture_errors", "console_errors", "dom", "dom_sha256",
+    "failed_requests", "http_errors", "interval", "page_errors", "runtime_identity",
+    "scenario", "screenshot", "screenshot_sha256", "status", "source_revision", "subject_id", "timestamp", "url"
   ])
-  assert.deepEqual(contract.authority, {
-    required: ["browser", "run-owned-fixture-mutation", "run-owned-runtime"],
-    current: "not_authorized",
-    source: "/home/roku/wjlab/state/current.json"
+  assert.equal(contract.authority, undefined)
+  assert.equal(contract.capture.script, "install/local/wikidot-verification/scripts/capture-framerail-route-action-temporal.mjs")
+  assert.match(contract.capture.script_sha256, /^[0-9a-f]{64}$/u)
+  assert.equal(
+    createHash("sha256").update(await readFile(new URL("../../scripts/capture-framerail-route-action-temporal.mjs", browserContractPath))).digest("hex"),
+    contract.capture.script_sha256
+  )
+  assert.deepEqual(contract.capture.scenarios, {
+    denial: {result_oracle_source: "failure_control_identity", intervals: ["denial"]},
+    failure: {result_oracle_source: "failure_control_identity", intervals: ["failure"]},
+    success: {intervals: ["selection", "loading", "settled", "success"]}
+  })
+  assert.deepEqual(contract.subjects.find(({id}) => id === "control:create").loading, {
+    kind: "navigation",
+    url_suffix: "/edit/true",
+    status: 200
   })
   assert.deepEqual(contract.historical_evidence, {
     path: "/home/roku/wjlab/evidence/page-pane-lazy-browser-20260713.json",
     sha256: "17b9b5215d40c32123ada66b43c5d5a37ea4a06a37bf2ebf99c0595e39c61ba9",
+    schema: "wikijump.page_pane_lazy_browser.v1",
     classification: "historical_history_only"
   })
+  const historicalIdentity = await verifyHistoricalEvidence(contract.historical_evidence)
+  assert.equal(historicalIdentity.sha256, contract.historical_evidence.sha256)
   assert.equal(contract.cleanup.required, true)
   assert.equal(contract.cleanup.protected_resources_must_remain_unchanged, true)
+  assert.deepEqual(contract.cleanup.proof_fields, [
+    "fixture_restored_or_removed",
+    "browser_state_removed",
+    "runtime_stopped",
+    "protected_resources_preserved"
+  ])
+
+  const urls = {
+    denial: {missing_page: "https://framerail.invalid/denial-missing", saved_page: "https://framerail.invalid/denial-saved"},
+    failure: {missing_page: "https://framerail.invalid/failure-missing", saved_page: "https://framerail.invalid/failure-saved"},
+    success: {missing_page: "https://framerail.invalid/success-missing", saved_page: "https://framerail.invalid/success-saved"}
+  }
+  assert.equal(validateTemporalRunContract(contract).subjects.length, 14)
+  const plan = buildTemporalCapturePlan(contract, urls)
+  assert.equal(plan.length, 84)
+  assert.equal(new Set(plan.map(({subject, interval}) => `${subject.id}:${interval}`)).size, 84)
+  assert.equal(plan.find(({subject}) => subject.id === "control:create").url, urls.denial.missing_page)
+  assert.equal(plan.find(({subject}) => subject.id === "pane:append").url, urls.denial.saved_page)
+})
+
+test("issue #1372 capture seam requires observable settled boundaries", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const missingPredicate = structuredClone(contract)
+  delete missingPredicate.subjects[0].settled_predicate
+  assert.throws(() => validateTemporalRunContract(missingPredicate), /no exact settled predicate/u)
+
+  const attachedPredicate = structuredClone(contract)
+  attachedPredicate.subjects.find(({id}) => id === "pane:watchers").settled_predicate.state = "attached"
+  assert.throws(() => validateTemporalRunContract(attachedPredicate), /no exact settled predicate/u)
+})
+
+test("issue #1372 capture seam rejects a stale historical artifact digest", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const stale = {...contract.historical_evidence, sha256: "0".repeat(64)}
+  await assert.rejects(verifyHistoricalEvidence(stale), /SHA-256 does not match/u)
+})
+
+test("issue #1372 capture seam rejects authority state and narrowed-boundary drift", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const staleAuthority = structuredClone(contract)
+  staleAuthority.authority = {source: "/home/roku/wjlab/state/current.json"}
+  assert.throws(() => validateTemporalRunContract(staleAuthority), /authority state/u)
+
+  const missingBoundary = structuredClone(contract)
+  missingBoundary.capture.scenarios.success.intervals = ["selection", "loading", "success"]
+  assert.throws(() => validateTemporalRunContract(missingBoundary), /wrong interval boundary/u)
+
+  const duplicateBoundary = structuredClone(contract)
+  duplicateBoundary.capture.scenarios.success.intervals = ["selection", "loading", "settled", "settled", "success"]
+  assert.throws(() => validateTemporalRunContract(duplicateBoundary), /wrong interval boundary/u)
+})
+
+test("issue #1372 capture seam rejects all-success URLs and arbitrary identity files", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const urls = {
+    denial: {missing_page: "https://framerail.invalid/denial-missing", saved_page: "https://framerail.invalid/denial-saved"},
+    failure: {missing_page: "https://framerail.invalid/failure-missing", saved_page: "https://framerail.invalid/failure-saved"},
+    success: {missing_page: "https://framerail.invalid/success-missing", saved_page: "https://framerail.invalid/success-saved"}
+  }
+  const identities = validCaptureInputs(contract, urls)
+  const allSuccessUrls = {...urls, denial: urls.success, failure: urls.success}
+  assert.throws(
+    () => validateCaptureInputBindings(contract, allSuccessUrls, identities),
+    /fixture identity is not bound to the supplied URLs/u
+  )
+
+  for (const key of ["fixture", "failureControl"]) {
+    const arbitrary = structuredClone(identities)
+    arbitrary[key] = {identity: {label: key, path: `/tmp/${key}`, sha256: "0".repeat(64), size: 1}}
+    assert.throws(() => validateCaptureInputBindings(contract, urls, arbitrary), /identity descriptor is required/u)
+  }
+})
+
+test("issue #1372 capture seam rejects an unbound create navigation", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const wrongDestination = structuredClone(contract)
+  wrongDestination.subjects.find(({id}) => id === "control:create").loading.url_suffix = "/anywhere"
+  assert.throws(() => validateTemporalRunContract(wrongDestination), /exact navigation destination and status/u)
+
+  const wrongStatus = structuredClone(contract)
+  wrongStatus.subjects.find(({id}) => id === "control:create").loading.status = 302
+  assert.throws(() => validateTemporalRunContract(wrongStatus), /exact navigation destination and status/u)
+})
+
+test("issue #1372 capture seam rejects incomplete result oracles and vanished loading", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const urls = {
+    denial: {missing_page: "https://framerail.invalid/denial-missing", saved_page: "https://framerail.invalid/denial-saved"},
+    failure: {missing_page: "https://framerail.invalid/failure-missing", saved_page: "https://framerail.invalid/failure-saved"},
+    success: {missing_page: "https://framerail.invalid/success-missing", saved_page: "https://framerail.invalid/success-saved"}
+  }
+  const incomplete = validCaptureInputs(contract, urls)
+  delete incomplete.failureControl.descriptor.result_oracles.denial[contract.subjects[0].id]
+  assert.throws(
+    () => validateCaptureInputBindings(contract, urls, incomplete),
+    /does not cover every subject/u
+  )
+  assert.throws(
+    () => assertLoadingBoundaryPresent(false, "pane:append"),
+    /loading predicate was not true at capture/u
+  )
+  assert.doesNotThrow(() => assertLoadingBoundaryPresent(true, "pane:append"))
+})
+
+test("issue #1372 capture seam rejects missing exact response status and oversized artifacts", async () => {
+  const contract = JSON.parse(await readFile(browserContractPath, "utf8"))
+  const urls = {
+    denial: {missing_page: "https://framerail.invalid/denial-missing", saved_page: "https://framerail.invalid/denial-saved"},
+    failure: {missing_page: "https://framerail.invalid/failure-missing", saved_page: "https://framerail.invalid/failure-saved"},
+    success: {missing_page: "https://framerail.invalid/success-missing", saved_page: "https://framerail.invalid/success-saved"}
+  }
+  const invalid = validCaptureInputs(contract, urls)
+  delete invalid.failureControl.descriptor.result_oracles.denial[contract.subjects[0].id].event.status
+  assert.throws(() => validateCaptureInputBindings(contract, urls, invalid), /exact response status/u)
+  assert.throws(() => assertByteLimit(Buffer.alloc(DOM_MAX_BYTES + 1), DOM_MAX_BYTES, "DOM artifact"), /byte limit/u)
+  assert.throws(() => assertByteLimit(Buffer.alloc(SCREENSHOT_MAX_BYTES + 1), SCREENSHOT_MAX_BYTES, "screenshot artifact"), /byte limit/u)
+  assert.throws(() => assertByteLimit(Buffer.alloc(DIAGNOSTIC_MAX_BYTES + 1), DIAGNOSTIC_MAX_BYTES, "diagnostics"), /byte limit/u)
+})
+
+test("issue #1372 storage states use run-owned copies and reject a pre-existing output root", async () => {
+  const rootPath = await mkdtemp("/tmp/issue-1372-storage-")
+  const outputDir = `${rootPath}/capture`
+  const sourceStates = {}
+  for (const scenario of ["denial", "failure", "success"]) {
+    const sourcePath = `${rootPath}/${scenario}.json`
+    const bytes = `{"cookies":[],"origins":[],"scenario":"${scenario}"}\n`
+    await writeFile(sourcePath, bytes)
+    sourceStates[scenario] = {path: sourcePath, sha256: createHash("sha256").update(bytes).digest("hex")}
+  }
+  await mkdir(outputDir)
+  await assert.rejects(validateOutputPreflight(outputDir, []), /output directory already exists/u)
+  await rm(outputDir, {recursive: true})
+  await mkdir(outputDir)
+  const targets = runOwnedStorageStatePaths(outputDir)
+  const copies = await copyRunOwnedStorageStates(sourceStates, targets)
+  assert.notEqual(copies.denial.path, sourceStates.denial.path)
+  assert.equal((await lstat(copies.denial.path)).isFile(), true)
+  await removeRunOwnedStorageStates(copies)
+  await assert.rejects(lstat(copies.denial.path), {code: "ENOENT"})
+  assert.equal((await lstat(sourceStates.denial.path)).isFile(), true)
+  await rm(rootPath, {recursive: true})
+})
+
+test("issue #1372 cleanup closes an acquired proxy after partial startup", async () => {
+  const closed = []
+  const sourceProxy = {close: async () => closed.push("source")}
+  const cleanup = await closeCaptureEgressProxies(sourceProxy, null)
+  assert.deepEqual(closed, ["source"])
+  assert.equal(cleanup.allClosed, false)
+  assert.equal(cleanup.error, null)
+})
+
+test("issue #1372 cleanup bounds proxy shutdown", async () => {
+  const cleanup = await closeCaptureEgressProxies({close: () => new Promise(() => {})}, null, 5)
+  assert.equal(cleanup.allClosed, false)
+  assert.match(cleanup.error?.message ?? "", /timed out after 5ms/u)
+  assert.equal(SHUTDOWN_TIMEOUT_MS > 0, true)
+})
+
+test("issue #1372 rejects stale runtime source identity", () => {
+  assert.throws(
+    () => validateSourceIdentity(
+      {wikijump_commit: "1".repeat(40), wikijump_tree: "2".repeat(40)},
+      {wikijump_commit: "3".repeat(40), wikijump_tree: "2".repeat(40)},
+    ),
+    /actual clean capture source identity/u,
+  )
+})
+
+test("issue #1372 rejects wrong navigation destination or status", () => {
+  const event = {url_suffix: "/edit/true", status: 200}
+  assert.throws(() => requireNavigationResponse({url: () => "https://candidate.invalid/wrong", status: () => 200}, event, "create"), /exact destination and status/u)
+  assert.throws(() => requireNavigationResponse({url: () => "https://candidate.invalid/edit/true", status: () => 302}, event, "create"), /exact destination and status/u)
+})
+
+test("issue #1372 rejects a leftover run-owned storage state", async (t) => {
+  const rootPath = await mkdtemp("/tmp/issue-1372-leftover-")
+  t.after(() => rm(rootPath, {recursive: true, force: true}))
+  const target = `${rootPath}/storage-state-denial.json`
+  await writeFile(target, "{}\n")
+  await assert.rejects(
+    assertRunOwnedStorageStatesAbsent({denial: {path: target}}),
+    /remains after cleanup/u,
+  )
 })
