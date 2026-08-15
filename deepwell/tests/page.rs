@@ -17228,9 +17228,14 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             "TAG_EQUALS=%%linked_title%%|%%fullname%%\n",
             "[[/module]]\n",
             "TAG_EQUALS_END\n\n",
+            "DEFAULT_START\n",
+            "[[module PreviousPage category=\"{category}\"]]\n",
+            "DEFAULT_END\n\n",
             "INLINE_START\n",
             "start-[[module NextPage]]-middle\n",
             "start-[[module PreviousPage]]-middle\n",
+            "prefix-[[module NextPage]]-suffix\n",
+            "  [[module PreviousPage]]\n",
             "INLINE_END\n\n",
             "NEXTPREV_END",
         ),
@@ -17367,10 +17372,30 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             && tag_equals.contains("/fixture-nextpreviouspage:delta"),
         "NextPreviousPage tag selectors should filter candidates while using the current page as the position anchor:\n{html}",
     );
+    let default = section(&html, "DEFAULT_START", "DEFAULT_END");
+    for expected in [
+        r#"<div class="list-pages-box">"#,
+        r#"<div class="list-pages-item">"#,
+        r#"<h1><span><a href="/fixture-nextpreviouspage:bravo">Bravo NextPreviousPage</a></span></h1>"#,
+        r#"<p>by <span class="printuser avatarhover">"#,
+        r#"<span class="odate time_"#,
+        "Bravo body.",
+    ] {
+        assert!(
+            default.contains(expected),
+            "bare PreviousPage must preserve the live default title, author, date, and body DOM: {expected:?}\n{default}",
+        );
+    }
+    assert!(
+        !default.contains("data-wikijump-compat-"),
+        "generated PreviousPage DOM must not expose internal compatibility markers:\n{default}",
+    );
     let inline = section(&html, "INLINE_START", "INLINE_END");
     assert!(
         inline.contains("start-[[module NextPage]]-middle")
-            && inline.contains("start-[[module PreviousPage]]-middle"),
+            && inline.contains("start-[[module PreviousPage]]-middle")
+            && inline.contains("prefix-[[module NextPage]]-suffix")
+            && inline.contains("  [[module PreviousPage]]"),
         "inline NextPage and PreviousPage invocations must remain literal:\n{inline}",
     );
     assert_eq!(html.matches("[[module NextPage]]").count(), 1);
