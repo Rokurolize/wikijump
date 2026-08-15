@@ -20381,19 +20381,16 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     );
     assert!(absent.body.contains(SOURCE));
 
-    let missing_id = |runner: &mut TestRunner| async {
-        runner.set_request_context(RequestContext {
-            site_id: Some(site_id),
-            page_reference: Some(Reference::Id(i64::MAX)),
-            ..Default::default()
-        });
-        run_endpoint!(
-            runner,
-            wikidot_page_preview,
-            json!({"site_id": site_id, "title": "missing", "wikitext": SOURCE}),
-        )
-    };
-    let missing = missing_id(&mut runner).await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(i64::MAX)),
+        ..Default::default()
+    });
+    let missing = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "missing", "wikitext": SOURCE}),
+    );
     assert!(missing.body.contains(SOURCE));
 
     let stale_slug = "fixture-backlinks-preview-stale-target";
