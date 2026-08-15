@@ -7,7 +7,7 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
-import {main} from "../scripts/run-identity-bound-differential.mjs";
+import {main, parseArgs} from "../scripts/run-identity-bound-differential.mjs";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const REPOSITORY = fileURLToPath(new URL("../../../..", import.meta.url));
@@ -143,6 +143,14 @@ test("one public command runs the candidate-bound generic runtime stack and prov
   assert.equal(verdict.cleanup.status, "pass");
   assert.equal(verdict.artifacts.some((item) => item.path === `${value.runtimeOutput}.stack.log`), true);
   assert.ok(verdict.artifacts.every((item) => path.isAbsolute(item.path) && /^[0-9a-f]{64}$/u.test(item.sha256)));
+});
+
+test("the identity-bound differential requires the propagated candidate run ID", () => {
+  assert.deepEqual(parseArgs(["--case-manifest", "/tmp/case.json", "--run-id", "candidate-run-abcdef123456"]), {
+    manifestPath: "/tmp/case.json",
+    runId: "candidate-run-abcdef123456",
+  });
+  assert.throws(() => parseArgs(["--case-manifest", "/tmp/case.json"]), /--run-id/u);
 });
 
 test("the public seam ignores poisoned Git, Docker, and PATH routing", async (t) => {

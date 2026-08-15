@@ -100,6 +100,41 @@ class PrepareStandingImagesTest(unittest.TestCase):
             }
             PREPARE.validate_prepared_receipt(receipt, root, identity)
 
+    def test_prepared_receipt_rejects_a_different_candidate_run_id(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            identity = {
+                "wikijump_sha": "a" * 40,
+                "wikijump_tree": "b" * 40,
+                "ftml_sha": "c" * 40,
+                "dependency_lock_sha256": "d" * 64,
+            }
+            dockerfiles = {}
+            images = {}
+            for service in PREPARE.SERVICES:
+                path = root / "install/prod" / service / "Dockerfile"
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(service, encoding="utf-8")
+                dockerfiles[service] = hashlib.sha256(service.encode()).hexdigest()
+                images[service] = {
+                    "reference": PREPARE.image_reference(identity["wikijump_sha"], service),
+                    "id": "sha256:" + "e" * 64,
+                    "profile": PREPARE.BUILD_PROFILES[service],
+                }
+            proof = candidate_proof(root, identity)
+            receipt = {
+                "schema_version": 1,
+                "kind": "standing-image-preparation",
+                "status": "pass",
+                "run_id": "candidate-run-other",
+                **identity,
+                "candidate_proof": proof,
+                "dockerfiles": dockerfiles,
+                "images": images,
+            }
+            with self.assertRaisesRegex(ValueError, "run ID"):
+                PREPARE.validate_prepared_receipt(receipt, root, identity)
+
     def test_prepared_receipt_rejects_a_mutable_tag(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
