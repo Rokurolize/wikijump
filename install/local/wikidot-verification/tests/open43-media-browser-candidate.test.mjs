@@ -79,7 +79,7 @@ function intervalObservation(url, initial, settled, requestHash, centeredImages)
 test("media browser rows are one executable CandidateCaseSet denominator", async () => {
   const audit = JSON.parse(read("docs/development/open43-m-closure-audit.json"));
   const expected = audit.issues
-    .filter(({ issue }) => [756, 776, 806, 1039, 1042, 1043, 1062].includes(issue))
+    .filter(({ issue }) => [756, 776, 806, 1039, 1043, 1062].includes(issue))
     .flatMap(({ subrows }) => subrows)
     .filter(({ classification, next_command_ids }) => classification === "candidate_required" && next_command_ids.includes("C_MEDIA_BROWSER_CANDIDATE"))
     .map(({ case_id }) => case_id);
@@ -90,6 +90,15 @@ test("media browser rows are one executable CandidateCaseSet denominator", async
   assert.ok(OPEN43_MEDIA_BROWSER_CASE_IDS.includes("M806_BROWSER_GEOMETRY_AND_NETWORK"));
   assert.equal(typeof caseSet.prepareRun, "function");
   assert.match(candidateCaseUsage(), /open43-media-browser/u);
+});
+
+test("M1042_BROWSER_LIFECYCLE has exactly one executable denominator owner", async () => {
+  const media = await candidateCaseSet("open43-media-browser");
+  const embedvideo = await candidateCaseSet("open43-embedvideo-browser");
+  const claims = [...media.caseIds, ...embedvideo.caseIds];
+  assert.equal(claims.filter((caseId) => caseId === "M1042_BROWSER_LIFECYCLE").length, 1);
+  assert.equal(media.caseIds.includes("M1042_BROWSER_LIFECYCLE"), false);
+  assert.deepEqual(embedvideo.caseIds, ["M1042_BROWSER_LIFECYCLE"]);
 });
 
 test("the Playwright file is collection-only and the case set owns candidate receipts", () => {

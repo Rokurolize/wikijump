@@ -6,7 +6,9 @@ import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution
 import { requireNonEmptyString, requirePlainObject, requireSha256, sha256Value } from "./standing-browser-parity-util.mjs";
 
 const AUDIT = JSON.parse(fs.readFileSync(new URL("../../../../docs/development/open43-m-closure-audit.json", import.meta.url), "utf8"));
-const MEDIA_ISSUES = new Set([756, 776, 806, 1039, 1042, 1043, 1062]);
+// Issue 1042 has a dedicated provider case set (open43-embedvideo-browser),
+// so M1042_BROWSER_LIFECYCLE is excluded here to keep one owner per case ID.
+const MEDIA_ISSUES = new Set([756, 776, 806, 1039, 1043, 1062]);
 const AUDIT_ROWS = AUDIT.issues
   .filter(({ issue }) => MEDIA_ISSUES.has(issue))
   .flatMap(({ subrows }) => subrows)
