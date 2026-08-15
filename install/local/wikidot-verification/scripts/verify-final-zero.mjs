@@ -23,6 +23,14 @@ export const FINAL_ZERO_CLASSES = Object.freeze([
 const GIT = /^[0-9a-f]{40}$/u;
 const SHA256 = /^[0-9a-f]{64}$/u;
 const SURFACE = /^surface:[0-9]{8}$/u;
+const DEFERRED_KINDS = Object.freeze([
+  "framerail_xmlrpc_method",
+  "wikidot_py_amc_module_shape",
+]);
+const DEFERRED_PREFIXES = Object.freeze([
+  "framerail-xmlrpc:",
+  "wikidot-py-",
+]);
 
 function fail(message) {
   throw new Error(message);
@@ -63,6 +71,10 @@ function count(predicate, values) {
   return values.reduce((total, value) => total + (predicate(value) ? 1 : 0), 0);
 }
 
+function isDeferredScopeRow(row) {
+  return DEFERRED_KINDS.includes(row.kind) || DEFERRED_PREFIXES.some((prefix) => row.source_local_id.startsWith(prefix));
+}
+
 function validateDenominator(value) {
   const denominator = object(value, "final-zero denominator");
   exactKeys(
@@ -96,6 +108,8 @@ function validateDenominator(value) {
       row,
       [
         "surface_id",
+        "source_local_id",
+        "kind",
         "identity",
         "public_surface",
         "owner",
@@ -113,6 +127,9 @@ function validateDenominator(value) {
       `final-zero denominator row ${index}`,
     );
     if (!SURFACE.test(row.surface_id ?? "")) fail(`row ${index} has an invalid surface_id`);
+    if (typeof row.source_local_id !== "string" || row.source_local_id === "") fail(`row ${index} has an invalid source_local_id`);
+    if (typeof row.kind !== "string" || row.kind === "") fail(`row ${index} has an invalid kind`);
+    if (isDeferredScopeRow(row)) fail(`current final-zero denominator contains deferred scope row ${row.source_local_id}`);
     enumValue(row.identity, ["canonical", "ambiguous"], `row ${index}.identity`);
     for (const field of ["public_surface"]) {
       if (typeof row[field] !== "boolean") fail(`row ${index}.${field} must be boolean`);
@@ -134,6 +151,8 @@ function validateDenominator(value) {
     return row;
   });
   const ids = rows.map((row) => row.surface_id);
+  const sourceLocalIds = rows.map((row) => row.source_local_id);
+  if (new Set(sourceLocalIds).size !== sourceLocalIds.length) fail("final-zero denominator has duplicate source-local identities");
   return {
     rows,
     ids,
@@ -143,7 +162,46 @@ function validateDenominator(value) {
   };
 }
 
-async function validateLedger(filePath, denominatorIds) {
+function validateScopeRow(value, index, name) {
+  const row = object(value, `${name} row ${index}`);
+  exactKeys(row, ["source_local_id", "kind"], `${name} row ${index}`);
+  if (typeof row.source_local_id !== "string" || row.source_local_id === "") {
+    fail(`${name} row ${index}.source_local_id is invalid`);
+  }
+  if (!DEFERRED_PREFIXES.some((prefix) => row.source_local_id.startsWith(prefix))) {
+    fail(`${name} row ${index} has an unsupported source-local identity`);
+  }
+  if (!DEFERRED_KINDS.includes(row.kind)) fail(`${name} row ${index} has an unsupported kind`);
+  const expectedKind = row.source_local_id.startsWith("wikidot-py-")
+    ? "wikidot_py_amc_module_shape"
+    : "framerail_xmlrpc_method";
+  if (row.kind !== expectedKind) {
+    fail(`${name} row ${index} has an invalid kind for its source-local identity`);
+  }
+  return row;
+}
+
+function scopeKey(row) {
+  return `${row.source_local_id}\u0000${row.kind}`;
+}
+
+function validateDeferredDenominator(value) {
+  const denominator = object(value, "deferred denominator");
+  exactKeys(denominator, ["schema", "rows"], "deferred denominator");
+  if (denominator.schema !== "wikijump.compatibility_deferred_denominator.v1") {
+    fail("deferred denominator has an unsupported schema");
+  }
+  if (!Array.isArray(denominator.rows) || denominator.rows.length === 0) {
+    fail("deferred denominator rows must be non-empty");
+  }
+  const rows = denominator.rows.map((row, index) => validateScopeRow(row, index, "deferred denominator"));
+  if (new Set(rows.map(({source_local_id}) => source_local_id)).size !== rows.length) {
+    fail("deferred denominator has duplicate source-local identities");
+  }
+  return rows;
+}
+
+async function validateLedger(filePath, denominator) {
   const ledger = object(JSON.parse(await fs.readFile(filePath, "utf8")), "compatibility ledger");
   exactKeys(ledger, ["schema", "counts", "rows"], "compatibility ledger");
   if (ledger.schema !== "wikijump.compatibility_ledger.v1") fail("compatibility ledger has an unsupported schema");
@@ -152,12 +210,40 @@ async function validateLedger(filePath, denominatorIds) {
   exactKeys(ledger.counts, ["canonical_surfaces"], "compatibility ledger counts");
   const ids = ledger.rows.map((row, index) => {
     object(row, `compatibility ledger row ${index}`);
+    exactKeys(row, ["surface_id", "source_local_id", "kind"], `compatibility ledger row ${index}`);
     if (!SURFACE.test(row.surface_id ?? "")) fail(`compatibility ledger row ${index} has an invalid surface_id`);
+    if (typeof row.source_local_id !== "string" || row.source_local_id === "") fail(`compatibility ledger row ${index} has an invalid source_local_id`);
+    if (typeof row.kind !== "string" || row.kind === "") fail(`compatibility ledger row ${index} has an invalid kind`);
+    if (isDeferredScopeRow(row)) {
+      fail(`current compatibility ledger contains deferred scope row ${row.source_local_id}`);
+    }
     return row.surface_id;
   });
   if (new Set(ids).size !== ids.length) fail("compatibility ledger has duplicate surface ids");
-  if (JSON.stringify([...ids].sort()) !== JSON.stringify([...denominatorIds].sort())) fail("ledger surface ids differ from the final-zero denominator");
+  const sourceLocalIds = ledger.rows.map(({source_local_id}) => source_local_id);
+  if (new Set(sourceLocalIds).size !== sourceLocalIds.length) fail("compatibility ledger has duplicate source-local identities");
+  if (JSON.stringify([...ids].sort()) !== JSON.stringify([...denominator.ids].sort())) fail("ledger surface ids differ from the final-zero denominator");
+  const scope = ledger.rows.map(({source_local_id, kind}) => `${source_local_id}\u0000${kind}`);
+  const expectedScope = denominator.rows.map(({source_local_id, kind}) => `${source_local_id}\u0000${kind}`);
+  if (JSON.stringify(scope.sort()) !== JSON.stringify(expectedScope.sort())) fail("ledger source-local identities and kinds differ from the current denominator");
   if (ledger.counts?.canonical_surfaces !== ids.length) fail("ledger canonical surface count is not exact");
+  return ledger;
+}
+
+async function validateDeferredLedger(filePath, expectedRows) {
+  const ledger = object(JSON.parse(await fs.readFile(filePath, "utf8")), "deferred ledger");
+  exactKeys(ledger, ["schema", "rows"], "deferred ledger");
+  if (ledger.schema !== "wikijump.compatibility_deferred_ledger.v1") {
+    fail("deferred ledger has an unsupported schema");
+  }
+  if (!Array.isArray(ledger.rows) || ledger.rows.length === 0) fail("deferred ledger rows must be non-empty");
+  const rows = ledger.rows.map((row, index) => validateScopeRow(row, index, "deferred ledger"));
+  if (new Set(rows.map(({source_local_id}) => source_local_id)).size !== rows.length) {
+    fail("deferred ledger has duplicate source-local identities");
+  }
+  if (JSON.stringify(rows.map(scopeKey).sort()) !== JSON.stringify(expectedRows.map(scopeKey).sort())) {
+    fail("deferred ledger does not exactly own the deferred denominator");
+  }
   return ledger;
 }
 
@@ -208,7 +294,7 @@ function finalZeroCounts(denominator) {
 
 export function parseArgs(argv) {
   const args = {};
-  const names = new Set(["ledger", "denominator", "standing-matrix", "output"]);
+  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "output"]);
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
     if (flag === "--help" || flag === "-h") return {help: true};
@@ -222,12 +308,14 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --standing-matrix FILE --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, standingMatrix}) {
+export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix}) {
   const denominatorValue = validateDenominator(JSON.parse(await fs.readFile(denominator, "utf8")));
-  await validateLedger(ledger, denominatorValue.ids);
+  await validateLedger(ledger, denominatorValue);
+  const deferredDenominatorRows = validateDeferredDenominator(JSON.parse(await fs.readFile(deferredDenominator, "utf8")));
+  await validateDeferredLedger(deferredLedger, deferredDenominatorRows);
   const matrix = await validateStandingMatrix(standingMatrix, denominatorValue.ids);
   const counts = finalZeroCounts(denominatorValue);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
@@ -237,9 +325,16 @@ export async function verifyFinalZero({ledger, denominator, standingMatrix}) {
     status: "pass",
     merge_commit: matrix.merge_commit,
     counts,
+    scope_admission: {
+      status: "pass",
+      current_deferred_rows: 0,
+      deferred_rows: deferredDenominatorRows.length,
+    },
     inputs: {
       ledger: {path: path.resolve(ledger), sha256: await sha256File(ledger)},
       denominator: {path: path.resolve(denominator), sha256: await sha256File(denominator)},
+      deferred_denominator: {path: path.resolve(deferredDenominator), sha256: await sha256File(deferredDenominator)},
+      deferred_ledger: {path: path.resolve(deferredLedger), sha256: await sha256File(deferredLedger)},
       standing_matrix: {path: path.resolve(standingMatrix), sha256: await sha256File(standingMatrix)},
     },
   };
@@ -254,6 +349,8 @@ export async function main(argv, {stdout = console.log} = {}) {
   const receipt = await verifyFinalZero({
     ledger: args.ledger,
     denominator: args.denominator,
+    deferredDenominator: args["deferred-denominator"],
+    deferredLedger: args["deferred-ledger"],
     standingMatrix: args["standing-matrix"],
   });
   const sealed = await sealJsonNoReplace(args.output, receipt);
