@@ -7,6 +7,7 @@ import {
   verifyOpen43SettingsBrowserCleanup,
   verifyOpen43SettingsBrowserCase,
 } from "../src/open43-settings-browser-candidate-contract.mjs";
+import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const hash = (character) => character.repeat(64);
 
@@ -749,7 +750,13 @@ test("settings cleanup requires exact public restoration without page cleanup au
     before: settings,
     after: structuredClone(settings),
   };
-  const resources = [{ kind: "settings", released: true }];
+  const beforeSha256 = sha256Value(settings);
+  const resources = [{
+    kind: "settings",
+    identity: { site_id: 17, category_ids: [11, 12], before_sha256: beforeSha256 },
+    released: true,
+    release_proof: { before_sha256: beforeSha256, after_sha256: beforeSha256 },
+  }];
   assert.equal(
     verifyOpen43SettingsBrowserCleanup(proof, resources).public_restoration_verified,
     true,
@@ -775,5 +782,12 @@ test("settings cleanup requires exact public restoration without page cleanup au
   assert.throws(
     () => verifyOpen43SettingsBrowserCleanup({ before: {}, after: {} }, resources),
     /pre-run public settings\.site/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCleanup(proof, [{
+      ...resources[0],
+      identity: { ...resources[0].identity, site_id: 18 },
+    }]),
+    /resource identity/u,
   );
 });

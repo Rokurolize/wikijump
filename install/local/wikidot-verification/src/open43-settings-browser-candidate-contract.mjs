@@ -498,10 +498,24 @@ export function verifyOpen43SettingsBrowserCleanup(rawProof, resources) {
   ) {
     throw new Error("settings cleanup left a run resource unreleased");
   }
+  const resource = resources[0];
+  const identity = requirePlainObject(resource.identity, "settings cleanup resource identity");
+  const releaseProof = requirePlainObject(resource.release_proof, "settings cleanup resource release proof");
+  const beforeSha256 = sha256Value(before);
+  const afterSha256 = sha256Value(after);
+  if (
+    identity.site_id !== before.site.site_id ||
+    JSON.stringify(identity.category_ids) !== JSON.stringify(before.categories.map(({ category_id }) => category_id)) ||
+    identity.before_sha256 !== beforeSha256 ||
+    releaseProof.before_sha256 !== beforeSha256 ||
+    releaseProof.after_sha256 !== afterSha256
+  ) {
+    throw new Error("settings cleanup resource identity does not match the restored settings");
+  }
   return {
     public_absence_verified: true,
     public_restoration_verified: true,
-    settings_restored_sha256: sha256Value(after),
+    settings_restored_sha256: afterSha256,
     resources_released: resources.length,
   };
 }
