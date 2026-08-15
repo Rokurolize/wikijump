@@ -7,6 +7,7 @@ import {
   verifyOpen43B610ShellCleanup,
 } from "./open43-b610-shell-candidate-contract.mjs";
 import {
+  DEFAULT_SETTLE_MS,
   PAGE_CHROME_SKELETON,
   canaryForUrl,
 } from "./standing-browser-canaries.mjs";
@@ -91,6 +92,17 @@ function browserContract(canary) {
   });
 }
 
+function requiredRuntimeBindings(privateInput) {
+  if (!Array.isArray(privateInput.runtime_bindings) || privateInput.runtime_bindings.length === 0) {
+    throw new Error("B610 private input must contain required runtime bindings");
+  }
+  const roles = new Set(privateInput.runtime_bindings.map((binding) => binding?.role));
+  for (const role of ["caddy", "framerail", "deepwell", "files"]) {
+    if (!roles.has(role)) throw new Error(`B610 runtime bindings are missing ${role}`);
+  }
+  return privateInput.runtime_bindings;
+}
+
 async function observeShell(page, faviconRoutePrefix) {
   return await page.evaluate(async (prefix) => {
     const header = document.querySelector("#header");
@@ -163,6 +175,7 @@ export function createOpen43B610ShellCandidateCaseSet() {
         privateInput.site_slug !== SITE_SLUG ||
         privateInput.page_slug !== PAGE_SLUG
       ) throw new Error("B610 private input must select the fixed SCP-9506 fixture");
+      const runtimeBindings = requiredRuntimeBindings(privateInput);
       const pageUrl = new URL(`/${PAGE_SLUG}`, candidatePageOrigin(candidateIdentity)).href;
       const canary = canaryForUrl(pageUrl);
       if (canary === null || canary.slug !== PAGE_SLUG) throw new Error("B610 page is not an existing browser canary");
@@ -181,6 +194,7 @@ export function createOpen43B610ShellCandidateCaseSet() {
           canary_slug: canary.slug,
           theme_family: canary.theme_family,
           viewport: VIEWPORT,
+          settle_ms: DEFAULT_SETTLE_MS,
           initial_fixture_id: INITIAL_FIXTURE_ID,
           settled_fixture_id: SETTLED_FIXTURE_ID,
         },
@@ -202,11 +216,18 @@ export function createOpen43B610ShellCandidateCaseSet() {
             contract: browserContract(canary),
             viewport: VIEWPORT,
             timeoutMs: 300_000,
-            settleMs: 0,
+            settleMs: DEFAULT_SETTLE_MS,
             onPhase: async (phase) => candidateBrowserContexts.setActiveFixture(
               phase === "settled" ? SETTLED_FIXTURE_ID : INITIAL_FIXTURE_ID,
             ),
           });
+          capture.settled_interval = {
+            policy: "standing-browser-canary",
+            settle_ms: DEFAULT_SETTLE_MS,
+            resource_completion_status: capture.document?.resource_completion?.status ?? null,
+            initial_phase: capture.first_paint?.document?.phase ?? null,
+            settled_phase: capture.document?.phase ?? null,
+          };
           const shell = await observeShell(page, plan.expected.favicon_route_prefix);
           return [{
             case_id: OPEN43_B610_SHELL_CASE_IDS[0],
@@ -226,11 +247,12 @@ export function createOpen43B610ShellCandidateCaseSet() {
       };
       return {
         sourceFiles: SOURCE_FILES,
-        runtimeBindings: [],
+        runtimeBindings,
         privateInputIdentity: {
           fixture_id: FIXTURE_ID,
           site_slug: SITE_SLUG,
           page_slug: PAGE_SLUG,
+          runtime_bindings_sha256: sha256Value(runtimeBindings),
           private_input_sha256: privateInputSha256,
         },
         plan: {

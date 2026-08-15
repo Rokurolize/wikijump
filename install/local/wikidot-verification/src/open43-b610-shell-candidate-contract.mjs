@@ -44,6 +44,17 @@ function verifyCapture(capture, plan) {
   if (value.document?.phase !== "settled") {
     throw new Error("B610 settled capture phase is missing");
   }
+  const settledInterval = requirePlainObject(value.settled_interval, "B610 settled interval");
+  if (
+    settledInterval.policy !== "standing-browser-canary" ||
+    settledInterval.settle_ms !== plan.browser.settle_ms ||
+    settledInterval.settle_ms <= 0 ||
+    settledInterval.resource_completion_status !== "complete" ||
+    settledInterval.initial_phase !== "domcontentloaded_immediate_observation" ||
+    settledInterval.settled_phase !== "settled"
+  ) {
+    throw new Error("B610 settled interval is missing or unproved");
+  }
   const artifacts = [
     requireArtifact(value.first_paint?.screenshot, "B610 initial screenshot"),
     requireArtifact(value.settled_viewport_screenshot, "B610 settled viewport screenshot"),
