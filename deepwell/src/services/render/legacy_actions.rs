@@ -205,25 +205,17 @@ impl LegacyActionRegistry {
             .collect()
     }
 
-    /// Return a sidecar only when the saved exact Wikidot controls and FTML
-    /// requirements have the same cardinality. Runtime includes or custom DOM
-    /// shapes therefore disable the whole surface instead of shifting an
-    /// ordinal onto another control.
+    /// Return a sidecar only when the saved inert anchors and FTML requirements
+    /// have the same cardinality. An extra authored or runtime anchor therefore
+    /// disables the whole surface instead of shifting an ordinal onto another
+    /// control. Standalone buttons with a custom class remain eligible because
+    /// Wikidot replaces the default class with the authored class.
     pub fn browser_actions_for_wikidot_html(
         &self,
         body: &str,
     ) -> Vec<LegacyBrowserAction> {
         let actions = self.browser_actions();
-        let controls = body
-            .split(r#"class="#)
-            .skip(1)
-            .filter_map(|classes| classes.split_once('"').map(|(classes, _)| classes))
-            .filter(|classes| {
-                classes
-                    .split_ascii_whitespace()
-                    .any(|class| class == "wiki-standalone-button")
-            })
-            .count();
+        let controls = body.matches(r#"href="javascript:;""#).count();
         if controls == actions.len() {
             actions
         } else {
@@ -309,7 +301,7 @@ mod tests {
 
     #[test]
     fn wikidot_html_keeps_exact_control_shape_without_private_identifiers() {
-        let mut body = r#"<p><a class="wiki-standalone-button" id="wj-button-abc" href="javascript:;">print</a></p>"#.to_owned();
+        let mut body = r#"<p><a class="g07-print-class" id="wj-button-abc" href="javascript:;">print</a></p>"#.to_owned();
         let registry = LegacyActionRegistry {
             actions: vec![RegisteredLegacyAction {
                 renderer_id: "wj-button-abc".to_owned(),
@@ -321,7 +313,7 @@ mod tests {
 
         assert_eq!(
             body,
-            r#"<p><a class="wiki-standalone-button" href="javascript:;">print</a></p>"#,
+            r#"<p><a class="g07-print-class" href="javascript:;">print</a></p>"#,
         );
         assert!(!body.contains("wikijump"));
         assert!(!body.contains("wj-"));

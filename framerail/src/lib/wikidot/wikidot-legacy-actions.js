@@ -187,9 +187,7 @@ const bind = (elements, element, action) => {
  * @param {Set<ActionControl>} elements
  */
 const bindStandaloneActions = (root, actions, elements) => {
-  const candidates = [
-    ...root.querySelectorAll('a.wiki-standalone-button[href="javascript:;"]')
-  ]
+  const candidates = [...root.querySelectorAll('a[href="javascript:;"]')]
   for (const [element, action] of planWikidotStandaloneActionBindings(
     /** @type {ActionControl[]} */ (candidates),
     actions

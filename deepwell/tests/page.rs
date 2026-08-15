@@ -7621,13 +7621,13 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
 
     for html in [saved, preview.body] {
         assert_eq!(
-            html.matches("wiki-standalone-button").count(),
-            5,
-            "all supported standalone actions must retain the Wikidot button class: {html}",
+            html.matches(r#"class="wiki-standalone-button""#).count(),
+            4,
+            "standalone actions without a custom class must retain the Wikidot button class: {html}",
         );
         assert!(
-            html.contains("custom-action"),
-            "documented custom button classes must survive rendering: {html}",
+            html.contains(r#"class="custom-action""#),
+            "the custom print class must replace the default class: {html}",
         );
         assert_eq!(
             html.matches(r#"href="javascript:;""#).count(),

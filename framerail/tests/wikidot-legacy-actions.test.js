@@ -62,8 +62,36 @@ test("typed standalone actions call only their fixed browser behavior", async ()
   ])
 })
 
+test("custom-class standalone print controls use the typed browser action", async () => {
+  const selector = 'a[href="javascript:;"]'
+  const print = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [print] : [])
+  }
+  print.parentElement = root
+  let printCalls = 0
+
+  wikidotLegacyActions(root, {
+    actions: [{ type: "print" }],
+    runtime: { print: () => (printCalls += 1) }
+  })
+
+  assert.equal(
+    await listeners.get("click")({
+      target: print,
+      preventDefault: () => {},
+      stopPropagation: () => {}
+    }),
+    true
+  )
+  assert.equal(printCalls, 1)
+})
+
 test("standalone edit clicks use the exact control set and fail closed on extras", async () => {
-  const selector = 'a.wiki-standalone-button[href="javascript:;"]'
+  const selector = 'a[href="javascript:;"]'
   const exact = actionElement()
   const listeners = new Map()
   const root = {
