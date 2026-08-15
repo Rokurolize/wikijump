@@ -32,6 +32,18 @@ export const SCREENSHOT_MAX_BYTES = 16 * 1024 * 1024;
 export const DIAGNOSTIC_MAX_BYTES = 1024 * 1024;
 export const SHUTDOWN_TIMEOUT_MS = 10_000;
 
+function repositoryEvidencePath(value) {
+  if (typeof value !== "string" || value.length === 0 || path.isAbsolute(value) || path.normalize(value) !== value) {
+    throw new Error("historical evidence must use an exact repository-relative path");
+  }
+  const resolved = path.resolve(REPO_ROOT, value);
+  const relative = path.relative(REPO_ROOT, resolved);
+  if (relative.startsWith(`..${path.sep}`) || relative === ".." || path.isAbsolute(relative)) {
+    throw new Error("historical evidence must remain inside the repository");
+  }
+  return resolved;
+}
+
 function nextArg(argv, index, flag) {
   const value = argv[index + 1];
   if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
@@ -139,6 +151,10 @@ export function validateTemporalRunContract(contract) {
   }
   if (contract.historical_evidence?.schema !== "wikijump.page_pane_lazy_browser.v1" || contract.historical_evidence?.classification !== "historical_history_only") {
     throw new Error("temporal run contract historical receipt is not classified as history-only");
+  }
+  repositoryEvidencePath(contract.historical_evidence.path);
+  if (!/^[0-9a-f]{64}$/u.test(contract.historical_evidence.sha256 ?? "")) {
+    throw new Error("temporal run contract historical receipt SHA-256 is malformed");
   }
   const scenarios = SCENARIO_ORDER.map((id) => {
     const scenario = contract.capture.scenarios?.[id];
@@ -298,14 +314,15 @@ export function validateSourceIdentity(sourceIdentity, runtimeIdentity) {
 }
 
 export async function verifyHistoricalEvidence(historicalEvidence) {
-  if (!historicalEvidence || historicalEvidence.schema !== "wikijump.page_pane_lazy_browser.v1" || historicalEvidence.classification !== "historical_history_only" || typeof historicalEvidence.path !== "string" || !path.isAbsolute(historicalEvidence.path)) {
-    throw new Error("historical evidence must use an absolute retained path");
+  if (!historicalEvidence || historicalEvidence.schema !== "wikijump.page_pane_lazy_browser.v1" || historicalEvidence.classification !== "historical_history_only") {
+    throw new Error("historical evidence is not a classified history-only receipt");
   }
+  const retainedPath = repositoryEvidencePath(historicalEvidence.path);
   if (!/^[0-9a-f]{64}$/u.test(historicalEvidence.sha256 ?? "")) {
     throw new Error("historical evidence SHA-256 is malformed");
   }
-  const {identity, bytes} = await readFileIdentity(historicalEvidence.path, "historical_evidence");
-  if (identity.path !== historicalEvidence.path || identity.sha256 !== historicalEvidence.sha256) {
+  const {identity, bytes} = await readFileIdentity(retainedPath, "historical_evidence");
+  if (identity.path !== retainedPath || identity.sha256 !== historicalEvidence.sha256) {
     throw new Error("historical evidence SHA-256 does not match the retained artifact");
   }
   let receipt;

@@ -15,6 +15,7 @@ import {requireNonEmptyString, requirePlainObject, requireSha256, sha256File} fr
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const CONTRACT_PATH = path.join(REPOSITORY_ROOT, "install/local/wikidot-verification/fixtures/framerail-route-action-browser/run-contract.json");
 const CONTRACT_RELATIVE_PATH = "install/local/wikidot-verification/fixtures/framerail-route-action-browser/run-contract.json";
+const HISTORICAL_EVIDENCE_RELATIVE_PATH = "install/local/wikidot-verification/artifacts/page-pane-lazy-browser-20260713.json";
 const TEMPORAL_OUTPUT_NAME = "framerail-route-action-temporal";
 const SOURCE_FILES = Object.freeze([...new Set([
   ...STANDING_BROWSER_EXECUTION_MODULES,
@@ -26,6 +27,7 @@ const SOURCE_FILES = Object.freeze([...new Set([
   "install/local/wikidot-verification/src/browser-session.mjs",
   "install/local/wikidot-verification/src/browser-render-evidence.mjs",
   CONTRACT_RELATIVE_PATH,
+  HISTORICAL_EVIDENCE_RELATIVE_PATH,
   "docs/development/framerail-route-action-evidence.json",
 ])]);
 
@@ -93,6 +95,7 @@ function assertTemporalIdentity(result, contract, contractSha256, candidateIdent
 export async function createFramerailRouteActionCandidateCaseSet({temporalRunner = runTemporalCapture} = {}) {
   const contractBytes = await fs.readFile(CONTRACT_PATH);
   const contract = JSON.parse(contractBytes.toString("utf8"));
+  if (contract.historical_evidence?.path !== HISTORICAL_EVIDENCE_RELATIVE_PATH) throw new Error("temporal contract historical evidence is not bound to its source identity");
   const contractSha256 = await sha256File(CONTRACT_PATH);
   const definitions = caseDefinitions(contract);
   const definitionById = new Map(definitions.map((definition) => [definition.case_id, definition]));

@@ -303,7 +303,7 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     status: 200
   })
   assert.deepEqual(contract.historical_evidence, {
-    path: "/home/roku/wjlab/evidence/page-pane-lazy-browser-20260713.json",
+    path: "install/local/wikidot-verification/artifacts/page-pane-lazy-browser-20260713.json",
     sha256: "17b9b5215d40c32123ada66b43c5d5a37ea4a06a37bf2ebf99c0595e39c61ba9",
     schema: "wikijump.page_pane_lazy_browser.v1",
     classification: "historical_history_only"

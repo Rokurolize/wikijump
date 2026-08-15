@@ -9,7 +9,7 @@
     "sha256": "497fe825f1efc723744844dcf65acd2a8c6fbc2645900642f6250fa62c1e0176"
   },
   "historical_evidence": {
-    "path": "/home/roku/wjlab/evidence/page-pane-lazy-browser-20260713.json",
+    "path": "install/local/wikidot-verification/artifacts/page-pane-lazy-browser-20260713.json",
     "sha256": "17b9b5215d40c32123ada66b43c5d5a37ea4a06a37bf2ebf99c0595e39c61ba9",
     "schema": "wikijump.page_pane_lazy_browser.v1",
     "classification": "historical_history_only"
@@ -31,7 +31,7 @@
   ],
   "capture": {
     "script": "install/local/wikidot-verification/scripts/capture-framerail-route-action-temporal.mjs",
-    "script_sha256": "47c64880c862560d284b09579247dc239e1636c59be8452460f25df5e57188a8",
+    "script_sha256": "03d2689efb0b436ea03cd6f1e4952dacbc7ca165f68012ef7344f2536b0783d0",
     "scenarios": {
       "denial": {
         "result_oracle_source": "failure_control_identity",
