@@ -4,6 +4,7 @@ import test from "node:test";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import {
   OPEN43_B690_GEOMETRY_FIXTURE,
+  verifyOpen43B690FixedSixPage,
   verifyOpen43B690GeometryInitial,
   verifyOpen43B690GeometrySettled,
 } from "../src/open43-browser-690-candidate-case-set.mjs";
@@ -103,12 +104,78 @@ function settledFixture() {
   return { observations, plan };
 }
 
+function sixPageFixture() {
+  const slugs = [
+    "scp-9506",
+    "scp-744",
+    "scp-2117",
+    "scp-5516",
+    "scp-8980",
+    "theme:basalt",
+  ];
+  const plan = {
+    page_origin: pageOrigin,
+    viewport: { width: 1366, height: 900 },
+    fixture_identity_sha256: sha256Value(OPEN43_B690_GEOMETRY_FIXTURE),
+    live_reference_sha256: "b".repeat(64),
+    live_policy_sha256: "c".repeat(64),
+    six_page_slugs: slugs,
+    live_capture_sha256_by_slug: Object.fromEntries(
+      slugs.map((slug, index) => [slug, String(index).repeat(64).slice(0, 64)]),
+    ),
+  };
+  const observations = {
+    fixture_identity_sha256: plan.fixture_identity_sha256,
+    live_reference_sha256: plan.live_reference_sha256,
+    live_policy_sha256: plan.live_policy_sha256,
+    sequence: 3,
+    viewport: structuredClone(plan.viewport),
+    browser_environment: { executable_sha256: "d".repeat(64) },
+    pages: slugs.map((slug) => {
+      const url = new URL(`/${encodeURI(slug)}`, pageOrigin).href;
+      const traced = slug !== "scp-9506";
+      return {
+        slug,
+        input_url: url,
+        final_url: url,
+        navigation_status: 200,
+        resource_completion: {
+          status: "complete",
+          load_ready_state: "complete",
+          font_status: "loaded",
+          incomplete_image_count: 0,
+        },
+        live_capture_sha256: plan.live_capture_sha256_by_slug[slug],
+        artifact_sha256: {
+          domcontentloaded_immediate: "e".repeat(64),
+          settled_viewport: "f".repeat(64),
+          settled_full_page: "0".repeat(64),
+        },
+        comparison: {
+          status: "pass",
+          anomalies: [],
+          attributes: { status: "pass" },
+          domcontentloaded_immediate_probes: [{ status: "pass" }],
+          settled_probes: [{ status: "pass" }],
+          domcontentloaded_immediate_custom_properties: [],
+          domcontentloaded_immediate_first_divergent_element: traced
+            ? { kind: "none" }
+            : null,
+          settled_first_divergent_element: traced ? { kind: "none" } : null,
+        },
+      };
+    }),
+  };
+  return { observations, plan };
+}
+
 test("B690 initial geometry has an executable source-owned candidate adapter", async () => {
   const selected = await candidateCaseSet("open43-690-geometry");
   assert.equal(selected.id, "open43-690-geometry");
   assert.deepEqual(selected.caseIds, [
     "B690_GEOMETRY_INITIAL",
     "B690_GEOMETRY_SETTLED",
+    "B690_FIXED_SIX_PAGE_DENOMINATOR",
   ]);
 });
 
@@ -168,5 +235,42 @@ test("B690 verifies settled resource completion before the total-height boundary
   assert.throws(
     () => verifyOpen43B690GeometrySettled(tall, plan),
     /page-content height diverged/u,
+  );
+});
+
+test("B690 verifies one fixed complete six-page denominator", () => {
+  const { observations, plan } = sixPageFixture();
+  assert.deepEqual(verifyOpen43B690FixedSixPage(observations, plan), {
+    verified: true,
+    pairs_total: 6,
+  });
+
+  const reordered = structuredClone(observations);
+  reordered.pages.reverse();
+  assert.throws(
+    () => verifyOpen43B690FixedSixPage(reordered, plan),
+    /six-page order mismatched/u,
+  );
+
+  const incomplete = structuredClone(observations);
+  incomplete.pages[0].resource_completion.font_status = "loading";
+  assert.throws(
+    () => verifyOpen43B690FixedSixPage(incomplete, plan),
+    /resources did not settle/u,
+  );
+
+  const stateDrift = structuredClone(observations);
+  stateDrift.pages[5].comparison.attributes.status = "fail";
+  assert.throws(
+    () => verifyOpen43B690FixedSixPage(stateDrift, plan),
+    /six-page comparison failed/u,
+  );
+
+  const divergent = structuredClone(observations);
+  divergent.pages[4].comparison.settled_first_divergent_element.kind =
+    "style_divergence";
+  assert.throws(
+    () => verifyOpen43B690FixedSixPage(divergent, plan),
+    /first divergence found/u,
   );
 });

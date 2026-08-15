@@ -5,13 +5,10 @@ import {
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
 import { compareFirstDivergenceTraces } from "./first-divergent-element.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
-import {
-  captureDocumentObservation,
-  waitForBrowserParitySettledResources,
-} from "./standing-browser-parity-observation.mjs";
 import { loadSealedLiveReference } from "./standing-browser-parity-reference.mjs";
 import {
   DEFAULT_THRESHOLDS,
+  compareCaptures,
   validateThresholds,
 } from "./standing-browser-parity-contract.mjs";
 import {
@@ -25,6 +22,8 @@ export const OPEN43_B690_GEOMETRY_INITIAL_CASE_ID =
   "B690_GEOMETRY_INITIAL";
 export const OPEN43_B690_GEOMETRY_SETTLED_CASE_ID =
   "B690_GEOMETRY_SETTLED";
+export const OPEN43_B690_FIXED_SIX_PAGE_CASE_ID =
+  "B690_FIXED_SIX_PAGE_DENOMINATOR";
 
 export const OPEN43_B690_GEOMETRY_FIXTURE = Object.freeze({
   fixture_id: "open43-standing-browser-initial-geometry",
@@ -60,6 +59,9 @@ const TRACE_CANARIES = Object.freeze(
     return canary;
   }),
 );
+const SIX_PAGE_SLUGS = Object.freeze(
+  STANDING_BROWSER_CANARIES.map(({ slug }) => slug),
+);
 const SOURCE_FILES = Object.freeze([
   ...new Set([
     ...STANDING_BROWSER_EXECUTION_MODULES,
@@ -87,18 +89,24 @@ function exactFixture(privateInput) {
   return fixture;
 }
 
-function liveDocumentBySlug(liveReference, phase) {
+function liveRecordBySlug(liveReference) {
   return Object.fromEntries(
-    liveReference.records
-      .filter(({ input }) =>
-        OPEN43_B690_GEOMETRY_FIXTURE.trace_canary_slugs.includes(
-          new URL(input.live_url).pathname.slice(1),
-        ),
-      )
-      .map(({ input, capture }) => {
-        const document = phase === "settled" ? capture.document : capture.first_paint.document;
-        return [decodeURIComponent(new URL(input.live_url).pathname.slice(1)), document];
-      }),
+    liveReference.records.map((record) => [
+      decodeURIComponent(new URL(record.input.live_url).pathname.slice(1)),
+      record,
+    ]),
+  );
+}
+
+function liveDocumentBySlug(records, phase) {
+  return Object.fromEntries(
+    OPEN43_B690_GEOMETRY_FIXTURE.trace_canary_slugs.map((slug) => {
+      const capture = records[slug]?.capture;
+      return [
+        slug,
+        phase === "settled" ? capture?.document : capture?.first_paint?.document,
+      ];
+    }),
   );
 }
 
@@ -253,6 +261,110 @@ export function verifyOpen43B690GeometrySettled(observations, plan) {
   });
 }
 
+export function verifyOpen43B690FixedSixPage(observations, plan) {
+  const value = requirePlainObject(
+    observations,
+    `${OPEN43_B690_FIXED_SIX_PAGE_CASE_ID} observations`,
+  );
+  if (
+    value.fixture_identity_sha256 !== plan.fixture_identity_sha256 ||
+    value.live_reference_sha256 !== plan.live_reference_sha256 ||
+    value.live_policy_sha256 !== plan.live_policy_sha256 ||
+    value.sequence !== 3 ||
+    JSON.stringify(value.viewport) !== JSON.stringify(plan.viewport) ||
+    !Array.isArray(value.pages) ||
+    value.pages.length !== plan.six_page_slugs.length
+  ) {
+    throw new Error("B690 fixed six-page denominator or identity mismatched");
+  }
+  requireSha256(
+    value.browser_environment.executable_sha256,
+    "B690 browser executable SHA-256",
+  );
+  if (
+    JSON.stringify(value.pages.map(({ slug }) => slug)) !==
+    JSON.stringify(plan.six_page_slugs)
+  ) {
+    throw new Error("B690 fixed six-page order mismatched");
+  }
+
+  for (const page of value.pages) {
+    const expectedUrl = new URL(
+      `/${encodeURI(page.slug)}`,
+      plan.page_origin,
+    ).href;
+    if (
+      page.input_url !== expectedUrl ||
+      page.final_url !== expectedUrl ||
+      page.navigation_status !== 200 ||
+      page.live_capture_sha256 !==
+        plan.live_capture_sha256_by_slug[page.slug]
+    ) {
+      throw new Error(`B690 fixed six-page navigation mismatched: ${page.slug}`);
+    }
+    const resource = page.resource_completion;
+    if (
+      resource?.status !== "complete" ||
+      resource.load_ready_state !== "complete" ||
+      resource.font_status !== "loaded" ||
+      resource.incomplete_image_count !== 0
+    ) {
+      throw new Error(`B690 fixed six-page resources did not settle: ${page.slug}`);
+    }
+    const artifacts = page.artifact_sha256 ?? {};
+    for (const [name, sha256] of Object.entries(artifacts)) {
+      requireSha256(sha256, `${page.slug} ${name} artifact SHA-256`);
+    }
+    if (
+      JSON.stringify(Object.keys(artifacts).sort()) !==
+      JSON.stringify([
+        "domcontentloaded_immediate",
+        "settled_full_page",
+        "settled_viewport",
+      ])
+    ) {
+      throw new Error(`B690 fixed six-page artifacts mismatched: ${page.slug}`);
+    }
+    const comparison = requirePlainObject(
+      page.comparison,
+      `${page.slug} complete comparison`,
+    );
+    const immediateProbes = comparison.domcontentloaded_immediate_probes;
+    const settledProbes = comparison.settled_probes;
+    const immediateProperties =
+      comparison.domcontentloaded_immediate_custom_properties;
+    if (
+      comparison.status !== "pass" ||
+      !Array.isArray(comparison.anomalies) ||
+      comparison.anomalies.length !== 0 ||
+      comparison.attributes?.status !== "pass" ||
+      !Array.isArray(immediateProbes) ||
+      immediateProbes.some(({ status }) => status !== "pass") ||
+      !Array.isArray(settledProbes) ||
+      settledProbes.some(({ status }) => status !== "pass") ||
+      !Array.isArray(immediateProperties) ||
+      immediateProperties.some(({ status }) => status !== "pass")
+    ) {
+      throw new Error(`B690 fixed six-page comparison failed: ${page.slug}`);
+    }
+    const initialDivergence =
+      comparison.domcontentloaded_immediate_first_divergent_element;
+    const settledDivergence = comparison.settled_first_divergent_element;
+    if (
+      (initialDivergence !== null &&
+        !new Set(["none", "resource_incomplete"]).has(
+          initialDivergence?.kind,
+        )) ||
+      (settledDivergence !== null && settledDivergence?.kind !== "none")
+    ) {
+      throw new Error(
+        `B690 fixed six-page first divergence found: ${page.slug}`,
+      );
+    }
+  }
+  return { verified: true, pairs_total: value.pages.length };
+}
+
 function verifyCleanup(proof, resources) {
   const value = requirePlainObject(proof, "B690 cleanup proof");
   if (
@@ -276,6 +388,7 @@ export function createOpen43B690GeometryCandidateCaseSet() {
     caseIds: Object.freeze([
       OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
       OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
+      OPEN43_B690_FIXED_SIX_PAGE_CASE_ID,
     ]),
     async prepareRun({
       candidateIdentity,
@@ -301,20 +414,23 @@ export function createOpen43B690GeometryCandidateCaseSet() {
         policySha256: fixture.live_policy_sha256,
         policyFilePath: fixture.live_policy_path,
       });
-      const liveInitialDocuments = liveDocumentBySlug(liveReference, "initial");
-      const liveSettledDocuments = liveDocumentBySlug(liveReference, "settled");
+      const liveRecords = liveRecordBySlug(liveReference);
+      const liveInitialDocuments = liveDocumentBySlug(liveRecords, "initial");
+      const liveSettledDocuments = liveDocumentBySlug(liveRecords, "settled");
       const pageOrigin = candidatePageOrigin(candidateIdentity);
       const plan = {
-        schema: "wikijump.open43_b690_geometry_candidate_plan.v2",
+        schema: "wikijump.open43_b690_geometry_candidate_plan.v3",
         case_ids: [
           OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
           OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
+          OPEN43_B690_FIXED_SIX_PAGE_CASE_ID,
         ],
         page_origin: pageOrigin,
         viewport: VIEWPORT,
         thresholds: validateThresholds(DEFAULT_THRESHOLDS),
         phase: "domcontentloaded_immediate_observation",
         trace_canary_slugs: [...fixture.trace_canary_slugs],
+        six_page_slugs: [...SIX_PAGE_SLUGS],
         fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
         live_reference_sha256: liveReference.sha256,
         live_policy_sha256: fixture.live_policy_sha256,
@@ -346,6 +462,12 @@ export function createOpen43B690GeometryCandidateCaseSet() {
             pageContentHeight(liveSettledDocuments[slug], `${slug} settled live document`),
           ]),
         ),
+        live_capture_sha256_by_slug: Object.fromEntries(
+          SIX_PAGE_SLUGS.map((slug) => [
+            slug,
+            sha256Value(liveRecords[slug].capture),
+          ]),
+        ),
       };
       return {
         sourceFiles: SOURCE_FILES,
@@ -367,57 +489,71 @@ export function createOpen43B690GeometryCandidateCaseSet() {
           });
           const initialPages = [];
           const settledPages = [];
-          for (const canary of TRACE_CANARIES) {
-            await candidateBrowserContexts.setActiveFixture(
-              OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
-            );
+          const sixPages = [];
+          for (const [index, canary] of STANDING_BROWSER_CANARIES.entries()) {
             const url = new URL(
               `/${encodeURI(canary.slug)}`,
               pageOrigin,
             ).href;
-            const page = await browser.context.newPage();
-            try {
-              const response = await page.goto(url, {
-                waitUntil: "domcontentloaded",
-                timeout: 300_000,
-              });
-              const contract = {
-                first_divergence_trace: canary.first_divergence_trace,
-                geometry_selectors: ["#page-content"],
-              };
-              const initialObservation = await captureDocumentObservation(page, {
-                contract,
-                phase: "domcontentloaded_immediate_observation",
+            const capture =
+              await candidateBrowserContexts.captureCandidateObservation({
+                context: browser.context,
+                url,
+                label: "b690-fixed-six-page",
+                index,
+                contract: canary,
                 viewport: VIEWPORT,
+                timeoutMs: 300_000,
+                settleMs: 0,
+                async onPhase(phase) {
+                  await candidateBrowserContexts.setActiveFixture(
+                    phase === "settled"
+                      ? OPEN43_B690_GEOMETRY_SETTLED_CASE_ID
+                      : OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
+                  );
+                },
               });
+            const liveCapture = liveRecords[canary.slug].capture;
+            sixPages.push({
+              slug: canary.slug,
+              input_url: capture.input_url,
+              final_url: capture.final_url,
+              navigation_status: capture.navigation_status,
+              resource_completion: capture.document.resource_completion,
+              live_capture_sha256: sha256Value(liveCapture),
+              artifact_sha256: {
+                domcontentloaded_immediate: capture.first_paint.screenshot.sha256,
+                settled_viewport: capture.settled_viewport_screenshot.sha256,
+                settled_full_page: capture.screenshot.sha256,
+              },
+              comparison: compareCaptures(
+                capture,
+                liveCapture,
+                plan.thresholds,
+                undefined,
+                canary,
+              ),
+            });
+            if (TRACE_CANARIES.includes(canary)) {
               initialPages.push({
                 slug: canary.slug,
                 input_url: url,
-                final_url: page.url(),
-                navigation_status: response?.status() ?? 0,
-                candidate_trace: initialObservation.first_divergence_trace,
+                final_url: capture.final_url,
+                navigation_status: capture.navigation_status,
+                candidate_trace:
+                  capture.first_paint.document.first_divergence_trace,
                 live_trace: liveInitialDocuments[canary.slug].first_divergence_trace,
-              });
-              await candidateBrowserContexts.setActiveFixture(
-                OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
-              );
-              const resourceCompletion =
-                await waitForBrowserParitySettledResources(page, 300_000);
-              const settledObservation = await captureDocumentObservation(page, {
-                contract,
-                phase: "settled",
-                viewport: VIEWPORT,
               });
               settledPages.push({
                 slug: canary.slug,
                 input_url: url,
-                final_url: page.url(),
-                navigation_status: response?.status() ?? 0,
-                resource_completion: resourceCompletion,
-                candidate_trace: settledObservation.first_divergence_trace,
+                final_url: capture.final_url,
+                navigation_status: capture.navigation_status,
+                resource_completion: capture.document.resource_completion,
+                candidate_trace: capture.document.first_divergence_trace,
                 live_trace: liveSettledDocuments[canary.slug].first_divergence_trace,
                 candidate_page_content_height: pageContentHeight(
-                  settledObservation,
+                  capture.document,
                   `${canary.slug} settled candidate document`,
                 ),
                 live_page_content_height: pageContentHeight(
@@ -425,8 +561,6 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                   `${canary.slug} settled live document`,
                 ),
               });
-            } finally {
-              await page.close();
             }
           }
           return [
@@ -454,6 +588,18 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 pages: settledPages,
               },
             },
+            {
+              case_id: OPEN43_B690_FIXED_SIX_PAGE_CASE_ID,
+              observations: {
+                fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
+                live_reference_sha256: liveReference.sha256,
+                live_policy_sha256: fixture.live_policy_sha256,
+                sequence: 3,
+                viewport: VIEWPORT,
+                browser_environment: browser.environment,
+                pages: sixPages,
+              },
+            },
           ];
         },
         async cleanup() {
@@ -468,6 +614,9 @@ export function createOpen43B690GeometryCandidateCaseSet() {
           }
           if (caseId === OPEN43_B690_GEOMETRY_SETTLED_CASE_ID) {
             return verifyOpen43B690GeometrySettled(observations, this.plan);
+          }
+          if (caseId === OPEN43_B690_FIXED_SIX_PAGE_CASE_ID) {
+            return verifyOpen43B690FixedSixPage(observations, this.plan);
           }
           throw new Error(`unknown B690 case: ${caseId}`);
         },
