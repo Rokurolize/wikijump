@@ -2,6 +2,7 @@ import { fixtureState, hasExactKeys, requestContextHeaders } from "./context.js"
 import { pages, toArticleViewResult } from "./data.js"
 
 const LISTPAGES_NAVIGATION_EXTRA = /^p\/[1-9][0-9]*$/u
+const SEARCH_SITE_EXTRA = /^q\/.+$/u
 const NEW_PAGE_EDIT_EXTRA = /^edit\/true(?:\/.*)?$/u
 const DATA_FORM_CREATE_SLUG = "data-form-create-flow:example"
 const DATA_FORM_CONTROLS_CREATE_SLUG = "data-form-controls-flow:example"
@@ -417,6 +418,9 @@ const pageForArticleRoute = (route) => {
         "</div>"
       ].join("")
     }
+  }
+  if (route.slug === "search:site") {
+    return SEARCH_SITE_EXTRA.test(route.extra) ? page : null
   }
   if (
     (route.slug === DATA_FORM_EDIT_SLUG ||

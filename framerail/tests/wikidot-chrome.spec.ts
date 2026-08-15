@@ -76,6 +76,9 @@ test("Wikidot-compatible search chrome preserves its two inputs and focus behavi
   await expect(query).toHaveValue("codex search probe")
   await form.locator('input[type="submit"]').click({ force: true })
   await expect(page).toHaveURL(/\/search:site\/q\/codex%20search%20probe$/u)
+  await expect(page.locator("#page-content")).toContainText(
+    "Search is temporarily unavailable, we are working to bring it online!"
+  )
 })
 
 test("SearchAll module submits the selected live area route", async ({ page }) => {
