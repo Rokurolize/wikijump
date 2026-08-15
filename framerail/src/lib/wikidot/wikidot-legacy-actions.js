@@ -266,6 +266,7 @@ const initializeWikidotRateWidgets = (root, elements) => {
     const score = widget.ownerDocument.createElement("input")
     score.name = "score"
     score.type = "hidden"
+    score.value = `${rating}`
     widget.append(score)
     groups.push(images)
   }

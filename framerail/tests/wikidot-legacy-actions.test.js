@@ -189,6 +189,37 @@ test("Rate sidecars bind only the exact renderer-owned control sequence", () => 
   )
 })
 
+test("initialized Rate stars preserve the live hidden score value", () => {
+  const created = []
+  const widget = {
+    dataset: { rating: "4" },
+    ownerDocument: {
+      createElement: () => {
+        const element = actionElement()
+        element.append = () => {}
+        created.push(element)
+        return element
+      }
+    },
+    style: {},
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    append: () => {}
+  }
+  const root = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelectorAll: (selector) =>
+      selector === ".page-rate-widget-start" ? [widget] : []
+  }
+
+  wikidotLegacyActions(root, { actions: [], runtime: {} })
+
+  assert.equal(created.at(-1).name, "score")
+  assert.equal(created.at(-1).type, "hidden")
+  assert.equal(created.at(-1).value, "4")
+})
+
 test("unsupported sidecar actions fail closed without calling authored names", async () => {
   let called = false
   const handled = await performWikidotLegacyAction(
