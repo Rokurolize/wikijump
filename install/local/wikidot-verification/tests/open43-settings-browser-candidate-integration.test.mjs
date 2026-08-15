@@ -4,12 +4,13 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
-  createOpen43SettingsGroupCandidateCaseSet,
   createOpen43SettingsBrowserCandidateCaseSet,
+  createOpen43SettingsGroupCandidateCaseSet,
 } from "../src/open43-settings-browser-candidate-case-set.mjs";
 import { parityBrowserThrottleConfig } from "../src/standing-browser-parity-browser-session.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
@@ -537,6 +538,49 @@ test("the real toolbar candidate group runs through the canonical runner with an
   }
   await assert.rejects(runCandidateCaseSet(options), /output directory already exists/u);
   assert.deepEqual((await fs.readdir(path.join(outputDir, "cases"))).sort(), ["S757_TOOLBAR_INITIAL.json", "S757_TOOLBAR_SETTLED.json"]);
+});
+
+test("#1046 runs its three public cases without changing unrelated settings", async (t) => {
+  const expectedCaseIds = [
+    "S1046_ADMIN_INITIAL",
+    "S1046_ADMIN_SETTLED",
+    "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+  ];
+  assert.deepEqual((await candidateCaseSet("open43-settings-admin")).caseIds, expectedCaseIds);
+
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "admin",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-admin-candidate-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  const result = await runCandidateCaseSet({
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: {},
+    privateInputSha256: sha256Value("private-input"),
+    outputDir: path.join(root, "evidence"),
+    caseSet,
+    dependencies: dependencies(events, []),
+  });
+
+  assert.deepEqual(result.denominator.case_ids, expectedCaseIds);
+  assert.deepEqual(result.cases.map(({ case_id: caseId }) => caseId), expectedCaseIds);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(state.site.description, "Before description");
+  assert.equal(state.site.google_analytics_enabled, false);
+  assert.equal(state.site.show_top_toolbar, false);
+  assert.equal(state.categories.get("_default").theme_kind, "built_in");
+  assert.equal(state.categories.get("corpus").theme_kind, "built_in");
+  const actions = events.filter(({ seam }) => seam === "action").map(({ name }) => name);
+  assert.equal(actions.includes("theme"), false);
+  assert.equal(actions.includes("toolbar"), false);
+  assert.equal(actions.filter((name) => name === "analytics").length, 1);
+  assert.deepEqual(events.filter(({ seam, label }) => seam === "browser-adapter" && label !== undefined).map(({ label }) => label), ["S1046_ADMIN", "S1046_ADMIN"]);
 });
 
 test("the real Settings CaseSet verifies direct and client theme evidence independently", async (t) => {

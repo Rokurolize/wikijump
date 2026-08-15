@@ -22,6 +22,9 @@ export {
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
 const VIEWPORTS = Object.freeze([1280, 767, 479]);
+const OPEN43_SETTINGS_ADMIN_CASE_IDS = Object.freeze(
+  OPEN43_SETTINGS_BROWSER_CASE_IDS.filter((caseId) => caseId.startsWith("S1046_")),
+);
 
 const siteSettings = (site) => ({
   site_id: site.site_id,
@@ -202,6 +205,10 @@ class Open43SettingsRun {
     }
     this.#before = await this.#settings();
     this.#settingsResource = this.#resources.register("settings", { site_id: site.site_id, category_ids: [category.category_id, transitionCategory.category_id], before_sha256: sha256Value(this.#before) });
+    if (this.#group === "admin") {
+      await this.#action("site", siteFields(site), { expectSuccess: true });
+      return;
+    }
     await this.#action("analytics", { siteId: site.site_id, expectedSettingsRevision: site.settings_revision, enabled: false, profile: "" }, { expectSuccess: true });
     const afterAnalytics = await this.#site();
     await this.#action("toolbar", { siteId: site.site_id, expectedSettingsRevision: afterAnalytics.settings_revision, top: false, bottom: afterAnalytics.show_bottom_toolbar }, { expectSuccess: true });
@@ -244,7 +251,42 @@ class Open43SettingsRun {
     const pageUrl = new URL(`/${encodeURIComponent(this.#fixture.default_category.page_slug)}`, this.#session.pageOrigin).href;
     const transitionUrl = new URL(`/${encodeURIComponent(this.#fixture.transition_category.page_slug)}`, this.#session.pageOrigin).href;
     this.#verificationPlan = { ...this.#fixedPlan, group: this.#group, default_page_url: pageUrl, transition_page_url: transitionUrl };
-    const temporal = (pair, settled) => ({
+    if (this.#group === "admin") {
+      const denied = await Promise.all([
+        this.#browser.deniedAdmin("anonymous"),
+        this.#browser.deniedAdmin("non_admin"),
+      ]);
+      const matrix = await this.#matrix();
+      const adminUrl = new URL("/_admin", this.#session.pageOrigin).href;
+      const adminInitial = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 0 });
+      const adminInitialSite = await this.#site();
+      const adminInitialValuesSha256 = sha256Value(generalValues(adminInitialSite));
+      const adminSettledValuesSha256 = sha256Value({ ...generalValues(adminInitialSite), description: this.#fixedPlan.general_ui_description_marker });
+      let staleValuesSha256 = null;
+      let stalePublicRevision = null;
+      const generalLifecycle = await this.#browser.exerciseGeneralAdmin({
+        description: this.#fixedPlan.general_ui_description_marker,
+        onLoaded: async () => {
+          const site = await this.#site();
+          await this.#action("analytics", { siteId: site.site_id, expectedSettingsRevision: site.settings_revision, enabled: site.google_analytics_enabled, profile: site.google_analytics_profile ?? "" }, { expectSuccess: true });
+        },
+        onStaleObserved: async () => {
+          const site = await this.#site();
+          staleValuesSha256 = sha256Value(generalValues(site));
+          stalePublicRevision = site.settings_revision;
+        },
+      });
+      const adminSettledSite = await this.#site();
+      const adminSettled = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 1 });
+      this.#verificationPlan = { ...this.#verificationPlan, admin_url: adminUrl, admin_initial_values_sha256: adminInitialValuesSha256, admin_settled_values_sha256: adminSettledValuesSha256, admin_initial_revision: adminInitialSite.settings_revision, admin_settled_revision: adminInitialSite.settings_revision + 3, general_description_sha256: sha256Value(this.#fixedPlan.general_ui_description_marker), matrix_site_id: matrix.site_id, matrix_before_revision: matrix.before_revision, matrix_admin_after_revision: matrix.admin_after_revision, matrix_before_sha256: matrix.before_sha256, matrix_admin_after_sha256: matrix.expected_admin_after_sha256 };
+      const { success_dom_values: successDomValues, ...generalLifecycleReceipt } = generalLifecycle;
+      return [
+        { case_id: "S1046_ADMIN_INITIAL", observations: { temporal: temporal(adminInitial, false), admin: { route: "/_admin", status: adminInitial.capture.navigation_status, controls: adminInitial.initial.admin.controls, values_sha256: sha256Value(adminInitial.initial.admin.general_values) }, denied } },
+        { case_id: "S1046_ADMIN_SETTLED", observations: { temporal: temporal(adminSettled, true), lifecycle: { ...generalLifecycleReceipt, stale_mutated: staleValuesSha256 !== adminInitialValuesSha256, stale_public_revision: stalePublicRevision, success_public_values_sha256: sha256Value(generalValues(adminSettledSite)), success_public_revision: adminSettledSite.settings_revision, success_dom_values_sha256: sha256Value(successDomValues), settled_values_sha256: sha256Value(adminSettled.settled.admin.general_values), reload_values_sha256: sha256Value(adminSettled.reload.admin.general_values), client_navigation_values_sha256: sha256Value(adminSettled.client.admin.general_values), client_navigation_preserved_document: adminSettled.client_navigation_preserved_document, client_resource_completion: adminSettled.client_resource_completion, reload_url: adminSettled.reload_url, console_errors: [...new Set([...(generalLifecycleReceipt.console_errors ?? []), ...adminSettled.console_errors])].sort() } } },
+        { case_id: "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX", observations: { actor_sessions: this.#actorSessions, outcomes: matrix.outcomes } },
+      ];
+    }
+    const groupTemporal = (pair, settled) => ({
       phase: settled ? pair.capture.document.phase : pair.capture.first_paint.document.phase,
       sequence: settled ? 2 : 1,
       input_url: pair.capture.input_url,
@@ -283,8 +325,8 @@ class Open43SettingsRun {
         };
       };
       return [
-        { case_id: "S754_ANALYTICS_INITIAL", observations: { disabled_temporal: temporal(disabled, false), enabled_temporal: temporal(enabled, false), disabled: analyticsState(disabled, false), enabled: analyticsState(enabled, true) } },
-        { case_id: "S754_ANALYTICS_SETTLED", observations: { temporal: temporal(enabled, true), admin_lifecycle: lifecycle, analytics: { profile: enabled.settled.analytics.profile, queue: enabled.settled.analytics.queue, reload_queue: enabled.reload.analytics.queue, reload_url: enabled.reload_url, client_navigation_queue: enabled.client.analytics.queue, client_navigation_preserved_document: enabled.client_navigation_preserved_document, client_resource_completion: enabled.client_resource_completion, remote_request_count: enabled.remote_analytics_request_count, initial_navigation_csp_header_sha256: enabled.initial_navigation_csp_header_sha256, csp_nonce_matches_initial_navigation_header: enabled.csp_nonce_matches_initial_navigation_header, console_errors: enabled.console_errors, failed_request_identity_sha256: failedRequestIdentity(enabled) } } },
+        { case_id: "S754_ANALYTICS_INITIAL", observations: { disabled_temporal: groupTemporal(disabled, false), enabled_temporal: groupTemporal(enabled, false), disabled: analyticsState(disabled, false), enabled: analyticsState(enabled, true) } },
+        { case_id: "S754_ANALYTICS_SETTLED", observations: { temporal: groupTemporal(enabled, true), admin_lifecycle: lifecycle, analytics: { profile: enabled.settled.analytics.profile, queue: enabled.settled.analytics.queue, reload_queue: enabled.reload.analytics.queue, reload_url: enabled.reload_url, client_navigation_queue: enabled.client.analytics.queue, client_navigation_preserved_document: enabled.client_navigation_preserved_document, client_resource_completion: enabled.client_resource_completion, remote_request_count: enabled.remote_analytics_request_count, initial_navigation_csp_header_sha256: enabled.initial_navigation_csp_header_sha256, csp_nonce_matches_initial_navigation_header: enabled.csp_nonce_matches_initial_navigation_header, console_errors: enabled.console_errors, failed_request_identity_sha256: failedRequestIdentity(enabled) } } },
       ];
     }
     if (this.#group === "toolbar") {
@@ -335,8 +377,8 @@ class Open43SettingsRun {
       navigation_from_url: pair.navigation_from_url,
     });
     return [
-      { case_id: "S755_THEME_INITIAL", observations: { default_temporal: temporal(defaultTheme, false), transition_temporal: temporal(transitionTheme, false), category_transition_temporal: clientTransitionTemporal(transitionTheme, false), default_theme: themeState(defaultTheme.initial.theme, this.#fixedPlan.theme_marker, false, defaultTheme, defaultTheme.capture), transition_theme: themeState(transitionTheme.initial.theme, this.#fixedPlan.transition_theme_marker, true, transitionTheme, transitionTheme.capture), category_transition_theme: categoryState(transitionTheme.client_initial.theme, transitionTheme) } },
-      { case_id: "S755_THEME_SETTLED", observations: { default_temporal: temporal(defaultTheme, true), transition_temporal: temporal(transitionTheme, true), category_transition_temporal: clientTransitionTemporal(transitionTheme, true), default_theme: { ...themeState(defaultTheme.settled.theme, this.#fixedPlan.theme_marker, false, defaultTheme, defaultTheme.capture), reload_url: defaultTheme.reload_url }, transition_theme: { ...themeState(transitionTheme.settled.theme, this.#fixedPlan.transition_theme_marker, true, transitionTheme, transitionTheme.capture), reload_url: transitionTheme.reload_url }, category_transition_theme: categoryState(transitionTheme.client.theme, transitionTheme), setting_changes: { default: this.#settingChanges.theme, transition: this.#settingChanges.transitionTheme } } },
+      { case_id: "S755_THEME_INITIAL", observations: { default_temporal: groupTemporal(defaultTheme, false), transition_temporal: groupTemporal(transitionTheme, false), category_transition_temporal: clientTransitionTemporal(transitionTheme, false), default_theme: themeState(defaultTheme.initial.theme, this.#fixedPlan.theme_marker, false, defaultTheme, defaultTheme.capture), transition_theme: themeState(transitionTheme.initial.theme, this.#fixedPlan.transition_theme_marker, true, transitionTheme, transitionTheme.capture), category_transition_theme: categoryState(transitionTheme.client_initial.theme, transitionTheme) } },
+      { case_id: "S755_THEME_SETTLED", observations: { default_temporal: groupTemporal(defaultTheme, true), transition_temporal: groupTemporal(transitionTheme, true), category_transition_temporal: clientTransitionTemporal(transitionTheme, true), default_theme: { ...themeState(defaultTheme.settled.theme, this.#fixedPlan.theme_marker, false, defaultTheme, defaultTheme.capture), reload_url: defaultTheme.reload_url }, transition_theme: { ...themeState(transitionTheme.settled.theme, this.#fixedPlan.transition_theme_marker, true, transitionTheme, transitionTheme.capture), reload_url: transitionTheme.reload_url }, category_transition_theme: categoryState(transitionTheme.client.theme, transitionTheme), setting_changes: { default: this.#settingChanges.theme, transition: this.#settingChanges.transitionTheme } } },
     ];
   }
 
@@ -435,13 +477,16 @@ class Open43SettingsRun {
     if (this.#before !== null) {
       const defaultBefore = this.#before.categories.find(({ slug }) => slug === this.#fixture.default_category.slug);
       const transitionBefore = this.#before.categories.find(({ slug }) => slug === this.#fixture.transition_category.slug);
-      for (const restore of [
+      const restores = [
         async () => { const site = await this.#site(true); await this.#action("site", siteFields({ ...site, ...this.#before.site }), { cleanup: true, expectSuccess: true }); },
+      ];
+      if (this.#group !== "admin") restores.push(
         async () => { const category = await this.#category("default_category", true); await this.#action("theme", themeFields(this.#siteId, category, defaultBefore), { cleanup: true, expectSuccess: true }); },
         async () => { const category = await this.#category("transition_category", true); await this.#action("theme", themeFields(this.#siteId, category, transitionBefore), { cleanup: true, expectSuccess: true }); },
         async () => { const site = await this.#site(true); await this.#action("toolbar", { siteId: this.#siteId, expectedSettingsRevision: site.settings_revision, top: this.#before.site.show_top_toolbar, bottom: this.#before.site.show_bottom_toolbar }, { cleanup: true, expectSuccess: true }); },
         async () => { const site = await this.#site(true); await this.#action("analytics", { siteId: this.#siteId, expectedSettingsRevision: site.settings_revision, enabled: this.#before.site.google_analytics_enabled, profile: this.#before.site.google_analytics_profile ?? "" }, { cleanup: true, expectSuccess: true }); },
-      ]) await restore().catch((error) => failures.push(error));
+      );
+      for (const restore of restores) await restore().catch((error) => failures.push(error));
     }
     let after = null;
     try { if (this.#before !== null) after = await this.#settings(true); } catch (error) { failures.push(error); }
@@ -483,9 +528,11 @@ export function createOpen43SettingsGroupCandidateCaseSet({
       ? OPEN43_SETTINGS_THEME_CASE_IDS
       : group === "toolbar"
         ? OPEN43_SETTINGS_TOOLBAR_CASE_IDS
-      : group === "all"
-        ? OPEN43_SETTINGS_BROWSER_CASE_IDS
-        : null;
+        : group === "admin"
+          ? OPEN43_SETTINGS_ADMIN_CASE_IDS
+          : group === "all"
+            ? OPEN43_SETTINGS_BROWSER_CASE_IDS
+            : null;
   if (caseIds === null) throw new Error(`unknown Open43 settings candidate group: ${group}`);
   const id = group === "all" ? "open43-settings-browser" : `open43-settings-${group}`;
   return Object.freeze({
