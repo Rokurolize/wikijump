@@ -137,6 +137,139 @@ test("issue #1372 candidate case set invokes the temporal seam and maps all 84 r
   assert.equal((await run.cleanup()).public_absence_verified, true);
 });
 
+const contractPath1372 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../fixtures/framerail-route-action-browser/run-contract.json");
+const scriptPath1372 = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../scripts/capture-framerail-route-action-temporal.mjs");
+
+async function issue1372EvidenceRows(candidateCommitValue) {
+  const contract = JSON.parse(await fs.readFile(contractPath1372, "utf8"));
+  const {scenarios, subjects} = validateTemporalRunContract(contract);
+  return scenarios.flatMap((scenario) => subjects.flatMap((subject) => scenario.intervals.map((interval) => ({
+    actor_class: "permitted",
+    capture_errors: [],
+    dom_sha256: hash("a"),
+    interval,
+    scenario: scenario.id,
+    screenshot_sha256: hash("b"),
+    source_revision: candidateCommitValue,
+    subject_id: subject.id,
+  }))));
+}
+
+async function issue1372PrepareRun({evidenceBuilder = (rows) => rows, candidateCommitValue = commit("1"), candidateTreeValue = commit("2")} = {}) {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "framerail-candidate-seam-"));
+  const contractSha256 = createHash("sha256").update(await fs.readFile(contractPath1372)).digest("hex");
+  const scriptSha256 = createHash("sha256").update(await fs.readFile(scriptPath1372)).digest("hex");
+  const urls = Object.fromEntries(["denial", "failure", "success"].map((scenario) => [scenario, {
+    missing_page: `https://scpaiueouiuiuiui.wikijump.localhost:18443/${scenario}-missing`,
+    saved_page: `https://scpaiueouiuiuiui.wikijump.localhost:18443/${scenario}-saved`,
+  }]));
+  const caseSet = await createFramerailRouteActionCandidateCaseSet({
+    temporalRunner: async (args) => {
+      const temporalOutput = args.outputDir;
+      await fs.mkdir(temporalOutput, {recursive: true});
+      const evidence = await evidenceBuilder(await issue1372EvidenceRows(candidateCommitValue));
+      await fs.writeFile(path.join(temporalOutput, "records.json"), JSON.stringify({
+        status: "captured",
+        source_revision: candidateCommitValue,
+        source_tree: candidateTreeValue,
+        evidence,
+        capture: {
+          source_identity: {wikijump_commit: candidateCommitValue, wikijump_tree: candidateTreeValue},
+          runtime_source_identity: {wikijump_commit: candidateCommitValue, wikijump_tree: candidateTreeValue},
+          browser_identity: {executable: {path: "/tmp/browser", sha256: hash("c")}, version: "fixture"},
+          fixture_identity: {path: "/tmp/fixture.json", sha256: hash("d")},
+          failure_control_identity: {path: "/tmp/failure.json", sha256: hash("e")},
+          runtime_identity: {path: "/tmp/runtime.json", sha256: hash("f")},
+          run_contract_identity: {path: contractPath1372, sha256: contractSha256},
+          capture_script_identity: {path: scriptPath1372, sha256: scriptSha256},
+          request_gate_config: path.join(temporalOutput, "request-gate-config.json"),
+        },
+        cleanup_observed: {browser_sessions_closed: 3, egress_proxies_closed: true, request_gate_flushed: true, capture_lock_released: true, storage_states_removed: true},
+      }), {flag: "wx"});
+      return 0;
+    },
+  });
+  const run = caseSet.prepareRun({
+    runId: "candidate-case-1372-fake-boundary",
+    candidateIdentity: {candidate: {wikijump_commit: candidateCommitValue, wikijump_tree: candidateTreeValue, endpoint: {scheme: "https", host: "scpaiueouiuiuiui.wikijump.localhost", port: 18443}}},
+    privateInputSha256: hash("0"),
+    outputDir: outputRoot,
+    privateInput: {temporal_capture: {
+      browser_executable: "/tmp/browser",
+      browser_identity: {sha256: hash("c"), version: "fixture"},
+      fixture_identity: "/tmp/fixture.json",
+      fixture_identity_sha256: hash("d"),
+      failure_control_identity: "/tmp/failure.json",
+      failure_control_identity_sha256: hash("e"),
+      runtime_identity: "/tmp/runtime.json",
+      runtime_identity_sha256: hash("f"),
+      actor_classes: {denial: "denied", failure: "denied", success: "permitted"},
+      storage_states: {denial: "/tmp/denial.json", failure: "/tmp/failure-state.json", success: "/tmp/success.json"},
+      urls,
+      runtime_bindings: [],
+    }},
+    signal: null,
+    resources: {},
+  });
+  return {caseSet, run, outputRoot};
+}
+
+test("issue #1372 candidate seam maps and verifies every registered temporal row exactly once", async (t) => {
+  const {caseSet, run, outputRoot} = await issue1372PrepareRun();
+  t.after(() => fs.rm(outputRoot, {recursive: true, force: true}));
+  assert.equal(caseSet.caseIds.length, 84);
+  assert.equal(new Set(caseSet.caseIds).size, 84);
+  assert.equal(run.plan.case_ids.length, 84);
+  assert.equal(new Set(run.plan.case_ids).size, 84);
+
+  const rows = await run.execute();
+  assert.equal(rows.length, 84);
+  assert.deepEqual([...rows.map(({case_id: caseId}) => caseId)].sort(), [...caseSet.caseIds].sort());
+  const pairs = rows.map(({observations}) => `${observations.scenario}:${observations.subject_id}:${observations.interval}`);
+  assert.equal(new Set(pairs).size, 84);
+
+  for (const row of rows) assert.equal(run.verifyCase(row.case_id, row.observations).verified, true);
+  const proof = await run.cleanup();
+  assert.equal(proof.public_absence_verified, true);
+  assert.equal(run.verifyCleanup(proof).public_absence_verified, true);
+});
+
+test("issue #1372 candidate seam rejects duplicate, unregistered, and missing evidence rows", async (t) => {
+  const boundaries = [
+    ["duplicate", (rows) => [rows[0], ...rows], /duplicates/u],
+    ["unregistered", (rows) => [...rows, {...rows[0], subject_id: "pane:unknown"}], /unregistered/u],
+    ["missing", (rows) => rows.slice(1), /missing/u],
+    ["not-an-array", () => null, /must be an array/u],
+  ];
+  for (const [label, build, error] of boundaries) {
+    await t.test(label, async () => {
+      const {run, outputRoot} = await issue1372PrepareRun({evidenceBuilder: build});
+      t.after(() => fs.rm(outputRoot, {recursive: true, force: true}));
+      await assert.rejects(run.execute(), error);
+    });
+  }
+});
+
+test("issue #1372 candidate seam verifyCase rejects drifted observations", async (t) => {
+  const {run, outputRoot} = await issue1372PrepareRun();
+  t.after(() => fs.rm(outputRoot, {recursive: true, force: true}));
+  const rows = await run.execute();
+  const first = rows[0];
+  const good = first.observations;
+  assert.throws(() => run.verifyCase(first.case_id, {...good, source_revision: commit("9")}), /not exact/u);
+  assert.throws(() => run.verifyCase(first.case_id, {...good, dom_sha256: "not-a-sha"}), /not exact/u);
+  assert.throws(() => run.verifyCase(first.case_id, {...good, capture_errors: ["drift"]}), /not exact/u);
+  const other = rows[rows.length - 1];
+  assert.throws(() => run.verifyCase(first.case_id, other.observations), /not exact/u);
+});
+
+test("issue #1372 candidate seam verifyCleanup requires the public absence proof", async (t) => {
+  const {run, outputRoot} = await issue1372PrepareRun();
+  t.after(() => fs.rm(outputRoot, {recursive: true, force: true}));
+  assert.throws(() => run.verifyCleanup({}), /did not prove owned-resource cleanup/u);
+  assert.throws(() => run.verifyCleanup({public_absence_verified: false}), /did not prove owned-resource cleanup/u);
+});
+
 test("candidate case registry exposes the real #1026 user identity adapter", async () => {
   const caseSet = await candidateCaseSet("open43-q1026-user-identity");
   assert.equal(caseSet.id, "open43-q1026-user-identity");

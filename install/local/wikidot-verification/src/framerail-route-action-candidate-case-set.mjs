@@ -143,10 +143,24 @@ export async function createFramerailRouteActionCandidateCaseSet({temporalRunner
           if (code !== 0) throw new Error(`temporal capture exited with status ${code}`);
           result = JSON.parse((await fs.readFile(path.join(temporalOutputDir, "records.json"))).toString("utf8"));
           assertTemporalIdentity(result, contract, contractSha256, candidateIdentity, input, temporalOutputDir);
+          if (!Array.isArray(result.evidence)) throw new Error("temporal result evidence must be an array");
+          const rowKey = ({scenario, subject_id, interval}) => `${scenario}\u0000${subject_id}\u0000${interval}`;
+          const recordsByKey = new Map();
+          for (const record of result.evidence) {
+            const key = rowKey(record);
+            const matches = recordsByKey.get(key) ?? [];
+            matches.push(record);
+            recordsByKey.set(key, matches);
+          }
+          const definitionKeys = new Set(definitions.map((definition) => rowKey(definition)));
+          for (const key of recordsByKey.keys()) {
+            if (!definitionKeys.has(key)) throw new Error("temporal result contains an unregistered evidence row");
+          }
           return definitions.map((definition) => {
-            const record = result.evidence.find((candidate) => candidate.scenario === definition.scenario && candidate.subject_id === definition.subject_id && candidate.interval === definition.interval);
-            if (!record) throw new Error(`temporal result is missing ${definition.case_id}`);
-            return {case_id: definition.case_id, observations: record};
+            const matches = recordsByKey.get(rowKey(definition)) ?? [];
+            if (matches.length === 0) throw new Error(`temporal result is missing ${definition.case_id}`);
+            if (matches.length > 1) throw new Error(`temporal result duplicates ${definition.case_id}`);
+            return {case_id: definition.case_id, observations: matches[0]};
           });
         },
         async cleanup() {
