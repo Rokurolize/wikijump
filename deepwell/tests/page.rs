@@ -20574,10 +20574,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
                 "FROM page_revision WHERE page.page_id = page_revision.page_id ",
                 "AND page.site_id = $1 AND page.slug LIKE $2 || '%'",
             ),
-            [
-                Value::from(site_id),
-                Value::from(SCAN_SOURCE_PREFIX),
-            ],
+            [Value::from(site_id), Value::from(SCAN_SOURCE_PREFIX)],
         ))
         .await
         .expect("Backlinks scan-boundary pages should receive their revisions");
