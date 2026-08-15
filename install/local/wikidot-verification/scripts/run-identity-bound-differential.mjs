@@ -158,6 +158,7 @@ function evaluateReport(run, report, cleanup, runId) {
   const identity = report.runtime_identity;
   requireValue(identity?.wikijump_sha === run.candidate.source.wikijump_sha && identity?.ftml_sha === run.candidate.source.ftml_sha && identity?.dependency_lock_sha256 === run.candidate.build.cargo_lock_sha256 && identity?.executable_sha256 === run.candidate.build.binary_sha256 && SHA256.test(identity?.runtime_config_sha256), "runtime identity does not match the candidate build");
   requireValue(cleanup?.schema === CLEANUP_SCHEMA && cleanup.status === "pass" && cleanup.run_id === runId && cleanup.run_root_removed === true && cleanup.public_absence_verified === true && cleanup.resources_released === true && cleanup.vacant === true && cleanup.browser_closed === true && (!cleanup.compose_started || (cleanup.compose_down_exit_code === 0 && cleanup.compose_down_signal === null)), "runtime stack cleanup did not pass");
+  requireValue(sameIdentity(cleanup.candidate_receipt, run.candidateManifest), "runtime stack cleanup is not bound to the candidate receipt");
   requireValue(Array.isArray(report.page_receipts) && report.page_receipts.length === 1 && report.page_receipts[0]?.cleanup?.status === "removed", "saved runtime page cleanup is incomplete");
   const comparison = report.comparisons[0];
   requireValue(run.captures.some((capture) => capture.path === comparison.identities?.capture_file) && Number.isSafeInteger(comparison.identities?.page_identity), "runtime result is not bound to saved Wikidot capture evidence");
@@ -254,7 +255,7 @@ export async function main(argv, {spawn = spawnSync} = {}) {
     case_id: run.caseId,
     status: passed ? "pass" : "fail",
     reason,
-    binding: {candidate_manifest: run.candidateManifest, runtime_identity: report?.runtime_identity ?? null, source: run.source, site_data: {state_fixtures: run.stateFixtures}, wikidot_evidence: {captures: run.captures, external_references: run.externalReferences}, actor: run.actor, context: run.context, site: run.site, url: run.url, executables: run.executables},
+    binding: {candidate_manifest: run.candidateManifest, artifact_key: run.candidate.artifact_key?.key?.replace(/^candidate-v3-/u, "") ?? null, runtime_identity: report?.runtime_identity ?? null, source: run.source, site_data: {state_fixtures: run.stateFixtures}, wikidot_evidence: {captures: run.captures, external_references: run.externalReferences}, actor: run.actor, context: run.context, site: run.site, url: run.url, executables: run.executables},
     channels: evaluation?.channels ?? {raw_html: {status: "fail"}, parsed_dom: {status: "fail"}, visible_text: {status: "fail"}, browser_intervals: {status: "not_applicable", basis: run.channels.browser_intervals.basis, reason: run.channels.browser_intervals.reason}},
     cleanup: cleanup ?? {schema: CLEANUP_SCHEMA, status: "fail", run_id: runId, public_absence_verified: false, resources_released: false, vacant: false, browser_closed: false, reason: "the runtime stack published no cleanup receipt"},
     command: {path: NODE, arguments: stackArgs, exit_code: command.status, signal: command.signal, stdout_sha256: sha256Hex(command.stdout ?? ""), stderr_sha256: sha256Hex(command.stderr ?? "")},

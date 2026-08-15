@@ -30,6 +30,7 @@ import {
   composeIdentityDocument,
   main as runStack,
   parseArgs as parseStackArgs,
+  requireOutputAbsent,
   resourcesAbsent,
   runtimeIdentity as stackRuntimeIdentity,
 } from "../scripts/run-generic-runtime-differential-stack.mjs";
@@ -1826,6 +1827,14 @@ test("stack controller uses the active Node executable and has no candidate buil
   );
   assert.match(source, /const NODE = process\.execPath;/u);
   assert.doesNotMatch(source, /build-deepwell-candidate|CARGO_TARGET_DIR|cargo build/u);
+});
+
+test("stack output guard rejects a broken symlink", async (t) => {
+  const root = await fsp.mkdtemp(path.join(os.tmpdir(), "runtime-output-guard-"));
+  t.after(() => fsp.rm(root, {recursive: true, force: true}));
+  const output = path.join(root, "report.json");
+  await fsp.symlink(path.join(root, "missing.json"), output);
+  assert.throws(() => requireOutputAbsent(output, "output"), /output already exists/u);
 });
 
 test("stack cleanup does not remove reusable candidate assets", async (t) => {

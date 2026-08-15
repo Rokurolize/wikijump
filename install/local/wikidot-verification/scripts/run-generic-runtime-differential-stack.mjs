@@ -127,6 +127,15 @@ export function resourcesAbsent(project, env, inspect = spawnSync) {
   }
 }
 
+export function requireOutputAbsent(target, name) {
+  try {
+    fs.lstatSync(target);
+    throw new Error(`${name} already exists: ${target}`);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+}
+
 function exactFtmlSha(cargoLock) {
   const matches = cargoLock
     .split(/^\[\[package\]\]\s*$/mu)
@@ -150,8 +159,10 @@ function isRecord(value) {
 
 export async function bindCandidate({repository, candidateManifest, binary}) {
   let manifest;
+  let candidateManifestBytes;
   try {
-    manifest = JSON.parse(await fsp.readFile(candidateManifest, "utf8"));
+    candidateManifestBytes = await fsp.readFile(candidateManifest);
+    manifest = JSON.parse(candidateManifestBytes.toString("utf8"));
   } catch (error) {
     throw new Error(`candidate manifest is unreadable: ${error.message}`);
   }
@@ -253,7 +264,7 @@ export async function bindCandidate({repository, candidateManifest, binary}) {
     sha256(await fsp.readFile(selectedBinary)) === build.binary_sha256,
     "binary hash does not match",
   );
-  return {manifest, binary: selectedBinary};
+  return {manifest, binary: selectedBinary, candidateReceipt: {path: candidateManifest, sha256: sha256Hex(candidateManifestBytes)}};
 }
 
 async function freePorts(count) {
@@ -474,11 +485,11 @@ export function runtimeIdentity(manifest, compose, config) {
 
 export async function main(argv) {
   const args = parseArgs(argv);
-  if (fs.existsSync(args.output)) throw new Error(`output already exists: ${args.output}`);
+  requireOutputAbsent(args.output, "output");
   const cleanupReceiptPath = `${args.output}.cleanup.json`;
   const stackLogPath = `${args.output}.stack.log`;
-  if (fs.existsSync(cleanupReceiptPath)) throw new Error(`cleanup receipt already exists: ${cleanupReceiptPath}`);
-  if (fs.existsSync(stackLogPath)) throw new Error(`stack log already exists: ${stackLogPath}`);
+  requireOutputAbsent(cleanupReceiptPath, "cleanup receipt");
+  requireOutputAbsent(stackLogPath, "stack log");
   const runId = args.runId;
   let boundCandidate;
   try {
@@ -488,7 +499,7 @@ export async function main(argv) {
     await publishBytesNoReplace(cleanupReceiptPath, `${JSON.stringify(failure)}\n`);
     throw error;
   }
-  const {manifest, binary} = boundCandidate;
+  const {manifest, binary, candidateReceipt} = boundCandidate;
   const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
   const project = runId;
   let runRoot = null;
@@ -503,6 +514,7 @@ export async function main(argv) {
     configPath = path.join(runRoot, "config.toml");
     identityPath = path.join(runRoot, "runtime-identity.json");
     const dockerConfigPath = path.join(runRoot, "docker-config");
+    for (const [target, name] of [[composePath, "compose output"], [configPath, "runtime config output"], [identityPath, "runtime identity output"]]) requireOutputAbsent(target, name);
     await fsp.mkdir(dockerConfigPath, {mode: 0o700});
     localDockerEnv = dockerEnv(dockerConfigPath);
     const [rpcPort, textBlockPort] = await freePorts(2);
@@ -656,6 +668,7 @@ export async function main(argv) {
       resources_released: resourcesReleased,
       vacant: false,
       browser_closed: true,
+      candidate_receipt: candidateReceipt,
     };
     cleanup.public_absence_verified = cleanup.status === "pass";
     cleanup.vacant = cleanup.status === "pass" && cleanup.run_root_removed;

@@ -17,7 +17,7 @@ import path from 'node:path';
 import {runCliIfMain} from '../src/cli-entry.mjs';
 import {sha256Hex} from '../src/canonical-json.mjs';
 import {sealJsonNoReplace} from '../src/standing-browser-parity-util.mjs';
-import {validateCandidateParityReceipt} from '../src/standing-browser-parity-receipt.mjs';
+import {STANDING_CANDIDATE_PARITY_ADMISSION_SCHEMA} from '../src/standing-browser-promotion-admission.mjs';
 
 import { buildMergeReadiness, parseDeviationLog } from '../src/deviation-log.mjs';
 
@@ -77,7 +77,7 @@ export function parseArgs(argv) {
 
 // Derive an effective exit code from a verdict file's own aggregate.
 export function verdictExitCode(verdict) {
-  if (['wikijump.compatibility_final_zero_receipt.v1', 'wikijump_syntax_differential.identity_bound_verdict.v1', 'wikijump_syntax_differential.runtime_stack_cleanup.v1', 'wikijump.standing_candidate_parity_receipt.v1'].includes(verdict?.schema)) {
+  if (['wikijump.compatibility_final_zero_receipt.v1', 'wikijump_syntax_differential.identity_bound_verdict.v1', 'wikijump_syntax_differential.runtime_stack_cleanup.v1', STANDING_CANDIDATE_PARITY_ADMISSION_SCHEMA].includes(verdict?.schema)) {
     return verdict.status === 'pass' ? 0 : verdict.status === 'fail' ? 1 : 2;
   }
   if (Object.hasOwn(verdict ?? {}, 'exit_code')) {
@@ -128,10 +128,10 @@ function verifyArtifactList(value, name) {
 function readCandidateReviewFreeze(file, frozenCandidateCommit) {
   const {value, reference} = readJsonInput(file, 'candidate review freeze');
   const candidate = value?.candidate;
-  if (value?.schema !== 'wikijump.standing_candidate_parity_identity.v1' || value?.status !== 'sealed' || typeof candidate?.run_id !== 'string' || candidate.run_id === '' || candidate.wikijump_commit !== frozenCandidateCommit || !/^[0-9a-f]{40}$/u.test(candidate.wikijump_tree ?? '') || /^(.)\1+$/u.test(candidate.wikijump_tree)) {
+  if (value?.schema !== 'wikijump.standing_candidate_parity_identity.v1' || value?.status !== 'sealed' || typeof candidate?.run_id !== 'string' || candidate.run_id === '' || !/^[0-9a-f]{64}$/u.test(value.artifact_key ?? '') || candidate.wikijump_commit !== frozenCandidateCommit || !/^[0-9a-f]{40}$/u.test(candidate.wikijump_tree ?? '') || /^(.)\1+$/u.test(candidate.wikijump_tree)) {
     throw new Error('candidate review freeze is missing or does not bind the frozen candidate');
   }
-  return {...reference, run_id: candidate.run_id, candidate_commit: candidate.wikijump_commit, candidate_tree: candidate.wikijump_tree};
+  return {...reference, run_id: candidate.run_id, artifact_key: value.artifact_key, candidate_commit: candidate.wikijump_commit, candidate_tree: candidate.wikijump_tree};
 }
 
 function requirePassingStatic(value, frozenCandidateCommit) {
@@ -141,29 +141,44 @@ function requirePassingStatic(value, frozenCandidateCommit) {
   return value;
 }
 
-function requireCandidate(value, candidateRunId, frozenCandidateCommit) {
+function requireCandidate(value, candidateRunId, frozenCandidateCommit, candidateArtifactKey) {
   const runtime = value?.binding?.runtime_identity;
   if (value?.schema !== 'wikijump_syntax_differential.identity_bound_verdict.v1' || value.status !== 'pass' || value.run_id !== candidateRunId || runtime?.wikijump_sha !== frozenCandidateCommit || !/^[0-9a-f]{40}$/u.test(runtime?.ftml_sha ?? '') || /^(.)\1+$/u.test(runtime.ftml_sha) || !/^[0-9a-f]{64}$/u.test(runtime?.dependency_lock_sha256 ?? '') || /^(.)\1+$/u.test(runtime.dependency_lock_sha256) || !/^[0-9a-f]{64}$/u.test(runtime?.executable_sha256 ?? '') || /^(.)\1+$/u.test(runtime.executable_sha256) || !/^[0-9a-f]{64}$/u.test(runtime?.runtime_config_sha256 ?? '') || /^(.)\1+$/u.test(runtime.runtime_config_sha256)) throw new Error('candidate validator is not a passing identity-bound receipt for the candidate run, source, dependencies, and PR head');
-  verifyArtifactList(value.artifacts, 'candidate producer artifacts');
+  const artifacts = verifyArtifactList(value.artifacts, 'candidate producer artifacts');
+  if (value.binding?.artifact_key !== candidateArtifactKey) throw new Error('candidate validator is not bound to the frozen candidate artifact key');
+  if (!value.binding?.candidate_manifest || !artifacts.some((artifact) => artifact.path === value.binding.candidate_manifest.path && artifact.sha256 === value.binding.candidate_manifest.sha256)) throw new Error('candidate validator has no bound candidate producer receipt');
   return value;
 }
 
-function requireCleanup(value, candidateRunId) {
+export function requireCleanup(value, candidateRunId, candidateVerdict) {
   if (value?.schema !== 'wikijump_syntax_differential.runtime_stack_cleanup.v1' || value.status !== 'pass' || value.run_id !== candidateRunId || value.run_root_removed !== true || value.public_absence_verified !== true || value.resources_released !== true || value.vacant !== true || value.browser_closed !== true || (value.compose_started === true && (value.compose_down_exit_code !== 0 || value.compose_down_signal !== null))) throw new Error('cleanup validator is not the passing runtime stack cleanup receipt for the candidate run');
+  const candidateReceipt = verifyArtifactReference(value.candidate_receipt, 'cleanup candidate receipt');
+  if (candidateVerdict?.binding?.candidate_manifest?.path !== candidateReceipt.path || candidateVerdict.binding.candidate_manifest.sha256 !== candidateReceipt.sha256) throw new Error('cleanup receipt is not cryptographically bound to the candidate producer receipt');
   return value;
 }
 
-function requireBrowser(value, candidateRunId, frozenCandidateCommit) {
-  validateCandidateParityReceipt(value, {requirePass: true});
-  if (value.candidate?.run_id !== candidateRunId || value.candidate?.wikijump_commit !== frozenCandidateCommit) throw new Error('browser validator is not bound to the candidate run and frozen PR head');
+export function requireBrowser(value, candidateRunId, frozenCandidateCommit, candidateArtifactKey) {
+  const hashes = [
+    'candidate_parity_receipt_sha256', 'candidate_identity_sha256',
+    'live_reference_sha256', 'live_completion_policy_sha256',
+    'source_runner_sha256', 'source_observation_sha256',
+    'source_execution_identity_sha256', 'parity.request_gate_final_sha256',
+    'parity.runtime_identity_sha256', 'parity.ledger_sha256',
+  ];
+  const validHashes = hashes.every((name) => {
+    const valueAtPath = name.split('.').reduce((current, key) => current?.[key], value);
+    return /^[0-9a-f]{64}$/u.test(valueAtPath ?? '');
+  });
+  if (value?.schema !== STANDING_CANDIDATE_PARITY_ADMISSION_SCHEMA || value.status !== 'pass' || !validHashes) throw new Error('browser validator is not the source-owned standing-browser admission receipt');
+  if (value.candidate?.wikijump_commit !== frozenCandidateCommit || value.candidate?.artifact_key !== candidateArtifactKey || !/^[0-9a-f]{40}$/u.test(value.candidate?.wikijump_tree ?? '') || !/^[0-9a-f]{40}$/u.test(value.candidate?.ftml_sha ?? '') || !Number.isSafeInteger(value.parity?.pairs_total) || value.parity.pairs_total <= 0 || !Number.isSafeInteger(value.parity?.local_artifacts_verified) || value.parity.local_artifacts_verified <= 0) throw new Error('browser admission is not bound to the frozen candidate run, artifact, and verified candidate artifacts');
   return value;
 }
 
-function validateValidator(name, value, {candidateRunId, frozenCandidateCommit}) {
+function validateValidator(name, value, {candidateRunId, frozenCandidateCommit, candidateArtifactKey, candidateVerdict}) {
   if (name === 'static') return requirePassingStatic(value, frozenCandidateCommit);
-  if (name === 'candidate') return requireCandidate(value, candidateRunId, frozenCandidateCommit);
-  if (name === 'browser') return requireBrowser(value, candidateRunId, frozenCandidateCommit);
-  if (name === 'cleanup') return requireCleanup(value, candidateRunId);
+  if (name === 'candidate') return requireCandidate(value, candidateRunId, frozenCandidateCommit, candidateArtifactKey);
+  if (name === 'browser') return requireBrowser(value, candidateRunId, frozenCandidateCommit, candidateArtifactKey);
+  if (name === 'cleanup') return requireCleanup(value, candidateRunId, candidateVerdict);
   throw new Error(`unknown validator: ${name}`);
 }
 
@@ -178,9 +193,11 @@ export async function main(argv) {
     return 0;
   }
   const candidateReviewFreeze = readCandidateReviewFreeze(args.candidateReviewFreeze, args.frozenCandidateCommit);
+  let candidateVerdict = null;
   const validators = args.validators.sort(({name: left}, {name: right}) => left.localeCompare(right)).map(({ name, file }) => {
     const {value: verdict, reference} = readJsonInput(file, `${name} validator`);
-    validateValidator(name, verdict, {candidateRunId: candidateReviewFreeze.run_id, frozenCandidateCommit: args.frozenCandidateCommit});
+    validateValidator(name, verdict, {candidateRunId: candidateReviewFreeze.run_id, frozenCandidateCommit: args.frozenCandidateCommit, candidateArtifactKey: candidateReviewFreeze.artifact_key, candidateVerdict});
+    if (name === 'candidate') candidateVerdict = verdict;
     return {name, exitCode: verdictExitCode(verdict), ...reference};
   });
   const parsed = args.deviationLog
