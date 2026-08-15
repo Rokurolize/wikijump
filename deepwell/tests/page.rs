@@ -17153,6 +17153,10 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
     let category = "fixture-nextpreviouspage";
     let required_tag = "fixture-nextpreviouspage-required";
     let shared_tag = "fixture-nextpreviouspage-shared";
+    const IMPORT_RUN_ID: i64 = 944_006;
+    const CREATOR_ID: i64 = 10_382_659;
+    const CREATOR_NAME: &str = "voted-fated-smuggler";
+    const CREATOR_SLUG: &str = "voted-fated-smuggler";
 
     CategoryService::get_or_create(runner.context(), site_id, category)
         .await
@@ -17174,6 +17178,39 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         "Bravo body.",
     )
     .await;
+    let bravo_page_id =
+        listpages_test_page_id(&runner, site_id, "fixture-nextpreviouspage:bravo").await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (
+            bravo_page_id,
+            "fixture-nextpreviouspage:bravo",
+            944_006,
+            CREATOR_NAME,
+        ),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET meta_json = jsonb_build_object( \
+                 'created_by_id', $1::bigint, \
+                 'created_by_unix', $2::text \
+             ) \
+             WHERE page_id = $3",
+            [
+                Value::from(CREATOR_ID),
+                Value::from(CREATOR_SLUG),
+                Value::from(bravo_page_id),
+            ],
+        ))
+        .await
+        .expect("NextPreviousPage imported author provenance should be attached");
     let holder_slug = "fixture-nextpreviouspage:charlie";
     let holder_revision = create_listpages_test_page(
         &mut runner,
@@ -17384,11 +17421,22 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         "NextPreviousPage tag selectors should filter candidates while using the current page as the position anchor:\n{html}",
     );
     let default = section(&html, "DEFAULT_START", "DEFAULT_END");
+    let expected_creator_href =
+        format!(r#"href="http://www.wikidot.com/user:info/{CREATOR_SLUG}""#);
+    let expected_avatar_src = format!(
+        "src=\"http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+    );
+    let expected_karma_style = format!(
+        r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+    );
     for expected in [
         r#"<div class="list-pages-box">"#,
         r#"<div class="list-pages-item">"#,
         r#"<h1><span><a href="/fixture-nextpreviouspage:bravo">Bravo NextPreviousPage</a></span></h1>"#,
-        r#"<p>by Administrator "#,
+        r#"<p>by <span class="printuser avatarhover">"#,
+        expected_creator_href.as_str(),
+        expected_avatar_src.as_str(),
+        expected_karma_style.as_str(),
         r#"<span class="odate time_"#,
         "Bravo body.",
     ] {
@@ -24733,10 +24781,10 @@ async fn listpages_imported_creator_identity_uses_structured_corpus_provenance()
         format!("http://www.wikidot.com/user:info/{CREATOR_SLUG}"),
         format!("WIKIDOT.page.listeners.userInfo({CREATOR_ID})"),
         format!(
-            "src=\"https://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+            "src=\"http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
         ),
         format!(
-            r#"style="background-image:url(https://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+            r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
         ),
     ] {
         assert!(
