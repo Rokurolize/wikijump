@@ -86,6 +86,7 @@ enum ForumModuleKind {
 struct CommentsArguments<'a> {
     title: Option<&'a str>,
     hide: bool,
+    hide_form: bool,
     order: ForumCommentsOrder,
     query_safe: bool,
 }
@@ -95,6 +96,7 @@ impl Default for CommentsArguments<'_> {
         Self {
             title: None,
             hide: false,
+            hide_form: false,
             order: ForumCommentsOrder::Forward,
             query_safe: true,
         }
@@ -114,6 +116,7 @@ fn comments_arguments(head: &str) -> CommentsArguments<'_> {
     let mut output = CommentsArguments::default();
     let mut title_seen = false;
     let mut hide_seen = false;
+    let mut hide_form_seen = false;
     let mut order_seen = false;
     for argument in arguments {
         if argument.op != "="
@@ -130,6 +133,13 @@ fn comments_arguments(head: &str) -> CommentsArguments<'_> {
             "hide" if !hide_seen && matches!(argument.value, "true" | "false") => {
                 hide_seen = true;
                 output.hide = argument.value == "true";
+            }
+            "hideForm"
+                if !hide_form_seen
+                    && matches!(argument.value, "false" | "true" | "yes") =>
+            {
+                hide_form_seen = true;
+                output.hide_form = matches!(argument.value, "true" | "yes");
             }
             "order"
                 if !order_seen && matches!(argument.value, "forwards" | "reverse") =>
@@ -981,6 +991,7 @@ impl RenderService {
                                     &mut visibility,
                                     page_id,
                                     arguments.order,
+                                    arguments.hide_form,
                                 )
                                 .await?
                                 {

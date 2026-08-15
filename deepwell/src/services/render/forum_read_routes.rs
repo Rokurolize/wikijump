@@ -778,8 +778,15 @@ impl RenderService {
                     Some("reverse") => ForumCommentsOrder::Reverse,
                     Some(_) => return Ok(response("not_ok", String::new())),
                 };
-                match forum_comments::load(ctx, site_id, &mut visibility, page_id, order)
-                    .await?
+                match forum_comments::load(
+                    ctx,
+                    site_id,
+                    &mut visibility,
+                    page_id,
+                    order,
+                    false,
+                )
+                .await?
                 {
                     ForumCommentsLoad::Found(output) => Ok(comments_response(
                         output.thread_id,

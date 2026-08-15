@@ -96,7 +96,9 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         let category_viewable = match self.category_decisions.get(&category_key) {
             Some(decision) => *decision,
             None => {
-                let decision = self.check(site_id, None, page_category_id).await?;
+                let decision = self
+                    .check(site_id, None, page_category_id, Action::View)
+                    .await?;
                 self.category_decisions.insert(category_key, decision);
                 decision
             }
@@ -112,12 +114,37 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         match self.page_decisions.get(&page_key) {
             Some(decision) => Ok(*decision),
             None => {
-                let decision =
-                    self.check(site_id, Some(page_id), page_category_id).await?;
+                let decision = self
+                    .check(site_id, Some(page_id), page_category_id, Action::View)
+                    .await?;
                 self.page_decisions.insert(page_key, decision);
                 Ok(decision)
             }
         }
+    }
+
+    pub(super) async fn forum_category_is_postable(
+        &mut self,
+        site_id: i64,
+        forum_category_id: i64,
+    ) -> Result<bool> {
+        PermissionService::check_user_can(
+            self.ctx,
+            &CheckPermissionContext {
+                user_id: self.viewer_user_id,
+                site_id,
+                page_reference: None,
+            },
+            Permission {
+                resource_type: Resource::ForumCategory,
+                resource_category: Some(Reference::Id(forum_category_id)),
+                action: Action::Create,
+            },
+        )
+        .await
+        .or_raise(|| {
+            Error::new("failed to check forum post permission", ErrorType::Render)
+        })
     }
 
     pub(super) async fn visible_thread_ids(
@@ -187,6 +214,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         site_id: i64,
         page_id: Option<i64>,
         page_category_id: i64,
+        action: Action,
     ) -> Result<bool> {
         PermissionService::check_user_can(
             self.ctx,
@@ -198,7 +226,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
             Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(page_category_id)),
-                action: Action::View,
+                action,
             },
         )
         .await

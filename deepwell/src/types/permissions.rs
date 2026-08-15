@@ -107,6 +107,7 @@ macro_rules! define_permission_types {
 // Define all valid permission types.
 define_permission_types! {
     Page => [View, Edit, BypassLock, Create, Delete, Rename],
+    ForumCategory => [Create],
     Role => [View, Edit, Assign],
     Site => [View, Edit],
 }
@@ -158,7 +159,7 @@ fn rejects_invalid_permission_parts() {
 
 #[test]
 fn permission_catalog_lists_valid_resource_actions() {
-    assert_eq!(Permission::ALL.len(), 11);
+    assert_eq!(Permission::ALL.len(), 12);
     assert!(Permission::ALL.contains(&Permission {
         resource_type: Resource::Page,
         resource_category: None,
@@ -170,6 +171,14 @@ fn permission_catalog_lists_valid_resource_actions() {
             resource_type: Resource::Role,
             resource_category: None,
             action: Action::Assign,
+        }),
+    );
+    assert_eq!(
+        Permission::new(Resource::ForumCategory, Action::Create),
+        Some(Permission {
+            resource_type: Resource::ForumCategory,
+            resource_category: None,
+            action: Action::Create,
         }),
     );
     assert_eq!(Permission::new(Resource::Site, Action::Assign), None);

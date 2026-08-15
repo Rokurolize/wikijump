@@ -12651,6 +12651,16 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     .await;
     create_comment(&runner, hidden_thread_id, None, 420).await;
 
+    let (_, _hide_form_denied_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-hideform-denied",
+        "Page Comments Hide Form Denied",
+        r#"[[module Comments hideForm="true"]]"#,
+    )
+    .await;
+
     let (_, invalid_thread_id) = create_discussion_page(
         &mut runner,
         site_id,
@@ -12904,6 +12914,16 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
             && !hidden_body.contains("thread-container-posts")
             && !hidden_body.contains("Page Comment 420"),
         "exact hide=true should keep the saved Comments shell inert:\n{hidden_body}",
+    );
+
+    let hide_form_denied_body =
+        saved_comments_body(&runner, site_id, "fixture-forum-comments-hideform-denied")
+            .await;
+    assert!(
+        hide_form_denied_body.contains(r#"id="comments-options-shown""#)
+            && hide_form_denied_body.contains(r#"id="new-post-button""#)
+            && !hide_form_denied_body.contains(r#"id="new-post-form""#),
+        "a denied actor must retain the Comments link without an input form:\n{hide_form_denied_body}",
     );
 
     let invalid_body = saved_comments_body(
