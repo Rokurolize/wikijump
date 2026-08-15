@@ -67,9 +67,9 @@ Physical volume renames remain a separate data migration with rollback retention
 
 ## Sealed Tier 2 receipt verifiers
 
-`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, exact final-frozen inputs, the sealed build inventory, and the rendered staging-home binding. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
+`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, exact final-frozen inputs, the sealed build inventory, and the rendered staging-home binding. `install/standing/promote.mjs` chains the admission CLI, canonical promotion validator, image preparation, and standing refresh. Refresh owns activation, rollback, and failure receipts; the controller does not remove those artifacts or forward arbitrary Compose arguments. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
 
-No checked-in host mutation controller currently chains those verifiers into a deploy. Treat the commands below as sealed-receipt validation tools, not as an operational orchestrator:
+Use `promote.mjs` for the complete sequence. Its explicit paths are the candidate receipt, candidate identity, live reference, live completion policy, sealed build evidence, rendered staging home, admission output, promotion precondition, prepared receipt, standing runtime home, and standing receipt. The standalone commands below remain available for receipt-only validation:
 
 ```sh
 node install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs \
