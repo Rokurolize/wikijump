@@ -4,6 +4,7 @@ import { expect, test, type APIRequestContext } from "@playwright/test"
 
 import {
   handleXmlRpcRequest,
+  MAX_XML_RPC_BODY_BYTES,
   parseXmlRpcCall,
   serializeMethodResponse
 } from "../src/lib/server/xmlrpc"
@@ -18,6 +19,7 @@ const emptyPageReadRequests = {
   pageGet: [],
   pageGetDirect: [],
   pageLifecycleIdentity: [],
+  pageRevisionDiff: [],
   pageRevisionGet: [],
   pageView: [],
   pageViewPermission: [],
@@ -1164,6 +1166,8 @@ test("XML-RPC endpoint rejects invalid pages.select scalar filters", async ({
 test("XML-RPC endpoint returns page metadata and bodies for corpus clients", async ({
   request
 }) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+
   const metaResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesGetMetaRequest,
     headers: xmlRpcHeaders
@@ -3260,7 +3264,7 @@ test("XML-RPC endpoint lets SvelteKit reject non-POST HEAD requests", async ({
 })
 
 test("XML-RPC endpoint rejects oversized request bodies", async ({ request }) => {
-  const oversizedBody = `${" ".repeat(1_048_577)}<methodCall />`
+  const oversizedBody = `${" ".repeat(MAX_XML_RPC_BODY_BYTES + 1)}<methodCall />`
   const response = await request.post("/xml-rpc-api.php", {
     data: oversizedBody,
     headers: {
