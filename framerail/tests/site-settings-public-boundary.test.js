@@ -21,6 +21,7 @@ let originalClientRequest
 let adminData
 let siteSettingsComponent
 let layoutSettingsComponent
+let analyticsSettingsComponent
 let rootLayoutComponent
 let canonicalAdminPage
 let legacyAdminPage
@@ -143,6 +144,9 @@ before(async () => {
   ;({ default: layoutSettingsComponent } = await vite.ssrLoadModule(
     "/src/routes/[x+2d]/admin/LayoutSettings.svelte"
   ))
+  ;({ default: analyticsSettingsComponent } = await vite.ssrLoadModule(
+    "/src/routes/[x+2d]/admin/AnalyticsSettings.svelte"
+  ))
   ;({ default: rootLayoutComponent } = await vite.ssrLoadModule(
     "/src/routes/+layout.svelte"
   ))
@@ -245,6 +249,19 @@ describe("Wikidot site settings public boundaries", () => {
     assert.doesNotMatch(disabled.head, /wikidot-site-analytics-profile/u)
     assert.doesNotMatch(disabled.head, /data-wikidot-site-theme/u)
     assert.doesNotMatch(disabled.body, /id="navi-bar"/u)
+
+    const analyticsBody = renderComponent(analyticsSettingsComponent, {
+      data: {
+        ...adminData,
+        site: {
+          ...adminData.site,
+          google_analytics_enabled: false,
+          google_analytics_profile: null
+        }
+      }
+    }).body
+    assert.match(analyticsBody, />Profile key<\/label>/u)
+    assert.match(analyticsBody, />Use Google Analytics<\/label>/u)
   })
 
   it("serves analytics through nonce-protected full-document SSR without a remote loader", async () => {
