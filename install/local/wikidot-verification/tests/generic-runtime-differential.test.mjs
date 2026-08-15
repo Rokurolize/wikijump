@@ -30,6 +30,7 @@ import {
   composeIdentityDocument,
   main as runStack,
   parseArgs as parseStackArgs,
+  resourcesAbsent,
   runtimeIdentity as stackRuntimeIdentity,
 } from "../scripts/run-generic-runtime-differential-stack.mjs";
 import {
@@ -1637,6 +1638,19 @@ test("disposable stack controller binds resources and candidate identity", () =>
   }, identityCompose, "config");
   assert.equal(identity.wikijump_sha, "1".repeat(40));
   assert.equal(identity.runtime_config_sha256.length, 64);
+});
+
+test("stack cleanup requires actual absence of containers, volumes, and networks", () => {
+  const calls = [];
+  const inspect = (command, args) => {
+    calls.push([command, args]);
+    return {status: 0, signal: null, stdout: "", stderr: ""};
+  };
+  assert.equal(resourcesAbsent("candidate-run-abcdef123456", {DOCKER_HOST: "test"}, inspect), true);
+  assert.equal(calls.length, 3);
+  assert.match(calls[0][1].at(-1), /candidate-run-abcdef123456/u);
+  assert.equal(resourcesAbsent("candidate-run-abcdef123456", {}, () => ({status: 0, signal: null, stdout: "leftover\n", stderr: ""})), false);
+  assert.equal(resourcesAbsent("candidate-run-abcdef123456", {}, () => ({status: 1, signal: null, stdout: "", stderr: "inspect failed"})), false);
 });
 
 test("stack controller binds an exact reusable dev candidate", async (t) => {

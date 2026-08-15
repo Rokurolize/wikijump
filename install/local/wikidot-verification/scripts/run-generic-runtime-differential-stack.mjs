@@ -106,6 +106,26 @@ function run(command, args, options = {}) {
   return result.stdout.trim();
 }
 
+export function resourcesAbsent(project, env, inspect = spawnSync) {
+  const resources = [
+    ["ps", "--all"],
+    ["volume", "ls"],
+    ["network", "ls"],
+  ];
+  try {
+    return resources.every(([kind, ...args]) => {
+      const result = inspect(DOCKER, [kind, ...args, "--quiet", "--filter", `label=com.rokurolize.wikijump.run_id=${project}`], {
+        encoding: "utf8",
+        env,
+        stdio: "pipe",
+      });
+      return !result.error && result.status === 0 && result.signal === null && (result.stdout ?? "").trim() === "";
+    });
+  } catch {
+    return false;
+  }
+}
+
 function exactFtmlSha(cargoLock) {
   const matches = cargoLock
     .split(/^\[\[package\]\]\s*$/mu)
@@ -609,22 +629,33 @@ export async function main(argv) {
         "down", "--volumes", "--remove-orphans",
       ], {encoding: "utf8", env: localDockerEnv});
     }
-    if (runRoot !== null) await fsp.rm(runRoot, {recursive: true, force: true});
+    const downSucceeded = !composeStarted || (down?.status === 0 && down?.signal === null);
+    const resourcesReleased = !composeStarted || resourcesAbsent(project, localDockerEnv);
+    const preserveRunRoot = composeStarted && (!downSucceeded || !resourcesReleased || stackLogError !== null);
+    let runRootRemovalError = null;
+    if (runRoot !== null && !preserveRunRoot) {
+      try {
+        await fsp.rm(runRoot, {recursive: true, force: true});
+      } catch (error) {
+        runRootRemovalError = error;
+      }
+    }
     const cleanup = {
       schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1",
       run_id: runId,
       project,
-      status: composeStarted && (down === null || down.status === 0) && stackLogError === null ? "pass" : "fail",
+      run_root: runRoot,
+      status: (!composeStarted || (downSucceeded && resourcesReleased && stackLogError === null)) && !preserveRunRoot && runRootRemovalError === null ? "pass" : "fail",
+      run_root_removal_error: runRootRemovalError?.message ?? null,
       compose_started: composeStarted,
       compose_down_exit_code: down?.status ?? null,
       compose_down_signal: down?.signal ?? null,
       run_root_removed: runRoot === null || !fs.existsSync(runRoot),
       public_absence_verified: false,
-      resources_released: down === null || down.status === 0,
+      resources_released: resourcesReleased,
       vacant: false,
       browser_closed: true,
     };
-    if (!cleanup.run_root_removed) cleanup.status = "fail";
     cleanup.public_absence_verified = cleanup.status === "pass";
     cleanup.vacant = cleanup.status === "pass" && cleanup.run_root_removed;
     await publishBytesNoReplace(cleanupReceiptPath, `${JSON.stringify(cleanup, null, 2)}\n`);

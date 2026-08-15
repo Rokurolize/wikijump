@@ -447,6 +447,25 @@ class RefreshStandingTest(unittest.TestCase):
             self.assertEqual(path.read_text(encoding="utf-8"), original)
             self.assertEqual(list(root.glob("..env.*")), [])
 
+    def test_rollback_restores_captured_image_references(self) -> None:
+        previous = {
+            "KEEP": "value",
+            "STANDING_DEEPWELL_IMAGE": "old-deepwell",
+            "STANDING_FRAMERAIL_IMAGE": "old-framerail",
+            "STANDING_WWS_IMAGE": "old-wws",
+        }
+        rollback = {
+            service: {"reference": f"rollback-{service}", "id": "sha256:" + "a" * 64}
+            for service in REFRESH.SERVICES
+        }
+        restored = REFRESH.rollback_environment(previous, rollback)
+        self.assertEqual(restored["KEEP"], "value")
+        for service in REFRESH.SERVICES:
+            self.assertEqual(
+                restored[f"STANDING_{service.upper()}_IMAGE"],
+                f"rollback-{service}",
+            )
+
     def test_runtime_differential_identity_binds_lock_image_and_compose_config(
         self,
     ) -> None:
