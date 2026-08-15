@@ -7,6 +7,7 @@ import test from "node:test";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
+  OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
   createOpen43SettingsBrowserCandidateCaseSet,
@@ -361,6 +362,36 @@ function dependencies(events, sourceFilesSeen) {
     },
   };
 }
+
+test("the #754 analytics group executes its cases through the shared runner", async (t) => {
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "analytics",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const sourceFiles = [];
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-analytics-group-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  const result = await runCandidateCaseSet({
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
+    privateInputSha256: sha256Value("private-input"),
+    outputDir: path.join(root, "evidence"),
+    caseSet,
+    dependencies: dependencies(events, sourceFiles),
+  });
+
+  assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_ANALYTICS_CASE_IDS);
+  assert.deepEqual(result.cases.map(({ case_id }) => case_id), OPEN43_SETTINGS_ANALYTICS_CASE_IDS);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(events.some(({ seam, label }) => seam === "browser-adapter" && label === "S754_ANALYTICS"), true);
+  assert.equal(events.some(({ seam, operation }) => seam === "browser-adapter" && operation === "analytics-save"), true);
+  assert.equal(events.some(({ seam, label }) => seam === "browser-adapter" && label === "S755_THEME"), false);
+});
 
 test("the real Settings CandidateCaseSet runs all nine configured cases exactly once through the shared runner", async (t) => {
   const events = [];
