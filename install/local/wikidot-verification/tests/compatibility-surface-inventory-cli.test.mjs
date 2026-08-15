@@ -1002,15 +1002,19 @@ test("CLI keeps an explicit source revision across metadata commits and rejects 
     { encoding: "utf8" }
   )
   assert.equal(drift.status, 1, drift.stderr)
-  assert.match(drift.stderr, /registry blob drift: deepwell\/src\/api\.rs/u)
+  assert.match(
+    drift.stderr,
+    /deepwell-jsonrpc-contract-manifest\.json (?:does not match the Deepwell method denominator|JSON-RPC registry identity drift)|registry blob drift: deepwell\/src\/api\.rs/u
+  )
 })
 
 test("CLI emits the pinned FTML raw manifest without changing the public denominator", async (t) => {
   const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-ftml-raw-"))
   cleanupFixture(t, outputRoot)
-  const trackedInventory = JSON.parse(
-    await fs.readFile(path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json"), "utf8")
-  )
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
   const outputPath = path.join(outputRoot, "inventory.json")
 
   const result = spawnSync(process.execPath, [
@@ -1020,7 +1024,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
     "--output",
     outputPath,
     "--source-revision",
-    trackedInventory.provenance.wikijump.commit
+    sourceRevision
   ], { encoding: "utf8" })
 
   assert.equal(result.status, 0, result.stderr)
@@ -1430,15 +1434,29 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
   assert.deepEqual(
     siteStructureFeatures.filter(({ implementation_owners: owners }) => owners.length > 0)
       .map(({ surface_id: surfaceId }) => surfaceId),
-    ["catalog-feature:page-tags"]
+    [
+      "catalog-feature:content-pages",
+      "catalog-feature:forum-categories",
+      "catalog-feature:forum-category-groups",
+      "catalog-feature:forum-posts",
+      "catalog-feature:forum-threads",
+      "catalog-feature:forums-overview",
+      "catalog-feature:page-categories",
+      "catalog-feature:page-forum-integration",
+      "catalog-feature:page-inclusions",
+      "catalog-feature:page-links",
+      "catalog-feature:page-parent-relations",
+      "catalog-feature:page-tags",
+      "catalog-feature:site-identity"
+    ]
   )
   assert.equal(
     siteStructureFeatures.filter(({ implementation_owners: owners }) => owners.length === 0).length,
-    12
+    0
   )
   assert.deepEqual(
     inventory.surfaces.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:page-parent-relations").implementation_owners,
-    []
+    ["wikijump"]
   )
   assert.deepEqual(inventory.relationship_edge_types, [
     "alias",

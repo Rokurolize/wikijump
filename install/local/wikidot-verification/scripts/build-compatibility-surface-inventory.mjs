@@ -1188,6 +1188,15 @@ async function discoverDeepwellJsonRpc(root) {
     (match) => match[1]
   )
   if (methods.length === 0) throw new Error(`${registryPath} declares no JSON-RPC methods`)
+  if (new Set(methods).size !== methods.length) {
+    const seen = new Set()
+    const duplicate = methods.find((method) => {
+      if (seen.has(method)) return true
+      seen.add(method)
+      return false
+    })
+    throw new Error(`duplicate surface_id: deepwell-jsonrpc:${duplicate}`)
+  }
   if (
     manifest.schema !== "wikijump.deepwell_jsonrpc_contract_manifest.v1" ||
     manifest.method_count !== methods.length ||
