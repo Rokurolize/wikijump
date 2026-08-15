@@ -27,7 +27,6 @@ const REVISION_BYTES = Buffer.from(
   "base64",
 );
 const RESIZED_VARIANT = "medium";
-
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
