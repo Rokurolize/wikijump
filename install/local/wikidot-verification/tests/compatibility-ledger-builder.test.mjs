@@ -382,6 +382,23 @@ test("compatibility ledger builder admits only the current scope and audits defe
     () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
     /unknown deferred ownership/u,
   );
+
+  writeFileSync(output, JSON.stringify(ledger));
+  const changedSpecification = deferredScopeInventory();
+  changedSpecification.surfaces.find(({ kind }) => kind === "framerail_xmlrpc_method").specification_owner = "spec:a";
+  writeFileSync(input, JSON.stringify(changedSpecification));
+  assert.throws(
+    () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
+    /unknown deferred ownership/u,
+  );
+
+  const changedAmcSpecification = deferredScopeInventory();
+  changedAmcSpecification.surfaces.find(({ kind }) => kind === "wikidot_py_amc_module_shape").specification_owner = "spec:a";
+  writeFileSync(input, JSON.stringify(changedAmcSpecification));
+  assert.throws(
+    () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
+    /unknown deferred ownership/u,
+  );
 });
 
 test("compatibility ledger builder partitions the pinned inventory without FTML leakage", () => {

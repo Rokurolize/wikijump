@@ -46,11 +46,19 @@ const DEFERRED_CATALOG_FEATURE_OWNERS = new Map([
 const DEFERRED_KIND_OWNERS = new Map([
   [
     "framerail_xmlrpc_method",
-    { inventory_owner: "wikijump.framerail", deferred_owner: "wikijump.xmlrpc-api" },
+    {
+      inventory_owner: "wikijump.framerail",
+      specification_owner: "wikijump.registry:framerail-xmlrpc",
+      deferred_owner: "wikijump.xmlrpc-api",
+    },
   ],
   [
     "wikidot_py_amc_module_shape",
-    { inventory_owner: "external.wikidot-py", deferred_owner: "external.wikidot-py" },
+    {
+      inventory_owner: "external.wikidot-py",
+      specification_owner: "wikijump.registry:wikidot-py-amc",
+      deferred_owner: "external.wikidot-py",
+    },
   ],
 ]);
 function fail(message) {
@@ -80,6 +88,7 @@ function deferredOwner(sourceClass, record) {
   const kindOwner = DEFERRED_KIND_OWNERS.get(record.kind);
   if (kindOwner === undefined) return null;
   if (
+    record.specification_owner !== kindOwner.specification_owner ||
     !Array.isArray(record.implementation_owners) ||
     record.implementation_owners.length !== 1 ||
     record.implementation_owners[0] !== kindOwner.inventory_owner
