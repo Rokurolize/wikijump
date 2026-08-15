@@ -21,6 +21,7 @@ export function parseArgs(argv) {
     casesOutput: null,
     pagesOutput: null,
     slugPrefix: null,
+    classificationOverrides: null,
     targetCharacters: 8_000,
     hardCharacters: 9_000,
   };
@@ -30,11 +31,13 @@ export function parseArgs(argv) {
     else if (arg === '--cases-output') args.casesOutput = optionValue(argv, index++, arg);
     else if (arg === '--pages-output') args.pagesOutput = optionValue(argv, index++, arg);
     else if (arg === '--slug-prefix') args.slugPrefix = optionValue(argv, index++, arg);
+    else if (arg === '--classification-overrides') args.classificationOverrides = optionValue(argv, index++, arg);
     else if (arg === '--target-characters') args.targetCharacters = Number(optionValue(argv, index++, arg));
     else if (arg === '--hard-characters') args.hardCharacters = Number(optionValue(argv, index++, arg));
     else throw new Error(`Unknown argument: ${arg}`);
   }
-  for (const [name, value] of Object.entries(args).filter(([name]) => !name.endsWith('Characters'))) {
+  for (const [name, value] of Object.entries(args)) {
+    if (name === 'classificationOverrides' || name.endsWith('Characters')) continue;
     if (!value) throw new Error(`--${name.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)} is required`);
   }
   if (!Number.isSafeInteger(args.targetCharacters) || args.targetCharacters <= 0) {
@@ -52,7 +55,10 @@ function writeJsonLines(path, values) {
 
 export async function main(argv) {
   const args = parseArgs(argv);
-  const cases = collectFtmlFixtureCases(args.ftmlRoot);
+  const classificationOverrides = args.classificationOverrides
+    ? JSON.parse(fs.readFileSync(args.classificationOverrides, 'utf8'))
+    : undefined;
+  const cases = collectFtmlFixtureCases(args.ftmlRoot, classificationOverrides);
   const pages = buildSavedPagePlans(cases, {
     slugPrefix: args.slugPrefix,
     targetCharacters: args.targetCharacters,

@@ -5,6 +5,21 @@ import path from 'node:path';
 export const LIVE_CASE_SCHEMA = 'wikijump_syntax_differential.live_case.v1';
 export const PAGE_PLAN_SCHEMA = 'wikijump_syntax_differential.wikidot_page_plan.v1';
 const RECORDED_BATCH_SOURCE_LIMIT = 7_500;
+const OVERRIDE_SCHEMA = 'ftml.classification_overrides.v1';
+const OVERRIDE_EXECUTION_CLASSES = new Set([
+  'not-applicable',
+  'saved-page-batch',
+  'page-preview-isolated',
+  'wikijump-runtime',
+]);
+const OVERRIDE_PAGE_SCOPES = new Set(['batch-safe', 'isolated']);
+const OVERRIDE_ROW_FIELDS = Object.freeze([
+  'execution_class',
+  'page_scope',
+  'path',
+  'reason',
+  'source_sha256',
+]);
 
 const RUNTIME_PATTERNS = [
   /\{\$[^}\r\n]+\}/u,
@@ -103,7 +118,62 @@ export function classifyFixture(relativePath, source, siblingNames = new Set()) 
   };
 }
 
-export function collectFtmlFixtureCases(ftmlRoot) {
+function validateClassificationOverrides(value) {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('classification overrides manifest must be an object');
+  }
+  if (value.schema !== OVERRIDE_SCHEMA) {
+    throw new Error(`classification overrides manifest has an unknown schema: ${value.schema}`);
+  }
+  if (Object.keys(value).sort().join(',') !== 'overrides,schema') {
+    throw new Error('classification overrides manifest has unknown fields');
+  }
+  const rows = value.overrides;
+  if (!Array.isArray(rows)) throw new Error('classification overrides manifest overrides must be an array');
+  const byPath = new Map();
+  let previous = '';
+  for (const row of rows) {
+    if (typeof row !== 'object' || row === null || Array.isArray(row)) {
+      throw new Error('classification override must be an object');
+    }
+    if (Object.keys(row).sort().join(',') !== OVERRIDE_ROW_FIELDS.join(',')) {
+      throw new Error('classification override has unknown fields');
+    }
+    const rowPath = row.path;
+    if (
+      typeof rowPath !== 'string' ||
+      rowPath.length === 0 ||
+      path.isAbsolute(rowPath) ||
+      rowPath.split('/').includes('..')
+    ) {
+      throw new Error(`classification override path must be a relative in-tree path: ${rowPath}`);
+    }
+    if (byPath.has(rowPath)) throw new Error(`duplicate classification override path: ${rowPath}`);
+    if (rowPath.localeCompare(previous, 'en') <= 0) {
+      throw new Error('classification overrides are not sorted by path');
+    }
+    previous = rowPath;
+    if (!/^[0-9a-f]{64}$/u.test(row.source_sha256)) {
+      throw new Error(`classification override has an invalid source SHA-256: ${rowPath}`);
+    }
+    if (!OVERRIDE_EXECUTION_CLASSES.has(row.execution_class)) {
+      throw new Error(`classification override has an invalid execution class: ${row.execution_class}`);
+    }
+    if (!OVERRIDE_PAGE_SCOPES.has(row.page_scope)) {
+      throw new Error(`classification override has an invalid page scope: ${row.page_scope}`);
+    }
+    if (typeof row.reason !== 'string' || row.reason.trim().length === 0) {
+      throw new Error(`classification override reason must be a non-empty string: ${rowPath}`);
+    }
+    byPath.set(rowPath, row);
+  }
+  return byPath;
+}
+
+export function collectFtmlFixtureCases(ftmlRoot, classificationOverrides) {
+  const overrides = validateClassificationOverrides(classificationOverrides);
+  const usedOverrides = new Set();
   const roots = [path.join(ftmlRoot, 'test'), path.join(ftmlRoot, 'tests', 'fixtures')];
   const sources = [];
   for (const root of roots) {
@@ -120,17 +190,36 @@ export function collectFtmlFixtureCases(ftmlRoot) {
       const source = fs.readFileSync(file, 'utf8');
       const siblingNames = new Set(fs.readdirSync(path.dirname(file)));
       const classification = classifyFixture(relativePath, source, siblingNames);
-      sources.push({
+      const sourcePath = relativePath.split(path.sep).join('/');
+      const row = {
         schema: LIVE_CASE_SCHEMA,
         case_id: caseId(relativePath),
         source,
         source_sha256: sha256(source),
         source_origin: {
           repository: 'Rokurolize/ftml',
-          path: relativePath.split(path.sep).join('/'),
+          path: sourcePath,
         },
         ...classification,
-      });
+      };
+      const override = overrides?.get(sourcePath);
+      if (override) {
+        if (override.source_sha256 !== row.source_sha256) {
+          throw new Error(`classification override source SHA-256 does not match ${sourcePath}`);
+        }
+        row.execution_class = override.execution_class;
+        row.page_scope = override.page_scope;
+        row.reasons = [override.reason];
+        usedOverrides.add(sourcePath);
+      }
+      sources.push(row);
+    }
+  }
+  if (overrides) {
+    for (const sourcePath of overrides.keys()) {
+      if (!usedOverrides.has(sourcePath)) {
+        throw new Error(`classification override path was not collected: ${sourcePath}`);
+      }
     }
   }
   return sources.sort((left, right) => left.case_id.localeCompare(right.case_id));

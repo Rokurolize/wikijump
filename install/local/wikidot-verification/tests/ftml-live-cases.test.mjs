@@ -11,6 +11,7 @@ import {
   collectFtmlFixtureCases,
   collectFtmlRecordedCases,
   isolateBatchInteractions,
+  sha256,
 } from '../src/ftml-live-cases.mjs';
 import {extractMarkedFragments} from '../scripts/verify-ftml-live-pages.mjs';
 import {compareFragment} from '../scripts/compare-wikidot-live-pages.mjs';
@@ -432,4 +433,99 @@ test('live fragment comparison requires parsed DOM and visible text parity', () 
   assert.equal(compareFragment('same', '<p>alpha</p>', '<p>alpha</p>').status, 'match');
   assert.equal(compareFragment('different-tag', '<p><b>alpha</b></p>', '<p><strong>alpha</strong></p>').status, 'mismatch');
   assert.equal(compareFragment('different-text', '<p>alpha</p>', '<p>beta</p>').status, 'mismatch');
+});
+
+function sortedOverrides(rows) {
+  return {
+    schema: 'ftml.classification_overrides.v1',
+    overrides: rows
+      .map((row) => structuredClone(row))
+      .sort((left, right) => left.path.localeCompare(right.path)),
+  };
+}
+
+async function fixtureRoot(sources) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'ftml-overrides-'));
+  for (const [relative, source] of Object.entries(sources)) {
+    const target = path.join(root, relative);
+    await fs.mkdir(path.dirname(target), {recursive: true});
+    await fs.writeFile(target, source);
+  }
+  return root;
+}
+
+const isolatedOverride = (relative, source, reason) => ({
+  path: relative,
+  source_sha256: sha256(source),
+  execution_class: 'page-preview-isolated',
+  page_scope: 'isolated',
+  reason,
+});
+
+test('fixture collector keeps generic email and internal triple link runtime without overrides', async () => {
+  const root = await fixtureRoot({
+    'test/email/basic/input.ftml': 'abc@example.com',
+    'test/link/internal/input.ftml': '[[[target-page|Label]]]',
+  });
+  const byId = new Map(collectFtmlFixtureCases(root).map((value) => [value.case_id, value]));
+  assert.equal(byId.get('test--email--basic').execution_class, 'wikijump-runtime');
+  assert.equal(byId.get('test--link--internal').execution_class, 'wikijump-runtime');
+});
+
+test('classification overrides isolate the exact email, mailto, and external-link rows', async () => {
+  const sources = {
+    'test/email/basic/input.ftml': 'abc@example.com',
+    'test/email/mailto/input.ftml': '[mailto:abc@example.com label]',
+    'test/link/external/input.ftml': '[[[https://example.com label]]]',
+  };
+  const root = await fixtureRoot(sources);
+  const overrides = sortedOverrides([
+    isolatedOverride('test/email/basic/input.ftml', sources['test/email/basic/input.ftml'], 'context-free-email-obfuscation'),
+    isolatedOverride('test/email/mailto/input.ftml', sources['test/email/mailto/input.ftml'], 'context-free-mailto-autolink'),
+    isolatedOverride('test/link/external/input.ftml', sources['test/link/external/input.ftml'], 'context-free-external-url'),
+  ]);
+  const byId = new Map(collectFtmlFixtureCases(root, overrides).map((value) => [value.case_id, value]));
+  for (const caseId of ['test--email--basic', 'test--email--mailto', 'test--link--external']) {
+    assert.equal(byId.get(caseId).execution_class, 'page-preview-isolated');
+    assert.equal(byId.get(caseId).page_scope, 'isolated');
+    assert.equal(byId.get(caseId).reasons.length, 1);
+  }
+  assert.deepEqual(byId.get('test--email--basic').reasons, ['context-free-email-obfuscation']);
+  assert.deepEqual(byId.get('test--email--mailto').reasons, ['context-free-mailto-autolink']);
+  assert.deepEqual(byId.get('test--link--external').reasons, ['context-free-external-url']);
+});
+
+test('classification overrides leave a nearby non-overridden runtime row runtime', async () => {
+  const sources = {
+    'test/link/external/input.ftml': '[[[https://example.com label]]]',
+    'test/link/internal/input.ftml': '[[[target-page|Label]]]',
+  };
+  const root = await fixtureRoot(sources);
+  const overrides = sortedOverrides([
+    isolatedOverride('test/link/external/input.ftml', sources['test/link/external/input.ftml'], 'context-free-external-url'),
+  ]);
+  const byId = new Map(collectFtmlFixtureCases(root, overrides).map((value) => [value.case_id, value]));
+  assert.equal(byId.get('test--link--external').execution_class, 'page-preview-isolated');
+  assert.equal(byId.get('test--link--internal').execution_class, 'wikijump-runtime');
+});
+
+test('classification overrides reject stale hashes and unused paths', async () => {
+  const sources = {'test/email/basic/input.ftml': 'abc@example.com'};
+  const root = await fixtureRoot(sources);
+
+  const stale = sortedOverrides([
+    isolatedOverride('test/email/basic/input.ftml', 'changed@example.com', 'context-free-email-obfuscation'),
+  ]);
+  assert.throws(
+    () => collectFtmlFixtureCases(root, stale),
+    /source SHA-256 does not match/u,
+  );
+
+  const unused = sortedOverrides([
+    isolatedOverride('test/email/absent/input.ftml', 'abc@example.com', 'context-free-email-obfuscation'),
+  ]);
+  assert.throws(
+    () => collectFtmlFixtureCases(root, unused),
+    /was not collected/u,
+  );
 });
