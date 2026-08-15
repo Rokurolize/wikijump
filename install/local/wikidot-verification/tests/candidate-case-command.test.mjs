@@ -124,6 +124,13 @@ test("issue #1372 candidate case set invokes the temporal seam and maps all 84 r
   assert.equal((await run.cleanup()).public_absence_verified, true);
 });
 
+test("candidate case registry exposes the real #1026 user identity adapter", async () => {
+  const caseSet = await candidateCaseSet("open43-q1026-user-identity");
+  assert.equal(caseSet.id, "open43-q1026-user-identity");
+  assert.deepEqual(caseSet.caseIds, ["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case command accepts only the fixed explicit attachment options", () => {
   assert.deepEqual(
     parseCandidateCaseArgs([
