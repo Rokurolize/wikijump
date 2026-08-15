@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-13",
+  "updated_at": "2026-08-15",
   "catalog_sha256": "f79aee6963a4c4428261b1bb0b4b8f0411a39cebc9d944f064f1b118153e5090",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
@@ -1387,7 +1387,8 @@
         "Deepwell public wikidot_page_preview rendering",
         "Deepwell public saved page_view rendering",
         "Deepwell public wikidot_forum_module page-discussion read interface",
-        "Framerail public POST /ajax-module-connector.php"
+        "Framerail public POST /ajax-module-connector.php",
+        "Authenticated live Wikidot Comments hideForm actor and form-state differential"
       ],
       "tests": [
         {
@@ -1398,7 +1399,17 @@
         {
           "path": "deepwell/tests/page.rs",
           "name": "forum_comments_list_resolves_only_visible_page_discussions",
-          "scope": "public saved-page title, hide, forwards and reverse shells, permission-filtered first-page embedding, fail-closed invalid attributes, page-to-discussion resolution, exact response metadata, indistinguishable hidden states, and read-only side effects"
+          "scope": "public saved-page title, hide, forwards and reverse shells, actor-dependent hideForm form visibility, permission-filtered first-page embedding, fail-closed invalid attributes, page-to-discussion resolution, exact response metadata, indistinguishable hidden states, and read-only side effects"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs",
+          "name": "authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
+          "scope": "retained authenticated live evidence covers omitted, false, true, and yes hideForm values plus negative syntax controls and exact cleanup"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/comments-hideform-browser-candidate-case-set.test.mjs",
+          "name": "Comments hideForm is registered as one executable candidate case with both actor controls",
+          "scope": "candidate case binds the same hideForm source matrix to allowed and denied actor browser observations"
         },
         {
           "path": "framerail/tests/ajax-module-connector.test.js",
@@ -1411,6 +1422,10 @@
         "deepwell/src/services/render/runtime_modules.rs",
         "deepwell/src/services/render/forum_comments.rs",
         "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_visibility.rs",
+        "deepwell/src/services/permission/resolvers.rs",
+        "deepwell/src/types/enums/permission.rs",
+        "deepwell/src/types/permissions.rs",
         "framerail/src/lib/server/ajax-module-connector.js",
         "framerail/src/lib/server/deepwell/forum.ts"
       ],
@@ -1422,11 +1437,12 @@
         "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-forward",
         "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-reverse",
         "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json#scp-comments-missing-page",
-        "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json"
+        "install/local/wikidot-verification/artifacts/forum-q1034-comments-attributes-anonymous-20260810.json",
+        "install/local/wikidot-verification/artifacts/forum-comments-hideform-actor-live-20260810.json",
+        "install/local/wikidot-verification/artifacts/issue1367-comments-hideform-browser-live-20260815-r7.json"
       ],
       "unresolved_ambiguities_or_blockers": [
-        "The actor-dependent hideForm=true and hideForm=yes behavior remains unobserved and unimplemented.",
-        "Later comment pages, non-anonymous actor states, forms, mutations, and browser interaction remain unobserved or unimplemented."
+        "Later comment pages, broader non-anonymous read states, form submission and mutation authority, and browser interaction beyond the retained hideForm lifecycle remain unobserved or unimplemented."
       ]
     },
     "module-countpages": {

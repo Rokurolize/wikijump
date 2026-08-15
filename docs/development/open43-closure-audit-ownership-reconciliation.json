@@ -65,14 +65,14 @@
     },
     {
       "path": "docs/development/open43-q-forum-closure-audit.json",
-      "sha256": "da3e1a1742409d8bb80679b20103e13a7ad1bd329f62c4dcb43394f30084f178",
+      "sha256": "1d34c30ab1f23fa3d3990996d4f013c7625ff547ad036059a904a5f8ea05fa9c",
       "source_revision": "eee723e8be459cbe890b739b6f833dfde6435c9f",
       "issue_count": 2,
       "case_count": 28,
-      "classification_counts": {"source_ready": 14, "needs_source": 1, "candidate_required": 6, "blocked_evidence": 7},
+      "classification_counts": {"source_ready": 15, "needs_source": 0, "candidate_required": 6, "blocked_evidence": 7},
       "issue_summaries": [
         {"issue": 778, "case_count": 9, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
-        {"issue": 1034, "case_count": 19, "classification_counts": {"source_ready": 11, "needs_source": 1, "candidate_required": 3, "blocked_evidence": 4}}
+        {"issue": 1034, "case_count": 19, "classification_counts": {"source_ready": 12, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 4}}
       ]
     },
     {
@@ -139,7 +139,7 @@
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 129, "needs_source": 1, "candidate_required": 84, "blocked_evidence": 71}
+    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 71}
   },
   "validation": {
     "jq_structural_assertions": "pass",
