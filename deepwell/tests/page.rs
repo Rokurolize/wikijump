@@ -3238,8 +3238,7 @@ async fn deleted_category_navigation_does_not_fall_back_to_site_navigation() {
 
 #[tokio::test]
 async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page() {
-    const SOURCE: &str =
-        r###"[[a href="##"]]Issue 610 fragment closer[[/a]] ##red|Issue 610 color boundary##"###;
+    const SOURCE: &str = r###"[[a href="##"]]Issue 610 fragment closer[[/a]] ##red|Issue 610 color boundary##"###;
     const EXPECTED_ANCHOR: &str = r###"<a href="##">Issue 610 fragment closer</a>"###;
     const EXPECTED_COLOR: &str =
         r###"<span style="color: red">Issue 610 color boundary</span>"###;
