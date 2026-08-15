@@ -126,10 +126,10 @@ function fakeBrowser(session) {
   };
 }
 
-test("Q1028 initial Categories DOM is executable through the canonical runner", async (t) => {
+test("Q1028 category lifecycle is executable through the canonical runner", async (t) => {
   const session = fakeSession();
   const caseSet = createOpen43CategoriesCandidateCaseSet({ sessionFactory: () => session });
-  assert.deepEqual((await candidateCaseSet("open43-categories")).caseIds, [...OPEN43_CATEGORIES_CASE_IDS]);
+  assert.deepEqual((await candidateCaseSet("open43-categories")).caseIds, ["Q1028_CATEGORY_LIFECYCLE_AND_CACHE"]);
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-categories-candidate-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   const identity = candidateIdentity();

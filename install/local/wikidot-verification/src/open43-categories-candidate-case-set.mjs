@@ -2,7 +2,7 @@ import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 export const OPEN43_CATEGORIES_CASE_IDS = Object.freeze([
-  "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS",
+  "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
 ]);
 
 const SITE_SLUG = "scpaiueouiuiuiui";
