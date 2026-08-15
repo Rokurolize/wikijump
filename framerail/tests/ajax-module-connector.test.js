@@ -1219,6 +1219,66 @@ test("dispatches the observed WikiPageAction deletePage request", async () => {
   assert.deepEqual(calls, [{ siteId: 6000006, pageId: 1469167148 }])
 })
 
+test("deletePage fails closed for invalid controls and Deepwell failures", async () => {
+  const canonical = {
+    action: "WikiPageAction",
+    event: "deletePage",
+    page_id: "1469167148",
+    moduleName: "Empty",
+    wikidot_token7: "client-token"
+  }
+  const invalidForms = [
+    { ...canonical, extra: "unexpected" },
+    ...["action", "event", "page_id", "moduleName"].map((field) => {
+      const form = { ...canonical }
+      delete form[field]
+      return form
+    }),
+    ...["", "0", "-1", "1.5", "9007199254740993"].map((page_id) => ({
+      ...canonical,
+      page_id
+    }))
+  ]
+
+  let calls = 0
+  for (const form of invalidForms) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      deletePage: async () => {
+        calls += 1
+        assert.fail("invalid deletePage controls must fail before Deepwell")
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+  }
+  assert.equal(calls, 0)
+
+  const missingDependency = await handleAjaxModuleConnectorRequest(
+    request(canonical),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages")
+    }
+  )
+  assert.equal((await missingDependency.json()).status, "not_ok")
+
+  const originalConsoleError = console.error
+  console.error = () => {}
+  try {
+    const failed = await handleAjaxModuleConnectorRequest(request(canonical), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      deletePage: async () => {
+        throw new Error("Deepwell unavailable")
+      }
+    })
+    assert.equal((await failed.json()).status, "not_ok")
+  } finally {
+    console.error = originalConsoleError
+  }
+})
+
 test("dispatches NewPage helper default action with Wikidot edit-routing fields", async () => {
   const pageName = `run-owned:${"x".repeat(51)}`
   const response = await handleAjaxModuleConnectorRequest(
