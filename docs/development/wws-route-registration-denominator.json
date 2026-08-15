@@ -45,14 +45,14 @@
       },
       {
         "path": "wws/src/route.rs",
-        "git_blob": "1aee59a9f4a8deebc3cc17c89901a209653234bf",
-        "sha256": "0bc528895f8b75256c72660408ae5bd89a282ad71fe33131e5c6b9d9659212c2"
+        "git_blob": "eb001a69c3c4eb4da4938b98af18a75ce5e97c73",
+        "sha256": "f394857e6718bb94dee5f6e8a44d0754674825f30ac336473d97dad265a17a83"
       }
     ]
   },
   "generator": {
     "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-    "sha256": "54eb84f8c97e39c6a5458b8a283263e09fd7a6e2294d8c99327d7d68c9d005c9"
+    "sha256": "a101ad9fa3f07acce86bb396deb3241a2bcb15fd8059803e0a84c26acf2a8beb"
   },
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",
@@ -64,8 +64,10 @@
   },
   "behavior_evidence": {
     "path": "docs/development/wws-cache-head-live-observations-20260815.md",
-    "git_blob": "1a8370a5993366b2bfff2a6684efa63f7210fed4",
-    "sha256": "f0619cbd863b1f7cccfee4ea63b00c2a4b1b98211c8d5d283179ab0e1315dd86"
+    "git_blob": "80cdc2cb0883696451b4c4c76571dc3511b01f80",
+    "sha256": "66c9f08d87169540f63d48129b8064cdef20b824fc5d23f612aa8ab135b186ad",
+    "capture_source_commit": "776ea0bf5d4be01d24226765e9c144313f00de46",
+    "capture_source_status": "historical"
   },
   "counts": {
     "registrations": 30,
@@ -461,7 +463,7 @@
         "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
         "wws-route-registration:GET:/-/html/{page_slug}/{id}"
       ],
-      "public_test": "wws/src/route.rs#live_html_hash_domain_route_is_currently_unmapped",
+      "public_test": null,
       "preserves_behavior_id": "wws-behavior:numeric-html-cache-head-range",
       "route_pattern": "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$",
       "reason": "Deepwell exposes numeric index or name lookup only; no evidenced hash, nonce, or domain identity maps this live route to a text block."

@@ -17,6 +17,13 @@ const LIVE_OBSERVATION_NOTE = "docs/development/wws-cache-head-live-observations
 const HISTORICAL_ARTIFACT = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json"
 const HISTORICAL_FIXTURE = "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
 const EXPECTED_REGISTRATION_COUNT = 30
+const EXPECTED_BEHAVIOR_IDS = new Set([
+  "wws-behavior:file-cache-head-range",
+  "wws-behavior:code-cache-head-range",
+  "wws-behavior:numeric-html-cache-head-range",
+  "wws-behavior:live-html-hash-domain-identity"
+])
+const BEHAVIOR_STATUSES = new Set(["implemented", "not_faithfully_mapped"])
 const BEHAVIOR_RECORDS = [
   {
     id: "wws-behavior:file-cache-head-range",
@@ -57,7 +64,7 @@ const BEHAVIOR_RECORDS = [
       "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
       "wws-route-registration:GET:/-/html/{page_slug}/{id}"
     ],
-    public_test: "wws/src/route.rs#live_html_hash_domain_route_is_currently_unmapped",
+    public_test: null,
     preserves_behavior_id: "wws-behavior:numeric-html-cache-head-range",
     route_pattern: "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$",
     reason: "Deepwell exposes numeric index or name lookup only; no evidenced hash, nonce, or domain identity maps this live route to a text block."
@@ -401,20 +408,59 @@ function gitSourceIdentity(root, commit, relativePath, capturedBytes) {
   return { path: relativePath, git_blob: blob, sha256: sha256(capturedBytes) }
 }
 
-function verifyBehaviorSourceReferences(records, capturedSources) {
+function duplicateValues(values) {
+  return [...new Set(values.filter((value, index) => values.indexOf(value) !== index))]
+}
+
+function captureSourceCommit(source) {
+  const match = /^- (?:Historical )?Wikijump source at capture: `([0-9a-f]{40})`\.$/mu.exec(source)
+  if (!match) throw new Error(`${LIVE_OBSERVATION_NOTE} must declare its exact capture source commit`)
+  return match[1]
+}
+
+function verifyBehaviorSourceReferences(records, registrationIds, capturedSources) {
+  const behaviorIds = records.map(({ id }) => id)
+  const duplicateBehaviorIds = duplicateValues(behaviorIds)
+  if (duplicateBehaviorIds.length > 0) throw new Error(`duplicate WWS behavior ids: ${duplicateBehaviorIds.join(", ")}`)
+  const missingBehaviorIds = [...EXPECTED_BEHAVIOR_IDS].filter((id) => !behaviorIds.includes(id))
+  const unknownBehaviorIds = behaviorIds.filter((id) => !EXPECTED_BEHAVIOR_IDS.has(id))
+  if (records.length !== EXPECTED_BEHAVIOR_IDS.size || missingBehaviorIds.length > 0 || unknownBehaviorIds.length > 0) {
+    throw new Error(`WWS behavior ids do not match expected set; missing: ${missingBehaviorIds.join(", ") || "none"}; unknown: ${unknownBehaviorIds.join(", ") || "none"}`)
+  }
+
+  const knownRegistrationIds = new Set(registrationIds)
   for (const record of records) {
+    if (!BEHAVIOR_STATUSES.has(record.status)) throw new Error(`${record.id} has an unsupported behavior status: ${record.status}`)
+    if (!Array.isArray(record.source_paths) || record.source_paths.length === 0) throw new Error(`${record.id} must declare source paths`)
+    const duplicateSourcePaths = duplicateValues(record.source_paths)
+    if (duplicateSourcePaths.length > 0) throw new Error(`duplicate source paths for ${record.id}: ${duplicateSourcePaths.join(", ")}`)
+    if (!Array.isArray(record.registration_ids) || record.registration_ids.length === 0) throw new Error(`${record.id} must declare registration ids`)
+    const duplicateRegistrationIds = duplicateValues(record.registration_ids)
+    if (duplicateRegistrationIds.length > 0) throw new Error(`duplicate registration ids for ${record.id}: ${duplicateRegistrationIds.join(", ")}`)
+    const unknownRegistrationIds = record.registration_ids.filter((id) => !knownRegistrationIds.has(id))
+    if (unknownRegistrationIds.length > 0) throw new Error(`unknown WWS route registration ids for ${record.id}: ${unknownRegistrationIds.join(", ")}`)
     for (const sourcePath of record.source_paths) {
       if (!capturedSources.has(sourcePath)) throw new Error(`${record.id} references uncaptured source input ${sourcePath}`)
     }
+    if (record.public_test === null) {
+      if (record.status === "implemented") throw new Error(`${record.id} must declare a public test anchor`)
+      continue
+    }
+    if (typeof record.public_test !== "string") throw new Error(`${record.id} must declare a public test anchor or null`)
     const separator = record.public_test.indexOf("#")
+    if (separator <= 0 || separator === record.public_test.length - 1) throw new Error(`${record.id} has a malformed public test anchor: ${record.public_test}`)
     const publicTestPath = record.public_test.slice(0, separator)
     const publicTestAnchor = record.public_test.slice(separator + 1)
     if (!record.source_paths.includes(publicTestPath)) {
       throw new Error(`${record.id} public test path is not a declared source input: ${publicTestPath}`)
     }
     const publicTestSource = capturedSources.get(publicTestPath)
-    if (!publicTestSource?.toString("utf8").includes(publicTestAnchor)) {
-      throw new Error(`${record.id} public test anchor is missing from captured source: ${record.public_test}`)
+    const publicTestTokens = scanRustTokens(publicTestSource.toString("utf8"), publicTestPath)
+    const declarations = publicTestTokens.filter((token, index) =>
+      token.value === "fn" && publicTestTokens[index + 1]?.kind === "identifier" && publicTestTokens[index + 1].value === publicTestAnchor
+    )
+    if (declarations.length !== 1) {
+      throw new Error(`${record.id} public test anchor is not exactly one function declaration: ${record.public_test}`)
     }
   }
 }
@@ -437,16 +483,17 @@ async function buildDenominator(root) {
   const commit = git(root, "rev-parse", "HEAD")
   const inputContent = new Map([[ROUTE_REGISTRY, routeBytes]])
   for (const definition of definitions.values()) inputContent.set(definition.path, bytesByPath.get(definition.path))
-  verifyBehaviorSourceReferences(BEHAVIOR_RECORDS, inputContent)
+  verifyBehaviorSourceReferences(BEHAVIOR_RECORDS, registrationIds, inputContent)
   const inputs = [...inputContent]
     .sort(([left], [right]) => compareText(left, right))
     .map(([relativePath, content]) => gitSourceIdentity(root, commit, relativePath, content))
-  const behaviorEvidence = gitSourceIdentity(
-    root,
-    commit,
-    LIVE_OBSERVATION_NOTE,
-    await fs.readFile(path.join(root, LIVE_OBSERVATION_NOTE))
-  )
+  const behaviorEvidenceBytes = await fs.readFile(path.join(root, LIVE_OBSERVATION_NOTE))
+  const capturedSourceCommit = captureSourceCommit(behaviorEvidenceBytes.toString("utf8"))
+  const behaviorEvidence = {
+    ...gitSourceIdentity(root, commit, LIVE_OBSERVATION_NOTE, behaviorEvidenceBytes),
+    capture_source_commit: capturedSourceCommit,
+    capture_source_status: capturedSourceCommit === commit ? "current" : "historical"
+  }
 
   const records = registrations.map((registration, index) => {
     const definition = definitions.get(registration.handler)

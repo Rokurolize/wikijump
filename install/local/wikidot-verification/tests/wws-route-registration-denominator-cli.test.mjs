@@ -45,13 +45,27 @@ const expectedRegistrations = [
 ]
 
 function runCli(root, output, extraArguments = [], environment = process.env) {
-  const arguments_ = [cliPath, "--root", root]
+  return runCliWithScript(cliPath, root, output, extraArguments, environment)
+}
+
+function runCliWithScript(scriptPath, root, output, extraArguments = [], environment = process.env) {
+  const arguments_ = [scriptPath, "--root", root]
   if (output !== null) arguments_.push("--output", output)
   arguments_.push(...extraArguments)
   return spawnSync(process.execPath, arguments_, {
     encoding: "utf8",
     env: environment
   })
+}
+
+async function writeGeneratorFixture(root, mutate = (source) => source) {
+  const generatorPath = path.join(root, "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs")
+  await fs.mkdir(path.dirname(generatorPath), { recursive: true })
+  const source = await fs.readFile(cliPath, "utf8")
+  const mutated = mutate(source)
+  assert.notEqual(mutated, source)
+  await fs.writeFile(generatorPath, mutated)
+  return generatorPath
 }
 
 async function sha256(filePath) {
@@ -156,34 +170,20 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
   for (const input of manifest.source.inputs) {
     assert.equal(input.sha256, await sha256(path.join(repositoryRoot, input.path)))
   }
-  const sourceInputPaths = new Set(manifest.source.inputs.map(({ path: inputPath }) => inputPath))
   for (const registration of manifest.registrations) {
     assert.ok(registration.route_registration_reference.startsWith("wws/src/route.rs#L"))
     assert.ok(registration.handler_definition_reference.startsWith(`${registration.handler_definition_path}#L`))
   }
   const behaviorRecords = manifest.behavior_records
-  const behaviorIds = behaviorRecords.map(({ id }) => id)
-  const expectedBehaviorIds = new Set([
-    "wws-behavior:file-cache-head-range",
-    "wws-behavior:code-cache-head-range",
-    "wws-behavior:numeric-html-cache-head-range",
-    "wws-behavior:live-html-hash-domain-identity"
-  ])
-  assert.deepEqual(new Set(behaviorIds), expectedBehaviorIds)
-  assert.equal(new Set(behaviorIds).size, behaviorIds.length)
-  const registrationIds = new Set(manifest.registrations.map(({ registration_id }) => registration_id))
-  assert.ok(behaviorRecords.every(({ registration_ids }) => registration_ids.every((id) => registrationIds.has(id))))
-  assert.ok(behaviorRecords.every(({ source_paths, public_test }) => {
-    const [publicTestPath] = public_test.split("#")
-    return source_paths.includes(publicTestPath) && source_paths.every((sourcePath) => sourceInputPaths.has(sourcePath))
-  }))
   assert.equal(
     manifest.behavior_evidence.sha256,
     await sha256(path.join(repositoryRoot, "docs/development/wws-cache-head-live-observations-20260815.md"))
   )
+  assert.equal(manifest.behavior_evidence.capture_source_commit, "776ea0bf5d4be01d24226765e9c144313f00de46")
+  assert.equal(manifest.behavior_evidence.capture_source_status, "historical")
   const liveBehavior = behaviorRecords.find(({ id }) => id === "wws-behavior:live-html-hash-domain-identity")
   assert.equal(liveBehavior.status, "not_faithfully_mapped")
-  assert.equal(liveBehavior.public_test, "wws/src/route.rs#live_html_hash_domain_route_is_currently_unmapped")
+  assert.equal(liveBehavior.public_test, null)
   assert.equal(liveBehavior.route_pattern, "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$")
   assert.equal(liveBehavior.preserves_behavior_id, "wws-behavior:numeric-html-cache-head-range")
 })
@@ -225,25 +225,39 @@ test("CLI verify rejects a byte-drifted denominator", async (t) => {
   assert.equal(result.stdout, "")
 })
 
-for (const [label, mutate] of [
-  ["a removed behavior row", (manifest) => manifest.behavior_records.pop()],
-  ["a duplicated behavior row", (manifest) => { manifest.behavior_records[1] = manifest.behavior_records[0] }]
+for (const [label, mutate, expectedError] of [
+  [
+    "an omitted behavior row",
+    (source) => source.replace(/\n  \{\n    id: "wws-behavior:code-cache-head-range",[\s\S]*?\n  \},/u, ""),
+    /WWS behavior ids do not match expected set; missing: wws-behavior:code-cache-head-range/u
+  ],
+  [
+    "duplicate behavior IDs",
+    (source) => source.replace('id: "wws-behavior:code-cache-head-range"', 'id: "wws-behavior:file-cache-head-range"'),
+    /duplicate WWS behavior ids/u
+  ],
+  [
+    "an unknown behavior route",
+    (source) => source.replace('wws-route-registration:GET:/-/code/{page_slug}/{index}', 'wws-route-registration:GET:/-/unknown/{page_slug}/{index}'),
+    /unknown WWS route registration ids/u
+  ],
+  [
+    "a non-declaration public test anchor",
+    (source) => source.replace("wws/src/handler/file.rs#file_exact_if_none_match_returns_not_modified_without_reading_blob", "wws/src/handler/file.rs#missing_public_test"),
+    /public test anchor is not exactly one function declaration/u
+  ]
 ]) {
-  test(`CLI verify rejects ${label}`, async (t) => {
-    const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-behavior-drift-"))
+  test(`CLI rejects ${label} in the generator`, async (t) => {
+    const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-behavior-validation-"))
     t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
+    await writeCommittedProductionFixture(temporaryDirectory)
+    const generatorPath = await writeGeneratorFixture(temporaryDirectory, mutate)
     const output = path.join(temporaryDirectory, "denominator.json")
-    const manifest = JSON.parse(await fs.readFile(
-      path.join(repositoryRoot, "docs/development/wws-route-registration-denominator.json"),
-      "utf8"
-    ))
-    mutate(manifest)
-    await fs.writeFile(output, `${JSON.stringify(manifest, null, 2)}\n`)
 
-    const result = runCli(repositoryRoot, output, ["--verify"])
+    const result = runCliWithScript(generatorPath, temporaryDirectory, output)
 
     assert.notEqual(result.status, 0)
-    assert.match(result.stderr, /denominator\.json is stale/u)
+    assert.match(result.stderr, expectedError)
     assert.equal(result.stdout, "")
   })
 }

@@ -5,7 +5,7 @@ This note records anonymous, read-only Wikidot observations for issue #1370. No 
 ## Capture identity
 
 - Capture window: 2026-08-14T17:09:38Z through 2026-08-14T17:11:46Z.
-- Historical Wikijump source at capture (not the current denominator commit): `776ea0bf5d4be01d24226765e9c144313f00de46`.
+- Wikijump source at capture: `776ea0bf5d4be01d24226765e9c144313f00de46`.
 - WWS route denominator: 30 registrations, 17 `ANY` and 13 `GET`, SHA-256 `f8e81d91f75b77a26a394e588c99485039cb844a0691205d1c342bcac650687a`.
 - Client: `curl` with `--noproxy '*' --connect-timeout 10 --max-time 20 --silent --show-error`.
 
