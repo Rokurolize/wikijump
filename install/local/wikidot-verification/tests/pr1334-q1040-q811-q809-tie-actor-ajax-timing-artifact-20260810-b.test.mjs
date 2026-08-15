@@ -28,8 +28,11 @@ test("Q1040 Q811 Q809 evidence is bounded, source-independent, and non-closing",
   if (artifact.script_sha256 === legacyScriptSha256) assert.equal(artifact.run_namespace, `${fixture.run_namespace_prefix}${artifact.run_id}`)
   else assert.equal(artifact.run_namespace, `${fixture.run_namespace_prefix}${sha256(artifact.run_id).slice(0, 12)}`)
   assert.equal(artifact.site, fixture.site)
-  assert.equal([legacyFixtureSha256, sha256(fixtureBytes)].includes(artifact.fixture_sha256), true)
-  assert.equal([legacyScriptSha256, sha256(scriptBytes)].includes(artifact.script_sha256), true)
+  const allowedIdentityPairs = new Set([
+    `${legacyFixtureSha256}:${legacyScriptSha256}`,
+    `${sha256(fixtureBytes)}:${sha256(scriptBytes)}`,
+  ])
+  assert.equal(allowedIdentityPairs.has(`${artifact.fixture_sha256}:${artifact.script_sha256}`), true)
   assert.equal(artifact.closure_status, "non_closing_evidence")
   assert.ok(["complete", "partial", "blocked"].includes(artifact.capture_status))
   const expectedBudgets = { ...fixture.limits, ...(artifact.fixture_sha256 === legacyFixtureSha256 ? { minimum_interval_between_mutations_ms: 1000 } : {}) }
@@ -62,4 +65,13 @@ test("Q1040 Q811 Q809 evidence is bounded, source-independent, and non-closing",
     ["session", /WIKIDOT_SESSION_ID/i], ["password", /password/i], ["email", /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i],
     ["cookie", /"cookie"\s*:/i], ["csrf", /"csrf(?:_token)?"\s*:/i], ["authorization", /"authorization"\s*:/i], ["login id", /"username"\s*:/i],
   ]) assert.equal(pattern.test(serialized), false, `artifact contains forbidden ${label}`)
+})
+
+test("Q evidence rejects a mixed old/current fixture and script identity", () => {
+  const allowedIdentityPairs = new Set([
+    `${legacyFixtureSha256}:${legacyScriptSha256}`,
+    `${sha256("current-fixture")}:${sha256("current-script")}`,
+  ])
+  assert.equal(allowedIdentityPairs.has(`${legacyFixtureSha256}:${sha256("current-script")}`), false)
+  assert.equal(allowedIdentityPairs.has(`${sha256("current-fixture")}:${legacyScriptSha256}`), false)
 })

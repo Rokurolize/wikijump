@@ -1,7 +1,6 @@
 import { Open43SettingsBrowserAdapter } from "./open43-settings-browser-adapter.mjs";
 import {
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
-  OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS,
   verifyOpen43SettingsBrowserCase,
   verifyOpen43SettingsBrowserCleanup,
 } from "./open43-settings-browser-candidate-contract.mjs";
@@ -10,10 +9,7 @@ import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
-export {
-  OPEN43_SETTINGS_BROWSER_CASE_IDS,
-  OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS,
-} from "./open43-settings-browser-candidate-contract.mjs";
+export { OPEN43_SETTINGS_BROWSER_CASE_IDS } from "./open43-settings-browser-candidate-contract.mjs";
 
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
@@ -320,7 +316,6 @@ class Open43SettingsRun {
       { case_id: "S1046_ADMIN_INITIAL", observations: { temporal: temporal(adminInitial, false), admin: { route: "/_admin", status: adminInitial.capture.navigation_status, controls: adminInitial.initial.admin.controls, values_sha256: sha256Value(adminInitial.initial.admin.general_values) }, denied } },
       { case_id: "S1046_ADMIN_SETTLED", observations: { temporal: temporal(adminSettled, true), lifecycle: { ...generalLifecycleReceipt, stale_mutated: staleValuesSha256 !== adminInitialValuesSha256, stale_public_revision: stalePublicRevision, success_public_values_sha256: adminSettledPublicValuesSha256, success_public_revision: adminSettledSite.settings_revision, success_dom_values_sha256: sha256Value(successDomValues), settled_values_sha256: sha256Value(adminSettled.settled.admin.general_values), reload_values_sha256: sha256Value(adminSettled.reload.admin.general_values), client_navigation_values_sha256: sha256Value(adminSettled.client.admin.general_values), client_navigation_preserved_document: adminSettled.client_navigation_preserved_document, client_resource_completion: adminSettled.client_resource_completion, reload_url: adminSettled.reload_url, console_errors: [...new Set([...(generalLifecycleReceipt.console_errors ?? []), ...adminSettled.console_errors])].sort() } } },
       { case_id: "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX", observations: { actor_sessions: this.#actorSessions, outcomes: matrix.outcomes } },
-      ...OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS.map((caseId) => ({ case_id: caseId, observations: { candidate_configuration: { mode: "source_blind" } } })),
     ];
   }
 

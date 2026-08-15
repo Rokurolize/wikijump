@@ -4,7 +4,6 @@ import test from "node:test";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import {
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
-  OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS,
   verifyOpen43SettingsBrowserCleanup,
   verifyOpen43SettingsBrowserCase,
 } from "../src/open43-settings-browser-candidate-contract.mjs";
@@ -29,47 +28,18 @@ function temporal(phase, sequence) {
 
 test("settings browser contract fixes the exact denominator and initial observation order", () => {
   assert.deepEqual(OPEN43_SETTINGS_BROWSER_CASE_IDS, [
-    "B610_CHROME_INITIAL",
-    "B610_CHROME_SETTLED",
-    "B610_FAVICON_ARTICLE_SIDEBAR_THEME_NETWORK",
-    "B610_EXACT_SERVED_IDENTITIES",
-    "B689_TABVIEW_INITIAL",
-    "B689_TABVIEW_SETTLED",
-    "B689_THEME_BASALT_GEOMETRY",
-    "B689_SCP8980_AND_NAVIGATION_LIFECYCLE",
-    "B690_GEOMETRY_INITIAL",
-    "B690_GEOMETRY_SETTLED",
-    "B690_FIXED_SIX_PAGE_DENOMINATOR",
-    "B690_PILOT_SCALE_COMPARE",
     "S754_ANALYTICS_INITIAL",
     "S754_ANALYTICS_SETTLED",
     "S755_THEME_INITIAL",
     "S755_THEME_SETTLED",
     "S757_TOOLBAR_INITIAL",
     "S757_TOOLBAR_SETTLED",
-    "S758_CREATE_INITIAL",
-    "S758_CREATE_SETTLED",
-    "B822_PAGE_TAGS_INITIAL",
-    "B822_PAGE_TAGS_SETTLED",
     "S1046_ADMIN_INITIAL",
     "S1046_ADMIN_SETTLED",
     "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
-    "Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE",
-    "Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE",
-    "Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE",
-    "Q811_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE",
-    "Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE",
-    "Q1028_CATEGORY_LIFECYCLE_AND_CACHE",
-    "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE",
   ]);
-  assert.equal(OPEN43_SETTINGS_BROWSER_CASE_IDS.length, 32);
-  assert.equal(new Set(OPEN43_SETTINGS_BROWSER_CASE_IDS).size, 32);
-  assert.equal(OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS.length, 23);
-  assert.equal(new Set(OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS).size, 23);
-  assert.deepEqual(
-    OPEN43_SETTINGS_BROWSER_CASE_IDS.filter((caseId) => OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS.includes(caseId)),
-    OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS,
-  );
+  assert.equal(OPEN43_SETTINGS_BROWSER_CASE_IDS.length, 9);
+  assert.equal(new Set(OPEN43_SETTINGS_BROWSER_CASE_IDS).size, 9);
 
   const plan = { analytics_profile: "UA-754-1" };
   const enabled = {
@@ -129,25 +99,11 @@ test("settings browser contract fixes the exact denominator and initial observat
   );
 });
 
-test("source-blind candidate configurations verify without claiming behavior", () => {
-  const plan = {};
-  for (const caseId of OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS) {
-    assert.deepEqual(
-      verifyOpen43SettingsBrowserCase(caseId, { candidate_configuration: { mode: "source_blind" } }, plan),
-      { verified: true, configuration_only: true },
-    );
-  }
-  assert.throws(
-    () => verifyOpen43SettingsBrowserCase(OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS[0], {}, plan),
-    /source-blind configuration is missing/u,
-  );
-});
-
-test("the candidate command reaches the complete Phase 3 settings denominator", async () => {
+test("the candidate command reaches only the authoritative nine-case settings denominator", async () => {
   const selected = await candidateCaseSet("open43-settings-browser");
   assert.deepEqual(selected.caseIds, OPEN43_SETTINGS_BROWSER_CASE_IDS);
-  assert.equal(selected.caseIds.length, 32);
-  assert.equal(new Set(selected.caseIds).size, 32);
+  assert.equal(selected.caseIds.length, 9);
+  assert.equal(new Set(selected.caseIds).size, 9);
 });
 
 test("analytics settled observation rejects duplicate order and stale queues", () => {
