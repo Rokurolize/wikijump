@@ -31,6 +31,7 @@ let canonicalAdminError
 let legacyAdminError
 let canonicalAdminServer
 let legacyAdminServer
+let wikidotCollapsibles
 
 const requestContext = (data, { error = null, routeId = "/[x+2d]/admin" } = {}) => {
   const page = {
@@ -164,6 +165,9 @@ before(async () => {
   ;({ default: legacyAdminError } = await vite.ssrLoadModule(
     "/src/routes/_admin/+error.svelte"
   ))
+  ;({ wikidotCollapsibles } = await vite.ssrLoadModule(
+    "/src/lib/wikidot/wikidot-collapsibles.ts"
+  ))
   canonicalAdminServer = await vite.ssrLoadModule(
     "/src/routes/[x+2d]/admin/+page.server.ts"
   )
@@ -196,12 +200,126 @@ describe("Wikidot site settings public boundaries", () => {
     }
     assert.match(siteBody, /<form id="sm-general-form"/u)
     assert.doesNotMatch(siteBody, /name="layout"/u)
+    assert.match(siteBody, /<div class="accordion" id="accordion2">/u)
+    assert.match(
+      siteBody,
+      /<a(?=[^>]*class="accordion-toggle")(?=[^>]*data-toggle="collapse")(?=[^>]*data-parent="#accordion2")(?=[^>]*href="#collapseOne")(?=[^>]*aria-expanded="false")(?=[^>]*aria-controls="collapseOne")[^>]*>/u
+    )
+    assert.match(siteBody, /<div id="collapseOne" class="accordion-body collapse">/u)
+    assert.doesNotMatch(siteBody, /id="collapseOne"[^>]*hidden/u)
+    assert.match(
+      siteBody,
+      /<div class="autocomplete-container">\s*<input[^>]+id="sm-general-start"/u
+    )
+    assert.match(
+      siteBody,
+      /<div class="autocomplete-container">\s*<input[^>]+id="sm-general-welcome"/u
+    )
+    assert.match(siteBody, /Welcome page for new members/u)
 
     const layoutBody = renderComponent(layoutSettingsComponent, {
       data: adminData
     }).body
     assert.match(layoutBody, /id="wikijump-layout-settings"/u)
     assert.match(layoutBody, /name="layout"/u)
+  })
+
+  it("keeps the advanced settings accordion collapsed until click or keyboard activation", () => {
+    class FakeElement {
+      constructor() {
+        this.listeners = new Map()
+        this.attributes = new Map()
+        const classes = new Set()
+        this.classList = {
+          contains: (name) => classes.has(name),
+          toggle: (name, force) => {
+            const enabled = force ?? !classes.has(name)
+            if (enabled) classes.add(name)
+            else classes.delete(name)
+            return enabled
+          }
+        }
+      }
+
+      addEventListener(type, listener) {
+        this.listeners.set(type, listener)
+      }
+
+      removeEventListener(type) {
+        this.listeners.delete(type)
+      }
+
+      contains(element) {
+        return element === this.link
+      }
+
+      closest(selector) {
+        return selector === 'a.accordion-toggle[data-toggle="collapse"]' ? this : null
+      }
+
+      getAttribute(name) {
+        return this.attributes.get(name) ?? null
+      }
+
+      setAttribute(name, value) {
+        this.attributes.set(name, String(value))
+      }
+    }
+
+    const root = new FakeElement()
+    const link = new FakeElement()
+    const panel = new FakeElement()
+    root.link = link
+    root.querySelector = (selector) => (selector === "#collapseOne" ? panel : null)
+    link.attributes.set("href", "#collapseOne")
+    link.attributes.set("aria-controls", "collapseOne")
+    link.attributes.set("aria-expanded", "false")
+    panel.classList.toggle("collapse", true)
+
+    const previousElement = globalThis.Element
+    const previousHTMLElement = globalThis.HTMLElement
+    globalThis.Element = FakeElement
+    globalThis.HTMLElement = FakeElement
+    try {
+      const behavior = wikidotCollapsibles(root)
+      assert.equal(panel.classList.contains("collapse"), true)
+      assert.equal(panel.classList.contains("in"), false)
+      assert.equal(link.getAttribute("aria-expanded"), "false")
+      assert.equal(link.getAttribute("aria-controls"), "collapseOne")
+
+      let prevented = false
+      root.listeners.get("click")({
+        target: link,
+        preventDefault: () => {
+          prevented = true
+        }
+      })
+      assert.equal(panel.classList.contains("in"), true)
+      assert.equal(link.getAttribute("aria-expanded"), "true")
+      assert.equal(prevented, true)
+
+      root.listeners.get("keydown")({
+        key: "Enter",
+        target: link,
+        preventDefault: () => {}
+      })
+      assert.equal(panel.classList.contains("in"), false)
+      assert.equal(link.getAttribute("aria-expanded"), "false")
+
+      root.listeners.get("keydown")({
+        key: " ",
+        target: link,
+        preventDefault: () => {}
+      })
+      assert.equal(panel.classList.contains("in"), true)
+      assert.equal(link.getAttribute("aria-expanded"), "true")
+      behavior.destroy()
+    } finally {
+      if (previousElement === undefined) delete globalThis.Element
+      else globalThis.Element = previousElement
+      if (previousHTMLElement === undefined) delete globalThis.HTMLElement
+      else globalThis.HTMLElement = previousHTMLElement
+    }
   })
 
   it("server-renders analytics, theme, and toolbar settings from the request view", () => {
