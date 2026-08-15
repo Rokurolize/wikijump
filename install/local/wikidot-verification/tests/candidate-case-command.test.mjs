@@ -51,6 +51,13 @@ test("candidate case registry exposes the executable issue 777 adapter", async (
   assert.deepEqual(caseSet.caseIds, ["A777_BROWSER_PRINT_LIFECYCLE"]);
 });
 
+test("candidate case registry exposes the executable issue 1029 Join adapter", async () => {
+  const caseSet = await candidateCaseSet("open43-issue1029-join");
+  assert.equal(caseSet.id, "open43-issue1029-join");
+  assert.deepEqual(caseSet.caseIds, ["A1029_EXACT_BROWSER_TRANSITIONS"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case registry exposes all issue #1372 temporal intervals from its existing contract", async () => {
   const caseSet = await candidateCaseSet("framerail-route-action-browser");
   assert.equal(caseSet.id, "framerail-route-action-browser");
