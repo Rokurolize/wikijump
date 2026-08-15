@@ -8,6 +8,7 @@ import {
 
 export const OPEN43_ACTIONS_CASE_IDS = Object.freeze([
   "A1041_CENTRAL_REGISTRY_AND_MUTATION",
+  "A1041_SET_TAGS_CONTENTION",
 ]);
 
 const SITE_SLUG = "scpaiueouiuiuiui";
@@ -19,6 +20,8 @@ const SOURCE = [
 ].join("\n");
 const INITIAL_TAGS = Object.freeze(["original"]);
 const EXPECTED_TAGS = Object.freeze(["candidate"]);
+const STALE_ERROR_CODE = 4000;
+const STALE_ERROR_MESSAGE_SHA256 = sha256Text("The request is in some way malformed or incorrect");
 const EXPECTED_LABELS = Object.freeze(["history", "view source", "Apply tags"]);
 const EXPECTED_OPERATIONS = Object.freeze([
   "site_get",
@@ -30,6 +33,12 @@ const EXPECTED_OPERATIONS = Object.freeze([
   "page_view",
   "wikidot_legacy_set_tags",
   "page_get",
+  "wikidot_legacy_set_tags",
+  "page_get",
+]);
+const CONTENTION_SETUP_OPERATIONS = Object.freeze(["page_edit", "page_get"]);
+const CONTENTION_OPERATIONS = Object.freeze([
+  "wikidot_legacy_set_tags",
   "wikidot_legacy_set_tags",
   "page_get",
 ]);
@@ -214,24 +223,68 @@ class Open43ActionsRun {
       ip_address: "127.0.0.1",
     });
     const afterMutation = await this.#page();
+    const centralRequests = requestEvidence(this.#session.events, eventStart);
 
-    return [{
-      case_id: OPEN43_ACTIONS_CASE_IDS[0],
-      observations: {
-        actor: { user_id: this.#session.editorUserId },
-        page: { site_id: this.#siteId, page_id: saved.page_id, slug: this.#pageSlug, source_sha256: sha256Text(SOURCE) },
-        preview: { body: previewBody, actions: previewActions, page_after_preview: null },
-        saved: { body: savedBody, revision_id: saved.revision_id, tags: saved.tags },
-        served: { body: viewBody, actions: viewActions },
-        forged: {
-          denied: mismatchDenied,
-          before_sha256: sha256Value(beforeMismatch),
-          after_sha256: sha256Value({ revision_id: afterMismatch.revision_id, tags: afterMismatch.tags }),
+    const contentionSetupStart = this.#session.events.length;
+    await this.#rpc("page_edit", {
+      site_id: this.#siteId,
+      page: saved.page_id,
+      last_revision_id: afterMutation.revision_id,
+      revision_comments: "Open43 actions contention reset",
+      user_id: this.#session.editorUserId,
+      tags: INITIAL_TAGS,
+      ip_address: "127.0.0.1",
+    });
+    const contentionBefore = await this.#page();
+    const contentionSetupRequests = requestEvidence(this.#session.events, contentionSetupStart);
+    const contentionStart = this.#session.events.length;
+    const attempts = await Promise.allSettled([0, 1].map(() => this.#rpc("wikidot_legacy_set_tags", {
+      page_id: saved.page_id,
+      last_revision_id: contentionBefore.revision_id,
+      action_index: viewActions[2].index,
+      action_fingerprint: viewActions[2].fingerprint,
+      user_id: this.#session.editorUserId,
+      ip_address: "127.0.0.1",
+    })));
+    const contentionAfter = await this.#page();
+
+    return [
+      {
+        case_id: OPEN43_ACTIONS_CASE_IDS[0],
+        observations: {
+          actor: { user_id: this.#session.editorUserId },
+          page: { site_id: this.#siteId, page_id: saved.page_id, slug: this.#pageSlug, source_sha256: sha256Text(SOURCE) },
+          preview: { body: previewBody, actions: previewActions, page_after_preview: null },
+          saved: { body: savedBody, revision_id: saved.revision_id, tags: saved.tags },
+          served: { body: viewBody, actions: viewActions },
+          forged: {
+            denied: mismatchDenied,
+            before_sha256: sha256Value(beforeMismatch),
+            after_sha256: sha256Value({ revision_id: afterMismatch.revision_id, tags: afterMismatch.tags }),
+          },
+          mutation: { revision_id: afterMutation.revision_id, tags: afterMutation.tags },
+          requests: centralRequests,
         },
-        mutation: { revision_id: afterMutation.revision_id, tags: afterMutation.tags },
-        requests: requestEvidence(this.#session.events, eventStart),
       },
-    }];
+      {
+        case_id: OPEN43_ACTIONS_CASE_IDS[1],
+        observations: {
+          actor: { user_id: this.#session.editorUserId },
+          page: { site_id: this.#siteId, page_id: saved.page_id, slug: this.#pageSlug, source_sha256: sha256Text(SOURCE) },
+          action: viewActions[2],
+          setup: {
+            before: { revision_id: afterMutation.revision_id, revision_number: afterMutation.revision_number, tags: afterMutation.tags },
+            reset: { revision_id: contentionBefore.revision_id, revision_number: contentionBefore.revision_number, tags: contentionBefore.tags },
+            requests: contentionSetupRequests,
+          },
+          attempts: attempts.map((attempt) => attempt.status === "fulfilled"
+            ? { status: attempt.status }
+            : { status: attempt.status, rpc_code: attempt.reason?.rpc?.code ?? null, rpc_message_sha256: attempt.reason?.rpc?.message_sha256 ?? null }),
+          after: { revision_id: contentionAfter.revision_id, revision_number: contentionAfter.revision_number, tags: contentionAfter.tags },
+          requests: requestEvidence(this.#session.events, contentionStart),
+        },
+      },
+    ];
   }
 
   async cleanup() {
@@ -265,8 +318,41 @@ class Open43ActionsRun {
 }
 
 function verifyCase(caseId, observations) {
-  if (caseId !== OPEN43_ACTIONS_CASE_IDS[0]) throw new Error(`unsupported Open43 actions case: ${caseId}`);
+  if (!OPEN43_ACTIONS_CASE_IDS.includes(caseId)) throw new Error(`unsupported Open43 actions case: ${caseId}`);
   requirePlainObject(observations, `${caseId} observations`);
+  if (caseId === OPEN43_ACTIONS_CASE_IDS[1]) {
+    if (observations.action?.type !== "set-tags" || observations.action.index !== 2 || !/^[0-9a-f]{32}$/u.test(observations.action.fingerprint ?? "")) throw new Error(`${caseId} did not bind the server-issued set-tags action`);
+    if (
+      JSON.stringify(observations.setup?.before?.tags) !== JSON.stringify(EXPECTED_TAGS)
+      || JSON.stringify(observations.setup?.reset?.tags) !== JSON.stringify(INITIAL_TAGS)
+      || observations.setup.before.revision_id === observations.setup.reset.revision_id
+      || !Number.isSafeInteger(observations.setup.before.revision_number)
+      || observations.setup.reset.revision_number !== observations.setup.before.revision_number + 1
+    ) throw new Error(`${caseId} did not establish one fresh public contention revision`);
+    const fulfilled = Array.isArray(observations.attempts) ? observations.attempts.filter(({ status }) => status === "fulfilled") : [];
+    const rejected = Array.isArray(observations.attempts) ? observations.attempts.filter(({ status }) => status === "rejected") : [];
+    if (fulfilled.length !== 1 || Object.keys(fulfilled[0]).length !== 1 || rejected.length !== 1 || rejected[0].rpc_code !== STALE_ERROR_CODE || rejected[0].rpc_message_sha256 !== STALE_ERROR_MESSAGE_SHA256) throw new Error(`${caseId} returned stale success or did not expose the exact stale-revision denial`);
+    if (
+      JSON.stringify(observations.after?.tags) !== JSON.stringify(EXPECTED_TAGS)
+      || observations.after.revision_id === observations.setup.reset.revision_id
+      || observations.after.revision_number !== observations.setup.reset.revision_number + 1
+    ) throw new Error(`${caseId} final public state does not match one winning transition`);
+    for (const [requests, expected, name] of [[observations.setup.requests, CONTENTION_SETUP_OPERATIONS, "setup"], [observations.requests, CONTENTION_OPERATIONS, "contention"]]) {
+      if (!Array.isArray(requests) || requests.length !== expected.length) throw new Error(`${caseId} ${name} request denominator is wrong`);
+      requests.forEach((request, index) => {
+        if (request.service !== "deepwell" || request.operation !== expected[index] || request.method !== "POST" || request.response_status !== 200) throw new Error(`${caseId} ${name} request evidence is wrong or out of order`);
+      });
+    }
+    return {
+      verified: true,
+      actor_user_id: observations.actor.user_id,
+      attempts: 2,
+      committed_transitions: 1,
+      stale_successes: 0,
+      tags_after_contention: EXPECTED_TAGS,
+      public_request_order_verified: true,
+    };
+  }
   for (const name of ["preview", "saved", "served"]) requirePlainObject(observations[name], `${caseId} ${name}`);
   const bodyHashes = [observations.preview.body?.sha256, observations.saved.body?.sha256, observations.served.body?.sha256];
   if (new Set(bodyHashes).size !== 1 || bodyHashes[0] === undefined) throw new Error(`${caseId} did not prove exact preview, saved, and served DOM equality`);
@@ -349,7 +435,7 @@ export function createOpen43ActionsCandidateCaseSet({
           source_sha256: sha256Text(SOURCE),
           initial_tags: INITIAL_TAGS,
           expected_tags: EXPECTED_TAGS,
-          candidate_observation_scope: "public Deepwell preview, saved-page, page-view, denial, mutation, and cleanup RPC responses",
+          candidate_observation_scope: "public Deepwell preview, saved-page, page-view, denial, mutation, contention, and cleanup RPC responses",
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),

@@ -8,11 +8,16 @@ import {
   OPEN43_ACTIONS_CASE_IDS,
   createOpen43ActionsCandidateCaseSet,
 } from "../src/open43-actions-candidate-case-set.mjs";
+import { CandidateHttpSession } from "../src/candidate-case-http.mjs";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
+import { sha256Text } from "../src/standing-browser-parity-util.mjs";
 
 const hash = (character) => character.repeat(64);
 const git = (character) => character.repeat(40);
+const staleError = () => Object.assign(new Error("stale revision"), {
+  rpc: { code: 4000, message_sha256: sha256Text("The request is in some way malformed or incorrect") },
+});
 const body = [
   '<p><a class="wiki-standalone-button" href="javascript:;">history</a></p>',
   '<p><a class="wiki-standalone-button" href="javascript:;">view source</a></p>',
@@ -84,6 +89,7 @@ class FakeActionsSession {
         page_id: 11,
         site_id: 7,
         revision_id: 21,
+        revision_number: 1,
         slug: params.slug,
         title: params.title,
         wikitext: params.wikitext,
@@ -94,9 +100,19 @@ class FakeActionsSession {
     }
     if (method === "page_view") return { type: "found", data: { compiled_body_html: body, legacy_actions: actions } };
     if (method === "wikidot_legacy_set_tags") {
-      if (params.action_fingerprint !== actions[2].fingerprint) throw new Error("descriptor mismatch");
+      await Promise.resolve();
+      if (params.action_fingerprint !== actions[2].fingerprint) throw staleError();
+      if (params.last_revision_id !== this.#page.revision_id) throw staleError();
       this.#page.tags = ["candidate"];
       this.#page.revision_id += 1;
+      this.#page.revision_number += 1;
+      return structuredClone(this.#page);
+    }
+    if (method === "page_edit") {
+      assert.equal(params.last_revision_id, this.#page.revision_id);
+      this.#page.tags = [...params.tags];
+      this.#page.revision_id += 1;
+      this.#page.revision_number += 1;
       return structuredClone(this.#page);
     }
     if (method === "page_delete") {
@@ -108,7 +124,31 @@ class FakeActionsSession {
   }
 }
 
-test("the #1041 candidate adapter proves preview, saved descriptors, denial, and mutation", async (t) => {
+test("the candidate RPC seam retains only stable public error identity", async () => {
+  const session = new CandidateHttpSession({
+    candidateIdentity: candidateIdentity(),
+    privateInput: {
+      deepwell_rpc_url: "http://127.0.0.1:32747/jsonrpc",
+      deepwell_rpc_token: hash("a"),
+      object_store_origin: "http://127.0.0.1:3900",
+      presigned_origin: "http://127.0.0.1:3900",
+      tls_ca_pem: "private-ca",
+      actors: { editor: { user_id: 123, session_token: "private-editor-token" } },
+    },
+    requestImpl: async () => ({
+      status: 200,
+      headers: { "content-type": "application/json" },
+      body: Buffer.from(JSON.stringify({ jsonrpc: "2.0", id: 1, error: { code: 4000, message: "The request is in some way malformed or incorrect", data: { call_trace: "must not escape" } } })),
+    }),
+  });
+  await assert.rejects(session.rpc("wikidot_legacy_set_tags"), (error) => {
+    assert.deepEqual(error.rpc, { code: 4000, message_sha256: sha256Text("The request is in some way malformed or incorrect") });
+    assert.equal(JSON.stringify(error).includes("call_trace"), false);
+    return true;
+  });
+});
+
+test("the #1041 candidate adapter proves preview, descriptors, denial, mutation, and contention", async (t) => {
   const registered = await candidateCaseSet("open43-actions");
   assert.deepEqual(registered.caseIds, OPEN43_ACTIONS_CASE_IDS);
 
@@ -137,7 +177,16 @@ test("the #1041 candidate adapter proves preview, saved descriptors, denial, and
   });
 
   assert.equal(aggregate.status, "pass");
-  assert.deepEqual(aggregate.denominator.case_ids, ["A1041_CENTRAL_REGISTRY_AND_MUTATION"]);
+  assert.deepEqual(aggregate.denominator.case_ids, [
+    "A1041_CENTRAL_REGISTRY_AND_MUTATION",
+    "A1041_SET_TAGS_CONTENTION",
+  ]);
+  const contentionArtifact = aggregate.cases.find(({ case_id: caseId }) => caseId === "A1041_SET_TAGS_CONTENTION");
+  const contention = JSON.parse(await fs.readFile(contentionArtifact.path, "utf8"));
+  assert.deepEqual(contention.observations.attempts.map(({ status }) => status).sort(), ["fulfilled", "rejected"]);
+  assert.equal(contention.observations.attempts.find(({ status }) => status === "rejected").rpc_code, 4000);
+  assert.equal(contention.verification.committed_transitions, 1);
+  assert.equal(contention.verification.stale_successes, 0);
   assert.equal(aggregate.cleanup.public_absence_verified, true);
   assert.equal(aggregate.resources[0].released, true);
   assert.deepEqual(
@@ -152,6 +201,11 @@ test("the #1041 candidate adapter proves preview, saved descriptors, denial, and
       "page_view",
       "wikidot_legacy_set_tags",
       "page_get",
+      "wikidot_legacy_set_tags",
+      "page_get",
+      "page_edit",
+      "page_get",
+      "wikidot_legacy_set_tags",
       "wikidot_legacy_set_tags",
       "page_get",
       "page_get",

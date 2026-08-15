@@ -175,7 +175,15 @@ export class CandidateHttpSession {
     }, cleanup);
     let payload;
     try { payload = JSON.parse(response.body); } catch { throw new Error(`${method} returned non-JSON at the public Deepwell seam`); }
-    if (response.status !== 200 || payload?.error !== undefined) throw new Error(`${method} failed at the public Deepwell seam`);
+    if (response.status !== 200) throw new Error(`${method} failed at the public Deepwell seam`);
+    if (payload?.error !== undefined) {
+      const error = new Error(`${method} failed at the public Deepwell seam`);
+      error.rpc = {
+        code: Number.isSafeInteger(payload.error?.code) ? payload.error.code : null,
+        message_sha256: typeof payload.error?.message === "string" ? sha256(payload.error.message) : null,
+      };
+      throw error;
+    }
     return payload.result;
   }
 
