@@ -14,7 +14,7 @@ import {
 const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set issue1373-amc-new-page|open43-backlinks|open43-media-files|open43-media-browser|open43-authoring-history|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-mailform-fail-closed|open43-b610-shell|open43-issue775-edit|open43-searchall --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set issue1373-amc-new-page|framerail-route-action-browser|open43-backlinks|open43-media-files|open43-media-browser|open43-authoring-history|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-mailform-fail-closed|open43-b610-shell|open43-issue775-edit|open43-searchall --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
 
 Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
@@ -100,6 +100,10 @@ export async function candidateCaseSet(name) {
   if (name === "issue1373-amc-new-page") {
     const { createIssue1373AmcNewPageCandidateCaseSet } = await import("./issue1373-amc-new-page-candidate-case-set.mjs");
     return createIssue1373AmcNewPageCandidateCaseSet();
+  }
+  if (name === "framerail-route-action-browser") {
+    const { createFramerailRouteActionCandidateCaseSet } = await import("./framerail-route-action-candidate-case-set.mjs");
+    return createFramerailRouteActionCandidateCaseSet();
   }
   throw new Error(`unknown source-owned candidate case set: ${name}`);
 }

@@ -274,7 +274,6 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     "failure_control_identity",
     "fixture_identity",
     "historical_evidence_identity",
-    "cleanup_proof",
     "run_contract_identity",
     "run_id",
     "repository_identity",
@@ -312,12 +311,12 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   const historicalIdentity = await verifyHistoricalEvidence(contract.historical_evidence)
   assert.equal(historicalIdentity.sha256, contract.historical_evidence.sha256)
   assert.equal(contract.cleanup.required, true)
-  assert.equal(contract.cleanup.protected_resources_must_remain_unchanged, true)
-  assert.deepEqual(contract.cleanup.proof_fields, [
-    "fixture_restored_or_removed",
-    "browser_state_removed",
-    "runtime_stopped",
-    "protected_resources_preserved"
+  assert.deepEqual(contract.cleanup.capture_owned_fields, [
+    "browser_sessions_closed",
+    "egress_proxies_closed",
+    "request_gate_flushed",
+    "capture_lock_released",
+    "storage_states_removed"
   ])
 
   const urls = {

@@ -161,7 +161,7 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
       return browserOwner().then((owner) => owner.captureCandidateObservation(options));
     },
   });
-  const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, signal, resources, candidateBrowserContexts }));
+  const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir: output, signal, resources, candidateBrowserContexts }));
   if (resources.snapshot().length !== 0) throw new Error("CandidateCaseSet prepareRun must be side-effect-free");
   browserOwnerOptions = {
     candidateIdentity: identity,

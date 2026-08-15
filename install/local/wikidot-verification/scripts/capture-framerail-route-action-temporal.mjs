@@ -789,12 +789,7 @@ function printHelp() {
 Captures the six issue #1372 temporal intervals for all 14 subjects. The URL flags name root-prepared denial, failure, and success fixtures for missing and saved pages. The command does not create or mutate fixtures, runtime data, or authority state.`);
 }
 
-async function run() {
-  const args = parseArgs(process.argv.slice(2));
-  if (args.help) {
-    printHelp();
-    return 0;
-  }
+export async function runTemporalCapture(args) {
   const contractFile = await jsonIdentity(args.contract, "run_contract", "wikijump.framerail_route_action_browser_run.v1");
   const contract = contractFile.descriptor;
   const {scenarios: contractScenarios} = validateTemporalRunContract(contract);
@@ -1007,6 +1002,15 @@ async function run() {
   }
   console.log(`wrote ${result.observation_count} temporal observations to ${path.join(args.outputDir, "records.json")}`);
   return 0;
+}
+
+async function run() {
+  const args = parseArgs(process.argv.slice(2));
+  if (args.help) {
+    printHelp();
+    return 0;
+  }
+  return await runTemporalCapture(args);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === SCRIPT_PATH) {
