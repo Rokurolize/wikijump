@@ -35,6 +35,7 @@ pub use self::list_pages::{
 pub use self::service::PageQueryService;
 pub(crate) use self::service::{PageQueryScoreFilterCache, PageQueryScoreFilterSession};
 pub(crate) use self::structs::MAX_PAGE_QUERY_SCORE_SELECTORS;
+pub(crate) use self::structs::wikidot_author_name_sql;
 pub use self::structs::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
     DateSelector, DateTimeResolution, FoundPageFields, FoundPageRow, FoundPages,

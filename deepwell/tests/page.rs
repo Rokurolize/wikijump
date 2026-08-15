@@ -8588,6 +8588,12 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries() {
     const EXTANT_USER_ID: i64 = 19_102_600;
     const DELETED_USER_ID: i64 = 19_102_601;
+    const NAME_ONLY_USER_ID: i64 = 19_102_602;
+    const COLLISION_FIRST_USER_ID: i64 = 19_102_603;
+    const COLLISION_SECOND_USER_ID: i64 = 19_102_604;
+    const UNICODE_USER_ID: i64 = 19_102_605;
+    const NUMERIC_ID_USER_ID: i64 = 2;
+    const DISPLAY_NUMERIC_NAME_USER_ID: i64 = 19_102_606;
     const PAGE_SLUG: &str = "fixture-wikidot-user-identity-matrix";
 
     let mut runner = TestRunner::setup().await;
@@ -8598,8 +8604,17 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
     transaction
         .execute_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
-            "INSERT INTO known_user (user_id) VALUES ($1), ($2)",
-            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+            "INSERT INTO known_user (user_id) VALUES ($1), ($2), ($3), ($4), ($5), ($6), ($7), ($8)",
+            [
+                Value::from(EXTANT_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(NAME_ONLY_USER_ID),
+                Value::from(COLLISION_FIRST_USER_ID),
+                Value::from(COLLISION_SECOND_USER_ID),
+                Value::from(UNICODE_USER_ID),
+                Value::from(NUMERIC_ID_USER_ID),
+                Value::from(DISPLAY_NUMERIC_NAME_USER_ID),
+            ],
         ))
         .await
         .expect("user-block known-user fixtures should be inserted");
@@ -8611,9 +8626,24 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
                 "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
                 ") VALUES ",
                 "($1, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Extant User', 'extant-user', 5, FALSE), ",
-                "($2, NOW() - INTERVAL '1 second', NOW(), TRUE, 'Deleted User', 'deleted-user', 0, FALSE)",
+                "($2, NOW() - INTERVAL '1 second', NOW(), TRUE, 'Deleted User', 'deleted-user', 0, FALSE), ",
+                "($3, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Name Only User', 'name-only-slug', 5, FALSE), ",
+                "($4, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Shared Person', 'shared-person-first', 5, FALSE), ",
+                "($5, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Shared_Person', 'shared-person-second', 5, FALSE), ",
+                "($6, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Éclair\tName\u{00a0}JP', 'unicode-name', 5, FALSE), ",
+                "($7, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Numeric Target', 'numeric-target', 5, FALSE), ",
+                "($8, NOW() - INTERVAL '1 second', NOW(), FALSE, '2', 'display-two', 5, FALSE)",
             ),
-            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+            [
+                Value::from(EXTANT_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(NAME_ONLY_USER_ID),
+                Value::from(COLLISION_FIRST_USER_ID),
+                Value::from(COLLISION_SECOND_USER_ID),
+                Value::from(UNICODE_USER_ID),
+                Value::from(NUMERIC_ID_USER_ID),
+                Value::from(DISPLAY_NUMERIC_NAME_USER_ID),
+            ],
         ))
         .await
         .expect("user-block Wikidot fixtures should be inserted");
@@ -8621,6 +8651,12 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
     let source = format!(
         concat!(
             "NAME=[[user Extant User]]\n",
+            "NAME_ONLY=[[user Name Only User]]\n",
+            "COLLISION=[[*user Shared Person]]\n",
+            "UNKNOWN_AVATAR=[[*user Unknown Avatar User]]\n",
+            "UNICODE=[[user éCLAIR\u{00a0}name\tjp]]\n",
+            "NUMERIC_ID=[[*user 2]]\n",
+            "NUMERIC_NAME=[[user display-two]]\n",
             "ID=[[*user {EXTANT_USER_ID}]]\n",
             "DELETED=[[user Deleted User]]\n",
             "A=[[user v7ws=\"alpha\tbeta\u{00a0}gamma\"]]\n",
@@ -8675,14 +8711,49 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
         other => panic!("expected saved Wikidot user matrix, got {other:?}"),
     };
 
-    assert!(
-        html.contains("http://www.wikidot.com/user:info/extant-user")
-            && html.contains(&format!(
-                "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID}); return false;"
-            ))
-            && html.contains(">Extant User</a>"),
-        "extant name and numeric ID references should share the imported identity:\n{html}",
-    );
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/extant-user")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID}); return false;"
+                ))
+                && output.contains(">Extant User</a>"),
+            "{label} extant name and numeric ID references should share the imported identity:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/name-only-slug")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({NAME_ONLY_USER_ID}); return false;"
+                ))
+                && output.contains(">Name Only User</a>"),
+            "{label} should resolve the imported display name even when its slug differs:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/unicode-name")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({UNICODE_USER_ID}); return false;"
+                ))
+                && output.contains(">Éclair"),
+            "{label} should use the shared Unicode whitespace and case normalization contract:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/numeric-target")
+                && output.contains("WIKIDOT.page.listeners.userInfo(2); return false;")
+                && output.contains(">Numeric Target</a>"),
+            "{label} numeric ID lookup must survive a display name normalized as 2:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/display-two")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({DISPLAY_NUMERIC_NAME_USER_ID}); return false;"
+                ))
+                && output.contains(">2</a>"),
+            "{label} should still resolve the separately loaded user whose display name is 2:\n{output}",
+        );
+    }
     assert_eq!(
         html.matches(&format!(
             "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID})"
@@ -8697,6 +8768,10 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
     let live_missing_user_fragments = [
         concat!(
             r#"<span class="error-inline"><em>Deleted User</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>Unknown Avatar User</em>"#,
             " does not match any existing user name</span>",
         ),
         concat!(
@@ -8742,13 +8817,56 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             output
                 .matches("does not match any existing user name")
                 .count(),
-            8,
-            "{label} must fail closed for the deleted identity and seven unknown lookup keys:\n{output}",
+            10,
+            "{label} must fail closed for the deleted identity, colliding name, starred unknown, and seven unknown lookup keys:\n{output}",
         );
         assert!(
             !output.contains("user:info/deleted-user"),
             "{label} must not expose a profile URL for the deleted identity:\n{output}",
         );
+        assert!(
+            output.contains(concat!(
+                r#"<span class="error-inline"><em>Shared Person</em>"#,
+                " does not match any existing user name</span>",
+            )),
+            "{label} must fail closed for colliding normalized display names:\n{output}",
+        );
+        assert!(
+            !output.contains("user:info/shared-person-first"),
+            "{label}: {output}"
+        );
+        assert!(
+            !output.contains("user:info/shared-person-second"),
+            "{label}: {output}"
+        );
+        for marker in [
+            "DELETED=",
+            "COLLISION=",
+            "UNKNOWN_AVATAR=",
+            "A=",
+            "B=",
+            "C=",
+            "D=",
+            "E=",
+            "F=",
+            "G=",
+        ] {
+            let start = output
+                .find(marker)
+                .unwrap_or_else(|| panic!("{label} missing {marker}: {output}"));
+            let case = &output[start..];
+            let end = case
+                .find("<br")
+                .or_else(|| case.find("</p>"))
+                .unwrap_or(case.len());
+            let case = &case[..end];
+            for forbidden in ["<a", "onclick=", "printuser", "avatar"] {
+                assert!(
+                    !case.contains(forbidden),
+                    "{label} {marker} must not emit {forbidden}: {case}"
+                );
+            }
+        }
     }
 }
 

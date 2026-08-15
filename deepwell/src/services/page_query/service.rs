@@ -27,7 +27,7 @@ use super::structs::{
     PageParentSelector, PageQuery, PageQueryResultEnvelope, PageQueryResultMetadata,
     PageTypeSelector, PaginationSelector, ScoreSelector, TagCondition,
     normalize_wikidot_author_name, parse_static_wikidot_data_form_values,
-    static_wikidot_data_form_matches,
+    static_wikidot_data_form_matches, wikidot_author_name_sql,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page};
@@ -615,9 +615,11 @@ impl PageQueryService {
                 if !normalized_snapshot_names.is_empty() {
                     let placeholders =
                         postgres_bind_placeholders(normalized_snapshot_names.len());
+                    let normalized_name_sql =
+                        wikidot_author_name_sql("snapshot.created_by_name");
                     author_condition = author_condition.add(Expr::cust_with_values(
                         format!(
-                            "EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot WHERE snapshot.page_id = page.page_id AND replace(replace(lower(btrim(snapshot.created_by_name)), '_', '-'), ' ', '-') IN ({placeholders}))"
+                            "EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot WHERE snapshot.page_id = page.page_id AND {normalized_name_sql} IN ({placeholders}))"
                         ),
                         normalized_snapshot_names,
                     ));
@@ -653,9 +655,11 @@ impl PageQueryService {
                 if !normalized_snapshot_names.is_empty() {
                     let placeholders =
                         postgres_bind_placeholders(normalized_snapshot_names.len());
+                    let normalized_name_sql =
+                        wikidot_author_name_sql("snapshot.created_by_name");
                     condition = condition.add(Expr::cust_with_values(
                         format!(
-                            "NOT EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot WHERE snapshot.page_id = page.page_id AND replace(replace(lower(btrim(snapshot.created_by_name)), '_', '-'), ' ', '-') IN ({placeholders}))"
+                            "NOT EXISTS (SELECT 1 FROM wikidot_page_snapshot snapshot WHERE snapshot.page_id = page.page_id AND {normalized_name_sql} IN ({placeholders}))"
                         ),
                         normalized_snapshot_names,
                     ));

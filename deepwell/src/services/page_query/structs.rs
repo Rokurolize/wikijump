@@ -92,8 +92,38 @@ pub enum AuthorSelector<'a> {
     None,
 }
 
+const WIKIDOT_AUTHOR_NAME_SEPARATOR_CHARS: &str = "\t \u{00a0}";
+
 pub fn normalize_wikidot_author_name(value: &str) -> String {
-    value.trim().to_ascii_lowercase().replace(['_', ' '], "-")
+    value
+        .trim_matches(is_wikidot_author_name_separator)
+        .to_lowercase()
+        .chars()
+        .map(|character| {
+            if character == '_' || is_wikidot_author_name_separator(character) {
+                '-'
+            } else {
+                character
+            }
+        })
+        .collect()
+}
+
+fn is_wikidot_author_name_separator(value: char) -> bool {
+    WIKIDOT_AUTHOR_NAME_SEPARATOR_CHARS.contains(value)
+}
+
+// Contract: trim ASCII space, tab, or NBSP; lowercase with Unicode mappings;
+// then map those three separators and underscore to '-'. Repeated separators
+// remain repeated. Broader Unicode whitespace and separator behavior remains
+// unevidenced and is intentionally not widened.
+pub(crate) const WIKIDOT_AUTHOR_NAME_SQL_TEMPLATE: &str = concat!(
+    "replace(translate(lower(btrim({column}, U&'\\0009\\0020\\00A0')), ",
+    "U&'\\0009\\0020\\00A0', '---'), '_', '-')",
+);
+
+pub(crate) fn wikidot_author_name_sql(column: &str) -> String {
+    WIKIDOT_AUTHOR_NAME_SQL_TEMPLATE.replace("{column}", column)
 }
 
 /// The relationship of the pages being queried to their parent/child pages.
@@ -557,6 +587,23 @@ mod tests {
         assert_eq!(values.get("field-one").map(String::as_str), Some("alpha"));
         assert_eq!(values.get("field-two").map(String::as_str), Some("beta"));
         assert!(!values.contains_key("field-three"));
+    }
+
+    #[test]
+    fn wikidot_author_name_rust_and_postgres_contracts_share_evidenced_inputs() {
+        let cases = [
+            (" Display_Name ", "display-name"),
+            ("alpha\tbeta\u{00a0}gamma", "alpha-beta-gamma"),
+            ("Éclair Name", "éclair-name"),
+            ("\u{2003}wide\u{2003}", "\u{2003}wide\u{2003}"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(normalize_wikidot_author_name(input), expected, "{input:?}");
+        }
+        assert_eq!(
+            wikidot_author_name_sql("wikidot_user.name"),
+            "replace(translate(lower(btrim(wikidot_user.name, U&'\\0009\\0020\\00A0')), U&'\\0009\\0020\\00A0', '---'), '_', '-')",
+        );
     }
 
     #[test]
