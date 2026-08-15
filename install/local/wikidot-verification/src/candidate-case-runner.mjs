@@ -7,6 +7,7 @@ import { assertCandidateIdentityFresh, validateCandidateParityIdentity } from ".
 import { assertStableCandidateRuntimeIdentity, observeCandidateRuntimeIdentity } from "./standing-browser-runtime-identity.mjs";
 import {
   createPrivateEmptyDirectory,
+  requireExactHttpsOrigins,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -162,12 +163,17 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     },
   });
   const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir: output, signal, resources, candidateBrowserContexts }));
+  const browserPublicOrigins = requireExactHttpsOrigins(
+    run.browserPublicOrigins ?? [],
+    "prepared run browserPublicOrigins",
+  );
   if (resources.snapshot().length !== 0) throw new Error("CandidateCaseSet prepareRun must be side-effect-free");
   browserOwnerOptions = {
     candidateIdentity: identity,
     outputDir: output,
     signal,
     credentialPolicy: run.browserCredentialPolicy ?? "none",
+    publicOrigins: browserPublicOrigins,
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };

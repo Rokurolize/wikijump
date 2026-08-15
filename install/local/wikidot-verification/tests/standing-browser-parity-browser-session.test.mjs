@@ -1,7 +1,67 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { installCandidateFilePortRoute } from "../src/standing-browser-parity-browser-session.mjs";
+import {
+  isParityBrowserPublicOrigin,
+  installCandidateFilePortRoute,
+  parityBrowserThrottleConfig,
+} from "../src/standing-browser-parity-browser-session.mjs";
+
+const hash = (character) => character.repeat(64);
+
+test("browser throttle receipt binds exact case-set public origins", () => {
+  const base = {
+    args: { mode: "candidate-case" },
+    runId: "fixture-run",
+    lock: { path: "/private/lock", owner: "fixture" },
+    policy: { sha256: hash("a"), value: { policy_version: "fixture-v1" } },
+    localOrigins: [],
+    candidate: null,
+  };
+  const config = parityBrowserThrottleConfig({
+    ...base,
+    publicOrigins: ["https://www.youtube.com", "https://embed.acast.com"],
+  });
+
+  assert.deepEqual(config.case_set_public_origins, [
+    "https://www.youtube.com",
+    "https://embed.acast.com",
+  ]);
+  assert.throws(
+    () => parityBrowserThrottleConfig({
+      ...base,
+      publicOrigins: ["https://www.youtube.com/watch"],
+    }),
+    /exact HTTPS origins/u,
+  );
+  assert.equal(
+    isParityBrowserPublicOrigin(
+      "https://www.youtube.com/embed/video",
+      "document",
+      "GET",
+      config.case_set_public_origins,
+    ),
+    true,
+  );
+  assert.equal(
+    isParityBrowserPublicOrigin(
+      "https://www.youtube.com/embed/video",
+      "document",
+      "POST",
+      config.case_set_public_origins,
+    ),
+    false,
+  );
+  assert.equal(
+    isParityBrowserPublicOrigin(
+      "https://youtube.com/embed/video",
+      "document",
+      "GET",
+      config.case_set_public_origins,
+    ),
+    false,
+  );
+});
 
 test("candidate file routing maps only the exact canonical file authority to its sealed port", async () => {
   let pattern;

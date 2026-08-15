@@ -332,6 +332,7 @@ test("CandidateCaseRunner owns and closes its lazy browser contexts", async (t) 
       /unavailable during prepareRun/u,
     );
     const run = prepareRun(args);
+    run.browserPublicOrigins = ["https://www.youtube.com"];
     const execute = run.execute;
     const cleanup = run.cleanup;
     run.execute = async () => {
@@ -360,6 +361,7 @@ test("CandidateCaseRunner owns and closes its lazy browser contexts", async (t) 
         assert.equal(options.outputDir.endsWith("evidence"), true);
         assert.equal(options.candidateIdentity.candidate.endpoint.port, 18443);
         assert.equal(options.credentialPolicy, "none");
+        assert.deepEqual(options.publicOrigins, ["https://www.youtube.com"]);
         return candidateBrowserContexts;
       },
     },

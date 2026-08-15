@@ -30,6 +30,31 @@ export function requireSha256(value, name) {
   return value;
 }
 
+export function requireExactHttpsOrigins(values, name) {
+  if (!Array.isArray(values) || new Set(values).size !== values.length) {
+    throw new Error(`${name} must be a unique array of exact HTTPS origins`);
+  }
+  return Object.freeze(values.map((value) => {
+    let url;
+    try {
+      url = new URL(value);
+    } catch {
+      throw new Error(`${name} must contain exact HTTPS origins`);
+    }
+    if (
+      typeof value !== "string" ||
+      value !== url.origin ||
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port
+    ) {
+      throw new Error(`${name} must contain exact HTTPS origins`);
+    }
+    return value;
+  }));
+}
+
 const MAX_STABLE_FILE_BYTES = 128 * 1024 * 1024;
 
 function requireStableRegularFile(stat, name) {

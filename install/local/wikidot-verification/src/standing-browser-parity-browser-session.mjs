@@ -15,6 +15,7 @@ import {
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
 import {
+  requireExactHttpsOrigins,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -159,7 +160,12 @@ export function parityBrowserThrottleConfig({
   localOrigins,
   candidate,
   credentialPolicy = "none",
+  publicOrigins = [],
 }) {
+  const caseSetPublicOrigins = requireExactHttpsOrigins(
+    publicOrigins,
+    "browser public origins",
+  );
   let credentials = "none";
   if (credentialPolicy !== "none") {
     const value = requirePlainObject(
@@ -203,14 +209,35 @@ export function parityBrowserThrottleConfig({
     },
     local_context_exempt_origins: localOrigins,
     candidate_endpoint: candidate ?? null,
-    public_request_policy:
-      "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
-    public_origin_policy:
-      "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents plus interwiki/resizeIframe scripts) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+    ...(caseSetPublicOrigins.length === 0
+      ? {
+          public_request_policy:
+            "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
+          public_origin_policy:
+            "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents plus interwiki/resizeIframe scripts) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+        }
+      : {
+          case_set_public_origins: caseSetPublicOrigins,
+          public_request_policy:
+            "Wikidot-family requests, exact case-set GET origins, and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
+          public_origin_policy:
+            "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents plus interwiki/resizeIframe scripts) and exact case-set HTTPS GET origins are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+        }),
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
     credentials,
   };
+}
+
+export function isParityBrowserPublicOrigin(
+  value,
+  resourceType,
+  method,
+  publicOrigins = [],
+) {
+  const url = value instanceof URL ? value : new URL(value);
+  return isWikidotCapturePublicOrigin(url, resourceType, method) ||
+    (method === "GET" && publicOrigins.includes(url.origin));
 }
 
 export async function createParityBrowserControls({
@@ -219,6 +246,7 @@ export async function createParityBrowserControls({
   policy,
   candidate,
   credentialPolicy = "none",
+  publicOrigins = [],
 }) {
   const runId = randomUUID();
   // Live-reference capture shares one host-global admission state. A caller
@@ -232,6 +260,10 @@ export async function createParityBrowserControls({
       intervalMs: DEFAULT_REQUEST_INTERVAL_MS,
     });
     const localOrigins = candidate?.candidate.endpoint.allowed_origin_set ?? [];
+    const caseSetPublicOrigins = requireExactHttpsOrigins(
+      publicOrigins,
+      "browser public origins",
+    );
     const configPath = path.join(outputDir, "throttle-config-receipt.json");
     const configSeal = await sealJsonNoReplace(
       configPath,
@@ -243,6 +275,7 @@ export async function createParityBrowserControls({
         localOrigins,
         candidate: candidate?.candidate.endpoint ?? null,
         credentialPolicy,
+        publicOrigins: caseSetPublicOrigins,
       }),
     );
     proxy = await startCaptureEgressProxy({
@@ -265,6 +298,7 @@ export async function createParityBrowserControls({
       configPath,
       configSha256: configSeal.sha256,
       localOrigins,
+      publicOrigins: caseSetPublicOrigins,
       async close() {
         let failure = null;
         await proxy?.close().catch((error) => {
@@ -338,7 +372,13 @@ export async function launchParityBrowser({
     const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
-      publicOriginPredicate: isWikidotCapturePublicOrigin,
+      publicOriginPredicate: (url, resourceType, method) =>
+        isParityBrowserPublicOrigin(
+          url,
+          resourceType,
+          method,
+          controls.publicOrigins,
+        ),
     });
     if (local) {
       await installCandidateFilePortRoute(context, controls.localOrigins);
