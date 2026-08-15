@@ -7,6 +7,7 @@ import test from "node:test";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
+  OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS,
   createOpen43SettingsBrowserCandidateCaseSet,
 } from "../src/open43-settings-browser-candidate-case-set.mjs";
 import { parityBrowserThrottleConfig } from "../src/standing-browser-parity-browser-session.mjs";
@@ -359,7 +360,7 @@ function dependencies(events, sourceFilesSeen) {
   };
 }
 
-test("the real Settings CandidateCaseSet runs all nine reversible public cases exactly once through the shared runner", async (t) => {
+test("the real Settings CandidateCaseSet runs all 32 configured cases exactly once through the shared runner", async (t) => {
   const events = [];
   const { state, session } = fakePublicBoundary(events);
   const caseSet = createOpen43SettingsBrowserCandidateCaseSet({
@@ -382,7 +383,7 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
 
   assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_BROWSER_CASE_IDS);
   assert.deepEqual(result.cases.map(({ case_id }) => case_id), OPEN43_SETTINGS_BROWSER_CASE_IDS);
-  assert.equal(new Set(result.cases.map(({ case_id }) => case_id)).size, 9);
+  assert.equal(new Set(result.cases.map(({ case_id }) => case_id)).size, 32);
   assert.equal(result.cleanup.public_restoration_verified, true);
   assert.equal(result.browser_cleanup.browser_context_count, 3);
   assert.deepEqual([...state.pages.keys()].sort(), [FIXTURE.default_category.page_slug, FIXTURE.transition_category.page_slug].sort());
@@ -401,7 +402,7 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   assert.equal(events.slice(firstCleanup).some((event) => event.seam === "browser-adapter" || event.seam === "gate"), false);
   assert.equal(events.slice(firstCleanup).every((event) => ["rpc", "action"].includes(event.seam)), true);
   const fixtures = events.filter(({ seam }) => seam === "gate").map(({ fixtureId }) => fixtureId);
-  for (const fixtureId of OPEN43_SETTINGS_BROWSER_CASE_IDS.filter((id) => !id.endsWith("MATRIX"))) assert.equal(fixtures.includes(fixtureId), true, `${fixtureId} lacks runner-owned gate attribution`);
+  for (const fixtureId of OPEN43_SETTINGS_BROWSER_CASE_IDS.filter((id) => !OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS.includes(id) && !id.endsWith("MATRIX"))) assert.equal(fixtures.includes(fixtureId), true, `${fixtureId} lacks runner-owned gate attribution`);
   assert.equal(events.some(({ seam, method, target }) => seam === "rpc" && method === "site_get" && target === FIXTURE.cross_site_sentinel_id), true);
   assert.equal(events.some(({ seam, name, siteId }) => seam === "action" && name === "site" && siteId === FIXTURE.cross_site_sentinel_id), true);
   assert.equal(events.some(({ seam, operation }) => seam === "browser-adapter" && operation === "general-form-save"), true);
@@ -480,6 +481,11 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   assert.equal(toolbarSettled.observations.setting_transition.client_immediate_top_toolbar_count, 1);
   assert.equal(toolbarSettled.observations.setting_transition.client_settled_top_toolbar_count, 1);
   assert.notEqual(toolbarSettled.observations.setting_transition.initial_temporal.artifact.path, toolbarSettled.observations.setting_transition.settled_temporal.artifact.path);
+  for (const caseId of OPEN43_SETTINGS_BROWSER_SOURCE_BLIND_CASE_IDS) {
+    const row = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${caseId}.json`), "utf8"));
+    assert.deepEqual(row.observations.candidate_configuration, { mode: "source_blind" });
+    assert.deepEqual(row.verification, { verified: true, configuration_only: true });
+  }
 });
 
 test("the real Settings CaseSet verifies direct and client theme evidence independently", async (t) => {
