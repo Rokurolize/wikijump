@@ -149,7 +149,7 @@ class FakeMembershipSession {
   }
 }
 
-test("the #1029 candidate adapter proves actor-bound Join through public seams", async (t) => {
+test("the #1029 candidate adapter proves actor-bound Join and contention through public seams", async (t) => {
   const registered = await candidateCaseSet("open43-membership-join");
   assert.deepEqual(registered.caseIds, OPEN43_MEMBERSHIP_JOIN_CASE_IDS);
 
@@ -182,7 +182,15 @@ test("the #1029 candidate adapter proves actor-bound Join through public seams",
   });
 
   assert.equal(aggregate.status, "pass");
-  assert.deepEqual(aggregate.denominator.case_ids, ["A1029_CENTRAL_PUBLIC_SEAMS"]);
+  assert.deepEqual(aggregate.denominator.case_ids, [
+    "A1029_CENTRAL_PUBLIC_SEAMS",
+    "A1029_TWO_TRANSACTION_CONTENTION",
+  ]);
+  const contentionArtifact = aggregate.cases.find(({ case_id: caseId }) => caseId === "A1029_TWO_TRANSACTION_CONTENTION");
+  const contention = JSON.parse(await fs.readFile(contentionArtifact.path, "utf8"));
+  assert.deepEqual(contention.observations.attempts.map(({ outcome }) => outcome).sort(), ["already_member", "joined"]);
+  assert.equal(contention.verification.committed_relations, 1);
+  assert.equal(contention.verification.stale_successes, 0);
   assert.equal(aggregate.cleanup.public_absence_verified, true);
   assert.equal(aggregate.resources.length, 3);
   assert.equal(aggregate.resources.every(({ released }) => released), true);

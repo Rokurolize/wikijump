@@ -7,6 +7,7 @@ import {
 
 export const OPEN43_MEMBERSHIP_JOIN_CASE_IDS = Object.freeze([
   "A1029_CENTRAL_PUBLIC_SEAMS",
+  "A1029_TWO_TRANSACTION_CONTENTION",
 ]);
 
 const ACTORS = Object.freeze(["administrator", "eligible", "pending", "banned"]);
@@ -268,21 +269,37 @@ class Open43MembershipJoinRun {
     }
     const afterMirror = visibleJoinEvidence(await this.#view("eligible"), joinPage, "Join view after mirror denial", { action: true });
 
+    const joinParams = {
+      page_id: action.page_id,
+      last_revision_id: action.revision_id,
+      action_index: action.index,
+      action_fingerprint: action.fingerprint,
+    };
     this.#membershipMutationAttempted = true;
-    const join = await this.#rpc("eligible", "membership_join", {
-      page_id: action.page_id,
-      last_revision_id: action.revision_id,
-      action_index: action.index,
-      action_fingerprint: action.fingerprint,
-    }, { page: this.#slugs.join });
-    const repeat = await this.#rpc("eligible", "membership_join", {
-      page_id: action.page_id,
-      last_revision_id: action.revision_id,
-      action_index: action.index,
-      action_fingerprint: action.fingerprint,
-    }, { page: this.#slugs.join });
+    const contentionStart = this.#events.length;
+    const eligibleSession = this.#sessions.eligible;
+    const eligibleEventStart = eligibleSession.events.length;
+    const attempts = await Promise.allSettled([0, 1].map(() => eligibleSession.rpc(
+      "membership_join",
+      joinParams,
+      { actor: "editor", siteId: this.#siteId, page: this.#slugs.join },
+    )));
+    this.#events.push(...eligibleSession.events.slice(eligibleEventStart).map((event) => ({
+      actor: "eligible",
+      service: event.service,
+      operation: event.operation,
+      method: event.method,
+      response_status: event.response_status,
+    })));
+    const attemptEvidence = attempts.map((attempt) => attempt.status === "fulfilled"
+      ? { status: attempt.status, outcome: attempt.value }
+      : { status: attempt.status, rpc_code: attempt.reason?.rpc?.code ?? null, rpc_message_sha256: attempt.reason?.rpc?.message_sha256 ?? null });
+    const outcomes = attemptEvidence.filter(({ status }) => status === "fulfilled").map(({ outcome }) => outcome);
+    const join = outcomes.find((outcome) => outcome === "joined");
+    const repeat = outcomes.find((outcome) => outcome === "already_member");
     const membership = await this.#rpc("administrator", "member_get", { site_id: this.#siteId, user_id: this.#eligibleId });
     if (membership?.from_id !== this.#eligibleId || membership.dest_id !== this.#siteId) throw new Error("joined membership is missing at the public seam");
+    const contentionRequests = structuredClone(this.#events.slice(contentionStart));
     this.#membershipResource = this.#resources.register("membership", { site_id: this.#siteId, user_id: this.#eligibleId });
     const joinedView = hiddenJoinEvidence(await this.#view("eligible"), "joined actor Join view");
 
@@ -302,6 +319,16 @@ class Open43MembershipJoinRun {
         transition: { first: join, repeat, membership: { from_id: membership.from_id, dest_id: membership.dest_id }, joined_view: joinedView },
         page_create: { page_id: savedContent.page_id, slug: savedContent.slug, source_sha256: sha256Text(savedContent.wikitext) },
         requests: structuredClone(this.#events),
+      },
+    }, {
+      case_id: OPEN43_MEMBERSHIP_JOIN_CASE_IDS[1],
+      observations: {
+        actor: { user_id: this.#eligibleId },
+        site: { site_id: this.#siteId, slug: EDITABLE_SITE },
+        action,
+        attempts: attemptEvidence,
+        membership: { from_id: membership.from_id, dest_id: membership.dest_id },
+        requests: contentionRequests,
       },
     }];
   }
@@ -352,8 +379,38 @@ class Open43MembershipJoinRun {
 }
 
 function verifyCase(caseId, observations) {
-  if (caseId !== OPEN43_MEMBERSHIP_JOIN_CASE_IDS[0]) throw new Error(`unsupported membership Join case: ${caseId}`);
   requirePlainObject(observations, `${caseId} observations`);
+  if (caseId === OPEN43_MEMBERSHIP_JOIN_CASE_IDS[1]) {
+    const attempts = observations.attempts;
+    const outcomes = Array.isArray(attempts)
+      ? attempts.filter(({ status }) => status === "fulfilled").map(({ outcome }) => outcome).sort()
+      : [];
+    if (
+      attempts?.length !== 2
+      || attempts.some(({ status }) => status !== "fulfilled")
+      || JSON.stringify(outcomes) !== JSON.stringify(["already_member", "joined"])
+      || observations.membership?.from_id !== observations.actor?.user_id
+      || observations.membership.dest_id !== observations.site?.site_id
+    ) {
+      throw new Error(`${caseId} did not serialize concurrent self-join to one current relation`);
+    }
+    const requests = observations.requests;
+    const expected = [["eligible", "membership_join"], ["eligible", "membership_join"], ["administrator", "member_get"]];
+    if (!Array.isArray(requests) || requests.length !== expected.length) throw new Error(`${caseId} public request denominator is wrong`);
+    requests.forEach((request, index) => {
+      const [actor, operation] = expected[index];
+      if (request.actor !== actor || request.service !== "deepwell" || request.operation !== operation || request.method !== "POST" || request.response_status !== 200) {
+        throw new Error(`${caseId} public contention request evidence is wrong or out of order`);
+      }
+    });
+    return {
+      verified: true,
+      committed_relations: 1,
+      outcomes,
+      stale_successes: 0,
+    };
+  }
+  if (caseId !== OPEN43_MEMBERSHIP_JOIN_CASE_IDS[0]) throw new Error(`unsupported membership Join case: ${caseId}`);
   if (new Set(Object.values(observations.actors ?? {})).size !== ACTORS.length) throw new Error(`${caseId} actor identities are not distinct`);
   if (
     observations.preview?.anonymous_body_sha256 !== observations.views?.anonymous?.body_sha256
