@@ -55,6 +55,7 @@ pub(in crate::services::render) struct BacklinksModulePage {
     pub(in crate::services::render) page_category_id: i64,
     pub(in crate::services::render) slug: String,
     pub(in crate::services::render) title: String,
+    pub(in crate::services::render) hidden: Vec<String>,
 }
 
 pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> String {
@@ -62,17 +63,17 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
         return "\n<div class=\"backlinks-module-box\">\n</div>\n".to_owned();
     }
 
-    let mut output = String::from("\n<div class=\"backlinks-module-box\"><ul>");
+    let mut output = String::from("\n<div class=\"backlinks-module-box\">\n\t\t\t<ul>");
 
     for page in pages {
-        output.push_str(r#"<li><a href="/"#);
+        output.push_str("\n\t\t\t\t\t\t\t<li>\n\t\t\t\t\t\t<a href=\"/");
         output.push_str(&escape_list_pages_html_attr(&page.slug));
-        output.push_str(r#"">"#);
+        output.push_str("\">");
         output.push_str(&escape_list_pages_html_text(&page.title));
-        output.push_str("</a></li>");
+        output.push_str("</a>\n\t\t\t\t\t</li>");
     }
 
-    output.push_str("</ul></div>\n");
+    output.push_str("\n\t\t\t\t\t</ul>\n\t</div>\n");
     output
 }
 
@@ -151,7 +152,7 @@ impl RenderService {
         let statement = Statement::from_string(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_id, p.page_category_id, p.slug, pr.title \
+                "SELECT p.page_id, p.page_category_id, p.slug, pr.title, pr.hidden \
                  FROM page_connection pc \
                  JOIN page p ON p.page_id = pc.from_page_id \
                  JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
@@ -191,7 +192,13 @@ impl RenderService {
             .or_raise(make_error)?;
 
             if anonymously_viewable {
-                viewable.push(row);
+                if !row
+                    .hidden
+                    .iter()
+                    .any(|field| field == "title" || field == "slug")
+                {
+                    viewable.push(row);
+                }
             }
         }
 

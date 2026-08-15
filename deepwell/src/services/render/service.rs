@@ -1336,6 +1336,8 @@ impl RenderService {
             page_preview,
             suppress_nested_list_pages,
         } = options;
+        let backlinks_page_id = current_page_id;
+        let current_page_id = (!page_preview).then_some(current_page_id).flatten();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let mut include_budget = IncludeExpansionBudget::new(max_include_expansions);
@@ -1485,7 +1487,7 @@ impl RenderService {
                 wikitext,
                 settings,
                 current_site_id,
-                current_page_id,
+                backlinks_page_id,
                 &mut wikidot_compat_html,
             )
             .await
@@ -1895,13 +1897,16 @@ impl RenderService {
             },
         )
         .await?;
+        let render_current_page_id = (lifecycle != RenderLifecycle::PagePreview)
+            .then_some(current_page_id)
+            .flatten();
         Box::pin(Self::render_inner_expanded(
             ctx,
             expanded,
             page_info,
             settings,
             current_site_id,
-            current_page_id,
+            render_current_page_id,
             viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,

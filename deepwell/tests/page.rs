@@ -20009,7 +20009,7 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 
     for expected in [
         "BF_DEFAULT_START",
-        r#"<div class="backlinks-module-box"><ul>"#,
+        "<div class=\"backlinks-module-box\">\n\t\t\t<ul>",
         r#"<a href="/fixture-backlinks-linker-alpha">Fixture Backlinks Linker Alpha</a>"#,
         r#"<a href="/fixture-backlinks-linker-beta">Fixture Backlinks Linker Beta</a>"#,
         "BF_DEFAULT_END",
@@ -20022,6 +20022,17 @@ async fn backlinks_module_renders_current_page_incoming_links() {
             "Backlinks module output should contain {expected:?}:\n{html}"
         );
     }
+
+    let expected_live_rows = concat!(
+        "<div class=\"backlinks-module-box\">\n\t\t\t<ul>\n",
+        "\t\t\t\t\t\t\t<li>\n\t\t\t\t\t\t<a href=\"/fixture-backlinks-linker-alpha\">Fixture Backlinks Linker Alpha</a>\n\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t\t\t<li>\n\t\t\t\t\t\t<a href=\"/fixture-backlinks-linker-beta\">Fixture Backlinks Linker Beta</a>\n\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t</ul>\n\t</div>",
+    );
+    assert!(
+        html.contains(expected_live_rows),
+        "Backlinks rows must retain the observed live DOM shape:\n{html}"
+    );
 
     for forbidden in [
         "TODO: module Backlinks",
@@ -20080,6 +20091,447 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         "Backlinks must query the current link graph on the next page view:\n{runtime_html}",
     );
     assert!(runtime_html.contains("start-[[module Backlinks]]-middle"));
+}
+
+#[tokio::test]
+async fn backlinks_module_page_preview_renders_current_page_incoming_links() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let target_slug = "fixture-backlinks-preview-target";
+    let target_source = "BF_PREVIEW_START\n[[module Backlinks]]\nBF_PREVIEW_END";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Fixture Backlinks Preview Target",
+        target_source,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-linker-alpha",
+        "Fixture Backlinks Preview Linker Alpha",
+        &format!("[[[{target_slug}|preview target link]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-linker-beta",
+        "Fixture Backlinks Preview Linker Beta",
+        &format!("[[[{target_slug}|preview target link]]]"),
+    )
+    .await;
+
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("Backlinks preview target should exist");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Fixture Backlinks Preview Target",
+            "wikitext": target_source,
+        }),
+    );
+    let expected_live_rows = concat!(
+        "<div class=\"backlinks-module-box\">\n\t\t\t<ul>\n",
+        "\t\t\t\t\t\t\t<li>\n",
+        "\t\t\t\t\t\t<a href=\"/fixture-backlinks-preview-linker-alpha\">Fixture Backlinks Preview Linker Alpha</a>\n",
+        "\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t\t\t<li>\n",
+        "\t\t\t\t\t\t<a href=\"/fixture-backlinks-preview-linker-beta\">Fixture Backlinks Preview Linker Beta</a>\n",
+        "\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t</ul>\n\t</div>",
+    );
+    assert!(
+        preview.body.contains(expected_live_rows),
+        "PagePreview must render the observed populated Backlinks DOM for its explicit page context:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
+async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries() {
+    const SOURCE: &str = "[[module Backlinks]]";
+    const PRIVATE_CATEGORY: &str = "fixture-backlinks-preview-private";
+    const SCAN_SOURCE_PREFIX: &str = "fixture-backlinks-preview-scan-source-";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let target_slug = "fixture-backlinks-preview-boundary-target";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Backlinks Preview Boundary Target",
+        SOURCE,
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("Backlinks preview target should exist");
+
+    let escaped_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-escape-source",
+        "Backlinks Preview Escape Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let escaped_revision = PageRevisionTable::find_by_id(escaped_revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("escaped source revision lookup should succeed")
+        .expect("escaped source revision should exist");
+    let escaped_page = PageTable::find_by_id(escaped_revision.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("escaped source page lookup should succeed")
+        .expect("escaped source page should exist");
+    let mut escaped_revision = escaped_revision.into_active_model();
+    escaped_revision.title = Set("Backlinks <Escape> & \"Title\"".to_owned());
+    escaped_revision.slug = Set("fixture-backlinks-escape-&\"".to_owned());
+    escaped_revision
+        .update(runner.context().transaction())
+        .await
+        .expect("escaped source revision should update");
+    let mut escaped_page = escaped_page.into_active_model();
+    escaped_page.slug = Set("fixture-backlinks-escape-&\"".to_owned());
+    escaped_page
+        .update(runner.context().transaction())
+        .await
+        .expect("escaped source page should update");
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-private-source",
+        "Backlinks Private Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-backlinks-preview-private-source",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+
+    let hidden_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-hidden-source",
+        "Backlinks Hidden Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let hidden_revision = PageRevisionTable::find_by_id(hidden_revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("hidden source revision lookup should succeed")
+        .expect("hidden source revision should exist");
+    let mut hidden_revision = hidden_revision.into_active_model();
+    hidden_revision.hidden = Set(vec!["title".to_owned(), "slug".to_owned()]);
+    hidden_revision
+        .update(runner.context().transaction())
+        .await
+        .expect("hidden source revision should update");
+
+    let deleted_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-deleted-source",
+        "Backlinks Deleted Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let deleted_revision = PageRevisionTable::find_by_id(deleted_revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("deleted source revision lookup should succeed")
+        .expect("deleted source revision should exist");
+    let deleted_page = PageTable::find_by_id(deleted_revision.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("deleted source page lookup should succeed")
+        .expect("deleted source page should exist");
+    let mut deleted_page = deleted_page.into_active_model();
+    deleted_page.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    deleted_page
+        .update(runner.context().transaction())
+        .await
+        .expect("deleted source page should update");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "unrelated renamed preview", "wikitext": SOURCE}),
+    );
+    assert!(preview.body.contains("backlinks-module-box"));
+    assert!(
+        preview
+            .body
+            .contains("fixture-backlinks-escape-&amp;&quot;")
+    );
+    assert!(
+        preview
+            .body
+            .contains("Backlinks &lt;Escape&gt; &amp; &quot;Title&quot;")
+    );
+    for forbidden in [
+        "Backlinks Private Source",
+        "Backlinks Hidden Source",
+        "fixture-backlinks-preview-hidden-source",
+        "Backlinks Deleted Source",
+    ] {
+        assert!(
+            !preview.body.contains(forbidden),
+            "Backlinks leaked {forbidden:?}: {}",
+            preview.body
+        );
+    }
+
+    let empty_slug = "fixture-backlinks-preview-empty-target";
+    create_listpages_test_page(&mut runner, site_id, empty_slug, "Empty Target", SOURCE)
+        .await;
+    let empty_target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": empty_slug}),
+    )
+    .expect("empty Backlinks target should exist");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(empty_target.page_id)),
+        ..Default::default()
+    });
+    let empty = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "empty", "wikitext": SOURCE}),
+    );
+    assert_eq!(
+        empty.body,
+        "\n<div class=\"backlinks-module-box\">\n</div>\n"
+    );
+
+    let non_backlink_source = concat!(
+        "[[module ListPages category=\"*\" link_to=\".\"]]\n[[/module]]\n",
+        "[[module PageTree]]\n[[module ChildPages]]\n[[module NextPage]]",
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    let identity_free = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "identity-free", "wikitext": non_backlink_source}),
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let identified = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "identified", "wikitext": non_backlink_source}),
+    );
+    assert_eq!(identified.body, identity_free.body);
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    let absent = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "absent", "wikitext": SOURCE}),
+    );
+    assert!(absent.body.contains(SOURCE));
+
+    let missing_id = |runner: &mut TestRunner| async {
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Id(i64::MAX)),
+            ..Default::default()
+        });
+        run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({"site_id": site_id, "title": "missing", "wikitext": SOURCE}),
+        )
+    };
+    let missing = missing_id(&mut runner).await;
+    assert!(missing.body.contains(SOURCE));
+
+    let stale_slug = "fixture-backlinks-preview-stale-target";
+    create_listpages_test_page(&mut runner, site_id, stale_slug, "Stale Target", SOURCE)
+        .await;
+    let stale = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": stale_slug}),
+    )
+    .expect("stale Backlinks target should exist");
+    let stale_page = PageTable::find_by_id(stale.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("stale Backlinks target lookup should succeed")
+        .expect("stale Backlinks target lookup should return a page");
+    let mut stale_page = stale_page.into_active_model();
+    stale_page.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    stale_page
+        .update(runner.context().transaction())
+        .await
+        .expect("stale Backlinks target should update");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(stale.page_id)),
+        ..Default::default()
+    });
+    let stale_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "stale", "wikitext": SOURCE}),
+    );
+    assert!(stale_preview.body.contains(SOURCE));
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let syntax_only = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "syntax-only",
+            "wikitext": SOURCE,
+            "syntax_only": true,
+        }),
+    );
+    assert!(syntax_only.body.contains(SOURCE));
+    let other_site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("second seeded site should exist");
+    let other_page_id = create_listpages_test_page(
+        &mut runner,
+        other_site.site.site_id,
+        "fixture-backlinks-preview-other-site-target",
+        "Other Site Target",
+        SOURCE,
+    )
+    .await;
+    let other_page_id = PageRevisionTable::find_by_id(other_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("other-site revision lookup should succeed")
+        .expect("other-site revision should exist")
+        .page_id;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(other_page_id)),
+        ..Default::default()
+    });
+    let mismatched = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "mismatched", "wikitext": SOURCE}),
+    );
+    assert!(mismatched.body.contains(SOURCE));
+
+    let template_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-scan-template",
+        "Backlinks Scan Template",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let target_category_id = target.page_category_id;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "WITH pages AS (",
+                "INSERT INTO page (site_id, page_category_id, slug, layout) ",
+                "SELECT $1, $2, $3 || series, 'wikidot' ",
+                "FROM generate_series(1, 501) AS series ",
+                "RETURNING page_id, slug), revisions AS (",
+                "INSERT INTO page_revision (revision_type, created_at, updated_at, ",
+                "revision_number, page_id, site_id, user_id, from_wikidot, changes, ",
+                "wikitext_hash, compiled_body_html_hash, compiled_body_styles_hash, ",
+                "compiled_top_bar_html_hash, compiled_side_bar_html_hash, compiled_at, ",
+                "compiled_generator, comments, hidden, title, alt_title, slug, tags) ",
+                "SELECT source.revision_type, source.created_at, source.updated_at, ",
+                "source.revision_number, pages.page_id, source.site_id, source.user_id, ",
+                "source.from_wikidot, source.changes, source.wikitext_hash, ",
+                "source.compiled_body_html_hash, source.compiled_body_styles_hash, ",
+                "source.compiled_top_bar_html_hash, source.compiled_side_bar_html_hash, ",
+                "source.compiled_at, source.compiled_generator, source.comments, ",
+                "source.hidden, source.title, source.alt_title, pages.slug, source.tags ",
+                "FROM pages CROSS JOIN page_revision source ",
+                "WHERE source.revision_id = $4 RETURNING revision_id, page_id), links AS (",
+                "INSERT INTO page_connection (from_page_id, to_page_id, connection_type, count) ",
+                "SELECT pages.page_id, $5, 'link', 1 FROM pages RETURNING from_page_id) ",
+                "UPDATE page SET latest_revision_id = revisions.revision_id ",
+                "FROM revisions WHERE page.page_id = revisions.page_id",
+            ),
+            [
+                Value::from(site_id),
+                Value::from(target_category_id),
+                Value::from(SCAN_SOURCE_PREFIX),
+                Value::from(template_revision_id),
+                Value::from(target.page_id),
+            ],
+        ))
+        .await
+        .expect("Backlinks scan-boundary sources should be inserted");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let saturated = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "saturated", "wikitext": SOURCE}),
+    );
+    assert!(saturated.body.contains(SOURCE));
+    assert!(!saturated.body.contains("backlinks-module-box"));
 }
 
 #[tokio::test]
