@@ -211,6 +211,7 @@ export const planWikidotStandaloneActionBindings = (candidates, actions) => {
   if (
     actions.some(
       (action) =>
+        !action ||
         !["edit", "history", "source", "print", "set-tags"].includes(action.type) ||
         (action.type === "set-tags" &&
           (!Number.isSafeInteger(action.index) ||

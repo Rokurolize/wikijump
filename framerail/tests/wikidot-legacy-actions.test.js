@@ -332,6 +332,13 @@ test("sidecar binding preserves exact DOM and fails closed on a count mismatch",
   }
 })
 
+test("standalone action binding fails closed on a malformed present sidecar", () => {
+  assert.deepEqual(
+    planWikidotStandaloneActionBindings([actionElement()], [null]),
+    []
+  )
+})
+
 test("Rate DOM is intercepted but remains inert without a typed sidecar", () => {
   const rate = actionElement()
   const listeners = new Map()
