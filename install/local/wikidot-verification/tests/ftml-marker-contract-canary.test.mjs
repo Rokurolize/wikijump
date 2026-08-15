@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -29,6 +30,14 @@ const candidateFtml = "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const ownershipPinReceiptFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
+const retainedCanarySummary = {
+  path: path.join(
+    "/home/roku/wjlab/evidence/20260815-ftml-1380-marker-324ac373-fixed-head-1",
+    "canary-summary.json",
+  ),
+  sha256:
+    "3019488859c69be2fe18e8061c2cbc0614c88af2a07614d04497aca6c397bb0c",
+};
 const sanitizedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(
     ([key]) =>
@@ -50,7 +59,7 @@ const sanitizedEnvironment = Object.fromEntries(
   ),
 );
 
-test("committed manifest and lock pin the merged FTML revision", () => {
+test("active FTML pin matches the retained merged marker canary", () => {
   const manifest = readFileSync(
     path.join(repositoryRoot, "deepwell/Cargo.toml"),
     "utf8",
@@ -77,6 +86,17 @@ test("committed manifest and lock pin the merged FTML revision", () => {
     )?.length,
     1,
   );
+
+  const canarySource = readFileSync(retainedCanarySummary.path, "utf8");
+  const canary = JSON.parse(canarySource);
+  assert.equal(
+    createHash("sha256").update(canarySource).digest("hex"),
+    retainedCanarySummary.sha256,
+  );
+  assert.equal(canary.status, "pass");
+  assert.equal(canary.baseline_ftml, ownershipPinReceiptFtml);
+  assert.equal(canary.candidate_ftml, candidateFtml);
+  assert.deepEqual(canary.required_surfaces, requiredSurfaces);
 });
 
 test("the 2026-08-04 marker canary receipt remains immutable", () => {
