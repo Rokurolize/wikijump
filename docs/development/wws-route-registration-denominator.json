@@ -90,8 +90,8 @@
       },
       {
         "path": "wws/src/handler/resized_image.rs",
-        "git_blob": "b35f47291b8573f31673675482d956c5bd816998",
-        "sha256": "b76b217bc46052305a08491998ed256c6fbef9dbffe71bc573823f465fceae6a"
+        "git_blob": "b82671fee9b61224e3abe86e8a546f9acd421edc",
+        "sha256": "fa2bcf6f76854b202f15fbf75b775652383f8e3f08845b2fb0318dda88bff074"
       },
       {
         "path": "wws/src/handler/robots.rs",
