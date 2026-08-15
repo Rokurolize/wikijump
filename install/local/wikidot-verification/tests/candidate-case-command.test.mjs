@@ -17,6 +17,13 @@ test("candidate case registry exposes the real Open43 settings browser adapter",
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 
+test("candidate case registry exposes the executable B610 shell case", async () => {
+  const caseSet = await candidateCaseSet("open43-b610-shell");
+  assert.equal(caseSet.id, "open43-b610-shell");
+  assert.deepEqual(caseSet.caseIds, ["B610_SHELL_PUBLIC_CONTRACT"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case command accepts only the fixed explicit attachment options", () => {
   assert.deepEqual(
     parseCandidateCaseArgs([
