@@ -1,5 +1,6 @@
 import { OPEN43_SETTINGS_BROWSER_CASE_IDS } from "./open43-settings-browser-candidate-contract.mjs";
 import { OPEN43_ISSUE775_CASE_IDS } from "./open43-issue775-edit-candidate-contract.mjs";
+import { OPEN43_SETTINGS_LIFECYCLE_CASE_IDS } from "./open43-settings-lifecycle-candidate-contract.mjs";
 
 export const OPEN43_BROWSER_CANDIDATE_CASE_IDS = Object.freeze([
   "B610_CHROME_INITIAL",
@@ -18,10 +19,7 @@ export const OPEN43_BROWSER_CANDIDATE_CASE_IDS = Object.freeze([
   "B822_PAGE_TAGS_SETTLED",
 ]);
 
-export const OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS = Object.freeze([
-  "S758_CREATE_INITIAL",
-  "S758_CREATE_SETTLED",
-]);
+export const OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS = OPEN43_SETTINGS_LIFECYCLE_CASE_IDS;
 
 export const OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS = Object.freeze([
   "Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE",

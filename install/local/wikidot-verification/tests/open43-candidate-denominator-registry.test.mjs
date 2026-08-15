@@ -10,6 +10,7 @@ import {
 } from "../src/open43-candidate-denominator-registry.mjs";
 import { OPEN43_ISSUE775_CASE_IDS } from "../src/open43-issue775-edit-candidate-contract.mjs";
 import { OPEN43_SETTINGS_BROWSER_CASE_IDS } from "../src/open43-settings-browser-candidate-contract.mjs";
+import { createOpen43SettingsLifecycleCandidateCaseSet } from "../src/open43-settings-lifecycle-candidate-case-set.mjs";
 
 test("Open43 candidate denominators are exact, disjoint, and handoff-only", () => {
   assert.deepEqual(OPEN43_SETTINGS_BROWSER_CASE_IDS, [
@@ -67,9 +68,11 @@ test("Open43 candidate denominators are exact, disjoint, and handoff-only", () =
   assert.equal(new Set(all).size, all.length);
 });
 
-test("handoff denominators are not runnable candidate case sets", async () => {
+test("#758 has an exact lifecycle-owner candidate adapter", async () => {
   assert.doesNotMatch(candidateCaseUsage(), /open43-(browser-surfaces|settings-lifecycle|page-query-surfaces)/u);
   for (const name of ["open43-browser-surfaces", "open43-settings-lifecycle", "open43-page-query-surfaces"]) {
     await assert.rejects(candidateCaseSet(name), /unknown source-owned candidate case set/u);
   }
+  const lifecycle = createOpen43SettingsLifecycleCandidateCaseSet();
+  assert.deepEqual(lifecycle.caseIds, OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS);
 });

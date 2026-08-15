@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { parse as parseDevalue } from "devalue";
 
+import { DEFAULT_SETTLE_MS } from "./standing-browser-canaries.mjs";
 import { waitForBrowserParitySettledResources } from "./standing-browser-parity-observation.mjs";
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
@@ -147,6 +148,7 @@ function browserSemanticSnapshot() {
 }
 
 const INITIAL_PROBE = `globalThis.__open43DocumentIdentity=crypto.randomUUID();globalThis.__open43SemanticSnapshot=${browserSemanticSnapshot.toString()};document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43InitialObservation=globalThis.__open43SemanticSnapshot()},{once:true});`;
+const CREATE_PROBE = `document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43CreateFirstPaint={title:document.querySelector("#page-title")?.textContent?.trim()??"",content:document.querySelector("#page-content")?.textContent?.trim()??""}},{once:true});`;
 
 async function activateClientNavigation(page) {
   await page.evaluate(() => {
@@ -435,6 +437,110 @@ export class Open43SettingsBrowserAdapter {
     } finally {
       page.off("console", onConsole);
       page.off("pageerror", onPageError);
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+
+  async captureAutonumberPage({ requestedSlug, title, wikitext, expectedUrl, index }) {
+    const page = await (await this.#context("administrator")).newPage();
+    const editorUrl = new URL(`/${encodeURIComponent(requestedSlug)}/edit/true`, this.#pageOrigin).href;
+    try {
+      await page.addInitScript({ content: CREATE_PROBE });
+      let actionResponse = null;
+      const capture = await this.#browserContexts.captureCandidateObservation({
+        context: await this.#context("administrator"),
+        page,
+        url: expectedUrl,
+        label: "S758_CREATE",
+        index,
+        viewport: DEFAULT_VIEWPORT,
+        timeoutMs: CAPTURE_TIMEOUT_MS,
+        settleMs: DEFAULT_SETTLE_MS,
+        navigate: async ({ page: targetPage, timeoutMs }) => {
+          await targetPage.goto(editorUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+          const responsePromise = targetPage.waitForResponse(
+            (response) => response.request().method() === "POST" && response.url().includes("?/edit"),
+            { timeout: timeoutMs },
+          );
+          await targetPage.locator("input[name='title']").fill(title);
+          await targetPage.locator("textarea[name='wikitext']").fill(wikitext);
+          await targetPage.locator("textarea[name='comments']").fill("Open43 autonumber candidate");
+          await targetPage.getByRole("button", { name: "save", exact: true }).click();
+          actionResponse = await responsePromise;
+          await targetPage.waitForURL(expectedUrl, { timeout: timeoutMs });
+          return actionResponse;
+        },
+        onPhase: async (phase) => {
+          await this.#browserContexts.setActiveFixture(phase === "settled" ? "S758_CREATE_SETTLED" : "S758_CREATE_INITIAL");
+        },
+      });
+      if (capture.capture_error || capture.navigation_status !== 200 || capture.final_url !== expectedUrl || actionResponse === null) throw new Error("S758 autonumber create capture failed");
+      const actionBody = await actionResponse.text();
+      let actionResult;
+      try { actionResult = JSON.parse(actionBody); } catch { throw new Error("S758 autonumber action did not return JSON"); }
+      const data = typeof actionResult?.data === "string" ? parseDevalue(actionResult.data) : null;
+      const assignedSlug = data?.res?.slug;
+      if (typeof assignedSlug !== "string" || assignedSlug.length === 0) throw new Error("S758 autonumber action did not return an assigned slug");
+      const domIdentity = await page.evaluate(() => ({
+        page_id: Number(document.querySelector("[data-page-id]")?.getAttribute("data-page-id") ?? 0),
+        revision_id: Number(document.querySelector("[data-revision-id]")?.getAttribute("data-revision-id") ?? 0),
+        slug: decodeURIComponent(location.pathname.slice(1)),
+        title: document.querySelector("#page-title")?.textContent?.trim() ?? "",
+      }));
+      const pageIdentity = {
+        page_id: Number(data.res.page_id ?? domIdentity.page_id),
+        revision_id: Number(data.res.revision_id ?? domIdentity.revision_id),
+        slug: domIdentity.slug,
+        title: domIdentity.title,
+      };
+      return {
+        assigned_slug: assignedSlug,
+        redirect_url: expectedUrl,
+        title,
+        action: {
+          http_status: actionResponse.status(),
+          action_type: actionResult?.type,
+          response_body_sha256: sha256(actionBody),
+        },
+        capture: {
+          navigation_status: capture.navigation_status,
+          input_url: expectedUrl,
+          final_url: capture.final_url,
+          failures: capture.failures,
+          request_gate_aborts: capture.request_gate_aborts,
+          first_paint: {
+            phase: capture.first_paint.document.phase,
+            screenshot: capture.first_paint.screenshot,
+            title: await page.evaluate(() => globalThis.__open43CreateFirstPaint?.title ?? ""),
+            content: await page.evaluate(() => globalThis.__open43CreateFirstPaint?.content ?? ""),
+          },
+          settled: {
+            phase: capture.document.phase,
+            resource_completion: capture.document.resource_completion.status,
+            content: (await page.locator("#page-content").innerText()).trim(),
+          },
+        },
+        page: pageIdentity,
+      };
+    } finally {
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+
+  async observeHistoryAndReload({ pageUrl }) {
+    const page = await (await this.#context("administrator")).newPage();
+    try {
+      const historyUrl = `${pageUrl}#_history`;
+      const history = await page.goto(historyUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      await page.locator(".page-history").waitFor({ state: "visible", timeout: CAPTURE_TIMEOUT_MS });
+      const historyRowCount = await page.locator(".page-history tr").count();
+      await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      const reload = await page.reload({ waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      return {
+        history: { url: historyUrl, status: history?.status() ?? 0, row_count: historyRowCount },
+        reload: { url: page.url(), status: reload?.status() ?? 0 },
+      };
+    } finally {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }
