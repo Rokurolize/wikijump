@@ -1074,6 +1074,14 @@ export const handleAjaxModuleConnectorRequest = async (
         })
       }
     }
+    if (moduleName === "viewsource/ViewSourceModule" && parameters.page_id === "0") {
+      return jsonResponse({
+        status: "no_page",
+        message: "The page does not exist",
+        callbackIndex: fields.has("callbackIndex") ? fieldValue(fields, "callbackIndex") : null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    }
     if (
       Object.keys(parameters).length !== pageReadParameters.size ||
       ![...pageReadParameters].every((name) => Object.hasOwn(parameters, name)) ||

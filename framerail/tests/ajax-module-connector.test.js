@@ -818,6 +818,34 @@ test("dispatches wikidot.py page reads without rewriting their request fields", 
   ])
 })
 
+test("returns the observed no_page envelope for a missing ViewSource page", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "viewsource/ViewSourceModule",
+      page_id: "0",
+      callbackIndex: "client-missing-page"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async () => assert.fail("must not render a missing page")
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "no_page")
+  assert.equal(body.callbackIndex, "client-missing-page")
+  assert.equal(typeof body.message, "string")
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(Object.keys(body).sort(), [
+    "CURRENT_TIMESTAMP",
+    "callbackIndex",
+    "message",
+    "status"
+  ])
+})
+
 test("dispatches only the canonical wikidot.py WhoRated shape", async () => {
   let received
   const response = await handleAjaxModuleConnectorRequest(
