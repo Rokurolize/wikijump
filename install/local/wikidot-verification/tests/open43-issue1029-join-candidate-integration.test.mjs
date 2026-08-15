@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -14,8 +15,10 @@ import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const JOIN_PATH = "/system:join";
 const PAGE_URL = `${PAGE_ORIGIN}${JOIN_PATH}`;
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const digest = (value) => createHash("sha256").update(value).digest("hex");
+const hash = (character) => digest(`open43-issue1029-${character}-fixture`);
+const git = (character) => digest(`open43-issue1029-${character}-git`).slice(0, 40);
+const runId = () => `candidate-run-${digest("open43-issue1029-run").slice(0, 12)}`;
 const actorIds = { administrator: -1, eligible: 101 };
 
 function candidateIdentity() {
@@ -178,12 +181,12 @@ async function runFixture(t) {
     privateInputSha256: hash("7"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: runId(),
     dependencies: {
       collectExecutionIdentity: async (_identity, sourceFiles) => ({ schema: "fixture.execution.v1", source_files: sourceFiles }),
       observeRuntimeIdentity: async () => ({ schema: "fixture.runtime.v1", identity: "stable" }),
       assertStableRuntimeIdentity(before, after) { assert.deepEqual(before, after); },
       createBrowserContexts() { throw new Error("the fake candidate case must not launch a browser"); },
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });
