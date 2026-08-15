@@ -32,6 +32,31 @@ const REQUIRED_SURFACES = ["heading", "separator", "div", "span", "alignment"];
 const OWNER = "ftml-marker-contract-canary";
 const EXPIRY_HOURS = 8;
 
+export function validateMarkerContractFixtures(fixtures) {
+  assert.equal(fixtures?.schema, "wikijump.ftml_marker_contract_fixtures.v1");
+  assert.equal(fixtures?.site_slug, "scp-wiki");
+  assert.equal(fixtures?.layout, "wikidot");
+  assert.ok(Array.isArray(fixtures?.fixtures), "marker fixture index is missing");
+  assert.deepEqual(
+    fixtures.fixtures.map((fixture) => fixture?.surface),
+    REQUIRED_SURFACES,
+    "marker fixture index must list each required surface exactly once",
+  );
+
+  const fixtureIds = fixtures.fixtures.map((fixture) => fixture?.fixture_id);
+  const slugs = fixtures.fixtures.map((fixture) => fixture?.slug);
+  assert.equal(new Set(fixtureIds).size, fixtureIds.length, "marker fixture IDs must be unique");
+  assert.equal(new Set(slugs).size, slugs.length, "marker fixture slugs must be unique");
+  for (const fixture of fixtures.fixtures) {
+    assert.ok(fixture && typeof fixture === "object", "marker fixture must be an object");
+    assert.equal(typeof fixture.fixture_id, "string", "marker fixture ID is missing");
+    assert.equal(typeof fixture.slug, "string", "marker fixture slug is missing");
+    assert.equal(typeof fixture.title, "string", "marker fixture title is missing");
+    assert.equal(typeof fixture.wikitext, "string", "marker fixture source is missing");
+  }
+  return fixtures;
+}
+
 export function usage() {
   return `Usage: run-ftml-marker-contract-canary.mjs --candidate-ftml SHA --output-dir DIR [--baseline-ftml SHA] [--work-root DIR] [--dry-run]
 
@@ -614,11 +639,8 @@ export async function main(argv, { stdout = process.stdout } = {}) {
 
 export async function runCanary(args, { stdout = process.stdout } = {}) {
   assertListPagesCandidateLaunchEnvironment();
-  const fixtures = JSON.parse(await fs.readFile(FIXTURES_PATH, "utf8"));
-  assert.deepEqual(
-    [...new Set(fixtures.fixtures.map((fixture) => fixture.surface))].sort(),
-    [...REQUIRED_SURFACES].sort(),
-    "fixture surfaces must be exactly the marker contract",
+  const fixtures = validateMarkerContractFixtures(
+    JSON.parse(await fs.readFile(FIXTURES_PATH, "utf8")),
   );
   let baselineFtml = args.baselineFtml ?? null;
   const runId = `ftml-marker-${args.candidateFtml.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`;

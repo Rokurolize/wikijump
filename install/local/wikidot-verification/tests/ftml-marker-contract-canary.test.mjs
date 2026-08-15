@@ -16,6 +16,7 @@ import {
   readSeedAdministrator,
   replaceFtmlPin,
   selectFtmlPinRewrite,
+  validateMarkerContractFixtures,
 } from "../scripts/run-ftml-marker-contract-canary.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -496,6 +497,38 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
   );
   assert.equal(plan.resource_disposition, "delete-on-close");
   assert.equal(plan.baseline_ftml, null);
+});
+
+test("marker canary fixture index rejects missing or duplicate records", () => {
+  const fixtures = JSON.parse(
+    readFileSync(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json",
+      ),
+      "utf8",
+    ),
+  );
+  assert.doesNotThrow(() => validateMarkerContractFixtures(fixtures));
+
+  const missing = { ...fixtures, fixtures: fixtures.fixtures.slice(0, -1) };
+  assert.throws(
+    () => validateMarkerContractFixtures(missing),
+    /must list each required surface exactly once/u,
+  );
+
+  const duplicate = {
+    ...fixtures,
+    fixtures: fixtures.fixtures.map((fixture, index) =>
+      index === fixtures.fixtures.length - 1
+        ? { ...fixture, fixture_id: fixtures.fixtures[0].fixture_id }
+        : fixture,
+    ),
+  };
+  assert.throws(
+    () => validateMarkerContractFixtures(duplicate),
+    /fixture IDs must be unique/u,
+  );
 });
 
 test("marker canary rejects abbreviated FTML revisions", () => {
