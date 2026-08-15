@@ -8852,7 +8852,15 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             "G=",
         ] {
             let start = output
-                .find(marker)
+                .match_indices(marker)
+                .find_map(|(start, _)| {
+                    let before = output[..start].trim_end_matches(['\r', '\n']);
+                    (before.is_empty()
+                        || ["<p>", "<br>", "<br/>", "<br />"]
+                            .iter()
+                            .any(|boundary| before.ends_with(boundary)))
+                    .then_some(start)
+                })
                 .unwrap_or_else(|| panic!("{label} missing {marker}: {output}"));
             let case = &output[start..];
             let end = case
