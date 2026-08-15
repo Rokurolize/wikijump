@@ -352,6 +352,93 @@ function executionIdentity(identity) {
   };
 }
 
+async function createFinalFrozenReceiptFixture(root, identity) {
+  const directory = path.join(root, "final-frozen");
+  await fs.mkdir(path.join(directory, "deepwell"), { recursive: true });
+  const paths = {
+    lockfile: path.join(directory, "deepwell", "Cargo.lock"),
+    verifier: path.join(directory, "verifier.mjs"),
+    fixture: path.join(directory, "fixture.json"),
+    tool: path.join(directory, "tool.mjs"),
+    denominator: path.join(directory, "denominator.json"),
+    images: path.join(directory, "images.json"),
+    manifest: path.join(directory, "inputs.json"),
+    writers: path.join(directory, "writers.json"),
+    receipt: path.join(directory, "receipt.json"),
+  };
+  await fs.writeFile(paths.lockfile, "lock\n");
+  await fs.writeFile(paths.verifier, "verifier\n");
+  await fs.writeFile(paths.fixture, "fixture\n");
+  await fs.writeFile(paths.tool, "tool\n");
+  await fs.writeFile(paths.denominator, "denominator\n");
+  await fs.writeFile(
+    paths.images,
+    canonicalJson({
+      status: "pass",
+      wikijump_sha: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      ftml_sha: identity.candidate.ftml_sha,
+      images: { deepwell: { id: image("f") } },
+    }),
+  );
+  await fs.writeFile(
+    paths.manifest,
+    canonicalJson({
+      lockfiles: [paths.lockfile],
+      verifier: [paths.verifier],
+      fixtures: [paths.fixture],
+      tools: [paths.tool],
+      denominator: [paths.denominator],
+      images: paths.images,
+    }),
+  );
+  await fs.writeFile(
+    paths.writers,
+    canonicalJson({
+      schema: "wikijump.phase4.source_writer_roster.v1",
+      status: "pass",
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      lanes: [{ name: "candidate", state: "stopped" }],
+    }),
+  );
+  const ref = async (filePath) => ({
+    path: filePath,
+    sha256: await sha256File(filePath),
+  });
+  await fs.writeFile(
+    paths.receipt,
+    canonicalJson({
+      schema: "wikijump.phase4.final_frozen_receipt.v1",
+      status: "FINAL_FROZEN",
+      source: {
+        wikijump_commit: identity.candidate.wikijump_commit,
+        wikijump_tree: identity.candidate.wikijump_tree,
+        ftml_sha: identity.candidate.ftml_sha,
+        lockfiles: [await ref(paths.lockfile)],
+      },
+      verifier: {
+        wikijump_commit: identity.candidate.wikijump_commit,
+        wikijump_tree: identity.candidate.wikijump_tree,
+        files: [await ref(paths.verifier)],
+      },
+      fixtures: [await ref(paths.fixture)],
+      tools: [await ref(paths.tool)],
+      denominator: [await ref(paths.denominator)],
+      images: {
+        producer: await ref(paths.images),
+        identities: { deepwell: image("f") },
+      },
+      inputs: {
+        manifest: await ref(paths.manifest),
+        source_writers: await ref(paths.writers),
+      },
+      source_writers: [],
+    }),
+  );
+  return paths.receipt;
+}
+
 async function fixture(root, identity = candidateIdentity()) {
   const policyPath = path.join(root, "policy.json");
   const identityPath = path.join(root, "candidate-identity.json");
@@ -489,7 +576,13 @@ async function fixture(root, identity = candidateIdentity()) {
   }).receipt;
   const receiptPath = path.join(root, "candidate-receipt.json");
   await fs.writeFile(receiptPath, canonicalJson(receipt), { mode: 0o600 });
-  return { receiptPath, identityPath, referencePath, policyPath };
+  return {
+    receiptPath,
+    finalFrozenReceiptPath: await createFinalFrozenReceiptFixture(root, identity),
+    identityPath,
+    referencePath,
+    policyPath,
+  };
 }
 
 async function createPromotionBuildFixture(root) {
@@ -688,6 +781,7 @@ test("promotion precondition accepts a complete source-admission fixture", async
   const paths = await fixture(root, identity);
   const result = await verifyStandingPromotionPrecondition({
     receiptPath: paths.receiptPath,
+    finalFrozenReceiptPath: paths.finalFrozenReceiptPath,
     candidateIdentityPath: paths.identityPath,
     liveReferencePath: paths.referencePath,
     liveCompletionPolicyPath: paths.policyPath,

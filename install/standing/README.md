@@ -66,7 +66,7 @@ Physical volume renames remain a separate data migration with rollback retention
 
 ## Sealed Tier 2 receipt verifiers
 
-`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, the sealed build inventory, and the rendered staging-home binding. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
+`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, exact final-frozen inputs, the sealed build inventory, and the rendered staging-home binding. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
 
 No checked-in host mutation controller currently chains those verifiers into a deploy. Treat the commands below as sealed-receipt validation tools, not as an operational orchestrator:
 
@@ -82,6 +82,7 @@ node install/local/wikidot-verification/scripts/verify-standing-candidate-parity
 ```sh
 node install/standing/scripts/verify-promotion-precondition.mjs \
   --receipt /secure/candidate/standing-candidate-parity-receipt.json \
+  --final-frozen-receipt /secure/candidate/final-frozen-receipt.json \
   --candidate-identity /secure/candidate/candidate-parity-identity.json \
   --live-reference /secure/live/standing-browser-live-reference.json \
   --live-completion-policy /secure/live/standing-live-completion-policy.json \

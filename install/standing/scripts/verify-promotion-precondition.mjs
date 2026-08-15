@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
 import { verifyStandingCandidateParityAdmission } from "../../local/wikidot-verification/src/standing-browser-promotion-admission.mjs";
+import { verifyFinalFrozenReceipt } from "../../local/wikidot-verification/src/final-frozen-receipt-contract.mjs";
 import { validateCandidateParityIdentity } from "../../local/wikidot-verification/src/standing-browser-parity-receipt.mjs";
 import {
+  readStableRegularFile,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -19,6 +20,7 @@ export const STANDING_PROMOTION_PRECONDITION_SCHEMA =
 
 const REQUIRED_ARGUMENTS = Object.freeze([
   "receipt",
+  "final-frozen-receipt",
   "candidate-identity",
   "live-reference",
   "live-completion-policy",
@@ -45,67 +47,6 @@ const BUILD_MANIFEST_EXCLUSIONS = Object.freeze([
 function requireEqual(actual, expected, name) {
   if (actual !== expected) throw new Error(`${name} does not match`);
   return actual;
-}
-
-function requireRegularFile(stat, name) {
-  if (
-    !stat?.isFile() ||
-    stat.isSymbolicLink() ||
-    (stat.nlink !== 1 && stat.nlink !== 1n)
-  ) {
-    throw new Error(`${name} must be a regular file`);
-  }
-}
-
-function statFingerprint(stat) {
-  return Object.freeze({
-    dev: String(stat.dev),
-    ino: String(stat.ino),
-    nlink: String(stat.nlink),
-    mode: String(stat.mode),
-    size: String(stat.size),
-    mtimeNs: String(stat.mtimeNs),
-    ctimeNs: String(stat.ctimeNs),
-  });
-}
-
-function requireSameFingerprint(before, after, name) {
-  if (JSON.stringify(before) !== JSON.stringify(after)) {
-    throw new Error(`${name} changed while it was being read`);
-  }
-}
-
-async function readStableRegularFile(filePath, name) {
-  const beforeStat = await fs
-    .lstat(filePath, { bigint: true })
-    .catch(() => null);
-  requireRegularFile(beforeStat, name);
-  const before = statFingerprint(beforeStat);
-  if (!fsConstants.O_NOFOLLOW) {
-    throw new Error("stable file verification requires O_NOFOLLOW support");
-  }
-  const handle = await fs.open(
-    filePath,
-    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
-  );
-  let bytes;
-  try {
-    const openedStat = await handle.stat({ bigint: true });
-    requireRegularFile(openedStat, name);
-    requireSameFingerprint(before, statFingerprint(openedStat), name);
-    bytes = await handle.readFile();
-  } finally {
-    await handle.close();
-  }
-  const afterStat = await fs
-    .lstat(filePath, { bigint: true })
-    .catch(() => null);
-  requireRegularFile(afterStat, name);
-  requireSameFingerprint(before, statFingerprint(afterStat), name);
-  return Object.freeze({
-    bytes,
-    sha256: createHash("sha256").update(bytes).digest("hex"),
-  });
 }
 
 function jsonValueFromStableFile(file, name) {
@@ -579,6 +520,7 @@ function requireStablePromotionBinding(before, after) {
 
 export async function verifyStandingPromotionPrecondition({
   receiptPath,
+  finalFrozenReceiptPath,
   candidateIdentityPath,
   liveReferencePath,
   liveCompletionPolicyPath,
@@ -598,6 +540,7 @@ export async function verifyStandingPromotionPrecondition({
     stagingHomeRoot,
     inputPaths: [
       { name: "candidate parity receipt", value: receiptPath },
+      { name: "final frozen receipt", value: finalFrozenReceiptPath },
       { name: "candidate parity identity", value: candidateIdentityPath },
       { name: "live reference", value: liveReferencePath },
       { name: "live completion policy", value: liveCompletionPolicyPath },
@@ -615,6 +558,15 @@ export async function verifyStandingPromotionPrecondition({
     buildEvidenceRoot,
     stagingHomeRoot,
   });
+  const finalFrozenSource = {
+    wikijump_commit: binding.identity.candidate.wikijump_commit,
+    wikijump_tree: binding.identity.candidate.wikijump_tree,
+    ftml_sha: binding.identity.candidate.ftml_sha,
+  };
+  const finalFrozen = await verifyFinalFrozenReceipt({
+    receiptPath: finalFrozenReceiptPath,
+    source: finalFrozenSource,
+  });
   bindAdmissionToPromotion({
     admission,
     identity: binding.identity,
@@ -629,6 +581,16 @@ export async function verifyStandingPromotionPrecondition({
       buildEvidenceRoot,
       stagingHomeRoot,
     }),
+  );
+  const finalFrozenAgain = await verifyFinalFrozenReceipt({
+    receiptPath: finalFrozenReceiptPath,
+    source: finalFrozenSource,
+  });
+  requireEqual(finalFrozenAgain.path, finalFrozen.path, "final frozen receipt path");
+  requireEqual(
+    finalFrozenAgain.sha256,
+    finalFrozen.sha256,
+    "final frozen receipt SHA-256",
   );
   const result = Object.freeze({
     schema: STANDING_PROMOTION_PRECONDITION_SCHEMA,
@@ -652,6 +614,10 @@ export async function verifyStandingPromotionPrecondition({
       ftml_sha: binding.identity.candidate.ftml_sha,
       compose_project: binding.identity.candidate.compose_project,
       expires_at: binding.identity.candidate.expires_at,
+    },
+    final_frozen_receipt: {
+      path: finalFrozen.path,
+      sha256: finalFrozen.sha256,
     },
     build: binding.build,
     staging_home: { manifest_sha256: binding.staging_home.manifest_sha256 },
@@ -683,7 +649,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage: verify-promotion-precondition.mjs --receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIRECTORY --staging-home DIRECTORY --output FILE
+  console.log(`Usage: verify-promotion-precondition.mjs --receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIRECTORY --staging-home DIRECTORY --output FILE
 
 Verifies the reviewed source browser-parity admission and binds it to the exact sealed build and rendered standing topology. It has no Docker, maintenance, canonical-home, or network side effects.`);
 }
@@ -696,6 +662,7 @@ async function main() {
   const args = parseArgs(process.argv);
   const result = await verifyStandingPromotionPrecondition({
     receiptPath: args.receipt,
+    finalFrozenReceiptPath: args["final-frozen-receipt"],
     candidateIdentityPath: args["candidate-identity"],
     liveReferencePath: args["live-reference"],
     liveCompletionPolicyPath: args["live-completion-policy"],
