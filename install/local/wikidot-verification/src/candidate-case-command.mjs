@@ -231,10 +231,13 @@ export async function runCandidateCaseCommand(args) {
   const outputDir = path.resolve(args["output-dir"]);
   await fs.mkdir(path.dirname(outputDir), { recursive: true, mode: 0o700 });
   const globalLockPath = path.join(os.tmpdir(), "wikijump-candidate-run.lock");
-  const globalLock = await fs.open(globalLockPath, "wx", 0o600);
-  await globalLock.writeFile(`${JSON.stringify({schema: "wikijump.candidate_global_lock.v1", run_id: args["run-id"], evidence_directory: path.dirname(outputDir)})}\n`);
-  await globalLock.sync();
-  await globalLock.close();
+  let globalLock;
+  try {
+    globalLock = JSON.parse(await fs.readFile(globalLockPath, "utf8"));
+  } catch (error) {
+    throw new Error(`candidate global lease is unavailable: ${error.message}`);
+  }
+  if (globalLock?.schema !== "wikijump.candidate_global_lock.v1" || globalLock.run_id !== args["run-id"]) throw new Error("candidate global lease does not bind the propagated run ID");
   const signals = interruption();
   try {
     return await runCandidateCaseSet({
@@ -249,7 +252,6 @@ export async function runCandidateCaseCommand(args) {
     });
   } finally {
     signals.close();
-    await fs.unlink(globalLockPath).catch(() => {});
   }
 }
 
