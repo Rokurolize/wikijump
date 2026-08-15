@@ -8667,6 +8667,7 @@
           "deepwell/tests/parent.rs#direct_parent_metadata_tracks_one_current_relationship_and_rejects_ambiguity",
           "deepwell/tests/parent.rs#parent_get_all_enforces_child_and_parent_view_permissions",
           "deepwell/tests/rated_pages.rs#ratedpages_renders_live_top_rated_box_and_rating_filters",
+          "deepwell/tests/rated_pages.rs#ratedpages_uses_request_viewer_for_private_rows",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page",
           "deepwell/tests/site.rs#site_settings_update_round_trips_and_rejects_stale_revision",
           "deepwell/tests/site.rs#site_update_requires_site_edit_permission",

@@ -10028,8 +10028,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "40590a6c660e20dc3a6b125f4d569db9a3948913",
-      "tree": "a6f257c08c03b4073436b119657427b173995664"
+      "commit": "2d32dce7e288399c9ff7b9ab05b89d318c6593a8",
+      "tree": "6ef8e50b0b1ba327a0cafc760e83f7c508041471"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -10118,7 +10118,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "d15f64a3c750dc603f2473f71e7f4d12063d37429c2c94da5ad8bca695ae8af6"
+        "sha256": "fe975b83be60e77d01f3bcb01c705a31cc3c24a36082964d525a656f8cb99442"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -10254,7 +10254,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "ea1ec057a16a6692d0a2d9a72e86971fe9e15efb823627e3b1a65307609e1525"
+        "sha256": "b565082547535d9631827aab8efe3887d8b914ed5d1ba57fe330b569cd7ee50a"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
