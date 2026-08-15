@@ -10,6 +10,7 @@ import { createOpen43Q809CandidateCaseSet } from "../src/open43-q809-candidate-c
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const CASE_ID = "Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE";
+const SERVED_CASE_ID = "Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE";
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const hash = (character) => character.repeat(64);
 const git = (character) => character.repeat(40);
@@ -60,7 +61,7 @@ function fixture() {
 }
 
 function fakeSession() {
-  const state = { fixture: fixture(), vote: null };
+  const state = { fixture: fixture(), vote: null, events: [] };
   const page = (entry, wikitext = null) => ({ page_id: entry.page_id, slug: entry.slug, title: entry.title, page_category_id: entry.category_id, wikitext });
   const html = (actor) => {
     const selected = actor === "anonymous" ? [state.fixture.public_page] : [state.fixture.private_page];
@@ -74,7 +75,9 @@ function fakeSession() {
       pageOrigin: PAGE_ORIGIN,
       privateInputIdentity: { editor_user_id: 42, fixture_identity_sha256: sha256Value(state.fixture) },
       requiredServiceBindings: [],
+      get events() { return structuredClone(state.events); },
       async rpc(method, params = {}, { actor = "editor" } = {}) {
+        state.events.push({ service: "deepwell", operation: method, method: "POST", response_status: 200 });
         if (method === "site_get") return { site_id: state.fixture.site_id, slug: "scpaiueouiuiuiui" };
         if (method === "page_get") {
           if (params.page === state.fixture.holder.slug) return page(state.fixture.holder, state.fixture.source);
@@ -105,9 +108,40 @@ function fakeSession() {
   };
 }
 
-test("Q809 runs the permission-before-limit candidate through the canonical runner", async (t) => {
+function fakeBrowserContexts(state) {
+  const servedHtml = () => {
+    const { fixture: f, vote } = state;
+    const score = vote?.value ?? f.mutated_public_score;
+    return `<div class="top-rated-pages-box"><div class="top-rated-pages-list"><div class="list-item"><a href="/${f.public_page.slug}">${f.public_page.title}</a><span style="color: #777">(Rating: ${score})</span></div></div></div>`;
+  };
+  return {
+    async newCandidateContext() {
+      const page = {
+        on() {},
+        off() {},
+        async evaluate() {
+          const html = servedHtml();
+          return {
+            url: PAGE_ORIGIN,
+            box_html: html,
+            list_item_count: (html.match(/<div class="list-item">/gu) ?? []).length,
+            compat_markers: html.match(/data-wikijump-compat-[^= ]+/gu) ?? [],
+          };
+        },
+        async close() {},
+      };
+      return { context: { async newPage() { return page; } }, environment: {} };
+    },
+    async captureCandidateObservation({ url }) {
+      return { navigation_status: 200, input_url: url, final_url: url, failures: [] };
+    },
+    async close() { return { browser_context_count: 1 }; },
+  };
+}
+
+test("Q809 runs the permission and served-mutation candidates through the canonical runner", async (t) => {
   const selected = await candidateCaseSet("open43-q809");
-  assert.deepEqual(selected.caseIds, [CASE_ID]);
+  assert.deepEqual(selected.caseIds, [CASE_ID, SERVED_CASE_ID]);
   const { session, state } = fakeSession();
   const caseSet = createOpen43Q809CandidateCaseSet({ sessionFactory: () => session });
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-q809-candidate-"));
@@ -121,6 +155,7 @@ test("Q809 runs the permission-before-limit candidate through the canonical runn
     outputDir: path.join(root, "evidence"),
     caseSet,
     dependencies: {
+      createBrowserContexts: async () => fakeBrowserContexts(state),
       collectExecutionIdentity: async () => ({ schema: "fixture.execution_identity.v1", source_clean: true, module_manifest_sha256: hash("f") }),
       observeRuntimeIdentity: async () => ({ schema: "fixture.runtime_observation.v1", identity: "stable" }),
       assertStableRuntimeIdentity(before, after) { assert.deepEqual(after, before); },
@@ -129,7 +164,36 @@ test("Q809 runs the permission-before-limit candidate through the canonical runn
     },
   });
   assert.equal(receipt.status, "pass");
-  assert.equal(receipt.cases[0].case_id, CASE_ID);
+  assert.deepEqual(receipt.cases.map(({ case_id }) => case_id), [CASE_ID, SERVED_CASE_ID]);
+  const servedCase = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${SERVED_CASE_ID}.json`), "utf8"));
+  assert.equal(servedCase.verification.served_mutation_visible, true);
+  assert.equal(servedCase.verification.stale_cache_absent, true);
+  assert.equal(servedCase.verification.private_leak_absent, true);
+  assert.equal(servedCase.verification.internal_identifiers_absent, true);
   assert.equal(state.vote, null);
   assert.equal(receipt.resources.every((resource) => resource.released), true);
+});
+
+test("Q809 served-mutation verification rejects a stale cached score", () => {
+  const { session } = fakeSession();
+  const run = createOpen43Q809CandidateCaseSet({ sessionFactory: () => session }).prepareRun({
+    candidateIdentity: candidateIdentity(),
+    privateInput: { fixture: fixture() },
+    signal: null,
+    resources: {},
+    candidateBrowserContexts: {},
+  });
+  const f = fixture();
+  const beforeHtml = `<div class="top-rated-pages-box"><div class="top-rated-pages-list"><div class="list-item"><a href="/${f.public_page.slug}">${f.public_page.title}</a><span style="color: #777">(Rating: ${f.initial_public_score})</span></div></div></div>`;
+  const staleHtml = `<div class="top-rated-pages-box"><div class="top-rated-pages-list"><div class="list-item"><a href="/${f.public_page.slug}">${f.public_page.title}</a><span style="color: #777">(Rating: ${f.mutated_public_score})</span></div><div style="display:none">(Rating: ${f.initial_public_score})</div></div></div>`;
+  const url = `${PAGE_ORIGIN}/${f.holder.slug}`;
+  assert.throws(() => run.verifyCase(SERVED_CASE_ID, {
+    url,
+    capture: { navigation_status: 200, input_url: url, final_url: url, failures: [] },
+    served: { box_html: staleHtml, list_item_count: 1, compat_markers: [] },
+    anonymous_before: beforeHtml,
+    anonymous_after: `<div class="top-rated-pages-box"><div class="top-rated-pages-list"><div class="list-item"><a href="/${f.public_page.slug}">${f.public_page.title}</a><span style="color: #777">(Rating: ${f.mutated_public_score})</span></div></div></div>`,
+    adapter_events: [{ operation: "page_view", method: "POST", response_status: 200 }],
+    event_scope: "adapter-issued-external-requests-only",
+  }), /stale cached score/u);
 });
