@@ -48,6 +48,121 @@ const SOURCE_INPUTS = new Map()
 const SUPPORTED_RELATIONSHIP_EDGE_TYPES = new Set([
   "alias", "equivalence", "implemented_by", "parsed_by", "rendered_by", "tested_by"
 ])
+const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
+  {
+    path: "/home/roku/wjlab/ownership-mapping-20260815/catalog-feature-owners.json",
+    sha256: "63537ec48261f0bb956407e7fa2889a2f33548b596d441191632319907f0f855"
+  },
+  {
+    path: "/home/roku/wjlab/ownership-mapping-20260815/deepwell-jsonrpc.json",
+    sha256: "9a55d5a726dd6696639cb1686da11440bf75bc211fbb7b48bac5575e3df4074c"
+  },
+  {
+    path: "/home/roku/wjlab/ownership-mapping-20260815/framerail-actions.json",
+    sha256: "d3b461c03d931c3397fcd345b0400fb07e8fbe8621f48cfd80dfd7f6b0ec126b"
+  },
+  {
+    path: "/home/roku/wjlab/ownership-mapping-20260815/wws-wikidot-py.json",
+    sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
+  }
+])
+const AUDITED_CATALOG_SHA256 = "f79aee6963a4c4428261b1bb0b4b8f0411a39cebc9d944f064f1b118153e5090"
+const AUDITED_CATALOG_FALLBACK = Object.freeze({
+  count: 95,
+  surface_ids_sha256: "82cce4db95e2a070f1bbdd192dcce8254f7ded92632969781771ac81f902d6a5",
+  mapping_sha256: "b00d1e43079102c83db2af1bab96584d46c12ce41218b12fa0ea36b427e3fb4e"
+})
+const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
+  count: 195,
+  surface_ids_sha256: "3a2cf09c168b37eb4539336cca7807f06585ece006a3327c2b2093b327424377",
+  mapping_sha256: "bf8c3ed6eebb5592cef108488dcc6c285d9b39eaf5224f8616a71f4b30708082",
+  fallback_issue: 1387,
+  fallback_count: 183,
+  fallback_surface_ids_sha256: "099e4b58d64be1758cb0df253e224419032a52b6066f911fe8e21fec5b796074",
+  fallback_mapping_sha256: "db854ca4e40491f39575e2fe35d4925590abecb0058200db7e48f1dbb1256dd8"
+})
+const AUDITED_ISSUE_GROUPS = Object.freeze({
+  deepwell_jsonrpc_method: Object.freeze({ count: 163, surface_ids_sha256: "307624e11c494a0fc894236e9f1c3da6665833ec7778418afe1116f39eea1a12", mapping_sha256: "4db63ea2576db5fa7df9993c3d1a56d646d5f089b65ad18b69a262494039e297" }),
+  framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
+  framerail_server_action: Object.freeze({ count: 97, surface_ids_sha256: "f1d6baa4652c07e181839c8efb90709c35c76154e95f0b71f15c94c0cd9f2dfc", mapping_sha256: "3cc1f313532c1664c989c02e121b4476f25642b48f55a6f5958fc92c97d513a3" }),
+  framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
+  framerail_amc_module_shape: Object.freeze({ count: 26, surface_ids_sha256: "171e867231c0bf70f6b9078393c6be28877cafa9b21233195e1c4fdbdc3f0f24", mapping_sha256: "a62ecebad82b6cfd8cf114e65d39bdfd5f23b02d32e2f63cfe06876d20e60398" }),
+  page_action: Object.freeze({ count: 25, surface_ids_sha256: "7650ecd18142446eb1c4f557ad13bc525cdd541b31dcbc982ea1f92288f0e206", mapping_sha256: "98ebacfd535793c5c4996797ea2c206f3edea85852520705b01a3f9dd03faad6" }),
+  framerail_xmlrpc_method: Object.freeze({ count: 17, surface_ids_sha256: "862b1daa07ba126424e6021d306854f2c431073c024e1497a0ed5ab65b0d118d", mapping_sha256: "8862712f0d5acc1e73ff31f873d4ed8a8e7d2c01afc74ce988894e38508f9a34" }),
+  wws_route: Object.freeze({ count: 47, surface_ids_sha256: "ab5f11a51af87a193c5f3b032a3b79c2e0c3ea1f787c35bb8c9d4d1c474569ab", mapping_sha256: "3cbd7115f9f7a4463abca2965c29a44418dd28013df29c5f396c52a562841bfa" }),
+  wikidot_py_amc_module_shape: Object.freeze({ count: 22, surface_ids_sha256: "4af71683f0059a07403b6cba86cb1d8961e9b9b4c1b2f3be158b2e7bd2918123", mapping_sha256: "a7cd9e3f642420977c413a97231131d38f56e0374e3440955e081b417e3ac48f" })
+})
+const CATALOG_SPLIT_IMPLEMENTATION_OWNERS = new Set([
+  "catalog-feature:module-countpages",
+  "catalog-feature:module-listpages",
+  "catalog-feature:page-inclusions",
+  "catalog-feature:syntax-engine"
+])
+const DEFERRED_XMLRPC_CATALOG_FEATURES = new Set([
+  "catalog-feature:api-categories-select",
+  "catalog-feature:api-deleted-methods",
+  "catalog-feature:api-files-get-meta",
+  "catalog-feature:api-files-get-one",
+  "catalog-feature:api-files-save-one",
+  "catalog-feature:api-files-select",
+  "catalog-feature:api-overview",
+  "catalog-feature:api-pages-get-meta",
+  "catalog-feature:api-pages-get-one",
+  "catalog-feature:api-pages-save-one",
+  "catalog-feature:api-pages-select",
+  "catalog-feature:api-posts-get",
+  "catalog-feature:api-posts-select",
+  "catalog-feature:api-tags-select",
+  "catalog-feature:api-users-get-me"
+])
+const FRAMERAIL_ROUTE_ISSUE_EXCEPTIONS = new Map([
+  ["framerail-route:/local--favicon/{filename}", 756],
+  ["framerail-route:/forum/c-{category}/{*name}", 1034],
+  ["framerail-route:/forum/start/{*extra}", 1034],
+  ["framerail-route:/forum/t-{thread}/{*name}", 1034],
+  ["framerail-route:/forum/{fallback}/{*extra}", 1034]
+])
+const PAGE_ACTION_ISSUES = new Map([
+  ["page-action:backlinks", 1027],
+  ["page-action:delete", 1373],
+  ["page-action:discuss", 839],
+  ["page-action:edit", 775],
+  ["page-action:edit-append", 1041],
+  ["page-action:edit-meta", 1373],
+  ["page-action:edit-sections", 1041],
+  ["page-action:file-delete", 1039],
+  ["page-action:file-edit", 1039],
+  ["page-action:file-history", 1039],
+  ["page-action:file-info", 1039],
+  ["page-action:file-move", 1039],
+  ["page-action:file-upload", 1062],
+  ["page-action:files", 1039],
+  ["page-action:history", 1063],
+  ["page-action:lock", 1373],
+  ["page-action:more-options", 1041],
+  ["page-action:parent", 1063],
+  ["page-action:print", 777],
+  ["page-action:rate", 1030],
+  ["page-action:rename-move", 1373],
+  ["page-action:site-tools", 1041],
+  ["page-action:tags", 1041],
+  ["page-action:view-source", 1041],
+  ["page-action:watchers", 1032]
+])
+const CATALOG_FEATURE_ISSUE_EXCEPTIONS = new Map([
+  ["catalog-feature:module-comments", 1034],
+  ["catalog-feature:module-forumcategory", 1034],
+  ["catalog-feature:module-forumnewthread", 1034],
+  ["catalog-feature:module-forumstart", 1034],
+  ["catalog-feature:module-forumthread", 1034],
+  ["catalog-feature:module-frontforum", 1034],
+  ["catalog-feature:module-managesite", 1038],
+  ["catalog-feature:module-members", 1032],
+  ["catalog-feature:module-petitionadmin", 1038],
+  ["catalog-feature:module-recentposts", 1034],
+  ["catalog-feature:module-recentthreads", 1034],
+  ["catalog-feature:module-sitechanges", 1035]
+])
 
 function pinnedWikidotPyAmcModules() {
   const result = spawnSync(
@@ -308,6 +423,10 @@ function surface({
 
 function uniqueSortedStrings(values) {
   return [...new Set(values.filter((value) => typeof value === "string" && value !== ""))].sort()
+}
+
+function auditedLinesSha256(lines) {
+  return sha256(`${[...lines].sort().join("\n")}\n`)
 }
 
 function assertExactKeys(value, expected, context) {
@@ -2531,7 +2650,7 @@ async function discoverOpen43AuditCases(root) {
   return { records, auditPaths: [...routing.source_audits] }
 }
 
-function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics) {
+function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics, auditedOwnershipActive) {
   const specificationKinds = uniqueSortedStrings(
     surfaces
       .filter(({ kind }) => kind !== "catalog_feature" && kind !== "open43_audit_case")
@@ -2556,12 +2675,7 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics) {
   const crosswalkByFeature = new Map(
     catalogCrosswalk.map((row) => [row.feature_id, row])
   )
-  const catalogOwnerPrefixes = [
-    DATA_FORM_SPECIFICATION_PREFIX,
-    MODULE_SPECIFICATION_PREFIX,
-    "docs/wikidot-specifications/specifications/site-structure/"
-  ]
-  return surfaces.map((record) => {
+  const normalizedSurfaces = surfaces.map((record) => {
     const {
       public_owner: legacyOwner,
       implementation_owner_records: implementationOwnerRecords,
@@ -2573,13 +2687,18 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics) {
       const featureId = record.surface_id.slice("catalog-feature:".length)
       const crosswalk = crosswalkByFeature.get(featureId)
       specificationOwner = `catalog.feature:${featureId}`
-      const hasCanonicalOwnerManifest = record.public_reference.some((reference) =>
-        catalogOwnerPrefixes.some((prefix) => reference.startsWith(prefix))
-      )
       if (crosswalk) {
         implementationOwners = uniqueSortedStrings(["ftml", crosswalk.runtime_owner])
-      } else if (hasCanonicalOwnerManifest) {
-        implementationOwners = uniqueSortedStrings(implementationOwnerRecords.map(({ owner }) => owner))
+      } else if (DEFERRED_XMLRPC_CATALOG_FEATURES.has(record.surface_id)) {
+        implementationOwners = []
+      } else if (implementationOwnerRecords.length > 0) {
+        implementationOwners = uniqueSortedStrings(
+          implementationOwnerRecords.map(({ owner }) => owner)
+        )
+      } else if (auditedOwnershipActive && CATALOG_SPLIT_IMPLEMENTATION_OWNERS.has(record.surface_id)) {
+        implementationOwners = ["ftml", "wikijump"]
+      } else if (auditedOwnershipActive) {
+        implementationOwners = ["wikijump"]
       } else {
         implementationOwners = []
       }
@@ -2603,6 +2722,136 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics) {
       implementation_owners: uniqueSortedStrings(implementationOwners)
     }
   })
+  if (auditedOwnershipActive) {
+    const fallbackRows = surfaces.filter((record) => {
+      if (record.kind !== "catalog_feature") return false
+      const featureId = record.surface_id.slice("catalog-feature:".length)
+      return !crosswalkByFeature.has(featureId) &&
+        !DEFERRED_XMLRPC_CATALOG_FEATURES.has(record.surface_id) &&
+        record.implementation_owner_records.length === 0
+    })
+    const fallbackIds = fallbackRows.map(({ surface_id: surfaceId }) => surfaceId)
+    const fallbackMapping = normalizedSurfaces
+      .filter(({ surface_id: surfaceId }) => fallbackIds.includes(surfaceId))
+      .map(({ surface_id: surfaceId, implementation_owners: owners }) => `${surfaceId}\t${owners.join(",")}`)
+    if (
+      fallbackRows.length !== AUDITED_CATALOG_FALLBACK.count ||
+      auditedLinesSha256(fallbackIds) !== AUDITED_CATALOG_FALLBACK.surface_ids_sha256 ||
+      auditedLinesSha256(fallbackMapping) !== AUDITED_CATALOG_FALLBACK.mapping_sha256
+    ) {
+      throw new Error("audited catalog implementation ownership drift")
+    }
+  }
+  return normalizedSurfaces
+}
+
+function framerailAmcModuleIssue(surfaceId) {
+  const moduleName = surfaceId.slice("framerail-amc-module:".length).split(":")[0]
+  if (moduleName === "pagerate/WhoRatedPageModule") return 1030
+  if (moduleName === "membership/MembersListModule") return 1032
+  if (moduleName.startsWith("forum/")) return 1034
+  if (moduleName === "changes/SiteChangesListModule") return 1035
+  if (moduleName === "files/PageFilesModule") return 1039
+  if (moduleName === "viewsource/ViewSourceModule") return 1041
+  if (moduleName.startsWith("history/")) return 1063
+  if (moduleName === "list/ListPagesModule") return 1374
+  throw new Error(`missing audited Framerail AMC module issue: ${surfaceId}`)
+}
+
+function auditedIssueForSurface(record) {
+  switch (record.kind) {
+    case "catalog_feature":
+      if (DEFERRED_XMLRPC_CATALOG_FEATURES.has(record.surface_id)) return null
+      return CATALOG_FEATURE_ISSUE_EXCEPTIONS.get(record.surface_id) ??
+        AUDITED_CURRENT_CATALOG_ISSUES.fallback_issue
+    case "deepwell_jsonrpc_method":
+      return 1368
+    case "wws_route":
+      return record.surface_id.includes("/local--html/{page_slug}/{id}/{domain}") ? 1370 : 1369
+    case "wikidot_py_amc_module_shape":
+      return 1376
+    case "framerail_xmlrpc_method":
+      return 1375
+    case "framerail_route":
+      return FRAMERAIL_ROUTE_ISSUE_EXCEPTIONS.get(record.surface_id) ?? 1372
+    case "framerail_server_action":
+      return record.surface_id === "framerail-server-action:/-/settings?/display" ? 1063 : 1372
+    case "framerail_amc_action_shape":
+      if (record.surface_id === "framerail-amc-action:ForumAction:createPageDiscussionThread") return 839
+      if (record.surface_id === "framerail-amc-action:misc/NewPageHelperAction:createNewPage") return 1371
+      throw new Error(`missing audited Framerail AMC action issue: ${record.surface_id}`)
+    case "framerail_amc_module_shape":
+      return framerailAmcModuleIssue(record.surface_id)
+    case "page_action": {
+      const issue = PAGE_ACTION_ISSUES.get(record.surface_id)
+      if (!issue) throw new Error(`missing audited page action issue: ${record.surface_id}`)
+      return issue
+    }
+    default:
+      return null
+  }
+}
+
+function applyAuditedIssueOwnership(surfaces, auditedOwnershipActive) {
+  if (!auditedOwnershipActive) return surfaces
+  const assigned = surfaces.map((record) => {
+    const issue = auditedIssueForSurface(record)
+    if (issue === null) return record
+    const existing = record.existing_refs.issues
+    if (existing.length > 0 && (existing.length !== 1 || existing[0] !== issue)) {
+      throw new Error(`audited issue conflicts with existing issue for ${record.surface_id}`)
+    }
+    return {
+      ...record,
+      existing_refs: {
+        ...record.existing_refs,
+        issues: [issue]
+      }
+    }
+  })
+  for (const [kind, expected] of Object.entries(AUDITED_ISSUE_GROUPS)) {
+    const rows = assigned.filter((record) => record.kind === kind)
+    const ids = rows.map(({ surface_id: surfaceId }) => surfaceId)
+    const mapping = rows.map(({ surface_id: surfaceId, existing_refs: existingRefs }) =>
+      `${surfaceId}\t${existingRefs.issues.join(",")}`
+    )
+    if (
+      rows.length !== expected.count ||
+      auditedLinesSha256(ids) !== expected.surface_ids_sha256 ||
+      auditedLinesSha256(mapping) !== expected.mapping_sha256
+    ) {
+      throw new Error(`audited issue ownership drift for ${kind}`)
+    }
+  }
+  const currentCatalogRows = assigned.filter((record) =>
+    record.kind === "catalog_feature" && !DEFERRED_XMLRPC_CATALOG_FEATURES.has(record.surface_id)
+  )
+  const currentCatalogIds = currentCatalogRows.map(({ surface_id: surfaceId }) => surfaceId)
+  const currentCatalogMapping = currentCatalogRows.map(
+    ({ surface_id: surfaceId, existing_refs: existingRefs }) =>
+      `${surfaceId}\t${existingRefs.issues.join(",")}`
+  )
+  const fallbackCatalogRows = currentCatalogRows.filter(
+    ({ surface_id: surfaceId }) => !CATALOG_FEATURE_ISSUE_EXCEPTIONS.has(surfaceId)
+  )
+  const fallbackCatalogIds = fallbackCatalogRows.map(({ surface_id: surfaceId }) => surfaceId)
+  const fallbackCatalogMapping = fallbackCatalogRows.map(
+    ({ surface_id: surfaceId, existing_refs: existingRefs }) =>
+      `${surfaceId}\t${existingRefs.issues.join(",")}`
+  )
+  if (
+    currentCatalogRows.length !== AUDITED_CURRENT_CATALOG_ISSUES.count ||
+    auditedLinesSha256(currentCatalogIds) !== AUDITED_CURRENT_CATALOG_ISSUES.surface_ids_sha256 ||
+    auditedLinesSha256(currentCatalogMapping) !== AUDITED_CURRENT_CATALOG_ISSUES.mapping_sha256 ||
+    fallbackCatalogRows.length !== AUDITED_CURRENT_CATALOG_ISSUES.fallback_count ||
+    auditedLinesSha256(fallbackCatalogIds) !==
+      AUDITED_CURRENT_CATALOG_ISSUES.fallback_surface_ids_sha256 ||
+    auditedLinesSha256(fallbackCatalogMapping) !==
+      AUDITED_CURRENT_CATALOG_ISSUES.fallback_mapping_sha256
+  ) {
+    throw new Error("audited current catalog issue ownership drift")
+  }
+  return assigned
 }
 
 function buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics) {
@@ -2777,8 +3026,10 @@ async function buildInventory(root, sourceRevision) {
     JSON.parse(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")),
     semantics
   )
+  const auditedOwnershipActive =
+    sha256(SOURCE_INPUTS.get("docs/wikidot-specifications/catalog.json")) === AUDITED_CATALOG_SHA256
   verifyRegistryBlobs(root, provenance.wikijump.commit)
-  const surfaces = normalizeSurfaceOwners([
+  const surfaces = normalizeSurfaceOwners(applyAuditedIssueOwnership([
     ...catalog,
     ...deepwell,
     ...framerailRoutes,
@@ -2788,7 +3039,7 @@ async function buildInventory(root, sourceRevision) {
     ...pageActions,
     ...wws,
     ...open43.records
-  ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")), ftmlRawSurfaceManifest.catalog_crosswalk, semantics)
+  ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")), auditedOwnershipActive), ftmlRawSurfaceManifest.catalog_crosswalk, semantics, auditedOwnershipActive)
   const relationshipModel = buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics)
   validateInventory(surfaces, relationshipModel.owner_keys)
   const byKind = {}
@@ -2813,6 +3064,7 @@ async function buildInventory(root, sourceRevision) {
       implementation_ledger_mirror: "docs/wikidot-specifications/implementation-ledger.json",
       source_coverage: "docs/wikidot-specifications/source-coverage.json",
       compatibility_surface_semantics: SEMANTICS_REGISTRY,
+      audited_ownership_reports: AUDITED_OWNERSHIP_REPORTS,
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",
       framerail_amc_registry: "framerail/src/lib/server/ajax-module-connector.js",

@@ -1032,6 +1032,93 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
   )
 })
 
+test("CLI projects the audited registry issue owners and catalog implementation boundary", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-audited-ownership-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const byId = new Map(inventory.surfaces.map((record) => [record.surface_id, record]))
+  const catalog = inventory.surfaces.filter((record) => record.kind === "catalog_feature")
+  const registryRows = inventory.surfaces.filter((record) => [
+    "deepwell_jsonrpc_method",
+    "framerail_amc_action_shape",
+    "framerail_amc_module_shape",
+    "framerail_route",
+    "framerail_server_action",
+    "framerail_xmlrpc_method",
+    "page_action",
+    "wikidot_py_amc_module_shape",
+    "wws_route"
+  ].includes(record.kind))
+
+  assert.deepEqual(
+    catalog.filter((record) => record.implementation_owners.length === 0)
+      .map(({ surface_id: surfaceId }) => surfaceId),
+    [
+      "catalog-feature:api-categories-select",
+      "catalog-feature:api-deleted-methods",
+      "catalog-feature:api-files-get-meta",
+      "catalog-feature:api-files-get-one",
+      "catalog-feature:api-files-save-one",
+      "catalog-feature:api-files-select",
+      "catalog-feature:api-overview",
+      "catalog-feature:api-pages-get-meta",
+      "catalog-feature:api-pages-get-one",
+      "catalog-feature:api-pages-save-one",
+      "catalog-feature:api-pages-select",
+      "catalog-feature:api-posts-get",
+      "catalog-feature:api-posts-select",
+      "catalog-feature:api-tags-select",
+      "catalog-feature:api-users-get-me"
+    ]
+  )
+  assert.equal(
+    catalog.filter((record) => !record.surface_id.startsWith("catalog-feature:api-"))
+      .every((record) => record.existing_refs.issues.length === 1),
+    true
+  )
+  assert.equal(
+    catalog.filter((record) => record.existing_refs.issues[0] === 1387).length,
+    183
+  )
+  assert.deepEqual(byId.get("catalog-feature:module-comments").existing_refs.issues, [1034])
+  assert.deepEqual(byId.get("catalog-feature:module-members").existing_refs.issues, [1032])
+  assert.deepEqual(byId.get("catalog-feature:module-managesite").existing_refs.issues, [1038])
+  assert.deepEqual(byId.get("catalog-feature:module-sitechanges").existing_refs.issues, [1035])
+  assert.deepEqual(byId.get("catalog-feature:account-lifecycle").existing_refs.issues, [1387])
+  assert.deepEqual(byId.get("catalog-feature:api-pages-select").existing_refs.issues, [])
+  assert.equal(registryRows.every((record) => record.existing_refs.issues.length > 0), true)
+  assert.deepEqual(byId.get("deepwell-jsonrpc:admin_view").existing_refs.issues, [1368])
+  assert.deepEqual(byId.get("wws-route:GET:/robots.txt").existing_refs.issues, [1369])
+  assert.deepEqual(
+    byId.get("wws-route:GET:/local--html/{page_slug}/{id}/{domain}").existing_refs.issues,
+    [1370]
+  )
+  assert.deepEqual(byId.get("framerail-route:/").existing_refs.issues, [1372])
+  assert.deepEqual(byId.get("framerail-route:/local--favicon/{filename}").existing_refs.issues, [756])
+  assert.deepEqual(byId.get("framerail-amc-action:ForumAction:createPageDiscussionThread").existing_refs.issues, [839])
+  assert.deepEqual(byId.get("framerail-amc-action:misc/NewPageHelperAction:createNewPage").existing_refs.issues, [1371])
+  assert.deepEqual(byId.get("framerail-xmlrpc:system.listMethods").existing_refs.issues, [1375])
+  assert.deepEqual(
+    byId.get("wikidot-py-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage").existing_refs.issues,
+    [1376]
+  )
+})
+
 test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift", async (t) => {
   const cases = [
     {
@@ -1232,7 +1319,7 @@ test("CLI rejects a canonical implementation ledger mirror mismatch before disco
   assert.match(result.stderr, /scripts\/data\/wikidot-implementation-ledger\.json and docs\/wikidot-specifications\/implementation-ledger\.json must be byte-identical/u)
 })
 
-test("CLI binds cited data-form owners and leaves unrelated rows unresolved", async (t) => {
+test("CLI keeps cited data-form owners and fills only audited ownerless rows", async (t) => {
   const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-data-form-owners-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
@@ -1269,7 +1356,7 @@ test("CLI binds cited data-form owners and leaves unrelated rows unresolved", as
     ["catalog-feature:data-forms-text-field", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-wiki-field", ["wikijump.deepwell", "wikijump.framerail"]]
   ])
-  const expectedUnresolved = [
+  const expectedAuditedFallback = [
     "catalog-feature:data-forms-css-styling",
     "catalog-feature:data-forms-date-field",
     "catalog-feature:data-forms-deleting-form",
@@ -1287,12 +1374,16 @@ test("CLI binds cited data-form owners and leaves unrelated rows unresolved", as
     "catalog-feature:data-forms-youtube"
   ]
   assert.equal(rows.length, 27)
-  assert.deepEqual(rows.map(({ surface_id }) => surface_id), [...expectedBound.keys(), ...expectedUnresolved].sort())
+  assert.deepEqual(rows.map(({ surface_id }) => surface_id), [...expectedBound.keys(), ...expectedAuditedFallback].sort())
   for (const row of rows) {
-    assert.deepEqual(row.implementation_owners, expectedBound.get(row.surface_id) ?? [], row.surface_id)
+    assert.deepEqual(
+      row.implementation_owners,
+      expectedBound.get(row.surface_id) ?? ["wikijump"],
+      row.surface_id
+    )
   }
-  assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length > 0).length, 12)
-  assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length === 0).length, 15)
+  assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length > 0).length, 27)
+  assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length === 0).length, 0)
   const canonicalLedger = JSON.parse(
     await fs.readFile(path.join(repositoryRoot, "scripts/data/wikidot-implementation-ledger.json"), "utf8")
   )
@@ -1302,7 +1393,7 @@ test("CLI binds cited data-form owners and leaves unrelated rows unresolved", as
   ))
 })
 
-test("CLI binds module owners from canonical records and keeps unsupported modules unresolved", async (t) => {
+test("CLI keeps canonical module owners and fills audited ownerless modules", async (t) => {
   const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-module-owners-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
@@ -1328,7 +1419,7 @@ test("CLI binds module owners from canonical records and keeps unsupported modul
   const canonicalLedger = JSON.parse(
     await fs.readFile(path.join(repositoryRoot, "scripts/data/wikidot-implementation-ledger.json"), "utf8")
   )
-  const unresolved = [
+  const auditedFallback = [
     "module-admoduleabovecontent",
     "module-admoduleabovesidebar",
     "module-admodulebelowcontent",
@@ -1360,14 +1451,17 @@ test("CLI binds module owners from canonical records and keeps unsupported modul
   ].map((id) => `catalog-feature:${id}`)
   assert.equal(moduleRows.length, 74)
   assert.deepEqual(
-    moduleRows.filter(({ implementation_owners }) => implementation_owners.length === 0)
+    moduleRows.filter(({ implementation_owners }) =>
+      implementation_owners.length === 1 && implementation_owners[0] === "wikijump"
+    )
       .map(({ surface_id: surfaceId }) => surfaceId),
-    unresolved
+    auditedFallback
   )
   for (const row of moduleRows) {
     const featureId = row.surface_id.slice("catalog-feature:".length)
-    const expectedOwners = canonicalLedger.implementation_owner_records[featureId].owners
+    const recordedOwners = canonicalLedger.implementation_owner_records[featureId].owners
       .map(({ owner }) => owner)
+    const expectedOwners = recordedOwners.length > 0 ? recordedOwners : ["wikijump"]
     assert.deepEqual(row.implementation_owners, expectedOwners, row.surface_id)
   }
   assert.deepEqual(

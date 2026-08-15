@@ -3047,6 +3047,7 @@
     "evidence.live",
     "external.wikidot-py",
     "ftml",
+    "wikijump",
     "wikijump.deepwell",
     "wikijump.framerail",
     "wikijump.policy:security",
