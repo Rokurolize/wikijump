@@ -44,7 +44,7 @@
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
   import {
     installWikidotSearchAll,
-    wikidotSearchPath
+    submitWikidotTopSearch
   } from "$lib/wikidot/wikidot-search.js"
   import {
     customThemeHeadHtml,
@@ -71,12 +71,7 @@
   }
 
   function submitWikidotSearch(event: SubmitEvent) {
-    event.preventDefault()
-    const form = event.currentTarget
-    if (!(form instanceof HTMLFormElement)) return
-    const input = form.elements.namedItem("query")
-    if (!(input instanceof HTMLInputElement)) return
-    window.location.href = wikidotSearchPath(input.value)
+    submitWikidotTopSearch(event, window)
   }
 
   function resolveCurrentLayout() {

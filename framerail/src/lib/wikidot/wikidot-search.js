@@ -1,5 +1,13 @@
 export const wikidotSearchPath = (query) => `/search:site/q/${encodeURIComponent(query)}`
 
+export const submitWikidotTopSearch = (event, windowObject) => {
+  const input = event.currentTarget?.elements?.namedItem?.("query")
+  if (typeof input?.value !== "string") return false
+  event.preventDefault()
+  windowObject.location.href = wikidotSearchPath(input.value)
+  return true
+}
+
 export const wikidotSearchAllPath = (query, area) =>
   `/search:all/a/${area}/q/${encodeURIComponent(query)}`
 
