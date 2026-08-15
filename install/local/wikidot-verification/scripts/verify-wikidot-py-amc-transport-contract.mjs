@@ -153,7 +153,7 @@ const expectedContractSha256 = "f6d6b22de6b69f689e746b198680a5d1ca547d69ac32bb61
 
 function parseArgs(argv) {
   let contract = path.join(repositoryRoot, "docs/development/wikidot-py-amc-transport-contract.json")
-  let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../../wikidot.py")
+  let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../wikidot.py")
   let evidenceRoot = repositoryRoot
   let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? path.join(os.homedir(), ".codex/skills/wikidot-py-operations/scripts/wikidot-python")
   for (let index = 0; index < argv.length; index += 1) {
