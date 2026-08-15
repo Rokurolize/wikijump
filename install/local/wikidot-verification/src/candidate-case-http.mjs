@@ -210,6 +210,37 @@ export class CandidateHttpSession {
     return { http_status: response.status, content_type: response.headers["content-type"] ?? null, response_body: response.body.toString("utf8"), response_body_sha256: sha256(response.body) };
   }
 
+  async ajaxModuleRequest(fields, { actor = "anonymous", page, cleanup = false } = {}) {
+    const body = Buffer.from(new URLSearchParams(fields).toString());
+    const response = await this.#send("framerail", "ajax-module-connector", {
+      url: new URL("/ajax-module-connector.php", this.pageOrigin),
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+        origin: this.pageOrigin,
+        ...(page === undefined ? {} : { referer: new URL(`/${encodeURIComponent(page)}`, this.pageOrigin).href }),
+        ...(actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {}),
+      },
+      body,
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup);
+    const responseBody = response.body.toString("utf8");
+    let payload;
+    try {
+      payload = JSON.parse(responseBody);
+    } catch {
+      throw new Error("AJAX Module Connector returned non-JSON at the public Framerail seam");
+    }
+    return {
+      http_status: response.status,
+      response_body_size: response.body.length,
+      response_body_sha256: sha256(response.body),
+      payload,
+    };
+  }
+
   async presignedPut(value, bytes, { cleanup = false } = {}) {
     const presigned = new URL(value);
     if (presigned.origin !== this.#input.presignedOrigin) throw new Error("blob_upload returned a URL outside the sealed object-store origin");
