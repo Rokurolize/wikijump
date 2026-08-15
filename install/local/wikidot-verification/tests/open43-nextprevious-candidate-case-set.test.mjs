@@ -47,7 +47,7 @@ function candidateIdentity() {
 }
 
 class FakeNextPreviousSession {
-  editorUserId = 17;
+  editorUserId = 8955132;
   requiredServiceBindings = [{ role: "deepwell", container_port: "2747/tcp", host_address: "127.0.0.1", host_port: 2747 }];
   privateInputIdentity = { editor_user_id: this.editorUserId, fixture: true };
   events = [];
@@ -55,6 +55,10 @@ class FakeNextPreviousSession {
   nextPageId = 100;
   nextRevisionId = 200;
   nextCreated = 1;
+
+  constructor(printuser = PRINTUSER) {
+    this.printuser = printuser;
+  }
 
   #page(slug) {
     return [...this.pages.values()].find((page) => page.slug === slug) ?? null;
@@ -69,7 +73,7 @@ class FakeNextPreviousSession {
     const previous = [...this.pages.values()].find((page) => page.name === "older" && !page.deleted && page.created < holder.created);
     const row = previous === undefined
       ? '<div class="list-pages-box">\n</div>'
-      : `<div class="list-pages-box">    <div class="list-pages-item">\n\n\n<h1><span><a href="/${previous.slug}">${previous.title}</a></span></h1>\n<p>by ${PRINTUSER} <span class="odate time_123 format_%25O">28 Jul 2026 14:34</span></p>\n<p>Previous candidate body.</p>\n</div>\n    </div>`;
+      : `<div class="list-pages-box">    <div class="list-pages-item">\n\n\n<h1><span><a href="/${previous.slug}">${previous.title}</a></span></h1>\n<p>by ${this.printuser} <span class="odate time_123 format_%25O">28 Jul 2026 14:34</span></p>\n<p>Previous candidate body.</p>\n</div>\n    </div>`;
     return `<p>PREVIOUS_START</p>${row}<p>PREVIOUS_END</p><p>INLINE_START</p>\nstart-[[module PreviousPage]]-middle\n<p>INLINE_END</p>`;
   }
 
@@ -151,4 +155,28 @@ test("the canonical runner executes the Q811 public PreviousPage case and seals 
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.candidate_identity_sha256, hash("a"));
   assert.match(result.run_plan.sha256, /^[0-9a-f]{64}$/u);
+});
+
+test("the Q811 verifier rejects a printuser DOM for the wrong public actor", async (t) => {
+  const session = new FakeNextPreviousSession(PRINTUSER.replaceAll("8955132", "42"));
+  const caseSet = createOpen43NextPreviousCandidateCaseSet({ sessionFactory: () => session });
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "open43-nextprevious-wrong-actor-"));
+  t.after(() => fs.rm(tempRoot, { recursive: true, force: true }));
+
+  await assert.rejects(runCandidateCaseSet({
+    candidateIdentity: candidateIdentity(),
+    candidateIdentitySha256: hash("a"),
+    privateInput: {},
+    privateInputSha256: hash("b"),
+    outputDir: path.join(tempRoot, "evidence"),
+    caseSet,
+    dependencies: {
+      collectExecutionIdentity: async (_identity, sourceFiles) => ({ source_files: sourceFiles }),
+      observeRuntimeIdentity: async () => ({ runtime: "fixed" }),
+      assertStableRuntimeIdentity: () => {},
+      runId: () => "candidate-case-0123456789ab",
+      now: () => "2026-08-15T00:00:00.000Z",
+    },
+  }), (error) => error instanceof AggregateError
+    && error.errors.some((cause) => /public PreviousPage default output did not preserve/u.test(cause.message)));
 });

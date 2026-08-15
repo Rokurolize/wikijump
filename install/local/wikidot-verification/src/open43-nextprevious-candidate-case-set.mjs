@@ -78,15 +78,24 @@ function requirePage(value, expected, name) {
   if (value?.page_id !== expected.page_id || value.slug !== expected.slug || value.title !== expected.title || value.wikitext !== expected.wikitext) throw new Error(`${name} did not preserve the run-owned public page identity`);
 }
 
-function defaultRowEvidence(html, page) {
+function exactPrintuser(printuser, expectedUserId) {
+  const match = printuser?.match(/^<span class="printuser avatarhover"><a href="(http:\/\/www\.wikidot\.com\/user:info\/[^"]+)" onclick="WIKIDOT\.page\.listeners\.userInfo\((-?\d+)\); return false;"><img class="small" src="http:\/\/www\.wikidot\.com\/avatar\.php\?userid=(-?\d+)&amp;amp;size=small&amp;amp;timestamp=-?\d+" alt="([^"]+)" style="background-image:url\(http:\/\/www\.wikidot\.com\/userkarma\.php\?u=(-?\d+)\)" \/><\/a><a href="([^"]+)" onclick="WIKIDOT\.page\.listeners\.userInfo\((-?\d+)\); return false;">([^<]+)<\/a><\/span>$/u);
+  if (!match) return false;
+  const [, profile, firstListenerId, avatarId, alt, karmaId, secondProfile, secondListenerId, name] = match;
+  const expected = String(expectedUserId);
+  return profile === secondProfile && alt === name && [firstListenerId, avatarId, karmaId, secondListenerId].every((value) => value === expected);
+}
+
+function defaultRowEvidence(html, page, expectedUserId) {
   const author = html.match(/<p>by ([\s\S]*?)<\/p>/u)?.[1] ?? null;
+  const printuserHtml = author?.match(/^(<span class="printuser avatarhover">[\s\S]*?<\/span>) <span class="odate /u)?.[1] ?? null;
   const date = html.match(/<span class="odate time_[^"]+ format_[^"]+">[^<]*<\/span>/u)?.[0] ?? null;
   return {
     wrapper: html.includes(LISTPAGES_WRAPPER),
     row: html.includes('<div class="list-pages-item">'),
     title: html.includes(`<h1><span><a href="/${page.slug}">${page.title}</a></span></h1>`),
     author,
-    printuser: author?.includes("printuser avatarhover") === true,
+    printuser: exactPrintuser(printuserHtml, expectedUserId),
     date,
     body: html.includes("Previous candidate body."),
     compat_markers: html.match(/data-wikijump-compat-[^= ]+/gu) ?? [],
@@ -177,7 +186,7 @@ class Open43NextPreviousRun {
       inline_sha256: sha256Value(inline),
       selected,
       selected_slug: page?.slug ?? null,
-      row: page === null ? null : defaultRowEvidence(previous, page),
+      row: page === null ? null : defaultRowEvidence(previous, page, this.#session.editorUserId),
       page_view: true,
     };
   }
