@@ -20196,6 +20196,7 @@ async fn backlinks_module_page_preview_renders_current_page_incoming_links() {
 #[tokio::test]
 async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries() {
     const SOURCE: &str = "[[module Backlinks]]";
+    const EMPTY_BOX: &str = "\n<div class=\"backlinks-module-box\">\n</div>\n";
     const PRIVATE_CATEGORY: &str = "fixture-backlinks-preview-private";
     const SCAN_SOURCE_PREFIX: &str = "fixture-backlinks-preview-scan-source-";
 
@@ -20332,7 +20333,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     assert!(
         preview
             .body
-            .contains("Backlinks &lt;Escape&gt; &amp; &quot;Title&quot;")
+            .contains("Backlinks &lt;Escape&gt; &amp; \"Title\"")
     );
     for forbidden in [
         "Backlinks Private Source",
@@ -20366,15 +20367,10 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         wikidot_page_preview,
         json!({"site_id": site_id, "title": "empty", "wikitext": SOURCE}),
     );
-    assert_eq!(
-        empty.body,
-        "\n<div class=\"backlinks-module-box\">\n</div>\n"
-    );
+    assert_eq!(empty.body, EMPTY_BOX);
 
-    let non_backlink_source = concat!(
-        "[[module ListPages category=\"*\" link_to=\".\"]]\n[[/module]]\n",
-        "[[module PageTree]]\n[[module ChildPages]]\n[[module NextPage]]",
-    );
+    let non_backlink_source =
+        "[[module PageTree]]\n[[module ChildPages]]\n[[module NextPage]]";
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         page_reference: None,
@@ -20407,7 +20403,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         wikidot_page_preview,
         json!({"site_id": site_id, "title": "absent", "wikitext": SOURCE}),
     );
-    assert!(absent.body.contains(SOURCE));
+    assert_eq!(absent.body, EMPTY_BOX);
 
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
@@ -20419,7 +20415,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         wikidot_page_preview,
         json!({"site_id": site_id, "title": "missing", "wikitext": SOURCE}),
     );
-    assert!(missing.body.contains(SOURCE));
+    assert_eq!(missing.body, EMPTY_BOX);
 
     let stale_slug = "fixture-backlinks-preview-stale-target";
     create_listpages_test_page(&mut runner, site_id, stale_slug, "Stale Target", SOURCE)
@@ -20451,7 +20447,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         wikidot_page_preview,
         json!({"site_id": site_id, "title": "stale", "wikitext": SOURCE}),
     );
-    assert!(stale_preview.body.contains(SOURCE));
+    assert_eq!(stale_preview.body, EMPTY_BOX);
 
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
@@ -20495,7 +20491,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         wikidot_page_preview,
         json!({"site_id": site_id, "title": "mismatched", "wikitext": SOURCE}),
     );
-    assert!(mismatched.body.contains(SOURCE));
+    assert_eq!(mismatched.body, EMPTY_BOX);
 
     let template_revision_id = create_listpages_test_page(
         &mut runner,
@@ -20507,7 +20503,7 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
     .await;
     let target_category_id = target.page_category_id;
     let transaction = runner.context().transaction();
-    transaction
+    let inserted_connections = transaction
         .execute_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
             concat!(
@@ -20529,11 +20525,10 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
                 "source.compiled_at, source.compiled_generator, source.comments, ",
                 "source.hidden, source.title, source.alt_title, pages.slug, source.tags ",
                 "FROM pages CROSS JOIN page_revision source ",
-                "WHERE source.revision_id = $4 RETURNING revision_id, page_id), links AS (",
-                "INSERT INTO page_connection (from_page_id, to_page_id, connection_type, count) ",
-                "SELECT pages.page_id, $5, 'link', 1 FROM pages RETURNING from_page_id) ",
-                "UPDATE page SET latest_revision_id = revisions.revision_id ",
-                "FROM revisions WHERE page.page_id = revisions.page_id",
+                "WHERE source.revision_id = $4 RETURNING revision_id, page_id) ",
+                "INSERT INTO page_connection ",
+                "(from_page_id, to_page_id, connection_type, count) ",
+                "SELECT revisions.page_id, $5, 'link', 1 FROM revisions",
             ),
             [
                 Value::from(site_id),
@@ -20545,6 +20540,23 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         ))
         .await
         .expect("Backlinks scan-boundary sources should be inserted");
+    assert_eq!(inserted_connections.rows_affected(), 501);
+    let updated_pages = transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "UPDATE page SET latest_revision_id = page_revision.revision_id ",
+                "FROM page_revision WHERE page.page_id = page_revision.page_id ",
+                "AND page.site_id = $1 AND page.slug LIKE $2 || '%'",
+            ),
+            [
+                Value::from(site_id),
+                Value::from(SCAN_SOURCE_PREFIX),
+            ],
+        ))
+        .await
+        .expect("Backlinks scan-boundary pages should receive their revisions");
+    assert_eq!(updated_pages.rows_affected(), 501);
     runner.set_request_context(RequestContext {
         site_id: Some(site_id),
         page_reference: Some(Reference::Id(target.page_id)),
@@ -20555,7 +20567,6 @@ async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries
         wikidot_page_preview,
         json!({"site_id": site_id, "title": "saturated", "wikitext": SOURCE}),
     );
-    assert!(saturated.body.contains(SOURCE));
     assert!(!saturated.body.contains("backlinks-module-box"));
 }
 

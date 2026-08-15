@@ -77,8 +77,8 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
     output
 }
 
-fn backlinks_scan_exceeded(row_count: usize) -> bool {
-    row_count > MAX_BACKLINKS_MODULE_ROWS
+fn backlinks_scan_is_incomplete(row_count: usize) -> bool {
+    row_count >= MAX_BACKLINKS_MODULE_ROWS
 }
 
 impl RenderService {
@@ -94,9 +94,7 @@ impl RenderService {
             return Ok(wikitext);
         }
 
-        let (Some(current_site_id), Some(current_page_id)) =
-            (current_site_id, current_page_id)
-        else {
+        let Some(current_site_id) = current_site_id else {
             return Ok(wikitext);
         };
 
@@ -116,13 +114,22 @@ impl RenderService {
                 continue;
             }
 
-            let Some(pages) =
-                Self::load_backlinks_module_pages(ctx, current_site_id, current_page_id)
+            let pages = match current_page_id {
+                Some(current_page_id) => {
+                    let Some(pages) = Self::load_backlinks_module_pages(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                    )
                     .await?
-            else {
-                expanded.push_str(mtch.as_str());
-                cursor = mtch.end();
-                continue;
+                    else {
+                        expanded.push_str(mtch.as_str());
+                        cursor = mtch.end();
+                        continue;
+                    };
+                    pages
+                }
+                None => Vec::new(),
             };
             expanded.push_str(
                 &compat_html.push_block_html(render_backlinks_module_box(&pages)),
@@ -169,7 +176,7 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
-        if backlinks_scan_exceeded(rows.len()) {
+        if backlinks_scan_is_incomplete(rows.len()) {
             return Ok(None);
         }
 
@@ -209,7 +216,7 @@ impl RenderService {
 #[cfg(test)]
 mod tests {
     use super::{
-        BACKLINKS_MODULE_REGEX, MAX_BACKLINKS_MODULE_ROWS, backlinks_scan_exceeded,
+        BACKLINKS_MODULE_REGEX, MAX_BACKLINKS_MODULE_ROWS, backlinks_scan_is_incomplete,
         render_backlinks_module_box,
     };
 
@@ -232,7 +239,7 @@ mod tests {
 
     #[test]
     fn backlinks_requires_a_complete_bounded_scan_before_acl_filtering() {
-        assert!(!backlinks_scan_exceeded(MAX_BACKLINKS_MODULE_ROWS));
-        assert!(backlinks_scan_exceeded(MAX_BACKLINKS_MODULE_ROWS + 1));
+        assert!(!backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS - 1));
+        assert!(backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS));
     }
 }
