@@ -333,6 +333,8 @@ export const updateWikidotRateWidget = (element, score) => {
   )
   if (!stars) return
   stars.dataset.rating = `${numericScore}`
+  const hiddenScore = stars.querySelector('input[name="score"]')
+  if (hiddenScore) hiddenScore.value = `${numericScore}`
   for (const [index, image] of [
     .../** @type {NodeListOf<HTMLImageElement>} */ (stars.querySelectorAll("img"))
   ].entries()) {

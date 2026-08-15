@@ -6,6 +6,7 @@ import {
   performWikidotLegacyAction,
   planWikidotRateActionBindings,
   planWikidotStandaloneActionBindings,
+  updateWikidotRateWidget,
   wikidotLegacyActions
 } from "../src/lib/wikidot/wikidot-legacy-actions.js"
 import {
@@ -218,6 +219,23 @@ test("initialized Rate stars preserve the live hidden score value", () => {
   assert.equal(created.at(-1).name, "score")
   assert.equal(created.at(-1).type, "hidden")
   assert.equal(created.at(-1).value, "4")
+})
+
+test("a Rate action updates the live hidden star score after the server response", () => {
+  const score = { value: "0" }
+  const stars = {
+    dataset: { rating: "0" },
+    querySelector: (selector) => selector === 'input[name="score"]' ? score : null,
+    querySelectorAll: () => []
+  }
+  const widget = {
+    querySelector: (selector) => selector === ".page-rate-widget-start" ? stars : null
+  }
+  const element = { closest: () => widget }
+
+  updateWikidotRateWidget(element, 4)
+
+  assert.equal(score.value, "4")
 })
 
 test("unsupported sidecar actions fail closed without calling authored names", async () => {
