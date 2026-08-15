@@ -96,6 +96,11 @@ jobs:
           echo "WIKIDOT_PY_CHECKOUT=$GITHUB_WORKSPACE/.verification-wikidot-py" >> "$GITHUB_ENV"
           echo "WIKIDOT_PY_WRAPPER=$GITHUB_WORKSPACE/install/local/wikidot-verification/fixtures/wikidot-python-wrapper.sh" >> "$GITHUB_ENV"
 
+      - name: Setup uv
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.11.25"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
         with:
