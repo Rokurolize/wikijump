@@ -27,7 +27,7 @@ test("Wikidot top search intercepts the legacy dummy form action", () => {
     {
       currentTarget: {
         elements: {
-          namedItem: (name) => name === "query" ? { value: "  a/b? c  " } : null
+          namedItem: (name) => (name === "query" ? { value: "  a/b? c  " } : null)
         }
       },
       preventDefault() {
