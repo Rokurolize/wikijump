@@ -5,7 +5,10 @@ import {
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
 import { compareFirstDivergenceTraces } from "./first-divergent-element.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
-import { captureDocumentObservation } from "./standing-browser-parity-observation.mjs";
+import {
+  captureDocumentObservation,
+  waitForBrowserParitySettledResources,
+} from "./standing-browser-parity-observation.mjs";
 import { loadSealedLiveReference } from "./standing-browser-parity-reference.mjs";
 import {
   DEFAULT_THRESHOLDS,
@@ -20,6 +23,8 @@ import {
 
 export const OPEN43_B690_GEOMETRY_INITIAL_CASE_ID =
   "B690_GEOMETRY_INITIAL";
+export const OPEN43_B690_GEOMETRY_SETTLED_CASE_ID =
+  "B690_GEOMETRY_SETTLED";
 
 export const OPEN43_B690_GEOMETRY_FIXTURE = Object.freeze({
   fixture_id: "open43-standing-browser-initial-geometry",
@@ -82,7 +87,7 @@ function exactFixture(privateInput) {
   return fixture;
 }
 
-function liveTraceBySlug(liveReference) {
+function liveDocumentBySlug(liveReference, phase) {
   return Object.fromEntries(
     liveReference.records
       .filter(({ input }) =>
@@ -90,10 +95,10 @@ function liveTraceBySlug(liveReference) {
           new URL(input.live_url).pathname.slice(1),
         ),
       )
-      .map(({ input, capture }) => [
-        decodeURIComponent(new URL(input.live_url).pathname.slice(1)),
-        capture.first_paint.document.first_divergence_trace,
-      ]),
+      .map(({ input, capture }) => {
+        const document = phase === "settled" ? capture.document : capture.first_paint.document;
+        return [decodeURIComponent(new URL(input.live_url).pathname.slice(1)), document];
+      }),
   );
 }
 
@@ -114,21 +119,34 @@ function validateTrace(trace, name) {
   return value;
 }
 
-export function verifyOpen43B690GeometryInitial(observations, plan) {
+function pageContentHeight(document, name) {
+  const height = document?.geometry?.["#page-content"]?.rect?.height;
+  if (!Number.isFinite(height) || height <= 0) {
+    throw new Error(`${name} has no finite #page-content height`);
+  }
+  return height;
+}
+
+function verifyGeometry(observations, plan, { phase, sequence, settled }) {
+  const label = settled ? "B690 settled" : "B690 initial";
+  const divergenceLabel = settled ? "B690 settled" : "B690";
+  const caseId = settled
+    ? OPEN43_B690_GEOMETRY_SETTLED_CASE_ID
+    : OPEN43_B690_GEOMETRY_INITIAL_CASE_ID;
   const value = requirePlainObject(
     observations,
-    "B690_GEOMETRY_INITIAL observations",
+    `${caseId} observations`,
   );
   if (
     value.fixture_identity_sha256 !== plan.fixture_identity_sha256 ||
     value.live_reference_sha256 !== plan.live_reference_sha256 ||
     value.live_policy_sha256 !== plan.live_policy_sha256 ||
-    value.phase !== "domcontentloaded_immediate_observation" ||
-    value.sequence !== 1 ||
+    value.phase !== phase ||
+    value.sequence !== sequence ||
     !Array.isArray(value.pages) ||
     value.pages.length !== plan.trace_canary_slugs.length
   ) {
-    throw new Error("B690 initial geometry denominator or identity mismatched");
+    throw new Error(`${label} geometry denominator or identity mismatched`);
   }
   requireSha256(
     value.browser_environment.executable_sha256,
@@ -138,9 +156,12 @@ export function verifyOpen43B690GeometryInitial(observations, plan) {
     JSON.stringify(value.pages.map(({ slug }) => slug)) !==
     JSON.stringify(plan.trace_canary_slugs)
   ) {
-    throw new Error("B690 initial geometry page order mismatched");
+    throw new Error(`${label} geometry page order mismatched`);
   }
 
+  const liveHashes = settled
+    ? plan.settled_live_trace_sha256_by_slug
+    : plan.live_trace_sha256_by_slug;
   const classifications = [];
   for (const page of value.pages) {
     const expectedUrl = new URL(
@@ -152,32 +173,61 @@ export function verifyOpen43B690GeometryInitial(observations, plan) {
       page.final_url !== expectedUrl ||
       page.navigation_status !== 200
     ) {
-      throw new Error(`B690 initial navigation mismatched: ${page.slug}`);
+      throw new Error(`${label} navigation mismatched: ${page.slug}`);
+    }
+    if (
+      settled &&
+      (page.resource_completion?.status !== "complete" ||
+        page.resource_completion.load_ready_state !== "complete" ||
+        page.resource_completion.font_status !== "loaded" ||
+        page.resource_completion.incomplete_image_count !== 0)
+    ) {
+      throw new Error(`B690 resources did not settle: ${page.slug}`);
     }
     const liveTrace = validateTrace(
       page.live_trace,
-      `${page.slug} live trace`,
+      `${page.slug}${settled ? " settled" : ""} live trace`,
     );
-    if (
-      sha256Value(liveTrace) !== plan.live_trace_sha256_by_slug[page.slug]
-    ) {
-      throw new Error(`B690 live trace identity mismatched: ${page.slug}`);
+    if (sha256Value(liveTrace) !== liveHashes[page.slug]) {
+      throw new Error(`${label} live trace identity mismatched: ${page.slug}`);
     }
     const candidateTrace = validateTrace(
       page.candidate_trace,
-      `${page.slug} candidate trace`,
+      `${page.slug}${settled ? " settled" : ""} candidate trace`,
     );
     const classification = compareFirstDivergenceTraces(
       candidateTrace,
       liveTrace,
       plan.thresholds,
     );
-    if (!new Set(["none", "resource_incomplete"]).has(classification.kind)) {
+    if (
+      settled
+        ? classification.kind !== "none"
+        : !new Set(["none", "resource_incomplete"]).has(classification.kind)
+    ) {
       throw new Error(
-        `B690 first divergence found for ${page.slug}: ${classification.kind}`,
+        `${divergenceLabel} first divergence found for ${page.slug}: ${classification.kind}`,
       );
     }
-    classifications.push({ slug: page.slug, ...classification });
+    if (settled) {
+      const liveHeight = plan.live_page_content_height_by_slug[page.slug];
+      if (
+        page.live_page_content_height !== liveHeight ||
+        !Number.isFinite(page.candidate_page_content_height) ||
+        Math.abs(page.candidate_page_content_height - liveHeight) >
+          plan.thresholds.geometry_size_px
+      ) {
+        throw new Error(`B690 settled #page-content height diverged: ${page.slug}`);
+      }
+      classifications.push({
+        slug: page.slug,
+        ...classification,
+        live_page_content_height: liveHeight,
+        candidate_page_content_height: page.candidate_page_content_height,
+      });
+    } else {
+      classifications.push({ slug: page.slug, ...classification });
+    }
   }
   return {
     verified: true,
@@ -185,6 +235,22 @@ export function verifyOpen43B690GeometryInitial(observations, plan) {
     ordered_trace_count: classifications.length,
     classifications,
   };
+}
+
+export function verifyOpen43B690GeometryInitial(observations, plan) {
+  return verifyGeometry(observations, plan, {
+    phase: "domcontentloaded_immediate_observation",
+    sequence: 1,
+    settled: false,
+  });
+}
+
+export function verifyOpen43B690GeometrySettled(observations, plan) {
+  return verifyGeometry(observations, plan, {
+    phase: "settled",
+    sequence: 2,
+    settled: true,
+  });
 }
 
 function verifyCleanup(proof, resources) {
@@ -207,7 +273,10 @@ function verifyCleanup(proof, resources) {
 export function createOpen43B690GeometryCandidateCaseSet() {
   return Object.freeze({
     id: "open43-690-geometry",
-    caseIds: Object.freeze([OPEN43_B690_GEOMETRY_INITIAL_CASE_ID]),
+    caseIds: Object.freeze([
+      OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
+      OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
+    ]),
     async prepareRun({
       candidateIdentity,
       privateInput,
@@ -232,11 +301,15 @@ export function createOpen43B690GeometryCandidateCaseSet() {
         policySha256: fixture.live_policy_sha256,
         policyFilePath: fixture.live_policy_path,
       });
-      const liveTraces = liveTraceBySlug(liveReference);
+      const liveInitialDocuments = liveDocumentBySlug(liveReference, "initial");
+      const liveSettledDocuments = liveDocumentBySlug(liveReference, "settled");
       const pageOrigin = candidatePageOrigin(candidateIdentity);
       const plan = {
-        schema: "wikijump.open43_b690_geometry_candidate_plan.v1",
-        case_ids: [OPEN43_B690_GEOMETRY_INITIAL_CASE_ID],
+        schema: "wikijump.open43_b690_geometry_candidate_plan.v2",
+        case_ids: [
+          OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
+          OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
+        ],
         page_origin: pageOrigin,
         viewport: VIEWPORT,
         thresholds: validateThresholds(DEFAULT_THRESHOLDS),
@@ -248,7 +321,29 @@ export function createOpen43B690GeometryCandidateCaseSet() {
         live_trace_sha256_by_slug: Object.fromEntries(
           fixture.trace_canary_slugs.map((slug) => [
             slug,
-            sha256Value(validateTrace(liveTraces[slug], `${slug} live trace`)),
+            sha256Value(
+              validateTrace(
+                liveInitialDocuments[slug]?.first_divergence_trace,
+                `${slug} live trace`,
+              ),
+            ),
+          ]),
+        ),
+        settled_live_trace_sha256_by_slug: Object.fromEntries(
+          fixture.trace_canary_slugs.map((slug) => [
+            slug,
+            sha256Value(
+              validateTrace(
+                liveSettledDocuments[slug]?.first_divergence_trace,
+                `${slug} settled live trace`,
+              ),
+            ),
+          ]),
+        ),
+        live_page_content_height_by_slug: Object.fromEntries(
+          fixture.trace_canary_slugs.map((slug) => [
+            slug,
+            pageContentHeight(liveSettledDocuments[slug], `${slug} settled live document`),
           ]),
         ),
       };
@@ -270,8 +365,12 @@ export function createOpen43B690GeometryCandidateCaseSet() {
           const browser = await candidateBrowserContexts.newCandidateContext({
             viewport: VIEWPORT,
           });
-          const pages = [];
+          const initialPages = [];
+          const settledPages = [];
           for (const canary of TRACE_CANARIES) {
+            await candidateBrowserContexts.setActiveFixture(
+              OPEN43_B690_GEOMETRY_INITIAL_CASE_ID,
+            );
             const url = new URL(
               `/${encodeURI(canary.slug)}`,
               pageOrigin,
@@ -282,20 +381,49 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 waitUntil: "domcontentloaded",
                 timeout: 300_000,
               });
-              const observation = await captureDocumentObservation(page, {
-                contract: {
-                  first_divergence_trace: canary.first_divergence_trace,
-                },
+              const contract = {
+                first_divergence_trace: canary.first_divergence_trace,
+                geometry_selectors: ["#page-content"],
+              };
+              const initialObservation = await captureDocumentObservation(page, {
+                contract,
                 phase: "domcontentloaded_immediate_observation",
                 viewport: VIEWPORT,
               });
-              pages.push({
+              initialPages.push({
                 slug: canary.slug,
                 input_url: url,
                 final_url: page.url(),
                 navigation_status: response?.status() ?? 0,
-                candidate_trace: observation.first_divergence_trace,
-                live_trace: liveTraces[canary.slug],
+                candidate_trace: initialObservation.first_divergence_trace,
+                live_trace: liveInitialDocuments[canary.slug].first_divergence_trace,
+              });
+              await candidateBrowserContexts.setActiveFixture(
+                OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
+              );
+              const resourceCompletion =
+                await waitForBrowserParitySettledResources(page, 300_000);
+              const settledObservation = await captureDocumentObservation(page, {
+                contract,
+                phase: "settled",
+                viewport: VIEWPORT,
+              });
+              settledPages.push({
+                slug: canary.slug,
+                input_url: url,
+                final_url: page.url(),
+                navigation_status: response?.status() ?? 0,
+                resource_completion: resourceCompletion,
+                candidate_trace: settledObservation.first_divergence_trace,
+                live_trace: liveSettledDocuments[canary.slug].first_divergence_trace,
+                candidate_page_content_height: pageContentHeight(
+                  settledObservation,
+                  `${canary.slug} settled candidate document`,
+                ),
+                live_page_content_height: pageContentHeight(
+                  liveSettledDocuments[canary.slug],
+                  `${canary.slug} settled live document`,
+                ),
               });
             } finally {
               await page.close();
@@ -311,7 +439,19 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 phase: "domcontentloaded_immediate_observation",
                 sequence: 1,
                 browser_environment: browser.environment,
-                pages,
+                pages: initialPages,
+              },
+            },
+            {
+              case_id: OPEN43_B690_GEOMETRY_SETTLED_CASE_ID,
+              observations: {
+                fixture_identity_sha256: FIXTURE_IDENTITY_SHA256,
+                live_reference_sha256: liveReference.sha256,
+                live_policy_sha256: fixture.live_policy_sha256,
+                phase: "settled",
+                sequence: 2,
+                browser_environment: browser.environment,
+                pages: settledPages,
               },
             },
           ];
@@ -323,10 +463,13 @@ export function createOpen43B690GeometryCandidateCaseSet() {
           };
         },
         verifyCase(caseId, observations) {
-          if (caseId !== OPEN43_B690_GEOMETRY_INITIAL_CASE_ID) {
-            throw new Error(`unknown B690 case: ${caseId}`);
+          if (caseId === OPEN43_B690_GEOMETRY_INITIAL_CASE_ID) {
+            return verifyOpen43B690GeometryInitial(observations, this.plan);
           }
-          return verifyOpen43B690GeometryInitial(observations, this.plan);
+          if (caseId === OPEN43_B690_GEOMETRY_SETTLED_CASE_ID) {
+            return verifyOpen43B690GeometrySettled(observations, this.plan);
+          }
+          throw new Error(`unknown B690 case: ${caseId}`);
         },
         verifyCleanup,
       };

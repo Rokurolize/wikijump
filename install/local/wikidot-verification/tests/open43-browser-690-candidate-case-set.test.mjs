@@ -5,6 +5,7 @@ import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import {
   OPEN43_B690_GEOMETRY_FIXTURE,
   verifyOpen43B690GeometryInitial,
+  verifyOpen43B690GeometrySettled,
 } from "../src/open43-browser-690-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
@@ -79,10 +80,36 @@ function initialFixture() {
   return { observations, plan };
 }
 
+function settledFixture() {
+  const { observations, plan } = initialFixture();
+  observations.phase = "settled";
+  observations.sequence = 2;
+  plan.settled_live_trace_sha256_by_slug = {};
+  plan.live_page_content_height_by_slug = {};
+  for (const page of observations.pages) {
+    page.live_trace.incomplete_image_count = 0;
+    page.candidate_trace.incomplete_image_count = 0;
+    page.resource_completion = {
+      status: "complete",
+      load_ready_state: "complete",
+      font_status: "loaded",
+      incomplete_image_count: 0,
+    };
+    page.live_page_content_height = 20;
+    page.candidate_page_content_height = 20;
+    plan.settled_live_trace_sha256_by_slug[page.slug] = sha256Value(page.live_trace);
+    plan.live_page_content_height_by_slug[page.slug] = 20;
+  }
+  return { observations, plan };
+}
+
 test("B690 initial geometry has an executable source-owned candidate adapter", async () => {
   const selected = await candidateCaseSet("open43-690-geometry");
   assert.equal(selected.id, "open43-690-geometry");
-  assert.deepEqual(selected.caseIds, ["B690_GEOMETRY_INITIAL"]);
+  assert.deepEqual(selected.caseIds, [
+    "B690_GEOMETRY_INITIAL",
+    "B690_GEOMETRY_SETTLED",
+  ]);
 });
 
 test("B690 verifies the ordered initial traces and fails on the first causal divergence", () => {
@@ -109,5 +136,37 @@ test("B690 verifies the ordered initial traces and fails on the first causal div
   assert.throws(
     () => verifyOpen43B690GeometryInitial(reordered, plan),
     /page order mismatched/u,
+  );
+});
+
+test("B690 verifies settled resource completion before the total-height boundary", () => {
+  const { observations, plan } = settledFixture();
+  const verified = verifyOpen43B690GeometrySettled(observations, plan);
+  assert.equal(verified.verified, true);
+  assert.deepEqual(
+    verified.classifications.map(({ slug, kind }) => ({ slug, kind })),
+    plan.trace_canary_slugs.map((slug) => ({ slug, kind: "none" })),
+  );
+
+  const incomplete = structuredClone(observations);
+  incomplete.pages[0].resource_completion.status = "bounded_domcontentloaded";
+  assert.throws(
+    () => verifyOpen43B690GeometrySettled(incomplete, plan),
+    /resources did not settle/u,
+  );
+
+  const causal = structuredClone(observations);
+  causal.pages[0].candidate_trace.elements[0].style.display = "inline";
+  causal.pages[0].candidate_page_content_height = 200;
+  assert.throws(
+    () => verifyOpen43B690GeometrySettled(causal, plan),
+    /first divergence found.*style_divergence/u,
+  );
+
+  const tall = structuredClone(observations);
+  tall.pages[0].candidate_page_content_height = 40;
+  assert.throws(
+    () => verifyOpen43B690GeometrySettled(tall, plan),
+    /page-content height diverged/u,
   );
 });
