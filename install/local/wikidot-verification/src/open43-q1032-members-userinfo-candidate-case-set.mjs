@@ -7,6 +7,7 @@ import {
   MEMBERS_PARAMETERS,
   OPEN43_Q1032_CASE_IDS,
   OPEN43_Q1032_EVIDENCE,
+  SEARCHUSERS_DISABLED_SHA256,
   USERINFO_NO_TARGET_SHA256,
   validateOpen43Q1032PrivateInput,
   verifyOpen43Q1032Case,
@@ -44,8 +45,8 @@ function membersObservation(result) {
   };
 }
 
-function userInfoObservation(result) {
-  if (typeof result?.body !== "string") throw new Error("UserInfo public RPC returned a malformed response");
+function previewObservation(result) {
+  if (typeof result?.body !== "string") throw new Error("Q1032 public preview RPC returned a malformed response");
   return {
     rpc_status: "ok",
     body_sha256: sha256Text(result.body),
@@ -68,7 +69,7 @@ class Open43Q1032Run {
       { site_id: this.#input.site_id, parameters: MEMBERS_PARAMETERS },
       { actor: "anonymous", siteId: this.#input.site_id },
     );
-    const [anonymous, editor] = await Promise.all([
+    const [anonymous, editor, searchAnonymous, searchEditor] = await Promise.all([
       this.#session.rpc(
         "wikidot_page_preview",
         { site_id: this.#input.site_id, title: this.#input.preview_title, wikitext: "[[module UserInfo]]" },
@@ -79,12 +80,23 @@ class Open43Q1032Run {
         { site_id: this.#input.site_id, title: this.#input.preview_title, wikitext: "[[module UserInfo]]" },
         { actor: "editor", siteId: this.#input.site_id },
       ),
+      this.#session.rpc(
+        "wikidot_page_preview",
+        { site_id: this.#input.site_id, title: this.#input.preview_title, wikitext: "[[module SearchUsers]]" },
+        { actor: "anonymous", siteId: this.#input.site_id },
+      ),
+      this.#session.rpc(
+        "wikidot_page_preview",
+        { site_id: this.#input.site_id, title: this.#input.preview_title, wikitext: "[[module SearchUsers]]" },
+        { actor: "editor", siteId: this.#input.site_id },
+      ),
     ]);
     return [{
       case_id: OPEN43_Q1032_CASE_IDS[0],
       observations: {
         members: membersObservation(members),
-        userinfo: { anonymous: userInfoObservation(anonymous), editor: userInfoObservation(editor) },
+        userinfo: { anonymous: previewObservation(anonymous), editor: previewObservation(editor) },
+        searchusers: { anonymous: previewObservation(searchAnonymous), editor: previewObservation(searchEditor) },
       },
     }];
   }
@@ -145,6 +157,7 @@ export function createOpen43Q1032CandidateCaseSet({
           evidence: OPEN43_Q1032_EVIDENCE,
           members: { actor: "anonymous", parameters: MEMBERS_PARAMETERS, public_contract: "status-ok-table-page-one-pager-members-list-script" },
           userinfo: { source: "[[module UserInfo]]", actors: ["anonymous", "editor"], expected_no_target_sha256: USERINFO_NO_TARGET_SHA256 },
+          searchusers: { source: "[[module SearchUsers]]", actors: ["anonymous", "editor"], expected_disabled_sha256: SEARCHUSERS_DISABLED_SHA256 },
           mutation_policy: "read-only",
         },
         execute: () => execution.execute(),

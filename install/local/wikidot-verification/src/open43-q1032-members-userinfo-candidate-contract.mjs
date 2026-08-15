@@ -25,6 +25,10 @@ const USERINFO_NO_TARGET_BODY = "\n\n<div class=\"error-block\">No user specifie
 const USERINFO_NO_TARGET_SHA256 = createHash("sha256")
   .update(USERINFO_NO_TARGET_BODY)
   .digest("hex");
+const SEARCHUSERS_DISABLED_BODY = "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
+const SEARCHUSERS_DISABLED_SHA256 = createHash("sha256")
+  .update(SEARCHUSERS_DISABLED_BODY)
+  .digest("hex");
 const MEMBERS_PARAMETERS = Object.freeze({ group: "", order: "joined", page: "1" });
 
 function expect(condition, message) {
@@ -70,6 +74,14 @@ function verifyUserInfo(value, actor) {
   return { body_sha256: userinfo.body_sha256, no_target_error_verified: true };
 }
 
+function verifySearchUsers(value, actor) {
+  const searchusers = object(value, `${actor} SearchUsers observation`);
+  expect(searchusers.rpc_status === "ok", `${actor} SearchUsers preview did not return ok`);
+  expect(searchusers.body_sha256 === SEARCHUSERS_DISABLED_SHA256, `${actor} SearchUsers disabled body changed`);
+  expect(searchusers.body_length === Buffer.byteLength(SEARCHUSERS_DISABLED_BODY), `${actor} SearchUsers disabled body length changed`);
+  return { body_sha256: searchusers.body_sha256, disabled_error_verified: true };
+}
+
 export function verifyOpen43Q1032Case(caseId, observations) {
   expect(caseId === OPEN43_Q1032_CASE_IDS[0], `unsupported Q1032 case: ${caseId}`);
   const value = object(observations, `${caseId} observations`);
@@ -77,10 +89,14 @@ export function verifyOpen43Q1032Case(caseId, observations) {
   const anonymous = verifyUserInfo(value.userinfo?.anonymous, "anonymous");
   const editor = verifyUserInfo(value.userinfo?.editor, "editor");
   expect(anonymous.body_sha256 === editor.body_sha256, "UserInfo actor boundary is not invariant for the no-target negative");
+  const searchAnonymous = verifySearchUsers(value.searchusers?.anonymous, "anonymous");
+  const searchEditor = verifySearchUsers(value.searchusers?.editor, "editor");
+  expect(searchAnonymous.body_sha256 === searchEditor.body_sha256, "SearchUsers actor boundary is not invariant for the disabled state");
   return {
     verified: true,
     members,
     userinfo: { anonymous, editor, actor_invariant_no_target: true },
+    searchusers: { anonymous: searchAnonymous, editor: searchEditor, actor_invariant_disabled: true },
   };
 }
 
@@ -91,4 +107,4 @@ export function verifyOpen43Q1032Cleanup(proof, resources) {
   return { public_absence_verified: true, mutation_count: 0, resource_count: resources.length };
 }
 
-export { MEMBERS_PARAMETERS, USERINFO_NO_TARGET_BODY, USERINFO_NO_TARGET_SHA256 };
+export { MEMBERS_PARAMETERS, SEARCHUSERS_DISABLED_SHA256, USERINFO_NO_TARGET_BODY, USERINFO_NO_TARGET_SHA256 };

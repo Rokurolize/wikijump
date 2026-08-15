@@ -9,6 +9,7 @@ import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 
 const hash = (character) => character.repeat(64);
 const git = (character) => character.repeat(40);
+const SEARCHUSERS_DISABLED = "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
 
 function identity() {
   return {
@@ -52,21 +53,24 @@ function fakeSession(calls) {
     async rpc(method, params, options) {
       calls.push({ method, params, options });
       if (method === "wikidot_members_list_module") return { status: "ok", body: '<div><table><tr><td>member</td></tr></table><span class="pager-no">page 1 of 2</span><script>OZONE.ajax.requestModule("membership/MembersListModule")</script></div>' };
+      if (params.wikitext === "[[module SearchUsers]]") return { body: SEARCHUSERS_DISABLED };
       return { body: "\n\n<div class=\"error-block\">No user specified.</div>" };
     },
   };
 }
 
-test("Q1032 executable case reaches Members and both UserInfo actor boundaries", async () => {
+test("Q1032 executable case reaches Members and exact static account actor boundaries", async () => {
   const calls = [];
   const selected = createOpen43Q1032CandidateCaseSet({ sessionFactory: () => fakeSession(calls) });
   const prepared = selected.prepareRun({ candidateIdentity: identity(), privateInput: { site_id: 9, preview_title: "q1032-boundary" }, signal: null });
   const rows = await prepared.execute();
   assert.deepEqual(rows.map(({ case_id }) => case_id), [...OPEN43_Q1032_CASE_IDS]);
-  assert.equal(calls.length, 3);
-  assert.deepEqual(calls.map(({ method }) => method), ["wikidot_members_list_module", "wikidot_page_preview", "wikidot_page_preview"]);
-  assert.deepEqual(calls.map(({ options }) => options.actor), ["anonymous", "anonymous", "editor"]);
-  assert.equal(prepared.verifyCase(rows[0].case_id, rows[0].observations).verified, true);
+  assert.equal(calls.length, 5);
+  assert.deepEqual(calls.map(({ method }) => method), ["wikidot_members_list_module", "wikidot_page_preview", "wikidot_page_preview", "wikidot_page_preview", "wikidot_page_preview"]);
+  assert.deepEqual(calls.map(({ options }) => options.actor), ["anonymous", "anonymous", "editor", "anonymous", "editor"]);
+  const verified = prepared.verifyCase(rows[0].case_id, rows[0].observations);
+  assert.equal(verified.verified, true);
+  assert.equal(verified.searchusers.actor_invariant_disabled, true);
   const cleanup = await prepared.cleanup();
   assert.equal(prepared.verifyCleanup(cleanup, []).public_absence_verified, true);
 });
