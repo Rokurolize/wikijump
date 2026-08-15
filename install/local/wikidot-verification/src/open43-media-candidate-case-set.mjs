@@ -74,6 +74,13 @@ function resizedPath(pageSlug, fileName) {
   )}`;
 }
 
+function invalidPresignedUrl(value) {
+  const url = new URL(value);
+  url.pathname = `${url.pathname.replace(/\/+$/u, "")}/candidate-put-failure`;
+  url.searchParams.set("candidate_put_failure", "1");
+  return url.href;
+}
+
 function matchingRows(inventory, name) {
   return inventory.filter((row) => row.name === name);
 }
@@ -203,7 +210,7 @@ class Open43MediaRun {
     );
   }
 
-  async #beginPendingBlob(bytes) {
+  async #beginPendingBlob(bytes, { presignedUrlTransform = null, retainUploadFailure = false } = {}) {
     const permission = await this.#rpc("page_edit_permission");
     if (permission?.can_edit !== true) {
       throw new Error("editor cannot edit the run-owned media page");
@@ -228,8 +235,49 @@ class Open43MediaRun {
       page_slug: this.#pageSlug,
       byte_sha256: sha256(bytes),
     });
-    await this.#session.presignedPut(pending.presign_url, bytes);
+    try {
+      const uploadUrl = presignedUrlTransform === null
+        ? pending.presign_url
+        : presignedUrlTransform(pending.presign_url);
+      await this.#session.presignedPut(uploadUrl, bytes);
+    } catch (error) {
+      if (!retainUploadFailure) throw error;
+      state.upload_error = error instanceof Error ? error.message : String(error);
+    }
     return state;
+  }
+
+  async #cancelPendingBlob(state, proof) {
+    await this.#rpc("blob_cancel", {
+      user_id: this.#session.editorUserId,
+      pending_blob_id: state.pending.pending_blob_id,
+    });
+    this.#resources.release(state.token, proof);
+    this.#pending.delete(state.pending.pending_blob_id);
+  }
+
+  async #exerciseFailedPut(bytes) {
+    const eventStart = this.#session.events.length;
+    const pending = await this.#beginPendingBlob(bytes, {
+      presignedUrlTransform: invalidPresignedUrl,
+      retainUploadFailure: true,
+    });
+    if (pending.upload_error === undefined) {
+      await this.#cancelPendingBlob(pending, {
+        state: "unexpected-put-success",
+        pending_blob_id: pending.pending.pending_blob_id,
+      });
+      throw new Error("candidate failure PUT was accepted");
+    }
+    await this.#cancelPendingBlob(pending, {
+      state: "cancelled-after-put-failure",
+      pending_blob_id: pending.pending.pending_blob_id,
+      upload_error: pending.upload_error,
+    });
+    return {
+      upload_error: pending.upload_error,
+      adapter_events: localEvents(this.#session.events, eventStart),
+    };
   }
 
   async #consumePendingBlob(state, publicProof) {
@@ -323,6 +371,7 @@ class Open43MediaRun {
       FILE_NAMES.rejected_upload,
       "rejected-original",
     );
+    const failedPut = await this.#exerciseFailedPut(INPUTS.revision.bytes);
 
     const first = initialRows[0];
     const renameResult = await this.#rpc("file_edit", {
@@ -437,6 +486,7 @@ class Open43MediaRun {
           inventory_before_failed_action: inventoryBeforeFailedAction,
           inventory_after_failed_action: inventoryAfterFailedAction,
           failed_route: failedRoute,
+          failed_put: failedPut,
         },
       },
       {
@@ -582,6 +632,11 @@ export function createOpen43MediaCandidateCaseSet({
     editor_user_id: -1,
   });
   const sourceFiles = Object.freeze([
+    "framerail/src/lib/server/deepwell/file.ts",
+    "framerail/src/lib/server/deepwell/page-file.ts",
+    "framerail/src/lib/server/deepwell/pending-blob-upload.ts",
+    "framerail/src/lib/server/deepwell/presigned-upload.ts",
+    "framerail/src/lib/server/load/page/page-file-actions.ts",
     "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
     "install/local/wikidot-verification/src/atomic-no-replace.mjs",
     "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
@@ -617,6 +672,8 @@ export function createOpen43MediaCandidateCaseSet({
           fixed_inputs: { initial: publicInput(INPUTS.initial), revision: publicInput(INPUTS.revision) },
           resized_variant: RESIZED_VARIANT,
           source_owned_internal_upload_order: ["page_edit_permission", "blob_upload", "presigned_put", "file_create"],
+          candidate_failure_cleanup_order: ["page_edit_permission", "blob_upload", "presigned_put(non-2xx)", "blob_cancel"],
+          candidate_failure_forbids: ["file_create", "public_file_relation"],
           candidate_observation_scope: "adapter-issued-external-requests-only",
         },
         execute: () => execution.execute(),

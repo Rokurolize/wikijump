@@ -176,7 +176,23 @@ function serializableActionCase(observations, plan) {
   expect(sha256Value(observations.inventory_before_failed_action) === sha256Value(observations.inventory_after_failed_action), "failed multipart action changed the public inventory");
   missingRoute(observations.failed_route, "failed multipart route");
   matchingRow(observations.inventory_after_failed_action, plan.file_names.action_upload, "failed action post-inventory");
-  return { successful, failed, failed_action_left_inventory_unchanged: true };
+  const failedPut = object(observations.failed_put, "failed PUT cleanup");
+  expect(requireNonEmptyString(failedPut.upload_error, "failed PUT cleanup.upload_error"), "failed PUT did not fail");
+  expect(Array.isArray(failedPut.adapter_events) && failedPut.adapter_events.length === 4, "failed PUT cleanup event denominator is wrong");
+  const expectedEvents = [
+    ["deepwell", "page_edit_permission", "POST", 200],
+    ["deepwell", "blob_upload", "POST", 200],
+    ["object-store", "presigned_put", "PUT", null],
+    ["deepwell", "blob_cancel", "POST", 200],
+  ];
+  failedPut.adapter_events.forEach((event, index) => {
+    const [service, operation, method, status] = expectedEvents[index];
+    expect(event?.sequence === index + 1 && event.service === service && event.operation === operation && event.method === method, "failed PUT cleanup events are wrong or out of order");
+    if (status === null) expect(event.response_status < 200 || event.response_status >= 300, "failed PUT unexpectedly succeeded");
+    else expect(event.response_status === status, "failed PUT cleanup response status is wrong");
+  });
+  expect(failedPut.adapter_events.every((event) => event.operation !== "file_create"), "failed PUT attempted file_create");
+  return { successful, failed, failed_action_left_inventory_unchanged: true, failed_put_cancelled_without_file_create: true };
 }
 
 function uploadOrderCase(observations, plan) {

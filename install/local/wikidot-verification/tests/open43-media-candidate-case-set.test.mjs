@@ -106,6 +106,7 @@ async function createFakeCandidate({
     nextRevisionId: 50,
     cancelled: [],
     presignedPutFailed: false,
+    fileCreateCalls: 0,
   };
 
   function row(file) {
@@ -273,6 +274,7 @@ async function createFakeCandidate({
       deleted: false,
     };
     state.files.set(file.file_id, file);
+    state.fileCreateCalls += 1;
     response.writeHead(200, { "content-type": "application/json" });
     response.end(actionResult("success", 200));
   }
@@ -496,6 +498,19 @@ test("shared runner proves all four media cases through public HTTP and cleans t
   assert.equal(candidate.state.page, null);
   assert.equal(candidate.state.pending.size, 0);
   assert.ok([...candidate.state.files.values()].every((file) => file.deleted));
+  assert.equal(candidate.state.fileCreateCalls, 1);
+  const actionCase = receipt.cases.find((entry) => entry.case_id === "M1062_SERIALIZABLE_ACTION_RESPONSE");
+  const actionReceipt = JSON.parse(await fs.readFile(actionCase.path, "utf8"));
+  assert.deepEqual(
+    actionReceipt.observations.failed_put.adapter_events.map(({ service, operation, method }) => [service, operation, method]),
+    [
+      ["deepwell", "page_edit_permission", "POST"],
+      ["deepwell", "blob_upload", "POST"],
+      ["object-store", "presigned_put", "PUT"],
+      ["deepwell", "blob_cancel", "POST"],
+    ],
+  );
+  assert.equal(actionReceipt.observations.failed_put.adapter_events.some(({ operation }) => operation === "file_create"), false);
   assert.equal(
     JSON.stringify(receipt).includes("editor-session"),
     false,
@@ -511,7 +526,7 @@ test("pending release proof binds the replacement result rather than the earlier
   const candidate = await createFakeCandidate();
   t.after(() => candidate.close());
   const receipt = await runFixture(t, candidate);
-  const pending = receipt.resources.find((resource) => resource.kind === "pending-blob");
+  const pending = receipt.resources.find((resource) => resource.release_proof?.state === "consumed-by-file-revision");
   const revisedFile = [...candidate.state.files.values()].find((file) => file.name === "renamed.png");
   assert.equal(pending.release_proof.file_revision_id, revisedFile.revision_id);
   assert.equal(pending.release_proof.state, "consumed-by-file-revision");
@@ -561,7 +576,7 @@ test("execution error cancels a recorded pending blob and removes public state",
   await assert.rejects(runFixture(t, candidate), /candidate case execution failed/u);
   assert.equal(candidate.state.page, null);
   assert.equal(candidate.state.pending.size, 0);
-  assert.equal(candidate.state.cancelled.length, 1);
+  assert.equal(candidate.state.cancelled.length, 2);
   assert.ok([...candidate.state.files.values()].every((file) => file.deleted));
 });
 
