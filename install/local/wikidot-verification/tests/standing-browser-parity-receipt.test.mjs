@@ -10,8 +10,9 @@ import {
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "../src/standing-browser-execution-identity.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
 
 function identity() {
   const endpoint = {
@@ -243,6 +244,27 @@ test("candidate identity rejects mutable image tags and a standing project", () 
   assert.throws(
     () => validateCandidateParityIdentity(standing),
     /must not be wikijump-standing/u,
+  );
+});
+
+test("candidate identity rejects placeholder digests and Git objects", () => {
+  const placeholder = identity();
+  placeholder.artifact_key = "a".repeat(64);
+  assert.throws(
+    () => validateCandidateParityIdentity(placeholder),
+    /placeholder identity/u,
+  );
+  const placeholderGit = identity();
+  placeholderGit.candidate.wikijump_commit = "b".repeat(40);
+  assert.throws(
+    () => validateCandidateParityIdentity(placeholderGit),
+    /placeholder identity/u,
+  );
+  const placeholderImage = identity();
+  placeholderImage.candidate.images.caddy = `sha256:${"c".repeat(64)}`;
+  assert.throws(
+    () => validateCandidateParityIdentity(placeholderImage),
+    /placeholder identity/u,
   );
 });
 

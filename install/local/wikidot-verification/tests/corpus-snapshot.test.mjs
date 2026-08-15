@@ -259,4 +259,10 @@ test('freeze CLI hashes canonical files with a worker pool', () => {
   assert.equal(snapshot.totals.page_count, 1);
   assert.equal(snapshot.branches[0].files.length, 5);
   assert.match(snapshot.branches[0].tree_sha256, /^[0-9a-f]{64}$/u);
+  assert.throws(() => execFileSync(process.execPath, [
+    FREEZE_SCRIPT,
+    '--corpus-root', root,
+    '--output', output,
+    '--hash-workers', '2',
+  ], {stdio: 'pipe'}), /freeze output already exists/u);
 });

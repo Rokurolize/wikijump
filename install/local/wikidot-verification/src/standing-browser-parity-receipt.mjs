@@ -25,7 +25,14 @@ function requireGitObject(value, name) {
   if (typeof value !== "string" || !/^[0-9a-f]{40}$/u.test(value)) {
     throw new Error(`${name} must be a full lowercase Git object id`);
   }
+  if (/^(.)\1+$/u.test(value)) throw new Error(`${name} must not be a placeholder identity`);
   return value;
+}
+
+function requireRealSha256(value, name) {
+  const digest = requireSha256(value, name);
+  if (/^(.)\1+$/u.test(digest)) throw new Error(`${name} must not be a placeholder identity`);
+  return digest;
 }
 
 function requireIsoTimestamp(value, name) {
@@ -52,6 +59,7 @@ function requireImageMap(value) {
         `candidate.images.${role} must be an immutable sha256 image id`,
       );
     }
+    requireRealSha256(image.slice("sha256:".length), `candidate.images.${role}`);
   }
   return Object.freeze(Object.fromEntries(entries));
 }
@@ -160,17 +168,17 @@ export function validateCandidateParityIdentity(value) {
   const normalized = {
     schema: STANDING_CANDIDATE_PARITY_IDENTITY_SCHEMA,
     status: "sealed",
-    artifact_key: requireSha256(
+    artifact_key: requireRealSha256(
       identity.artifact_key,
       "candidate parity identity.artifact_key",
     ),
     build: {
-      seal_sha256: requireSha256(build.seal_sha256, "build.seal_sha256"),
-      verdict_sha256: requireSha256(
+      seal_sha256: requireRealSha256(build.seal_sha256, "build.seal_sha256"),
+      verdict_sha256: requireRealSha256(
         build.verdict_sha256,
         "build.verdict_sha256",
       ),
-      final_images_sha256: requireSha256(
+      final_images_sha256: requireRealSha256(
         build.final_images_sha256,
         "build.final_images_sha256",
       ),
@@ -199,15 +207,15 @@ export function validateCandidateParityIdentity(value) {
       source_clean: candidate.source_clean,
       images: requireImageMap(candidate.images),
       config: {
-        isolated_overlay_sha256: requireSha256(
+        isolated_overlay_sha256: requireRealSha256(
           config.isolated_overlay_sha256,
           "candidate.config.isolated_overlay_sha256",
         ),
-        promotion_base_manifest_sha256: requireSha256(
+        promotion_base_manifest_sha256: requireRealSha256(
           config.promotion_base_manifest_sha256,
           "candidate.config.promotion_base_manifest_sha256",
         ),
-        effective_runtime_services_sha256: requireSha256(
+        effective_runtime_services_sha256: requireRealSha256(
           config.effective_runtime_services_sha256,
           "candidate.config.effective_runtime_services_sha256",
         ),
@@ -216,11 +224,11 @@ export function validateCandidateParityIdentity(value) {
     },
     evidence: {
       status: evidence.status,
-      manifest_sha256: requireSha256(
+      manifest_sha256: requireRealSha256(
         evidence.manifest_sha256,
         "evidence.manifest_sha256",
       ),
-      seal_sha256: requireSha256(evidence.seal_sha256, "evidence.seal_sha256"),
+      seal_sha256: requireRealSha256(evidence.seal_sha256, "evidence.seal_sha256"),
     },
   };
   if (normalized.candidate.compose_project === "wikijump-standing") {

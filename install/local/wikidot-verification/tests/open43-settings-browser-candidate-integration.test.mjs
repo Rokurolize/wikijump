@@ -17,8 +17,9 @@ import {
 import { parityBrowserThrottleConfig } from "../src/standing-browser-parity-browser-session.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const ADMIN_TOKEN = "private-administrator-token";
 const NON_ADMIN_TOKEN = "private-non-admin-token";

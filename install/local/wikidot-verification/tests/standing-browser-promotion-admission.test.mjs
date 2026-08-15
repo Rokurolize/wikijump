@@ -55,8 +55,9 @@ test("standing admission CLI binds all evidence paths before sealing", async () 
 });
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
-const git = (character) => character.repeat(40);
-const image = (character) => `sha256:${character.repeat(64)}`;
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const git = (character) => mixedHex(character, 40);
+const image = (character) => `sha256:${mixedHex(character, 64)}`;
 const viewport = { width: 1366, height: 900 };
 const PROMOTION_ROLES = Object.freeze([
   "cache",
@@ -89,17 +90,17 @@ function runtimeServiceConfigurations(images) {
 function candidateIdentity({
   images = { caddy: image("e") },
   build = {
-    seal_sha256: "b".repeat(64),
-    verdict_sha256: "c".repeat(64),
-    final_images_sha256: "d".repeat(64),
+    seal_sha256: hash("b"),
+    verdict_sha256: hash("c"),
+    final_images_sha256: hash("d"),
   },
-  promotionBaseManifestSha256 = "0".repeat(64),
+  promotionBaseManifestSha256 = hash("0"),
 } = {}) {
   const runtimeConfigurations = runtimeServiceConfigurations(images);
   return {
     schema: "wikijump.standing_candidate_parity_identity.v1",
     status: "sealed",
-    artifact_key: "a".repeat(64),
+    artifact_key: hash("a"),
     build,
     candidate: {
       owner: "standing-parity-fixture",
@@ -113,7 +114,7 @@ function candidateIdentity({
       source_clean: true,
       images,
       config: {
-        isolated_overlay_sha256: "f".repeat(64),
+        isolated_overlay_sha256: hash("f"),
         promotion_base_manifest_sha256: promotionBaseManifestSha256,
         effective_runtime_services_sha256: sha256Value(runtimeConfigurations),
       },
@@ -131,8 +132,8 @@ function candidateIdentity({
     },
     evidence: {
       status: "sealed",
-      manifest_sha256: "1".repeat(64),
-      seal_sha256: "2".repeat(64),
+      manifest_sha256: hash("1"),
+      seal_sha256: hash("2"),
     },
   };
 }

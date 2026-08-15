@@ -10,8 +10,9 @@ import {
   runCandidateAccountProvisioningCommand,
 } from "../src/candidate-account-provisioning.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 function candidateIdentity(host = "scpaiueouiuiuiui.wikijump.localhost", port = 18443) {

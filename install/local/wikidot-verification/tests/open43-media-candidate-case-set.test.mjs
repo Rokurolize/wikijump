@@ -17,8 +17,9 @@ import {
 } from "../src/open43-media-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
 const INITIAL_BYTES = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC",
   "base64",

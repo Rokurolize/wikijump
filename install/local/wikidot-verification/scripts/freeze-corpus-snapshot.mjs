@@ -9,6 +9,7 @@ import {
   buildCorpusSnapshot,
   discoverCanonicalCorpusFiles,
 } from '../src/corpus-snapshot.mjs';
+import { publishBytesNoReplace } from '../src/atomic-no-replace.mjs';
 import { stableStringify } from '../src/canonical-json.mjs';
 import {runCliIfMain} from '../src/cli-entry.mjs';
 import { CORPUS_SNAPSHOT_HASH_WORKER_URL } from '../src/corpus-snapshot-hash-worker.mjs';
@@ -77,12 +78,15 @@ function repositorySnapshot(specification) {
   const repositoryPath = path.resolve(hash === -1 ? pathAndRef : pathAndRef.slice(0, hash));
   const reference = hash === -1 ? 'HEAD' : pathAndRef.slice(hash + 1);
   const git = (...args) => execFileSync('git', ['-C', repositoryPath, ...args], { encoding: 'utf8' }).trim();
+  if (git('status', '--porcelain=v1', '--untracked-files=all') !== '') {
+    throw new Error(`repository is not clean: ${repositoryPath}`);
+  }
   return {
     name,
     path: repositoryPath,
     reference,
     commit: git('rev-parse', `${reference}^{commit}`),
-    tracked_dirty: git('status', '--porcelain=v1', '--untracked-files=no').length > 0,
+    source_clean: true,
   };
 }
 
@@ -103,7 +107,13 @@ export async function main(argv, { stdout = console.log } = {}) {
     fileIntegrityCache,
   });
   fs.mkdirSync(path.dirname(path.resolve(args.output)), { recursive: true });
-  fs.writeFileSync(args.output, `${stableStringify(snapshot)}\n`);
+  const publication = await publishBytesNoReplace(
+    path.resolve(args.output),
+    `${stableStringify(snapshot)}\n`,
+  );
+  if (publication !== 'created') {
+    throw new Error(`freeze output already exists: ${path.resolve(args.output)}`);
+  }
   stdout(stableStringify({
     output: path.resolve(args.output),
     manifest_sha256: snapshot.manifest_sha256,

@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 
 import {runCliIfMain} from '../src/cli-entry.mjs';
+import {sealJsonNoReplace} from '../src/standing-browser-parity-util.mjs';
 
 import { buildMergeReadiness, parseDeviationLog } from '../src/deviation-log.mjs';
 
@@ -23,22 +24,40 @@ export function parseArgs(argv) {
     branch: null,
     deviationLog: null,
     validators: [],
-    runId: `merge-readiness-${new Date().toISOString().replace(/[:.]/g, '-')}`,
+    runId: null,
   };
+  const seen = new Set();
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
-    const next = () => argv[++i];
-    if (arg === '--output') args.output = next();
-    else if (arg === '--branch') args.branch = next();
-    else if (arg === '--deviation-log') args.deviationLog = next();
-    else if (arg === '--run-id') args.runId = next();
+    const next = () => {
+      const value = argv[++i];
+      if (!value || value.startsWith('--')) throw new Error(`${arg} requires a value`);
+      return value;
+    };
+    if (arg === '--output' || arg === '--branch' || arg === '--deviation-log' || arg === '--run-id') {
+      if (seen.has(arg)) throw new Error(`${arg} may be supplied only once`);
+      seen.add(arg);
+      const value = next();
+      if (arg === '--output') args.output = value;
+      else if (arg === '--branch') args.branch = value;
+      else if (arg === '--deviation-log') args.deviationLog = value;
+      else args.runId = value;
+    }
     else if (arg === '--validator') {
-      const [name, file] = next().split('=');
+      const value = next();
+      const separator = value.indexOf('=');
+      const name = separator > 0 ? value.slice(0, separator) : '';
+      const file = separator > 0 ? value.slice(separator + 1) : '';
+      if (!name || !file || args.validators.some((validator) => validator.name === name)) {
+        throw new Error('--validator must use one unique non-empty name=FILE value');
+      }
       args.validators.push({ name, file });
     } else if (arg === '--help' || arg === '-h') return {help: true};
     else throw new Error(`Unknown argument: ${arg}`);
   }
   if (!args.output) throw new Error('--output is required');
+  if (!args.runId) throw new Error('--run-id is required');
+  if (args.validators.length === 0) throw new Error('at least one --validator is required');
   return args;
 }
 
@@ -53,10 +72,10 @@ export function verdictExitCode(verdict) {
 }
 
 export function usage() {
-  return 'Usage: merge-readiness-report.mjs --output <report.json> [--branch name] [--deviation-log <jsonl>] [--validator name=verdict.json ...] [--run-id id]';
+  return 'Usage: merge-readiness-report.mjs --output <report.json> --run-id <id> --validator name=verdict.json [--validator name=verdict.json ...] [--branch name] [--deviation-log <jsonl>]';
 }
 
-export function main(argv) {
+export async function main(argv) {
   const args = parseArgs(argv);
   if (args.help) {
     console.log(usage());
@@ -76,7 +95,7 @@ export function main(argv) {
     deviations: parsed.entries,
     logErrors: parsed.errors,
   });
-  fs.writeFileSync(args.output, JSON.stringify(report, null, 1));
+  await sealJsonNoReplace(args.output, report);
   console.log(JSON.stringify(report, null, 2));
   return report.merge_ready ? 0 : 1;
 }
