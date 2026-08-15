@@ -17,6 +17,9 @@ if (new Set(OPEN43_MEDIA_BROWSER_CASE_IDS).size !== OPEN43_MEDIA_BROWSER_CASE_ID
 
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SHA256 = /^[0-9a-f]{64}$/u;
+const ISSUE_806_CASE_ID = "M806_BROWSER_GEOMETRY_AND_NETWORK";
+const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
+const MAX_CENTER_DELTA = 0.5;
 
 function object(value, name) { return requirePlainObject(value, name); }
 function sha256(value) { return createHash("sha256").update(value).digest("hex"); }
@@ -50,6 +53,41 @@ function intervalExpectation(value, name) {
   });
 }
 
+function viewport(value, name) {
+  const result = object(value, name);
+  if (!Number.isSafeInteger(result.width) || result.width <= 0 || !Number.isSafeInteger(result.height) || result.height <= 0) throw new Error(`${name} is invalid`);
+  return Object.freeze({ width: result.width, height: result.height });
+}
+
+function phaseHashes(value, name) {
+  const hashes = object(value, name);
+  return Object.freeze(Object.fromEntries(["initial", "settled", "responsive"].map((phase) => [phase, requireSha256(hashes[phase], `${name}.${phase}`)])));
+}
+
+function centeredImageContract(value, name) {
+  const contract = object(value, name);
+  const responsiveViewport = viewport(contract.responsive_viewport, `${name}.responsive_viewport`);
+  if (responsiveViewport.width > 767) throw new Error(`${name}.responsive_viewport must exercise the narrow layout`);
+  for (const field of ["rendered_width", "natural_width", "natural_height"]) if (!Number.isFinite(contract[field]) || contract[field] <= 0) throw new Error(`${name}.${field} is invalid`);
+  const clickTarget = contract.click_target_url_sha256;
+  if (clickTarget !== null) requireSha256(clickTarget, `${name}.click_target_url_sha256`);
+  const expected = object(contract.expected_snapshot_sha256, `${name}.expected_snapshot_sha256`);
+  return Object.freeze({
+    responsive_viewport: responsiveViewport,
+    width_attribute: requireNonEmptyString(contract.width_attribute, `${name}.width_attribute`),
+    computed_width: requireNonEmptyString(contract.computed_width, `${name}.computed_width`),
+    rendered_width: contract.rendered_width,
+    natural_width: contract.natural_width,
+    natural_height: contract.natural_height,
+    source_url_sha256: requireSha256(contract.source_url_sha256, `${name}.source_url_sha256`),
+    click_target_url_sha256: clickTarget,
+    expected_snapshot_sha256: Object.freeze({
+      positive: phaseHashes(expected.positive, `${name}.expected_snapshot_sha256.positive`),
+      negative: phaseHashes(expected.negative, `${name}.expected_snapshot_sha256.negative`),
+    }),
+  });
+}
+
 function mediaBrowserInput(rawInput) {
   const browser = object(object(rawInput, "private candidate case input").media_browser, "private input media_browser");
   if (!Array.isArray(browser.cases) || browser.cases.length !== OPEN43_MEDIA_BROWSER_CASE_IDS.length) throw new Error("private input media_browser.cases does not match the audit denominator");
@@ -63,6 +101,7 @@ function mediaBrowserInput(rawInput) {
       negative_source: requireNonEmptyString(value.negative_source, `${caseId}.negative_source`),
       capture_contract: object(value.capture_contract, `${caseId}.capture_contract`),
       expected: Object.freeze({ positive: intervalExpectation(value.expected?.positive, `${caseId}.expected.positive`), negative: intervalExpectation(value.expected?.negative, `${caseId}.expected.negative`) }),
+      centered_image: caseId === ISSUE_806_CASE_ID ? centeredImageContract(value.centered_image, `${caseId}.centered_image`) : null,
     });
   }));
 }
@@ -84,6 +123,54 @@ function cspViolationProbe() {
   });
 }
 
+function imageLifecycleProbe() {
+  globalThis.__open43ImageEvents = [];
+  for (const type of ["load", "error"]) addEventListener(type, (event) => {
+    const image = event.target;
+    if (image instanceof HTMLImageElement && image.closest("#page-content")) globalThis.__open43ImageEvents.push({ type, source_url: image.currentSrc || image.src });
+  }, true);
+}
+
+function centeredImageSnapshot() {
+  const images = [...document.querySelectorAll("#page-content .image-container.aligncenter > img.image")];
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    images: images.map((image) => {
+      const imageRect = image.getBoundingClientRect();
+      const containerRect = image.parentElement.getBoundingClientRect();
+      const clickTarget = image.closest("a");
+      return {
+        complete: image.complete,
+        natural_width: image.naturalWidth,
+        natural_height: image.naturalHeight,
+        width_attribute: image.getAttribute("width"),
+        computed_width: getComputedStyle(image).width,
+        rendered_width: imageRect.width,
+        rendered_height: imageRect.height,
+        center_delta: Math.abs((imageRect.left + imageRect.width / 2) - (containerRect.left + containerRect.width / 2)),
+        source_url: image.currentSrc || image.src,
+        click_target: clickTarget?.localName ?? null,
+        click_target_url: clickTarget?.href ?? null,
+        click_target_target: clickTarget?.target ?? null,
+      };
+    }),
+    events: globalThis.__open43ImageEvents ?? [],
+  };
+}
+
+function publicCenteredImageSnapshot(value) {
+  const snapshot = object(value, "centered image browser snapshot");
+  return {
+    viewport: snapshot.viewport,
+    images: snapshot.images.map(({ source_url, click_target_url, ...image }) => ({
+      ...image,
+      source_url_sha256: sha256(source_url),
+      click_target_url_sha256: click_target_url === null ? null : sha256(click_target_url),
+    })),
+    events: snapshot.events.map(({ type, source_url }) => ({ type, source_url_sha256: sha256(source_url) })),
+  };
+}
+
 function observedUrl(value) {
   const url = new URL(value);
   return { origin: url.origin, pathname: url.pathname, url_sha256: sha256(url.href) };
@@ -93,7 +180,7 @@ function domSignatureHash(documentObservation) {
   return sha256Value({ dom_signatures: documentObservation.dom_signatures, attribute_signatures: documentObservation.attribute_signatures });
 }
 
-async function captureInterval({ browser, pageOrigin, fixture, page, label, index, contract }) {
+async function captureInterval({ browser, pageOrigin, fixture, page, label, index, contract, centeredImage }) {
   const network = [];
   const consoleMessages = [];
   const pageErrors = [];
@@ -109,12 +196,16 @@ async function captureInterval({ browser, pageOrigin, fixture, page, label, inde
   page.on("requestfailed", (request) => network.push({ event: "requestfailed", failure: request.failure()?.errorText ?? null, resource_type: request.resourceType(), url: observedUrl(request.url()) }));
   page.on("console", (message) => consoleMessages.push({ type: message.type(), text_sha256: sha256(message.text()) }));
   page.on("pageerror", (error) => pageErrors.push(sha256(error.message)));
-  page.once("domcontentloaded", () => page.evaluate(focusSnapshot).then(resolveDOMContentLoaded, rejectDOMContentLoaded));
+  page.once("domcontentloaded", () => Promise.all([
+    page.evaluate(focusSnapshot),
+    centeredImage === null ? null : page.evaluate(centeredImageSnapshot),
+  ]).then(resolveDOMContentLoaded, rejectDOMContentLoaded));
   try {
     await page.addInitScript(cspViolationProbe);
+    if (centeredImage !== null) await page.addInitScript(imageLifecycleProbe);
     const url = new URL(`/${encodeURIComponent(fixture.slug)}`, pageOrigin).href;
     const capture = await browser.captureCandidateObservation({
-      context: page.context(), page, url, label, index, contract, viewport: { width: 1280, height: 900 }, timeoutMs: 300_000, settleMs: 0,
+      context: page.context(), page, url, label, index, contract, viewport: DEFAULT_VIEWPORT, timeoutMs: 300_000, settleMs: 0,
       navigate: async ({ page: targetPage, url: targetUrl, timeoutMs }) => {
         const response = await targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
         cspHeader = response?.headers()["content-security-policy"] ?? null;
@@ -123,10 +214,21 @@ async function captureInterval({ browser, pageOrigin, fixture, page, label, inde
       onPhase: (phase) => browser.setActiveFixture(fixtureId(`${label.toUpperCase().replaceAll("-", "_")}_${phase === "settled" ? "SETTLED" : "INITIAL"}`, "fixture")),
     });
     if (capture.capture_error) throw new Error(`${label} did not reach a DOMContentLoaded capture`);
-    const immediateFocus = await domContentLoaded;
+    const [immediateFocus, initialCenteredImages] = await domContentLoaded;
     const settledFocus = await page.evaluate(focusSnapshot);
     const cspViolations = await page.evaluate(() => globalThis.__open43CspViolations ?? []);
-    const observation = { url, capture, immediate_focus: immediateFocus, settled_focus: settledFocus, network, console: consoleMessages, page_errors: pageErrors, csp_header: cspHeader, csp_violations: cspViolations, cleanup: { page_closed: false } };
+    let centeredImages = null;
+    if (centeredImage !== null) {
+      const settled = await page.evaluate(centeredImageSnapshot);
+      await page.setViewportSize(centeredImage.responsive_viewport);
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      centeredImages = {
+        initial: publicCenteredImageSnapshot(initialCenteredImages),
+        settled: publicCenteredImageSnapshot(settled),
+        responsive: publicCenteredImageSnapshot(await page.evaluate(centeredImageSnapshot)),
+      };
+    }
+    const observation = { url, capture, immediate_focus: immediateFocus, settled_focus: settledFocus, network, console: consoleMessages, page_errors: pageErrors, csp_header: cspHeader, csp_violations: cspViolations, ...(centeredImages === null ? {} : { centered_images: centeredImages }), cleanup: { page_closed: false } };
     await page.close();
     observation.cleanup.page_closed = true;
     return observation;
@@ -156,13 +258,59 @@ function verifyInterval(value, expected, name) {
   return { navigation_status: capture.navigation_status, initial_dom_signature_sha256: domSignatureHash(initial), settled_dom_signature_sha256: domSignatureHash(settled), csp_header_sha256: expected.csp_header_sha256, required_request_url_sha256: expected.required_request_url_sha256, forbidden_request_url_sha256: expected.forbidden_request_url_sha256 };
 }
 
+function verifyIssue806CenteredImages(observations, contract, positive, negative) {
+  const expected = centeredImageContract(contract, `${ISSUE_806_CASE_ID}.centered_image`);
+  const phases = ["initial", "settled", "responsive"];
+  const snapshots = Object.fromEntries(["positive", "negative"].map((side) => {
+    const centered = object(object(observations[side], `${ISSUE_806_CASE_ID}.${side}`).centered_images, `${ISSUE_806_CASE_ID}.${side}.centered_images`);
+    return [side, Object.fromEntries(phases.map((phase) => {
+      const snapshot = object(centered[phase], `${ISSUE_806_CASE_ID}.${side}.${phase}`);
+      if (sha256Value(snapshot) !== expected.expected_snapshot_sha256[side][phase]) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} centered-image snapshot differs from its sealed expectation`);
+      return [phase, snapshot];
+    }))];
+  }));
+
+  for (const side of ["positive", "negative"]) for (const phase of phases) {
+    const snapshot = snapshots[side][phase];
+    const plannedViewport = phase === "responsive" ? expected.responsive_viewport : DEFAULT_VIEWPORT;
+    if (snapshot.viewport?.width !== plannedViewport.width || snapshot.viewport?.height !== plannedViewport.height || !Array.isArray(snapshot.images) || !Array.isArray(snapshot.events)) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} viewport or image observation is invalid`);
+    if (snapshot.events.some(({ type, source_url_sha256 }) => !["load", "error"].includes(type) || !SHA256.test(source_url_sha256))) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} image lifecycle observation is invalid`);
+    if (snapshot.events.some(({ type }) => type === "error")) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} observed an image load error`);
+  }
+
+  for (const phase of phases) {
+    const snapshot = snapshots.positive[phase];
+    if (snapshot.images.length !== 2) throw new Error(`${ISSUE_806_CASE_ID} ${phase} did not render both centered whitespace variants`);
+    for (const image of snapshot.images) {
+      if (typeof image.complete !== "boolean" || !Number.isSafeInteger(image.natural_width) || image.natural_width < 0 || !Number.isSafeInteger(image.natural_height) || image.natural_height < 0) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image load state is invalid`);
+      if (image.width_attribute !== expected.width_attribute || image.computed_width !== expected.computed_width || image.rendered_width !== expected.rendered_width) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image width is wrong`);
+      if (!Number.isFinite(image.center_delta) || image.center_delta > MAX_CENTER_DELTA) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image is not centered`);
+      if (image.source_url_sha256 !== expected.source_url_sha256) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image source identity is wrong`);
+      if (image.click_target_url_sha256 !== expected.click_target_url_sha256 || (expected.click_target_url_sha256 === null ? image.click_target !== null : image.click_target !== "a")) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image click target is wrong`);
+      if (phase !== "initial" && (image.complete !== true || image.natural_width !== expected.natural_width || image.natural_height !== expected.natural_height)) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image load state or natural dimensions are wrong`);
+    }
+  }
+  for (const phase of phases) if (snapshots.negative[phase].images.length !== 0) throw new Error(`${ISSUE_806_CASE_ID} ${phase} negative whitespace control acquired image ownership`);
+
+  const requested = observations.positive.network.some(({ event, resource_type, url }) => event === "request" && resource_type === "image" && url?.url_sha256 === expected.source_url_sha256);
+  const forbidden = observations.negative.network.some(({ event, url }) => event === "request" && url?.url_sha256 === expected.source_url_sha256);
+  if (!requested || forbidden || !positive.required_request_url_sha256.includes(expected.source_url_sha256) || !negative.forbidden_request_url_sha256.includes(expected.source_url_sha256)) throw new Error(`${ISSUE_806_CASE_ID} exact image request boundary is wrong`);
+
+  return {
+    responsive_viewport: expected.responsive_viewport,
+    positive_snapshot_sha256: Object.fromEntries(phases.map((phase) => [phase, sha256Value(snapshots.positive[phase])])),
+    negative_snapshot_sha256: Object.fromEntries(phases.map((phase) => [phase, sha256Value(snapshots.negative[phase])])),
+  };
+}
+
 export function verifyOpen43MediaBrowserCase(caseId, observations, plan) {
   const value = object(observations, `${caseId} observations`);
   const expected = object(plan.expected, `${caseId} plan.expected`);
   const positive = verifyInterval(value.positive, expected.positive, `${caseId}.positive`);
   const negative = verifyInterval(value.negative, expected.negative, `${caseId}.negative`);
   if (negative.forbidden_request_url_sha256.length === 0) throw new Error(`${caseId} has no negative boundary request set`);
-  return { verified: true, positive, negative, negative_boundary_verified: true };
+  const centeredImage = caseId === ISSUE_806_CASE_ID ? verifyIssue806CenteredImages(value, plan.centered_image, positive, negative) : null;
+  return { verified: true, positive, negative, ...(centeredImage === null ? {} : { centered_image: centeredImage }), negative_boundary_verified: true };
 }
 
 class Open43MediaBrowserRun {
@@ -205,8 +353,8 @@ class Open43MediaBrowserRun {
     for (const { casePlan, positive, negative } of fixtures) {
       const positiveContext = await this.#browser.newCandidateContext();
       const negativeContext = await this.#browser.newCandidateContext();
-      const positiveObservation = await captureInterval({ browser: this.#browser, pageOrigin: this.#session.pageOrigin, fixture: positive, page: await positiveContext.context.newPage(), label: `${casePlan.case_id.toLowerCase()}-positive`, index: results.length * 2, contract: casePlan.capture_contract });
-      const negativeObservation = await captureInterval({ browser: this.#browser, pageOrigin: this.#session.pageOrigin, fixture: negative, page: await negativeContext.context.newPage(), label: `${casePlan.case_id.toLowerCase()}-negative`, index: results.length * 2 + 1, contract: casePlan.capture_contract });
+      const positiveObservation = await captureInterval({ browser: this.#browser, pageOrigin: this.#session.pageOrigin, fixture: positive, page: await positiveContext.context.newPage(), label: `${casePlan.case_id.toLowerCase()}-positive`, index: results.length * 2, contract: casePlan.capture_contract, centeredImage: casePlan.centered_image });
+      const negativeObservation = await captureInterval({ browser: this.#browser, pageOrigin: this.#session.pageOrigin, fixture: negative, page: await negativeContext.context.newPage(), label: `${casePlan.case_id.toLowerCase()}-negative`, index: results.length * 2 + 1, contract: casePlan.capture_contract, centeredImage: casePlan.centered_image });
       results.push({ case_id: casePlan.case_id, observations: { positive: positiveObservation, negative: negativeObservation } });
     }
     return results;
@@ -244,14 +392,14 @@ export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (opt
       if (candidateIdentity.candidate.endpoint.host !== `${SITE_SLUG}.wikijump.localhost` || candidateIdentity.candidate.endpoint.port === 443) throw new Error(`Open43 media browser cases require the exact non-standing ${SITE_SLUG} candidate`);
       const casePlans = mediaBrowserInput(privateInput);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
-      const publicPlan = casePlans.map(({ case_id, capture_contract, expected }) => ({ case_id, capture_contract, expected }));
+      const publicPlan = casePlans.map(({ case_id, positive_source, negative_source, capture_contract, expected, centered_image }) => ({ case_id, positive_source_sha256: sha256(positive_source), negative_source_sha256: sha256(negative_source), capture_contract, expected, ...(centered_image === null ? {} : { centered_image }) }));
       const execution = new Open43MediaBrowserRun({ session, browser: candidateBrowserContexts, resources, casePlans, runId });
       return Object.freeze({
         sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "install/local/wikidot-verification/scripts/run-candidate-cases.mjs", "install/local/wikidot-verification/src/candidate-case-command.mjs", "install/local/wikidot-verification/src/candidate-case-http.mjs", "install/local/wikidot-verification/src/candidate-case-runner.mjs", "install/local/wikidot-verification/src/candidate-browser-contexts.mjs", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs", "install/local/wikidot-verification/package.json", "install/local/wikidot-verification/pnpm-lock.yaml"])]),
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: { ...session.privateInputIdentity, media_browser_cases_sha256: sha256Value(publicPlan) },
         browserCredentialPolicy: "none",
-        plan: { schema: "wikijump.open43_media_browser_candidate_plan.v1", site_slug: SITE_SLUG, case_ids: OPEN43_MEDIA_BROWSER_CASE_IDS, case_plans: publicPlan },
+        plan: { schema: "wikijump.open43_media_browser_candidate_plan.v2", site_slug: SITE_SLUG, case_ids: OPEN43_MEDIA_BROWSER_CASE_IDS, case_plans: publicPlan },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
         verifyCase: (caseId, observations) => verifyOpen43MediaBrowserCase(caseId, observations, casePlans.find(({ case_id: candidateCaseId }) => candidateCaseId === caseId)),
