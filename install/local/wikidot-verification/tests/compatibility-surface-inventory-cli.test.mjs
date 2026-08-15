@@ -1257,6 +1257,42 @@ test("CLI projects current Framerail route-action tests without inventing browse
   )
 })
 
+test("CLI projects only directly exercised Framerail AMC server tests", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-framerail-amc-tests-"))
+  cleanupFixture(t, outputRoot)
+  const outputPath = path.join(outputRoot, "inventory.json")
+  const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).stdout.trim()
+  const result = spawnSync(process.execPath, [
+    cliPath,
+    "--root",
+    repositoryRoot,
+    "--output",
+    outputPath,
+    "--source-revision",
+    sourceRevision
+  ], { encoding: "utf8" })
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const rows = inventory.surfaces.filter(({ kind }) =>
+    kind === "framerail_amc_action_shape" || kind === "framerail_amc_module_shape"
+  )
+  assert.equal(rows.length, 28)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 24)
+  const gaps = rows
+    .filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0)
+    .map(({ surface_id: surfaceId }) => surfaceId)
+  assert.deepEqual(gaps, [
+    "framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored",
+    "framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored",
+    "framerail-amc-module:list/ListPagesModule:failure-envelopes=missing_module_body:status=not_ok;message=ListPages module_body is required|render_failure:status=not_ok;message=Unable to render ListPages module",
+    "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant"
+  ])
+  assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)
+})
+
 test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift", async (t) => {
   const cases = [
     {
