@@ -23,16 +23,30 @@ mod common;
 
 use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID};
+use deepwell::models::page::Entity as PageTable;
+use deepwell::services::category::CategoryService;
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup};
 use deepwell::services::forum_post::CreateForumPost;
 use deepwell::services::forum_thread::CreateForumThread;
+use deepwell::services::permission::{CheckPermissionContext, PermissionService};
+use deepwell::services::render::UrlArguments;
+use deepwell::services::role::{
+    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+};
 use deepwell::services::view::GetPageViewOutput;
 use deepwell::services::{
-    ForumPostService, ForumService, ForumThreadService, RequestContext,
+    ForumPostService, ForumService, ForumThreadService, RenderService, RequestContext,
+    ScoreService,
 };
-use deepwell::types::Reference;
-use sea_orm::{ConnectionTrait, Statement, Value};
+use deepwell::types::{Action, PageId, Permission, Reference, Resource};
+use ftml::data::{PageInfo, ScoreValue};
+use ftml::layout::Layout;
+use sea_orm::{
+    ActiveModelTrait, ConnectionTrait, EntityTrait, IntoActiveModel, Set, Statement,
+    Value,
+};
 use serde_json::json;
+use std::borrow::Cow;
 
 async fn set_page_created_at(runner: &TestRunner, page_id: i64, created_at: &str) {
     let transaction = runner.context().transaction();
@@ -170,6 +184,182 @@ async fn create_page(
     );
     set_page_created_at(runner, page.page_id, created_at).await;
     page.page_id
+}
+
+async fn make_rated_pages_category_admin_only(
+    runner: &TestRunner,
+    site_id: i64,
+    category_slug: &str,
+) {
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, category_slug)
+            .await
+            .expect("RatedPages private category should be created");
+    let category_id = category.category_id;
+    let mut category_settings = category.into_active_model();
+    category_settings.rating_type = Set(Some("plus_minus".to_owned()));
+    category_settings
+        .update(runner.context().transaction())
+        .await
+        .expect("RatedPages private category rating type should be set");
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("{category_slug}-viewer"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("RatedPages private role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: vec![Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(category_id)),
+                action: Action::View,
+            }],
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("RatedPages private role should receive page view permission");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("RatedPages admin should receive the private role");
+}
+
+#[tokio::test]
+async fn ratedpages_uses_request_viewer_for_private_rows() {
+    const CATEGORY: &str = "ratedpages-actor-private";
+    const PRIVATE_SLUG: &str = "ratedpages-actor-private:top";
+    const PRIVATE_TITLE: &str = "RatedPages actor private row";
+    const PUBLIC_SLUG: &str = "ratedpages-actor-public";
+    const PUBLIC_TITLE: &str = "RatedPages actor public row";
+    const SOURCE: &str = "[[module RatedPages minRating=\"1\" limit=\"1\"]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist")
+        .site;
+    make_rated_pages_category_admin_only(&runner, site.site_id, CATEGORY).await;
+    let private_page_id = create_page(
+        &mut runner,
+        site.site_id,
+        PRIVATE_SLUG,
+        PRIVATE_TITLE,
+        "2026-08-15T00:00:01Z",
+    )
+    .await;
+    let public_page_id = create_page(
+        &mut runner,
+        site.site_id,
+        PUBLIC_SLUG,
+        PUBLIC_TITLE,
+        "2026-08-15T00:00:02Z",
+    )
+    .await;
+    let private_page = PageTable::find_by_id(private_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("RatedPages actor fixture lookup should succeed")
+        .expect("RatedPages actor fixture should exist");
+    insert_vote(&runner, private_page_id, ADMIN_USER_ID, 1).await;
+    insert_vote(&runner, private_page_id, SYSTEM_USER_ID, 1).await;
+    insert_vote(&runner, public_page_id, SYSTEM_USER_ID, 1).await;
+    let scores =
+        ScoreService::scores_bulk(runner.context(), &[private_page_id, public_page_id])
+            .await
+            .expect("RatedPages actor fixture scores should materialize");
+    assert_eq!(
+        scores,
+        vec![
+            (private_page_id, ScoreValue::Integer(2)),
+            (public_page_id, ScoreValue::Integer(1)),
+        ],
+        "RatedPages actor fixture votes must materialize the expected scores",
+    );
+    let page_info = PageInfo {
+        page: Cow::Borrowed(PRIVATE_SLUG),
+        category: Some(Cow::Borrowed(CATEGORY)),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed(PRIVATE_TITLE),
+        alt_title: None,
+        score: ScoreValue::Integer(2),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let render = |viewer_user_id| {
+        RenderService::render_page_for_viewer(
+            runner.context(),
+            SOURCE.to_owned(),
+            &page_info,
+            Layout::Wikidot,
+            PageId {
+                site_id: site.site_id,
+                category_id: private_page.page_category_id,
+                page_id: private_page_id,
+            },
+            viewer_user_id,
+            UrlArguments::default(),
+        )
+    };
+    let anonymous = render(None)
+        .await
+        .expect("anonymous RatedPages render should succeed")
+        .html_output
+        .body;
+    assert!(
+        anonymous.contains(PUBLIC_TITLE) && !anonymous.contains(PRIVATE_TITLE),
+        "anonymous RatedPages should skip the private first row and show the public row:\n{anonymous}"
+    );
+    let actor_can_view = PermissionService::check_user_can(
+        runner.context(),
+        &CheckPermissionContext {
+            user_id: Some(SAMPLE_USER_ID),
+            site_id: site.site_id,
+            page_reference: Some(Reference::Id(private_page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(private_page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .expect("authorized RatedPages fixture permission check should succeed");
+    assert!(
+        actor_can_view,
+        "authorized RatedPages fixture must view its private page"
+    );
+    let actor = render(Some(SAMPLE_USER_ID))
+        .await
+        .expect("authorized RatedPages render should succeed")
+        .html_output
+        .body;
+    assert!(
+        actor.contains(PRIVATE_TITLE) && !actor.contains(PUBLIC_TITLE),
+        "authorized RatedPages should see the private first row:\n{actor}"
+    );
 }
 
 #[tokio::test]

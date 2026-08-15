@@ -2177,6 +2177,7 @@ impl RenderService {
                 wikitext,
                 settings,
                 options.current_site_id,
+                options.viewer_user_id,
                 compat_html,
             )
             .await
@@ -2207,6 +2208,7 @@ impl RenderService {
         wikitext: String,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
+        viewer_user_id: Option<i64>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !RATEDPAGES_MODULE_REGEX.is_match(&wikitext) {
@@ -2235,8 +2237,13 @@ impl RenderService {
                 continue;
             };
             expanded.push_str(&wikitext[cursor..matched.start()]);
-            let rendered =
-                Self::render_rated_pages_query(ctx, current_site_id, &arguments).await?;
+            let rendered = Self::render_rated_pages_query(
+                ctx,
+                current_site_id,
+                viewer_user_id,
+                &arguments,
+            )
+            .await?;
             expanded.push_str(&compat_html.push_block_html(rendered));
             cursor = matched.end();
         }
@@ -2250,6 +2257,7 @@ impl RenderService {
     async fn render_rated_pages_query(
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
+        viewer_user_id: Option<i64>,
         arguments: &RatedPagesArguments,
     ) -> Result<String> {
         let categories = arguments
@@ -2320,7 +2328,7 @@ impl RenderService {
         let mut permission_cache = BTreeMap::new();
         let rows = find_viewable_list_pages_rows_with_batch_floor(
             ctx,
-            None,
+            viewer_user_id,
             query,
             arguments.limit,
             &mut permission_cache,
