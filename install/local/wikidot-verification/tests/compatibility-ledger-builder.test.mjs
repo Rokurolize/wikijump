@@ -401,6 +401,27 @@ test("compatibility ledger builder admits only the current scope and audits defe
   );
 });
 
+test("compatibility ledger builder rejects deferred sources in a previous current ledger", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-stale-scope-"));
+  const input = path.join(directory, "inventory.json");
+  const output = path.join(directory, "ledger.json");
+  const deferred = deferredScopeInventory();
+  writeFileSync(input, JSON.stringify(deferred));
+  execFileSync(process.execPath, [script, "--inventory", input, "--output", output]);
+
+  const previous = JSON.parse(readFileSync(output));
+  previous.source_local_identities.push({
+    source_manifest_id: "manifest:00000001",
+    raw_record_id: "raw:99999999",
+    source_local_id: "framerail-xmlrpc:pages.get_one",
+  });
+  writeFileSync(output, JSON.stringify(previous));
+  assert.throws(
+    () => execFileSync(process.execPath, [script, "--inventory", input, "--output", output], { stdio: "pipe" }),
+    /deferred source in current ledger/u,
+  );
+});
+
 test("compatibility ledger builder partitions the pinned inventory without FTML leakage", () => {
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-real-"));
   const input = path.join(directory, "inventory.json");

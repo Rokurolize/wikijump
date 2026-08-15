@@ -245,6 +245,8 @@ for (const [rows, field, identity] of [
   requireUniqueExisting(rows, field, identity);
 for (const { source_local_id: localId } of previous?.source_local_identities ??
   []) {
+  if (deferredIdentitySet.has(localId))
+    fail(`deferred source in current ledger: ${localId}`);
   if (!rawIdSet.has(localId)) fail(`raw source disappeared: ${localId}`);
 }
 
