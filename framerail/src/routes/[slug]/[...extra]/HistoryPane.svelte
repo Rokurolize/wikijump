@@ -184,6 +184,8 @@
         { message: string; code: string; data: Record<string, unknown> }
       >(res)
 
+      if (!active) return
+
       if (result.type === "failure" && result.data?.message) {
         errorPopupState.current = {
           state: true,
@@ -226,6 +228,8 @@
       { res: Optional<CreatePageRevisionOutput> },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
+
+    if (!active) return
 
     if (result.type === "failure" && result.data?.message) {
       errorPopupState.current = {
@@ -287,6 +291,7 @@
                   onclick={(event) => {
                     event.stopPropagation()
                     getRevision(revisionItem.revision_number, true, false).then(() => {
+                      if (!active) return
                       setShowRevision(true)
                       showRevisionSource = false
                     })
@@ -302,6 +307,7 @@
                   onclick={(event) => {
                     event.stopPropagation()
                     getRevision(revisionItem.revision_number, false, true).then(() => {
+                      if (!active) return
                       setShowRevision(false)
                       showRevisionSource = true
                     })
@@ -382,6 +388,7 @@
               onclick={(event) => {
                 event.stopPropagation()
                 getRevision(revisionItem.revision_number, true, false).then(() => {
+                  if (!active) return
                   setShowRevision(true)
                   showRevisionSource = false
                 })
@@ -395,6 +402,7 @@
               onclick={(event) => {
                 event.stopPropagation()
                 getRevision(revisionItem.revision_number, false, true).then(() => {
+                  if (!active) return
                   setShowRevision(false)
                   showRevisionSource = true
                 })
