@@ -24,6 +24,13 @@ test("candidate case registry exposes the executable B610 shell case", async () 
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 
+test("candidate case registry exposes the executable issue 775 adapter", async () => {
+  const caseSet = await candidateCaseSet("open43-issue775-edit");
+  assert.equal(caseSet.id, "open43-issue775-edit");
+  assert.deepEqual(caseSet.caseIds, ["A775_ACTOR_NAVIGATION_BROWSER"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case command accepts only the fixed explicit attachment options", () => {
   assert.deepEqual(
     parseCandidateCaseArgs([

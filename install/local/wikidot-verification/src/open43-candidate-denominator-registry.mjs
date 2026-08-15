@@ -1,4 +1,5 @@
 import { OPEN43_SETTINGS_BROWSER_CASE_IDS } from "./open43-settings-browser-candidate-contract.mjs";
+import { OPEN43_ISSUE775_CASE_IDS } from "./open43-issue775-edit-candidate-contract.mjs";
 
 export const OPEN43_BROWSER_CANDIDATE_CASE_IDS = Object.freeze([
   "B610_CHROME_INITIAL",
@@ -34,6 +35,7 @@ export const OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS = Object.freeze([
 
 export const OPEN43_CANDIDATE_DENOMINATORS = Object.freeze({
   settings: Object.freeze({ id: "open43-settings-browser", caseIds: OPEN43_SETTINGS_BROWSER_CASE_IDS }),
+  issue775_edit: Object.freeze({ id: "open43-issue775-edit", caseIds: OPEN43_ISSUE775_CASE_IDS }),
   browser: Object.freeze({ id: "open43-browser-surfaces", caseIds: OPEN43_BROWSER_CANDIDATE_CASE_IDS }),
   settings_lifecycle: Object.freeze({ id: "open43-settings-lifecycle", caseIds: OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS }),
   page_query: Object.freeze({ id: "open43-page-query-surfaces", caseIds: OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS }),

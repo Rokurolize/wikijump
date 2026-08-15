@@ -14,7 +14,7 @@ import {
 const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set open43-media-files|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-mailform-fail-closed|open43-b610-shell --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set open43-media-files|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-mailform-fail-closed|open43-b610-shell|open43-issue775-edit --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
 
 Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
@@ -76,6 +76,10 @@ export async function candidateCaseSet(name) {
   if (name === "open43-b610-shell") {
     const { createOpen43B610ShellCandidateCaseSet } = await import("./open43-b610-shell-candidate-case-set.mjs");
     return createOpen43B610ShellCandidateCaseSet();
+  }
+  if (name === "open43-issue775-edit") {
+    const { createOpen43Issue775EditCandidateCaseSet } = await import("./open43-issue775-edit-candidate-case-set.mjs");
+    return createOpen43Issue775EditCandidateCaseSet();
   }
   throw new Error(`unknown source-owned candidate case set: ${name}`);
 }

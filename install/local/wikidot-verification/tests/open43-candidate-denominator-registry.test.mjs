@@ -8,6 +8,7 @@ import {
   OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS,
   OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS,
 } from "../src/open43-candidate-denominator-registry.mjs";
+import { OPEN43_ISSUE775_CASE_IDS } from "../src/open43-issue775-edit-candidate-contract.mjs";
 import { OPEN43_SETTINGS_BROWSER_CASE_IDS } from "../src/open43-settings-browser-candidate-contract.mjs";
 
 test("Open43 candidate denominators are exact, disjoint, and handoff-only", () => {
@@ -49,14 +50,16 @@ test("Open43 candidate denominators are exact, disjoint, and handoff-only", () =
     "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE",
   ]);
 
-  assert.deepEqual(Object.keys(OPEN43_CANDIDATE_DENOMINATORS), ["settings", "browser", "settings_lifecycle", "page_query"]);
+  assert.deepEqual(Object.keys(OPEN43_CANDIDATE_DENOMINATORS), ["settings", "issue775_edit", "browser", "settings_lifecycle", "page_query"]);
   assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.settings.caseIds, OPEN43_SETTINGS_BROWSER_CASE_IDS);
+  assert.deepEqual(OPEN43_CANDIDATE_DENOMINATORS.issue775_edit.caseIds, OPEN43_ISSUE775_CASE_IDS);
   assert.equal(OPEN43_CANDIDATE_DENOMINATORS.settings_lifecycle.caseIds.includes("S758_CREATE_INITIAL"), true);
   assert.equal(OPEN43_CANDIDATE_DENOMINATORS.page_query.caseIds.includes("S758_CREATE_INITIAL"), false);
   assert.equal(OPEN43_SETTINGS_BROWSER_CASE_IDS.includes("S758_CREATE_INITIAL"), false);
 
   const all = [
     ...OPEN43_SETTINGS_BROWSER_CASE_IDS,
+    ...OPEN43_ISSUE775_CASE_IDS,
     ...OPEN43_BROWSER_CANDIDATE_CASE_IDS,
     ...OPEN43_SETTINGS_LIFECYCLE_CANDIDATE_CASE_IDS,
     ...OPEN43_PAGE_QUERY_CANDIDATE_CASE_IDS,
