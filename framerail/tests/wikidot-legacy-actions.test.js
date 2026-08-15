@@ -463,6 +463,12 @@ test("unsupported membership descriptors and authored lookalikes fail closed", a
   assert.equal(joined, false)
 })
 
+test("Join binding fails closed on a malformed present sidecar", () => {
+  const control = actionElement()
+  control.matches = () => true
+  assert.deepEqual(planWikidotJoinActionBindings([control], [null]), [])
+})
+
 test("a sidecar mismatch intercepts the exact legacy onclick without joining", () => {
   const first = actionElement()
   const second = actionElement()

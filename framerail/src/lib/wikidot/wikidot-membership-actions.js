@@ -29,6 +29,7 @@ const busyActions = new WeakSet()
 
 /** @param {MembershipBrowserAction} action */
 const validJoinAction = (action) =>
+  !!action &&
   action.type === "join" &&
   Number.isSafeInteger(action.page_id) &&
   action.page_id > 0 &&
