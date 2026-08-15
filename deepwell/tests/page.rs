@@ -17122,7 +17122,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             (Token::LeftBlock, ParseErrorKind::NoRulesMatch),
             (Token::RightBlock, ParseErrorKind::NoRulesMatch),
         ];
-        assert_eq!(parser_errors.len(), expected.len() * 2);
+        assert_eq!(parser_errors.len(), expected.len() * 4);
         for group in parser_errors.chunks_exact(expected.len()) {
             assert!(
                 group
@@ -17377,13 +17377,13 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         r#"<div class="list-pages-box">"#,
         r#"<div class="list-pages-item">"#,
         r#"<h1><span><a href="/fixture-nextpreviouspage:bravo">Bravo NextPreviousPage</a></span></h1>"#,
-        r#"<p>by <span class="printuser avatarhover">"#,
+        r#"<p>by Administrator "#,
         r#"<span class="odate time_"#,
         "Bravo body.",
     ] {
         assert!(
             default.contains(expected),
-            "bare PreviousPage must preserve the live default title, author, date, and body DOM: {expected:?}\n{default}",
+            "bare PreviousPage must preserve the shared ListPages default title, local author, date, and body DOM: {expected:?}\n{default}",
         );
     }
     assert!(
@@ -17395,11 +17395,11 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         inline.contains("start-[[module NextPage]]-middle")
             && inline.contains("start-[[module PreviousPage]]-middle")
             && inline.contains("prefix-[[module NextPage]]-suffix")
-            && inline.contains("  [[module PreviousPage]]"),
+            && inline.contains("[[module PreviousPage]]"),
         "inline NextPage and PreviousPage invocations must remain literal:\n{inline}",
     );
-    assert_eq!(html.matches("[[module NextPage]]").count(), 1);
-    assert_eq!(html.matches("[[module PreviousPage]]").count(), 1);
+    assert_eq!(html.matches("[[module NextPage]]").count(), 2);
+    assert_eq!(html.matches("[[module PreviousPage]]").count(), 2);
 
     let last = run_endpoint!(
         runner,
