@@ -163,8 +163,10 @@ test("#1038 candidate runner publishes exact actor-bound output and rejects repl
   ]);
 
   const receipt = JSON.parse(await fs.readFile(path.join(outputDir, "candidate-case-receipt.json"), "utf8"));
+  const runPlan = JSON.parse(await fs.readFile(path.join(outputDir, "run-plan.json"), "utf8"));
   const caseReceipt = JSON.parse(await fs.readFile(path.join(outputDir, "cases", "A1038_AUTHENTICATED_NON_ADMIN_DENIAL.json"), "utf8"));
   assert.equal(receipt.status, "pass");
+  assert.equal(runPlan.case_set_plan.public_entry_point, "Deepwell wikidot_page_preview");
   assert.equal(caseReceipt.status, "pass");
   assert.equal(caseReceipt.candidate_identity_sha256, sha256Value(identity));
   assert.equal(caseReceipt.private_input_sha256, hash("8"));

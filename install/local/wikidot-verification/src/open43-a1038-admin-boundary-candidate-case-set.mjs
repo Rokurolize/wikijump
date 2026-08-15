@@ -178,6 +178,7 @@ export function createOpen43A1038AdminBoundaryCandidateCaseSet({ sessionFactory 
           site_slug: SITE_SLUG,
           source: SOURCE,
           title: TITLE,
+          public_entry_point: "Deepwell wikidot_page_preview",
           actor: "non_admin",
           negative_boundary: "anonymous",
         },
