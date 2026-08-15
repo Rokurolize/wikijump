@@ -5,10 +5,6 @@
     "enabled": false,
     "mode": "static"
   },
-  "run_safety": {
-    "authority_gate": "safety_only",
-    "cleanup_gate": "required_before_live_execution"
-  },
   "source": {
     "repository": "Rokurolize/wikidot.py",
     "commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",

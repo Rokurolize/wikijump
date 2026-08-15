@@ -43,10 +43,7 @@ const fileSha256 = value => sha256(path.join(root, relativePath(value)))
 const verifyIdentityBindings = (planValue, evidenceValue) => {
   assert.equal(planValue.schema, "wikijump.issue1373_amc_write_evidence_run_plan.v3")
   assert.deepEqual(planValue.execution, { enabled: false, mode: "static" })
-  assert.deepEqual(planValue.run_safety, {
-    authority_gate: "safety_only",
-    cleanup_gate: "required_before_live_execution"
-  })
+  assert.equal(planValue.run_safety, undefined)
   assert.equal(planValue.source.repository, contract.source.repository)
   assert.equal(planValue.source.commit, contract.source.commit)
   assert.equal(planValue.source.commit, contract.authenticated_behavior_evidence.current_source_commit)
@@ -199,7 +196,8 @@ test("issue #1373 run plan stays source-bound and partial", () => {
     "authority",
     "required_authority",
     "execution_authorized",
-    "actors"
+    "actors",
+    "run_safety"
   ])
   const inspect = value => {
     if (Array.isArray(value)) return value.forEach(inspect)
