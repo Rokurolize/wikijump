@@ -136,6 +136,12 @@ function negativePreviewObservation(value, rows, name) {
   return { body_sha256: sha256Text(value.body), has_wrapper: false };
 }
 
+function literalPreviewObservation(value, source, name) {
+  const observation = negativePreviewObservation(value, [], name);
+  if (!value.body.includes(source)) throw new Error(`${name} did not preserve its literal source`);
+  return { ...observation, source_literal: true, source_sha256: sha256Text(source) };
+}
+
 class Open43BacklinksRun {
   #session;
   #fixture;
@@ -170,7 +176,7 @@ class Open43BacklinksRun {
     return foundPageView(value, `saved ${page.slug}`);
   }
 
-  async #preview(page, { cleanup = false, pageHeader = page?.slug } = {}) {
+  async #preview(page, { cleanup = false, pageHeader = page?.slug, syntaxOnly = false, wikitext = page?.source } = {}) {
     const request = {
       actor: "anonymous",
       siteId: this.#siteId,
@@ -180,7 +186,8 @@ class Open43BacklinksRun {
     return await this.#rpc("wikidot_page_preview", {
       site_id: this.#siteId,
       title: page?.title ?? "Backlinks identity negative control",
-      wikitext: page?.source ?? this.#fixture.holder.source,
+      wikitext: wikitext ?? this.#fixture.holder.source,
+      ...(syntaxOnly ? { syntax_only: true } : {}),
     }, request);
   }
 
@@ -232,8 +239,16 @@ class Open43BacklinksRun {
     const populatedPreview = await this.#preview(this.#fixture.holder);
     const emptyPreview = await this.#preview(this.#fixture.empty_holder);
     const noIdentity = await this.#preview(this.#fixture.holder, { pageHeader: null });
+    const missingIdentity = await this.#preview(this.#fixture.holder, { pageHeader: "9223372036854775807" });
     const staleIdentity = await this.#preview(this.#fixture.holder, { pageHeader: this.#fixture.stale_page_slug });
     const foreignIdentity = await this.#preview(this.#fixture.holder, { pageHeader: this.#fixture.foreign_page.slug });
+    const mismatchedIdentity = await this.#preview(this.#fixture.holder, { pageHeader: String(this.#fixture.foreign_page.page_id) });
+    const syntaxOnly = await this.#preview(this.#fixture.holder, { syntaxOnly: true });
+    const inlineSource = this.#fixture.holder.source.replace(
+      "[[module Backlinks]]",
+      "start-[[module Backlinks]]-middle",
+    );
+    const inlineModule = await this.#preview(this.#fixture.holder, { wikitext: inlineSource });
     const after = await this.#snapshot();
     const rows = [...this.#fixture.hidden, ...this.#fixture.private, ...this.#fixture.deleted];
     assertAbsent(populatedSaved.compiled_body_html, rows, "saved populated Backlinks");
@@ -262,8 +277,12 @@ class Open43BacklinksRun {
         },
         identity_negative: {
           no_identity: negativePreviewObservation(noIdentity, rows, "identity-free preview"),
+          missing_id: negativePreviewObservation(missingIdentity, rows, "missing-id preview"),
           stale: negativePreviewObservation(staleIdentity, rows, "stale-identity preview"),
           foreign: negativePreviewObservation(foreignIdentity, rows, "foreign-identity preview"),
+          mismatched_id: negativePreviewObservation(mismatchedIdentity, rows, "mismatched-id preview"),
+          syntax_only: literalPreviewObservation(syntaxOnly, this.#fixture.holder.source, "syntax-only preview"),
+          inline_module: literalPreviewObservation(inlineModule, inlineSource, "inline Backlinks module"),
         },
         state_before_sha256: sha256Value(this.#before),
         state_after_sha256: sha256Value(after),
@@ -292,10 +311,12 @@ function verifyCase(observations, fixture) {
   if (observations.fixture?.source_sha256 !== sha256Text(fixture.holder.source) || observations.fixture.empty_source_sha256 !== sha256Text(fixture.empty_holder.source) || observations.fixture.expected_populated_dom_sha256 !== sha256Text(fixture.expected.populated) || observations.fixture.expected_empty_dom_sha256 !== sha256Text(fixture.expected.empty)) throw new Error("Backlinks candidate fixture identity drifted");
   for (const side of [observations.saved.populated, observations.saved.empty, observations.preview.populated, observations.preview.empty]) if (side.fragment_sha256 !== sha256Text(side === observations.saved.empty || side === observations.preview.empty ? fixture.expected.empty : fixture.expected.populated)) throw new Error("saved or preview Backlinks DOM digest does not match its exact fixture fragment");
   for (const negative of Object.values(observations.identity_negative)) if (negative.has_wrapper !== false) throw new Error("invalid preview page identity rendered a Backlinks wrapper");
+  const inlineSource = fixture.holder.source.replace("[[module Backlinks]]", "start-[[module Backlinks]]-middle");
+  if (observations.identity_negative.syntax_only?.source_sha256 !== sha256Text(fixture.holder.source) || observations.identity_negative.inline_module?.source_sha256 !== sha256Text(inlineSource)) throw new Error("literal Backlinks negative control identity drifted");
   if (observations.state_before_sha256 !== observations.state_after_sha256) throw new Error("Backlinks candidate changed public fixture state");
   const events = [...observations.request_events];
   if (events.some((event) => MUTATING_OPERATIONS.has(event.operation))) throw new Error("Backlinks candidate issued a mutating public operation");
-  return { verified: true, controls: ["saved_populated", "saved_empty", "preview_populated", "preview_empty", "identity_free", "stale_identity", "foreign_identity"], hidden_private_deleted_fail_closed: true, mutation_count: 0 };
+  return { verified: true, controls: ["saved_populated", "saved_empty", "preview_populated", "preview_empty", "identity_free", "missing_id", "stale_identity", "foreign_identity", "mismatched_id", "syntax_only", "inline_module"], hidden_private_deleted_fail_closed: true, mutation_count: 0 };
 }
 
 export function createOpen43BacklinksCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options) } = {}) {
