@@ -47,8 +47,14 @@ function geometryDelta(local, live) {
   return Object.fromEntries(
     ["x", "y", "width", "height"].map((key) => [
       key,
-      rounded((local?.rect?.[key] ?? 0) - (live?.rect?.[key] ?? 0)),
+      (local?.rect?.[key] ?? 0) - (live?.rect?.[key] ?? 0),
     ]),
+  );
+}
+
+function roundedGeometryDelta(delta) {
+  return Object.fromEntries(
+    Object.entries(delta).map(([key, value]) => [key, rounded(value)]),
   );
 }
 
@@ -188,7 +194,7 @@ export function compareFirstDivergenceTraces(
         live_index: index,
         local: localElement,
         live: liveElement,
-        geometry_delta: geometry,
+        geometry_delta: roundedGeometryDelta(geometry),
         previous_stable_anchor: previousStableAnchor,
       };
     }
