@@ -746,9 +746,11 @@
           "case_id": "M756_UPLOAD_MATERIALIZATION",
           "acceptance": "Upload or download icon bytes into local ownership, atomically bind one icon slot, and define replacement, deletion, MIME, size, SVG/script, and failure behavior.",
           "classification": "blocked_evidence",
-          "reason": "The panel proves local upload and URL download controls but does not freeze the slot-to-blob transaction or its edge policies.",
+          "reason": "The current source does not materialize icon bytes. SiteIconSettings.svelte exposes only three text inputs; siteIconsAction normalizes those strings and siteIconsUpdate forwards only *_source values to Deepwell SiteService::update, which validates and stores source strings. No file input, multipart or presigned upload, slot-to-blob relation, or replacement/deletion/failure cleanup producer exists.",
           "source_paths": [
             "framerail/src/routes/[x+2d]/admin/SiteIconSettings.svelte",
+            "framerail/src/lib/server/load/admin.ts",
+            "framerail/src/lib/server/deepwell/admin.ts",
             "deepwell/src/services/site/service.rs"
           ],
           "existing_tests": [],
@@ -760,6 +762,16 @@
             "PUT and setting-commit failure cleanup",
             "existing URL download redirect and content policy"
           ],
+          "unresolved_producer": {
+            "status": "not_present",
+            "entrypoint": "framerail/src/routes/[x+2d]/admin/SiteIconSettings.svelte#siteIcons form",
+            "action": "framerail/src/lib/server/load/admin.ts#siteIconsAction",
+            "forwarder": "framerail/src/lib/server/deepwell/admin.ts#siteIconsUpdate",
+            "storage_boundary": "deepwell/src/services/site/service.rs#SiteService::update",
+            "current_operation": "The form submits faviconSource, iosIconSource, and windowsTileSource as strings; Deepwell validates and stores the corresponding source columns.",
+            "required_operation": "An authenticated administrator flow must accept icon bytes, allocate and upload a blob, atomically bind one slot, and define replacement, deletion, MIME, size, SVG/script, PUT-failure, and commit-failure cleanup behavior.",
+            "partial_uri_evidence_is_insufficient": true
+          },
           "next_command_ids": []
         },
         {
