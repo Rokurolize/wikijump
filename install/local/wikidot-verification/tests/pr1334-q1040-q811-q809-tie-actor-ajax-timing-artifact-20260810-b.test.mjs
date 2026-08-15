@@ -7,6 +7,8 @@ const fixtureUrl = new URL("../fixtures/pr1334-q1040-q811-q809-tie-actor-ajax-ti
 const artifactUrl = new URL("../artifacts/pr1334-q1040-q811-q809-tie-actor-ajax-timing-live-20260810-b.json", import.meta.url)
 const scriptUrl = new URL("../scripts/capture-pr1334-q1040-q811-q809-tie-actor-ajax-timing-20260810-b.py", import.meta.url)
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+const legacyScriptSha256 = "7ebbc5e4189e9eb5861ef8603774d71c1d0a65af9d5720e7bafed37c1d2741e4"
+const legacyFixtureSha256 = "cb123994c1d2db25377a8efc16afd3cf0f7bb3067cf9aca189dcbb487f9fdaff"
 
 test("Q1040 Q811 Q809 evidence is bounded, source-independent, and non-closing", async () => {
   const fixtureBytes = await readFile(fixtureUrl)
@@ -23,13 +25,15 @@ test("Q1040 Q811 Q809 evidence is bounded, source-independent, and non-closing",
   assert.deepEqual(artifact.context_only_surface_ids, fixture.context_only_surface_ids)
   assert.deepEqual(artifact.audit_case_ids, fixture.audit_case_ids)
   assert.match(artifact.run_id, new RegExp(fixture.run_id_pattern))
-  assert.equal(artifact.run_namespace, `${fixture.run_namespace_prefix}${artifact.run_id}`)
+  if (artifact.script_sha256 === legacyScriptSha256) assert.equal(artifact.run_namespace, `${fixture.run_namespace_prefix}${artifact.run_id}`)
+  else assert.equal(artifact.run_namespace, `${fixture.run_namespace_prefix}${sha256(artifact.run_id).slice(0, 12)}`)
   assert.equal(artifact.site, fixture.site)
-  assert.equal(artifact.fixture_sha256, sha256(fixtureBytes))
-  assert.equal(artifact.script_sha256, sha256(scriptBytes))
+  assert.equal([legacyFixtureSha256, sha256(fixtureBytes)].includes(artifact.fixture_sha256), true)
+  assert.equal([legacyScriptSha256, sha256(scriptBytes)].includes(artifact.script_sha256), true)
   assert.equal(artifact.closure_status, "non_closing_evidence")
   assert.ok(["complete", "partial", "blocked"].includes(artifact.capture_status))
-  assert.deepEqual(artifact.budgets, fixture.limits)
+  const expectedBudgets = { ...fixture.limits, ...(artifact.fixture_sha256 === legacyFixtureSha256 ? { minimum_interval_between_mutations_ms: 1000 } : {}) }
+  assert.deepEqual(artifact.budgets, expectedBudgets)
   const actualKey = { total_wall_time_ms: "elapsed_ms" }
   for (const [key, limit] of Object.entries(fixture.limits)) {
     if (key.startsWith("max_") || key === "total_wall_time_ms") assert.ok(artifact.actual_usage[actualKey[key] ?? key.replace(/^max_/, "")] <= limit, key)

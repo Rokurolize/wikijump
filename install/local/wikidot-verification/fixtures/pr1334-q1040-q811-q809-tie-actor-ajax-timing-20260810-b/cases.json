@@ -42,7 +42,7 @@
     "max_artifact_bytes": 1572864,
     "per_request_timeout_ms": 20000,
     "total_wall_time_ms": 1200000,
-    "minimum_interval_between_mutations_ms": 1000,
+    "minimum_interval_between_mutations_ms": 5000,
     "read_retry_limit": 1,
     "mutation_retry_limit": 0
   }
