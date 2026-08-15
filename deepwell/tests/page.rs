@@ -3238,8 +3238,11 @@ async fn deleted_category_navigation_does_not_fall_back_to_site_navigation() {
 
 #[tokio::test]
 async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page() {
-    const SOURCE: &str = r###"[[a href="##"]]Issue 610 fragment closer[[/a]]"###;
+    const SOURCE: &str =
+        r###"[[a href="##"]]Issue 610 fragment closer[[/a]] ##red|Issue 610 color boundary##"###;
     const EXPECTED_ANCHOR: &str = r###"<a href="##">Issue 610 fragment closer</a>"###;
+    const EXPECTED_COLOR: &str =
+        r###"<span style="color: red">Issue 610 color boundary</span>"###;
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
@@ -3267,6 +3270,11 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
     assert!(
         !preview.body.contains(r#"href="/&#35;&#35;""#),
         "PagePreview rewrote the fragment-only href as a path:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(EXPECTED_COLOR),
+        "PagePreview must still render an ordinary color marker outside the link:\n{}",
         preview.body,
     );
 
@@ -3350,6 +3358,10 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
     assert!(
         !side_bar.contains("All wikis") && !side_bar.contains(r#"href="/&#35;&#35;""#),
         "page_view reused stale navigation or rewrote the href:\n{side_bar}",
+    );
+    assert!(
+        side_bar.contains(EXPECTED_COLOR),
+        "saved navigation rerender must still render an ordinary color marker outside the link:\n{side_bar}",
     );
 }
 
