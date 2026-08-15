@@ -5,8 +5,9 @@ import path from "node:path";
 
 import compatibilityContract from "../../../../docs/development/compatibility-denominator-contract.json" with {type: "json"};
 
+import {sha256Hex} from "../src/canonical-json.mjs";
 import {runCliIfMain} from "../src/cli-entry.mjs";
-import {sealJsonNoReplace, sha256File} from "../src/standing-browser-parity-util.mjs";
+import {sealJsonNoReplace} from "../src/standing-browser-parity-util.mjs";
 
 const FINAL_ZERO_CLASSES = Object.freeze(compatibilityContract.vocabularies.final_zero_nonzero_classes);
 const LEDGER_SCHEMA = "wikijump.compatibility_ledger.v1";
@@ -25,9 +26,14 @@ function fail(message) {
   throw new Error(message);
 }
 
-async function loadJson(filePath, name) {
+async function readJsonInput(filePath, name) {
+  const absolute = path.resolve(filePath);
+  const bytes = await fs.readFile(absolute);
   try {
-    return JSON.parse(await fs.readFile(filePath, "utf8"));
+    return {
+      value: JSON.parse(bytes.toString("utf8")),
+      reference: {path: absolute, sha256: sha256Hex(bytes)},
+    };
   } catch (error) {
     fail(`${name} is not valid JSON: ${error.message}`);
   }
@@ -104,11 +110,6 @@ function finalZeroCounts(ledger) {
   return counts;
 }
 
-async function inputReference(filePath) {
-  const absolute = path.resolve(filePath);
-  return {path: absolute, sha256: await sha256File(absolute)};
-}
-
 export function parseArgs(argv) {
   const names = new Set(["ledger", "standing-matrix", "output"]);
   const args = {};
@@ -129,15 +130,17 @@ export function usage() {
 }
 
 export async function verifyFinalZero({ledger, standingMatrix}) {
-  const ledgerValue = currentLedger(await loadJson(ledger, "canonical compatibility ledger"));
-  const standing = await loadJson(standingMatrix, "standing compatibility output");
+  const ledgerInput = await readJsonInput(ledger, "canonical compatibility ledger");
+  const standingInput = await readJsonInput(standingMatrix, "standing compatibility output");
+  const ledgerValue = currentLedger(ledgerInput.value);
+  const standing = standingInput.value;
   if (typeof standing?.merge_commit !== "string" || standing.merge_commit === "") fail("standing compatibility output has no merge identity");
   const counts = finalZeroCounts(ledgerValue);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
   const inputs = {
-    ledger: await inputReference(ledger),
-    standing_matrix: await inputReference(standingMatrix),
+    ledger: ledgerInput.reference,
+    standing_matrix: standingInput.reference,
   };
   return {schema: "wikijump.compatibility_final_zero_receipt.v1", status: "pass", merge_commit: standing.merge_commit, counts, inputs};
 }
