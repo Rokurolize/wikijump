@@ -6,7 +6,9 @@ import test from "node:test";
 
 import {
   OPEN43_MAILFORM_CASE_IDS,
+  assertMailformFailClosedBody,
   createOpen43MailformCandidateCaseSet,
+  mailformFailClosedBody,
 } from "../src/open43-mailform-candidate-case-set.mjs";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
@@ -55,7 +57,9 @@ function candidateIdentity() {
 function failClosedBody(source) {
   const before = source.split("\n", 1)[0];
   const after = source.split("\n").at(-1);
-  return `<p>${before}</p><p><em>MailForm</em>: No such module</p><p>${after}</p>`;
+  const marker = before.slice("BEFORE ".length);
+  assert.equal(after, `AFTER ${marker}`);
+  return mailformFailClosedBody(marker);
 }
 
 class FakeMailformSession {
@@ -99,6 +103,18 @@ test("the canonical candidate registry exposes the executable #1037 case", async
   assert.equal(caseSet.id, "open43-mailform-fail-closed");
   assert.deepEqual(caseSet.caseIds, OPEN43_MAILFORM_CASE_IDS);
   assert.equal(typeof caseSet.prepareRun, "function");
+});
+
+test("the MailForm verifier rejects extra output beyond the exact body contract", () => {
+  const marker = "candidate-case-owner:open43-mailform-runtime-test";
+  assert.throws(
+    () => assertMailformFailClosedBody(
+      `${mailformFailClosedBody(marker)}<p>EXTRA</p>`,
+      "MailForm saved view",
+      marker,
+    ),
+    /exact retained fail-closed MailForm body/,
+  );
 });
 
 test("the MailForm fail-closed case is executable through CandidateCaseRunner", async (t) => {

@@ -21,6 +21,8 @@ const ACTIVE_MARKERS = Object.freeze([
   "mailformdef-",
   "MailFormModule.listeners",
 ]);
+const MAILFORM_UNAVAILABLE_MODULE_HTML =
+  '<div class="error-block">[[module <em>MailForm</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank" rel="noopener noreferrer">check available modules</a> and fix this page.</div>';
 
 function pageSlug(runId) {
   return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-case-".length)}`;
@@ -48,14 +50,24 @@ function requireCandidateSite(candidateIdentity) {
   }
 }
 
-function bodyEvidence(value, name) {
+export function mailformFailClosedBody(marker) {
+  requireNonEmptyString(marker, "MailForm run marker");
+  return `<p>BEFORE ${marker}</p>${MAILFORM_UNAVAILABLE_MODULE_HTML}<p>AFTER ${marker}</p>`;
+}
+
+export function assertMailformFailClosedBody(value, name, marker) {
   const body = requireNonEmptyString(value, `${name} body`);
-  for (const marker of ["BEFORE", "<em>MailForm</em>", "No such module", "AFTER"]) {
-    if (!body.includes(marker)) throw new Error(`${name} is not the retained fail-closed MailForm shape`);
+  if (body !== mailformFailClosedBody(marker)) {
+    throw new Error(`${name} is not the exact retained fail-closed MailForm body`);
   }
-  for (const marker of ACTIVE_MARKERS) {
-    if (body.includes(marker)) throw new Error(`${name} exposes active MailForm content ${marker}`);
+  for (const activeMarker of ACTIVE_MARKERS) {
+    if (body.includes(activeMarker)) throw new Error(`${name} exposes active MailForm content ${activeMarker}`);
   }
+  return body;
+}
+
+function bodyEvidence(value, name, marker) {
+  const body = assertMailformFailClosedBody(value, name, marker);
   return { sha256: sha256Text(body), bytes: Buffer.byteLength(body), fail_closed: true };
 }
 
@@ -115,7 +127,7 @@ class Open43MailformRun {
       title: this.#marker,
       wikitext: this.#source,
     }, { actor: "anonymous" });
-    const previewEvidence = bodyEvidence(preview?.body, "MailForm preview");
+    const previewEvidence = bodyEvidence(preview?.body, "MailForm preview", this.#marker);
 
     const created = await this.#rpc("page_create", {
       site_id: this.#siteId,
@@ -143,7 +155,7 @@ class Open43MailformRun {
 
     const saved = await this.#page();
     if (!this.#matchesOwnedPage(saved)) throw new Error("saved MailForm page does not match its public ownership proof");
-    const savedEvidence = bodyEvidence(saved.compiled_body_html, "MailForm saved view");
+    const savedEvidence = bodyEvidence(saved.compiled_body_html, "MailForm saved view", this.#marker);
     return [{
       case_id: "A1037_MAILFORM_FAIL_CLOSED_SERVED",
       observations: {
