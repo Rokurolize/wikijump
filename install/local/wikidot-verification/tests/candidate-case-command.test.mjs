@@ -131,6 +131,13 @@ test("candidate case registry exposes the real #1026 user identity adapter", asy
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 
+test("candidate case registry exposes an executable FTML marker contract", async () => {
+  const caseSet = await candidateCaseSet("ftml-marker-contract");
+  assert.equal(caseSet.id, "ftml-marker-contract");
+  assert.deepEqual(caseSet.caseIds, ["F1380_FTML_MARKER_CONTRACT"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case command accepts only the fixed explicit attachment options", () => {
   assert.deepEqual(
     parseCandidateCaseArgs([

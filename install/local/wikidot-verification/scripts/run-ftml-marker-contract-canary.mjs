@@ -28,7 +28,7 @@ const FIXTURES_PATH = path.join(
 );
 const BUILD_CANDIDATE = "/home/roku/wjlab/scripts/build-deepwell-candidate.sh";
 const LEASE = "/home/roku/.local/bin/roku-resource-lease";
-const REQUIRED_SURFACES = ["heading", "separator", "div", "span", "alignment"];
+export const REQUIRED_SURFACES = ["heading", "separator", "div", "span", "alignment"];
 const OWNER = "ftml-marker-contract-canary";
 const EXPIRY_HOURS = 8;
 
