@@ -168,6 +168,141 @@ function sameImageMap(left, right) {
   );
 }
 
+function exactObjectKeys(value, expected, name) {
+  requirePlainObject(value, name);
+  if (
+    JSON.stringify(Object.keys(value).sort()) !==
+    JSON.stringify([...expected].sort())
+  ) {
+    throw new Error(`${name} has missing or unknown fields`);
+  }
+}
+
+function requireGitObject(value, name) {
+  if (!/^[0-9a-f]{40}$/u.test(value ?? "")) {
+    throw new Error(`${name} must be a Git object id`);
+  }
+  return value;
+}
+
+function requireImageIds(value, name) {
+  exactObjectKeys(value, REQUIRED_IMAGE_ROLES, name);
+  const ids = REQUIRED_IMAGE_ROLES.map((role) => {
+    const imageId = value[role];
+    if (!/^sha256:[0-9a-f]{64}$/u.test(imageId ?? "")) {
+      throw new Error(`${name}.${role} must be an immutable image id`);
+    }
+    return imageId;
+  });
+  if (new Set(ids).size !== ids.length) {
+    throw new Error(`${name} reuses an image id`);
+  }
+}
+
+export function validateStandingPromotionPrecondition(value) {
+  exactObjectKeys(
+    value,
+    [
+      "schema",
+      "status",
+      "run_id",
+      "verified_at",
+      "admission",
+      "candidate",
+      "build",
+      "staging_home",
+    ],
+    "promotion precondition",
+  );
+  if (
+    value.schema !== STANDING_PROMOTION_PRECONDITION_SCHEMA ||
+    value.status !== "pass"
+  ) {
+    throw new Error("promotion precondition is not a passing canonical receipt");
+  }
+  requireNonEmptyString(value.run_id, "promotion precondition.run_id");
+  requireNonEmptyString(value.verified_at, "promotion precondition.verified_at");
+  exactObjectKeys(
+    value.admission,
+    [
+      "candidate_parity_receipt_sha256",
+      "candidate_identity_sha256",
+      "live_reference_sha256",
+      "live_completion_policy_sha256",
+      "source_runner_sha256",
+      "source_observation_sha256",
+      "source_execution_identity_sha256",
+    ],
+    "promotion precondition.admission",
+  );
+  for (const field of Object.keys(value.admission)) {
+    requireSha256(value.admission[field], `promotion precondition.admission.${field}`);
+  }
+  exactObjectKeys(
+    value.candidate,
+    [
+      "artifact_key",
+      "wikijump_commit",
+      "wikijump_tree",
+      "ftml_sha",
+      "compose_project",
+      "expires_at",
+    ],
+    "promotion precondition.candidate",
+  );
+  requireSha256(value.candidate.artifact_key, "promotion precondition candidate artifact_key");
+  requireGitObject(value.candidate.wikijump_commit, "promotion precondition candidate Wikijump commit");
+  requireGitObject(value.candidate.wikijump_tree, "promotion precondition candidate Wikijump tree");
+  requireGitObject(value.candidate.ftml_sha, "promotion precondition candidate FTML SHA");
+  requireNonEmptyString(value.candidate.compose_project, "promotion precondition candidate compose project");
+  requireNonEmptyString(value.candidate.expires_at, "promotion precondition candidate expiry");
+  exactObjectKeys(
+    value.build,
+    [
+      "seal_sha256",
+      "evidence_manifest_sha256",
+      "verdict_sha256",
+      "final_images_sha256",
+      "run_id",
+      "wikijump_commit",
+      "wikijump_tree",
+      "ftml_sha",
+      "images",
+    ],
+    "promotion precondition.build",
+  );
+  for (const field of [
+    "seal_sha256",
+    "evidence_manifest_sha256",
+    "verdict_sha256",
+    "final_images_sha256",
+  ]) {
+    requireSha256(value.build[field], `promotion precondition.build.${field}`);
+  }
+  requireEqual(value.build.run_id, value.run_id, "promotion precondition build run id");
+  requireGitObject(value.build.wikijump_commit, "promotion precondition build Wikijump commit");
+  requireGitObject(value.build.wikijump_tree, "promotion precondition build Wikijump tree");
+  requireGitObject(value.build.ftml_sha, "promotion precondition build FTML SHA");
+  requireImageIds(value.build.images, "promotion precondition.build.images");
+  for (const field of ["wikijump_commit", "wikijump_tree", "ftml_sha"]) {
+    requireEqual(
+      value.candidate[field],
+      value.build[field],
+      `promotion precondition candidate/build ${field}`,
+    );
+  }
+  exactObjectKeys(
+    value.staging_home,
+    ["manifest_sha256"],
+    "promotion precondition.staging_home",
+  );
+  requireSha256(
+    value.staging_home.manifest_sha256,
+    "promotion precondition staging home manifest",
+  );
+  return value;
+}
+
 function assertSafeRelativePath(relative, name) {
   if (
     relative === "" ||

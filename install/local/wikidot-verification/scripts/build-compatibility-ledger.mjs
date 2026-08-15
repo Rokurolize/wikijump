@@ -63,7 +63,6 @@ function fail(message) {
 
 function deferredOwner(sourceClass, record) {
   if (sourceClass !== "wikijump") return null;
-
   const catalogOwner = DEFERRED_CATALOG_FEATURE_OWNERS.get(record.surface_id);
   if (catalogOwner !== undefined) {
     const expectedSpecification = record.surface_id.replace(
@@ -80,7 +79,6 @@ function deferredOwner(sourceClass, record) {
     }
     return catalogOwner;
   }
-
   const kindOwner = DEFERRED_KIND_OWNERS.get(record.kind);
   if (kindOwner === undefined) return null;
   if (
