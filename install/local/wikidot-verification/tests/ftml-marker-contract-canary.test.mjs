@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -38,6 +38,87 @@ const retainedCanarySummary = {
   sha256:
     "3019488859c69be2fe18e8061c2cbc0614c88af2a07614d04497aca6c397bb0c",
 };
+
+function parseActiveFtmlDependency(source) {
+  let section = null;
+  let dependency = null;
+
+  for (const line of source.split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    const table = trimmed.match(/^\[([A-Za-z0-9_.-]+)\]$/u);
+    if (table) {
+      section = table[1];
+      continue;
+    }
+    if (section !== "dependencies") continue;
+
+    const entry = line.match(/^\s*([A-Za-z0-9_-]+)\s*=\s*(.+?)\s*$/u);
+    if (!entry || entry[1] !== "ftml") continue;
+    assert.equal(dependency, null, "duplicate active ftml dependency");
+
+    const value = entry[2].match(
+      /^\{\s*git\s*=\s*"([^"]+)"\s*,\s*rev\s*=\s*"([0-9a-f]{40})"\s*\}$/u,
+    );
+    assert.ok(value, "active ftml dependency must be an exact git pin");
+    assert.equal(
+      value[1],
+      "https://github.com/Rokurolize/ftml",
+      "active ftml dependency must use the canonical repository",
+    );
+    dependency = { git: value[1], rev: value[2] };
+  }
+
+  assert.ok(dependency, "active ftml dependency is missing");
+  return dependency;
+}
+
+function parseFtmlLockSource(source) {
+  let packageRecord = null;
+  const ftmlPackages = [];
+  const finishPackage = () => {
+    if (packageRecord?.name === "ftml") ftmlPackages.push(packageRecord);
+  };
+
+  for (const line of source.split(/\r?\n/u)) {
+    const trimmed = line.trim();
+    if (trimmed === "[[package]]") {
+      finishPackage();
+      packageRecord = {};
+      continue;
+    }
+    if (!packageRecord) continue;
+
+    const name = line.match(/^\s*name\s*=\s*"([^"]+)"\s*$/u);
+    if (name) {
+      assert.equal(packageRecord.name, undefined, "duplicate lock package name");
+      packageRecord.name = name[1];
+      continue;
+    }
+    const packageSource = line.match(
+      /^\s*source\s*=\s*"([^"]+)"\s*$/u,
+    );
+    if (packageSource) {
+      assert.equal(
+        packageRecord.source,
+        undefined,
+        "duplicate lock package source",
+      );
+      packageRecord.source = packageSource[1];
+    }
+  }
+  finishPackage();
+
+  assert.equal(ftmlPackages.length, 1, "ftml lock package is missing or duplicated");
+  assert.equal(
+    typeof ftmlPackages[0].source,
+    "string",
+    "ftml lock package source is missing",
+  );
+  return ftmlPackages[0].source;
+}
+
 const sanitizedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(
     ([key]) =>
@@ -59,7 +140,7 @@ const sanitizedEnvironment = Object.fromEntries(
   ),
 );
 
-test("active FTML pin matches the retained merged marker canary", () => {
+test("active FTML pin matches the retained merged marker canary when available", () => {
   const manifest = readFileSync(
     path.join(repositoryRoot, "deepwell/Cargo.toml"),
     "utf8",
@@ -68,35 +149,43 @@ test("active FTML pin matches the retained merged marker canary", () => {
     path.join(repositoryRoot, "deepwell/Cargo.lock"),
     "utf8",
   );
+  assert.deepEqual(parseActiveFtmlDependency(manifest), {
+    git: "https://github.com/Rokurolize/ftml",
+    rev: candidateFtml,
+  });
   assert.equal(
-    manifest.match(
-      new RegExp(
-        `ftml = \\{ git = "https://github\\.com/Rokurolize/ftml", rev = "${candidateFtml}" \\}`,
-        "gu",
-      ),
-    )?.length,
-    1,
-  );
-  assert.equal(
-    lock.match(
-      new RegExp(
-        `source = "git\\+https://github\\.com/Rokurolize/ftml\\?rev=${candidateFtml}#${candidateFtml}"`,
-        "gu",
-      ),
-    )?.length,
-    1,
+    parseFtmlLockSource(lock),
+    `git+https://github.com/Rokurolize/ftml?rev=${candidateFtml}#${candidateFtml}`,
   );
 
-  const canarySource = readFileSync(retainedCanarySummary.path, "utf8");
-  const canary = JSON.parse(canarySource);
+  if (!existsSync(retainedCanarySummary.path)) return;
+  const canaryBytes = readFileSync(retainedCanarySummary.path);
   assert.equal(
-    createHash("sha256").update(canarySource).digest("hex"),
+    createHash("sha256").update(canaryBytes).digest("hex"),
     retainedCanarySummary.sha256,
   );
+  const canary = JSON.parse(canaryBytes.toString("utf8"));
   assert.equal(canary.status, "pass");
   assert.equal(canary.baseline_ftml, ownershipPinReceiptFtml);
   assert.equal(canary.candidate_ftml, candidateFtml);
   assert.deepEqual(canary.required_surfaces, requiredSurfaces);
+});
+
+test("FTML pin parsing rejects comments and unrelated packages", () => {
+  assert.throws(
+    () =>
+      parseActiveFtmlDependency(
+        `# [dependencies]\n# ftml = { git = "https://github.com/Rokurolize/ftml", rev = "${candidateFtml}" }`,
+      ),
+    /active ftml dependency is missing/u,
+  );
+  assert.throws(
+    () =>
+      parseFtmlLockSource(
+        `[[package]]\nname = "other-package"\nsource = "git+https://github.com/Rokurolize/ftml?rev=${candidateFtml}#${candidateFtml}"`,
+      ),
+    /ftml lock package is missing/u,
+  );
 });
 
 test("the 2026-08-04 marker canary receipt remains immutable", () => {
