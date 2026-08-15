@@ -80,6 +80,23 @@ pnpm --dir install/local/wikidot-verification syntax-dispositions -- \
 
 The policy accepts only `intentional-security-boundary`, `wikijump-runtime-boundary`, and `live-observation-resource-failure`, and binds every entry to both its case ID and source SHA-256. An unknown mismatch, changed source, runner error, missing policy case, resolved exception, or policy entry aimed at a `not-applicable` case fails the check. Runtime cases remain outside this exception path: declare `local_execution_tier: wikijump-runtime` and let the syntax runner report them as `not-applicable`, then exercise them through the saved-page runtime lane.
 
+### FTML fixture classification overrides
+
+`scripts/build-ftml-live-pages.mjs` conservatively classifies fixture sources for saved-page, isolated PagePreview, runtime, or not-applicable execution. Its optional `--classification-overrides FILE` argument applies reviewed exceptions from an FTML-owned manifest. Without the argument, classification remains conservative and no override identity is used.
+
+The manifest schema is `ftml.wikidot_parity.classification_overrides.v1` with one `overrides` array sorted by `path`. Every row has exactly `path`, `source_sha256`, `execution_class`, `page_scope`, and one nonempty `reason`. An override applies only when its relative fixture path and lowercase SHA-256 match the source exactly. The loader rejects unknown or missing fields, invalid classes or scopes, duplicate or unsorted paths, stale hashes, and entries that match no collected fixture.
+
+```sh
+node install/local/wikidot-verification/scripts/build-ftml-live-pages.mjs \
+  --ftml-root /path/to/ftml \
+  --classification-overrides /path/to/ftml/tests/fixtures/wikidot-parity/classification-overrides.json \
+  --cases-output /absolute/evidence/path/cases.jsonl \
+  --pages-output /absolute/evidence/path/pages.jsonl \
+  --slug-prefix ftml-parity
+```
+
+The JSON stdout summary includes `classification_overrides` as the manifest's resolved path and raw-file SHA-256. It is `null` when the option is omitted, so every reported case-count denominator states whether reviewed overrides influenced it.
+
 Recorded batch-safe cases default to the measured 8,000-character target and 9,000-character hard limit. The 2026-07-26 matrix needed 68 batch requests plus 130 isolated interaction retries at this size. A 20,000-character run needed 33 successful or retry requests plus 173 isolated retries, while a 50,000-character run needed 18 successful or retry requests plus 186 isolated retries; the smaller default therefore minimized total Wikidot requests. Wikidot also returned empty previews for content-dependent 20,000-character and 50,000-character shards, and for every measured 84,528-character and roughly 150,000-character shard. Run `build-failed-preview-retries.mjs` and recapture only failed shards at the default retry size. `compare-wikidot-live-pages.mjs` accepts repeated `--captures` arguments, replaces failed parent shards with successful retries, and fails if any case remains unresolved. Cases whose batched rendering differs from their isolated FTML rendering must then move to the isolated lane; source length alone is not proof that cases are context-independent.
 
 Includes, page-existence checks, permissions, and most runtime modules use the saved-page runtime lane because PagePreview does not execute them. ListPages is an exception: live PagePreview executes site-scoped queries with default-category context but no saved current-page identity. `capture_wikidot_existing_pages.py` reads an existing Wikidot page anonymously and freezes its page ID, latest revision ID and number, public source wikitext and hash, selected rendered subtree, actor state, resolved site and domain, capture time, and pinned acquisition dependencies. Keeping the source bytes makes later corpus-drift diagnosis and exact-input replay possible without another Wikidot request. It accepts only the read-only `scp-wiki`, `scp-jp`, and `sandbox-for-codex` sites and mutates none of them.
