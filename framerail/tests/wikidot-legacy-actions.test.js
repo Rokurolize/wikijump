@@ -253,11 +253,11 @@ test("a Rate action updates the live hidden star score after the server response
   const score = { value: "0" }
   const stars = {
     dataset: { rating: "0" },
-    querySelector: (selector) => selector === 'input[name="score"]' ? score : null,
+    querySelector: (selector) => (selector === 'input[name="score"]' ? score : null),
     querySelectorAll: () => []
   }
   const widget = {
-    querySelector: (selector) => selector === ".page-rate-widget-start" ? stars : null
+    querySelector: (selector) => (selector === ".page-rate-widget-start" ? stars : null)
   }
   const element = { closest: () => widget }
 
@@ -379,10 +379,7 @@ test("sidecar binding preserves exact DOM and fails closed on a count mismatch",
 })
 
 test("standalone action binding fails closed on a malformed present sidecar", () => {
-  assert.deepEqual(
-    planWikidotStandaloneActionBindings([actionElement()], [null]),
-    []
-  )
+  assert.deepEqual(planWikidotStandaloneActionBindings([actionElement()], [null]), [])
 })
 
 test("Rate DOM is intercepted but remains inert without a typed sidecar", () => {
