@@ -21,6 +21,27 @@ const JOIN_ACTION = Object.freeze({
   index: 0,
   fingerprint: "1".repeat(32),
 });
+const ANONYMOUS_STATIC_BODY = [
+  "MEMBERSHIP_APPLY_START",
+  '<div id="membership-apply-box">You need to have a Wikidot.com account and be signed to apply for membership.</div>',
+  "MEMBERSHIP_APPLY_END",
+  "MEMBERSHIP_PASSWORD_START",
+  '<div id="membership-by-password-box">Please create an account and/or sign in first.</div>',
+  "MEMBERSHIP_PASSWORD_END",
+  "INVITATION_START",
+  '<div id="membership-email-invitation-box">Sorry, the invitation could not be found.</div>',
+  "INVITATION_END",
+  "UNSUBSCRIBE_START",
+  '<div class="error-block">Invalid indentification token.</div>',
+  "UNSUBSCRIBE_END",
+  "SEND_INVITATIONS_START",
+  '<div class="error-block">Inviting users has been disabled due to severe abuse.</div>',
+  "SEND_INVITATIONS_END",
+].join("\n");
+const MEMBER_STATIC_BODY = ANONYMOUS_STATIC_BODY.replace(
+  "Please create an account and/or sign in first.",
+  "You can not apply.<br/> It seems you already are a member of this site.",
+);
 
 function candidateIdentity() {
   return {
@@ -99,8 +120,11 @@ async function createFakeDeepwell() {
             page: { page_id: state.page.page_id, slug: state.page.slug },
             page_revision: { revision_id: state.page.revision_id, user_id: 91 },
             wikitext: state.page.wikitext,
+            compiled_body_html: actor === "anonymous" ? ANONYMOUS_STATIC_BODY : MEMBER_STATIC_BODY,
           },
         };
+      } else if (payload.method === "wikidot_page_preview") {
+        result = { body: actor === "anonymous" ? ANONYMOUS_STATIC_BODY : MEMBER_STATIC_BODY, styles: [] };
       } else if (payload.method === "membership_join") {
         assert.equal(actor, "registered");
         assert.equal(request.headers["x-deepwell-site-id"], "7");
@@ -144,7 +168,7 @@ async function createFakeDeepwell() {
   };
 }
 
-test("registered ordinary user joins the editable site then creates and reads a component page", async (t) => {
+test("the membership candidate proves ordinary page creation and the #1033 static actor matrix", async (t) => {
   const registered = await candidateCaseSet("open43-membership");
   assert.deepEqual(registered.caseIds, OPEN43_MEMBERSHIP_CASE_IDS);
   const deepwell = await createFakeDeepwell();
@@ -176,7 +200,10 @@ test("registered ordinary user joins the editable site then creates and reads a 
   });
 
   assert.equal(aggregate.status, "pass");
-  assert.deepEqual(aggregate.denominator.case_ids, ["A1060_ORDINARY_MEMBER_PAGE_CREATE"]);
+  assert.deepEqual(aggregate.denominator.case_ids, [
+    "A1060_ORDINARY_MEMBER_PAGE_CREATE",
+    "A1033_CENTRAL_STATIC_MODULE_MATRIX",
+  ]);
   assert.equal(aggregate.cleanup.page_absent, true);
   assert.equal(aggregate.cleanup.membership_absent, true);
   assert.equal(aggregate.resources.length, 2);
@@ -185,6 +212,21 @@ test("registered ordinary user joins the editable site then creates and reads a 
   assert.equal(receipt.verification.registered_user_id, 91);
   assert.equal(receipt.verification.joined_without_administrator_fallback, true);
   assert.equal(receipt.verification.component_page_created_and_read_back, true);
+  const staticReceipt = JSON.parse(await fs.readFile(aggregate.cases[1].path, "utf8"));
+  assert.equal(staticReceipt.case_id, "A1033_CENTRAL_STATIC_MODULE_MATRIX");
+  assert.equal(staticReceipt.verification.preview_and_saved_page_equal, true);
+  assert.deepEqual(staticReceipt.verification.actor_states, ["anonymous", "member"]);
+  assert.equal(staticReceipt.verification.opaque_values_absent, true);
+  assert.deepEqual(
+    staticReceipt.observations.requests.map(({ operation, actor }) => [operation, actor]),
+    [
+      ["page_view", "registered"],
+      ["wikidot_page_preview", "anonymous"],
+      ["wikidot_page_preview", "registered"],
+      ["page_view", "anonymous"],
+    ],
+  );
+  assert.doesNotMatch(JSON.stringify(staticReceipt), /candidate-(?:invitation|unsubscribe)-secret/u);
   const executeEvents = receipt.observations.requests;
   assert.equal(executeEvents.some(({ actor }) => actor === "administrator"), false);
   assert.deepEqual(

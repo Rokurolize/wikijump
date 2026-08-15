@@ -11,12 +11,33 @@ import {
 
 export const OPEN43_MEMBERSHIP_CASE_IDS = Object.freeze([
   "A1060_ORDINARY_MEMBER_PAGE_CREATE",
+  "A1033_CENTRAL_STATIC_MODULE_MATRIX",
 ]);
 
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
 const ADMINISTRATOR_USER_ID = -1;
-const PAGE_SOURCE = "Membership candidate vertical slice";
+const OPAQUE_VALUES = Object.freeze([
+  "candidate-invitation-secret",
+  "candidate-unsubscribe-secret",
+]);
+const PAGE_SOURCE = [
+  "MEMBERSHIP_APPLY_START",
+  "[[module MembershipApply]]",
+  "MEMBERSHIP_APPLY_END",
+  "MEMBERSHIP_PASSWORD_START",
+  "[[module MembershipByPassword]]",
+  "MEMBERSHIP_PASSWORD_END",
+  "INVITATION_START",
+  `[[module MembershipEmailInvitation token="${OPAQUE_VALUES[0]}"]]`,
+  "INVITATION_END",
+  "UNSUBSCRIBE_START",
+  `[[module AnonymousNotificationsUnsubscribe token="${OPAQUE_VALUES[1]}"]]`,
+  "UNSUBSCRIBE_END",
+  "SEND_INVITATIONS_START",
+  "[[module SendInvitations]]",
+  "SEND_INVITATIONS_END",
+].join("\n");
 const JOIN_PAGE = "system:join";
 const JOIN_CONTROL = "WIKIDOT.page.listeners.join";
 const EXPECTED_REQUESTS = Object.freeze([
@@ -31,6 +52,12 @@ const EXPECTED_REQUESTS = Object.freeze([
   ["page_create", "registered"],
   ["page_get", "registered"],
   ["page_view", "registered"],
+]);
+const STATIC_EXPECTED_REQUESTS = Object.freeze([
+  ["page_view", "registered"],
+  ["wikidot_page_preview", "anonymous"],
+  ["wikidot_page_preview", "registered"],
+  ["page_view", "anonymous"],
 ]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
@@ -153,6 +180,53 @@ function membershipMatches(value, siteId, userId) {
   return value?.dest_id === siteId && value.from_id === userId;
 }
 
+function staticModuleEvidence(value, name, actorState) {
+  const body = requireNonEmptyString(value, `${name} body`);
+  for (const marker of [
+    "MEMBERSHIP_APPLY_START",
+    "MEMBERSHIP_APPLY_END",
+    "MEMBERSHIP_PASSWORD_START",
+    "MEMBERSHIP_PASSWORD_END",
+    "INVITATION_START",
+    "INVITATION_END",
+    "UNSUBSCRIBE_START",
+    "UNSUBSCRIBE_END",
+    "SEND_INVITATIONS_START",
+    "SEND_INVITATIONS_END",
+  ]) {
+    if (!body.includes(marker)) throw new Error(`${name} omitted ${marker}`);
+  }
+  for (const expected of [
+    '<div id="membership-by-password-box">',
+    '<div id="membership-email-invitation-box">',
+    "Sorry, the invitation could not be found.",
+    "Invalid indentification token.",
+    "Inviting users has been disabled due to severe abuse.",
+  ]) {
+    if (!body.includes(expected)) throw new Error(`${name} omitted the observed ${expected} output`);
+  }
+  if (actorState === "anonymous") {
+    if (!body.includes('<div id="membership-apply-box">') || !body.includes("You need to have a Wikidot.com account and be signed to apply for membership.") || !body.includes("Please create an account and/or sign in first.")) {
+      throw new Error(`${name} omitted the observed anonymous membership state`);
+    }
+  } else if (actorState === "member") {
+    if (!body.includes("You can not apply.<br/>") || !body.includes("already are a member of this site.")) {
+      throw new Error(`${name} omitted the observed current-member password state`);
+    }
+  } else {
+    throw new Error(`${name} actor state is unsupported`);
+  }
+  for (const forbidden of ["[[module", ...OPAQUE_VALUES]) {
+    if (body.includes(forbidden)) throw new Error(`${name} exposed forbidden opaque source ${forbidden}`);
+  }
+  return {
+    actor_state: actorState,
+    body_sha256: sha256Text(body),
+    body_bytes: Buffer.byteLength(body),
+    opaque_values_absent: true,
+  };
+}
+
 class Open43MembershipRun {
   #session;
   #resources;
@@ -184,13 +258,13 @@ class Open43MembershipRun {
     return await this.#rpc("member_get", { site_id: this.#siteId, user_id: this.#session.registeredUserId }, { actor, cleanup });
   }
 
-  async #view(slug) {
+  async #view(slug, { actor = "registered" } = {}) {
     return await this.#rpc("page_view", {
       site_id: this.#siteId,
-      session_token: this.#session.registeredSessionToken,
+      session_token: actor === "anonymous" ? null : this.#session.registeredSessionToken,
       route: { slug, extra: "" },
       locales: ["en-US", "en"],
-    }, { page: slug });
+    }, { actor, page: slug });
   }
 
   #matchesOwnedPage(page) {
@@ -255,25 +329,62 @@ class Open43MembershipRun {
       throw new Error("ordinary member page did not round-trip through page_view");
     }
 
-    return [{
-      case_id: OPEN43_MEMBERSHIP_CASE_IDS[0],
-      observations: {
-        actor: { ...actor, admin_view_type: adminView.type },
-        join: {
-          before: { page_id: action.page_id, revision_id: action.revision_id, descriptor_type: action.type, control_visible: true },
-          outcome: joinOutcome,
-          membership: { site_id: membership.dest_id, user_id: membership.from_id, accepted: membership.metadata?.accepted?.cause ?? null },
-          after: { control_visible: false, descriptor_count: afterJoin.membership_actions.length },
-        },
-        page: {
-          slug: this.#pageSlug,
-          category: "component",
-          created: { page_id: created.page_id, revision_id: created.revision_id, revision_user_id: saved.revision_user_id },
-          readback: { page_id: readback.page.page_id, revision_id: readback.page_revision.revision_id, revision_user_id: readback.page_revision.user_id, source_sha256: sha256Text(readback.wikitext) },
-        },
-        requests: this.#session.events.slice(eventStart),
+    const membershipRequests = this.#session.events.slice(eventStart);
+    const staticRequestStart = this.#session.events.length - 1;
+    const anonymousPreview = await this.#rpc("wikidot_page_preview", {
+      site_id: this.#siteId,
+      title: "Open43 static membership anonymous preview",
+      wikitext: PAGE_SOURCE,
+    }, { actor: "anonymous" });
+    const memberPreview = await this.#rpc("wikidot_page_preview", {
+      site_id: this.#siteId,
+      title: "Open43 static membership member preview",
+      wikitext: PAGE_SOURCE,
+    });
+    const anonymousSaved = found(await this.#view(this.#pageSlug, { actor: "anonymous" }), "anonymous static membership page_view");
+    const staticEvidence = {
+      preview: {
+        anonymous: staticModuleEvidence(anonymousPreview?.body, "anonymous preview", "anonymous"),
+        member: staticModuleEvidence(memberPreview?.body, "member preview", "member"),
       },
-    }];
+      saved: {
+        anonymous: staticModuleEvidence(anonymousSaved.compiled_body_html, "anonymous saved page", "anonymous"),
+        member: staticModuleEvidence(readback.compiled_body_html, "member saved page", "member"),
+      },
+    };
+    if (staticEvidence.preview.anonymous.body_sha256 !== staticEvidence.saved.anonymous.body_sha256 || staticEvidence.preview.member.body_sha256 !== staticEvidence.saved.member.body_sha256) {
+      throw new Error("static membership preview and saved-page output differ by actor");
+    }
+
+    return [
+      {
+        case_id: OPEN43_MEMBERSHIP_CASE_IDS[0],
+        observations: {
+          actor: { ...actor, admin_view_type: adminView.type },
+          join: {
+            before: { page_id: action.page_id, revision_id: action.revision_id, descriptor_type: action.type, control_visible: true },
+            outcome: joinOutcome,
+            membership: { site_id: membership.dest_id, user_id: membership.from_id, accepted: membership.metadata?.accepted?.cause ?? null },
+            after: { control_visible: false, descriptor_count: afterJoin.membership_actions.length },
+          },
+          page: {
+            slug: this.#pageSlug,
+            category: "component",
+            created: { page_id: created.page_id, revision_id: created.revision_id, revision_user_id: saved.revision_user_id },
+            readback: { page_id: readback.page.page_id, revision_id: readback.page_revision.revision_id, revision_user_id: readback.page_revision.user_id, source_sha256: sha256Text(readback.wikitext) },
+          },
+          requests: membershipRequests,
+        },
+      },
+      {
+        case_id: OPEN43_MEMBERSHIP_CASE_IDS[1],
+        observations: {
+          actor: { user_id: actor.user_id, membership: membership.metadata?.accepted?.cause ?? null },
+          ...staticEvidence,
+          requests: this.#session.events.slice(staticRequestStart),
+        },
+      },
+    ];
   }
 
   async cleanup() {
@@ -319,8 +430,22 @@ class Open43MembershipRun {
 }
 
 function verifyCase(caseId, observations) {
-  if (caseId !== OPEN43_MEMBERSHIP_CASE_IDS[0]) throw new Error(`unsupported Open43 membership case: ${caseId}`);
   requirePlainObject(observations, `${caseId} observations`);
+  if (caseId === OPEN43_MEMBERSHIP_CASE_IDS[1]) {
+    if (!Number.isSafeInteger(observations.actor?.user_id) || observations.actor.membership !== "self_joined") throw new Error(`${caseId} did not use the controlled current member`);
+    for (const actorState of ["anonymous", "member"]) {
+      if (observations.preview?.[actorState]?.actor_state !== actorState || observations.saved?.[actorState]?.actor_state !== actorState || observations.preview[actorState].body_sha256 !== observations.saved[actorState].body_sha256 || observations.preview[actorState].opaque_values_absent !== true || observations.saved[actorState].opaque_values_absent !== true) {
+        throw new Error(`${caseId} did not prove equal preview and saved-page ${actorState} output`);
+      }
+    }
+    if (!Array.isArray(observations.requests) || observations.requests.length !== STATIC_EXPECTED_REQUESTS.length) throw new Error(`${caseId} public request denominator is wrong`);
+    observations.requests.forEach((request, index) => {
+      const [operation, actor] = STATIC_EXPECTED_REQUESTS[index];
+      if (request?.service !== "deepwell" || request.operation !== operation || request.method !== "POST" || request.response_status !== 200 || request.actor !== actor) throw new Error(`${caseId} public requests are wrong or out of order`);
+    });
+    return { verified: true, actor_states: ["anonymous", "member"], preview_and_saved_page_equal: true, opaque_values_absent: true };
+  }
+  if (caseId !== OPEN43_MEMBERSHIP_CASE_IDS[0]) throw new Error(`unsupported Open43 membership case: ${caseId}`);
   if (!Number.isSafeInteger(observations.actor?.user_id) || observations.actor.user_id === ADMINISTRATOR_USER_ID || observations.actor.user_type !== "regular" || observations.actor.admin_view_type !== "admin_permissions") throw new Error(`${caseId} actor is not an ordinary registered non-administrator`);
   if (observations.join?.before?.control_visible !== true || observations.join.before.descriptor_type !== "join" || observations.join.outcome !== "joined" || observations.join.after?.control_visible !== false || observations.join.after.descriptor_count !== 0) throw new Error(`${caseId} did not prove the public self-join transition`);
   if (observations.join.membership?.user_id !== observations.actor.user_id || observations.join.membership.accepted !== "self_joined") throw new Error(`${caseId} did not prove self-joined membership`);
@@ -358,7 +483,16 @@ export function createOpen43MembershipCandidateCaseSet({
     "deepwell/src/endpoints/page.rs",
     "deepwell/src/endpoints/site_member.rs",
     "deepwell/src/services/membership/service.rs",
+    "deepwell/src/services/render/runtime_modules.rs",
     "deepwell/src/services/view/service.rs",
+    "docs/wikidot-specifications/specifications/module/module-anonymousnotificationsunsubscribe.md",
+    "docs/wikidot-specifications/specifications/module/module-membershipapply.md",
+    "docs/wikidot-specifications/specifications/module/module-membershipbypassword.md",
+    "docs/wikidot-specifications/specifications/module/module-membershipemailinvitation.md",
+    "docs/wikidot-specifications/specifications/module/module-sendinvitations.md",
+    "install/local/wikidot-verification/artifacts/membershipbypassword-role-preview-probe.json",
+    "install/local/wikidot-verification/artifacts/simpletodo-sendinvitations-live-preview.json",
+    "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json",
     "deepwell/tests/role.rs",
     "framerail/src/lib/server/deepwell/membership.ts",
     "framerail/src/lib/wikidot/wikidot-membership-actions.js",
@@ -388,7 +522,7 @@ export function createOpen43MembershipCandidateCaseSet({
           execution_actor: "registered",
           administrator_scope: "cleanup-only",
           source_sha256: sha256Text(PAGE_SOURCE),
-          candidate_observation_scope: "public Deepwell session, membership, page-create, page-readback, and cleanup RPC responses",
+          candidate_observation_scope: "public Deepwell session, membership, anonymous/member preview, page-create, actor-specific page-readback, and cleanup RPC responses",
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
