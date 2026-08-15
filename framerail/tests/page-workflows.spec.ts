@@ -223,7 +223,7 @@ test("autonumbered page creation follows the assigned slug", async ({ page }) =>
 test("history ignores a stale revision diff response", async ({ page, request }) => {
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/page-workflow-probe")
+  await page.goto("/authoring-history-probe")
   await page.getByRole("link", { name: "history", exact: true }).click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
 
@@ -253,13 +253,13 @@ test("history ignores a stale revision diff response", async ({ page, request })
   expect(requests).toEqual([
     {
       site_id: 6000005,
-      page_id: 3000340,
+      page_id: 3000345,
       from_revision_number: 1,
       to_revision_number: 2
     },
     {
       site_id: 6000005,
-      page_id: 3000340,
+      page_id: 3000345,
       from_revision_number: 2,
       to_revision_number: 1
     }
@@ -283,7 +283,7 @@ test("history ignores a stale successful diff after page navigation", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/page-workflow-probe")
+  await page.goto("/authoring-history-probe")
   await page.getByRole("link", { name: "history", exact: true }).click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
   await page.locator(".revision-diff-controls button").nth(1).click()
@@ -313,7 +313,7 @@ test("history ignores a stale failure after page navigation", async ({
 }) => {
   await request.get(`${FIXTURE_URL}/last-page-read-requests`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
-  await page.goto("/page-workflow-probe")
+  await page.goto("/authoring-history-probe")
   await page.getByRole("link", { name: "history", exact: true }).click()
   await expect(page.locator(".revision-diff-controls")).toBeVisible()
   await page.locator(".revision-diff-controls button").nth(1).click()

@@ -2,6 +2,9 @@ import { fixtureState, hasExactKeys, pageById } from "./context.js"
 import { pages, toPageResult } from "./data.js"
 import { sendRpcError, sendRpcResult } from "./response.js"
 
+const HISTORY_WORKFLOW_PAGE_ID = 3000345
+const HISTORY_NAVIGATION_PAGE_ID = 3000173
+
 /**
  * @param {{
  *   rpcRequest: any
@@ -113,10 +116,11 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
       "site_id"
     ]) &&
     rpcRequest.params.site_id === 6000005 &&
-    pageById(rpcRequest.params.page_id) &&
+    (rpcRequest.params.page_id === HISTORY_WORKFLOW_PAGE_ID ||
+      rpcRequest.params.page_id === HISTORY_NAVIGATION_PAGE_ID) &&
     rpcRequest.params.revision_direction === "before" &&
-    typeof rpcRequest.params.revision_number === "number" &&
-    typeof rpcRequest.params.limit === "number"
+    rpcRequest.params.revision_number === -1 &&
+    rpcRequest.params.limit === 20
   ) {
     result = [
       {
@@ -145,9 +149,11 @@ export const handlePageLookupRpc = ({ rpcRequest, request, response }) => {
       "to_revision_number"
     ]) &&
     rpcRequest.params.site_id === 6000005 &&
-    pageById(rpcRequest.params.page_id) &&
-    typeof rpcRequest.params.from_revision_number === "number" &&
-    typeof rpcRequest.params.to_revision_number === "number"
+    rpcRequest.params.page_id === HISTORY_WORKFLOW_PAGE_ID &&
+    ((rpcRequest.params.from_revision_number === 1 &&
+      rpcRequest.params.to_revision_number === 2) ||
+      (rpcRequest.params.from_revision_number === 2 &&
+        rpcRequest.params.to_revision_number === 1))
   ) {
     pageReadRequests.pageRevisionDiff.push(rpcRequest.params)
     result = {

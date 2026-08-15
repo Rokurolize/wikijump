@@ -280,6 +280,22 @@ x^2 + y^2 = z^2
     compiled_body_html:
       '<p>Page workflow probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
   },
+  "authoring-history-probe": {
+    page_id: 3000345,
+    revision_id: 9000345,
+    page_created_at: "2026-07-24T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 3,
+    revision_created_at: "2026-07-24T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Authoring History Probe",
+    slug: "authoring-history-probe",
+    tags: ["fixture"],
+    wikitext: "Authoring history probe",
+    compiled_body_html:
+      '<p>Authoring history probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
+  },
   "navigation-style-a": {
     page_id: 3000360,
     revision_id: 9000360,
