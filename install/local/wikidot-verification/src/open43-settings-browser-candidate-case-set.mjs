@@ -289,6 +289,7 @@ class Open43SettingsRun {
     }
     if (this.#group === "toolbar") {
       const disabledToolbar = [];
+      for (const [offset, width] of VIEWPORTS.slice(1).entries()) disabledToolbar.push(await this.#browser.capturePagePair({ url: pageUrl, label: "S757_TOOLBAR", index: offset + 1, viewport: { width, height: 900 } }));
       const toolbarTransition = await this.#browser.capturePagePair({
         url: pageUrl, label: "S757_TOOLBAR", index: 0, viewport: { width: VIEWPORTS[0], height: 900 }, navigationFromUrl: transitionUrl,
         beforeClientNavigation: async () => {
@@ -298,8 +299,7 @@ class Open43SettingsRun {
           this.#settingChanges.toolbar = { before_sha256: sha256Value(siteSettings(before)), after_sha256: sha256Value(siteSettings(after)) };
         },
       });
-      disabledToolbar.push(toolbarTransition);
-      for (const [offset, width] of VIEWPORTS.slice(1).entries()) disabledToolbar.push(await this.#browser.capturePagePair({ url: pageUrl, label: "S757_TOOLBAR", index: offset + 1, viewport: { width, height: 900 } }));
+      disabledToolbar.unshift(toolbarTransition);
       const toolbar = [];
       for (const [offset, width] of VIEWPORTS.entries()) toolbar.push(await this.#browser.capturePagePair({ url: pageUrl, label: "S757_TOOLBAR", index: offset + 3, viewport: { width, height: 900 } }));
       const toolbarRows = (pairs, settled, enabled) => pairs.map((pair, index) => {
