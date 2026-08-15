@@ -220,6 +220,17 @@ export class CandidateHttpSession {
     }, cleanup));
   }
 
+  async pageRequest(pageSlug, { method = "GET", actor = "anonymous", cleanup = false, operation = `page-${method.toLowerCase()}` } = {}) {
+    const url = new URL(`/${encodeURIComponent(pageSlug)}`, this.pageOrigin);
+    return publicResponse(await this.#send("framerail", operation, {
+      url,
+      method,
+      headers: actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {},
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup));
+  }
+
   async multipartFileAction(pageSlug, fields, file, { actor = "editor", cleanup = false } = {}) {
     const data = multipart(fields, file);
     const url = new URL(`/${encodeURIComponent(pageSlug)}?/fileUpload`, this.pageOrigin);
