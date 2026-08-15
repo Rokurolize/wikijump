@@ -240,6 +240,19 @@ export class CandidateHttpSession {
     }, cleanup));
   }
 
+  async pageRouteRequest(pathname, { method = "GET", actor = "anonymous", cleanup = false, operation = `route-${method.toLowerCase()}` } = {}) {
+    if (typeof pathname !== "string" || !pathname.startsWith("/")) throw new Error("candidate page route must be an absolute path");
+    const url = new URL(pathname, this.pageOrigin);
+    if (url.origin !== this.pageOrigin || url.pathname !== pathname || url.search || url.hash) throw new Error("candidate page route escaped the sealed origin or included a query or fragment");
+    return publicResponse(await this.#send("framerail", operation, {
+      url,
+      method,
+      headers: actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {},
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup));
+  }
+
   async multipartFileAction(pageSlug, fields, file, { actor = "editor", cleanup = false } = {}) {
     const data = multipart(fields, file);
     const url = new URL(`/${encodeURIComponent(pageSlug)}?/fileUpload`, this.pageOrigin);

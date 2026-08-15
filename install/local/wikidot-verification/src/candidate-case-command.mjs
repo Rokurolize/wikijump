@@ -14,7 +14,7 @@ import {
 const OPTIONS = ["case-set", "candidate-identity", "private-input", "output-dir"];
 
 export function candidateCaseUsage() {
-  return `Usage: run-candidate-cases.mjs --case-set ftml-marker-contract|issue1373-amc-new-page|framerail-route-action-browser|comments-hideform-browser|open43-actions|open43-membership|open43-membership-join|open43-backlinks|open43-authoring|open43-categories|open43-media-files|open43-media-browser|open43-embedvideo-browser|open43-authoring-history|open43-page-tree|open43-page-query-nextprevious|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-settings-toolbar|open43-settings-admin|open43-settings-page-tags|open43-mailform-fail-closed|open43-simpletodo-read-only|open43-b610-shell|open43-issue775-edit|open43-searchall|open43-a1038-admin-boundary|open43-q778-forum-mini|open43-q809|open43-q1026-user-identity|open43-q1032-members-userinfo|open43-q1036-search-feed|open43-q1040|open43-featuredsite|open43-689-tabview|open43-690-geometry --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
+  return `Usage: run-candidate-cases.mjs --case-set ftml-marker-contract|issue1373-amc-new-page|framerail-route-action-browser|comments-hideform-browser|open43-actions|open43-membership|open43-membership-join|open43-backlinks|open43-authoring|open43-categories|open43-media-files|open43-media-browser|open43-embedvideo-browser|open43-authoring-history|open43-page-tree|open43-page-query-nextprevious|open43-settings-browser|open43-settings-analytics|open43-settings-theme|open43-settings-toolbar|open43-settings-admin|open43-settings-page-tags|open43-mailform-fail-closed|open43-simpletodo-read-only|open43-b610-shell|open43-issue775-edit|open43-searchall|open43-a1038-admin-boundary|open43-q778-forum-mini|open43-q1034-forum|open43-q809|open43-q1026-user-identity|open43-q1032-members-userinfo|open43-q1036-search-feed|open43-q1040|open43-featuredsite|open43-689-tabview|open43-690-geometry --candidate-identity FILE --private-input PRIVATE.json --output-dir DIRECTORY
 
 Attaches to one sealed external non-standing candidate without owning its stack. PRIVATE.json must be a private regular file with no group or other permissions. Receipts retain only its SHA-256 and secret hashes.`;
 }
@@ -168,6 +168,10 @@ export async function candidateCaseSet(name) {
   if (name === "open43-q778-forum-mini") {
     const { createOpen43Q778ForumMiniCandidateCaseSet } = await import("./open43-q778-forum-mini-candidate-case-set.mjs");
     return createOpen43Q778ForumMiniCandidateCaseSet();
+  }
+  if (name === "open43-q1034-forum") {
+    const { createOpen43Q1034ForumCandidateCaseSet } = await import("./open43-q1034-forum-candidate-case-set.mjs");
+    return createOpen43Q1034ForumCandidateCaseSet();
   }
   if (name === "open43-categories") {
     const { createOpen43CategoriesCandidateCaseSet } = await import("./open43-categories-candidate-case-set.mjs");
