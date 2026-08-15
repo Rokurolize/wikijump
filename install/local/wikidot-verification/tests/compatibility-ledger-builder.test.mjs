@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -241,4 +242,77 @@ test("compatibility ledger builder preserves opaque identities and rejects broke
       ),
     /duplicate existing surface identity/u,
   );
+});
+
+test("compatibility ledger builder projects recorded proof claims without erasing failures", () => {
+  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-proof-"));
+  const input = path.join(directory, "inventory.json");
+  const output = path.join(directory, "ledger.json");
+
+  const pendingFixture = inventory();
+  pendingFixture.surfaces[0].candidate.status = "pending";
+  pendingFixture.surfaces[0].standing.status = "pending";
+  writeFileSync(input, JSON.stringify(pendingFixture));
+  execFileSync(process.execPath, [
+    script,
+    "--inventory",
+    input,
+    "--output",
+    output,
+  ]);
+  const pending = JSON.parse(readFileSync(output));
+  assert.deepEqual(pending.rows[0].candidate, {
+    state: "pending",
+    artifacts: [],
+  });
+  assert.deepEqual(pending.rows[0].standing, {
+    state: "pending",
+    artifacts: [],
+  });
+
+  const failedFixture = inventory();
+  failedFixture.surfaces[0].candidate.status = "passed";
+  failedFixture.surfaces[0].standing.status = "failed";
+  writeFileSync(input, JSON.stringify(failedFixture));
+  execFileSync(process.execPath, [
+    script,
+    "--inventory",
+    input,
+    "--output",
+    output,
+  ]);
+  const projected = JSON.parse(readFileSync(output));
+  const boundArtifact = {
+    path: input,
+    sha256: createHash("sha256").update(readFileSync(input)).digest("hex"),
+  };
+  assert.deepEqual(projected.rows[0].candidate, {
+    state: "pass",
+    artifacts: [boundArtifact],
+  });
+  assert.deepEqual(projected.rows[0].standing, {
+    state: "fail",
+    artifacts: [boundArtifact],
+  });
+
+  const blockedFixture = inventory();
+  blockedFixture.surfaces[0].candidate.status = "blocked";
+  blockedFixture.surfaces[0].standing.status = "not_applicable";
+  writeFileSync(input, JSON.stringify(blockedFixture));
+  execFileSync(process.execPath, [
+    script,
+    "--inventory",
+    input,
+    "--output",
+    output,
+  ]);
+  const blocked = JSON.parse(readFileSync(output));
+  assert.deepEqual(blocked.rows[0].candidate, {
+    state: "blocked",
+    artifacts: [],
+  });
+  assert.deepEqual(blocked.rows[0].standing, {
+    state: "blocked",
+    artifacts: [],
+  });
 });
