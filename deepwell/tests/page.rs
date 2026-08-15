@@ -7505,7 +7505,7 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
         "[[button edit text=\"Edit here\" onclick=\"alert(1)\"]]\n",
         "[[button history]]\n",
         "[[button source]]\n",
-        "[[button print style=\"color: #444\"]]\n",
+        "[[button print class=\"custom-action\" style=\"color: #444\"]]\n",
         "[[button set-tags -* +favorite text=\"Change tags\"]]\n",
         "[[button unsupported text=\"Never active\"]]",
     );
@@ -7591,9 +7591,13 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
 
     for html in [saved, preview.body] {
         assert_eq!(
-            html.matches(r#"class="wiki-standalone-button""#).count(),
+            html.matches("wiki-standalone-button").count(),
             5,
             "all supported standalone actions must retain the Wikidot button class: {html}",
+        );
+        assert!(
+            html.contains("custom-action"),
+            "documented custom button classes must survive rendering: {html}",
         );
         assert_eq!(
             html.matches(r#"href="javascript:;""#).count(),

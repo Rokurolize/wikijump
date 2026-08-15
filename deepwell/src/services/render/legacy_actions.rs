@@ -214,7 +214,16 @@ impl LegacyActionRegistry {
         body: &str,
     ) -> Vec<LegacyBrowserAction> {
         let actions = self.browser_actions();
-        let controls = body.matches(r#"class="wiki-standalone-button""#).count();
+        let controls = body
+            .split(r#"class="#)
+            .skip(1)
+            .filter_map(|classes| classes.split_once('"').map(|(classes, _)| classes))
+            .filter(|classes| {
+                classes
+                    .split_ascii_whitespace()
+                    .any(|class| class == "wiki-standalone-button")
+            })
+            .count();
         if controls == actions.len() {
             actions
         } else {
