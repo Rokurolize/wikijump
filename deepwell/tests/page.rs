@@ -5071,6 +5071,7 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "[[include component:image-block name=leaf.png|link=#]]\n",
             "[[include component:image-block name=2117.png|alt=alt|alt-text=An image|link=\"https://scp-wiki.wdfiles.com/local--files/fragment:attachment-owner-leaf/2117.png\"]]\n",
             "[[image direct-leaf.png]]\n",
+            "[[f=image centered-leaf.png]]\n",
             "[[image \"leaf two.png\"]]\n",
             "[[include component:attachment-owner-wrapper",
             " | asset=forwarded.png",
@@ -5186,6 +5187,13 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
     assert!(
         html.contains("/local--files/fragment:attachment-owner-leaf/direct-leaf.png"),
         "a direct relative image must retain the nested included source owner: {html}"
+    );
+    assert!(
+        html.contains("/local--files/fragment:attachment-owner-leaf/centered-leaf.png")
+            && !html.contains(
+                "/local--files/fixture-attachment-owner-consumer/centered-leaf.png",
+            ),
+        "f=image must retain the nested included source owner: {html}",
     );
     assert!(
         html.contains("/local--files/fragment:attachment-owner-leaf/leaf%20two.png"),

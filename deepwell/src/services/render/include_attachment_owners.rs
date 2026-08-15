@@ -12,7 +12,7 @@ use super::literal_regions::LiteralRegionIndex;
 use super::percent_encoding::percent_encode_path_segment;
 
 static IMAGE_OPEN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?i)\[\[(?:[=<>]|f[<>])?image(?P<separator>[ \t]+)"#).unwrap()
+    Regex::new(r#"(?i)\[\[(?:[=<>]|f[=<>])?image(?P<separator>[ \t]+)"#).unwrap()
 });
 static INCLUDE_OPEN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[[ \t\n]*include(?:[ \t\r\n]+|\[!--.*?--\])+"#).unwrap()
