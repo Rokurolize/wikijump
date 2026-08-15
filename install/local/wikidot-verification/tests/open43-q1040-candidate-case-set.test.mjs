@@ -46,15 +46,38 @@ function candidateIdentity() {
 }
 
 function fakeCandidateSession() {
-  const state = { pages: new Map(), nextPageId: 10, nextRevisionId: 20 };
+  const state = { pages: new Map(), events: [], nextPageId: 10, nextRevisionId: 20 };
+  const pageById = (pageId) => [...state.pages.values()].find((page) => page.page_id === pageId);
+  const visiblePage = (slug) => {
+    const page = state.pages.get(slug);
+    return page && !page.deleted ? page : null;
+  };
+  const viewBody = () => {
+    const current = [...state.pages.values()].find((page) => page.slug.endsWith("-current"));
+    const next = [...state.pages.values()]
+      .filter((page) => !page.deleted && page.slug !== current.slug && page.title > current.title)
+      .sort((left, right) => left.title.localeCompare(right.title))[0];
+    const row = next
+      ? `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by <span class="printuser avatarhover">editor</span> <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`
+      : '<div class="list-pages-box">\n</div>';
+    const custom = next
+      ? `<div class="list-pages-box"><div class="list-pages-item">NEXT=<a href="/${next.slug}">${next.title}</a>|${next.title}</div></div>`
+      : '<div class="list-pages-box">\n</div>';
+    return `<p>Q1040_DEFAULT_START</p>${row}<p>Q1040_DEFAULT_END</p><p>Q1040_NEXT_START</p>${custom}<p>Q1040_NEXT_END</p>`;
+  };
   const session = {
     editorUserId: 10,
     pageOrigin: PAGE_ORIGIN,
     privateInputIdentity: { actor_user_id: 10 },
     requiredServiceBindings: [],
+    get events() { return structuredClone(state.events); },
     async rpc(method, params = {}) {
+      state.events.push({ service: "deepwell", operation: method, method: "POST", response_status: 200 });
       if (method === "site_get") return { site_id: 7 };
-      if (method === "page_get") return structuredClone(state.pages.get(params.page) ?? null);
+      if (method === "page_get") {
+        const page = visiblePage(params.page);
+        return page ? structuredClone({ ...page, ...(params.details?.compiled ? { compiled_body_html: page.wikitext } : {}) }) : null;
+      }
       if (method === "page_create") {
         const page = {
           page_id: ++state.nextPageId,
@@ -62,23 +85,40 @@ function fakeCandidateSession() {
           slug: params.slug,
           title: params.title,
           wikitext: params.wikitext,
+          deleted: false,
         };
         state.pages.set(page.slug, page);
         return structuredClone(page);
       }
+      if (method === "page_view") return { type: "found", data: { compiled_body_html: viewBody() } };
+      if (method === "page_edit") {
+        const page = state.pages.get(params.page);
+        page.title = params.title;
+        page.revision_id = ++state.nextRevisionId;
+        return { revision_id: page.revision_id };
+      }
       if (method === "page_delete") {
-        const page = [...state.pages.values()].find((candidate) => candidate.page_id === params.page);
-        if (page) state.pages.delete(page.slug);
+        const page = pageById(params.page);
+        if (page) {
+          page.deleted = true;
+          page.revision_id = ++state.nextRevisionId;
+        }
         return { page_id: params.page };
+      }
+      if (method === "page_restore") {
+        const page = pageById(params.page_id);
+        page.deleted = false;
+        page.revision_id = ++state.nextRevisionId;
+        return { page_id: page.page_id, revision_id: page.revision_id, slug: page.slug };
       }
       throw new Error(`unexpected RPC ${method}`);
     },
     async pageRequest(slug) {
-      const page = state.pages.get(slug);
+      const page = visiblePage(slug);
       if (!page) return { status: 404, body_base64: "" };
-      const pages = [...state.pages.values()];
-      const next = pages.find((candidate) => candidate.title.endsWith(" next"));
-      const previous = pages.find((candidate) => candidate.title.endsWith(" previous"));
+      const pages = [...state.pages.values()].filter((candidate) => !candidate.deleted);
+      const next = pages.find((candidate) => candidate.slug.endsWith("-next"));
+      const previous = pages.find((candidate) => candidate.slug.endsWith("-previous"));
       return {
         status: 200,
         body_base64: Buffer.from(`<div id="page-content"><div class="list-pages-box"><a href="/${next.slug}">${next.title}</a><a href="/${previous.slug}">${previous.title}</a></div></div>`).toString("base64"),
@@ -96,10 +136,10 @@ function fakeBrowserContexts(state) {
         off() {},
         url: () => PAGE_ORIGIN,
         async evaluate() {
-          const pages = [...state.pages.values()];
-          const next = pages.find((candidate) => candidate.title.endsWith(" next"));
+          const pages = [...state.pages.values()].filter((candidate) => !candidate.deleted);
+          const next = pages.find((candidate) => candidate.slug.endsWith("-next"));
           return {
-            links: pages.filter((candidate) => candidate.title.endsWith(" next") || candidate.title.endsWith(" previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title })),
+            links: pages.filter((candidate) => candidate.slug.endsWith("-next") || candidate.slug.endsWith("-previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title })),
             default_row: `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by <span class="printuser avatarhover">editor</span> <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`,
           };
         },
@@ -140,7 +180,11 @@ test("Q1040 has one executable candidate case through the canonical runner", asy
   });
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.cases[0].case_id, CASE_ID);
-  assert.equal(state.pages.size, 0);
+  const caseReceipt = JSON.parse(await fs.readFile(path.join(root, "evidence", "cases", `${CASE_ID}.json`), "utf8"));
+  assert.equal(caseReceipt.verification.mutation_next_read, true);
+  assert.equal(caseReceipt.verification.empty_wrapper_contract, true);
+  assert.equal([...state.pages.values()].every((page) => page.deleted), true);
+  assert.equal(state.events.filter((event) => event.operation === "page_view").length, 4);
   assert.equal(receipt.resources.every((resource) => resource.released), true);
 });
 
@@ -157,8 +201,8 @@ test("Q1040 rejects directional links without the default NextPage row", () => {
   assert.throws(() => run.verifyCase(CASE_ID, {
     capture: { navigation_status: 200, failures: [] },
     links: [
-      { href: "/open43-q1040-0123456789ab-next", text: "Q1040 0123456789ab next" },
-      { href: "/open43-q1040-0123456789ab-previous", text: "Q1040 0123456789ab previous" },
+      { href: "/open43-q1040-0123456789ab-next", text: "CCC Q1040 0123456789ab next" },
+      { href: "/open43-q1040-0123456789ab-previous", text: "AAA Q1040 0123456789ab previous" },
     ],
     default_row: null,
   }), /default NextPage row/u);
