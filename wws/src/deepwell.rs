@@ -158,6 +158,28 @@ impl Deepwell {
         Ok(block_info)
     }
 
+    pub async fn get_text_block_by_hash(
+        &self,
+        site_id: i64,
+        sha1: &str,
+        session_token: Option<&str>,
+    ) -> Result<Option<TextBlockIndex>> {
+        let params = rpc_object! {
+            "site_id" => site_id,
+            "page_id" => Option::<i64>::None,
+            "block_type" => TextBlockType::Html.value(),
+            "index" => Option::<i16>::None,
+            "name" => Option::<String>::None,
+            "sha1" => Some(sha1),
+            "session_token" => session_token,
+        };
+
+        let block_info: Option<TextBlockIndex> =
+            self.client.request("text_block_get_index", params).await?;
+
+        Ok(block_info)
+    }
+
     // Basic errors
 
     pub async fn basic_error_missing_site_slug(
@@ -539,6 +561,16 @@ mod tests {
             .unwrap();
         assert_eq!(named_block.index, NonZeroU16::new(2).unwrap());
 
+        deepwell
+            .get_text_block_by_hash(
+                42,
+                "9079b854a8fdfa2328a297ff563fce21f866af0e",
+                Some("session-token"),
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
         let page_get = requests_by_method(&requests, "page_get");
         assert_eq!(page_get[0]["params"]["site_id"], 42);
         assert_eq!(page_get[0]["params"]["page"], "scp-173");
@@ -561,6 +593,16 @@ mod tests {
         assert!(block_gets[1]["params"]["index"].is_null());
         assert_eq!(block_gets[1]["params"]["name"], "example");
         assert!(block_gets[1]["params"]["session_token"].is_null());
+        assert_eq!(block_gets[2]["params"]["site_id"], 42);
+        assert!(block_gets[2]["params"]["page_id"].is_null());
+        assert_eq!(block_gets[2]["params"]["block_type"], "html");
+        assert!(block_gets[2]["params"]["index"].is_null());
+        assert!(block_gets[2]["params"]["name"].is_null());
+        assert_eq!(
+            block_gets[2]["params"]["sha1"],
+            "9079b854a8fdfa2328a297ff563fce21f866af0e"
+        );
+        assert_eq!(block_gets[2]["params"]["session_token"], "session-token");
     }
 
     #[tokio::test]

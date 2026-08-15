@@ -24,6 +24,7 @@ const expectedRegistrations = [
   ["ANY", "/local--code/{page_slug}/{index}", "handle_code_redirect", "wws/src/handler/redirect.rs"],
   ["ANY", "/local--files/{page_slug}/{filename}", "handle_local_file", "wws/src/handler/file.rs"],
   ["ANY", "/local--html/{page_slug}/{id}", "handle_html_redirect", "wws/src/handler/redirect.rs"],
+  ["ANY", "/local--html/{page_slug}/{id}/{domain}", "handle_invalid_method", "wws/src/handler/misc.rs"],
   ["ANY", "/local--resized-images/{page_slug}/{filename}/{variant}", "handle_invalid_method", "wws/src/handler/misc.rs"],
   ["ANY", "/{page_slug}/code/{filename}", "handle_code_redirect", "wws/src/handler/redirect.rs"],
   ["ANY", "/{page_slug}/download/{filename}", "handle_download_redirect", "wws/src/handler/redirect.rs"],
@@ -39,6 +40,7 @@ const expectedRegistrations = [
   ["GET", "/common--javascript/{*path}", "handle_common_javascript", "wws/src/handler/misc.rs"],
   ["GET", "/common--theme/base/css/html-block.css", "handle_html_block_css", "wws/src/handler/misc.rs"],
   ["GET", "/common--theme/{*path}", "handle_common_theme", "wws/src/handler/misc.rs"],
+  ["GET", "/local--html/{page_slug}/{id}/{domain}", "handle_html_terminal", "wws/src/handler/text_block.rs"],
   ["GET", "/local--resized-images/{page_slug}/{filename}/{variant}", "handle_resized_image", "wws/src/handler/resized_image.rs"],
   ["GET", "/robots.txt", "handle_robots_txt", "wws/src/handler/robots.rs"],
   ["GET", "/{page_slug}/code", "handle_default_code_redirect", "wws/src/handler/redirect.rs"]
@@ -95,34 +97,60 @@ async function copyHistoricalEvidence(root) {
   }
 }
 
+async function copyBehaviorSourceInputs(root) {
+  for (const relativePath of [
+    "deepwell/Cargo.lock",
+    "deepwell/Cargo.toml",
+    "deepwell/migrations/20260815010000_text_block_wikidot_sha1.sql",
+    "deepwell/src/api.rs",
+    "deepwell/src/endpoints/text_block.rs",
+    "deepwell/src/models/text_block.rs",
+    "deepwell/src/services/context.rs",
+    "deepwell/src/services/text_block/service.rs",
+    "deepwell/src/services/text_block/structs.rs",
+    "deepwell/tests/page.rs",
+    "wws/Cargo.lock",
+    "wws/Cargo.toml",
+    "wws/src/deepwell.rs",
+    "wws/src/handler/file.rs",
+    "wws/src/handler/text_block.rs"
+  ]) {
+    const target = path.join(root, relativePath)
+    await fs.mkdir(path.dirname(target), { recursive: true })
+    await fs.copyFile(path.join(repositoryRoot, relativePath), target)
+  }
+}
+
 async function writeCommittedProductionFixture(root) {
   await fs.cp(path.join(repositoryRoot, "wws/src"), path.join(root, "wws/src"), { recursive: true })
+  await copyBehaviorSourceInputs(root)
   await copyHistoricalEvidence(root)
   runGit(root, "init", "--quiet")
   runGit(root, "config", "user.email", "denominator-test@example.invalid")
   runGit(root, "config", "user.name", "Denominator Test")
-  runGit(root, "add", "wws/src", "docs/development/wws-cache-head-live-observations-20260815.md")
+  runGit(root, "add", ".")
   runGit(root, "commit", "--quiet", "-m", "fixture")
 }
 
 async function writeNonProductionHandlerFixture(root, symbol, handlerSource) {
   const routes = Array.from(
-    { length: 30 },
+    { length: 32 },
     (_, index) => `.route("/fixture-${index}", any(${symbol}))`
   ).join("\n")
   await writeRouteSource(root, `pub fn build_router() { Router::new()${routes} }\n`)
   const handlerPath = path.join(root, "wws/src/handler/fake.rs")
   await fs.mkdir(path.dirname(handlerPath), { recursive: true })
   await fs.writeFile(handlerPath, handlerSource)
+  await copyBehaviorSourceInputs(root)
   await copyHistoricalEvidence(root)
   runGit(root, "init", "--quiet")
   runGit(root, "config", "user.email", "denominator-test@example.invalid")
   runGit(root, "config", "user.name", "Denominator Test")
-  runGit(root, "add", "wws/src", "docs/development/wws-cache-head-live-observations-20260815.md")
+  runGit(root, "add", ".")
   runGit(root, "commit", "--quiet", "-m", "fixture")
 }
 
-test("CLI writes the exact current 30-registration WWS denominator with source ownership", async (t) => {
+test("CLI writes the exact current 32-registration WWS denominator with source ownership", async (t) => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-denominator-"))
   t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
   const output = path.join(temporaryDirectory, "denominator.json")
@@ -130,7 +158,7 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
   const result = runCli(repositoryRoot, output)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, `wrote 30 WWS route registrations to ${output}\n`)
+  assert.equal(result.stdout, `wrote 32 WWS route registrations to ${output}\n`)
   const manifest = JSON.parse(await fs.readFile(output, "utf8"))
   assert.equal(manifest.schema, "wikijump.wws_route_registration_denominator.v2")
   assert.deepEqual(manifest.historical_artifact, {
@@ -144,11 +172,11 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
   assert.equal(manifest.source.identity, "git_blob_and_sha256_per_captured_input")
   assert.deepEqual(Object.keys(manifest.source).sort(), ["identity", "inputs"])
   assert.deepEqual(manifest.counts, {
-    registrations: 30,
-    by_declared_method_class: { ANY: 17, GET: 13 },
-    primary_handler_owners: 30,
+    registrations: 32,
+    by_declared_method_class: { ANY: 18, GET: 14 },
+    primary_handler_owners: 32,
     fallback_handler_owners: 1,
-    handler_owner_bindings: 31,
+    handler_owner_bindings: 33,
     duplicate_registration_ids: 0
   })
   assert.deepEqual(
@@ -160,7 +188,7 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
     ]),
     expectedRegistrations
   )
-  assert.equal(new Set(manifest.registrations.map(({ registration_id }) => registration_id)).size, 30)
+  assert.equal(new Set(manifest.registrations.map(({ registration_id }) => registration_id)).size, 32)
   assert.deepEqual(
     manifest.registrations
       .filter(({ fallback_handler_symbol: symbol }) => symbol !== null)
@@ -183,8 +211,8 @@ test("CLI writes the exact current 30-registration WWS denominator with source o
   assert.equal(manifest.behavior_evidence.capture_source_status, "historical")
   const liveBehavior = behaviorRecords.find(({ id }) => id === "wws-behavior:live-html-hash-domain-identity")
   assert.equal(liveBehavior.status, "not_faithfully_mapped")
-  assert.equal(liveBehavior.public_test, null)
-  assert.equal(liveBehavior.route_pattern, "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$")
+  assert.equal(liveBehavior.public_test, "wws/src/handler/text_block.rs#html_terminal_hash_verifies_fetched_bytes")
+  assert.equal(liveBehavior.route_pattern, "^/local--html/[^/]+/[0-9a-f]{40}-[0-9][0-9]*/[^/]+/$")
   assert.equal(liveBehavior.preserves_behavior_id, "wws-behavior:numeric-html-cache-head-range")
 })
 
@@ -200,7 +228,7 @@ test("CLI reproduces and verifies the exact committed denominator", async (t) =>
   assert.equal(verifyResult.status, 0, verifyResult.stderr)
   assert.equal(
     verifyResult.stdout,
-    "verified 30 WWS route registrations in docs/development/wws-route-registration-denominator.json\n"
+    "verified 32 WWS route registrations in docs/development/wws-route-registration-denominator.json\n"
   )
   assert.deepEqual(
     await fs.readFile(output),
@@ -245,6 +273,11 @@ for (const [label, mutate, expectedError] of [
     "a non-declaration public test anchor",
     (source) => source.replace("wws/src/handler/file.rs#file_exact_if_none_match_returns_not_modified_without_reading_blob", "wws/src/handler/file.rs#missing_public_test"),
     /public test anchor is not exactly one function declaration/u
+  ],
+  [
+    "a missing declared source input",
+    (source) => source.replace('"deepwell/Cargo.toml",', '"deepwell/missing/Cargo.toml",\n      "deepwell/Cargo.toml",'),
+    /declared WWS source input is missing: deepwell\/missing\/Cargo\.toml/u
   ]
 ]) {
   test(`CLI rejects ${label} in the generator`, async (t) => {
@@ -327,7 +360,7 @@ test("CLI does not reread a source pathname after capturing its bytes", async (t
   const status = await exit
 
   assert.equal(status, 0, stderr)
-  assert.equal(stdout, `wrote 30 WWS route registrations to denominator.json\n`)
+  assert.equal(stdout, `wrote 32 WWS route registrations to denominator.json\n`)
   const manifest = JSON.parse(await fs.readFile(output, "utf8"))
   const routeInput = manifest.source.inputs.find(({ path: inputPath }) => inputPath === "wws/src/route.rs")
   assert.equal(routeInput.sha256, createHash("sha256").update(originalRouteSource).digest("hex"))
@@ -356,7 +389,7 @@ test("CLI rejects duplicate registrations with equivalent reordered method filte
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-duplicate-"))
   t.after(() => fs.rm(root, { recursive: true, force: true }))
   const filler = Array.from(
-    { length: 28 },
+    { length: 30 },
     (_, index) => `.route("/filler-${index}", any(handle_filler_${index}))`
   ).join("\n")
   await writeRouteSource(

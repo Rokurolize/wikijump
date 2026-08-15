@@ -160,6 +160,9 @@ pub(crate) enum PostCommitAction {
         depth: RerenderDepth,
         r#type: RerenderType,
     },
+    DeleteTextBlockObjects {
+        filenames: Vec<String>,
+    },
 }
 
 impl<'txn> ServiceContext<'txn> {
@@ -355,6 +358,21 @@ impl<'txn> ServiceContext<'txn> {
         Ok(())
     }
 
+    pub(crate) fn defer_text_block_cleanup(&self, filenames: Vec<String>) -> Result<()> {
+        if filenames.is_empty() {
+            return Ok(());
+        }
+        let mut actions = self.post_commit_actions.lock().map_err(|_| {
+            Error::new(
+                "failed to queue replaced text block cleanup",
+                ErrorType::TextBlock,
+            )
+            .raise()
+        })?;
+        actions.push(PostCommitAction::DeleteTextBlockObjects { filenames });
+        Ok(())
+    }
+
     pub(crate) fn drain_post_commit_actions(&self) -> Result<Vec<PostCommitAction>> {
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
@@ -390,6 +408,22 @@ impl<'txn> ServiceContext<'txn> {
                         None,
                     )
                     .await?;
+                }
+                PostCommitAction::DeleteTextBlockObjects { filenames } => {
+                    for filename in filenames {
+                        state
+                            .s3_tblocks_bucket
+                            .delete_object(&filename)
+                            .await
+                            .or_raise(|| {
+                                Error::new(
+                                    format!(
+                                        "failed to delete replaced S3 text block '{filename}'"
+                                    ),
+                                    ErrorType::TextBlock,
+                                )
+                            })?;
+                    }
                 }
             }
         }

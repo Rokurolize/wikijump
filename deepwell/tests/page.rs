@@ -23,7 +23,9 @@ mod common;
 
 use self::common::TestRunner;
 use cuid2::cuid;
-use deepwell::api::{ServerState, build_server_at, build_server_state_without_workers};
+use deepwell::api::{
+    ServerState, build_server_at, build_server_state, build_server_state_without_workers,
+};
 use deepwell::config::{Config, Secrets};
 use deepwell::constants::{
     ADMIN_USER_ID, ANONYMOUS_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID, UNKNOWN_USER_ID,
@@ -82,11 +84,13 @@ use deepwell::services::role::{
 use deepwell::services::score::ScoreValue as QueryScoreValue;
 use deepwell::services::session::CreateSession;
 use deepwell::services::site::UpdateSiteBody;
+use deepwell::services::text_block::{MIME_HTML, TextBlock};
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
     PageService, RelationService, RenderService, RequestContext, ServiceContext,
-    SessionService, SettingsService, SiteService, TextService, ThemeSetting,
+    SessionService, SettingsService, SiteService, TextBlockService, TextService,
+    ThemeSetting,
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
@@ -99,6 +103,7 @@ use sea_orm::{
     TransactionTrait, Value,
 };
 use serde_json::{Value as JsonValue, json};
+use sha1::{Digest as Sha1Digest, Sha1};
 use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::BTreeSet;
@@ -33390,6 +33395,11 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     const PAGE_SLUG: &str = "fixture-private-text-block-read";
     const PUBLIC_PAGE_SLUG: &str = "fixture-public-text-block-read";
     const PRIVATE_CATEGORY: &str = "fixture-text-block-read-private-view";
+    const PUBLIC_HTML_BYTES: &[u8] = b"public hosted HTML raw bytes";
+    const PRIVATE_HTML_BYTES: &[u8] = b"private hosted HTML raw bytes";
+    const DUPLICATE_HTML_BYTES: &[u8] = b"duplicate hosted HTML raw bytes";
+    const TWO_VISIBLE_HTML_BYTES: &[u8] = b"two visible hosted HTML raw bytes";
+    const OVERFLOW_HTML_BYTES: &[u8] = b"overflow hosted HTML raw bytes";
 
     let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
         .expect("Seeded site not found");
@@ -33427,6 +33437,7 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
         1,
         None,
         "sentinel-private-html-block",
+        Some(PRIVATE_HTML_BYTES),
     )
     .await;
     create_text_block_fixture(
@@ -33436,6 +33447,17 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
         2,
         Some("secret-code"),
         "sentinel-private-code-block",
+        None,
+    )
+    .await;
+    create_text_block_fixture(
+        &runner,
+        page.page_id,
+        TextBlockType::Html,
+        2,
+        None,
+        "sentinel-private-duplicate-html-block",
+        Some(DUPLICATE_HTML_BYTES),
     )
     .await;
 
@@ -33455,15 +33477,61 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
         }),
     );
     assert!(public_page.parser_errors.is_empty());
+    TextBlockService::add_blocks(
+        runner.context(),
+        public_page.page_id,
+        TextBlockType::Html,
+        &[TextBlock {
+            text: std::str::from_utf8(PUBLIC_HTML_BYTES).unwrap(),
+            text_type: None,
+            mime: MIME_HTML,
+            name: None,
+        }],
+    )
+    .await
+    .expect("public HTML block should be uploaded through add_blocks");
     create_text_block_fixture(
         &runner,
         public_page.page_id,
         TextBlockType::Html,
-        1,
+        2,
         None,
-        &format!("{}_html_1", public_page.page_id),
+        "sentinel-public-duplicate-html-block",
+        Some(DUPLICATE_HTML_BYTES),
     )
     .await;
+    create_text_block_fixture(
+        &runner,
+        public_page.page_id,
+        TextBlockType::Html,
+        3,
+        None,
+        "sentinel-public-visible-duplicate-html-block-1",
+        Some(TWO_VISIBLE_HTML_BYTES),
+    )
+    .await;
+    create_text_block_fixture(
+        &runner,
+        public_page.page_id,
+        TextBlockType::Html,
+        4,
+        None,
+        "sentinel-public-visible-duplicate-html-block-2",
+        Some(TWO_VISIBLE_HTML_BYTES),
+    )
+    .await;
+    for index in 5_i16..=37_i16 {
+        create_text_block_fixture(
+            &runner,
+            public_page.page_id,
+            TextBlockType::Html,
+            index,
+            None,
+            &format!("sentinel-overflow-html-block-{index}"),
+            Some(OVERFLOW_HTML_BYTES),
+        )
+        .await;
+    }
 
     runner.set_request_context(RequestContext::default());
 
@@ -33479,10 +33547,104 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     )
     .expect("public text block should exist");
     assert_eq!(public_block.index, 1);
-    assert_eq!(
-        public_block.s3_filename,
-        format!("{}_html_1", public_page.page_id)
+    assert!(
+        public_block
+            .s3_filename
+            .starts_with(&format!("text-blocks/{}/html/", public_page.page_id))
     );
+
+    let public_sha1 = format!("{:x}", Sha1::digest(PUBLIC_HTML_BYTES));
+    let public_by_hash = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": public_sha1.clone(),
+        }),
+    )
+    .expect("public HTML block should resolve by raw-byte SHA-1");
+    assert_eq!(public_by_hash.index, 1);
+    assert_eq!(public_by_hash.s3_filename, public_block.s3_filename);
+
+    let duplicate_sha1 = format!("{:x}", Sha1::digest(DUPLICATE_HTML_BYTES));
+    let duplicate_anonymous = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": duplicate_sha1.clone(),
+        }),
+    )
+    .expect("anonymous lookup should skip the private duplicate and find public HTML");
+    assert_eq!(duplicate_anonymous.index, 2);
+    assert_eq!(
+        duplicate_anonymous.s3_filename,
+        "sentinel-public-duplicate-html-block"
+    );
+
+    let two_visible_sha1 = format!("{:x}", Sha1::digest(TWO_VISIBLE_HTML_BYTES));
+    let two_visible = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": two_visible_sha1,
+        }),
+    );
+    assert!(
+        two_visible.is_none(),
+        "two ACL-visible rows with one SHA-1 must fail closed"
+    );
+
+    let overflow_sha1 = format!("{:x}", Sha1::digest(OVERFLOW_HTML_BYTES));
+    let overflow = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": overflow_sha1,
+        }),
+    );
+    assert!(
+        overflow.is_none(),
+        "33 matching rows must fail closed before ACL resolution"
+    );
+
+    let mismatch_sha1 = format!(
+        "{}{}",
+        if public_sha1.as_bytes()[0] == b'0' {
+            '1'
+        } else {
+            '0'
+        },
+        &public_sha1[1..],
+    );
+    let mismatch = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": mismatch_sha1,
+        }),
+    );
+    assert!(mismatch.is_none());
+
+    let private_sha1 = format!("{:x}", Sha1::digest(PRIVATE_HTML_BYTES));
+    let private_anonymous = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": private_sha1.clone(),
+        }),
+    );
+    assert!(private_anonymous.is_none());
 
     let error = run_endpoint_err!(
         runner,
@@ -33535,6 +33697,35 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     assert_eq!(private_html.index, 1);
     assert_eq!(private_html.s3_filename, "sentinel-private-html-block");
 
+    let private_by_hash = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": private_sha1,
+            "session_token": admin_session_token,
+        }),
+    )
+    .expect("admin should resolve private HTML block by raw-byte SHA-1");
+    assert_eq!(private_by_hash.index, 1);
+    assert_eq!(private_by_hash.s3_filename, "sentinel-private-html-block");
+
+    let duplicate_admin = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": duplicate_sha1,
+            "session_token": admin_session_token,
+        }),
+    );
+    assert!(
+        duplicate_admin.is_none(),
+        "private plus public rows are two ACL-visible matches for admin"
+    );
+
     let private_code = run_endpoint!(
         runner,
         text_block_get_index,
@@ -33549,6 +33740,222 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     .expect("private named code block should exist");
     assert_eq!(private_code.index, 2);
     assert_eq!(private_code.s3_filename, "sentinel-private-code-block");
+
+    let old_html_bytes: Vec<u8> = runner
+        .state()
+        .s3_tblocks_bucket
+        .get_object(&public_block.s3_filename)
+        .await
+        .expect("existing HTML object should be readable")
+        .into();
+    let html_prefix = format!("text-blocks/{}/html/", public_page.page_id);
+    let old_html_keys = runner
+        .state()
+        .s3_tblocks_bucket
+        .list(html_prefix.clone(), None)
+        .await
+        .expect("existing HTML objects should be listable")
+        .into_iter()
+        .flat_map(|page| page.contents)
+        .map(|object| object.key)
+        .collect::<BTreeSet<_>>();
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_string(
+            DatabaseBackend::Postgres,
+            format!(
+                "ALTER TABLE text_block ADD CONSTRAINT issue1370_force_insert_{} CHECK (false) NOT VALID",
+                public_page.page_id
+            ),
+        ))
+        .await
+        .expect("forced text-block insert failure should be installed");
+    let failed_replacement = TextBlockService::add_blocks(
+        runner.context(),
+        public_page.page_id,
+        TextBlockType::Html,
+        &[TextBlock {
+            text: "this replacement must not overwrite the old object",
+            text_type: None,
+            mime: MIME_HTML,
+            name: None,
+        }],
+    )
+    .await;
+    assert!(
+        failed_replacement.is_err(),
+        "a forced database failure must fail the replacement"
+    );
+    let new_html_keys = runner
+        .state()
+        .s3_tblocks_bucket
+        .list(html_prefix, None)
+        .await
+        .expect("HTML objects should remain listable after rollback")
+        .into_iter()
+        .flat_map(|page| page.contents)
+        .map(|object| object.key)
+        .collect::<BTreeSet<_>>();
+    assert!(
+        old_html_keys == new_html_keys,
+        "a failed replacement must remove only its newly uploaded object"
+    );
+    let preserved_html_bytes: Vec<u8> = runner
+        .state()
+        .s3_tblocks_bucket
+        .get_object(&public_block.s3_filename)
+        .await
+        .expect("the old HTML object should survive rollback")
+        .into();
+    assert_eq!(
+        preserved_html_bytes, old_html_bytes,
+        "a failed same-index replacement must preserve the old object bytes"
+    );
+    runner
+        .state()
+        .s3_tblocks_bucket
+        .delete_object(&public_block.s3_filename)
+        .await
+        .expect("public HTML fixture cleanup should succeed");
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn startup_backfills_legacy_html_sha1_and_validates_constraint() {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("workerless Deepwell state should build");
+    let page_id = PageTable::find()
+        .one(&state.database)
+        .await
+        .expect("seeded page lookup should succeed")
+        .expect("seeded page should exist")
+        .page_id;
+    let block_index = i16::MAX;
+    let rejected_block_index = i16::MAX - 1;
+    let missing_block_index = i16::MAX - 2;
+    let s3_filename = format!("issue1370-startup-legacy-{}", cuid());
+    let missing_s3_filename = format!("issue1370-startup-missing-{}", cuid());
+    let raw_bytes = b"legacy HTML bytes for startup backfill";
+
+    state
+        .s3_tblocks_bucket
+        .put_object(&s3_filename, raw_bytes)
+        .await
+        .expect("legacy HTML bytes should upload");
+    let txn = state
+        .database
+        .begin()
+        .await
+        .expect("legacy fixture transaction should begin");
+    txn.execute_raw(Statement::from_string(
+        txn.get_database_backend(),
+        "ALTER TABLE text_block ADD COLUMN IF NOT EXISTS wikidot_sha1 BYTEA",
+    ))
+    .await
+    .expect("legacy fixture should establish the SHA-1 column");
+    txn.execute_raw(Statement::from_string(
+        txn.get_database_backend(),
+        "ALTER TABLE text_block DROP CONSTRAINT IF EXISTS text_block_html_wikidot_sha1_present",
+    ))
+    .await
+    .expect("legacy fixture should remove the validation constraint");
+    text_block::ActiveModel {
+        block_type: Set(TextBlockType::Html),
+        page_id: Set(page_id),
+        block_index: Set(missing_block_index),
+        s3_filename: Set(missing_s3_filename),
+        block_name: Set(None),
+        text_type: Set(None),
+        wikidot_sha1: Set(None),
+    }
+    .insert(&txn)
+    .await
+    .expect("missing legacy HTML row should be inserted");
+    text_block::ActiveModel {
+        block_type: Set(TextBlockType::Html),
+        page_id: Set(page_id),
+        block_index: Set(block_index),
+        s3_filename: Set(s3_filename.clone()),
+        block_name: Set(None),
+        text_type: Set(None),
+        wikidot_sha1: Set(None),
+    }
+    .insert(&txn)
+    .await
+    .expect("legacy HTML row should be inserted");
+    txn.execute_raw(Statement::from_string(
+        txn.get_database_backend(),
+        "ALTER TABLE text_block ADD CONSTRAINT text_block_html_wikidot_sha1_present CHECK (block_type <> 'html' OR wikidot_sha1 IS NOT NULL) NOT VALID",
+    ))
+    .await
+    .expect("legacy fixture should restore the unvalidated constraint");
+    txn.commit()
+        .await
+        .expect("legacy fixture transaction should commit");
+    drop(state);
+
+    assert!(
+        build_server_state(Config::integration_testing(), Secrets::load())
+            .await
+            .is_err(),
+        "startup must fail when legacy HTML backfill cannot read S3"
+    );
+    let cleanup_state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("workerless state should clean up the failed startup fixture");
+    text_block::Entity::delete_by_id((TextBlockType::Html, page_id, missing_block_index))
+        .exec(&cleanup_state.database)
+        .await
+        .expect("missing legacy row cleanup should succeed");
+    drop(cleanup_state);
+
+    let state = build_server_state(Config::integration_testing(), Secrets::load())
+        .await
+        .expect("startup should backfill and validate legacy HTML rows");
+    let populated =
+        text_block::Entity::find_by_id((TextBlockType::Html, page_id, block_index))
+            .one(&state.database)
+            .await
+            .expect("backfilled row lookup should succeed")
+            .expect("backfilled row should remain present");
+    assert_eq!(
+        populated.wikidot_sha1,
+        Some(Sha1::digest(raw_bytes).to_vec())
+    );
+
+    let rejected = text_block::ActiveModel {
+        block_type: Set(TextBlockType::Html),
+        page_id: Set(page_id),
+        block_index: Set(rejected_block_index),
+        s3_filename: Set(format!("issue1370-startup-rejected-{}", cuid())),
+        block_name: Set(None),
+        text_type: Set(None),
+        wikidot_sha1: Set(None),
+    }
+    .insert(&state.database)
+    .await;
+    assert!(
+        rejected.is_err(),
+        "validated constraint must reject a remaining NULL HTML identity"
+    );
+
+    text_block::Entity::delete_by_id((TextBlockType::Html, page_id, block_index))
+        .exec(&state.database)
+        .await
+        .expect("legacy row cleanup should succeed");
+    state
+        .s3_tblocks_bucket
+        .delete_object(&s3_filename)
+        .await
+        .expect("legacy object cleanup should succeed");
 }
 
 async fn create_empty_file_fixture(
@@ -33681,6 +34088,7 @@ async fn create_text_block_fixture(
     block_index: i16,
     block_name: Option<&str>,
     s3_filename: &str,
+    raw_bytes: Option<&[u8]>,
 ) {
     text_block::ActiveModel {
         block_type: Set(block_type),
@@ -33689,6 +34097,7 @@ async fn create_text_block_fixture(
         s3_filename: Set(s3_filename.to_owned()),
         block_name: Set(block_name.map(str::to_owned)),
         text_type: Set(None),
+        wikidot_sha1: Set(raw_bytes.map(|bytes| Sha1::digest(bytes).to_vec())),
     }
     .insert(runner.context().transaction())
     .await

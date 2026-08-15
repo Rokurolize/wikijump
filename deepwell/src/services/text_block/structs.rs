@@ -48,3 +48,10 @@ pub struct TextBlockIndex {
     /// The filename that this block is stored under in S3.
     pub s3_filename: String,
 }
+
+#[derive(Debug, Clone)]
+pub(crate) struct TextBlockCandidate {
+    pub(crate) page_id: i64,
+    pub(crate) index: i16,
+    pub(crate) s3_filename: String,
+}

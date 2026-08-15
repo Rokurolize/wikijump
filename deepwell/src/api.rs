@@ -34,7 +34,9 @@ use crate::middleware::{RequestContextHeaders, RequestContextLayer, RpcAuthLayer
 use crate::runtime::ServerStateInner;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::JobWorker;
-use crate::services::{PasswordService, RequestContext, ServiceContext, SessionService};
+use crate::services::{
+    PasswordService, RequestContext, ServiceContext, SessionService, TextBlockService,
+};
 use crate::{database, info, redis as redis_db};
 use jsonrpsee::server::{RpcModule, Server, ServerConfig, ServerHandle};
 use reqwest::Client as ReqwestClient;
@@ -185,6 +187,12 @@ async fn build_server_state_inner(
 
     // Start workers listening to the job queue (requires ServerState)
     if start_workers {
+        TextBlockService::backfill_wikidot_sha1(&state)
+            .await
+            .or_raise(make_error)?;
+        TextBlockService::validate_wikidot_sha1_constraint(&state)
+            .await
+            .or_raise(make_error)?;
         JobWorker::spawn_all(&state);
     }
 

@@ -16,7 +16,7 @@ const HANDLER_DIRECTORY = "wws/src/handler"
 const LIVE_OBSERVATION_NOTE = "docs/development/wws-cache-head-live-observations-20260815.md"
 const HISTORICAL_ARTIFACT = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json"
 const HISTORICAL_FIXTURE = "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
-const EXPECTED_REGISTRATION_COUNT = 30
+const EXPECTED_REGISTRATION_COUNT = 32
 const EXPECTED_BEHAVIOR_IDS = new Set([
   "wws-behavior:file-cache-head-range",
   "wws-behavior:code-cache-head-range",
@@ -59,15 +59,35 @@ const BEHAVIOR_RECORDS = [
   {
     id: "wws-behavior:live-html-hash-domain-identity",
     status: "not_faithfully_mapped",
-    source_paths: [ROUTE_REGISTRY],
-    registration_ids: [
-      "wws-route-registration:ANY:/local--html/{page_slug}/{id}",
-      "wws-route-registration:GET:/-/html/{page_slug}/{id}"
+    source_paths: [
+      ROUTE_REGISTRY,
+      "wws/src/handler/text_block.rs",
+      "deepwell/migrations/20260815010000_text_block_wikidot_sha1.sql",
+      "deepwell/Cargo.toml",
+      "deepwell/Cargo.lock",
+      "deepwell/src/api.rs",
+      "deepwell/src/endpoints/text_block.rs",
+      "deepwell/src/models/text_block.rs",
+      "deepwell/src/services/context.rs",
+      "deepwell/src/services/text_block/service.rs",
+      "deepwell/src/services/text_block/structs.rs",
+      "deepwell/tests/page.rs",
+      "wws/Cargo.toml",
+      "wws/Cargo.lock",
+      "wws/src/deepwell.rs",
     ],
-    public_test: null,
+    registration_ids: [
+      "wws-route-registration:GET:/local--html/{page_slug}/{id}/{domain}",
+      "wws-route-registration:ANY:/local--html/{page_slug}/{id}/{domain}"
+    ],
+    public_test: "wws/src/handler/text_block.rs#html_terminal_hash_verifies_fetched_bytes",
     preserves_behavior_id: "wws-behavior:numeric-html-cache-head-range",
-    route_pattern: "^/local--html/[^/]+/[0-9a-f]{40}-[1-9][0-9]*/[^/]+/$",
-    reason: "Deepwell exposes numeric index or name lookup only; no evidenced hash, nonce, or domain identity maps this live route to a text block."
+    historical_evidence_receipt: "install/local/wikidot-verification/artifacts/issue1370-live-html-hash-domain-identity-20260815/receipt.json",
+    historical_evidence_sha256: "fc4cac9274c46150c338f0b38ded5b6dbbffd5edc58e2d4b51f07096873b828b",
+    current_evidence_receipt: null,
+    current_receipt_status: "pending",
+    route_pattern: "^/local--html/[^/]+/[0-9a-f]{40}-[0-9][0-9]*/[^/]+/$",
+    reason: "Immutable live evidence is preserved as historical. Production startup backfills legacy HTML identities from exact S3 bytes in bounded batches and validates the NOT VALID constraint before workers accept requests; a current source-bound receipt remains required acceptance work."
   }
 ]
 const GIT_EXECUTABLE = "/usr/bin/git"
@@ -483,6 +503,15 @@ async function buildDenominator(root) {
   const commit = git(root, "rev-parse", "HEAD")
   const inputContent = new Map([[ROUTE_REGISTRY, routeBytes]])
   for (const definition of definitions.values()) inputContent.set(definition.path, bytesByPath.get(definition.path))
+  for (const sourcePath of new Set(BEHAVIOR_RECORDS.flatMap(({ source_paths: paths }) => paths))) {
+    if (inputContent.has(sourcePath)) continue
+    try {
+      inputContent.set(sourcePath, await fs.readFile(path.join(root, sourcePath)))
+    } catch (error) {
+      if (error?.code === "ENOENT") throw new Error(`declared WWS source input is missing: ${sourcePath}`)
+      throw error
+    }
+  }
   verifyBehaviorSourceReferences(BEHAVIOR_RECORDS, registrationIds, inputContent)
   const inputs = [...inputContent]
     .sort(([left], [right]) => compareText(left, right))

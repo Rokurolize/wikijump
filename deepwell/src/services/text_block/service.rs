@@ -30,21 +30,26 @@
 //! (If a page is resurrected, then all this data gets
 //! re-inserted as part of creating the new revision.)
 //!
-//! Additionally, for fetching text blocks, this is
-//! done by wws by directly accessing S3 itself, so
-//! nothing here is needed.
+//! Additionally, WWS fetches text blocks directly from S3.
 
 use super::structs::{TextBlock, TextBlockIndex};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt, StdResult};
+use crate::models::page;
 use crate::models::text_block::{self, Entity as TextBlockTable};
+use crate::runtime::ServerState;
 use crate::services::ServiceContext;
 use crate::types::TextBlockType;
 use crate::utils::ConvertToI16;
 use futures::{StreamExt, stream::FuturesUnordered};
+use s3::bucket::Bucket;
 use sea_orm::{
-    ColumnTrait, Condition, DeleteResult, EntityTrait, QueryFilter, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DeleteResult, EntityTrait,
+    JoinType, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set, Statement,
+    TransactionTrait,
 };
+use sha1::{Digest, Sha1};
 use std::collections::HashSet;
+use uuid::Uuid;
 
 /// Keep each SeaORM insert well below PostgreSQL's 65,535 bind-parameter limit.
 const TEXT_BLOCK_INSERT_BATCH_SIZE: usize = 1_000;
@@ -52,33 +57,72 @@ const TEXT_BLOCK_INSERT_BATCH_SIZE: usize = 1_000;
 /// Bound concurrent object-store writes while avoiding one network round trip per block.
 const TEXT_BLOCK_UPLOAD_CONCURRENCY: usize = 16;
 
-/// Write out the S3 filename for this hosted text block.
-///
-/// This allows reusing a buffer, since we need to write out several
-/// and don't need the string other than for running the S3 operation.
-///
-/// They all take the format of `<PAGE ID>_<BLOCK TYPE>_<BLOCK INDEX>`.
-/// These are always 1-indexed, since that's how they're addressed via URL.
-/// To give some examples of filenames, consider we have a page with ID
-/// 12345 which has 2 code blocks and 3 html blocks. The objects in the bucket
-/// would be:
-///
-/// * `12345_code_1`
-/// * `12345_code_2`
-/// * `12345_html_1`
-/// * `12345_html_2`
-/// * `12345_html_3`
-macro_rules! format_filename {
-    ($buffer:expr, $page_id:expr, $index:expr, $block_type:expr $(,)?) => {{
-        let buffer = &mut $buffer;
-        let page_id = $page_id;
-        let index = $index;
-        let block_type = block_type_name($block_type);
+const TEXT_BLOCK_WIKIDOT_SHA1_BACKFILL_BATCH_SIZE: u64 = 256;
+const MAX_TEXT_BLOCK_OBJECT_BYTES: usize = 16 * 1024 * 1024;
 
-        buffer.clear();
-        assert_ne!(index, 0, "Text block indices must be 1-indexed!");
-        str_write!(buffer, "{page_id}_{block_type}_{index}");
-    }};
+/// ponytail: 32-candidate fail-closed ceiling; upgrade to permission-filtered SQL when visibility can be resolved in the query.
+const MAX_WIKIDOT_SHA1_CANDIDATES: usize = 32;
+
+async fn sha1_s3_object(bucket: &Bucket, s3_filename: &str) -> Result<Vec<u8>> {
+    let s3::request::request_trait::ResponseDataStream {
+        mut bytes,
+        status_code,
+    } = bucket
+        .get_object_stream(s3_filename)
+        .await
+        .map_err(|error| {
+            Error::new(
+                format!(
+                    "failed to fetch legacy HTML text block '{s3_filename}': {error}"
+                ),
+                ErrorType::TextBlock,
+            )
+        })?;
+    if status_code != 200 {
+        return Err(Error::new(
+            format!(
+                "S3 returned HTTP {status_code} for legacy HTML text block '{s3_filename}'"
+            ),
+            ErrorType::TextBlock,
+        )
+        .into());
+    }
+
+    let mut total: usize = 0;
+    let mut digest = Sha1::new();
+    while let Some(chunk) = bytes.next().await {
+        let chunk = chunk.map_err(|error| {
+            Error::new(
+                format!("failed to read legacy HTML text block '{s3_filename}': {error}"),
+                ErrorType::TextBlock,
+            )
+        })?;
+        total = total.checked_add(chunk.len()).ok_or_else(|| {
+            Error::new(
+                format!("legacy HTML text block '{s3_filename}' is too large"),
+                ErrorType::TextBlock,
+            )
+        })?;
+        if total > MAX_TEXT_BLOCK_OBJECT_BYTES {
+            return Err(Error::new(
+                format!(
+                    "legacy HTML text block '{s3_filename}' exceeds {MAX_TEXT_BLOCK_OBJECT_BYTES} bytes"
+                ),
+                ErrorType::TextBlock,
+            )
+            .into());
+        }
+        digest.update(&chunk);
+    }
+    Ok(digest.finalize().to_vec())
+}
+
+async fn cleanup_uploaded_text_blocks(bucket: &Bucket, filenames: &[String]) {
+    for filename in filenames {
+        if let Err(error) = bucket.delete_object(filename).await {
+            warn!("Failed to clean up uploaded S3 text block '{filename}': {error}");
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -131,11 +175,10 @@ impl TextBlockService {
 
         let txn = ctx.transaction();
         let bucket = ctx.s3_tblocks_bucket();
-        let mut buffer = String::new();
 
         // First, get the stored filenames for this block type.
-        // After the new blocks are uploaded, old filenames not present in the
-        // replacement batch are removed from S3.
+        // After the new blocks are uploaded and the transaction commits, all
+        // old filenames are removed from S3.
         let previous_filenames =
             Self::get_block_s3_filenames(ctx, page_id, Some(block_type))
                 .await
@@ -160,7 +203,7 @@ impl TextBlockService {
         // after another.
         let mut uploads = Vec::with_capacity(blocks.len());
         let mut models = Vec::with_capacity(blocks.len());
-        let mut new_filenames = HashSet::with_capacity(blocks.len());
+        let mut new_filenames = Vec::with_capacity(blocks.len());
         let mut previous_block_names = HashSet::with_capacity(blocks.len());
         for (index, block) in (1..=max_index).zip(blocks.iter()) {
             let &TextBlock {
@@ -178,8 +221,11 @@ impl TextBlockService {
                 }
             }
 
-            format_filename!(buffer, page_id, index, block_type);
-            let filename = buffer.clone();
+            let filename = format!(
+                "text-blocks/{page_id}/{}/{}",
+                block_type_name(block_type),
+                Uuid::new_v4()
+            );
             uploads.push((filename.clone(), text, mime));
 
             models.push(text_block::ActiveModel {
@@ -189,26 +235,36 @@ impl TextBlockService {
                 s3_filename: Set(filename.clone()),
                 block_name: Set(name.map(String::from)),
                 text_type: Set(text_type.map(String::from)),
+                wikidot_sha1: Set(matches!(block_type, TextBlockType::Html)
+                    .then(|| html_block_sha1(text))),
             });
-            new_filenames.insert(filename);
+            new_filenames.push(filename);
         }
 
-        let mut pending_uploads = FuturesUnordered::new();
-        for (filename, text, mime) in &uploads {
-            pending_uploads.push(async move {
-                debug!("Uploading new S3 text block {filename} ({mime})");
-                bucket
-                    .put_object_with_content_type(filename, text.as_bytes(), mime)
-                    .await
-            });
-            if pending_uploads.len() == TEXT_BLOCK_UPLOAD_CONCURRENCY {
-                while let Some(result) = pending_uploads.next().await {
-                    result.or_raise(make_error)?;
+        let upload_result: Result<()> = async {
+            let mut pending_uploads = FuturesUnordered::new();
+            for (filename, text, mime) in &uploads {
+                pending_uploads.push(async move {
+                    debug!("Uploading new S3 text block {filename} ({mime})");
+                    bucket
+                        .put_object_with_content_type(filename, text.as_bytes(), mime)
+                        .await
+                });
+                if pending_uploads.len() == TEXT_BLOCK_UPLOAD_CONCURRENCY {
+                    while let Some(result) = pending_uploads.next().await {
+                        result.or_raise(make_error)?;
+                    }
                 }
             }
+            while let Some(result) = pending_uploads.next().await {
+                result.or_raise(make_error)?;
+            }
+            Ok(())
         }
-        while let Some(result) = pending_uploads.next().await {
-            result.or_raise(make_error)?;
+        .await;
+        if let Err(error) = upload_result {
+            cleanup_uploaded_text_blocks(bucket, &new_filenames).await;
+            return Err(error);
         }
 
         // Then, delete the blocks from the database.
@@ -216,39 +272,154 @@ impl TextBlockService {
         // This doesn't require us to know which need to be kept
         // because we're just INSERTing over all of it.
 
-        let DeleteResult { rows_affected, .. } = TextBlockTable::delete_many()
-            .filter(
-                Condition::all()
-                    .add(text_block::Column::BlockType.eq(block_type))
-                    .add(text_block::Column::PageId.eq(page_id)),
-            )
-            .exec(txn)
-            .await
-            .or_raise(make_error)?;
-
-        debug_assert_eq!(
-            rows_affected,
-            previous_filenames.len() as u64,
-            "Deleted row count does not match previous text block filename count",
-        );
-
-        // Finally, insert the new text block rows in bounded batches. SeaORM
-        // emits one statement per insert_many call, so an unbounded batch can
-        // exceed PostgreSQL's bind limit after the S3 uploads have succeeded.
-        for range in text_block_insert_ranges(models.len()) {
-            TextBlockTable::insert_many(models[range].iter().cloned())
+        let database_result: Result<()> = async {
+            let DeleteResult { rows_affected, .. } = TextBlockTable::delete_many()
+                .filter(
+                    Condition::all()
+                        .add(text_block::Column::BlockType.eq(block_type))
+                        .add(text_block::Column::PageId.eq(page_id)),
+                )
                 .exec(txn)
                 .await
                 .or_raise(make_error)?;
-        }
 
-        for filename in &previous_filenames {
-            if !new_filenames.contains(filename) {
-                debug!("Deleting replaced S3 text block {filename}");
-                bucket.delete_object(filename).await.or_raise(make_error)?;
+            debug_assert_eq!(
+                rows_affected,
+                previous_filenames.len() as u64,
+                "Deleted row count does not match previous text block filename count",
+            );
+
+            // Finally, insert the new text block rows in bounded batches. SeaORM
+            // emits one statement per insert_many call, so an unbounded batch can
+            // exceed PostgreSQL's bind limit after the S3 uploads have succeeded.
+            for range in text_block_insert_ranges(models.len()) {
+                TextBlockTable::insert_many(models[range].iter().cloned())
+                    .exec(txn)
+                    .await
+                    .or_raise(make_error)?;
             }
+            Ok(())
+        }
+        .await;
+        if let Err(error) = database_result {
+            cleanup_uploaded_text_blocks(bucket, &new_filenames).await;
+            return Err(error);
         }
 
+        if let Err(error) = ctx.defer_text_block_cleanup(previous_filenames) {
+            cleanup_uploaded_text_blocks(bucket, &new_filenames).await;
+            return Err(error);
+        }
+
+        Ok(())
+    }
+
+    /// Populate the identity for legacy HTML rows before the server accepts requests.
+    pub(crate) async fn backfill_wikidot_sha1(state: &ServerState) -> Result<()> {
+        let make_error = || {
+            Error::new(
+                "failed to backfill Wikidot HTML block SHA-1 identities",
+                ErrorType::TextBlock,
+            )
+        };
+        let mut after = None;
+        loop {
+            let txn = state.database.begin().await.or_raise(make_error)?;
+            let mut condition = Condition::all()
+                .add(text_block::Column::BlockType.eq(TextBlockType::Html))
+                .add(text_block::Column::WikidotSha1.is_null());
+            if let Some((page_id, block_index)) = after {
+                condition = condition.add(
+                    Condition::any()
+                        .add(text_block::Column::PageId.gt(page_id))
+                        .add(
+                            Condition::all()
+                                .add(text_block::Column::PageId.eq(page_id))
+                                .add(text_block::Column::BlockIndex.gt(block_index)),
+                        ),
+                );
+            }
+            let rows: Vec<(i64, i16, String)> = TextBlockTable::find()
+                .select_only()
+                .column(text_block::Column::PageId)
+                .column(text_block::Column::BlockIndex)
+                .column(text_block::Column::S3Filename)
+                .filter(condition)
+                .order_by_asc(text_block::Column::PageId)
+                .order_by_asc(text_block::Column::BlockIndex)
+                .limit(TEXT_BLOCK_WIKIDOT_SHA1_BACKFILL_BATCH_SIZE)
+                .lock_with_behavior(
+                    sea_orm::sea_query::LockType::Update,
+                    sea_orm::sea_query::LockBehavior::SkipLocked,
+                )
+                .into_tuple()
+                .all(&txn)
+                .await
+                .or_raise(make_error)?;
+            if rows.is_empty() {
+                txn.commit().await.or_raise(make_error)?;
+                break;
+            }
+            after = rows
+                .last()
+                .map(|(page_id, block_index, _)| (*page_id, *block_index));
+
+            for (page_id, block_index, s3_filename) in rows {
+                let digest = match sha1_s3_object(&state.s3_tblocks_bucket, &s3_filename)
+                    .await
+                {
+                    Ok(digest) => digest,
+                    Err(error) => {
+                        warn!(
+                            "unable to backfill legacy HTML text block for page ID {page_id}, block {block_index}, object '{s3_filename}': {error}",
+                        );
+                        return Err(error);
+                    }
+                };
+                text_block::ActiveModel {
+                    block_type: Set(TextBlockType::Html),
+                    page_id: Set(page_id),
+                    block_index: Set(block_index),
+                    wikidot_sha1: Set(Some(digest)),
+                    ..Default::default()
+                }
+                .update(&txn)
+                .await
+                .or_raise(make_error)?;
+            }
+            txn.commit().await.or_raise(make_error)?;
+        }
+
+        Ok(())
+    }
+
+    pub(crate) async fn validate_wikidot_sha1_constraint(
+        state: &ServerState,
+    ) -> Result<()> {
+        let txn = state.database.begin().await.or_raise(|| {
+            Error::new(
+                "failed to begin Wikidot HTML block SHA-1 constraint validation",
+                ErrorType::TextBlock,
+            )
+        })?;
+        txn
+            .execute_raw(Statement::from_string(
+                txn.get_database_backend(),
+                "ALTER TABLE text_block VALIDATE CONSTRAINT text_block_html_wikidot_sha1_present",
+            ))
+            .await
+            .or_raise(|| {
+                Error::new(
+                    "failed to validate Wikidot HTML block SHA-1 identities",
+                    ErrorType::TextBlock,
+                )
+            })?;
+        txn.commit().await.or_raise(|| {
+            Error::new(
+                "failed to commit Wikidot HTML block SHA-1 constraint validation",
+                ErrorType::TextBlock,
+            )
+        })?;
         Ok(())
     }
 
@@ -347,6 +518,58 @@ impl TextBlockService {
         }
     }
 
+    /// Finds HTML blocks by their indexed raw-byte SHA-1.
+    ///
+    pub(crate) async fn get_blocks_by_wikidot_sha1(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        digest: &[u8],
+    ) -> Result<Option<Vec<super::structs::TextBlockCandidate>>> {
+        TextBlockTable::find()
+            .select_only()
+            .column(text_block::Column::PageId)
+            .column(text_block::Column::BlockIndex)
+            .column(text_block::Column::S3Filename)
+            .join(JoinType::InnerJoin, text_block::Relation::Page.def())
+            .filter(
+                Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::DeletedAt.is_null())
+                    .add(text_block::Column::BlockType.eq(TextBlockType::Html))
+                    .add(text_block::Column::WikidotSha1.eq(digest)),
+            )
+            .order_by_asc(text_block::Column::PageId)
+            .order_by_asc(text_block::Column::BlockIndex)
+            .limit((MAX_WIKIDOT_SHA1_CANDIDATES + 1) as u64)
+            .into_tuple()
+            .all(ctx.transaction())
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to find HTML text blocks with SHA-1 in site ID {site_id}"
+                    ),
+                    ErrorType::TextBlock,
+                )
+            })
+            .map(|rows| {
+                if rows.len() > MAX_WIKIDOT_SHA1_CANDIDATES {
+                    return None;
+                }
+                Some(
+                    rows.into_iter()
+                        .map(|(page_id, index, s3_filename)| {
+                            super::structs::TextBlockCandidate {
+                                page_id,
+                                index,
+                                s3_filename,
+                            }
+                        })
+                        .collect(),
+                )
+            })
+    }
+
     /// Finds how many text blocks of a type exist for a page.
     async fn get_block_s3_filenames(
         ctx: &ServiceContext<'_>,
@@ -417,6 +640,10 @@ fn block_type_name(block_type: TextBlockType) -> &'static str {
         TextBlockType::Html => "html",
         TextBlockType::Code => "code",
     }
+}
+
+fn html_block_sha1(text: &str) -> Vec<u8> {
+    Sha1::digest(text.as_bytes()).to_vec()
 }
 
 /// Returns the largest 1-indexed text block index for this block count.
