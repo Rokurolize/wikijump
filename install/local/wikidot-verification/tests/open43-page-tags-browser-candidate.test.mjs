@@ -20,19 +20,20 @@ const PLAN = {
   hrefs_sha256: sha256Value(HREFS),
 };
 
-function capture(width) {
-  const artifact = { path: "B822_PAGE_TAGS-" + width + "-initial.png", sha256: sha256Value(["initial", width]) };
+function capture(width, phase) {
+  const initial = phase === "initial";
+  const artifact = { path: `B822_PAGE_TAGS-${width}-${phase}.png`, sha256: sha256Value([phase, width]) };
   return {
     viewport: { width, height: 900 },
     temporal: {
-      phase: "domcontentloaded_immediate_observation",
-      sequence: 1,
+      phase: initial ? "domcontentloaded_immediate_observation" : "settled",
+      sequence: initial ? 1 : 2,
       input_url: PAGE_URL,
       final_url: PAGE_URL,
       navigation_status: 200,
       artifact,
-      counterpart_artifact_path: "B822_PAGE_TAGS-" + width + "-settled.png",
-      counterpart_artifact_sha256: sha256Value(["settled", width]),
+      counterpart_artifact_path: `B822_PAGE_TAGS-${width}-${initial ? "settled" : "initial"}.png`,
+      counterpart_artifact_sha256: sha256Value([initial ? "settled" : "initial", width]),
     },
     page_tags: {
       container: {
@@ -56,8 +57,8 @@ function capture(width) {
   };
 }
 
-test("#822 verifies public page-tag DOM and rejects the modern flex owner", () => {
-  const observations = {
+function observations(phase) {
+  return {
     page_url: PAGE_URL,
     public_page: {
       site_id: PLAN.site_id,
@@ -69,17 +70,33 @@ test("#822 verifies public page-tag DOM and rejects the modern flex owner", () =
       tags_sha256: PLAN.tags_sha256,
       hrefs_sha256: PLAN.hrefs_sha256,
     },
-    captures: [1280, 767, 479].map(capture),
+    captures: [1280, 767, 479].map((width) => capture(width, phase)),
   };
-  assert.deepEqual(verifyOpen43PageTagsCase("B822_PAGE_TAGS_INITIAL", observations, PLAN), {
+}
+
+test("#822 verifies initial and settled page-tag DOM and rejects the modern flex owner", () => {
+  const initial = observations("initial");
+  const settled = observations("settled");
+  assert.deepEqual(verifyOpen43PageTagsCase("B822_PAGE_TAGS_INITIAL", initial, PLAN), {
     verified: true,
+    phase: "domcontentloaded_immediate_observation",
     viewport_count: 3,
     tag_count: 2,
   });
-  const negative = structuredClone(observations);
+  assert.deepEqual(verifyOpen43PageTagsCase("B822_PAGE_TAGS_SETTLED", settled, PLAN), {
+    verified: true,
+    phase: "settled",
+    viewport_count: 3,
+    tag_count: 2,
+  });
+  assert.throws(
+    () => verifyOpen43PageTagsCase("B822_PAGE_TAGS_SETTLED", initial, PLAN),
+    /did not bind the required candidate navigation phase/u,
+  );
+  const negative = structuredClone(settled);
   negative.captures[0].page_tags.container.display = "flex";
   assert.throws(
-    () => verifyOpen43PageTagsCase("B822_PAGE_TAGS_INITIAL", negative, PLAN),
+    () => verifyOpen43PageTagsCase("B822_PAGE_TAGS_SETTLED", negative, PLAN),
     /imported page-tags matched the modern flex owner/u,
   );
 });

@@ -31,6 +31,13 @@ test("candidate case registry exposes the executable B610 shell case", async () 
   assert.equal(typeof caseSet.prepareRun, "function");
 });
 
+test("candidate case registry exposes both exact issue 822 page-tag intervals", async () => {
+  const caseSet = await candidateCaseSet("open43-settings-page-tags");
+  assert.equal(caseSet.id, "open43-settings-page-tags");
+  assert.deepEqual(caseSet.caseIds, ["B822_PAGE_TAGS_INITIAL", "B822_PAGE_TAGS_SETTLED"]);
+  assert.equal(typeof caseSet.prepareRun, "function");
+});
+
 test("candidate case registry exposes the executable issue 775 adapter", async () => {
   const caseSet = await candidateCaseSet("open43-issue775-edit");
   assert.equal(caseSet.id, "open43-issue775-edit");

@@ -1,6 +1,6 @@
 import { Open43SettingsBrowserAdapter } from "./open43-settings-browser-adapter.mjs";
 import {
-  OPEN43_PAGE_TAGS_INITIAL_CASE_IDS,
+  OPEN43_PAGE_TAGS_CASE_IDS,
   verifyOpen43PageTagsCase,
   verifyOpen43PageTagsCleanup,
 } from "./open43-page-tags-browser-candidate-contract.mjs";
@@ -25,16 +25,29 @@ function pageIdentity(page) {
   };
 }
 
-function temporal(pair) {
+function temporal(pair, phase) {
+  const initial = phase === "initial";
   return {
-    phase: pair.capture.first_paint.document.phase,
-    sequence: 1,
+    phase: initial ? pair.capture.first_paint.document.phase : pair.capture.document.phase,
+    sequence: initial ? 1 : 2,
     input_url: pair.capture.input_url,
     final_url: pair.capture.final_url,
     navigation_status: pair.capture.navigation_status,
-    artifact: pair.capture.first_paint.screenshot,
-    counterpart_artifact_path: pair.capture.settled_viewport_screenshot.path,
-    counterpart_artifact_sha256: pair.capture.settled_viewport_screenshot.sha256,
+    artifact: initial ? pair.capture.first_paint.screenshot : pair.capture.settled_viewport_screenshot,
+    counterpart_artifact_path: initial ? pair.capture.settled_viewport_screenshot.path : pair.capture.first_paint.screenshot.path,
+    counterpart_artifact_sha256: initial ? pair.capture.settled_viewport_screenshot.sha256 : pair.capture.first_paint.screenshot.sha256,
+  };
+}
+
+function captureRow(pair, width, phase) {
+  return {
+    viewport: { width, height: 900 },
+    temporal: temporal(pair, phase),
+    page_tags: pair[phase].page_tags,
+    stylesheet_assets: pair.stylesheet_assets,
+    capture_failures: pair.capture.failures,
+    request_gate_aborts: pair.capture.request_gate_aborts ?? [],
+    failed_request_identity_sha256: failedRequestIdentity(pair),
   };
 }
 
@@ -102,7 +115,7 @@ class Open43PageTagsRun {
     };
     this.#pageBefore = { ...identity, hrefs_sha256: this.#plan.hrefs_sha256 };
     this.#pageResource = this.#resources.register("page-tags", { ...this.#pageBefore, before_sha256: sha256Value(this.#pageBefore) });
-    const captures = [];
+    const captures = { initial: [], settled: [] };
     for (const [index, width] of VIEWPORTS.entries()) {
       const pair = await this.#browser.capturePagePair({
         url: pageUrl,
@@ -111,24 +124,17 @@ class Open43PageTagsRun {
         viewport: { width, height: 900 },
         captureStylesheetAssets: true,
       });
-      captures.push({
-        viewport: { width, height: 900 },
-        temporal: temporal(pair),
-        page_tags: pair.initial.page_tags,
-        stylesheet_assets: pair.stylesheet_assets,
-        capture_failures: pair.capture.failures,
-        request_gate_aborts: pair.capture.request_gate_aborts ?? [],
-        failed_request_identity_sha256: failedRequestIdentity(pair),
-      });
+      captures.initial.push(captureRow(pair, width, "initial"));
+      captures.settled.push(captureRow(pair, width, "settled"));
     }
-    return [{
-      case_id: "B822_PAGE_TAGS_INITIAL",
+    return OPEN43_PAGE_TAGS_CASE_IDS.map((caseId, index) => ({
+      case_id: caseId,
       observations: {
         page_url: pageUrl,
         public_page: this.#pageBefore,
-        captures,
+        captures: index === 0 ? captures.initial : captures.settled,
       },
-    }];
+    }));
   }
 
   async cleanup() {
@@ -171,7 +177,7 @@ export function createOpen43PageTagsBrowserCandidateCaseSet({
 } = {}) {
   return Object.freeze({
     id: "open43-settings-page-tags",
-    caseIds: OPEN43_PAGE_TAGS_INITIAL_CASE_IDS,
+    caseIds: OPEN43_PAGE_TAGS_CASE_IDS,
     prepareRun({ candidateIdentity, privateInput, signal, resources, candidateBrowserContexts }) {
       if (candidateIdentity.candidate.endpoint.host !== SITE_HOST || candidateIdentity.candidate.endpoint.port === 443 || candidateIdentity.candidate.port_443_published !== false) throw new Error("Open43 page-tags cases require exact non-standing " + SITE_HOST);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
@@ -183,7 +189,7 @@ export function createOpen43PageTagsBrowserCandidateCaseSet({
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: session.privateInputIdentity,
         browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 2, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
-        plan: { schema: "wikijump.open43_page_tags_browser_candidate_plan.v1", site_id: session.fixtureIdentity.site_id, site_slug: SITE_SLUG, case_ids: OPEN43_PAGE_TAGS_INITIAL_CASE_IDS, fixture_category: session.fixtureIdentity.transition_category.slug, fixture_category_id: session.fixtureIdentity.transition_category.category_id, fixture_page_slug: session.fixtureIdentity.transition_category.page_slug, fixture_page_id: session.fixtureIdentity.transition_category.page_id },
+        plan: { schema: "wikijump.open43_page_tags_browser_candidate_plan.v1", site_id: session.fixtureIdentity.site_id, site_slug: SITE_SLUG, case_ids: OPEN43_PAGE_TAGS_CASE_IDS, fixture_category: session.fixtureIdentity.transition_category.slug, fixture_category_id: session.fixtureIdentity.transition_category.category_id, fixture_page_slug: session.fixtureIdentity.transition_category.page_slug, fixture_page_id: session.fixtureIdentity.transition_category.page_id },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
         verifyCase: (caseId, observations) => execution.verifyCase(caseId, observations),
