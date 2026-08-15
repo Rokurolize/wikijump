@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -11,15 +10,6 @@ const script = path.join(
   root,
   "install/local/wikidot-verification/scripts/build-compatibility-ledger.mjs",
 );
-const contractVerifier = path.join(
-  root,
-  "install/local/wikidot-verification/scripts/verify-compatibility-denominator-contract.mjs",
-);
-const denominatorContract = path.join(
-  root,
-  "docs/development/compatibility-denominator-contract.json",
-);
-
 const surface = (surfaceId, overrides = {}) => ({
   surface_id: surfaceId,
   kind: "catalog_feature",
@@ -526,125 +516,22 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
   }
 });
 
-test("compatibility ledger builder projects recorded proof claims without erasing failures", () => {
+test("compatibility ledger builder does not turn inventory status into proof", () => {
   const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-proof-"));
   const input = path.join(directory, "inventory.json");
   const output = path.join(directory, "ledger.json");
-  const failedOutput = path.join(directory, "ledger-failed.json");
-  const blockedOutput = path.join(directory, "ledger-blocked.json");
-
-  const pendingFixture = inventory();
-  pendingFixture.surfaces[0].candidate.status = "pending";
-  pendingFixture.surfaces[0].standing.status = "pending";
-  writeFileSync(input, JSON.stringify(pendingFixture));
-  execFileSync(process.execPath, [
-    script,
-    "--inventory",
-    input,
-    "--output",
-    output,
-  ]);
-  const pending = JSON.parse(readFileSync(output));
-  assert.deepEqual(pending.rows[0].candidate, {
-    state: "pending",
-    artifacts: [],
-  });
-  assert.deepEqual(pending.rows[0].standing, {
-    state: "pending",
-    artifacts: [],
-  });
-
-  const failedFixture = inventory();
-  failedFixture.surfaces[0].candidate.status = "passed";
-  failedFixture.surfaces[0].standing.status = "failed";
-  writeFileSync(input, JSON.stringify(failedFixture));
-  execFileSync(process.execPath, [
-    script,
-    "--inventory",
-    input,
-    "--output",
-    failedOutput,
-    "--previous",
-    output,
-  ]);
-  const projected = JSON.parse(readFileSync(failedOutput));
-  const boundArtifact = {
-    path: input,
-    sha256: createHash("sha256").update(readFileSync(input)).digest("hex"),
-  };
-  assert.deepEqual(projected.rows[0].candidate, {
-    state: "pass",
-    artifacts: [boundArtifact],
-  });
-  assert.deepEqual(projected.rows[0].standing, {
-    state: "fail",
-    artifacts: [boundArtifact],
-  });
-
-  const blockedFixture = inventory();
-  blockedFixture.surfaces[0].candidate.status = "blocked";
-  blockedFixture.surfaces[0].standing.status = "not_applicable";
-  writeFileSync(input, JSON.stringify(blockedFixture));
-  execFileSync(process.execPath, [
-    script,
-    "--inventory",
-    input,
-    "--output",
-    blockedOutput,
-    "--previous",
-    failedOutput,
-  ]);
-  const blocked = JSON.parse(readFileSync(blockedOutput));
-  assert.deepEqual(blocked.rows[0].candidate, {
-    state: "blocked",
-    artifacts: [],
-  });
-  assert.deepEqual(blocked.rows[0].standing, {
-    state: "blocked",
-    artifacts: [],
-  });
-});
-
-test("ledger builder resolves a relative inventory path before emitting proof artifacts", () => {
-  const directory = mkdtempSync(path.join(tmpdir(), "wikijump-ledger-relative-"));
-  const relativeInput = "inventory.json";
-  const input = path.join(directory, relativeInput);
-  const output = path.join(directory, "ledger.json");
-
   const fixture = inventory();
   fixture.surfaces[0].candidate.status = "passed";
   fixture.surfaces[0].standing.status = "failed";
   writeFileSync(input, JSON.stringify(fixture));
-  execFileSync(
-    process.execPath,
-    [script, "--inventory", relativeInput, "--output", output],
-    { cwd: directory },
-  );
+  execFileSync(process.execPath, [
+    script,
+    "--inventory",
+    input,
+    "--output",
+    output,
+  ]);
   const ledger = JSON.parse(readFileSync(output));
-  const resolvedPath = path.resolve(directory, relativeInput);
-  const resolvedSha256 = createHash("sha256")
-    .update(readFileSync(resolvedPath))
-    .digest("hex");
-  for (const dimension of ["candidate", "standing"]) {
-    const [artifact] = ledger.rows[0][dimension].artifacts;
-    assert.ok(path.isAbsolute(artifact.path), `${dimension} artifact path`);
-    assert.equal(artifact.path, resolvedPath);
-    assert.equal(artifact.sha256, resolvedSha256);
-  }
-
-  const contract = JSON.parse(readFileSync(denominatorContract));
-  const row = contract.structural_examples.rows[0];
-  row.candidate = {
-    state: "pass",
-    artifacts: [ledger.rows[0].candidate.artifacts[0]],
-  };
-  row.standing = {
-    state: "fail",
-    artifacts: [ledger.rows[0].standing.artifacts[0]],
-  };
-  const contractPath = path.join(directory, "contract.json");
-  writeFileSync(contractPath, JSON.stringify(contract));
-  execFileSync(process.execPath, [contractVerifier, "--contract", contractPath], {
-    cwd: directory,
-  });
+  assert.deepEqual(ledger.rows[0].candidate, {state: "pending", artifacts: []});
+  assert.deepEqual(ledger.rows[0].standing, {state: "pending", artifacts: []});
 });

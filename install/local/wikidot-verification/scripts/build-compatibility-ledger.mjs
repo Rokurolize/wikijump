@@ -393,23 +393,6 @@ function testReferences(references) {
     .sort(codePointCompare);
 }
 
-function proofProjection(status) {
-  if (status === "pending") return { state: "pending", artifacts: [] };
-  if (status === "passed") {
-    return {
-      state: "pass",
-      artifacts: [{ path: inventoryPath, sha256: inventorySha256 }],
-    };
-  }
-  if (status === "failed") {
-    return {
-      state: "fail",
-      artifacts: [{ path: inventoryPath, sha256: inventorySha256 }],
-    };
-  }
-  return { state: "blocked", artifacts: [] };
-}
-
 const rows = canonicalLocalIds.map((localId) => {
   const record = rawByLocal.get(localId);
   const specification = record.specification_owner
@@ -486,8 +469,8 @@ const rows = canonicalLocalIds.map((localId) => {
       blocked && issues.length > 0
         ? { state: "present", numbers: issues }
         : { state: "none", numbers: [] },
-    candidate: proofProjection(record.candidate?.status),
-    standing: proofProjection(record.standing?.status),
+    candidate: { state: "pending", artifacts: [] },
+    standing: { state: "pending", artifacts: [] },
     closure: {
       state: record.closure?.status === "closed" ? "closed" : "open",
       references: record.closure?.references ?? [],
