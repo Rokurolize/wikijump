@@ -11,8 +11,10 @@ import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const CASE_ID = "Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE";
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
+const RUN_ID = "candidate-run-0123456789ab";
 const EMPTY_BOX = "\n<div class=\"backlinks-module-box\">\n</div>\n";
 const INLINE_LITERAL = "\nstart-[[module Backlinks]]-middle\n";
 
@@ -169,12 +171,12 @@ test("Q1027 runs the rename-delete-restore candidate through the canonical runne
     privateInputSha256: hash("e"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: RUN_ID,
     dependencies: {
       createBrowserContexts: async () => fakeBrowserContexts(state),
       collectExecutionIdentity: async () => ({ schema: "fixture.execution_identity.v1", source_clean: true, module_manifest_sha256: hash("f") }),
       observeRuntimeIdentity: async () => ({ schema: "fixture.runtime_observation.v1", identity: "stable" }),
       assertStableRuntimeIdentity(before, after) { assert.deepEqual(after, before); },
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-15T00:00:00.000Z",
     },
   });
@@ -192,14 +194,14 @@ test("Q1027 runs the rename-delete-restore candidate through the canonical runne
 test("Q1027 verification rejects a served DOM drift", () => {
   const { session } = fakeCandidateSession();
   const run = createOpen43Q1027CandidateCaseSet({ sessionFactory: () => session }).prepareRun({
-    runId: "candidate-case-0123456789ab",
+    runId: RUN_ID,
     candidateIdentity: candidateIdentity(),
     privateInput: {},
     signal: null,
     resources: {},
     candidateBrowserContexts: {},
   });
-  const url = "https://scpaiueouiuiuiui.wikijump.localhost:18443/open43-q1027-0123456789ab-target";
+  const url = `https://scpaiueouiuiuiui.wikijump.localhost:18443/open43-q1027-${RUN_ID.slice("candidate-case-".length)}-target`;
   assert.throws(() => run.verifyCase(CASE_ID, {
     url,
     capture: { navigation_status: 200, input_url: url, final_url: url, failures: [] },
