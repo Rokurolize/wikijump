@@ -69,6 +69,36 @@ function browserSemanticSnapshot() {
   const toolbarLink = toolbar?.querySelector("a");
   const toolbarBounds = toolbar?.getBoundingClientRect();
   const linkBounds = toolbarLink?.getBoundingClientRect();
+  const roundedRect = (value) => value === null ? null : {
+    x: value.x,
+    y: value.y,
+    width: value.width,
+    height: value.height,
+  };
+  const pageTags = document.querySelector(".page-tags");
+  const pageTagChildren = pageTags === null ? [] : [...pageTags.children];
+  const pageTagStyleRules = [];
+  const visitStyleRules = (rules, href) => {
+    for (const rule of rules ?? []) {
+      if (typeof rule.selectorText === "string" && rule.selectorText.includes(".page-tags")) {
+        let matches = false;
+        try { matches = pageTags !== null && pageTags.matches(rule.selectorText); } catch {}
+        if (matches) pageTagStyleRules.push({
+          href,
+          selector: rule.selectorText,
+          display: rule.style.display || null,
+          justify_content: rule.style.justifyContent || null,
+          text_align: rule.style.textAlign || null,
+        });
+      }
+      try { if (rule.cssRules) visitStyleRules(rule.cssRules, href); } catch {}
+    }
+  };
+  for (const sheet of document.styleSheets) {
+    try { visitStyleRules(sheet.cssRules, sheet.href); } catch {}
+  }
+  const pageTagsStyle = pageTags === null ? null : getComputedStyle(pageTags);
+  const pageTagChildRects = pageTagChildren.map((child) => roundedRect(child.getBoundingClientRect()));
   return {
     analytics: {
       profile: document.querySelector("meta[name='wikidot-site-analytics-profile']")?.content ?? null,
@@ -90,6 +120,23 @@ function browserSemanticSnapshot() {
       top_toolbar_count: document.querySelectorAll("#navi-bar").length,
       geometry: toolbarBounds ? { width: toolbarBounds.width, height: toolbarBounds.height } : null,
       hit_target: linkBounds ? { width: linkBounds.width, height: linkBounds.height } : null,
+    },
+    page_tags: pageTags === null ? null : {
+      container: {
+        child_count: pageTagChildren.length,
+        display: pageTagsStyle.display,
+        justify_content: pageTagsStyle.justifyContent,
+        text_align: pageTagsStyle.textAlign,
+        flex_wrap: pageTagsStyle.flexWrap,
+        gap: pageTagsStyle.gap,
+        rect: roundedRect(pageTags.getBoundingClientRect()),
+      },
+      child_tags: pageTagChildren.map((child) => child.localName),
+      labels: pageTagChildren.map((child) => child.textContent ?? ""),
+      hrefs: pageTagChildren.map((child) => child instanceof HTMLAnchorElement ? child.href : null),
+      child_rects: pageTagChildRects,
+      line_count: new Set(pageTagChildRects.filter(Boolean).map(({ y }) => y)).size,
+      active_rules: pageTagStyleRules,
     },
     page_content_text: document.querySelector("#page-content")?.textContent?.trim() ?? "",
     admin: {
@@ -128,10 +175,11 @@ export class Open43SettingsBrowserAdapter {
     return (await this.#contexts.get(actor)).context;
   }
 
-  async capturePagePair({ url, label, index, viewport = DEFAULT_VIEWPORT, contract = null, navigationFromUrl = null, beforeClientNavigation = null }) {
+  async capturePagePair({ url, label, index, viewport = DEFAULT_VIEWPORT, contract = null, navigationFromUrl = null, beforeClientNavigation = null, captureStylesheetAssets = false }) {
     const page = await (await this.#context("administrator")).newPage();
     const consoleErrors = [];
     const analyticsRequests = [];
+    const stylesheetResponses = [];
     let initialNavigationCspHeader = null;
     const onConsole = (message) => {
       if (message.type() === "error") consoleErrors.push(sha256(message.text()));
@@ -140,9 +188,13 @@ export class Open43SettingsBrowserAdapter {
     const onRequest = (request) => {
       if (/google-analytics|googletagmanager/u.test(new URL(request.url()).hostname)) analyticsRequests.push(sha256(request.url()));
     };
+    const onResponse = (response) => {
+      if (captureStylesheetAssets && response.request().resourceType() === "stylesheet") stylesheetResponses.push(response);
+    };
     page.on("console", onConsole);
     page.on("pageerror", onPageError);
     page.on("request", onRequest);
+    page.on("response", onResponse);
     try {
       await page.setViewportSize(viewport);
       await page.addInitScript({ content: INITIAL_PROBE });
@@ -234,6 +286,9 @@ export class Open43SettingsBrowserAdapter {
           client_navigation_preserved: document.querySelectorAll("#navi-bar").length === 1,
         };
       });
+      const stylesheetAssets = captureStylesheetAssets
+        ? [...new Map((await Promise.all(stylesheetResponses.map(async (response) => [response.url(), { url: response.url(), sha256: sha256(await response.body()) }]))).map(([, asset]) => [JSON.stringify(asset), asset])).values()]
+        : [];
       return {
         capture,
         initial,
@@ -255,11 +310,13 @@ export class Open43SettingsBrowserAdapter {
         csp_nonce_matches_initial_navigation_header:
           initial.analytics.nonce.length > 0 &&
           initialNavigationCspHeader?.includes(`'nonce-${initial.analytics.nonce}'`) === true,
+        stylesheet_assets: stylesheetAssets,
       };
     } finally {
       page.off("console", onConsole);
       page.off("pageerror", onPageError);
       page.off("request", onRequest);
+      page.off("response", onResponse);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }
