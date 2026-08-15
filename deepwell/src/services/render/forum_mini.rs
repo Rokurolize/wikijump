@@ -142,7 +142,7 @@ fn forum_mini_date(created_at: time::OffsetDateTime) -> String {
     )
 }
 
-fn render_forum_mini_threads(threads: &[ForumMiniThread]) -> String {
+fn render_forum_mini_threads(threads: &[ForumMiniThread], active: bool) -> String {
     let mut output = String::from("<div class=\"forum-mini-stat\">\n");
     for thread in threads {
         output.push_str("<div class=\"item\">\n<div class=\"title\">\n<a href=\"");
@@ -151,7 +151,7 @@ fn render_forum_mini_threads(threads: &[ForumMiniThread]) -> String {
         output.push_str(&escape_list_pages_html_text(&thread.title));
         output.push_str("</a>\n</div>\n<div class=\"info\">\n(Started ");
         output.push_str(&forum_mini_date(thread.created_at));
-        output.push_str(", Posts: ");
+        output.push_str(if active { " , Posts: " } else { ", Posts: " });
         output.push_str(&thread.post_count.max(0).to_string());
         output.push_str(")\n</div>\n</div>\n");
     }
@@ -499,7 +499,12 @@ impl RenderService {
                 | ForumMiniModuleKind::ActiveThreads => {
                     load_forum_mini_threads(ctx, site_id, kind, limit)
                         .await?
-                        .map(|threads| render_forum_mini_threads(&threads))
+                        .map(|threads| {
+                            render_forum_mini_threads(
+                                &threads,
+                                kind == ForumMiniModuleKind::ActiveThreads,
+                            )
+                        })
                 }
             };
             let Some(rendered) = rendered else {

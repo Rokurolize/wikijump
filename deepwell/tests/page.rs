@@ -11678,6 +11678,10 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
             && !active_threads.contains("Private Page Activity Marker"),
         "{active_threads}",
     );
+    assert!(
+        active_threads.contains("</span> ,"),
+        "{active_threads}",
+    );
 
     let recent_posts =
         load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-posts").await;
