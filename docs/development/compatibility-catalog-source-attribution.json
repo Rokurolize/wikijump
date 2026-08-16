@@ -360,6 +360,189 @@
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }
       ],
       "tests": [{ "path": "deepwell/tests/media.rs", "anchor": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page" }]
+    },
+    {
+      "surface_id": "catalog-feature:content-pages",
+      "sources": [{ "path": "deepwell/src/services/page/service.rs", "anchor": "pub async fn create(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "initial_page_creation_uses_destination_category_layout" }]
+    },
+    {
+      "surface_id": "catalog-feature:forum-category-groups",
+      "sources": [{ "path": "deepwell/src/services/forum/service.rs", "anchor": "pub async fn create_group(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+    },
+    {
+      "surface_id": "catalog-feature:forum-categories",
+      "sources": [{ "path": "deepwell/src/services/forum/service.rs", "anchor": "pub async fn create_category(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+    },
+    {
+      "surface_id": "catalog-feature:forum-threads",
+      "sources": [{ "path": "deepwell/src/services/forum_thread/service.rs", "anchor": "pub async fn create(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+    },
+    {
+      "surface_id": "catalog-feature:forum-posts",
+      "sources": [{ "path": "deepwell/src/services/forum_post/service.rs", "anchor": "pub async fn create(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+    },
+    {
+      "surface_id": "catalog-feature:forums-overview",
+      "sources": [{ "path": "deepwell/src/services/render/forum_read_routes.rs", "anchor": "pub async fn render_wikidot_forum_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-categories",
+      "sources": [{ "path": "deepwell/src/services/category/service.rs", "anchor": "pub async fn get_or_create(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-forum-integration",
+      "sources": [{ "path": "deepwell/src/services/forum_thread/service.rs", "anchor": "pub async fn get_or_create_page_discussion(" }],
+      "tests": [{ "path": "deepwell/tests/page_discussion.rs", "anchor": "wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_deleted_pages" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-inclusions",
+      "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) async fn expand_includes(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_site_include_uses_local_dependency_page_for_site_qualified_include" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-links",
+      "sources": [{ "path": "deepwell/src/services/link/service.rs", "anchor": "pub async fn update(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "page_backlinks_view_filters_before_exposing_titles_and_slugs" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-parent-relations",
+      "sources": [{ "path": "deepwell/src/services/parent/service.rs", "anchor": "pub async fn create(" }],
+      "tests": [{ "path": "deepwell/tests/parent.rs", "anchor": "direct_parent_metadata_tracks_one_current_relationship_and_rejects_ambiguity" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-identity",
+      "sources": [{ "path": "deepwell/src/services/site/service.rs", "anchor": "pub async fn create(" }],
+      "tests": [{ "path": "deepwell/tests/site.rs", "anchor": "platform_hostname_policy_covers_site_and_alias_lifecycle_paths" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-password-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"password\") =>" },
+        { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"password\":" }
+      ],
+      "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "password-create-plaintext-source-masked-display exposes the password control contract" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-static-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"static\") =>" },
+        { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"static\":" }
+      ],
+      "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "static-wiki-value-create-display has no override control and serializes null" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-url-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"url\") =>" },
+        { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"url\":" }
+      ],
+      "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "url-default-schema-applies-to-display without rewriting storage" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-attachment",
+      "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listpages_content_executes_attachment_syntax_with_selected_page_owner" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-buttons",
+      "sources": [{ "path": "deepwell/src/services/render/legacy_actions.rs", "anchor": "pub fn from_wikidot_source(source: &str) -> Self" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-collapsible-blocks",
+      "sources": [
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "fn normalize_wikidot_cross_closed_div_collapsibles(" },
+        { "path": "framerail/src/lib/wikidot/wikidot-collapsibles.ts", "anchor": "export function wikidotCollapsibles(node: HTMLElement)" }
+      ],
+      "tests": [{ "path": "framerail/tests/wikidot-collapsible.spec.ts", "anchor": "Wikidot-compatible collapsibles preserve legacy interaction" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-html-blocks",
+      "sources": [
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(" },
+        { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "settings.enable_html_blocks = false;" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-iftags",
+      "sources": [{ "path": "deepwell/src/services/render/iftags.rs", "anchor": "pub(super) fn resolve_outermost_wikidot_iftags(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "page_render_basalt_rate_does_not_claim_active_iftags_through_eof" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-include",
+      "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) async fn expand_includes(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "include_parser_functions_follow_argument_and_caller_ownership_phases" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-layout",
+      "sources": [
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "WIKIDOT_TABVIEW_SCRIPT_URL" },
+        { "path": "framerail/src/lib/wikidot/wikidot-tabviews.ts", "anchor": "export function wikidotTabviews(node: HTMLElement)" }
+      ],
+      "tests": [{ "path": "framerail/tests/wikidot-tabview.spec.ts", "anchor": "Wikidot-compatible tabviews switch panels without inline script execution" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-tag-buttons",
+      "sources": [
+        { "path": "deepwell/src/services/render/legacy_actions.rs", "anchor": "pub fn apply_to_tags(&self, current: &[String]) -> Option<Vec<String>>" },
+        { "path": "framerail/src/lib/wikidot/wikidot-legacy-action-request.js", "anchor": "Submit a set-tags descriptor by server-issued ordinal" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-users",
+      "sources": [{ "path": "deepwell/src/services/render/ftml_user_info.rs", "anchor": "pub(super) async fn load(ctx: &ServiceContext<'_>, names: &[String]) -> Result<Self>" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:meta-tags",
+      "sources": [{ "path": "deepwell/src/services/page_meta_tag/service.rs", "anchor": "pub async fn effective(" }],
+      "tests": [{ "path": "deepwell/tests/page_meta_tag.rs", "anchor": "page_meta_tag_overrides_site_tag_in_effective_reads_and_article_view" }]
+    },
+    {
+      "surface_id": "catalog-feature:content-licensing",
+      "sources": [
+        { "path": "deepwell/src/services/site/service.rs", "anchor": "if let Maybe::Set(license) = input.license" },
+        { "path": "deepwell/src/services/category/service.rs", "anchor": "validate_wikidot_license_override(" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "article_view_uses_category_license_and_site_fallback" }]
+    },
+    {
+      "surface_id": "catalog-feature:favicons",
+      "sources": [
+        { "path": "deepwell/src/services/site/service.rs", "anchor": "fn validate_site_icon_source(" },
+        { "path": "framerail/src/lib/site-icon-source.ts", "anchor": "export function siteIconRedirectLocation(" }
+      ],
+      "tests": [{ "path": "framerail/tests/site-icons.test.js", "anchor": "favicon declaration keeps Wikidot's local route rather than the configured source" }]
+    },
+    {
+      "surface_id": "catalog-feature:roles-and-permissions",
+      "sources": [
+        { "path": "deepwell/src/services/permission/service.rs", "anchor": "pub async fn check_user_can<'a>(" },
+        { "path": "deepwell/src/services/role/service.rs", "anchor": "pub async fn grant_role_to_user(" }
+      ],
+      "tests": [{ "path": "deepwell/tests/permission.rs", "anchor": "async fn check_user_can()" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-membership",
+      "sources": [{ "path": "deepwell/src/services/membership/service.rs", "anchor": "pub async fn join(" }],
+      "tests": [{ "path": "deepwell/tests/role.rs", "anchor": "ordinary_user_joins_only_the_editable_site_then_creates_a_page" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-navigation",
+      "sources": [
+        { "path": "deepwell/src/services/site/service.rs", "anchor": "if let Maybe::Set(top_bar_page) = input.top_bar_page" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav)" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "rerender_uses_latest_navigation_page_revision" }]
     }
   ]
 }
