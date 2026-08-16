@@ -118,11 +118,6 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "frontforum_custom_body_matches_observed_public_preview_boundaries" }]
     },
     {
-      "surface_id": "catalog-feature:module-join",
-      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_join_modules_for_view" }],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
-    },
-    {
       "surface_id": "catalog-feature:module-listdrafts",
       "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_list_drafts_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listdrafts_module_matches_live_empty_draft_state" }]
