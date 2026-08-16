@@ -1,0 +1,329 @@
+{
+  "schema": "wikijump.compatibility_catalog_source_attribution.v1",
+  "records": [
+    {
+      "surface_id": "catalog-feature:module-ad",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_ad_modules(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "ad_module_page_source_matches_live_empty_output" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-admoduleabovecontent",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-admoduleabovesidebar",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-admodulebelowcontent",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-admodulebelowfooter",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-admodulebelowsidebar",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-anonymousnotificationsunsubscribe",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "static_account_modules_match_live_preview_and_page_view_basics" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-backlinks",
+      "sources": [{ "path": "deepwell/src/services/render/backlinks.rs", "anchor": "expand_backlinks_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "backlinks_module_renders_current_page_incoming_links" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-categories",
+      "sources": [{ "path": "deepwell/src/services/render/categories.rs", "anchor": "expand_categories_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "categories_module_lists_active_categories_and_honors_include_hidden" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-clone",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules.rs", "anchor": "expand_site_utility_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "anonymous_page_and_site_utility_modules_match_frozen_safe_states" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-comments",
+      "sources": [
+        { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" },
+        { "path": "deepwell/src/services/render/forum_comments.rs", "anchor": "fn render_comments(" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-dashboard",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "anonymous_page_and_site_utility_modules_match_frozen_safe_states" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-featuredsite",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "featuredsite_fails_closed_without_a_local_featured_site_authority" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-feed",
+      "sources": [{ "path": "deepwell/src/services/render/search_feed.rs", "anchor": "expand_search_feed_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "search_and_feed_modules_match_live_preview_and_page_view_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-files",
+      "sources": [{ "path": "deepwell/src/services/render/file_modules.rs", "anchor": "expand_files_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-flickrgallery",
+      "sources": [{ "path": "deepwell/src/services/render/file_modules.rs", "anchor": "expand_flickr_gallery_preview_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-footerbar",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-forumcategory",
+      "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-forumnewthread",
+      "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-forumstart",
+      "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-forumthread",
+      "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-frontforum",
+      "sources": [
+        { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" },
+        { "path": "deepwell/src/services/render/forum_front.rs", "anchor": "pub(super) fn render(" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "frontforum_custom_body_matches_observed_public_preview_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-join",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_join_modules_for_view" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-listdrafts",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_list_drafts_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listdrafts_module_matches_live_empty_draft_state" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-loginstatus",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "loginstatus_page_source_matches_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-mailform",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-managesite",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules.rs", "anchor": "expand_site_utility_modules" }],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "anonymous_page_and_site_utility_modules_match_frozen_safe_states" },
+        { "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:module-members",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_members_modules_with_directory" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "members_module_queries_only_visible_site_members_and_roles" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-membershipapply",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_membership_apply_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "public_membership_module_states_are_distinct_and_opaque" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-membershipbypassword",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_membership_by_password_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "membership_by_password_module_matches_live_anonymous_and_member_output" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-membershipemailinvitation",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "static_account_modules_match_live_preview_and_page_view_basics" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-miniactivethreads",
+      "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-minirecentposts",
+      "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-minirecentthreads",
+      "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-navibar",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-pageoptionsbottom",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "finalize_runtime_module_residuals" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-petitionadmin",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules.rs", "anchor": "expand_site_utility_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-rate",
+      "sources": [
+        { "path": "deepwell/src/services/render/rate_actions.rs", "anchor": "pub struct RateBrowserActionRegistry" },
+        { "path": "framerail/src/lib/wikidot/wikidot-legacy-actions.js", "anchor": "planWikidotRateActionBindings" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "page_render_emits_wikidot_rate_widget_structure" },
+        { "path": "framerail/tests/wikidot-legacy-actions.test.js", "anchor": "Rate sidecars bind only the exact renderer-owned control sequence" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:module-recentposts",
+      "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_modules_match_live_missing_context_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-recentthreads",
+      "sources": [{ "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "expand_forum_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "recent_threads_matches_live_placeholder_and_owner_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-search",
+      "sources": [{ "path": "deepwell/src/services/render/search_feed.rs", "anchor": "expand_search_feed_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "search_and_feed_modules_match_live_preview_and_page_view_boundaries" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-searchall",
+      "sources": [
+        { "path": "deepwell/src/services/render/search_feed.rs", "anchor": "expand_search_all_modules" },
+        { "path": "framerail/src/lib/wikidot/wikidot-search.js", "anchor": "installWikidotSearchAll" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "searchall_module_matches_live_form_and_unavailable_route_contract" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-simpletodo",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_simpletodo_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "simpletodo_and_sendinvitations_modules_match_live_preview_basics" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-sitechanges",
+      "sources": [{ "path": "deepwell/src/services/render/site_changes.rs", "anchor": "expand_site_changes_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "sitechanges_default_snapshot_filters_before_the_initial_page_limit" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-sitegrid",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules.rs", "anchor": "resolve_typed_root_site_grid_runtime_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-tagcloud",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "expand_tag_cloud_modules" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "tagcloud_module_renders_live_category_links_styles_and_boolean_quirks" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-themepreviewer",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "anonymous_page_and_site_utility_modules_match_frozen_safe_states" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-userinfo",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "static_account_modules_match_live_preview_and_page_view_basics" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-watchers",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "static_account_modules_match_live_preview_and_page_view_basics" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-whoinvited",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn render_static_account_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "static_account_modules_match_live_preview_and_page_view_basics" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-checkbox-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"checkbox\")" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"checkbox\"" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form checkbox and wiki controls match live DOM and storage" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-creating-new-page",
+      "sources": [
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "pageId: creating ? 0 : pageId" },
+        { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form create flow renders controls and stores Wikidot source" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-field-properties",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.match_pattern" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form field properties and PCRE-style match behavior follow live Wikidot" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-hints",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub hint: String" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "placeholder={field.hint}" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form field properties and PCRE-style match behavior follow live Wikidot" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-tags",
+      "sources": [
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "if (creating && initialTags)" },
+        { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "const tags = tagsStr.split" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form create rejects NewPage tags without creating a page" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-text-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"text\")" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-control form-text\"" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form text and select controls match live validation and storage" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-wiki-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"wiki\")" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"wiki\"" }
+      ],
+      "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form checkbox and wiki controls match live DOM and storage" }]
+    }
+  ]
+}

@@ -12,6 +12,7 @@ const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
 const DEFAULT_OUTPUT = "docs/development/compatibility-surface-inventory.json"
 const SEMANTICS_REGISTRY = "docs/development/compatibility-surface-semantics.json"
+const CATALOG_SOURCE_ATTRIBUTION = "docs/development/compatibility-catalog-source-attribution.json"
 const CANONICAL_IMPLEMENTATION_LEDGER = "scripts/data/wikidot-implementation-ledger.json"
 const DATA_FORM_SPECIFICATION_PREFIX = "docs/wikidot-specifications/specifications/data-forms/"
 const MODULE_SPECIFICATION_PREFIX = "docs/wikidot-specifications/specifications/module/"
@@ -2840,7 +2841,7 @@ function auditCompletion(classification) {
   if (classification === "blocked_evidence") {
     return {
       evidence: phase("blocked"),
-      source: phase("blocked"),
+      source: phase("implemented"),
       candidate: phase("blocked"),
       standing: phase("blocked"),
       closure: phase("blocked")
@@ -3195,6 +3196,112 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics, auditedOw
   return normalizedSurfaces
 }
 
+function applyFtmlCatalogSourceProjection(surfaces, ftmlRawSurfaceManifest) {
+  const rawById = new Map(
+    ftmlRawSurfaceManifest.records.map((record) => [record.surface_id, record])
+  )
+  const pureFtmlByFeature = new Map(
+    ftmlRawSurfaceManifest.catalog_crosswalk
+      .filter(({ runtime_owner: runtimeOwner }) => runtimeOwner === null)
+      .map((row) => [row.feature_id, row])
+  )
+  const revision = ftmlRawSurfaceManifest.source?.commit
+  if (!/^[0-9a-f]{40}$/u.test(revision ?? "")) {
+    throw new Error("pinned FTML catalog source projection has no exact revision")
+  }
+  return surfaces.map((record) => {
+    if (record.kind !== "catalog_feature") return record
+    const featureId = record.surface_id.slice("catalog-feature:".length)
+    const crosswalk = pureFtmlByFeature.get(featureId)
+    if (!crosswalk) return record
+    const ownerIds = uniqueSortedStrings([
+      ...crosswalk.parsed_by,
+      ...crosswalk.rendered_by
+    ])
+    if (ownerIds.length === 0) {
+      throw new Error(`pure FTML catalog feature has no implementation source: ${featureId}`)
+    }
+    const references = ownerIds.map((surfaceId) => {
+      const owner = rawById.get(surfaceId)
+      if (!owner || typeof owner.source_reference !== "string" || owner.source_reference === "") {
+        throw new Error(`pure FTML catalog feature has an unknown source owner: ${featureId} -> ${surfaceId}`)
+      }
+      return `Rokurolize/ftml@${revision}:${owner.source_reference}`
+    })
+    return {
+      ...record,
+      source: phase("implemented", references)
+    }
+  })
+}
+
+async function applyCatalogSourceAttribution(root, surfaces, sourceRevision) {
+  const registry = await readJson(root, CATALOG_SOURCE_ATTRIBUTION)
+  if (
+    registry.schema !== "wikijump.compatibility_catalog_source_attribution.v1" ||
+    !Array.isArray(registry.records)
+  ) {
+    throw new Error(`${CATALOG_SOURCE_ATTRIBUTION} has an invalid contract`)
+  }
+  const surfaceIds = new Set(
+    surfaces
+      .filter(({ kind }) => kind === "catalog_feature")
+      .map(({ surface_id: surfaceId }) => surfaceId)
+  )
+  const recordIds = registry.records.map(({ surface_id: surfaceId }) => surfaceId)
+  if (new Set(recordIds).size !== recordIds.length) {
+    throw new Error(`${CATALOG_SOURCE_ATTRIBUTION} has duplicate surface ids`)
+  }
+  const verified = new Map()
+  for (const record of registry.records) {
+    if (
+      typeof record.surface_id !== "string" ||
+      !surfaceIds.has(record.surface_id) ||
+      DEFERRED_XMLRPC_CATALOG_FEATURES.has(record.surface_id) ||
+      !Array.isArray(record.sources) ||
+      record.sources.length === 0 ||
+      !Array.isArray(record.tests) ||
+      record.tests.length === 0
+    ) {
+      throw new Error(`${CATALOG_SOURCE_ATTRIBUTION} has an invalid row for ${record.surface_id}`)
+    }
+    const verifyWitnesses = (witnesses, kind) => witnesses.map((witness) => {
+      if (
+        typeof witness?.path !== "string" ||
+        witness.path === "" ||
+        path.isAbsolute(witness.path) ||
+        witness.path.split("/").includes("..") ||
+        typeof witness.anchor !== "string" ||
+        witness.anchor === ""
+      ) {
+        throw new Error(`${CATALOG_SOURCE_ATTRIBUTION} has invalid ${kind} witness for ${record.surface_id}`)
+      }
+      if (!gitRevisionContains(root, sourceRevision, witness.path, witness.anchor)) {
+        throw new Error(
+          `${CATALOG_SOURCE_ATTRIBUTION} ${kind} witness drifted for ${record.surface_id}: ${witness.path}#${witness.anchor}`
+        )
+      }
+      return `${witness.path}#${witness.anchor}`
+    })
+    verified.set(record.surface_id, {
+      sources: verifyWitnesses(record.sources, "source"),
+      tests: verifyWitnesses(record.tests, "test")
+    })
+  }
+  return surfaces.map((record) => {
+    const attribution = verified.get(record.surface_id)
+    if (!attribution) return record
+    return {
+      ...record,
+      source: phase("implemented", [...record.source.references, ...attribution.sources]),
+      existing_refs: {
+        ...record.existing_refs,
+        tests: uniqueSortedStrings([...record.existing_refs.tests, ...attribution.tests])
+      }
+    }
+  })
+}
+
 function framerailAmcModuleIssue(surfaceId) {
   const moduleName = surfaceId.slice("framerail-amc-module:".length).split(":")[0]
   if (moduleName === "pagerate/WhoRatedPageModule") return 1030
@@ -3492,7 +3599,7 @@ async function buildInventory(root, sourceRevision) {
     ? await applyWwsContractEvidence(root, wws, provenance.wikijump.commit)
     : wws
   verifyRegistryBlobs(root, provenance.wikijump.commit)
-  const surfaces = normalizeSurfaceOwners(applyAuditedIssueOwnership([
+  const ftmlProjectedSources = applyFtmlCatalogSourceProjection([
     ...catalog,
     ...deepwell,
     ...projectedFramerailRoutes,
@@ -3502,7 +3609,18 @@ async function buildInventory(root, sourceRevision) {
     ...pageActions,
     ...projectedWws,
     ...open43.records
-  ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")), auditedOwnershipActive), ftmlRawSurfaceManifest.catalog_crosswalk, semantics, auditedOwnershipActive)
+  ].sort((left, right) => left.surface_id.localeCompare(right.surface_id, "en")), ftmlRawSurfaceManifest)
+  const projectedSources = await applyCatalogSourceAttribution(
+    root,
+    ftmlProjectedSources,
+    provenance.wikijump.commit
+  )
+  const surfaces = normalizeSurfaceOwners(
+    applyAuditedIssueOwnership(projectedSources, auditedOwnershipActive),
+    ftmlRawSurfaceManifest.catalog_crosswalk,
+    semantics,
+    auditedOwnershipActive
+  )
   const relationshipModel = buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics)
   validateInventory(surfaces, relationshipModel.owner_keys)
   const byKind = {}
@@ -3527,6 +3645,7 @@ async function buildInventory(root, sourceRevision) {
       implementation_ledger_mirror: "docs/wikidot-specifications/implementation-ledger.json",
       source_coverage: "docs/wikidot-specifications/source-coverage.json",
       compatibility_surface_semantics: SEMANTICS_REGISTRY,
+      compatibility_catalog_source_attribution: CATALOG_SOURCE_ATTRIBUTION,
       audited_ownership_reports: AUDITED_OWNERSHIP_REPORTS,
       deepwell_jsonrpc_registry: "deepwell/src/api.rs",
       framerail_routes_root: "framerail/src/routes",

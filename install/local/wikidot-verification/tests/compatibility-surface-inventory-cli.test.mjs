@@ -157,6 +157,10 @@ async function writeRepositoryFixture(root) {
       }
     ]
   })
+  await writeJson(root, "docs/development/compatibility-catalog-source-attribution.json", {
+    schema: "wikijump.compatibility_catalog_source_attribution.v1",
+    records: []
+  })
   const implementationLedger = {
     catalog_sha256: sha256(`${JSON.stringify(catalog, null, 2)}\n`),
     features: {
@@ -1055,6 +1059,18 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
       ({ surface_id: surfaceId }) => surfaceId === "ftml.fixture:test/link/canonical-inline"
     )
   )
+  const byId = new Map(inventory.surfaces.map((record) => [record.surface_id, record]))
+  const bibliography = byId.get("catalog-feature:syntax-bibliography")
+  assert.equal(bibliography.source.status, "implemented")
+  assert.ok(bibliography.source.references.length > 0)
+  assert.ok(
+    bibliography.source.references.every((reference) =>
+      reference.startsWith(`Rokurolize/ftml@${inventory.provenance.ftml.commit}:`)
+    )
+  )
+  const iftags = byId.get("catalog-feature:syntax-iftags")
+  assert.equal(iftags.source.status, "pending")
+  assert.deepEqual(iftags.source.references, [])
 })
 
 test("CLI projects the audited registry issue owners and catalog implementation boundary", async (t) => {
@@ -2227,6 +2243,66 @@ test("CLI rejects an implementation ledger orphan", async () => {
 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /orphan ledger feature: orphan-feature/u)
+})
+
+test("CLI projects Catalog source completion only from exact revision witnesses", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-catalog-source-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const attributionPath = path.join(
+    root,
+    "docs/development/compatibility-catalog-source-attribution.json"
+  )
+  await fs.writeFile(attributionPath, `${JSON.stringify({
+    schema: "wikijump.compatibility_catalog_source_attribution.v1",
+    records: [{
+      surface_id: "catalog-feature:feature-one",
+      sources: [{ path: "deepwell/src/api.rs", anchor: 'register!("ping", ping);' }],
+      tests: [{ path: "framerail/src/routes/+page.svelte", anchor: "<h1>Fixture</h1>" }]
+    }]
+  }, null, 2)}\n`)
+  const outputPath = path.join(root, "inventory.json")
+
+  const result = runCli(root, outputPath)
+
+  assert.equal(result.status, 0, result.stderr)
+  const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
+  const feature = inventory.surfaces.find(
+    ({ surface_id: surfaceId }) => surfaceId === "catalog-feature:feature-one"
+  )
+  assert.equal(feature.source.status, "implemented")
+  assert.deepEqual(feature.source.references, [
+    'deepwell/src/api.rs#register!("ping", ping);'
+  ])
+  assert.deepEqual(feature.existing_refs.tests, [
+    "framerail/src/routes/+page.svelte#<h1>Fixture</h1>"
+  ])
+})
+
+test("CLI rejects Catalog source attribution witness drift", async (t) => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-catalog-source-drift-"))
+  cleanupFixture(t, root)
+  await writeRepositoryFixture(root)
+  const attributionPath = path.join(
+    root,
+    "docs/development/compatibility-catalog-source-attribution.json"
+  )
+  await fs.writeFile(attributionPath, `${JSON.stringify({
+    schema: "wikijump.compatibility_catalog_source_attribution.v1",
+    records: [{
+      surface_id: "catalog-feature:feature-one",
+      sources: [{ path: "deepwell/src/api.rs", anchor: "missing-source-anchor" }],
+      tests: [{ path: "framerail/src/routes/+page.svelte", anchor: "<h1>Fixture</h1>" }]
+    }]
+  }, null, 2)}\n`)
+
+  const result = runCli(root, path.join(root, "inventory.json"))
+
+  assert.equal(result.status, 1)
+  assert.match(
+    result.stderr,
+    /source witness drifted for catalog-feature:feature-one/u
+  )
 })
 
 test("CLI rejects invalid catalog live-observation links", async (t) => {
