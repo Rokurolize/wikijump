@@ -370,6 +370,17 @@
       "tests": [{ "path": "deepwell/tests/media.rs", "anchor": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page" }]
     },
     {
+      "surface_id": "catalog-feature:syntax-social-bookmarking",
+      "sources": [
+        { "path": "deepwell/src/services/render/compat/wikidot_social.rs", "anchor": "pub(in crate::services::render) fn expand_wikidot_social_syntax(" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "has_wikidot_social_syntax(&wikitext)" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "social_syntax_matches_frozen_live_service_selection_and_widget_identity" },
+        { "path": "deepwell/tests/list_pages.rs", "anchor": "listpages_default_rows_expand_secondary_page_body_modules" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:content-pages",
       "sources": [{ "path": "deepwell/src/services/page/service.rs", "anchor": "pub async fn create(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "initial_page_creation_uses_destination_category_layout" }]
