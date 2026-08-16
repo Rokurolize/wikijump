@@ -1069,8 +1069,13 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
     )
   )
   const iftags = byId.get("catalog-feature:syntax-iftags")
-  assert.equal(iftags.source.status, "pending")
-  assert.deepEqual(iftags.source.references, [])
+  assert.equal(iftags.source.status, "implemented")
+  assert.deepEqual(iftags.source.references, [
+    "deepwell/src/services/render/iftags.rs#pub(super) fn resolve_outermost_wikidot_iftags("
+  ])
+  assert.deepEqual(iftags.existing_refs.tests, [
+    "deepwell/tests/page.rs#page_render_basalt_rate_does_not_claim_active_iftags_through_eof"
+  ])
 })
 
 test("CLI projects the audited registry issue owners and catalog implementation boundary", async (t) => {
@@ -1185,8 +1190,8 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/deepwell-jsonrpc-contract-manifest.json")
   ), true)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 136)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 27)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 137)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 26)
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:authorization_token_issue")
       .existing_refs.tests,
@@ -1196,6 +1201,11 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:admin_view")
       .existing_refs.tests,
     []
+  )
+  assert.deepEqual(
+    rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:category_get")
+      .existing_refs.tests,
+    ["deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity"]
   )
 })
 

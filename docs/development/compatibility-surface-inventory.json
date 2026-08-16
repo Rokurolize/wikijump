@@ -10934,8 +10934,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "6d16f50ed71fdbf3b9b8c00f0bd58a717e55c47a",
-      "tree": "3eb4e6b77f6f889a04e83e6d133fa46b9682ac67"
+      "commit": "e57034383db72b1d7ccc54c0c3471f650383cd8e",
+      "tree": "0f653e554bedaaf5823dfa3ce718806de51e1056"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -11084,7 +11084,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "77da6a3e56738982fc07056ffd2492599011ead2ae71defdc3f6776299ee0c57"
+        "sha256": "bf3894dbf11b4c0425dc147feb69bafee25ac128d3368d8cc87cf70972c1fe4f"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11092,7 +11092,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "7d45cfe7268619debfb303d3d13dec0e5d105dbf0e298636825951aa84527e83"
+        "sha256": "4fbd9023ce31e26a8e24b9a48f5c2e1761618752a8bacfbfa8f9a547d480ea6b"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11140,7 +11140,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "c9152e7f37031b60a0923af9bbc2f6e87ea48ff06e3bef7f1d9da3f6c63f18a9"
+        "sha256": "dda9ab1b2c5816e3d8b25f5378b25b506d42c1af282ea243e2a27d583c53aa74"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11152,7 +11152,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "3896b3fc9ec27793a4d18b0ab49cdd47cc5b0be7875597f38f97c5b4c1ed1304"
+        "sha256": "514544d9b59a964e5e3abe756e5b97da3b03f11fb3ad9d40caf469019b2b3ad8"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11376,7 +11376,7 @@
       },
       {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-        "sha256": "489944ea94f72a0226291f416aeb15552849d9dfc34ddcbb63ae38956d19bec4"
+        "sha256": "75fda403139f990eb3ee583d8ae653847f2639fca222f5e434ce393b385de6e2"
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
@@ -12306,7 +12306,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#article_view_uses_category_license_and_site_fallback"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12315,8 +12317,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/category/service.rs#validate_wikidot_license_override(",
+          "deepwell/src/services/site/service.rs#if let Maybe::Set(license) = input.license"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12346,7 +12351,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#initial_page_creation_uses_destination_category_layout"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12355,8 +12362,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/page/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12747,9 +12756,10 @@
         ]
       },
       "source": {
-        "status": "in_progress",
+        "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
           "deepwell/src/services/render/list_pages/data_forms.rs",
           "deepwell/src/services/render/service.rs",
           "deepwell/src/services/view/service.rs"
@@ -12900,12 +12910,14 @@
         ]
       },
       "source": {
-        "status": "in_progress",
+        "status": "implemented",
         "references": [
           "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/data_form.rs#Some(\"hidden\") =>",
           "deepwell/src/services/view/service.rs",
           "framerail/src/lib/server/deepwell/views.ts",
           "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/lib/wikidot/wikidot-data-form.js#case \"hidden\":",
           "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
         ]
       },
@@ -13274,7 +13286,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#password-create-plaintext-source-masked-display exposes the password control contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13283,8 +13297,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#Some(\"password\") =>",
+          "framerail/src/lib/wikidot/wikidot-data-form.js#case \"password\":"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13426,7 +13443,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#static-wiki-value-create-display has no override control and serializes null"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13435,8 +13454,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#Some(\"static\") =>",
+          "framerail/src/lib/wikidot/wikidot-data-form.js#case \"static\":"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13580,7 +13602,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#url-default-schema-applies-to-display without rewriting storage"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13589,8 +13613,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#Some(\"url\") =>",
+          "framerail/src/lib/wikidot/wikidot-data-form.js#case \"url\":"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13798,7 +13825,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-icons.test.js#favicon declaration keeps Wikidot's local route rather than the configured source"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13807,8 +13836,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/site/service.rs#fn validate_site_icon_source(",
+          "framerail/src/lib/site-icon-source.ts#export function siteIconRedirectLocation("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13838,7 +13870,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13847,8 +13881,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/forum/service.rs#pub async fn create_category("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13878,7 +13914,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13887,8 +13925,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/forum/service.rs#pub async fn create_group("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13918,7 +13958,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13927,8 +13969,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/forum_post/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13998,7 +14042,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14007,8 +14053,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/forum_thread/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14038,7 +14086,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14047,8 +14097,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/forum_read_routes.rs#pub async fn render_wikidot_forum_module("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14199,6 +14251,7 @@
         ],
         "cases": [],
         "tests": [
+          "deepwell/tests/page.rs#layout_only_modules_page_source_match_live_unavailable_module",
           "deepwell/tests/page.rs::ad_module_page_source_matches_live_empty_output",
           "deepwell/tests/page.rs::layout_only_modules_page_source_match_live_unavailable_module",
           "deepwell/tests/page.rs::loginstatus_page_source_matches_live_unavailable_module"
@@ -14214,9 +14267,10 @@
         ]
       },
       "source": {
-        "status": "blocked",
+        "status": "implemented",
         "references": [
-          "deepwell/src/services/render/runtime_modules.rs"
+          "deepwell/src/services/render/runtime_modules.rs",
+          "deepwell/src/services/render/runtime_modules.rs#pub(super) fn finalize_runtime_module_residuals("
         ]
       },
       "candidate": {
@@ -14260,9 +14314,10 @@
         ]
       },
       "source": {
-        "status": "in_progress",
+        "status": "implemented",
         "references": [
-          "framerail/src/lib/ForumModuleBody.svelte"
+          "framerail/src/lib/ForumModuleBody.svelte",
+          "framerail/src/lib/ForumModuleBody.svelte#<div id=\"page-content\">{@html body}</div>"
         ]
       },
       "candidate": {
@@ -14294,7 +14349,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-chrome.spec.ts#header-extra-div-1",
+          "framerail/tests/wikidot-static-styles.test.ts#header-extra-div-1"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14303,8 +14361,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "framerail/src/lib/sigma-esque/wikidot.svelte#<div id=\"container\">"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14375,7 +14435,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_meta_tag.rs#page_meta_tag_overrides_site_tag_in_effective_reads_and_article_view"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14384,8 +14446,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/page_meta_tag/service.rs#pub async fn effective("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18252,7 +18316,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#categories_module_lists_active_categories_and_honors_include_hidden"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18261,8 +18327,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/category/service.rs#pub async fn get_or_create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18332,7 +18400,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_discussion.rs#wikidot_page_discussion_create_is_anonymous_idempotent_and_rejects_deleted_pages"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18341,8 +18411,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/forum_thread/service.rs#pub async fn get_or_create_page_discussion("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18372,7 +18444,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_site_include_uses_local_dependency_page_for_site_qualified_include"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18381,8 +18455,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#pub(in crate::services::render) async fn expand_includes("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18413,7 +18489,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18422,8 +18500,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/link/service.rs#pub async fn update("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18453,7 +18533,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/parent.rs#direct_parent_metadata_tracks_one_current_relationship_and_rejects_ambiguity"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18462,8 +18544,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/parent/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18495,6 +18579,7 @@
         "cases": [],
         "tests": [
           "framerail/tests/wikidot-found-page-tags-public-boundary.test.js",
+          "framerail/tests/wikidot-found-page-tags-public-boundary.test.js#normal found-page route SSR renders ordered tag links directly in page-tags",
           "framerail/tests/wikidot-page-tags.test.js"
         ]
       },
@@ -18507,9 +18592,10 @@
         ]
       },
       "source": {
-        "status": "in_progress",
+        "status": "implemented",
         "references": [
           "framerail/src/lib/wikidot/wikidot-page-tags.js",
+          "framerail/src/lib/wikidot/wikidot-page-tags.js#export const buildWikidotPageTagsHtml = (",
           "framerail/src/routes/[slug]/[...extra]/WikidotFoundPageTags.svelte",
           "framerail/src/routes/[slug]/[...extra]/page.svelte"
         ]
@@ -18542,7 +18628,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#saved_newpage_views_resolve_templates_from_current_anonymous_state",
+          "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18551,8 +18640,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
+          "deepwell/src/services/blueprint/template.rs#pub(crate) fn compose_template(template: &str, content: &str) -> String",
+          "deepwell/src/services/category/service.rs#page template must reference a live page in the same site"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18663,7 +18756,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/permission.rs#async fn check_user_can()"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18672,8 +18767,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/permission/service.rs#pub async fn check_user_can<'a>(",
+          "deepwell/src/services/role/service.rs#pub async fn grant_role_to_user("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18943,7 +19041,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/site.rs#platform_hostname_policy_covers_site_and_alias_lifecycle_paths"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18952,8 +19052,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/site/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19023,7 +19125,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19032,8 +19136,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/membership/service.rs#pub async fn join("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19063,7 +19169,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#rerender_uses_latest_navigation_page_revision"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19072,8 +19180,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav)",
+          "deepwell/src/services/site/service.rs#if let Maybe::Set(top_bar_page) = input.top_bar_page"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19143,7 +19254,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#normal_page_create_allocates_category_numbers_without_consuming_conflicts",
+          "framerail/tests/site-settings-foundation.test.js#keeps effective theme variants separate for initial head rendering"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19152,8 +19266,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/category/service.rs#let theme_storage = input.theme.to_option().map(|theme| theme.to_storage());",
+          "deepwell/src/services/settings/service.rs#fn theme_from_storage(category: &PageCategoryModel) -> Result<ThemeSetting>",
+          "framerail/src/routes/[x+2d]/admin/ThemeSettings.svelte#$form.themeType = category.theme_kind"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19263,7 +19381,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#listpages_content_executes_attachment_syntax_with_selected_page_owner"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19272,8 +19392,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#pub(super) fn localize_wikidot_local_file_urls("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19437,7 +19559,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19446,8 +19570,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/legacy_actions.rs#pub fn from_wikidot_source(source: &str) -> Self"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19522,7 +19648,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-collapsible.spec.ts#Wikidot-compatible collapsibles preserve legacy interaction"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19531,8 +19659,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#fn normalize_wikidot_cross_closed_div_collapsibles(",
+          "framerail/src/lib/wikidot/wikidot-collapsibles.ts#export function wikidotCollapsibles(node: HTMLElement)"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19993,7 +20124,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20002,8 +20135,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/page_preview.rs#settings.enable_html_blocks = false;",
+          "deepwell/src/services/render/service.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20034,7 +20170,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_render_basalt_rate_does_not_claim_active_iftags_through_eof"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20043,8 +20181,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/iftags.rs#pub(super) fn resolve_outermost_wikidot_iftags("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20091,12 +20231,14 @@
         ]
       },
       "source": {
-        "status": "in_progress",
+        "status": "implemented",
         "references": [
           "deepwell/Cargo.lock",
           "deepwell/Cargo.toml",
           "deepwell/src/services/context.rs",
-          "deepwell/src/services/file_revision/service.rs"
+          "deepwell/src/services/file_revision/service.rs",
+          "deepwell/src/services/render/service.rs#fn expand_wikidot_image_block_includes(",
+          "deepwell/src/services/render/service.rs#pub(super) fn localize_wikidot_local_file_urls("
         ]
       },
       "candidate": {
@@ -20128,7 +20270,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#include_parser_functions_follow_argument_and_caller_ownership_phases"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20137,8 +20281,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#pub(in crate::services::render) async fn expand_includes("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20214,7 +20360,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-tabview.spec.ts#Wikidot-compatible tabviews switch panels without inline script execution"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20223,8 +20371,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#WIKIDOT_TABVIEW_SCRIPT_URL",
+          "framerail/src/lib/wikidot/wikidot-tabviews.ts#export function wikidotTabviews(node: HTMLElement)"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20656,7 +20807,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20665,8 +20818,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/legacy_actions.rs#pub fn apply_to_tags(&self, current: &[String]) -> Option<Vec<String>>",
+          "framerail/src/lib/wikidot/wikidot-legacy-action-request.js#Submit a set-tags descriptor by server-issued ordinal"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20829,7 +20985,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20838,8 +20996,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/ftml_user_info.rs#pub(super) async fn load(ctx: &ServiceContext<'_>, names: &[String]) -> Result<Self>"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -22231,7 +22391,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35365,7 +35527,9 @@
         "cases": [
           "A1029_ACTOR_BOUND_OPEN_SELF_JOIN"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35446,7 +35610,9 @@
         "cases": [
           "A1029_CENTRAL_PUBLIC_SEAMS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-membership-join-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35486,7 +35652,9 @@
         "cases": [
           "A1029_EXACT_BROWSER_TRANSITIONS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue1029-join-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35526,7 +35694,9 @@
         "cases": [
           "A1029_JOIN_RENDER_ARGUMENT_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35606,7 +35776,10 @@
         "cases": [
           "A1029_SAVED_RENDERER_BINDING"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page",
+          "framerail/tests/wikidot-legacy-actions.test.js#unsupported membership descriptors and authored lookalikes fail closed"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35647,7 +35820,9 @@
         "cases": [
           "A1029_TWO_TRANSACTION_CONTENTION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-membership-join-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35727,7 +35902,10 @@
         "cases": [
           "A1030_ACTOR_BOUND_VOTE_MUTATION"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently",
+          "deepwell/tests/vote_authorization.rs#vote_mutations_require_route_target_view_permission"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35807,7 +35985,10 @@
         "cases": [
           "A1030_BROWSER_REQUEST_MINIMIZATION"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-legacy-action-request.test.js#Rate requests submit only the server registry binding",
+          "framerail/tests/wikidot-legacy-actions.test.js#Rate controls share one busy boundary across the page runtime"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -35927,7 +36108,11 @@
         "cases": [
           "A1030_RENDER_AND_TYPED_DESCRIPTOR"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_render_emits_wikidot_rate_widget_structure",
+          "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
+          "framerail/tests/wikidot-legacy-actions.test.js#Rate sidecars bind only the exact renderer-owned control sequence"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36089,7 +36274,9 @@
         "cases": [
           "A1033_CENTRAL_STATIC_MODULE_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-membership-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36170,7 +36357,9 @@
         "cases": [
           "A1033_MEMBERSHIPBYPASSWORD_OBSERVED_ACTORS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#membership_by_password_module_matches_live_anonymous_and_member_output"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36251,7 +36440,10 @@
         "cases": [
           "A1033_STATIC_ANONYMOUS_MODULE_CONTRACTS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque",
+          "deepwell/tests/page.rs#static_account_modules_match_live_preview_and_page_view_basics"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36331,7 +36523,9 @@
         "cases": [
           "A1037_MAILFORM_FAIL_CLOSED_SERVED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-mailform-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36411,7 +36605,9 @@
         "cases": [
           "A1037_MAILFORM_READ_ONLY_FAIL_CLOSED"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::mailform_without_a_trusted_action_contract_fails_closed_in_preview_and_saved_views"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36491,7 +36687,10 @@
         "cases": [
           "A1037_NEWPAGE_PAGE_FORM"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::newpage_module_resolves_existing_templates_in_rendered_pages",
+          "framerail/tests/ajax-module-connector.test.js"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36571,7 +36770,11 @@
         "cases": [
           "A1037_REDIRECT_POLICY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/view/redirect.rs::tests",
+          "deepwell/tests/page.rs::imported_redirect_noredirect_renders_live_error_block",
+          "framerail/tests/page-redirect.test.ts"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36611,7 +36814,9 @@
         "cases": [
           "A1037_SIMPLETODO_INITIAL_READ_ONLY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::simpletodo_and_sendinvitations_modules_match_live_preview_basics"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36691,7 +36896,11 @@
         "cases": [
           "A1038_ADMIN_POSITIVE_READ_MODELS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
+          "framerail/tests/ajax-module-connector-manage-site-general.test.js#ManageSiteGeneral accepts the exact parameter-free administrator read",
+          "framerail/tests/wikidot-manage-site-general.test.js#ManageSiteGeneral renders the exact captured administrator read model"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36733,7 +36942,9 @@
         "cases": [
           "A1038_ANONYMOUS_SAFE_STATES"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::anonymous_page_and_site_utility_modules_match_frozen_safe_states"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36773,7 +36984,12 @@
         "cases": [
           "A1038_AUTHENTICATED_NON_ADMIN_DENIAL"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_denies_only_non_administrators",
+          "deepwell/tests/page.rs#saved_site_utility_modules_recheck_the_session_actor",
+          "deepwell/tests/page.rs::authenticated_site_utility_preview_denies_only_non_administrators",
+          "deepwell/tests/page.rs::saved_site_utility_modules_recheck_the_session_actor"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36894,7 +37110,10 @@
         "cases": [
           "A1038_LITERAL_AND_BODY_OWNERSHIP"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::site_utility_modules_preserve_literal_and_reject_unsupported_shapes",
+          "deepwell/tests/page.rs::typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37134,7 +37353,9 @@
         "cases": [
           "A1041_CENTRAL_REGISTRY_AND_MUTATION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-actions-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37174,7 +37395,10 @@
         "cases": [
           "A1041_CLOSED_ACTION_REGISTRY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
+          "framerail/tests/wikidot-legacy-actions.test.js#unsupported sidecar actions fail closed without calling authored names"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37216,7 +37440,9 @@
         "cases": [
           "A1041_EXACT_BROWSER_LIFECYCLE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue1041-lifecycle-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37256,7 +37482,10 @@
         "cases": [
           "A1041_FIXED_BROWSER_ACTIONS"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-legacy-action-request.test.js",
+          "framerail/tests/wikidot-legacy-actions.test.js"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37296,7 +37525,9 @@
         "cases": [
           "A1041_SET_TAGS_CONTENTION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-actions-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37336,7 +37567,9 @@
         "cases": [
           "A1041_SET_TAGS_DENIAL_MATRIX_TESTS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_set_tags_denials_preserve_public_page_state"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37377,7 +37610,9 @@
         "cases": [
           "A1041_SET_TAGS_REVISION_MUTATION"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_set_tags_action_resolves_server_descriptor_and_is_revision_idempotent"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37497,7 +37732,9 @@
         "cases": [
           "A1060_EDITABLE_SITE_PUBLIC_JOIN_ROUTE"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37578,7 +37815,9 @@
         "cases": [
           "A1060_ORDINARY_MEMBER_PAGE_CREATE"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37742,7 +37981,9 @@
         "cases": [
           "A1061_EXACT_POST_COMMIT_WORKER_CANDIDATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-authoring-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37782,7 +38023,9 @@
         "cases": [
           "A1061_EXACT_PUBLIC_SLICE_CANDIDATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-authoring-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37822,7 +38065,9 @@
         "cases": [
           "A1061_FIRST_RELOAD_INTERVALS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-authoring-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38190,7 +38435,9 @@
         "cases": [
           "A1063_DIFF_BROWSER_WORKFLOW"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-authoring-history-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38272,7 +38519,9 @@
         "cases": [
           "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-authoring-history-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38478,7 +38727,9 @@
         "cases": [
           "A1063_SETTINGS_BROWSER_WORKFLOW"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-authoring-history-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38561,7 +38812,9 @@
         "cases": [
           "A775_ACTOR_NAVIGATION_BROWSER"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue775-edit-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38641,7 +38894,10 @@
         "cases": [
           "A775_FIXED_EDIT_DISPATCH"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-legacy-actions.test.js#sidecar binding preserves exact DOM and fails closed on a count mismatch",
+          "framerail/tests/wikidot-legacy-actions.test.js#typed standalone actions call only their fixed browser behavior"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38681,7 +38937,9 @@
         "cases": [
           "A775_TYPED_EDIT_DESCRIPTOR_DOM"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38722,7 +38980,9 @@
         "cases": [
           "A777_BROWSER_PRINT_LIFECYCLE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue777-print-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38802,7 +39062,9 @@
         "cases": [
           "A777_FIXED_PRINT_ONLY"
         ],
-        "tests": []
+        "tests": [
+          "framerail/tests/wikidot-legacy-actions.test.js#typed standalone actions call only their fixed browser behavior"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -38842,7 +39104,9 @@
         "cases": [
           "A777_TYPED_PRINT_DESCRIPTOR_DOM"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -39255,6 +39519,7 @@
           "B689_TABVIEW_INITIAL"
         ],
         "tests": [
+          "install/local/wikidot-verification/src/open43-browser-689-candidate-case-set.mjs",
           "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"
         ]
       },
@@ -39421,7 +39686,9 @@
         "cases": [
           "B690_FIXED_SIX_PAGE_DENOMINATOR"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-browser-690-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -39504,6 +39771,7 @@
           "B690_GEOMETRY_INITIAL"
         ],
         "tests": [
+          "install/local/wikidot-verification/src/open43-browser-690-candidate-case-set.mjs",
           "install/local/wikidot-verification/tests/standing-browser-canaries.test.mjs"
         ]
       },
@@ -39546,6 +39814,7 @@
           "B690_GEOMETRY_SETTLED"
         ],
         "tests": [
+          "install/local/wikidot-verification/src/open43-browser-690-candidate-case-set.mjs",
           "install/local/wikidot-verification/tests/standing-browser-parity-observation.test.mjs"
         ]
       },
@@ -39712,7 +39981,9 @@
         "cases": [
           "B822_PAGE_TAGS_INITIAL"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-page-tags-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -39752,7 +40023,9 @@
         "cases": [
           "B822_PAGE_TAGS_SETTLED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-page-tags-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -40223,7 +40496,8 @@
           "M1039_MUTATION_TO_NEXT_READ"
         ],
         "tests": [
-          "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission"
+          "deepwell/tests/page.rs::file_mutations_require_parent_page_edit_permission",
+          "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -40352,7 +40626,9 @@
         "cases": [
           "M1042_BROWSER_LIFECYCLE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-embedvideo-browser-candidate.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -40563,7 +40839,9 @@
         "cases": [
           "M1043_BROWSER_RENDER_AND_VIEWER"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -40775,6 +41053,7 @@
         "tests": [
           "deepwell/src/services/render/compat/wikidot_gallery.rs::tests::gallery_dom_matches_the_frozen_static_thumbnail_shape_without_scripts",
           "deepwell/tests/page.rs::wikidot_gallery_selects_authorized_current_page_images_after_page_acl",
+          "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs",
           "wws/src/handler/resized_image.rs::tests::public_route_caps_concurrent_decode_work",
           "wws/src/handler/resized_image.rs::tests::public_route_checks_acl_before_file_details_and_rejects_unsafe_inputs",
           "wws/src/handler/resized_image.rs::tests::public_route_tracks_latest_revision_and_fails_closed_after_rename_or_delete",
@@ -40944,7 +41223,9 @@
         "cases": [
           "M1062_BROWSER_UPLOAD_FLOW"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -41116,7 +41397,9 @@
         "cases": [
           "M1062_SERIALIZABLE_ACTION_RESPONSE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -41159,7 +41442,8 @@
         "tests": [
           "framerail/tests/page-file-client-ip.test.js",
           "framerail/tests/page-file-upload-lifecycle.test.js",
-          "framerail/tests/presigned-upload.test.js"
+          "framerail/tests/presigned-upload.test.js",
+          "install/local/wikidot-verification/src/open43-media-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -41200,7 +41484,9 @@
         "cases": [
           "M756_BROWSER_CACHE_TRANSITIONS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -41448,7 +41734,9 @@
         "cases": [
           "M776_BROWSER_GEOMETRY_AND_NETWORK"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -41662,7 +41950,9 @@
         "cases": [
           "M806_BROWSER_GEOMETRY_AND_NETWORK"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -41877,7 +42167,9 @@
         "cases": [
           "Q1026_BROWSER_PRINTUSER_INTERVALS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1026-user-identity-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -41917,7 +42209,9 @@
         "cases": [
           "Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1026-user-identity-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -42209,7 +42503,8 @@
           "Q1027_RENAME_DELETE_RESTORE_CACHE_AND_SERVED_CANDIDATE"
         ],
         "tests": [
-          "deepwell/tests/page.rs::backlinks_module_renders_current_page_incoming_links"
+          "deepwell/tests/page.rs::backlinks_module_renders_current_page_incoming_links",
+          "install/local/wikidot-verification/src/open43-q1027-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -42296,7 +42591,9 @@
         "cases": [
           "Q1028_ACTOR_SCOPED_RUNTIME_INVENTORY"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::categories_runtime_inventory_is_scoped_to_the_request_actor"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -42336,7 +42633,9 @@
         "cases": [
           "Q1028_CATEGORY_LIFECYCLE_AND_CACHE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-categories-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -42416,7 +42715,10 @@
         "cases": [
           "Q1028_INITIAL_CATEGORY_DOM_AND_ARGUMENTS"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/categories.rs::tests",
+          "deepwell/tests/page.rs::categories_module_lists_active_categories_and_honors_include_hidden"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -42496,7 +42798,9 @@
         "cases": [
           "Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1032-members-userinfo-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -43008,7 +43312,9 @@
         "cases": [
           "Q1034_EXACT_CANDIDATE_FORUM_ROUTES_AND_AJAX"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1034-forum-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -43048,7 +43354,9 @@
         "cases": [
           "Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1034-forum-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -43088,7 +43396,9 @@
         "cases": [
           "Q1034_EXACT_CANDIDATE_RECENTTHREADS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1034-forum-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -43717,7 +44027,9 @@
         "cases": [
           "Q1035_SITECHANGES_DEFAULT_INITIAL_SNAPSHOT"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -43842,7 +44154,9 @@
         "cases": [
           "Q1035_SITECHANGES_PERMISSION_BEFORE_LIMIT"
         ],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44008,7 +44322,9 @@
         "cases": [
           "Q1036_EXACT_CANDIDATE_PREVIEW_SAVED_BOUNDARIES"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1036-search-feed-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44089,7 +44405,8 @@
           "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"
         ],
         "tests": [
-          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates"
+          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "install/local/wikidot-verification/src/open43-q1040-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -44299,7 +44616,9 @@
         "cases": [
           "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q748-topbar-search-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44382,7 +44701,9 @@
         "cases": [
           "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q748-topbar-search-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44462,7 +44783,9 @@
         "cases": [
           "Q778_BROWSER_ROUTE_IDENTITY_AND_SETTLING"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q778-forum-mini-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44502,7 +44825,9 @@
         "cases": [
           "Q778_EXACT_CANDIDATE_24_CASE_REPLAY"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q778-forum-mini-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44542,7 +44867,9 @@
         "cases": [
           "Q778_EXACT_CANDIDATE_SAVED_PAGE_RUNTIME"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q778-forum-mini-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -44829,7 +45156,8 @@
           "Q779_EXPLICIT_ROOT_ACTOR_AND_LIFECYCLE_CANDIDATE"
         ],
         "tests": [
-          "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom"
+          "deepwell/tests/page.rs::page_tree_module_renders_current_page_hierarchy_with_live_depth_dom",
+          "install/local/wikidot-verification/src/open43-page-tree-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -45045,7 +45373,9 @@
         "cases": [
           "Q807_EXACT_CANDIDATE_FORM_ROUTE_BROWSER"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q807-searchall-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -45208,7 +45538,8 @@
           "Q809_PERMISSION_BEFORE_LIMIT_CANDIDATE"
         ],
         "tests": [
-          "deepwell/src/services/render/runtime_page_queries.rs::tests::bounded_modules_can_keep_query_batches_at_their_effective_limit"
+          "deepwell/src/services/render/runtime_page_queries.rs::tests::bounded_modules_can_keep_query_batches_at_their_effective_limit",
+          "install/local/wikidot-verification/src/open43-q809-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -45295,7 +45626,8 @@
           "Q809_SERVED_MUTATION_AND_BROWSER_CANDIDATE"
         ],
         "tests": [
-          "deepwell/tests/rated_pages.rs::ratedpages_renders_live_top_rated_box_and_rating_filters"
+          "deepwell/tests/rated_pages.rs::ratedpages_renders_live_top_rated_box_and_rating_filters",
+          "install/local/wikidot-verification/src/open43-q809-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -45377,7 +45709,9 @@
         "cases": [
           "Q810_CANDIDATE_FAIL_CLOSED_NETWORK"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q810-featuredsite-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -45461,7 +45795,8 @@
           "Q811_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"
         ],
         "tests": [
-          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates"
+          "deepwell/tests/page.rs::nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "install/local/wikidot-verification/src/open43-nextprevious-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -45629,7 +45964,9 @@
         "cases": [
           "S1046_ADMIN_INITIAL"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -45669,7 +46006,9 @@
         "cases": [
           "S1046_ADMIN_SETTLED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -45918,7 +46257,8 @@
         ],
         "tests": [
           "deepwell/tests/site.rs::site_update_requires_site_edit_permission",
-          "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment"
+          "framerail/tests/deployment-environment.test.js::defaults CSRF origin checks from deployment environment",
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
         ]
       },
       "evidence": {
@@ -46085,7 +46425,9 @@
         "cases": [
           "S754_ANALYTICS_INITIAL"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46125,7 +46467,9 @@
         "cases": [
           "S754_ANALYTICS_SETTLED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46493,7 +46837,9 @@
         "cases": [
           "S755_THEME_INITIAL"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46533,7 +46879,9 @@
         "cases": [
           "S755_THEME_SETTLED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46739,7 +47087,9 @@
         "cases": [
           "S757_TOOLBAR_INITIAL"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46779,7 +47129,9 @@
         "cases": [
           "S757_TOOLBAR_SETTLED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-browser-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46943,7 +47295,9 @@
         "cases": [
           "S758_CREATE_INITIAL"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-lifecycle-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -46983,7 +47337,9 @@
         "cases": [
           "S758_CREATE_SETTLED"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-settings-lifecycle-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -47200,7 +47556,9 @@
           1373
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-delete-action-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -47918,7 +48276,10 @@
           1063
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-parent-action-boundary.test.js",
+          "framerail/tests/page-parent-authorization.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48051,7 +48412,9 @@
           1373
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-move-action-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -49185,11 +49548,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/redirect.rs#file_redirect_targets_internal_file_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49265,11 +49631,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/well_known.rs#well_known_main_target_returns_plain_not_found"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49305,11 +49674,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/well_known.rs#well_known_main_target_returns_plain_not_found"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49345,11 +49717,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/redirect.rs#code_redirect_targets_internal_code_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49385,11 +49760,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/redirect.rs#download_redirect_targets_internal_download_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49425,11 +49803,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/redirect.rs#file_redirect_targets_internal_file_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49465,11 +49846,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/redirect.rs#html_redirect_targets_internal_html_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49634,11 +50018,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49674,11 +50061,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49714,11 +50104,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49754,11 +50147,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49794,11 +50190,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49834,11 +50233,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/route.rs#public_code_routes_default_to_first_block_without_changing_indexed_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -49917,11 +50319,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50169,11 +50574,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/route.rs#public_code_routes_default_to_first_block_without_changing_indexed_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50209,11 +50617,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#unknown_common_resources_are_not_served_by_catch_all"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50249,11 +50660,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#html_block_iframe_script_is_served_with_javascript_type"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50289,11 +50703,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#resize_iframe_html_is_served_with_html_type"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50329,11 +50746,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#unknown_common_resources_are_not_served_by_catch_all"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50369,11 +50789,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#html_block_css_is_served_with_css_type"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50452,11 +50875,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/resized_image.rs#public_router_serves_documented_variants_and_cheap_conditional_head"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50492,11 +50918,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/robots.rs#robots_txt_main_target_returns_plain_allow_all_policy"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50744,11 +51173,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/route.rs#public_code_routes_default_to_first_block_without_changing_indexed_route"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50784,11 +51216,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#unknown_common_resources_are_not_served_by_catch_all"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50824,11 +51259,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#html_block_iframe_script_is_served_with_javascript_type"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50864,11 +51302,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#resize_iframe_html_is_served_with_html_type"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50904,11 +51345,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#unknown_common_resources_are_not_served_by_catch_all"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50944,11 +51388,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/misc.rs#html_block_css_is_served_with_css_type"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -51027,11 +51474,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/resized_image.rs#public_router_serves_documented_variants_and_cheap_conditional_head"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -51067,11 +51517,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/robots.rs#robots_txt_main_target_returns_plain_allow_all_policy"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
