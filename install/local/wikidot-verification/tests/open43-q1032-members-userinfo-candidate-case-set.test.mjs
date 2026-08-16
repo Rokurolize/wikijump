@@ -51,6 +51,9 @@ const PRIVATE_INPUT = {
   preview_title: "q1032-boundary",
   saved_page: { page_id: 700, revision_id: 701, slug: "members-directory" },
   saved_page_source_sha256: "509ffeb30626c5007a60d8005ec9d0ea884b6f4cdec408448521e141181b087a",
+  actors: {
+    administrator: { user_id: 41, session_token: "administrator-session-token" },
+  },
 };
 
 const DIRECTORY_STATE = {
@@ -59,6 +62,8 @@ const DIRECTORY_STATE = {
   members_script: true,
   searchusers_disabled: true,
   whoinvited_form: true,
+  printuser_count: 2,
+  printuser_listener: true,
 };
 
 function fakeSession(calls, { badAjax = false } = {}) {
@@ -74,13 +79,41 @@ function fakeSession(calls, { badAjax = false } = {}) {
     },
     async ajaxModuleConnector(fields, options) {
       calls.push({ method: "ajax-module-connector", fields, options });
+      const page = fields.page;
+      if (page === "1468") {
+        return {
+          http_status: 200,
+          content_type: "text/plain; charset=UTF-8",
+          response_body_sha256: hash("g"),
+          json: { status: "not_ok", jsInclude: [], cssInclude: [], callbackIndex: null },
+        };
+      }
+      if (fields.moduleName === "profile/UserInfoModule") {
+        return {
+          http_status: 200,
+          content_type: "text/plain; charset=UTF-8",
+          response_body_sha256: hash("h"),
+          json: { status: "ok", body: "\n\n<div class=\"error-block\">No user specified.</div>", jsInclude: [], cssInclude: [], callbackIndex: null },
+        };
+      }
+      const markers = page === "1" || page === "0"
+        ? { table: true, pager: true, script: true }
+        : { table: true, pager: true, script: true };
       return {
         http_status: 200,
         content_type: "text/plain; charset=UTF-8",
         response_body_sha256: hash("f"),
         json: badAjax
           ? { status: "ok", body: "<div>no table</div>", jsInclude: [], cssInclude: [], callbackIndex: null }
-          : { status: "ok", body: AJAX_BODY, jsInclude: [], cssInclude: [], callbackIndex: null },
+          : {
+              status: "ok",
+              body: markers.table
+                ? `<div id="ml-test"><table><tr><td><span class="printuser avatarhover"><a onclick="WIKIDOT.page.listeners.userInfo(1); return false;">member</a></span></td></tr></table><span class="pager-no">page ${page} of 1</span><script>OZONE.ajax.requestModule("membership/MembersListModule")</script></div>`
+                : "<div>No users.</div>",
+              jsInclude: [],
+              cssInclude: [],
+              callbackIndex: null,
+            },
       };
     },
     async pageRequest(slug, options) {
@@ -122,7 +155,7 @@ test("Q1032 executable case reaches Members, exact static account boundaries, th
   const prepared = selected.prepareRun({ candidateIdentity: identity(), privateInput: PRIVATE_INPUT, signal: null, candidateBrowserContexts: fakeBrowserContexts() });
   const rows = await prepared.execute();
   assert.deepEqual(rows.map(({ case_id }) => case_id), [...OPEN43_Q1032_CASE_IDS]);
-  assert.equal(calls.length, 7);
+  assert.equal(calls.length, 16);
   assert.deepEqual(calls.map(({ method }) => method), [
     "wikidot_members_list_module",
     "wikidot_page_preview",
@@ -130,9 +163,22 @@ test("Q1032 executable case reaches Members, exact static account boundaries, th
     "wikidot_page_preview",
     "wikidot_page_preview",
     "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
+    "ajax-module-connector",
     "page-request",
   ]);
-  assert.deepEqual(calls.map(({ options }) => options.actor), ["anonymous", "anonymous", "editor", "anonymous", "editor", "anonymous", "anonymous"]);
+  assert.deepEqual(calls.map(({ options }) => options.actor), [
+    "anonymous", "anonymous", "editor", "anonymous", "editor",
+    "anonymous", "anonymous", "anonymous", "anonymous", "anonymous",
+    "anonymous", "anonymous", "editor", "editor", "anonymous", "anonymous",
+  ]);
   for (const row of rows) {
     const verified = prepared.verifyCase(row.case_id, row.observations);
     assert.equal(verified.verified, true, row.case_id);

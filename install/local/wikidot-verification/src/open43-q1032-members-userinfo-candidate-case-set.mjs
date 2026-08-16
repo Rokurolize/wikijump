@@ -2,7 +2,10 @@ import { createHash } from "node:crypto";
 
 import { CandidateHttpSession } from "./candidate-case-http.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
-import { sha256Value } from "./standing-browser-parity-util.mjs";
+import {
+  requirePlainObject,
+  sha256Value,
+} from "./standing-browser-parity-util.mjs";
 import {
   MEMBERS_AJAX_FORM,
   MEMBERS_PARAMETERS,
@@ -85,27 +88,39 @@ function directoryState(page) {
     const membersScript = Array.from(document.querySelectorAll("script"))
       .some((script) => script.textContent?.includes('OZONE.ajax.requestModule("membership/MembersListModule"') === true);
     const bodyText = document.body?.innerText ?? "";
+    const printusers = Array.from(document.querySelectorAll("#page-content .printuser.avatarhover a"));
     return {
       members_table: document.querySelectorAll("#page-content table").length > 0,
       members_pager: document.querySelectorAll("#page-content .pager-no").length > 0,
       members_script: membersScript,
       searchusers_disabled: bodyText.includes("User search has been (temporarily) disabled. Sorry!") === true,
       whoinvited_form: document.querySelectorAll("form#who-invited-form, input#user-lookup").length === 2,
+      printuser_count: printusers.length,
+      printuser_listener: printusers.some((anchor) => anchor.getAttribute("onclick")?.includes("WIKIDOT.page.listeners.userInfo(") === true),
     };
   });
 }
 
 class Open43Q1032Run {
   #session;
+  #administratorSession;
   #input;
   #pageOrigin;
   #browserContexts;
 
-  constructor(session, input, pageOrigin, browserContexts) {
+  constructor(session, input, pageOrigin, browserContexts, administratorSession) {
     this.#session = session;
+    this.#administratorSession = administratorSession;
     this.#input = input;
     this.#pageOrigin = pageOrigin;
     this.#browserContexts = browserContexts;
+  }
+
+  async #ajax(actor, fields) {
+    if (actor === "administrator") {
+      return await this.#administratorSession.ajaxModuleConnector(fields, { actor: "editor" });
+    }
+    return await this.#session.ajaxModuleConnector(fields, { actor });
   }
 
   async #directoryMatrix() {
@@ -147,12 +162,37 @@ class Open43Q1032Run {
   }
 
   async #membersAjax() {
-    const response = await this.#session.ajaxModuleConnector(MEMBERS_AJAX_FORM, { actor: "anonymous" });
+    const response = await this.#ajax("anonymous", MEMBERS_AJAX_FORM);
+    const pages = [];
+    for (const page of [0, 1, 2, 3]) {
+      pages.push({
+        page,
+        response: await this.#ajax("anonymous", { ...MEMBERS_AJAX_FORM, page: String(page) }),
+      });
+    }
+    const outOfRange = {
+      page: 1468,
+      response: await this.#ajax("anonymous", { ...MEMBERS_AJAX_FORM, page: "1468" }),
+    };
+    const actor_matrix = [];
+    for (const actor of ["anonymous", "editor", "administrator"]) {
+      actor_matrix.push({
+        actor,
+        response: await this.#ajax(actor, { ...MEMBERS_AJAX_FORM, page: "2" }),
+      });
+    }
+    const missing_identity = {
+      envelope: await this.#ajax("anonymous", { moduleName: "profile/UserInfoModule", user_id: "", callbackIndex: "1" }),
+    };
     return [{
       case_id: OPEN43_Q1032_CASE_IDS[1],
       observations: {
         request_form: MEMBERS_AJAX_FORM,
         response: ajaxObservation(response),
+        pages: pages.map(({ page, response: pageResponse }) => ({ page, response: ajaxObservation(pageResponse) })),
+        out_of_range: { page: outOfRange.page, response: ajaxObservation(outOfRange.response) },
+        actor_matrix: actor_matrix.map(({ actor, response: actorResponse }) => ({ actor, response: ajaxObservation(actorResponse) })),
+        missing_identity: { envelope: ajaxObservation(missing_identity.envelope) },
       },
     }];
   }
@@ -267,6 +307,14 @@ export function createOpen43Q1032CandidateCaseSet({
       const input = validateOpen43Q1032PrivateInput(privateInput);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       if (session.pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("Q1032 session did not bind the sealed candidate origin");
+      const rawInput = requirePlainObject(privateInput, "Q1032 private input");
+      const administrator = requirePlainObject(rawInput.actors?.administrator, "Q1032 administrator actor");
+      const administratorSession = sessionFactory({
+        candidateIdentity,
+        privateInput: { ...rawInput, actors: { editor: administrator } },
+        signal,
+      });
+      if (administratorSession.pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("Q1032 administrator session did not bind the sealed candidate origin");
       const pageOrigin = session.pageOrigin;
       const privateInputIdentity = {
         ...session.privateInputIdentity,
@@ -274,9 +322,10 @@ export function createOpen43Q1032CandidateCaseSet({
         preview_title: input.preview_title,
         saved_page: input.saved_page,
         saved_page_source_sha256: input.saved_page_source_sha256,
+        administrator_session_sha256: sha256Value(administratorSession.privateInputIdentity),
         evidence_sha256: sha256Value(OPEN43_Q1032_EVIDENCE),
       };
-      const execution = new Open43Q1032Run(session, input, pageOrigin, candidateBrowserContexts);
+      const execution = new Open43Q1032Run(session, input, pageOrigin, candidateBrowserContexts, administratorSession);
       const plan = {
         schema: "wikijump.open43_q1032_members_userinfo_candidate_plan.v1",
         site_slug: SITE_SLUG,
@@ -289,7 +338,7 @@ export function createOpen43Q1032CandidateCaseSet({
         members: { actor: "anonymous", parameters: MEMBERS_PARAMETERS, public_contract: "status-ok-table-page-one-pager-members-list-script" },
         userinfo: { source: "[[module UserInfo]]", actors: ["anonymous", "editor"], expected_no_target_sha256: USERINFO_NO_TARGET_SHA256 },
         searchusers: { source: "[[module SearchUsers]]", actors: ["anonymous", "editor"], expected_disabled_sha256: SEARCHUSERS_DISABLED_SHA256 },
-        members_ajax: { form: MEMBERS_AJAX_FORM, envelope: "text-plain-ok-table-page-one-pager-members-list-script-no-includes-null-callback" },
+        members_ajax: { form: MEMBERS_AJAX_FORM, pages: [0, 1, 2, 3], out_of_range_page: 1468, actors: ["anonymous", "editor", "administrator"], envelope: "text-plain-ok-table-page-one-pager-members-list-script-no-includes-null-callback" },
         browser_directory: { saved_slug: input.saved_page.slug, capture_slug: DIRECTORY_CAPTURE.slug, mutation_policy: "read-only" },
         mutation_policy: "read-only",
       };

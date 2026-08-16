@@ -145,12 +145,81 @@ function verifyAjax(value) {
   };
 }
 
+function verifyAjaxEnvelopeShape(value, label) {
+  const ajax = object(value, `${label} Ajax observation`);
+  expect(ajax.http_status === 200, `${label} Ajax connector did not return HTTP 200`);
+  expect(ajax.content_type === "text/plain; charset=UTF-8", `${label} Ajax connector content type differs from the live envelope`);
+  requireSha256(ajax.response_body_sha256, `${label} Ajax response body SHA-256`);
+  const json = object(ajax.json, `${label} Ajax response envelope`);
+  expect(Array.isArray(json.jsInclude) && json.jsInclude.length === 0, `${label} Ajax envelope changed jsInclude`);
+  expect(Array.isArray(json.cssInclude) && json.cssInclude.length === 0, `${label} Ajax envelope changed cssInclude`);
+  expect(json.callbackIndex === null, `${label} Ajax envelope changed callbackIndex`);
+  return {
+    status: json.status,
+    response_body_sha256: ajax.response_body_sha256,
+    body_has_table: typeof json.body === "string" && json.body.includes("<table"),
+    body_has_pager: typeof json.body === "string" && json.body.includes('<span class="pager-no">'),
+    body_has_module_script: typeof json.body === "string" && json.body.includes('OZONE.ajax.requestModule("membership/MembersListModule"'),
+    envelope_shape_verified: true,
+  };
+}
+
+function verifyBoundaryEnvelope(value, label) {
+  const ajax = object(value, `${label} Ajax observation`);
+  expect(ajax.http_status === 200, `${label} Ajax connector did not return HTTP 200`);
+  expect(ajax.content_type === "text/plain; charset=UTF-8", `${label} Ajax connector content type differs from the live envelope`);
+  const json = object(ajax.json, `${label} Ajax response envelope`);
+  expect(Array.isArray(json.jsInclude) && json.jsInclude.length === 0, `${label} Ajax envelope changed jsInclude`);
+  expect(Array.isArray(json.cssInclude) && json.cssInclude.length === 0, `${label} Ajax envelope changed cssInclude`);
+  expect(json.callbackIndex === null, `${label} Ajax envelope changed callbackIndex`);
+  return { status: json.status, envelope_shape_verified: true };
+}
+
 export function verifyOpen43Q1032AjaxCase(caseId, observations) {
   expect(caseId === OPEN43_Q1032_CASE_IDS[1], `unsupported Q1032 case: ${caseId}`);
   const value = object(observations, `${caseId} observations`);
   expect(JSON.stringify(value.request_form) === JSON.stringify(MEMBERS_AJAX_FORM), "Members Ajax request shape changed");
   const ajax = verifyAjax(value.response);
-  return { verified: true, ajax };
+
+  const pages = value.pages;
+  expect(Array.isArray(pages) && pages.length === 4, "Members Ajax page matrix drifted");
+  for (const row of pages) {
+    const page = object(row, "Members Ajax page matrix row");
+    if (page.page === 0 || page.page === 1) {
+      const verified = verifyAjaxEnvelopeShape(page.response, `page ${page.page}`);
+      expect(verified.status === "ok" && verified.body_has_table && verified.body_has_pager && verified.body_has_module_script, `page ${page.page} did not return the live table matrix`);
+    } else {
+      const verified = verifyAjaxEnvelopeShape(page.response, `page ${page.page}`);
+      expect(verified.status === "ok", `page ${page.page} did not return an ok envelope`);
+    }
+  }
+
+  const outOfRange = object(value.out_of_range, "Members Ajax out-of-range boundary");
+  expect(outOfRange.page === 1468, "Members Ajax out-of-range page drifted");
+  expect(verifyBoundaryEnvelope(outOfRange.response, "out-of-range").status === "not_ok", "Members Ajax out-of-range boundary did not return the live not_ok envelope");
+
+  const matrix = value.actor_matrix;
+  expect(Array.isArray(matrix) && matrix.length === 3, "Members Ajax actor matrix drifted");
+  const matrixShapes = matrix.map((row) => {
+    const actor = object(row, "Members Ajax actor matrix row");
+    const verified = verifyAjaxEnvelopeShape(actor.response, `actor ${actor.actor}`);
+    expect(verified.status === "ok", `actor ${actor.actor} did not return an ok envelope`);
+    return JSON.stringify({ status: verified.status, table: verified.body_has_table, pager: verified.body_has_pager, script: verified.body_has_module_script });
+  });
+  expect(new Set(matrixShapes).size === 1, "Members Ajax actor matrix is not actor-invariant");
+
+  const missing = object(value.missing_identity, "Members Ajax missing-identity boundary");
+  expect(missing.envelope.json?.status === "ok", "Members Ajax missing-identity envelope drifted");
+  expect(typeof missing.envelope.json?.body === "string" && missing.envelope.json.body.includes("No user specified."), "Members Ajax missing-identity error block drifted");
+
+  return {
+    verified: true,
+    ajax,
+    pages_matrix_verified: true,
+    out_of_range_verified: true,
+    actor_matrix_invariant: true,
+    missing_identity_verified: true,
+  };
 }
 
 function verifyDirectoryState(state, label) {
@@ -160,12 +229,16 @@ function verifyDirectoryState(state, label) {
   expect(value.members_script === true, `Q1032 ${label} members module script is missing`);
   expect(value.searchusers_disabled === true, `Q1032 ${label} SearchUsers disabled state is missing`);
   expect(value.whoinvited_form === true, `Q1032 ${label} WhoInvited form shell is missing`);
+  expect(Number.isSafeInteger(value.printuser_count) && value.printuser_count > 0, `Q1032 ${label} printuser rows are missing`);
+  expect(value.printuser_listener === true, `Q1032 ${label} printuser userInfo listener is missing`);
   return {
     members_table: value.members_table,
     members_pager: value.members_pager,
     members_script: value.members_script,
     searchusers_disabled: value.searchusers_disabled,
     whoinvited_form: value.whoinvited_form,
+    printuser_count: value.printuser_count,
+    printuser_listener: value.printuser_listener,
   };
 }
 
