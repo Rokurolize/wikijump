@@ -1952,7 +1952,7 @@ const FRAMERAIL_AMC_TESTS = new Map([
   ],
   [
     "framerail-amc-module:list/ListPagesModule:duplicate-fields=last_value",
-    ["ListPages keeps the later URL-form value for duplicate scalar fields", "fails closed for unsupported modules while duplicate module names keep the later value"]
+    ["ListPages keeps the later URL-form value for duplicate scalar fields", "ListPages keeps later module names while other modules reject duplicates"]
   ],
   [
     "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
