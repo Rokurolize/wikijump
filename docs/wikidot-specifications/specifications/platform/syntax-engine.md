@@ -3,6 +3,7 @@
 - Feature ID: `syntax-engine`
 - Category: `platform`
 - Documentation status: `high-level-documentation`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Implement the documented Wikidot capability “Wiki syntax engine” and its use
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `syntax-pagepreview` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl` (SHA-256 `6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a`): Seventeen anonymous PagePreview probes cover embedding, iframe filtering, foldable-list initial DOM, links, and social-bookmarking boundaries.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Wikidot's syntax engine accepts the catalogued wiki syntax, modules, templates, links, formatting, data forms, and other documented constructs rather than requiring authors to write raw HTML/PHP/JavaScript for ordinary site authoring.
+
+### P2 - parser stage, nesting, and composition
+
+- Parsing/nesting/composition is the aggregate behavior of the individual syntax/module contracts. FTML owns context-free syntax primitives while Wikijump owns runtime state-dependent evaluation.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Raw source is stored as the page revision; compiled/rendered output is derived and may be regenerated without changing source identity.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Rendering MUST preserve sanitization and runtime permission boundaries: authored syntax cannot gain file/site/actor authority absent an owning runtime feature.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Selection/order/pagination belong to modules such as ListPages, not the syntax engine globally.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- PagePreview and saved-page rendering are separate public execution tiers; current live probes demonstrate constructs such as [[html]] can differ by tier, so preview output must not be assumed identical to saved runtime.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Generated HTML/DOM must follow each syntax feature's Wikidot layout contract, including legacy classes/IDs/quirks rather than modernized equivalents.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Parser/render resource bounds must prevent pathological source from hanging or exhausting the service while preserving valid behavior. Unknown/unverified constructs remain literal or fail closed rather than expanding authority.
 
 
 ## Suggested public TDD seams

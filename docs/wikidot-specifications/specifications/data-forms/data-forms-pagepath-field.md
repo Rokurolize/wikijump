@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-pagepath-field`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Implement the documented data-form capability “The 'pagepath' field type”, i
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- The field type is pagepath and accepts the documented tree/category and depth configuration. Its submitted value is a page fullname, not an internal numeric page ID.
+
+### P2 - parser stage, nesting, and composition
+
+- The pagepath field is declared in the YAML fields map; its configuration determines the browser selector/tree presentation but does not create a new page-link syntax.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Live create/edit/reload accepts and stores the submitted fullname verbatim, including nonexistent and cross-category values. Implementation MUST reproduce that save boundary rather than enforcing documentation-implied referential validation on submission.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- The field editor follows containing-page edit permissions. Resolution/display of a stored target MUST separately apply target visibility so a hidden node is not disclosed.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Configured tree depth/category affects the choices shown by the editor where observed; the stored scalar itself remains one fullname. No implicit pagination is introduced.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- The field is served through PageEditModule and saved page rendering; target navigation uses ordinary page URLs.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Resolved stored values display their page-name label; unresolved values remain stored without a fabricated link/label in the captured saved output.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Malformed-looking values observed at the direct save seam still round-trip. Client-side choice restrictions MUST NOT be mistaken for server-side validation unless live evidence proves the rejection boundary.
 
 
 ## Suggested public TDD seams

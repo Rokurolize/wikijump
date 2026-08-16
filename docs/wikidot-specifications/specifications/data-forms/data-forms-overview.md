@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-overview`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Support structured page data defined by category templates and exposed through W
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-create-edit` -> `install/local/wikidot-verification/artifacts/data-form-create-edit-live.json` (SHA-256 `12a85fc671c52b036d5fe648e63ff5cbfc7d28a8cd0d88e662de614cd6772a8b`)
+- `data-form-public-demos` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl` (SHA-256 `54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5`): The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen.
+
+### P1 - invocation grammar and scalar interpretation
+
+- A category _template may contain one [[form]]...[[/form]] YAML definition. Fields have names and properties; documented defaults include text when type is omitted and select behavior when an option-values definition implies it.
+
+### P2 - parser stage, nesting, and composition
+
+- The form is parsed as YAML inside the template. Field names, indentation, scalar/list structure, and one-form-per-template constraint are compatibility-sensitive and MUST reject malformed schema instead of guessing.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- A missing page first shows the normal missing-page state; Create page opens the generated data-form editor, save writes structured page source, and later edit/reload reconstructs controls from stored values.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Create, edit, read, and query authority is inherited from the site's ordinary category/page permission model. A data form does not bypass category restrictions.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Field order is template order. Structured fields can be selected/sorted by ListPages only through the documented query variables and selectors; the overview adds no hidden index semantics.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- PageEditModule owns generated editing; normal page GET owns display; ViewSource exposes the saved structured source. Missing-page, create, save, cancel, and reload routes remain distinct public states.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Saved data forms render table.form-table with form-row label/value structure; editor controls are generated from field types. The normal page chrome is suppressed while the generated editor is open as observed live.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Invalid schema/save MUST fail without a partial structured page. A successful save must be revision-bound and reload to the same values; browser and server must not disagree on the stored form state.
 
 
 ## Suggested public TDD seams

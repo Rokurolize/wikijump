@@ -3,6 +3,7 @@
 - Feature ID: `syntax-embedding-code`
 - Category: `wiki-syntax`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Parse and render Wikidot's documented embedding code from other sites syntax, in
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `syntax-pagepreview` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl` (SHA-256 `6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a`): Seventeen anonymous PagePreview probes cover embedding, iframe filtering, foldable-list initial DOM, links, and social-bookmarking boundaries.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Recognize documented [[iframe URL ...]] attributes and the deprecated [[embed]]/[[html]] families only at their evidenced boundaries. Live iframe probes preserve frameborder, width, height, scrolling and drop an unknown probe attribute.
+
+### P2 - parser stage, nesting, and composition
+
+- [[iframe]] is a single directive. [[html]] and [[embed]] are block constructs with context-dependent execution; live PagePreview leaves [[html]] literal and routes the tested [[embed]] body through the legacy embed matcher.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Embedding code is render-only; source must round-trip unchanged. The preview/saved-page distinction MUST NOT rewrite stored source.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Unknown iframe attributes are not passed through. HTML/script execution must remain behind the platform's isolated HTML/security boundary and MUST NOT authorize parent-page script execution by default.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Embedding code has no independent selection, ordering, count, or pagination semantics.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Iframe src is a browser URL. Live PagePreview emits known attributes and empty values for known omitted iframe attributes; it does not propagate arbitrary authored attributes.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The observed iframe output includes src, align, frameborder, height, scrolling, width, class, and style. Unknown authored attributes are absent. [[html]] preview output is escaped literal source, establishing a context boundary rather than saved-page execution parity.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Unsupported/unsafe code must fail closed or remain literal according to context. Browser load errors and CSP failures are separate temporal outcomes and MUST NOT cause the parser to widen accepted markup.
 
 
 ## Suggested public TDD seams

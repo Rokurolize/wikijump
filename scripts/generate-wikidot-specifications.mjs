@@ -35,6 +35,21 @@ const implementationLedgerSourcePath = join(
   "data",
   "wikidot-implementation-ledger.json",
 );
+const detailedContractsSourcePath = join(
+  scriptDirectory,
+  "data",
+  "wikidot-detailed-feature-contracts.json",
+);
+const detailedSpecEvidenceSourcePath = join(
+  scriptDirectory,
+  "data",
+  "wikidot-detailed-spec-evidence-20260816.json",
+);
+const detailedContractsReferentSourcePath = join(
+  scriptDirectory,
+  "data",
+  "referent-table-detailed-feature-contracts.md",
+);
 const corpusRoot = resolve(
   process.env.WIKIDOT_DOCUMENTATION_CORPUS ??
     "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages",
@@ -45,6 +60,16 @@ const displayedCorpusRoot =
 const checkOnly = process.argv.includes("--check");
 const schemaVersion = 1;
 const generatedDate = "2026-07-28";
+const detailedContractAxes = Object.freeze({
+  P1: "invocation grammar and scalar interpretation",
+  P2: "parser stage, nesting, and composition",
+  P3: "lifecycle, persistence, import, and round trips",
+  P4: "actors, permissions, visibility, and privacy",
+  P5: "selection, ordering, counting, and pagination",
+  P6: "HTTP, API, URL, Ajax, feed, and navigation contracts",
+  P7: "DOM, CSS, resources, interaction, and geometry",
+  P8: "temporal behavior, failure atomicity, limits, and resource bounds",
+});
 
 function invariant(condition, message) {
   if (!condition) {
@@ -224,6 +249,48 @@ for (const observation of liveObservations.observations) {
     }
   }
 }
+
+const detailedContracts = JSON.parse(
+  readFileSync(detailedContractsSourcePath, "utf8"),
+);
+const detailedSpecEvidence = JSON.parse(
+  readFileSync(detailedSpecEvidenceSourcePath, "utf8"),
+);
+const detailedContractsReferent = readFileSync(
+  detailedContractsReferentSourcePath,
+  "utf8",
+);
+
+const detailedEvidenceAliases = Object.freeze({
+  "current-www-source": detailedSpecEvidence.captures?.current_www_sources,
+  "invocation-only-module-pagepreview":
+    detailedSpecEvidence.captures?.invocation_only_module_pagepreview,
+  "special-page-module-summary":
+    detailedSpecEvidence.captures?.special_page_module_summary,
+  "syntax-pagepreview": detailedSpecEvidence.captures?.syntax_pagepreview,
+  "authenticated-structure":
+    detailedSpecEvidence.captures?.authenticated_structure,
+  "account-upgrade-nonpro":
+    detailedSpecEvidence.captures?.account_upgrade_nonpro,
+  "data-form-public-demos":
+    detailedSpecEvidence.captures?.data_form_public_demos,
+  "data-form-create-edit":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_create_edit,
+  "data-form-date-pagepath":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_date_pagepath,
+  "data-form-file-field":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_file_field,
+  "data-form-images-links-youtube":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_images_links_youtube,
+  "data-form-output-css":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_output_css,
+  "userinfo-targets":
+    detailedSpecEvidence.retained_repository_evidence?.userinfo_targets,
+  "category-template-lifecycle":
+    detailedSpecEvidence.retained_repository_evidence?.category_template_lifecycle,
+  "canonical-live-observations":
+    detailedSpecEvidence.retained_repository_evidence?.canonical_live_observations,
+});
 
 function page(fullname) {
   const value = pages.get(fullname);
@@ -1236,6 +1303,160 @@ function renderImplementationContract(feature) {
   return categoryContracts[feature.category] ?? platformSeams;
 }
 
+function validateDetailedContracts() {
+  invariant(
+    detailedContracts.schema === "wikijump.wikidot_detailed_feature_contracts.v1",
+    "Unexpected detailed feature contract schema",
+  );
+  invariant(
+    detailedContracts.evidence_manifest ===
+      "docs/wikidot-specifications/detailed-spec-evidence-20260816.json",
+    "Detailed feature contracts point at an unexpected evidence manifest",
+  );
+  invariant(
+    detailedSpecEvidence.schema === "wikijump.wikidot_detailed_spec_evidence.v1",
+    "Unexpected detailed specification evidence schema",
+  );
+  invariant(
+    /^[0-9a-f]{40}$/.test(
+      detailedContracts.source_gap_snapshot?.wikijump_commit ?? "",
+    ),
+    "Detailed feature contracts have no exact source-gap Wikijump commit",
+  );
+  invariant(
+    detailedContracts.source_gap_snapshot?.canonical_surface_count === 870,
+    "Detailed feature contracts have an unexpected canonical surface count",
+  );
+  invariant(
+    detailedContracts.source_gap_snapshot?.feature_count === 57,
+    "Detailed feature contracts must describe exactly 57 source-gap features",
+  );
+  invariant(
+    detailedContracts.features &&
+      !Array.isArray(detailedContracts.features) &&
+      typeof detailedContracts.features === "object",
+    "Detailed feature contracts features must be an object",
+  );
+  const contractIds = Object.keys(detailedContracts.features).sort();
+  invariant(
+    contractIds.length === detailedContracts.source_gap_snapshot.feature_count,
+    "Detailed feature contract feature count does not match the source-gap snapshot",
+  );
+  const catalogIds = new Set(features.map(({ id }) => id));
+  const axisIds = Object.keys(detailedContractAxes);
+  let axisCount = 0;
+  for (const featureId of contractIds) {
+    invariant(
+      catalogIds.has(featureId),
+      `Detailed feature contract refers to unknown catalog feature ${featureId}`,
+    );
+    const contract = detailedContracts.features[featureId];
+    invariant(
+      contract && typeof contract === "object" && !Array.isArray(contract),
+      `Detailed feature contract ${featureId} must be an object`,
+    );
+    invariant(
+      JSON.stringify(Object.keys(contract).sort()) ===
+        JSON.stringify(["axes", "evidence"]),
+      `Detailed feature contract ${featureId} has unknown fields`,
+    );
+    invariant(
+      Array.isArray(contract.evidence) &&
+        contract.evidence.length > 0 &&
+        new Set(contract.evidence).size === contract.evidence.length,
+      `Detailed feature contract ${featureId} has invalid evidence aliases`,
+    );
+    for (const alias of contract.evidence) {
+      const evidence = detailedEvidenceAliases[alias];
+      invariant(
+        evidence && typeof evidence === "object" && !Array.isArray(evidence),
+        `Detailed feature contract ${featureId} uses unknown evidence alias ${alias}`,
+      );
+      invariant(
+        typeof evidence.path === "string" && evidence.path.length > 0,
+        `Detailed evidence ${alias} has no path`,
+      );
+      invariant(
+        /^[0-9a-f]{64}$/.test(evidence.sha256 ?? ""),
+        `Detailed evidence ${alias} has no SHA-256`,
+      );
+      const evidencePath = evidence.path.startsWith("/")
+        ? evidence.path
+        : join(repositoryRoot, evidence.path);
+      const actual = readFileSync(evidencePath);
+      invariant(
+        sha256(actual) === evidence.sha256,
+        `Detailed evidence ${alias} hash drifted: ${evidence.path}`,
+      );
+    }
+    invariant(
+      contract.axes &&
+        !Array.isArray(contract.axes) &&
+        JSON.stringify(Object.keys(contract.axes)) === JSON.stringify(axisIds),
+      `Detailed feature contract ${featureId} must define P1-P8 in order`,
+    );
+    for (const axisId of axisIds) {
+      const requirements = contract.axes[axisId];
+      invariant(
+        Array.isArray(requirements) &&
+          requirements.length > 0 &&
+          new Set(requirements).size === requirements.length &&
+          requirements.every(
+            (value) =>
+              typeof value === "string" &&
+              value.trim() === value &&
+              value.length >= 40,
+          ),
+        `Detailed feature contract ${featureId} ${axisId} has invalid requirements`,
+      );
+      axisCount += 1;
+    }
+  }
+  invariant(
+    axisCount === 57 * Object.keys(detailedContractAxes).length,
+    "Detailed feature contract axis denominator is not exactly 456",
+  );
+  invariant(
+    detailedContractsReferent.endsWith("\n"),
+    "Detailed feature contract referent table must end with a newline",
+  );
+}
+
+function renderDetailedContract(feature) {
+  const contract = detailedContracts.features[feature.id];
+  if (!contract) return "";
+  const evidence = contract.evidence
+    .map((alias) => {
+      const item = detailedEvidenceAliases[alias];
+      const claim = typeof item.claim === "string" ? `: ${item.claim}` : "";
+      return `- \`${alias}\` -> \`${item.path}\` (SHA-256 \`${item.sha256}\`)${claim}`;
+    })
+    .join("\n");
+  const axes = Object.entries(detailedContractAxes)
+    .map(([axisId, title]) => `### ${axisId} - ${title}
+
+${contract.axes[axisId].map((requirement) => `- ${requirement}`).join("\n")}`)
+    .join("\n\n");
+  return `
+## Detailed conformance contract
+
+- Status: \`detailed-p1-p8\`
+- Source-gap snapshot: Wikijump \`${detailedContracts.source_gap_snapshot.wikijump_commit}\`
+- Evidence manifest: \`${detailedContracts.evidence_manifest}\`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+${evidence}
+
+${axes}
+`;
+}
+
 function specificationPath(feature) {
   return join("specifications", feature.category, `${feature.id}.md`);
 }
@@ -1272,6 +1493,9 @@ ${sourceRangeText(source)}
   const featureLiveObservations = liveObservations.observations.filter(
     (observation) => observation.feature_ids.includes(feature.id),
   );
+  const detailedStatus = detailedContracts.features[feature.id]
+    ? "- Detailed conformance status: `detailed-p1-p8`\n"
+    : "";
   const liveEvidence =
     featureLiveObservations.length === 0
       ? ""
@@ -1332,7 +1556,7 @@ ${observation.evidence
 - Feature ID: \`${feature.id}\`
 - Category: \`${feature.category}\`
 - Documentation status: \`${feature.documentation_status}\`
-- Specification source: frozen local Wikidot documentation corpus
+${detailedStatus}- Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
 ## Purpose
@@ -1346,7 +1570,7 @@ ${requirements}
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
-${liveEvidence}
+${renderDetailedContract(feature)}${liveEvidence}
 
 ## Suggested public TDD seams
 
@@ -1367,6 +1591,8 @@ ${sourceList}
 ${evidence}
 `;
 }
+
+validateDetailedContracts();
 
 features.sort(
   (left, right) =>
@@ -1520,9 +1746,11 @@ const catalog = {
   })),
 };
 const serializedCatalog = `${JSON.stringify(catalog, null, 2)}\n`;
-const implementationLedger = JSON.parse(
-  readFileSync(implementationLedgerSourcePath, "utf8"),
+const rawImplementationLedger = readFileSync(
+  implementationLedgerSourcePath,
+  "utf8",
 );
+const implementationLedger = JSON.parse(rawImplementationLedger);
 validateWikidotImplementationLedger({
   ledger: implementationLedger,
   rawCatalog: serializedCatalog,
@@ -1572,6 +1800,7 @@ This is the human-readable index of every feature extracted from the frozen loca
 - Corpus pages connected to one or more feature IDs: ${sourcePagesWithFeatures}
 - Corpus pages classified without a feature ID: ${sourcePagesWithoutFeatures}
 - Unclassified corpus pages: 0
+- Detailed P1-P8 source-gap specifications: ${Object.keys(detailedContracts.features).length}
 
 Features by category:
 
@@ -1603,6 +1832,8 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 - \`source-coverage.json\` proves that all ${pages.size.toLocaleString("en-US")} corpus pages were enumerated and classified, while listing only non-user pages individually.
 - \`live-observations.json\` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
 - \`implementation-ledger.json\` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.
+- \`detailed-feature-contracts.json\` is the machine-readable P1-P8 contract for the 57 source-gap features hardened against current Wikidot evidence.
+- \`detailed-spec-evidence-20260816.json\` seals the documentation, live Wikidot, and retained evidence used by those detailed contracts without storing credentials or private message content.
 - \`specifications/\` contains exactly one English Markdown specification for every catalog item.
 - \`IMPLEMENTATION_PROMPT.md\` instructs a coding agent to implement the complete catalog using vertical-slice TDD.
 
@@ -1613,6 +1844,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 3. Every normative source extract retains its exact corpus page, original line numbers, and complete-file SHA-256.
 4. Documentation status matters. \`invocation-only\`, \`high-level-documentation\`, and \`partially-documented\` specs identify real features but do not authorize invented behavior.
 5. This snapshot is a specification-discovery input. When a reproducible live Wikidot observation conflicts with it, record both and implement live behavior.
+6. A specification marked \`detailed-p1-p8\` has explicit normative coverage for all P1-P8 axes. A fail-closed statement in that section is an intentional compatibility boundary, not permission to infer the missing behavior from local output.
 
 ## Regeneration
 
@@ -1725,11 +1957,24 @@ const expectedFiles = new Map([
   ["README.md", readme],
   ["CATALOG.md", catalogMarkdown],
   ["catalog.json", serializedCatalog],
+  [
+    "detailed-feature-contracts.json",
+    `${JSON.stringify(detailedContracts, null, 2)}\n`,
+  ],
+  [
+    "detailed-spec-evidence-20260816.json",
+    `${JSON.stringify(detailedSpecEvidence, null, 2)}\n`,
+  ],
+  ["referent-table-detailed-feature-contracts.md", detailedContractsReferent],
+  [
+    "referent-table-detailed-feature-contracts.sha256",
+    `${sha256(detailedContractsReferent)}  referent-table-detailed-feature-contracts.md\n`,
+  ],
   ["source-coverage.json", `${JSON.stringify(coverage, null, 2)}\n`],
   ["live-observations.json", `${JSON.stringify(liveObservations, null, 2)}\n`],
   [
     "implementation-ledger.json",
-    `${JSON.stringify(implementationLedger, null, 2)}\n`,
+    rawImplementationLedger,
   ],
   ["IMPLEMENTATION_PROMPT.md", implementationPrompt],
   ...specificationFiles,

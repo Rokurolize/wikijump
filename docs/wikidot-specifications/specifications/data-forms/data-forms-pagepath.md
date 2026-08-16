@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-pagepath`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Implement the documented data-form capability “The Pagepath concept”, includ
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-public-demos` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl` (SHA-256 `54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5`): The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen.
+- `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- Pagepath represents a stored page fullname used as one node in an authored tree/category. The documentation describes category-scoped trees and a pagepath field selecting nodes in that tree.
+
+### P2 - parser stage, nesting, and composition
+
+- Pagepath values are field scalars inside the form YAML; tree rendering and hierarchy are ordinary page/category relationships rather than a second parser grammar.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Selecting or displaying a pagepath MUST NOT reveal an inaccessible target page. A stored fullname may exist without granting permission to view that page.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Hierarchy/navigation may order nodes by the configured tree relationships, but the stored scalar itself does not imply an automatically validated parent chain. Missing targets observed live produce no visible resolved node label.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Create/edit/reload MUST preserve the exact stored fullname. Tree mutations, rename/delete propagation, and cache convergence beyond the documented examples require their own live evidence and MUST NOT be inferred from the scalar alone.
 
 
 ## Suggested public TDD seams

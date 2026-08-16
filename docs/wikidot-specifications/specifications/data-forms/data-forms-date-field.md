@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-date-field`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Implement the documented data-form capability “The 'date' field type”, inclu
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-public-demos` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl` (SHA-256 `54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5`): The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen.
+- `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- The field type is date. It accepts the documented width and options mapping, including the documented jQuery UI Datepicker string, integer, boolean, array, date-format, min/max date, showOn, yearRange, and altField/altFormat forms.
+
+### P2 - parser stage, nesting, and composition
+
+- The field is declared inside the YAML fields map of one [[form]] block. Datepicker options are nested below options and retain their documented names and scalar shapes.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Current public demos show normal datepicker selections stored as Unix-second strings, while direct authenticated save probes accepted and round-tripped arbitrary submitted strings such as 02/29/2023 and not-a-date unchanged. The server save boundary therefore MUST NOT invent stricter date validation than live Wikidot.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Date fields use the same create/edit permission boundary as the containing data-form page; the field itself grants no additional read or write authority.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Date values may be consumed by the documented data-form/ListPages machinery, but this feature adds no independent pagination. Ordering/filtering MUST operate on the stored representation according to the consuming query contract.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- The public editor MUST expose a date field and its datepicker options; saved-page date formatting uses Wikidot [[date]] formatting when authored in the template. No separate date API is implied.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The browser editor MUST preserve the documented datepicker options, alternate-field behavior, trigger/button behavior, and visible format. The public demo remains the canonical current rendering example for the documented option set.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Malformed direct submissions observed at the public save seam are accepted and round-trip unchanged. Locale/time-zone behavior outside the captured English/Asia-Tokyo evidence MUST NOT be guessed; implementation must preserve stored data and fail closed only where a documented parser rule requires it.
 
 
 ## Suggested public TDD seams

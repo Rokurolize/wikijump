@@ -3,6 +3,7 @@
 - Feature ID: `subscriptions-plans`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Represent Wikidot account and site upgrades, slots, storage limits, expiration, 
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `special-page-module-summary` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/module-special-page-summary.json` (SHA-256 `5d99c1f543ca08c590d037c950a3afd765c2282b2c6cd61c0fef8d5f7b5c8ae3`): CreateAccount, DeleteAccount, FrontSpecialMini, NewSite, and SitesTagCloud have current special-page output while CurrencyConvert contributes no identifiable current module DOM on the plans page.
+- `account-upgrade-nonpro` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/account-upgrade-nonpro-module-redacted.json` (SHA-256 `4227469a6ee0a48abddf0d889f503c5607ea4a5df5e6aeda48697f9005e31ccd`): The authenticated current dashboard/upgrades/buy/DUBNonProModule states Pro Lite = 5 sites/30 GB, Pro = 10 sites/100 GB, Pro+ = 30 sites/200 GB, and extra slots add exactly one site plus 5 GB each; the retained artifact is redacted and credential-audited.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Account upgrades are Pro Lite, Pro, Pro+, and additional Slots. Upgrades are per-user subscriptions applied to the user's sites, with plan-specific site/storage/private-member/SSL/statistics/ad capabilities and documented refund/expiration rules.
+
+### P2 - parser stage, nesting, and composition
+
+- Subscription plans are account/platform state, not wiki syntax.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Subscriptions are time-bounded and renewable. Expiration downgrades account/sites without deleting content or stored settings; over-slot recent sites may become read-only and over-storage accounts cannot upload new files. Renewing restores retained feature settings.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Purchase and account storage are private to the user. Pro-only site settings may be configured by Master Admins or appropriately entitled Pro admins as documented; free guest admins cannot configure Pro-only custom-domain/favicon-style features.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Plan limits count sites, account storage, per-site storage ceilings, private members, and related capacities. The current authenticated DUBNonProModule resolves the FAQ contradiction: five extra slots add five sites plus 25 GB and ten extra slots add ten sites plus 50 GB, so one extra slot currently adds exactly one site plus 5 GB.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- The account Upgrade panel is the authenticated purchase/configuration boundary; the public plans page is informational. Refund/payment processing is an external billing action and must not be inferred from page source alone.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Plan status may affect Pro indicators and availability of SSL/statistics/signature/ad/custom-domain controls. Hidden/disabled controls must correspond to effective entitlement, not merely client-side CSS.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Upgrade/downgrade/expiration must change entitlements atomically without deleting retained content. Billing failure must not partially grant plan capabilities. Plan capacities and prices remain bound to current live source/dashboard evidence and must be refreshed if Wikidot changes them.
 
 
 ## Suggested public TDD seams

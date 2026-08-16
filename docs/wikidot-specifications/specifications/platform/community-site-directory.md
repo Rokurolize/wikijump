@@ -3,6 +3,7 @@
 - Feature ID: `community-site-directory`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,53 @@ Represent Community Sites, their application and ownership rules, advertising ru
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Community Site status is requested through the online application and is available to qualifying high-quality, active, publicly available community projects. Community Sites are distinct from ordinary personal-plan sites.
+
+### P2 - parser stage, nesting, and composition
+
+- The directory/application record uses structured page/data-form composition but does not create new wiki syntax; the 1,560 corpus application records are user data, not normative grammar.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Accepted Community Sites have no single Master Admin, are run by admins/moderators/members, are separated from personal storage/traffic plans, and cannot use ordinary rename/remove actions. Conversion/abandonment decisions are staff-managed lifecycle events.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Applications are processed by Wikidot staff. Community Site administrative authority is distributed; logged-in users are not shown platform advertising on Community Sites.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Directory listing/ranking is not defined by the application-record corpus and MUST NOT be inferred from record order. The application status itself is not a page-query count.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- The documented application route is /community-sites:new/edit/true and accepted sites remain ordinary Wikidot public sites with their own routes. Staff decision channels are not exposed as a public mutation API.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The public Community Sites page presents the application call-to-action and explanatory plan/status text. No private application content may be rendered into the directory.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Application processing is asynchronous/staff-owned. Failed or pending applications MUST not partially grant Community Site privileges, and ordinary users cannot simulate acceptance by editing a data record.
 
 
 ## Suggested public TDD seams

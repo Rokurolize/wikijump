@@ -3,6 +3,7 @@
 - Feature ID: `syntax-links`
 - Category: `wiki-syntax`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Parse and render Wikidot's documented links syntax, including every documented f
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `syntax-pagepreview` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl` (SHA-256 `6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a`): Seventeen anonymous PagePreview probes cover embedding, iframe filtering, foldable-list initial DOM, links, and social-bookmarking boundaries.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Support documented triple-bracket internal links, external links, single-bracket links, empty links, anchors, email links, InterWiki forms, magic URI path options, and hash fragments with their documented custom-text/new-window forms.
+
+### P2 - parser stage, nesting, and composition
+
+- Internal page-name purification, category prefixes, fragments, and custom labels are parsed as link syntax. Link-like text inside literal/code ownership MUST remain literal according to the surrounding syntax contract.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Links are render/navigation constructs and do not mutate destination pages. Magic URI options affect the destination request/editor state only when that route is activated.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Rendering a link MUST NOT reveal whether a destination is private beyond the documented newpage/existing-page presentation available to that actor. Email scrambling must not expose the plain address to simple source scraping beyond the authored source itself.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Links have no independent pagination; authored link order is preserved.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Live examples confirm internal missing link /some-page with class newpage, external * link target=_blank, empty link href=javascript:;, InterWiki Wikipedia URL with new-window onclick, and ordinary fragment anchors for both #_editpage and an unknown #_notawikidotcommand. Runtime hash-magic action handling is separate from anchor rendering.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Email syntax renders as span.wiki-email with scrambled visible text. Anchor href/text/target/class and InterWiki onclick behavior are compatibility-sensitive at the rendered DOM boundary.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Malformed or unsupported magic options MUST NOT acquire mutation authority. Navigation/back-forward behavior follows the resulting URL; render-time recognition must remain deterministic and safe under unusual characters and escaping.
 
 
 ## Suggested public TDD seams
