@@ -136,7 +136,11 @@
     {
       "action_id": "parent",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/ParentPane.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/ParentPane.svelte"],
+      "test_references": [
+        "framerail/tests/page-parent-action-boundary.test.js",
+        "framerail/tests/page-parent-authorization.test.js"
+      ]
     },
     {
       "action_id": "lock",
@@ -146,12 +150,14 @@
     {
       "action_id": "rename-move",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/MovePane.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/MovePane.svelte"],
+      "test_references": ["framerail/tests/page-move-action-boundary.test.js"]
     },
     {
       "action_id": "delete",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/DeletePane.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/DeletePane.svelte"],
+      "test_references": ["framerail/tests/page-delete-action-boundary.test.js"]
     },
     {
       "action_id": "file-upload",
