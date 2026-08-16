@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "55f7e869d8c9e7c36a784a69ea0d4f95329ad843",
-      "tree": "fd08ba40f1b1225f900cf835b59e1b10dc1379a2"
+      "commit": "3c34d8e642a2788fa12b621731750551be9e5023",
+      "tree": "e6b8c93ed87ed16f4e89d2ab0f1ac3e7fac5fbbd"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -11177,7 +11177,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "47b61257ef5ae0470c1dcd96765c0235f041ff578d1551e455c4bfe60be02a57"
+        "sha256": "74775d7e5ae6145c5c4b6abe4e5ea294ad0cd4af1f9fcc0b216b57b1d28f2f39"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -29242,7 +29242,7 @@
         "cases": [],
         "tests": [
           "framerail/tests/ajax-module-connector.test.js#ListPages keeps the later URL-form value for duplicate scalar fields",
-          "framerail/tests/ajax-module-connector.test.js#fails closed for unsupported modules while duplicate module names keep the later value"
+          "framerail/tests/ajax-module-connector.test.js#ListPages keeps later module names while other modules reject duplicates"
         ]
       },
       "evidence": {
