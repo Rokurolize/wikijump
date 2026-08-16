@@ -21,10 +21,10 @@
 use super::super::literal_regions::LiteralRegionIndex;
 use super::super::service::{
     ProtectedWikidotCompatLink, RenderService, WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX,
-    WIKIDOT_CURRENT_PAGE_LINK_REGEX, WIKIDOT_STAR_LOCAL_LINK_REGEX,
-    WIKIDOT_WIKIPEDIA_LINK_REGEX, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_NONCE_LEN,
-    WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX, escape_list_pages_html_attr,
-    escape_list_pages_html_text,
+    WIKIDOT_CURRENT_PAGE_LINK_REGEX, WIKIDOT_LABELED_EMAIL_LINK_REGEX,
+    WIKIDOT_STAR_LOCAL_LINK_REGEX, WIKIDOT_WIKIPEDIA_LINK_REGEX,
+    WIKIDOT_WIKIPEDIA_LINK_SENTINEL_NONCE_LEN, WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX,
+    escape_list_pages_html_attr, escape_list_pages_html_text,
 };
 use super::issued_markers::restore_issued_html_text_markers;
 use ftml::settings::WikitextSettings;
@@ -109,9 +109,68 @@ impl RenderService {
         }
 
         let mut links = Vec::new();
+        Self::protect_wikidot_labeled_email_links(wikitext, &mut links);
         Self::protect_wikidot_current_page_links(wikitext, &mut links);
         Self::protect_wikidot_star_local_links(wikitext, &mut links);
         links
+    }
+
+    pub(in crate::services::render) fn protect_wikidot_labeled_email_links(
+        wikitext: &mut String,
+        links: &mut Vec<ProtectedWikidotCompatLink>,
+    ) {
+        let source = wikitext.clone();
+        let mut output = String::with_capacity(source.len());
+        let mut last = 0;
+
+        for captures in WIKIDOT_LABELED_EMAIL_LINK_REGEX.captures_iter(&source) {
+            let Some(link_match) = captures.get(0) else {
+                continue;
+            };
+
+            output.push_str(&source[last..link_match.start()]);
+            last = link_match.end();
+
+            if source[..link_match.start()].ends_with('[')
+                || source[link_match.end()..].starts_with(']')
+                || Self::is_inside_wikidot_literal_region(&source, link_match.start())
+            {
+                output.push_str(link_match.as_str());
+                continue;
+            }
+
+            let Some(email) = captures.name("email").map(|matched| matched.as_str())
+            else {
+                output.push_str(link_match.as_str());
+                continue;
+            };
+            let Some(label) = captures
+                .name("label")
+                .map(|matched| matched.as_str().trim())
+                .filter(|label| !label.is_empty())
+            else {
+                output.push_str(link_match.as_str());
+                continue;
+            };
+
+            let Some(anchor) = wikidot_labeled_email_span(email, label) else {
+                output.push_str(link_match.as_str());
+                continue;
+            };
+            let marker = wikidot_compat_link_marker();
+            links.push(ProtectedWikidotCompatLink {
+                anchor,
+                marker: marker.clone(),
+            });
+            output.push_str(&marker);
+        }
+
+        if last == 0 {
+            return;
+        }
+
+        output.push_str(&source[last..]);
+        *wikitext = output;
     }
 
     pub(in crate::services::render) fn protect_wikidot_current_page_links(
@@ -155,8 +214,9 @@ impl RenderService {
             }
 
             let marker = wikidot_compat_link_marker();
+            let fragment = captures.name("fragment").map(|matched| matched.as_str());
             links.push(ProtectedWikidotCompatLink {
-                anchor: wikidot_current_page_anchor(label),
+                anchor: wikidot_current_page_anchor(fragment, label),
                 marker: marker.clone(),
             });
             output.push_str(&marker);
@@ -333,11 +393,36 @@ pub(in crate::services::render) fn wikidot_compat_link_marker() -> String {
     )
 }
 
-pub(in crate::services::render) fn wikidot_current_page_anchor(label: &str) -> String {
+pub(in crate::services::render) fn wikidot_current_page_anchor(
+    fragment: Option<&str>,
+    label: &str,
+) -> String {
+    let href = fragment.map_or_else(
+        || "javascript:;".to_owned(),
+        |fragment| format!("#{fragment}"),
+    );
     format!(
-        r#"<a href="javascript:;">{label}</a>"#,
+        r#"<a href="{href}">{label}</a>"#,
+        href = escape_list_pages_html_attr(&href),
         label = escape_list_pages_html_text(label),
     )
+}
+
+pub(in crate::services::render) fn wikidot_labeled_email_span(
+    email: &str,
+    label: &str,
+) -> Option<String> {
+    let (user, domain) = email.split_once('@')?;
+    let body = format!(
+        "{}|{}#{}",
+        domain.chars().rev().collect::<String>(),
+        user.chars().rev().collect::<String>(),
+        label.chars().rev().collect::<String>(),
+    );
+    Some(format!(
+        r#"<span class="wiki-email">{}</span>"#,
+        escape_list_pages_html_text(&body),
+    ))
 }
 
 pub(in crate::services::render) fn wikidot_star_local_anchor(

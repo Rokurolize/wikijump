@@ -525,7 +525,16 @@ pub(super) static WIKIJUMP_FOOTNOTE_DATA_ID_REGEX: LazyLock<Regex> =
 static WIKIDOT_USER_INLINE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[\[\*user\s+(?P<name>[^\]]+)\]\]").unwrap());
 pub(super) static WIKIDOT_CURRENT_PAGE_LINK_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\[#\s+(?P<label>[^\]\n]+)\]").unwrap());
+    LazyLock::new(|| {
+        Regex::new(r"\[#(?:(?P<fragment>[^\s\]\n]+))?\s+(?P<label>[^\]\n]+)\]").unwrap()
+    });
+pub(super) static WIKIDOT_LABELED_EMAIL_LINK_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| {
+        Regex::new(
+            r"\[(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)\s+(?P<label>[^\]\n]+)\]",
+        )
+        .unwrap()
+    });
 pub(super) static WIKIDOT_STAR_LOCAL_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\*/(?P<target>[^\s\]\n]+)\s+(?P<label>[^\]\n]+)\]").unwrap()
 });
@@ -632,8 +641,7 @@ static WIKIDOT_EMAIL_CLASS_SPAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"<span class="wiki-email">(?P<body>[^<]*)</span>"#).unwrap()
 });
 static WIKIDOT_OBFUSCATED_EMAIL_BODY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"^[A-Za-z0-9.-]+\|[A-Za-z0-9._%+-]+#[A-Za-z0-9.-]+\|[A-Za-z0-9._%+-]+$"#)
-        .unwrap()
+    Regex::new(r#"^[A-Za-z0-9.-]+\|[A-Za-z0-9._%+-]+#[^<\r\n]+$"#).unwrap()
 });
 static WIKIDOT_RECOVERABLE_REVERSED_EMAIL_BODY_REGEX: LazyLock<Regex> = LazyLock::new(
     || {

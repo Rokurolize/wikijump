@@ -11164,6 +11164,59 @@ async fn adsenseunit_module_matches_live_deprecated_empty_output() {
 }
 
 #[tokio::test]
+async fn syntax_links_match_frozen_live_semantics_with_documented_security_divergence() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Frozen live link syntax boundaries",
+            "wikitext": concat!(
+                "[[[some page| custom text]]]\n\n",
+                "[*https://example.com/ Example]\n\n",
+                "[# empty link]\n\n",
+                "[support@example.com email me]\n\n",
+                "[wikipedia:Albert_Einstein Albert]\n\n",
+                "[#_editpage edit]\n\n",
+                "[#_notawikidotcommand unknown]",
+            ),
+        }),
+    );
+    let html = preview.body;
+
+    for expected in [
+        r#"<a class="newpage" href="/some-page">custom text</a>"#,
+        // Issue #1388 owns the extra rel attribute as a security divergence
+        // from Wikidot's otherwise identical new-window anchor.
+        r#"<a href="https://example.com/" target="_blank" rel="noopener noreferrer">Example</a>"#,
+        r#"<a href="javascript:;">empty link</a>"#,
+        r#"<span class="wiki-email">moc.elpmaxe|troppus#em liame</span>"#,
+        r#"<a href="http://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
+        r##"<a href="#_editpage">edit</a>"##,
+        r##"<a href="#_notawikidotcommand">unknown</a>"##,
+    ] {
+        assert!(
+            html.contains(expected),
+            "public preview must retain the frozen anonymous Wikidot link boundary {expected:?}:\n{html}",
+        );
+    }
+
+    assert!(!html.contains("support@example.com"));
+    assert!(!html.contains("onclick=\"WIKIDOT.page"));
+}
+
+#[tokio::test]
 async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
