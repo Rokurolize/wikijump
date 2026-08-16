@@ -214,6 +214,19 @@ test("CLI writes the exact current 32-registration WWS denominator with source o
   assert.equal(liveBehavior.public_test, "wws/src/handler/text_block.rs#html_terminal_hash_verifies_fetched_bytes")
   assert.equal(liveBehavior.route_pattern, "^/local--html/[^/]+/[0-9a-f]{40}-[0-9][0-9]*/[^/]+/$")
   assert.equal(liveBehavior.preserves_behavior_id, "wws-behavior:numeric-html-cache-head-range")
+  assert.deepEqual(
+    behaviorRecords.find(({ id }) => id === "wws-behavior:basic-error-guard"),
+    {
+      id: "wws-behavior:basic-error-guard",
+      status: "implemented",
+      source_paths: ["wws/src/route.rs", "wws/src/handler/basic_error.rs", "wws/src/handler/misc.rs"],
+      registration_ids: [
+        "wws-route-registration:ANY:/-/basic-error/{error_code}",
+        "wws-route-registration:GET:/-/basic-error/{error_code}"
+      ],
+      public_test: "wws/src/route.rs#public_basic_error_route_rejects_external_get_head_and_post"
+    }
+  )
 })
 
 test("CLI reproduces and verifies the exact committed denominator", async (t) => {

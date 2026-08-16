@@ -210,4 +210,32 @@ mod tests {
 
         server.abort();
     }
+
+    #[tokio::test]
+    async fn public_basic_error_route_rejects_external_get_head_and_post() {
+        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let url = format!("http://{address}/-/basic-error/file-root");
+
+        let get = client.get(&url).send().await.unwrap();
+        assert_eq!(get.status(), StatusCode::FORBIDDEN);
+        assert_eq!(get.text().await.unwrap(), "ERROR XF-1002");
+
+        let head = client.head(&url).send().await.unwrap();
+        assert_eq!(head.status(), StatusCode::FORBIDDEN);
+        assert!(head.bytes().await.unwrap().is_empty());
+
+        let post = client.post(&url).send().await.unwrap();
+        assert_eq!(post.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        server.abort();
+    }
 }

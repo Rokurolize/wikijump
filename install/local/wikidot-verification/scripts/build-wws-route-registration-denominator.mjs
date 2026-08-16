@@ -28,6 +28,7 @@ const EXPECTED_BEHAVIOR_IDS = new Set([
   "wws-behavior:html-block-iframe-js",
   "wws-behavior:html-redirect",
   "wws-behavior:invalid-method",
+  "wws-behavior:basic-error-guard",
   "wws-behavior:default-code-redirect",
   "wws-behavior:code-cache-head-range",
   "wws-behavior:numeric-html-cache-head-range",
@@ -116,6 +117,16 @@ const BEHAVIOR_RECORDS = [
       "wws-route-registration:ANY:/local--resized-images/{page_slug}/{filename}/{variant}"
     ],
     public_test: "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+  },
+  {
+    id: "wws-behavior:basic-error-guard",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/basic_error.rs", "wws/src/handler/misc.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/-/basic-error/{error_code}",
+      "wws-route-registration:GET:/-/basic-error/{error_code}"
+    ],
+    public_test: "wws/src/route.rs#public_basic_error_route_rejects_external_get_head_and_post"
   },
   {
     id: "wws-behavior:file-redirect",
