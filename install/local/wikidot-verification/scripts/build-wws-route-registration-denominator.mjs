@@ -18,10 +18,24 @@ const HISTORICAL_ARTIFACT = "install/local/wikidot-verification/artifacts/pr1334
 const HISTORICAL_FIXTURE = "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
 const EXPECTED_REGISTRATION_COUNT = 32
 const EXPECTED_BEHAVIOR_IDS = new Set([
+  "wws-behavior:code-redirect",
+  "wws-behavior:common-javascript-fallback",
+  "wws-behavior:common-theme-fallback",
   "wws-behavior:file-cache-head-range",
+  "wws-behavior:file-redirect",
+  "wws-behavior:download-redirect",
+  "wws-behavior:html-block-css",
+  "wws-behavior:html-block-iframe-js",
+  "wws-behavior:html-redirect",
+  "wws-behavior:invalid-method",
+  "wws-behavior:default-code-redirect",
   "wws-behavior:code-cache-head-range",
   "wws-behavior:numeric-html-cache-head-range",
-  "wws-behavior:live-html-hash-domain-identity"
+  "wws-behavior:live-html-hash-domain-identity",
+  "wws-behavior:resize-iframe-html",
+  "wws-behavior:resized-image",
+  "wws-behavior:robots-txt",
+  "wws-behavior:well-known"
 ])
 const BEHAVIOR_STATUSES = new Set(["implemented", "not_faithfully_mapped"])
 const BEHAVIOR_RECORDS = [
@@ -88,6 +102,117 @@ const BEHAVIOR_RECORDS = [
     current_receipt_status: "pending",
     route_pattern: "^/local--html/[^/]+/[0-9a-f]{40}-[0-9][0-9]*/[^/]+/$",
     reason: "Immutable live evidence is preserved as historical. Production startup backfills legacy HTML identities from exact S3 bytes in bounded batches and validates the NOT VALID constraint before workers accept requests; a current source-bound receipt remains required acceptance work."
+  },
+  {
+    id: "wws-behavior:invalid-method",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/misc.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/-/basic-error/{error_code}",
+      "wws-route-registration:ANY:/-/code/{page_slug}/{index}",
+      "wws-route-registration:ANY:/-/download/{page_slug}/{filename}",
+      "wws-route-registration:ANY:/-/file/{page_slug}/{filename}",
+      "wws-route-registration:ANY:/-/html/{page_slug}/{id}",
+      "wws-route-registration:ANY:/local--resized-images/{page_slug}/{filename}/{variant}"
+    ],
+    public_test: "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+  },
+  {
+    id: "wws-behavior:file-redirect",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/redirect.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/-/files/{page_slug}/{filename}",
+      "wws-route-registration:ANY:/{page_slug}/file/{filename}"
+    ],
+    public_test: "wws/src/handler/redirect.rs#file_redirect_targets_internal_file_route"
+  },
+  {
+    id: "wws-behavior:code-redirect",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/redirect.rs"],
+    registration_ids: ["wws-route-registration:ANY:/{page_slug}/code/{filename}"],
+    public_test: "wws/src/handler/redirect.rs#code_redirect_targets_internal_code_route"
+  },
+  {
+    id: "wws-behavior:download-redirect",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/redirect.rs"],
+    registration_ids: ["wws-route-registration:ANY:/{page_slug}/download/{filename}"],
+    public_test: "wws/src/handler/redirect.rs#download_redirect_targets_internal_download_route"
+  },
+  {
+    id: "wws-behavior:html-redirect",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/redirect.rs"],
+    registration_ids: ["wws-route-registration:ANY:/{page_slug}/html/{filename}"],
+    public_test: "wws/src/handler/redirect.rs#html_redirect_targets_internal_html_route"
+  },
+  {
+    id: "wws-behavior:well-known",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/well_known.rs"],
+    registration_ids: [
+      "wws-route-registration:ANY:/.well-known",
+      "wws-route-registration:ANY:/.well-known/{*path}"
+    ],
+    public_test: "wws/src/handler/well_known.rs#well_known_main_target_returns_plain_not_found"
+  },
+  {
+    id: "wws-behavior:default-code-redirect",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/redirect.rs"],
+    registration_ids: ["wws-route-registration:GET:/{page_slug}/code"],
+    public_test: "wws/src/route.rs#public_code_routes_default_to_first_block_without_changing_indexed_route"
+  },
+  {
+    id: "wws-behavior:common-javascript-fallback",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/misc.rs"],
+    registration_ids: ["wws-route-registration:GET:/common--javascript/{*path}"],
+    public_test: "wws/src/handler/misc.rs#unknown_common_resources_are_not_served_by_catch_all"
+  },
+  {
+    id: "wws-behavior:html-block-iframe-js",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/misc.rs"],
+    registration_ids: ["wws-route-registration:GET:/common--javascript/html-block-iframe.js"],
+    public_test: "wws/src/handler/misc.rs#html_block_iframe_script_is_served_with_javascript_type"
+  },
+  {
+    id: "wws-behavior:resize-iframe-html",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/misc.rs"],
+    registration_ids: ["wws-route-registration:GET:/common--javascript/resize-iframe.html"],
+    public_test: "wws/src/handler/misc.rs#resize_iframe_html_is_served_with_html_type"
+  },
+  {
+    id: "wws-behavior:common-theme-fallback",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/misc.rs"],
+    registration_ids: ["wws-route-registration:GET:/common--theme/{*path}"],
+    public_test: "wws/src/handler/misc.rs#unknown_common_resources_are_not_served_by_catch_all"
+  },
+  {
+    id: "wws-behavior:html-block-css",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/misc.rs"],
+    registration_ids: ["wws-route-registration:GET:/common--theme/base/css/html-block.css"],
+    public_test: "wws/src/handler/misc.rs#html_block_css_is_served_with_css_type"
+  },
+  {
+    id: "wws-behavior:resized-image",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/resized_image.rs"],
+    registration_ids: ["wws-route-registration:GET:/local--resized-images/{page_slug}/{filename}/{variant}"],
+    public_test: "wws/src/handler/resized_image.rs#public_router_serves_documented_variants_and_cheap_conditional_head"
+  },
+  {
+    id: "wws-behavior:robots-txt",
+    status: "implemented",
+    source_paths: [ROUTE_REGISTRY, "wws/src/handler/robots.rs"],
+    registration_ids: ["wws-route-registration:GET:/robots.txt"],
+    public_test: "wws/src/handler/robots.rs#robots_txt_main_target_returns_plain_allow_all_policy"
   }
 ]
 const GIT_EXECUTABLE = "/usr/bin/git"

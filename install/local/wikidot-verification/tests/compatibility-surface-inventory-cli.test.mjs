@@ -1222,8 +1222,8 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
   assert.equal(rows.length, 47)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 44)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "partial").length, 3)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 14)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 33)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 44)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 3)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/wws-route-registration-denominator.json")
   ), true)
