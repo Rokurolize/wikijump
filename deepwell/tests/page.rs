@@ -2544,6 +2544,56 @@ async fn page_editing_history_preserves_each_page_change_as_a_recoverable_revisi
 }
 
 #[tokio::test]
+async fn documented_expression_parser_functions_render_at_the_public_preview_seam() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Documented expression parser functions",
+            "wikitext": concat!(
+                "ABS=[[#expr abs(-100) ]]\n",
+                "MIN=[[#expr min(4, 1, -4, 6, -10) ]]\n",
+                "MAX=[[#expr max(4, 1, -4, 6, -10) ]]\n",
+                "MATH=[[#expr 2*(2-1) ]]\n",
+                "IF_TRUE=[[#if true | TRUE | FALSE ]]\n",
+                "IF_FALSE=[[#if false | TRUE | FALSE ]]\n",
+                "IF_ZERO=[[#if 0 | TRUE | FALSE ]]\n",
+                "IF_NULL=[[#if null | TRUE | FALSE ]]\n",
+                "IF_NULL_UPPER=[[#if NULL | TRUE | FALSE ]]\n",
+                "IFEXPR=[[#ifexpr 2*(2-1) == 2 | YES | NO ]]",
+            ),
+        }),
+    );
+
+    for expected in [
+        "ABS=100",
+        "MIN=-10",
+        "MAX=6",
+        "MATH=2",
+        "IF_TRUE=TRUE",
+        "IF_FALSE=FALSE",
+        "IF_ZERO=FALSE",
+        "IF_NULL=FALSE",
+        "IF_NULL_UPPER=TRUE",
+        "IFEXPR=YES",
+    ] {
+        assert!(
+            preview.body.contains(expected),
+            "documented expression output {expected:?} missing from:\n{}",
+            preview.body,
+        );
+    }
+    assert!(!preview.body.contains("[[#expr"));
+    assert!(!preview.body.contains("[[#if"));
+}
+
+#[tokio::test]
 async fn article_view_uses_category_license_and_site_fallback() {
     const SITE_SLUG: &str = "test";
     const PAGE_SLUG: &str = "category-license:article";
