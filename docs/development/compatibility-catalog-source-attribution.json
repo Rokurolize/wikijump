@@ -273,6 +273,19 @@
       "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form checkbox and wiki controls match live DOM and storage" }]
     },
     {
+      "surface_id": "catalog-feature:data-forms-date-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"date\") =>" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "mountWikidotDatePicker(" },
+        { "path": "framerail/src/lib/wikidot/wikidot-date-picker.js", "anchor": "export const mountWikidotDatePicker = (" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_and_edit_round_trip_date_field_scalars_and_options" },
+        { "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "date fields expose options and preserve accepted and malformed submitted scalars" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form datepicker selections save the evidenced Unix-second scalar" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:data-forms-creating-new-page",
       "sources": [
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "pageId: creating ? 0 : pageId" },

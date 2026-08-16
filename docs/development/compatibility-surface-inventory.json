@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "3c34d8e642a2788fa12b621731750551be9e5023",
-      "tree": "e6b8c93ed87ed16f4e89d2ab0f1ac3e7fac5fbbd"
+      "commit": "59f3faedc01cf441bf2b8321788011d3ff07eff9",
+      "tree": "142a1aee20fa7e0ed6ec035f24dd0d23ee99c652"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "c1148f195eee8ff90cbaa9e73570321d41dcb2cf05541d26492d9ae2e96c4057"
+        "sha256": "bada7c30cb8ce3097782e10ef5bcf924376add9839443cda8d468bdbc9e6be5b"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -12673,7 +12673,11 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#page_view_and_edit_round_trip_date_field_scalars_and_options",
+          "framerail/tests/data-form-create-flow.spec.ts#data-form datepicker selections save the evidenced Unix-second scalar",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#date fields expose options and preserve accepted and malformed submitted scalars"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12682,8 +12686,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#Some(\"date\") =>",
+          "framerail/src/lib/wikidot/wikidot-date-picker.js#export const mountWikidotDatePicker = (",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#mountWikidotDatePicker("
+        ]
       },
       "candidate": {
         "status": "pending",
