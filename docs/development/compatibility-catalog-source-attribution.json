@@ -431,6 +431,22 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "page_backlinks_view_filters_before_exposing_titles_and_slugs" }]
     },
     {
+      "surface_id": "catalog-feature:page-editing-history",
+      "sources": [
+        { "path": "deepwell/src/services/page/service.rs", "anchor": "pub async fn edit(" },
+        { "path": "deepwell/src/endpoints/page_revision.rs", "anchor": "pub async fn page_revision_range(" },
+        { "path": "framerail/src/lib/wikidot/wikidot-edit-sections.js", "anchor": "export const buildWikidotSectionEditSubmission = (" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte", "anchor": "<form id=\"page-append\"" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte", "anchor": "class=\"revision-diff-controls\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "page_editing_history_preserves_each_page_change_as_a_recoverable_revision" },
+        { "path": "framerail/tests/wikidot-edit-sections.test.js", "anchor": "section edit submission replaces only its revision-bound source range" },
+        { "path": "framerail/tests/page-append-backlinks-public-boundary.test.js", "anchor": "Append submission preserves metadata and commits only the appended source at the revision-bound edit action" },
+        { "path": "framerail/tests/page-workflows.spec.ts", "anchor": "history ignores a stale revision diff response" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:page-parent-relations",
       "sources": [{ "path": "deepwell/src/services/parent/service.rs", "anchor": "pub async fn create(" }],
       "tests": [{ "path": "deepwell/tests/parent.rs", "anchor": "direct_parent_metadata_tracks_one_current_relationship_and_rejects_ambiguity" }]
