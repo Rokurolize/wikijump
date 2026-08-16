@@ -2827,10 +2827,20 @@ async function applyWwsContractEvidence(root, records, sourceRevision) {
 }
 
 function auditTests(row) {
+  const evidenceTests = Array.isArray(row.evidence)
+    ? row.evidence.flatMap((entry) => {
+        if (typeof entry !== "string") return []
+        if (!entry.startsWith("deepwell/tests/") &&
+            !entry.startsWith("framerail/tests/") &&
+            !entry.startsWith("install/local/wikidot-verification/tests/")) return []
+        return [entry.replace("::", "#")]
+      })
+    : []
   return uniqueSortedStrings([
     ...testReferences(row.tests),
     ...testReferences(row.public_tests),
-    ...testReferences(row.existing_tests)
+    ...testReferences(row.existing_tests),
+    ...evidenceTests
   ])
 }
 
