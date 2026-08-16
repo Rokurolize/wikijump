@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "0ff8a86dc083cfbe1f9d25b03e6838e6082317c3",
-      "tree": "d911bb6258676c4b095138ffe21a29819cafa5e6"
+      "commit": "a3fc87582abaac069377706f57bfaf5d6b4c6677",
+      "tree": "4678fe27f1ec91257066adb72540d8c1a998d5b8"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "b320589bcbe48a48d12aada99dfee5011ef62760faaa759046312fd71d349be7"
+        "sha256": "0ea7eb686357deb6240d86d71a250bc380e4f172d59963501517b89cc0e6723d"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -18376,7 +18376,12 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
+          "framerail/tests/page-append-backlinks-public-boundary.test.js#Append submission preserves metadata and commits only the appended source at the revision-bound edit action",
+          "framerail/tests/page-workflows.spec.ts#history ignores a stale revision diff response",
+          "framerail/tests/wikidot-edit-sections.test.js#section edit submission replaces only its revision-bound source range"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18385,8 +18390,14 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page_revision.rs#pub async fn page_revision_range(",
+          "deepwell/src/services/page/service.rs#pub async fn edit(",
+          "framerail/src/lib/wikidot/wikidot-edit-sections.js#export const buildWikidotSectionEditSubmission = (",
+          "framerail/src/routes/[slug]/[...extra]/AppendPane.svelte#<form id=\"page-append\"",
+          "framerail/src/routes/[slug]/[...extra]/HistoryPane.svelte#class=\"revision-diff-controls\""
+        ]
       },
       "candidate": {
         "status": "pending",
