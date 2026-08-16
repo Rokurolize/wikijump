@@ -138,6 +138,18 @@ features["module-listpages"] = {
   ],
 };
 
+features["module-rate"].tests = [
+  {
+    path: "framerail/tests/wikidot-legacy-actions.test.js",
+    name: "initialized Rate stars preserve the live hidden score value",
+    scope:
+      "public Framerail Rate widget sidecar regression for the initialized hidden score value",
+  },
+];
+features["module-rate"].implementation_files = [
+  "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
+];
+
 const ledger = {
   schema: WIKIDOT_IMPLEMENTATION_LEDGER_SCHEMA,
   updated_at: "2026-07-28",

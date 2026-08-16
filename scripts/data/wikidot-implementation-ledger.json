@@ -2860,6 +2860,11 @@
       ],
       "tests": [
         {
+          "path": "framerail/tests/wikidot-legacy-actions.test.js",
+          "name": "initialized Rate stars preserve the live hidden score value",
+          "scope": "public Framerail Rate widget sidecar regression for the initialized hidden score value"
+        },
+        {
           "path": "deepwell/tests/vote.rs",
           "name": "registered_point_vote_lifecycle_refreshes_saved_rate_page",
           "scope": "public fixture and mutation endpoints verify registered plus/minus set, change, same-value no-op, remove, and staff disable/repeated-disable/enable; every actual change moves the local public-content fence and queues the exact target full rerender in a task-owned namespace consumed before saved page_view score observation, without claiming live Wikidot timing"
@@ -2918,6 +2923,7 @@
         "deepwell/src/services/render/service/tests.rs",
         "deepwell/tests/page.rs",
         "deepwell/tests/vote.rs",
+        "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
         "docs/ftml-boundary-deviations/rate-conditional-literal-boundary.md"
       ],
       "documentation_evidence": [
