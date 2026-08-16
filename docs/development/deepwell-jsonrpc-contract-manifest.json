@@ -1548,16 +1548,10 @@
       },
       "transaction_isolation": "default",
       "test_witness": {
-        "kind": "source_contract_only",
-        "reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract",
-        "coverage_gap": {
-          "searched_root": "deepwell/tests",
-          "reason": "no direct run_endpoint handler invocation or rpc_request method invocation was found",
-          "searched_invocations": [
-            "run_endpoint!(runner, handler, ...)",
-            "rpc_request(\"method\", ...)"
-          ]
-        }
+        "kind": "rpc_behavioral",
+        "reference": "deepwell/tests/page.rs#page_move_render_failure_rolls_back_destination_identity",
+        "alternatives": [],
+        "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
     },
     {

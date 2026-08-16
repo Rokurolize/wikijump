@@ -17,6 +17,17 @@ const HISTORICAL_EVIDENCE = [
   "install/local/wikidot-verification/artifacts/pr1334-deepwell-identity-jsonrpc-attribution-20260810.json",
   "install/local/wikidot-verification/artifacts/pr1334-deepwell-page-revision-jsonrpc-attribution-20260810.json"
 ]
+const CURATED_RPC_WITNESSES = [
+  {
+    method: "category_get",
+    source_path: "deepwell/tests/page.rs",
+    test_name: "page_move_render_failure_rolls_back_destination_identity",
+    required_fragments: [
+      "page_move_rpc_request(",
+      '"category_get", json!({"site": site_id, "category": category}),'
+    ]
+  }
+]
 const MUTATING_SERVICE_CALLS = new Set([
   "AuthorizationTokenService::create",
   "BlobService::add_blacklist", "BlobService::cancel_upload", "BlobService::hard_delete_all", "BlobService::remove_blacklist", "BlobService::start_upload",
@@ -342,7 +353,7 @@ function deriveTransportContract(rpcAuthSource, middlewareSource) {
   }
 }
 
-async function behavioralWitnesses(root) {
+async function behavioralWitnesses(root, registeredMethodNames) {
   const directory = path.join(root, "deepwell/tests")
   const files = []
   async function visit(current) {
@@ -375,6 +386,30 @@ async function behavioralWitnesses(root) {
       rpcWitnesses.set(method, references)
     }
   }
+  for (const witness of CURATED_RPC_WITNESSES) {
+    if (!registeredMethodNames.has(witness.method)) {
+      throw new Error(`curated RPC witness references an unregistered method: ${witness.method}`)
+    }
+    const source = await readText(root, witness.source_path)
+    const declarations = [...source.matchAll(
+      /#\[(?:tokio::test|test)\]\s*(?:async\s+)?fn\s+([A-Za-z_][A-Za-z0-9_]*)/gu
+    )].filter((match) => match[1] === witness.test_name)
+    if (declarations.length !== 1) {
+      throw new Error(
+        `${witness.source_path} must declare exactly one curated RPC witness test named ${witness.test_name}`
+      )
+    }
+    const reference = `${witness.source_path}#${witness.test_name}`
+    const body = normalizeSource(rustFunctionBody(source, declarations[0].index, reference))
+    for (const fragment of witness.required_fragments) {
+      if (!body.includes(normalizeSource(fragment))) {
+        throw new Error(`${reference} no longer contains the curated ${witness.method} RPC witness`)
+      }
+    }
+    const references = rpcWitnesses.get(witness.method) ?? []
+    references.push(reference)
+    rpcWitnesses.set(witness.method, references)
+  }
   return {
     endpoint: new Map([...endpointWitnesses].map(([handler, references]) => [handler, [...new Set(references)].sort()])),
     rpc: new Map([...rpcWitnesses].map(([method, references]) => [method, [...new Set(references)].sort()]))
@@ -383,15 +418,16 @@ async function behavioralWitnesses(root) {
 
 async function buildManifest(root) {
   const apiSource = await readText(root, API_PATH)
+  const registrations = registeredMethods(apiSource)
   const [endpointByHandler, witnesses, rpcAuthSource, middlewareSource] = await Promise.all([
     endpointSources(root),
-    behavioralWitnesses(root),
+    behavioralWitnesses(root, new Set(registrations.map(({ method }) => method))),
     readText(root, "deepwell/src/middleware/rpc_auth.rs"),
     readText(root, "deepwell/src/middleware.rs")
   ])
   const transport = deriveTransportContract(rpcAuthSource, middlewareSource)
   const methods = []
-  for (const registration of registeredMethods(apiSource)) {
+  for (const registration of registrations) {
     const matches = endpointByHandler.get(registration.handler) ?? []
     if (matches.length !== 1) {
       throw new Error(`${API_PATH}#register:${registration.method} resolves ${matches.length} endpoint handlers named ${registration.handler}`)
