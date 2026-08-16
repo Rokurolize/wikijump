@@ -36653,7 +36653,9 @@
         "cases": [
           "A1037_NEWPAGE_EXACT_CANDIDATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-a1037-forms-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36736,7 +36738,9 @@
         "cases": [
           "A1037_REDIRECT_EXACT_CANDIDATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-a1037-forms-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",

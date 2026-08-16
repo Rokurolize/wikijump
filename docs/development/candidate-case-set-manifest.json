@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.candidate_case_set_manifest.v1",
   "registry": "install/local/wikidot-verification/src/candidate-case-command.mjs#candidateCaseSet",
-  "case_set_count": 47,
-  "execution_case_set_count": 46,
+  "case_set_count": 48,
+  "execution_case_set_count": 47,
   "alias_case_set_count": 1,
   "case_sets": [
     {
@@ -132,6 +132,13 @@
         "A1030_CENTRAL_RUST_MATRIX",
         "A1030_TWO_TRANSACTION_CONTENTION",
         "A1030_EXACT_CANDIDATE_BROWSER"
+      ]
+    },
+    {
+      "name": "open43-a1037-forms",
+      "case_ids": [
+        "A1037_NEWPAGE_EXACT_CANDIDATE",
+        "A1037_REDIRECT_EXACT_CANDIDATE"
       ]
     },
     {

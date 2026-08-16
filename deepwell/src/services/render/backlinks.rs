@@ -198,14 +198,13 @@ impl RenderService {
             .await
             .or_raise(make_error)?;
 
-            if anonymously_viewable {
-                if !row
+            if anonymously_viewable
+                && !row
                     .hidden
                     .iter()
                     .any(|field| field == "title" || field == "slug")
-                {
-                    viewable.push(row);
-                }
+            {
+                viewable.push(row);
             }
         }
 
