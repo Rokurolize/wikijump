@@ -371,6 +371,17 @@ export const classifyWikidotSiteChangesRequest = (fields) => fields
   )
   await writeText(
     root,
+    "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+    await fs.readFile(
+      path.join(
+        repositoryRoot,
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json"
+      ),
+      "utf8"
+    )
+  )
+  await writeText(
+    root,
     "framerail/src/lib/server/xmlrpc/methods.ts",
     `const METHOD_DEFINITIONS = {
   "system.listMethods": { help: "fixture", signatures: [["array"]] }
@@ -750,6 +761,17 @@ test("CLI discovers declared public surfaces and writes deterministic completion
       "framerail-amc-module:changes/SiteChangesListModule:parameters=options,page,perpage"
     ]
   )
+  const siteChangesBrowser = inventory.surfaces.find(
+    ({ surface_id }) =>
+      surface_id ===
+      "framerail-amc-module:changes/SiteChangesListModule:parameters=categoryId,options,page,pageId,perpage"
+  )
+  assert.deepEqual(siteChangesBrowser.evidence, {
+    status: "available",
+    references: [
+      "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_SITECHANGES_AMC_20260810"
+    ]
+  })
   assert.deepEqual(
     inventory.surfaces
       .filter(({ surface_id }) => surface_id.includes("/-/health-check"))
@@ -1322,7 +1344,19 @@ test("CLI projects only directly exercised Framerail AMC server tests", async (t
     "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
     "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant"
   ])
-  assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)
+  assert.deepEqual(
+    rows
+      .filter(({ evidence }) => evidence.status === "available")
+      .map(({ surface_id: surfaceId, evidence }) => ({ surfaceId, references: evidence.references })),
+    [{
+      surfaceId:
+        "framerail-amc-module:changes/SiteChangesListModule:parameters=categoryId,options,page,pageId,perpage",
+      references: [
+        "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_SITECHANGES_AMC_20260810"
+      ]
+    }]
+  )
+  assert.equal(rows.filter(({ evidence }) => evidence.status === "missing").length, 28)
 })
 
 test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift", async (t) => {

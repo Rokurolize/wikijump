@@ -11380,6 +11380,10 @@
         "sha256": "fc4cac9274c46150c338f0b38ded5b6dbbffd5edc58e2d4b51f07096873b828b"
       },
       {
+        "path": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
+        "sha256": "9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410"
+      },
+      {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
         "sha256": "445c0e313c98ad37ef05e58aef412ebac6a0a53fba23b2a54ad4b726336bb7d4"
       },
@@ -11423,6 +11427,7 @@
     "framerail_routes_root": "framerail/src/routes",
     "framerail_amc_registry": "framerail/src/lib/server/ajax-module-connector.js",
     "framerail_amc_wire_contracts": "docs/development/framerail-amc-wire-contracts.json",
+    "framerail_amc_live_evidence": "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json",
     "wikidot_py_amc_contract": "docs/development/wikidot-py-amc-client-parity.json",
     "wikidot_py_source": {
       "repository": "Rokurolize/wikidot.py",
@@ -28603,8 +28608,10 @@
         ]
       },
       "evidence": {
-        "status": "missing",
-        "references": []
+        "status": "available",
+        "references": [
+          "install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json#E_OPEN43_SITECHANGES_AMC_20260810"
+        ]
       },
       "source": {
         "status": "implemented",
