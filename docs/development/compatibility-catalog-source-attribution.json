@@ -483,6 +483,18 @@
       "tests": [{ "path": "framerail/tests/wikidot-collapsible.spec.ts", "anchor": "Wikidot-compatible collapsibles preserve legacy interaction" }]
     },
     {
+      "surface_id": "catalog-feature:syntax-embedding-code",
+      "sources": [
+        { "path": "deepwell/src/services/render/compat/wikidot_iframe.rs", "anchor": "pub(in crate::services::render) fn expand_wikidot_iframe_syntax(" },
+        { "path": "deepwell/src/services/render/compat/wikidot_embed.rs", "anchor": "pub(in crate::services::render) fn protect_wikidot_embed_iframes(" },
+        { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "settings.enable_html_blocks = false;" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/media.rs", "anchor": "documented_embedding_code_probes_match_frozen_live_preview" },
+        { "path": "deepwell/tests/page.rs", "anchor": "wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:syntax-html-blocks",
       "sources": [
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(" },
