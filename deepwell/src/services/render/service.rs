@@ -41,6 +41,9 @@ use super::compat::text_fragments::CompatTextFragments;
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
+use super::compat::wikidot_social::{
+    expand_wikidot_social_syntax, has_wikidot_social_syntax,
+};
 use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
@@ -1624,6 +1627,24 @@ impl RenderService {
                 },
                 &mut wikidot_compat_html,
                 &mut wikidot_compat_text,
+            );
+        }
+        if settings.enable_page_syntax && has_wikidot_social_syntax(&wikitext) {
+            let social_site = match current_site_id {
+                Some(site_id) => Some(
+                    SiteService::get(ctx, Reference::Id(site_id))
+                        .await
+                        .or_raise(make_error)?,
+                ),
+                None => None,
+            };
+            wikitext = expand_wikidot_social_syntax(
+                wikitext,
+                &mut wikidot_compat_html,
+                social_site
+                    .as_ref()
+                    .map_or(page_info.site.as_ref(), |site| site.slug.as_str()),
+                social_site.as_ref().map_or("", |site| site.name.as_str()),
             );
         }
         wikitext = Self::finalize_runtime_module_residuals(

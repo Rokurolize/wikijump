@@ -11217,6 +11217,141 @@ async fn syntax_links_match_frozen_live_semantics_with_documented_security_diver
 }
 
 #[tokio::test]
+async fn social_syntax_matches_frozen_live_service_selection_and_widget_identity() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let cases: [(&str, &[&str]); 3] = [
+        (
+            "[[social]]",
+            &[
+                "BlinkList",
+                "blogmarks",
+                "del.icio.us",
+                "digg",
+                "Fark",
+                "feedmelinks",
+                "Furl",
+                "LinkaGoGo",
+                "NewsVine",
+                "Netvouz",
+                "Reddit",
+                "YahooMyWeb",
+                "Facebook",
+            ],
+        ),
+        (
+            "[[social digg,furl,del.icio.us,facebook]]",
+            &["digg", "Furl", "del.icio.us", "Facebook"],
+        ),
+        ("[[social facebook,not-a-service]]", &["Facebook"]),
+    ];
+
+    for (source, expected_titles) in cases {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "TITLE",
+                "wikitext": source,
+            }),
+        );
+        let html = preview.body;
+
+        let id_prefix = r#"<span id="social"#;
+        let id_start = html
+            .find(id_prefix)
+            .map(|index| index + id_prefix.len())
+            .expect("social output should expose the live generated-id prefix");
+        let id_suffix = &html[id_start..];
+        let id_end = id_suffix
+            .find('"')
+            .expect("social generated id should terminate in the opening span");
+        let generated_digits = &id_suffix[..id_end];
+        assert!(
+            !generated_digits.is_empty()
+                && generated_digits
+                    .chars()
+                    .all(|character| character.is_ascii_digit()),
+            "social id suffix must remain generated decimal digits: {html}",
+        );
+        let social_id = format!("social{generated_digits}");
+        assert!(
+            html.contains(&format!(r##"var socialspan = $j("#{social_id}")[0];"##)),
+            "social runtime script must target the exact generated widget id: {html}",
+        );
+        assert!(
+            html.contains(
+                "http%3A%2F%2Fscp-wiki.wikidot.com%2Fajax-module-connector.php"
+            ),
+            "social service URLs must carry the current Wikidot site connector URL: {html}",
+        );
+        assert!(
+            html.contains(
+                "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/",
+            ),
+            "social icons must retain the frozen Wikidot resource prefix: {html}",
+        );
+
+        assert_eq!(
+            html.matches(r#"style="margin: 0 2px""#).count(),
+            expected_titles.len(),
+            "social output must render exactly the selected supported services: {html}",
+        );
+        let mut cursor = 0;
+        for title in expected_titles {
+            let needle = format!(r#"title="{title}""#);
+            let relative = html[cursor..]
+                .find(&needle)
+                .unwrap_or_else(|| panic!("missing social provider {title:?}: {html}"));
+            cursor += relative + needle.len();
+        }
+        assert!(!html.contains("not-a-service"));
+        assert!(!html.contains("[[social"));
+
+        if source == "[[social]]" {
+            for service_url in [
+                "http://www.blinklist.com/index.php?Action=Blink/addblink.php",
+                "http://blogmarks.net/my/new.php?mini=1",
+                "http://del.icio.us/post?url=",
+                "http://digg.com/submit?phase=2",
+                "http://cgi.fark.com/cgi/fark/edit.pl?new_url=",
+                "http://feedmelinks.com/categorize?from=toolbar",
+                "http://www.furl.net/storeIt.jsp?u=",
+                "http://www.linkagogo.com/go/AddNoPopup?url=",
+                "http://www.newsvine.com/_tools/seed&amp;save?u=",
+                "http://www.netvouz.com/action/submitBookmark?url=",
+                "http://reddit.com/submit?url=",
+                "http://myweb2.search.yahoo.com/myresults/bookmarklet?u=",
+                "http://www.facebook.com/share.php?u=",
+            ] {
+                assert!(
+                    html.contains(service_url),
+                    "default social output must retain live service URL {service_url:?}: {html}",
+                );
+            }
+            assert!(
+                html.contains("new_comment=SCP+Foundation&amp;linktype=Misc"),
+                "Fark output must carry the current site title with Wikidot plus encoding: {html}",
+            );
+            assert!(
+                html.contains("encodeURIComponent(document.title)"),
+                "social runtime script must preserve Wikidot title substitution: {html}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
 async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
