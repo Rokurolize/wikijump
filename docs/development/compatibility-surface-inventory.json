@@ -3699,12 +3699,12 @@
       "target": "wikijump.framerail"
     },
     {
-      "source": "framerail-amc-module:list/ListPagesModule:duplicate-fields=rejected",
+      "source": "framerail-amc-module:list/ListPagesModule:duplicate-fields=last_value",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
     {
-      "source": "framerail-amc-module:list/ListPagesModule:failure-envelopes=missing_module_body:status=not_ok;message=ListPages module_body is required|render_failure:status=not_ok;message=Unable to render ListPages module",
+      "source": "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -3714,12 +3714,17 @@
       "target": "wikijump.framerail"
     },
     {
-      "source": "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=required",
+      "source": "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
     {
       "source": "framerail-amc-module:list/ListPagesModule:success-envelope=status=ok;body=string",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
+    },
+    {
+      "source": "framerail-amc-module:list/ListPagesModule:unknown-parameters=non_data_form_ignored;leading_underscore_rejected",
       "type": "implemented_by",
       "target": "wikijump.framerail"
     },
@@ -10934,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "e57034383db72b1d7ccc54c0c3471f650383cd8e",
-      "tree": "0f653e554bedaaf5823dfa3ce718806de51e1056"
+      "commit": "55f7e869d8c9e7c36a784a69ea0d4f95329ad843",
+      "tree": "fd08ba40f1b1225f900cf835b59e1b10dc1379a2"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -11084,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "bf3894dbf11b4c0425dc147feb69bafee25ac128d3368d8cc87cf70972c1fe4f"
+        "sha256": "c1148f195eee8ff90cbaa9e73570321d41dcb2cf05541d26492d9ae2e96c4057"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11096,7 +11101,7 @@
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
-        "sha256": "3a3eea1acd70082389625726cb6f859fd587352959df3247a46ee123448e6e7c"
+        "sha256": "38a346b4367e3a454f94ff00d879020a90aa6646d3188feef43e24e3b164da3f"
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
@@ -11152,19 +11157,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "514544d9b59a964e5e3abe756e5b97da3b03f11fb3ad9d40caf469019b2b3ad8"
+        "sha256": "6c2e30e338d73cf25027b1043892d91facabcb9348dce85aef1756903d954161"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "f79aee6963a4c4428261b1bb0b4b8f0411a39cebc9d944f064f1b118153e5090"
+        "sha256": "7864c18f6045bc32dbe050844c6653364992be41e76fb41878e42273bd53b10a"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "0eaaa3f86004e81e21ef340518f09950ab5f82ad027c116244a90fa9f289ebad"
+        "sha256": "c14ae278bf1572a46ae6b08027cbea94a8fe44518ecc7b5e7ddf38d12a4f2552"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "70ba63f33c5985a54a2b9b95272fc1d8d17b8eadf2d0f10cb49a6a745527d98a"
+        "sha256": "78636d4172bdbd92bc12bd81a0331254198305b6739fcbfe0f813fb116b646c9"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11172,7 +11177,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "24bee7130646ad36f2a48cf860df023fa6b0d341d9ea36aa0b3c67defd29d1bd"
+        "sha256": "47b61257ef5ae0470c1dcd96765c0235f041ff578d1551e455c4bfe60be02a57"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11376,15 +11381,15 @@
       },
       {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-        "sha256": "75fda403139f990eb3ee583d8ae653847f2639fca222f5e434ce393b385de6e2"
+        "sha256": "445c0e313c98ad37ef05e58aef412ebac6a0a53fba23b2a54ad4b726336bb7d4"
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "0eaaa3f86004e81e21ef340518f09950ab5f82ad027c116244a90fa9f289ebad"
+        "sha256": "c14ae278bf1572a46ae6b08027cbea94a8fe44518ecc7b5e7ddf38d12a4f2552"
       },
       {
         "path": "wws/src/route.rs",
-        "sha256": "8ed5b5b4571cc121771d708bceac9bfb53fbdcbb39cc22866503f095b3078d66"
+        "sha256": "44588f64fe87b50a322d9406e33081439efea664ecb907c161a5d66d6b3e59ee"
       }
     ]
   },
@@ -11470,12 +11475,12 @@
     ]
   },
   "counts": {
-    "total": 924,
+    "total": 925,
     "by_kind": {
       "catalog_feature": 210,
       "deepwell_jsonrpc_method": 163,
       "framerail_amc_action_shape": 2,
-      "framerail_amc_module_shape": 26,
+      "framerail_amc_module_shape": 27,
       "framerail_route": 28,
       "framerail_server_action": 97,
       "framerail_xmlrpc_method": 17,
@@ -15945,9 +15950,7 @@
           1387
         ],
         "cases": [],
-        "tests": [
-          "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque"
-        ]
+        "tests": []
       },
       "evidence": {
         "status": "available",
@@ -15956,10 +15959,8 @@
         ]
       },
       "source": {
-        "status": "implemented",
-        "references": [
-          "deepwell/src/services/render/runtime_modules.rs#expand_join_modules_for_view"
-        ]
+        "status": "pending",
+        "references": []
       },
       "candidate": {
         "status": "pending",
@@ -17298,7 +17299,8 @@
           "deepwell/tests/page.rs#page_render_star_rate_module_consumes_body_and_substitutes_live_variables",
           "deepwell/tests/vote.rs#registered_point_vote_lifecycle_refreshes_saved_rate_page",
           "deepwell/tests/vote.rs#registered_star_vote_lifecycle_refreshes_saved_rate_and_vote_count",
-          "framerail/tests/wikidot-legacy-actions.test.js#Rate sidecars bind only the exact renderer-owned control sequence"
+          "framerail/tests/wikidot-legacy-actions.test.js#Rate sidecars bind only the exact renderer-owned control sequence",
+          "framerail/tests/wikidot-legacy-actions.test.js#initialized Rate stars preserve the live hidden score value"
         ]
       },
       "evidence": {
@@ -17321,6 +17323,7 @@
           "deepwell/tests/page.rs",
           "deepwell/tests/vote.rs",
           "docs/ftml-boundary-deviations/rate-conditional-literal-boundary.md",
+          "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
           "framerail/src/lib/wikidot/wikidot-legacy-actions.js#planWikidotRateActionBindings"
         ]
       },
@@ -29225,7 +29228,7 @@
       ]
     },
     {
-      "surface_id": "framerail-amc-module:list/ListPagesModule:duplicate-fields=rejected",
+      "surface_id": "framerail-amc-module:list/ListPagesModule:duplicate-fields=last_value",
       "kind": "framerail_amc_module_shape",
       "public_reference": [
         "deepwell/src/services/render/list_pages/ajax.rs",
@@ -29238,7 +29241,8 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/ajax-module-connector.test.js#fails closed for unsupported modules and duplicate fields"
+          "framerail/tests/ajax-module-connector.test.js#ListPages keeps the later URL-form value for duplicate scalar fields",
+          "framerail/tests/ajax-module-connector.test.js#fails closed for unsupported modules while duplicate module names keep the later value"
         ]
       },
       "evidence": {
@@ -29267,7 +29271,7 @@
       ]
     },
     {
-      "surface_id": "framerail-amc-module:list/ListPagesModule:failure-envelopes=missing_module_body:status=not_ok;message=ListPages module_body is required|render_failure:status=not_ok;message=Unable to render ListPages module",
+      "surface_id": "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
       "kind": "framerail_amc_module_shape",
       "public_reference": [
         "deepwell/src/services/render/list_pages/ajax.rs",
@@ -29347,7 +29351,7 @@
       ]
     },
     {
-      "surface_id": "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=required",
+      "surface_id": "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
       "kind": "framerail_amc_module_shape",
       "public_reference": [
         "deepwell/src/services/render/list_pages/ajax.rs",
@@ -29360,7 +29364,8 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/ajax-module-connector.test.js#dispatches ListPages forms and returns the Wikidot JSON envelope"
+          "framerail/tests/ajax-module-connector.test.js#dispatches ListPages forms and returns the Wikidot JSON envelope",
+          "framerail/tests/ajax-module-connector.test.js#ListPages omits module_body for Deepwell's default row template"
         ]
       },
       "evidence": {
@@ -29403,6 +29408,49 @@
         "cases": [],
         "tests": [
           "framerail/tests/ajax-module-connector.test.js#dispatches ListPages forms and returns the Wikidot JSON envelope"
+        ]
+      },
+      "evidence": {
+        "status": "missing",
+        "references": []
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:framerail-amc",
+      "implementation_owners": [
+        "wikijump.framerail"
+      ]
+    },
+    {
+      "surface_id": "framerail-amc-module:list/ListPagesModule:unknown-parameters=non_data_form_ignored;leading_underscore_rejected",
+      "kind": "framerail_amc_module_shape",
+      "public_reference": [
+        "deepwell/src/services/render/list_pages/ajax.rs",
+        "docs/development/framerail-amc-wire-contracts.json",
+        "framerail/src/lib/server/ajax-module-connector.js"
+      ],
+      "existing_refs": {
+        "issues": [
+          1374
+        ],
+        "cases": [],
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js#ListPages ignores unknown non-data-form selectors while recognized selectors apply",
+          "framerail/tests/ajax-module-connector.test.js#ListPages retains fail-closed boundaries for dynamic selectors and invalid UTF-8"
         ]
       },
       "evidence": {
@@ -50039,7 +50087,8 @@
         ],
         "cases": [],
         "tests": [
-          "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+          "wws/src/handler/misc.rs#invalid_methods_are_rejected",
+          "wws/src/route.rs#public_basic_error_route_rejects_external_get_head_and_post"
         ]
       },
       "evidence": {
@@ -50382,11 +50431,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/route.rs#public_basic_error_route_rejects_external_get_head_and_post"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -50981,11 +51033,14 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/route.rs#public_basic_error_route_rejects_external_get_head_and_post"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
+          "docs/development/wws-cache-head-live-observations-20260815.md",
           "docs/development/wws-route-registration-denominator.json"
         ]
       },

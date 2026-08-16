@@ -1035,7 +1035,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
 
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
-  assert.equal(inventory.counts.total, 924)
+  assert.equal(inventory.counts.total, 925)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.counts, {
     lexer_rules: 62,
     parser_functions: 3,
@@ -1234,8 +1234,8 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
   assert.equal(rows.length, 47)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 44)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "partial").length, 3)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 44)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 3)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 46)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 1)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/wws-route-registration-denominator.json")
   ), true)
@@ -1508,7 +1508,7 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
     inventory.ftml_raw_surface_manifest.records.map(({ surface_id: surfaceId }) => surfaceId)
   )
   assert.ok([...rawIds].every((surfaceId) => !publicIds.has(surfaceId)))
-  assert.equal(inventory.counts.total, 924)
+  assert.equal(inventory.counts.total, 925)
   assert.equal(
     inventory.relationship_edges.filter(({ type }) => type === "alias").length,
     47
