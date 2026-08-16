@@ -69,7 +69,7 @@ const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
     sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
   }
 ])
-const AUDITED_CATALOG_SHA256 = "f79aee6963a4c4428261b1bb0b4b8f0411a39cebc9d944f064f1b118153e5090"
+const AUDITED_CATALOG_SHA256 = "7864c18f6045bc32dbe050844c6653364992be41e76fb41878e42273bd53b10a"
 const AUDITED_CATALOG_FALLBACK = Object.freeze({
   count: 95,
   surface_ids_sha256: "82cce4db95e2a070f1bbdd192dcce8254f7ded92632969781771ac81f902d6a5",
@@ -89,7 +89,7 @@ const AUDITED_ISSUE_GROUPS = Object.freeze({
   framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
   framerail_server_action: Object.freeze({ count: 97, surface_ids_sha256: "f1d6baa4652c07e181839c8efb90709c35c76154e95f0b71f15c94c0cd9f2dfc", mapping_sha256: "3cc1f313532c1664c989c02e121b4476f25642b48f55a6f5958fc92c97d513a3" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
-  framerail_amc_module_shape: Object.freeze({ count: 26, surface_ids_sha256: "171e867231c0bf70f6b9078393c6be28877cafa9b21233195e1c4fdbdc3f0f24", mapping_sha256: "a62ecebad82b6cfd8cf114e65d39bdfd5f23b02d32e2f63cfe06876d20e60398" }),
+  framerail_amc_module_shape: Object.freeze({ count: 27, surface_ids_sha256: "4f2f2705c525444287f6d2f2835903263953f78d8d2d830f46b296e139de8b13", mapping_sha256: "90c279280479e68e0227a8c4d26ececa5a74b0f0ef8937abeac548dcffc89b61" }),
   page_action: Object.freeze({ count: 25, surface_ids_sha256: "7650ecd18142446eb1c4f557ad13bc525cdd541b31dcbc982ea1f92288f0e206", mapping_sha256: "98ebacfd535793c5c4996797ea2c206f3edea85852520705b01a3f9dd03faad6" }),
   framerail_xmlrpc_method: Object.freeze({ count: 17, surface_ids_sha256: "862b1daa07ba126424e6021d306854f2c431073c024e1497a0ed5ab65b0d118d", mapping_sha256: "8862712f0d5acc1e73ff31f873d4ed8a8e7d2c01afc74ce988894e38508f9a34" }),
   wws_route: Object.freeze({ count: 47, surface_ids_sha256: "ab5f11a51af87a193c5f3b032a3b79c2e0c3ea1f787c35bb8c9d4d1c474569ab", mapping_sha256: "3cbd7115f9f7a4463abca2965c29a44418dd28013df29c5f396c52a562841bfa" }),
@@ -2015,7 +2015,7 @@ function applyFramerailAmcTests(root, records, sourceRevision) {
       }
     }
   })
-  if (linked !== 24 || projected.length - linked !== 4) {
+  if (linked !== 25 || projected.length - linked !== 4) {
     throw new Error("Framerail AMC public-test coverage counts drifted")
   }
   return projected
@@ -3589,7 +3589,9 @@ function buildRelationshipModel(surfaces, ftmlRawSurfaceManifest, semantics) {
     throw new Error(`${SEMANTICS_REGISTRY} has missing or unused specification owner keys`)
   }
   if (JSON.stringify(implementationOwners) !== JSON.stringify(usedImplementationOwners)) {
-    throw new Error(`${SEMANTICS_REGISTRY} has missing or unused implementation owner keys`)
+    throw new Error(
+      `${SEMANTICS_REGISTRY} has missing or unused implementation owner keys: expected ${JSON.stringify(implementationOwners)}, discovered ${JSON.stringify(usedImplementationOwners)}`
+    )
   }
   const implementationOwnerSet = new Set(implementationOwners)
   const edges = []
