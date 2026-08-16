@@ -543,6 +543,38 @@
         { "path": "deepwell/src/services/render/service.rs", "anchor": "render_nav_page(top_bar_page_wikitext, CorpusRenderScope::TopNav)" }
       ],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "rerender_uses_latest_navigation_page_revision" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-templates",
+      "sources": [
+        { "path": "deepwell/src/services/blueprint/template.rs", "anchor": "pub(crate) fn compose_template(template: &str, content: &str) -> String" },
+        { "path": "deepwell/src/services/blueprint/service.rs", "anchor": "pub(crate) async fn apply_page_template(" },
+        { "path": "deepwell/src/services/category/service.rs", "anchor": "page template must reference a live page in the same site" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "category_page_template_prefills_new_page_source_and_can_be_cleared" },
+        { "path": "deepwell/tests/page.rs", "anchor": "saved_newpage_views_resolve_templates_from_current_anonymous_state" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:layout-page",
+      "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
+      "tests": [
+        { "path": "framerail/tests/wikidot-static-styles.test.ts", "anchor": "header-extra-div-1" },
+        { "path": "framerail/tests/wikidot-chrome.spec.ts", "anchor": "header-extra-div-1" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:site-themes",
+      "sources": [
+        { "path": "deepwell/src/services/category/service.rs", "anchor": "let theme_storage = input.theme.to_option().map(|theme| theme.to_storage());" },
+        { "path": "deepwell/src/services/settings/service.rs", "anchor": "fn theme_from_storage(category: &PageCategoryModel) -> Result<ThemeSetting>" },
+        { "path": "framerail/src/routes/[x+2d]/admin/ThemeSettings.svelte", "anchor": "$form.themeType = category.theme_kind" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "normal_page_create_allocates_category_numbers_without_consuming_conflicts" },
+        { "path": "framerail/tests/site-settings-foundation.test.js", "anchor": "keeps effective theme variants separate for initial head rendering" }
+      ]
     }
   ]
 }
