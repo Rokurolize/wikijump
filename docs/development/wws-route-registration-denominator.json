@@ -110,14 +110,14 @@
       },
       {
         "path": "wws/src/route.rs",
-        "git_blob": "496d68cde9019efc8abd24d56e1a93df2d370a9b",
-        "sha256": "8ed5b5b4571cc121771d708bceac9bfb53fbdcbb39cc22866503f095b3078d66"
+        "git_blob": "cd0700b89dc926503f4367d47479be331f63d439",
+        "sha256": "44588f64fe87b50a322d9406e33081439efea664ecb907c161a5d66d6b3e59ee"
       }
     ]
   },
   "generator": {
     "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-    "sha256": "75fda403139f990eb3ee583d8ae653847f2639fca222f5e434ce393b385de6e2"
+    "sha256": "445c0e313c98ad37ef05e58aef412ebac6a0a53fba23b2a54ad4b726336bb7d4"
   },
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json",
@@ -589,6 +589,20 @@
         "wws-route-registration:ANY:/local--resized-images/{page_slug}/{filename}/{variant}"
       ],
       "public_test": "wws/src/handler/misc.rs#invalid_methods_are_rejected"
+    },
+    {
+      "id": "wws-behavior:basic-error-guard",
+      "status": "implemented",
+      "source_paths": [
+        "wws/src/route.rs",
+        "wws/src/handler/basic_error.rs",
+        "wws/src/handler/misc.rs"
+      ],
+      "registration_ids": [
+        "wws-route-registration:ANY:/-/basic-error/{error_code}",
+        "wws-route-registration:GET:/-/basic-error/{error_code}"
+      ],
+      "public_test": "wws/src/route.rs#public_basic_error_route_rejects_external_get_head_and_post"
     },
     {
       "id": "wws-behavior:file-redirect",
