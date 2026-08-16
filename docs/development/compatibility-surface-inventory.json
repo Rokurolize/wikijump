@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "59f3faedc01cf441bf2b8321788011d3ff07eff9",
-      "tree": "142a1aee20fa7e0ed6ec035f24dd0d23ee99c652"
+      "commit": "9a49cb1201144da047dd3603172a86ac2d8d14e0",
+      "tree": "91a4d8be9d8cfae1ff48bfe20f2011a499347143"
     },
     "ftml": {
       "commit": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "bada7c30cb8ce3097782e10ef5bcf924376add9839443cda8d468bdbc9e6be5b"
+        "sha256": "c8c683fd26dc0818c6391ba79ce6bf8df117605a4d47985bcbde75a9450a699e"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11157,7 +11157,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "6c2e30e338d73cf25027b1043892d91facabcb9348dce85aef1756903d954161"
+        "sha256": "6b50fad61997d64d7492137393a152dcc096c42715ebb221095e7fc2ed228286"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -20693,7 +20693,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/list_pages.rs#listpages_default_rows_expand_secondary_page_body_modules",
+          "deepwell/tests/page.rs#social_syntax_matches_frozen_live_service_selection_and_widget_identity"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20702,8 +20705,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/compat/wikidot_social.rs#pub(in crate::services::render) fn expand_wikidot_social_syntax(",
+          "deepwell/src/services/render/service.rs#has_wikidot_social_syntax(&wikitext)"
+        ]
       },
       "candidate": {
         "status": "pending",
