@@ -263,7 +263,10 @@ const isSupportedPageReadShape = (moduleName, parameters) => {
 
 /**
  * @param {Request} request
- * @returns {Promise<Map<string, string>>}
+ * @returns {Promise<{
+ *   fields: Map<string, string>
+ *   duplicateFields: Set<string>
+ * }>}
  */
 const readUrlEncodedForm = async (request) => {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim()
@@ -284,7 +287,7 @@ const readUrlEncodedForm = async (request) => {
 
   const reader = request.body?.getReader()
   if (reader === undefined) {
-    return new Map()
+    return { fields: new Map(), duplicateFields: new Set() }
   }
 
   /** @type {Uint8Array[]} */
@@ -313,10 +316,12 @@ const readUrlEncodedForm = async (request) => {
   const body = new TextDecoder("utf-8", { fatal: true }).decode(bytes)
   const form = new URLSearchParams(body)
   const values = new Map()
+  const duplicateFields = new Set()
   for (const [key, value] of form) {
+    if (values.has(key)) duplicateFields.add(key)
     values.set(key, value)
   }
-  return values
+  return { fields: values, duplicateFields }
 }
 
 /**
@@ -625,10 +630,15 @@ export const handleAjaxModuleConnectorRequest = async (
     )
   }
 
-  /** @type {Map<string, string>} */
-  let fields
+  /**
+   * @type {{
+   *   fields: Map<string, string>
+   *   duplicateFields: Set<string>
+   * }}
+   */
+  let parsedForm
   try {
-    fields = await readUrlEncodedForm(request)
+    parsedForm = await readUrlEncodedForm(request)
   } catch (error) {
     const status = error instanceof RangeError ? 413 : 400
     return jsonResponse(
@@ -643,7 +653,19 @@ export const handleAjaxModuleConnectorRequest = async (
     )
   }
 
+  const { fields, duplicateFields } = parsedForm
   const moduleName = fields.get("moduleName")
+  if (moduleName !== "list/ListPagesModule" && duplicateFields.size > 0) {
+    const duplicateField = duplicateFields.values().next().value
+    return jsonResponse(
+      {
+        status: "not_ok",
+        message: `AJAX Module Connector field is duplicated: ${duplicateField}`
+      },
+      400
+    )
+  }
+
   if (moduleName === MANAGE_SITE_GENERAL_MODULE) {
     if (fields.size !== 1) {
       return jsonResponse({

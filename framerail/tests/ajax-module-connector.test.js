@@ -328,10 +328,10 @@ test("fails closed before Deepwell for unobserved MembersListModule shapes", asy
         assert.fail("the later duplicate value must fail shape validation")
     }
   )
-  assert.equal(duplicate.status, 200)
+  assert.equal(duplicate.status, 400)
   assert.deepEqual(await duplicate.json(), {
     status: "not_ok",
-    message: "Unsupported AJAX module shape: membership/MembersListModule"
+    message: "AJAX Module Connector field is duplicated: group"
   })
 })
 
@@ -926,7 +926,6 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     assert.equal((await response.json()).status, "not_ok")
   }
 
-  let duplicateReceived
   const duplicate = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
@@ -936,20 +935,18 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
-      renderSiteChangesModule: async (input) => {
-        duplicateReceived = input
-        return { status: "ok", body: "rows" }
-      }
+      renderSiteChangesModule: async () =>
+        assert.fail("duplicate SiteChanges fields must fail before Deepwell")
     }
   )
-  assert.equal(duplicate.status, 200)
-  const duplicateBody = await duplicate.json()
-  assert.equal(duplicateBody.status, "ok")
-  assert.equal(duplicateBody.body, "rows")
-  assert.equal(duplicateReceived.page, "2")
+  assert.equal(duplicate.status, 400)
+  assert.deepEqual(await duplicate.json(), {
+    status: "not_ok",
+    message: "AJAX Module Connector field is duplicated: page"
+  })
 })
 
-test("fails closed for unsupported modules while duplicate module names keep the later value", async () => {
+test("ListPages keeps later module names while other modules reject duplicates", async () => {
   const unsupported = await handleAjaxModuleConnectorRequest(
     request({ moduleName: "forum/ForumStartModule", module_body: "" }),
     { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
@@ -989,10 +986,10 @@ test("fails closed for unsupported modules while duplicate module names keep the
     }),
     { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
   )
-  assert.equal(listPagesThenUnknown.status, 200)
+  assert.equal(listPagesThenUnknown.status, 400)
   assert.deepEqual(await listPagesThenUnknown.json(), {
     status: "not_ok",
-    message: "Unsupported AJAX module: not-a-real-module"
+    message: "AJAX Module Connector field is duplicated: moduleName"
   })
 })
 
@@ -1129,7 +1126,6 @@ test("WhoRated rejects unknown and malformed request fields", async () => {
   }
   assert.equal(renders, 0)
 
-  let duplicateReceived
   const duplicate = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
@@ -1139,17 +1135,15 @@ test("WhoRated rejects unknown and malformed request fields", async () => {
     {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
-      renderPageReadModule: async (input) => {
-        duplicateReceived = input
-        return { status: "ok", body: "votes" }
-      }
+      renderPageReadModule: async () =>
+        assert.fail("duplicate WhoRated fields must fail before Deepwell")
     }
   )
-  assert.equal(duplicate.status, 200)
-  const duplicateBody = await duplicate.json()
-  assert.equal(duplicateBody.status, "ok")
-  assert.equal(duplicateBody.body, "votes")
-  assert.equal(duplicateReceived.parameters.pageId, "2")
+  assert.equal(duplicate.status, 400)
+  assert.deepEqual(await duplicate.json(), {
+    status: "not_ok",
+    message: "AJAX Module Connector field is duplicated: pageId"
+  })
 })
 
 test("dispatches the exact wikidot.py page revision list shape", async () => {
