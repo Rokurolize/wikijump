@@ -2845,73 +2845,86 @@ function auditTests(row) {
 }
 
 async function authoritativeAuditTests(root, auditPath, issue, sourceRevision) {
-  const descriptor = issue.authoritative_manifest
-  if (descriptor === undefined) return new Map()
-  if (
-    !descriptor ||
-    typeof descriptor !== "object" ||
-    Array.isArray(descriptor) ||
-    typeof descriptor.path !== "string" ||
-    descriptor.path === "" ||
-    !/^[0-9a-f]{64}$/u.test(descriptor.sha256 ?? "")
-  ) {
-    throw new Error(`${auditPath} contains an invalid authoritative_manifest`)
-  }
-  const revision = descriptor.source_revision ?? sourceRevision
-  if (!/^[0-9a-f]{40}$/u.test(revision ?? "")) {
-    throw new Error(`${auditPath} ${descriptor.path} has invalid authoritative_manifest source_revision`)
-  }
-  let bytes
-  try {
-    bytes = execFileSync(GIT_EXECUTABLE, ["-C", root, "show", `${revision}:${descriptor.path}`], {
-      env: GIT_ENVIRONMENT,
-      stdio: ["ignore", "pipe", "ignore"]
-    })
-  } catch {
-    throw new Error(`${auditPath} cannot read authoritative manifest ${revision}:${descriptor.path}`)
-  }
-  if (sha256(bytes) !== descriptor.sha256) {
-    throw new Error(`${auditPath} authoritative manifest digest does not match ${revision}:${descriptor.path}`)
-  }
-  let manifest
-  try {
-    manifest = JSON.parse(bytes.toString("utf8"))
-  } catch (error) {
-    throw new Error(`${auditPath} authoritative manifest ${descriptor.path} is invalid JSON: ${error.message}`)
-  }
-  if (!Array.isArray(manifest.cases)) {
-    throw new Error(`${auditPath} authoritative manifest ${descriptor.path} cases must be an array`)
-  }
   const testsByCase = new Map()
-  for (const entry of manifest.cases) {
-    if (!entry || typeof entry.case_id !== "string" || entry.case_id === "") {
-      throw new Error(`${auditPath} authoritative manifest ${descriptor.path} contains a case without case_id`)
+  const descriptors = []
+  if (issue.authoritative_manifest !== undefined) descriptors.push(issue.authoritative_manifest)
+  if (issue.authoritative_manifests !== undefined) {
+    if (!Array.isArray(issue.authoritative_manifests)) {
+      throw new Error(`${auditPath} authoritative_manifests must be an array`)
     }
-    if (testsByCase.has(entry.case_id)) {
-      throw new Error(`${auditPath} authoritative manifest ${descriptor.path} contains duplicate case ${entry.case_id}`)
+    descriptors.push(...issue.authoritative_manifests.filter(({ case_inventory: caseInventory }) => caseInventory === true))
+  }
+  for (const descriptor of descriptors) {
+    if (
+      !descriptor ||
+      typeof descriptor !== "object" ||
+      Array.isArray(descriptor) ||
+      typeof descriptor.path !== "string" ||
+      descriptor.path === "" ||
+      !/^[0-9a-f]{64}$/u.test(descriptor.sha256 ?? "")
+    ) {
+      throw new Error(`${auditPath} contains an invalid authoritative manifest`)
     }
-    const historicalReferences = uniqueSortedStrings([
-      ...(typeof entry.test === "string" && entry.test !== "" ? [entry.test] : []),
-      ...testReferences(entry.tests)
-    ])
-    const currentReferences = []
-    for (const reference of historicalReferences) {
-      const [testPath, anchor = ""] = reference.split(/#|::/u, 2)
-      if (!isCanonicalRepositoryReference(testPath)) {
-        throw new Error(`${auditPath} ${entry.case_id} has invalid authoritative test reference: ${reference}`)
-      }
-      let source
-      try {
-        source = await fs.readFile(path.join(root, testPath), "utf8")
-      } catch {
-        continue
-      }
-      if (anchor !== "" && !source.includes(anchor)) {
-        continue
-      }
-      currentReferences.push(reference)
+    const revision = descriptor.source_revision ?? sourceRevision
+    if (!/^[0-9a-f]{40}$/u.test(revision ?? "")) {
+      throw new Error(`${auditPath} ${descriptor.path} has invalid authoritative manifest source_revision`)
     }
-    testsByCase.set(entry.case_id, currentReferences)
+    let bytes
+    try {
+      bytes = execFileSync(GIT_EXECUTABLE, ["-C", root, "show", `${revision}:${descriptor.path}`], {
+        env: GIT_ENVIRONMENT,
+        stdio: ["ignore", "pipe", "ignore"]
+      })
+    } catch {
+      throw new Error(`${auditPath} cannot read authoritative manifest ${revision}:${descriptor.path}`)
+    }
+    if (sha256(bytes) !== descriptor.sha256) {
+      throw new Error(`${auditPath} authoritative manifest digest does not match ${revision}:${descriptor.path}`)
+    }
+    let manifest
+    try {
+      manifest = JSON.parse(bytes.toString("utf8"))
+    } catch (error) {
+      throw new Error(`${auditPath} authoritative manifest ${descriptor.path} is invalid JSON: ${error.message}`)
+    }
+    if (!Array.isArray(manifest.cases)) {
+      throw new Error(`${auditPath} authoritative manifest ${descriptor.path} cases must be an array`)
+    }
+    const manifestCaseIds = new Set()
+    for (const entry of manifest.cases) {
+      if (!entry || typeof entry.case_id !== "string" || entry.case_id === "") {
+        throw new Error(`${auditPath} authoritative manifest ${descriptor.path} contains a case without case_id`)
+      }
+      if (manifestCaseIds.has(entry.case_id)) {
+        throw new Error(`${auditPath} authoritative manifest ${descriptor.path} contains duplicate case ${entry.case_id}`)
+      }
+      manifestCaseIds.add(entry.case_id)
+      const historicalReferences = uniqueSortedStrings([
+        ...(typeof entry.test === "string" && entry.test !== "" ? [entry.test] : []),
+        ...testReferences(entry.tests),
+        ...(typeof entry.public_test === "string" && entry.public_test !== "" ? [entry.public_test] : []),
+        ...testReferences(entry.public_tests)
+      ])
+      const currentReferences = []
+      for (const reference of historicalReferences) {
+        const [testPath, anchor = ""] = reference.split(/#|::/u, 2)
+        if (!isCanonicalRepositoryReference(testPath)) {
+          throw new Error(`${auditPath} ${entry.case_id} has invalid authoritative test reference: ${reference}`)
+        }
+        let source
+        try {
+          source = await fs.readFile(path.join(root, testPath), "utf8")
+        } catch {
+          continue
+        }
+        if (anchor !== "" && !source.includes(anchor)) continue
+        currentReferences.push(reference)
+      }
+      testsByCase.set(
+        entry.case_id,
+        uniqueSortedStrings([...(testsByCase.get(entry.case_id) ?? []), ...currentReferences])
+      )
+    }
   }
   return testsByCase
 }
