@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.candidate_case_set_manifest.v1",
   "registry": "install/local/wikidot-verification/src/candidate-case-command.mjs#candidateCaseSet",
-  "case_set_count": 46,
-  "execution_case_set_count": 45,
+  "case_set_count": 47,
+  "execution_case_set_count": 46,
   "alias_case_set_count": 1,
   "case_sets": [
     {
@@ -124,6 +124,14 @@
         "B690_GEOMETRY_INITIAL",
         "B690_GEOMETRY_SETTLED",
         "B690_FIXED_SIX_PAGE_DENOMINATOR"
+      ]
+    },
+    {
+      "name": "open43-a1030-rate",
+      "case_ids": [
+        "A1030_CENTRAL_RUST_MATRIX",
+        "A1030_TWO_TRANSACTION_CONTENTION",
+        "A1030_EXACT_CANDIDATE_BROWSER"
       ]
     },
     {

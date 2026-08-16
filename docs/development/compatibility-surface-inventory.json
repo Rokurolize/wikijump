@@ -36028,7 +36028,9 @@
         "cases": [
           "A1030_CENTRAL_RUST_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-a1030-rate-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36068,7 +36070,9 @@
         "cases": [
           "A1030_EXACT_CANDIDATE_BROWSER"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-a1030-rate-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -36193,7 +36197,9 @@
         "cases": [
           "A1030_TWO_TRANSACTION_CONTENTION"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-a1030-rate-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
