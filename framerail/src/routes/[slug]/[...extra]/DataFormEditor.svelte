@@ -11,8 +11,9 @@
   } from "$lib/wikidot/wikidot-data-form.js"
   import WikidotDataFormMatchWorker from "$lib/wikidot/wikidot-data-form-match.worker.ts?worker"
   import { superForm } from "sveltekit-superforms"
-  import { onDestroy, untrack } from "svelte"
+  import { onDestroy, onMount, untrack } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
+  import { mountWikidotDatePicker } from "$lib/wikidot/wikidot-date-picker.js"
 
   import type { DataFormDefinition } from "$lib/server/deepwell/views"
   import type { buildPageForms } from "$lib/server/load/page/page-forms"
@@ -54,6 +55,15 @@
   let values = $state<Record<string, string>>(
     untrack(() => buildWikidotDataFormState(definition, initialValues))
   )
+  let dateDisplayValues = $state<Record<string, string>>(
+    untrack(() =>
+      Object.fromEntries(
+        definition.fields
+          .filter((field) => field.field_type === "date")
+          .map((field) => [field.name, initialValues[field.name] ?? ""])
+      )
+    )
+  )
   const validationErrors = new SvelteMap<string, string>()
   const category = $derived(
     slug.includes(":") ? slug.slice(0, slug.indexOf(":")) : "_default"
@@ -74,6 +84,40 @@
       }
     }
     return groups
+  })
+
+  onMount(() => {
+    const cleanups = definition.fields.flatMap((field) => {
+      if (field.field_type !== "date") return []
+      const input = document.getElementsByName(`field-${field.name}`)[0]
+      if (!(input instanceof HTMLInputElement)) return []
+      return [
+        mountWikidotDatePicker(
+          input,
+          field.options ?? {},
+          ({ display, timestamp }) => {
+            dateDisplayValues[field.name] = display
+            values[field.name] = timestamp
+            const altField = field.options?.altField
+            if (typeof altField !== "string") return
+            const altInput = document.querySelector<HTMLInputElement>(altField)
+            if (altInput?.name.startsWith("field-")) {
+              values[altInput.name.slice("field-".length)] = altInput.value
+            }
+          },
+          (display) => {
+            dateDisplayValues[field.name] = display
+            const altField = field.options?.altField
+            if (typeof altField !== "string") return
+            const altInput = document.querySelector<HTMLInputElement>(altField)
+            if (altInput?.name.startsWith("field-")) {
+              values[altInput.name.slice("field-".length)] = altInput.value
+            }
+          }
+        )
+      ]
+    })
+    return () => cleanups.forEach((cleanup) => cleanup())
   })
 
   type MatchField = {
@@ -399,13 +443,18 @@
                 <input
                   name={`field-${field.name}`}
                   class={presentation.className ?? ""}
+                  oninput={(event) => {
+                    const display = event.currentTarget.value
+                    dateDisplayValues[field.name] = display
+                    values[field.name] = display
+                  }}
                   onkeypress={(event) => {
                     if (event.key === "Enter") event.preventDefault()
                   }}
                   placeholder={field.hint || undefined}
                   size={field.width}
                   type="text"
-                  bind:value={values[field.name]}
+                  value={dateDisplayValues[field.name] ?? ""}
                 />
               {:else if field.field_type === "password" || field.field_type === "url"}
                 {@const presentation = getWikidotDataFormFieldPresentation(field)}

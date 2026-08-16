@@ -12,6 +12,7 @@ const DATA_FORM_EMPTY_SELECT_CREATE_SLUG = "data-form-empty-select-flow:example"
 const DATA_FORM_PROPERTIES_CREATE_SLUG = "data-form-properties-flow:example"
 const DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG = "data-form-checkbox-wiki-flow:example"
 const DATA_FORM_DATE_CREATE_SLUG = "data-form-date-field-flow:example"
+const DATA_FORM_DATE_OPTIONS_CREATE_SLUG = "data-form-date-options-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -56,6 +57,66 @@ const DATA_FORM_DATE_DEFINITION = {
       after: "",
       join: false,
       options: { dateFormat: "mm/dd/yy", showOn: "button" }
+    }
+  ]
+}
+const DATA_FORM_DATE_OPTIONS_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "date-primary",
+      label: "Primary date",
+      hint: "",
+      field_type: "date",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 24,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      options: {
+        altField: "input[name=field-alt-date]",
+        altFormat: "m/d/yy",
+        dateFormat: "mm/dd/yy",
+        showOn: "button"
+      }
+    },
+    {
+      name: "date-secondary",
+      label: "Secondary date",
+      hint: "",
+      field_type: "date",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 24,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      options: { dateFormat: "DD, d MM yy", showOn: "both", firstDay: 1 }
+    },
+    {
+      name: "alt-date",
+      label: "Alternate date",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 10,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false
     }
   ]
 }
@@ -448,7 +509,8 @@ const pageForArticleRoute = (route) => {
   if (
     (route.slug === DATA_FORM_EDIT_SLUG ||
       route.slug === DATA_FORM_CONTROLS_CREATE_SLUG ||
-      route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG) &&
+      route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG ||
+      route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG) &&
     route.extra === "edit"
   ) {
     return page
@@ -521,19 +583,21 @@ const missingPageArticleViewResult = (route) => ({
           ? { definition: DATA_FORM_DEFINITION, values: {} }
           : route.slug === DATA_FORM_DATE_CREATE_SLUG
             ? { definition: DATA_FORM_DATE_DEFINITION, values: {} }
-            : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
-              ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
-              : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
-                ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
-                : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
-                  ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
-                  : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
-                    ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
-                    : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
-                      ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
-                      : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
-                        ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
-                        : null
+            : route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG
+              ? { definition: DATA_FORM_DATE_OPTIONS_DEFINITION, values: {} }
+              : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
+                ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
+                : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
+                  ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
+                  : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
+                    ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
+                    : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
+                      ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
+                      : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
+                        ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
+                        : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
+                          ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
+                          : null
     }
   }
 })
@@ -565,7 +629,8 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     typeof rpcRequest.params.route.slug === "string" &&
     (pageForArticleRoute(rpcRequest.params.route) ||
       ((rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG ||
-        rpcRequest.params.route.slug === DATA_FORM_DATE_CREATE_SLUG) &&
+        rpcRequest.params.route.slug === DATA_FORM_DATE_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG) &&
         rpcRequest.params.route.extra === "") ||
       NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
   ) {
@@ -581,6 +646,19 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
         result.page.data.data_form = {
           definition: DATA_FORM_DEFINITION,
           values: { name: "Probe Name", choice: "a" }
+        }
+      } else if (
+        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG &&
+        rpcRequest.params.route.extra === "edit"
+      ) {
+        result.page.data.options.edit = true
+        result.page.data.data_form = {
+          definition: DATA_FORM_DATE_OPTIONS_DEFINITION,
+          values: {
+            "date-primary": "1411099200",
+            "date-secondary": "1418360400",
+            "alt-date": "12/11/2014"
+          }
         }
       } else if (
         rpcRequest.params.route.slug === DATA_FORM_CONTROLS_CREATE_SLUG &&

@@ -201,7 +201,7 @@ test("date fields expose options and preserve accepted and malformed submitted s
     includeInFormFields: true,
     display: "date"
   })
-  for (const value of ["02/29/2024", "02/29/2023", "not-a-date"]) {
+  for (const value of ["1411099200", "02/29/2024", "02/29/2023", "not-a-date"]) {
     assert.equal(
       serializeWikidotDataFormSource(definition, { date: value }),
       `date: ${value}`

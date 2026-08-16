@@ -80,11 +80,20 @@ test("data-form date field renders its basic control and preserves submitted sca
   expect(missingResponse?.status()).toBe(404)
   await page.locator("#create-it-now-link a").click()
   await expect(page).toHaveURL(/data-form-date-field-flow:example\/edit\/true$/u)
-
   const date = page.locator("input[name='field-date']")
   await expect(date).toHaveAttribute("type", "text")
-  await expect(date).toHaveClass("form-control form-date")
+  await expect(date).toHaveClass(/form-control form-date/u)
   await expect(date).toHaveAttribute("size", "24")
+  await expect(date).toHaveClass(/hasDatepicker/u)
+  const dateTrigger = page.locator("button.ui-datepicker-trigger")
+  await expect(dateTrigger).toHaveCount(1)
+  await dateTrigger.click()
+  await expect(page.locator(".ui-datepicker")).toBeVisible()
+  const today = page.locator(".ui-datepicker-calendar td.ui-datepicker-today a")
+  await expect(today).toHaveCount(1)
+  await today.click()
+  await expect(date).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/u)
+  await page.keyboard.press("Escape")
 
   await date.fill("02/29/2024")
   await page.locator("#edit-save-button").click()
@@ -99,6 +108,81 @@ test("data-form date field renders its basic control and preserves submitted sca
       )
     })
     .toMatchObject({ params: { wikitext: "date: 02/29/2024" } })
+})
+
+test("data-form datepicker selections save the evidenced Unix-second scalar", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-date-field-flow:example/edit/true")
+
+  const date = page.locator("input[name='field-date']")
+  const dateTrigger = page.locator("button.ui-datepicker-trigger")
+  await dateTrigger.click()
+  await expect(page.locator(".ui-datepicker")).toBeVisible()
+  await page.locator(".ui-datepicker-calendar td.ui-datepicker-today a").click()
+  await expect(date).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/u)
+  await page.locator("#edit-save-button").click()
+
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string; wikitext?: string } }) =>
+          entry.params.slug === "data-form-date-field-flow:example"
+      )
+    })
+    .toMatchObject({ params: { wikitext: /^date: -?\d+$/u } })
+})
+
+test("date options edit reload formats stored seconds and serializes alt fields", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-date-options-flow:example/edit")
+
+  const primary = page.locator("input[name='field-date-primary']")
+  const secondary = page.locator("input[name='field-date-secondary']")
+  const alt = page.locator("input[name='field-alt-date']")
+  await expect(primary).toHaveValue("09/19/2014")
+  await expect(secondary).toHaveValue("Friday, 12 December 2014")
+  await expect(alt).toHaveValue("9/19/2014")
+  await expect(page.locator("button.ui-datepicker-trigger")).toHaveCount(2)
+
+  const expectedSelection = await page.evaluate(() => {
+    const selected = new Date(2014, 8, 20)
+    return {
+      timestamp: String(Math.trunc(selected.getTime() / 1000)),
+      alt: "9/20/2014"
+    }
+  })
+  await page.locator("button.ui-datepicker-trigger").first().click()
+  await expect(page.locator(".ui-datepicker")).toBeVisible()
+  await page.locator(".ui-datepicker-calendar a[data-date='20']").click()
+  await expect(alt).toHaveValue(expectedSelection.alt)
+  await page.locator("#edit-save-button").click()
+
+  await expect(page.locator("#edit-page-form")).toHaveCount(0)
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageEdit.find(
+      (entry: { params: { page?: number } }) => entry.params.page === 3000400
+    )
+  ).toMatchObject({
+    params: {
+      page: 3000400,
+      last_revision_id: 9000400,
+      wikitext: `date-primary: ${expectedSelection.timestamp}\ndate-secondary: 1418360400\nalt-date: '${expectedSelection.alt}'`
+    }
+  })
 })
 
 test("data-form text and select controls match live validation and storage", async ({

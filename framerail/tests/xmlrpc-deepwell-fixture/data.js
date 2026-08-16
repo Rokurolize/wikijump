@@ -53,6 +53,23 @@ export const pages = {
     wikitext: "Main",
     compiled_body_html: "<p>Main</p>"
   },
+  "data-form-date-options-flow:example": {
+    page_id: 3000400,
+    revision_id: 9000400,
+    page_created_at: "2026-08-16T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-16T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Data Form Date Options",
+    slug: "data-form-date-options-flow:example",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      "date-primary: 1411099200\ndate-secondary: 1418360400\nalt-date: 12/11/2014",
+    compiled_body_html: "<p>Data form date options fixture.</p>"
+  },
   "scp-173": {
     page_id: 3000173,
     revision_id: 9000173,
