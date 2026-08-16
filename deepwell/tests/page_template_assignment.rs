@@ -751,6 +751,155 @@ async fn page_view_exposes_category_data_form_definition_in_template_order() {
 }
 
 #[tokio::test]
+async fn page_view_and_edit_round_trip_date_field_scalars_and_options() {
+    const CATEGORY: &str = "data-form-date-field-public";
+    const TEMPLATE_SLUG: &str = "data-form-date-field-public:_template";
+    const PAGE_SLUG: &str = "data-form-date-field-public:date";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  date:\n",
+        "    label: Date value\n",
+        "    width: 24\n",
+        "    type: date\n",
+        "    options:\n",
+        "      dateFormat: 'mm/dd/yy'\n",
+        "      showOn: button\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form date-field test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("date-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-date-field-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => {
+            panic!("date field must be exposed by the public create view: {other:?}")
+        }
+    };
+    let date = definition.field("date").expect("date field definition");
+    assert!(definition.supports_observed_create_edit());
+    assert_eq!(date.width, 24);
+    assert_eq!(date.options["dateFormat"], json!("mm/dd/yy"));
+    assert_eq!(date.options["showOn"], json!("button"));
+
+    let page = create_page(&mut runner, site_id, PAGE_SLUG, "date: 02/29/2023").await;
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => {
+            assert_eq!(data_form.values["date"], "02/29/2023");
+        }
+        other => {
+            panic!("date field must round-trip through the public edit view: {other:?}")
+        }
+    }
+
+    set_page_actor(&mut runner, site_id, PAGE_SLUG);
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "round trip leap date",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "date: 02/29/2024",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("date field edit should save through the public page seam");
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, "date: 02/29/2024");
+            assert_eq!(data_form.values["date"], "02/29/2024");
+        }
+        other => {
+            panic!("saved date field must reload through the public edit view: {other:?}")
+        }
+    }
+}
+
+#[tokio::test]
 async fn assigned_data_form_template_edit_invalidates_warm_imported_article_cache() {
     const CATEGORY: &str = "data-form-template-cache-lifecycle";
     const TEMPLATE_SLUG: &str = "data-form-template-cache-lifecycle:_template";

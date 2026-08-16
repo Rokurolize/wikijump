@@ -70,6 +70,37 @@ test("data-form create flow renders controls and stores Wikidot source", async (
     })
 })
 
+test("data-form date field renders its basic control and preserves submitted scalars", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  const missingResponse = await page.goto("/data-form-date-field-flow:example")
+  expect(missingResponse?.status()).toBe(404)
+  await page.locator("#create-it-now-link a").click()
+  await expect(page).toHaveURL(/data-form-date-field-flow:example\/edit\/true$/u)
+
+  const date = page.locator("input[name='field-date']")
+  await expect(date).toHaveAttribute("type", "text")
+  await expect(date).toHaveClass("form-control form-date")
+  await expect(date).toHaveAttribute("size", "24")
+
+  await date.fill("02/29/2024")
+  await page.locator("#edit-save-button").click()
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string; wikitext?: string } }) =>
+          entry.params.slug === "data-form-date-field-flow:example"
+      )
+    })
+    .toMatchObject({ params: { wikitext: "date: 02/29/2024" } })
+})
+
 test("data-form text and select controls match live validation and storage", async ({
   page,
   request

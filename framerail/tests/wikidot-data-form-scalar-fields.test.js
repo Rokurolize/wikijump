@@ -178,3 +178,33 @@ test("url-explicit-ftp-schema-survives-edit while dangerous schemes fail closed"
     href: null
   })
 })
+
+test("date fields expose options and preserve accepted and malformed submitted scalars", () => {
+  const date = {
+    ...field("date", "date"),
+    label: "Date",
+    width: 24,
+    options: {
+      dateFormat: "mm/dd/yy",
+      showOn: "button",
+      altField: "input[name=field-alt-date]",
+      altFormat: "m/d/yy"
+    }
+  }
+  const definition = { default_layout: true, fields: [date] }
+
+  assert.deepEqual(buildWikidotDataFormState(definition, {}), { date: "" })
+  assert.deepEqual(getWikidotDataFormFieldPresentation(date), {
+    control: "input",
+    inputType: "text",
+    className: "form-control form-date",
+    includeInFormFields: true,
+    display: "date"
+  })
+  for (const value of ["02/29/2024", "02/29/2023", "not-a-date"]) {
+    assert.equal(
+      serializeWikidotDataFormSource(definition, { date: value }),
+      `date: ${value}`
+    )
+  }
+})

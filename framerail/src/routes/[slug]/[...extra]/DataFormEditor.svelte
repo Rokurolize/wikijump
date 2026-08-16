@@ -394,6 +394,19 @@
                 ? `${field.before} `
                 : " "}{#if field.field_type === "static"}
                 {field.configured_value ?? ""}
+              {:else if field.field_type === "date"}
+                {@const presentation = getWikidotDataFormFieldPresentation(field)}
+                <input
+                  name={`field-${field.name}`}
+                  class={presentation.className ?? ""}
+                  onkeypress={(event) => {
+                    if (event.key === "Enter") event.preventDefault()
+                  }}
+                  placeholder={field.hint || undefined}
+                  size={field.width}
+                  type="text"
+                  bind:value={values[field.name]}
+                />
               {:else if field.field_type === "password" || field.field_type === "url"}
                 {@const presentation = getWikidotDataFormFieldPresentation(field)}
                 <input

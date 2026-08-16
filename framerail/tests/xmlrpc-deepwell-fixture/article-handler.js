@@ -11,6 +11,7 @@ const DATA_FORM_INVALID_REGEX_CREATE_SLUG = "data-form-invalid-regex-flow:exampl
 const DATA_FORM_EMPTY_SELECT_CREATE_SLUG = "data-form-empty-select-flow:example"
 const DATA_FORM_PROPERTIES_CREATE_SLUG = "data-form-properties-flow:example"
 const DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG = "data-form-checkbox-wiki-flow:example"
+const DATA_FORM_DATE_CREATE_SLUG = "data-form-date-field-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -33,6 +34,28 @@ const DATA_FORM_DEFINITION = {
         { value: "b", label: "Beta" }
       ],
       default_value: "b"
+    }
+  ]
+}
+const DATA_FORM_DATE_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "date",
+      label: "Date value",
+      hint: "",
+      field_type: "date",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 24,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      options: { dateFormat: "mm/dd/yy", showOn: "button" }
     }
   ]
 }
@@ -496,19 +519,21 @@ const missingPageArticleViewResult = (route) => ({
       data_form:
         route.slug === DATA_FORM_CREATE_SLUG
           ? { definition: DATA_FORM_DEFINITION, values: {} }
-          : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
-            ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
-            : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
-              ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
-              : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
-                ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
-                : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
-                  ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
-                  : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
-                    ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
-                    : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
-                      ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
-                      : null
+          : route.slug === DATA_FORM_DATE_CREATE_SLUG
+            ? { definition: DATA_FORM_DATE_DEFINITION, values: {} }
+            : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
+              ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
+              : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
+                ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
+                : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
+                  ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
+                  : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
+                    ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
+                    : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
+                      ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
+                      : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
+                        ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
+                        : null
     }
   }
 })
@@ -539,7 +564,8 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     hasExactKeys(rpcRequest.params.route, ["extra", "slug"]) &&
     typeof rpcRequest.params.route.slug === "string" &&
     (pageForArticleRoute(rpcRequest.params.route) ||
-      (rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG &&
+      ((rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_DATE_CREATE_SLUG) &&
         rpcRequest.params.route.extra === "") ||
       NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
   ) {

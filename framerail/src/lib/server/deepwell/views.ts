@@ -160,6 +160,7 @@ export interface DataFormFieldDefinition {
   values: DataFormValueDefinition[]
   default_value: Nullable<string>
   configured_value: Nullable<string>
+  options: Record<string, unknown>
   width: number
   height: number
   match_pattern: Nullable<string>

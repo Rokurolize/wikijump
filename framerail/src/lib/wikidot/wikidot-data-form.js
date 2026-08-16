@@ -14,6 +14,7 @@
  *   values: WikidotDataFormValue[]
  *   default_value: string | null
  *   configured_value?: string | null
+ *   options?: Record<string, unknown>
  * }} WikidotDataFormField
  */
 
@@ -29,7 +30,7 @@
  *   inputType: "password" | "text" | null
  *   className: string | null
  *   includeInFormFields: boolean
- *   display: "text" | "masked" | "wiki" | "url"
+ *   display: "text" | "masked" | "wiki" | "url" | "date"
  * }} WikidotDataFormFieldPresentation
  */
 
@@ -99,6 +100,14 @@ export const getWikidotDataFormFieldPresentation = (field) => {
         className: "form-control form-url",
         includeInFormFields: true,
         display: "url"
+      }
+    case "date":
+      return {
+        control: "input",
+        inputType: "text",
+        className: "form-control form-date",
+        includeInFormFields: true,
+        display: "date"
       }
     default:
       return {
@@ -179,6 +188,13 @@ const serializeWikidotUrlScalar = (value) => {
   return serializeWikidotTextScalar(value)
 }
 
+/** @param {string} value */
+const serializeWikidotDateScalar = (value) => {
+  if (value === "") return "''"
+  if (/\s|^(?:false|null|true)$/iu.test(value)) return serializeWikidotTextScalar(value)
+  return value
+}
+
 /**
  * Serializes the currently evidenced data-form fields in template order.
  *
@@ -200,15 +216,17 @@ export const serializeWikidotDataFormSource = (definition, values) => {
             ? "null"
             : field.field_type === "url"
               ? serializeWikidotUrlScalar(value)
-              : field.field_type === "checkbox"
-                ? values[field.name] === "1"
-                  ? "'1'"
-                  : "'0'"
-                : field.field_type === "select"
-                  ? serializeWikidotSelectScalar(value)
-                  : field.field_type === "wiki"
-                    ? serializeWikidotWikiScalar(value)
-                    : serializeWikidotTextScalar(value)
+              : field.field_type === "date"
+                ? serializeWikidotDateScalar(value)
+                : field.field_type === "checkbox"
+                  ? values[field.name] === "1"
+                    ? "'1'"
+                    : "'0'"
+                  : field.field_type === "select"
+                    ? serializeWikidotSelectScalar(value)
+                    : field.field_type === "wiki"
+                      ? serializeWikidotWikiScalar(value)
+                      : serializeWikidotTextScalar(value)
       return `${field.name}: ${serialized}`
     })
     .join("\n")

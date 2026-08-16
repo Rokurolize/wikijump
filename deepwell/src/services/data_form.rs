@@ -127,6 +127,17 @@ impl DataFormDefinition {
                                 .as_ref()
                                 .is_none_or(|value| field.value_label(value).is_some())
                     }
+                    Some("date") => {
+                        field.configured_value.is_none()
+                            && field.default_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && field.options_valid
+                            && valid_wikidot_date_options(&field.options)
+                            && field.has_only_properties(&[
+                                "label", "type", "width", "options",
+                            ])
+                    }
                     _ => false,
                 })
     }
@@ -142,6 +153,8 @@ pub struct DataFormFieldDefinition {
     pub default_value: Option<String>,
     #[serde(default)]
     pub configured_value: Option<String>,
+    #[serde(default)]
+    pub options: BTreeMap<String, serde_json::Value>,
     pub width: usize,
     pub height: usize,
     pub match_pattern: Option<String>,
@@ -156,6 +169,8 @@ pub struct DataFormFieldDefinition {
     has_text_specific_properties: bool,
     #[serde(skip)]
     has_values_property: bool,
+    #[serde(skip)]
+    options_valid: bool,
     #[serde(skip)]
     authored_width: Option<String>,
     #[serde(skip)]
@@ -174,6 +189,7 @@ impl Default for DataFormFieldDefinition {
             values: Vec::new(),
             default_value: None,
             configured_value: None,
+            options: BTreeMap::new(),
             width: 40,
             height: 1,
             match_pattern: None,
@@ -183,6 +199,7 @@ impl Default for DataFormFieldDefinition {
             join: false,
             has_text_specific_properties: false,
             has_values_property: false,
+            options_valid: true,
             authored_width: None,
             authored_height: None,
             authored_properties: BTreeSet::new(),
@@ -291,6 +308,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
     let mut saw_fields = false;
     let mut current_field: Option<String> = None;
     let mut current_values_field: Option<String> = None;
+    let mut current_options_field: Option<String> = None;
     let mut current_properties = BTreeSet::<String>::new();
 
     for line in body.lines() {
@@ -312,6 +330,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             in_fields = true;
             current_field = None;
             current_values_field = None;
+            current_options_field = None;
             current_properties.clear();
             continue;
         }
@@ -333,6 +352,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             }
             current_field = Some(field.to_owned());
             current_values_field = None;
+            current_options_field = None;
             current_properties.clear();
             continue;
         }
@@ -340,6 +360,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             definition.observed_create_edit_compatible = false;
             current_field = None;
             current_values_field = None;
+            current_options_field = None;
             current_properties.clear();
             continue;
         }
@@ -360,6 +381,9 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             }
             if let Some(field) = definition.field_mut(field_name) {
                 field.authored_properties.insert(key.to_owned());
+            }
+            if key != "options" {
+                current_options_field = None;
             }
             match key {
                 "label" => {
@@ -499,11 +523,37 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                         current_values_field = None;
                     }
                 }
+                "options" if value.is_empty() => {
+                    current_values_field = None;
+                    current_options_field = Some(field_name.to_owned());
+                }
                 _ => {
                     definition.observed_create_edit_compatible = false;
                     current_values_field = None;
                 }
             }
+            continue;
+        }
+        if indent == 6
+            && current_options_field.as_deref() == Some(field_name)
+            && let Some((key, value)) = trimmed.split_once(':')
+        {
+            let key = key.trim();
+            if key.is_empty() {
+                definition.observed_create_edit_compatible = false;
+                continue;
+            }
+            let Some(field) = definition.field_mut(field_name) else {
+                definition.observed_create_edit_compatible = false;
+                continue;
+            };
+            let value = value.trim();
+            if value.is_empty() || field.options.contains_key(key) {
+                field.options_valid = false;
+            }
+            field
+                .options
+                .insert(key.to_owned(), parse_wikidot_data_form_option(value));
             continue;
         }
         if indent == 6
@@ -653,6 +703,7 @@ pub fn parse_observed_wikidot_data_form_values(
                     value
                 }
             }
+            Some("date") => parse_wikidot_stored_date_scalar(raw_value)?,
             _ => return None,
         };
         let canonical = match field.field_type.as_deref() {
@@ -664,6 +715,9 @@ pub fn parse_observed_wikidot_data_form_values(
             Some("static") => "null".to_owned(),
             Some("url") => serialize_wikidot_stored_url_scalar(&value),
             Some("select") => serialize_wikidot_stored_select_scalar(&value),
+            // Wikidot stores date submissions verbatim, including malformed
+            // values observed at the authenticated save boundary.
+            Some("date") => raw_value.to_owned(),
             _ => return None,
         };
         if canonical != raw_value {
@@ -814,6 +868,106 @@ fn parse_wikidot_text_width(value: &str) -> usize {
         .unwrap_or(40)
 }
 
+fn parse_wikidot_data_form_option(value: &str) -> serde_json::Value {
+    let value = value.trim();
+    if quoted_wikidot_data_form_scalar(value) {
+        return serde_json::Value::String(
+            unquote_wikidot_data_form_scalar(value).to_owned(),
+        );
+    }
+    if value.starts_with('[') || value.ends_with(']') {
+        let Some(items) = value
+            .strip_prefix('[')
+            .and_then(|value| value.strip_suffix(']'))
+        else {
+            return serde_json::Value::Object(serde_json::Map::new());
+        };
+        return serde_json::Value::Array(
+            items
+                .split(',')
+                .map(|item| parse_wikidot_data_form_option(item.trim()))
+                .collect(),
+        );
+    }
+    if value.starts_with('{') || value.ends_with('}') {
+        return serde_json::Value::Object(serde_json::Map::new());
+    }
+    match value.to_ascii_lowercase().as_str() {
+        "true" => return serde_json::Value::Bool(true),
+        "false" => return serde_json::Value::Bool(false),
+        "null" | "~" => return serde_json::Value::Null,
+        _ => {}
+    }
+    if let Ok(number) = value.parse::<i64>() {
+        return serde_json::Value::Number(number.into());
+    }
+    serde_json::Value::String(value.to_owned())
+}
+
+fn valid_wikidot_date_options(options: &BTreeMap<String, serde_json::Value>) -> bool {
+    options.iter().all(|(name, value)| match name.as_str() {
+        "altField" | "altFormat" | "appendText" | "buttonImage" | "buttonText"
+        | "closeText" | "currentText" | "dateFormat" | "nextText" | "prevText"
+        | "weekHeader" | "yearRange" | "yearSuffix" => value.is_string(),
+        "dayNames" | "dayNamesMin" | "dayNamesShort" => {
+            valid_wikidot_date_string_array(value, 7)
+        }
+        "monthNames" | "monthNamesShort" => valid_wikidot_date_string_array(value, 12),
+        "autoSize" | "buttonImageOnly" | "changeMonth" | "changeYear"
+        | "hideIfNoPrevNext" | "isRTL" | "showButtonPanel" | "showMonthAfterYear"
+        | "showWeek" => value.is_boolean(),
+        "firstDay" | "showCurrentAtPos" | "stepMonths" => value.as_i64().is_some(),
+        "defaultDate" | "maxDate" | "minDate" => {
+            value.is_null() || value.is_string() || value.as_i64().is_some()
+        }
+        "duration" => {
+            value.as_i64().is_some()
+                || matches!(value, serde_json::Value::String(value) if matches!(
+                    value.as_str(),
+                    "slow" | "normal" | "fast"
+                ))
+        }
+        "numberOfMonths" => {
+            value.as_i64().is_some() || valid_wikidot_date_integer_array(value, 2)
+        }
+        "shortYearCutoff" => value.as_i64().is_some() || value.is_string(),
+        "showAnim" => matches!(
+            value,
+            serde_json::Value::String(value)
+                if matches!(value.as_str(), "show" | "slideDown" | "fadeIn")
+        ),
+        "showOn" => matches!(
+            value,
+            serde_json::Value::String(value)
+                if matches!(value.as_str(), "focus" | "button" | "both")
+        ),
+        _ => false,
+    })
+}
+
+fn valid_wikidot_date_string_array(
+    value: &serde_json::Value,
+    expected_len: usize,
+) -> bool {
+    let serde_json::Value::Array(items) = value else {
+        return false;
+    };
+    items.len() == expected_len
+        && items
+            .iter()
+            .all(|item| item.as_str().is_some_and(|item| !item.is_empty()))
+}
+
+fn valid_wikidot_date_integer_array(
+    value: &serde_json::Value,
+    expected_len: usize,
+) -> bool {
+    let serde_json::Value::Array(items) = value else {
+        return false;
+    };
+    items.len() == expected_len && items.iter().all(|item| item.as_i64().is_some())
+}
+
 fn parse_wikidot_text_height(value: &str) -> usize {
     value
         .parse::<i64>()
@@ -889,6 +1043,19 @@ fn parse_wikidot_stored_url_scalar(value: &str) -> Option<String> {
         return None;
     };
     (serialize_wikidot_stored_url_scalar(&parsed) == value).then_some(parsed)
+}
+
+fn parse_wikidot_stored_date_scalar(value: &str) -> Option<String> {
+    if value.contains(['\n', '\r']) {
+        return None;
+    }
+    if value.starts_with('\'') {
+        parse_wikidot_single_quoted_scalar(value)
+    } else if value.starts_with('"') {
+        parse_wikidot_double_quoted_scalar(value)
+    } else {
+        Some(value.to_owned())
+    }
 }
 
 fn valid_wikidot_bare_url_scalar(value: &str) -> bool {
@@ -1197,6 +1364,79 @@ fields:
         .expect("data form");
 
         assert!(!definition.supports_observed_create_edit());
+    }
+
+    #[test]
+    fn date_field_public_definition_and_values_preserve_documented_scalars() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  date:\n    label: Date\n    width: 24\n    type: date\n    options:\n      dateFormat: 'mm/dd/yy'\n      showOn: button\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        let date = definition.field("date").expect("date field");
+        assert_eq!(date.field_type.as_deref(), Some("date"));
+        assert_eq!(date.width, 24);
+        assert_eq!(date.options["dateFormat"], serde_json::json!("mm/dd/yy"));
+        assert_eq!(date.options["showOn"], serde_json::json!("button"));
+        for scalar in ["02/29/2024", "02/29/2023", "not-a-date"] {
+            let values = parse_observed_wikidot_data_form_values(
+                &definition,
+                &format!("date: {scalar}"),
+            )
+            .expect("date values round-trip at the public view seam");
+            assert_eq!(values.get("date").map(String::as_str), Some(scalar));
+        }
+    }
+
+    #[test]
+    fn date_field_accepts_the_documented_option_shapes() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  date:\n    type: date\n    options:\n      altField: 'input[name=field-alt-date]'\n      altFormat: 'm/d/yy'\n      appendText: ' Pick a date'\n      autoSize: true\n      buttonImage: '/files/calendar.png'\n      buttonImageOnly: false\n      buttonText: 'Pick!'\n      changeMonth: true\n      changeYear: false\n      closeText: 'Done'\n      currentText: 'Today'\n      dateFormat: 'DD, d MM yy'\n      dayNames: [Sonntag, Montag, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag]\n      dayNamesMin: [So, Mo, Di, Mi, Do, Fr, Sa]\n      dayNamesShort: [Son, Mon, Die, Mit, Don, Fre, Sam]\n      defaultDate: null\n      duration: 0\n      firstDay: 0\n      hideIfNoPrevNext: true\n      isRTL: false\n      maxDate: 1700000000\n      minDate: '+2y -1m'\n      monthNames: [Jänner, Februar, März, April, Mai, Juni, Juli, August, September, Oktober, November, Dezember]\n      monthNamesShort: [Jän, Feb, Mär, Apr, Mai, Jun, Jul, Aug, Sep, Okt, Nov, Dez]\n      nextText: 'Forward'\n      numberOfMonths: [2, 3]\n      prevText: 'Back'\n      shortYearCutoff: '+20'\n      showAnim: fadeIn\n      showButtonPanel: true\n      showCurrentAtPos: 0\n      showMonthAfterYear: false\n      showOn: both\n      showWeek: true\n      stepMonths: 0\n      weekHeader: 'wk#'\n      yearRange: '2014:2025'\n      yearSuffix: ' CE'\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        let date = definition.field("date").expect("date field");
+        assert_eq!(date.options["defaultDate"], serde_json::Value::Null);
+        assert_eq!(date.options["duration"], serde_json::json!(0));
+        assert_eq!(date.options["minDate"], serde_json::json!("+2y -1m"));
+        assert_eq!(date.options["numberOfMonths"], serde_json::json!([2, 3]));
+        assert_eq!(date.options["monthNames"][2], serde_json::json!("März"));
+    }
+
+    #[test]
+    fn date_field_rejects_unknown_duplicate_and_wrong_option_shapes() {
+        for options in [
+            "unknownOption: true",
+            "autoSize: 1",
+            "showOn: 1",
+            "numberOfMonths: [2, 3, 4]",
+            "numberOfMonths: [2, [3]]",
+            "dayNames: [Sonntag, 1, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag]",
+            "dayNames: [Sonntag, Montag",
+            "monthNames: [Januar]",
+            "dateFormat: {nested: true}",
+            "dateFormat:",
+        ] {
+            let form = format!(
+                "[[form]]\nfields:\n  date:\n    type: date\n    options:\n      {options}\n[[/form]]",
+            );
+            let definition =
+                parse_wikidot_data_form_definition(&form).expect("data form");
+            assert!(definition.field("date").is_some(), "definition is retained");
+            assert!(
+                !definition.supports_observed_create_edit(),
+                "shape must fail closed:\n{form}",
+            );
+        }
+
+        let duplicate = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  date:\n    type: date\n    options:\n      showOn: button\n      showOn: focus\n[[/form]]",
+        )
+        .expect("data form");
+        assert!(duplicate.field("date").is_some(), "definition is retained");
+        assert!(!duplicate.supports_observed_create_edit());
     }
 
     #[test]
