@@ -8,7 +8,12 @@ import {
 
 export const OPEN43_Q1032_CASE_IDS = Object.freeze([
   "Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX",
+  "Q1032_MEMBERS_AJAX_EXACT_CANDIDATE",
+  "Q1032_BROWSER_DIRECTORY_ACTIONS",
 ]);
+
+export const OPEN43_Q1032_SAVED_DIRECTORY_SOURCE = "MEMBERS_START\n[[module Members]]\nMEMBERS_END\nSEARCH_START\n[[module SearchUsers]]\nSEARCH_END\nWHO_START\n[[module WhoInvited]]\nWHO_END";
+export const OPEN43_Q1032_SAVED_DIRECTORY_SOURCE_SHA256 = "509ffeb30626c5007a60d8005ec9d0ea884b6f4cdec408448521e141181b087a";
 
 export const OPEN43_Q1032_EVIDENCE = Object.freeze({
   members: Object.freeze({
@@ -30,6 +35,7 @@ const SEARCHUSERS_DISABLED_SHA256 = createHash("sha256")
   .update(SEARCHUSERS_DISABLED_BODY)
   .digest("hex");
 const MEMBERS_PARAMETERS = Object.freeze({ group: "", order: "joined", page: "1" });
+const MEMBERS_AJAX_FORM = Object.freeze({ moduleName: "membership/MembersListModule", group: "", order: "joined", page: "1" });
 
 function expect(condition, message) {
   if (!condition) throw new Error(message);
@@ -47,7 +53,18 @@ export function validateOpen43Q1032PrivateInput(value) {
   const input = object(value, "Q1032 private input");
   expect(Number.isSafeInteger(input.site_id) && input.site_id > 0, "Q1032 site_id must be a positive safe integer");
   requireNonEmptyString(input.preview_title, "Q1032 preview_title");
-  return input;
+  const saved = object(input.saved_page, "Q1032 saved_page");
+  expect(Number.isSafeInteger(saved.page_id) && saved.page_id > 0, "Q1032 saved_page.page_id must be a positive safe integer");
+  expect(Number.isSafeInteger(saved.revision_id) && saved.revision_id > 0, "Q1032 saved_page.revision_id must be a positive safe integer");
+  requireNonEmptyString(saved.slug, "Q1032 saved_page.slug");
+  requireSha256(input.saved_page_source_sha256, "Q1032 saved_page_source_sha256");
+  expect(input.saved_page_source_sha256 === OPEN43_Q1032_SAVED_DIRECTORY_SOURCE_SHA256, "Q1032 saved directory source is not the fixed live matrix");
+  return Object.freeze({
+    site_id: input.site_id,
+    preview_title: input.preview_title,
+    saved_page: Object.freeze({ page_id: saved.page_id, revision_id: saved.revision_id, slug: saved.slug }),
+    saved_page_source_sha256: input.saved_page_source_sha256,
+  });
 }
 
 function verifyMembers(value) {
@@ -107,4 +124,64 @@ export function verifyOpen43Q1032Cleanup(proof, resources) {
   return { public_absence_verified: true, mutation_count: 0, resource_count: resources.length };
 }
 
-export { MEMBERS_PARAMETERS, SEARCHUSERS_DISABLED_SHA256, USERINFO_NO_TARGET_BODY, USERINFO_NO_TARGET_SHA256 };
+function verifyAjax(value) {
+  const ajax = object(value, "Members Ajax observation");
+  expect(ajax.http_status === 200, "Members Ajax connector did not return HTTP 200");
+  expect(ajax.content_type === "text/plain; charset=UTF-8", "Members Ajax connector content type differs from the live envelope");
+  requireSha256(ajax.response_body_sha256, "Members Ajax response body SHA-256");
+  const json = object(ajax.json, "Members Ajax response envelope");
+  expect(json.status === "ok", "Members Ajax envelope did not return ok");
+  expect(typeof json.body === "string" && json.body.length > 0, "Members Ajax body is empty");
+  expect(json.body.includes("<table"), "Members Ajax body has no table");
+  expect(json.body.includes('<span class="pager-no">page 1 of '), "Members Ajax body has no page-one pager");
+  expect(json.body.includes('OZONE.ajax.requestModule("membership/MembersListModule"'), "Members Ajax body has no MembersListModule script");
+  expect(Array.isArray(json.jsInclude) && json.jsInclude.length === 0, "Members Ajax envelope changed jsInclude");
+  expect(Array.isArray(json.cssInclude) && json.cssInclude.length === 0, "Members Ajax envelope changed cssInclude");
+  expect(json.callbackIndex === null, "Members Ajax envelope changed callbackIndex");
+  return {
+    response_body_sha256: ajax.response_body_sha256,
+    row_count: (json.body.match(/<tr\b/gu) ?? []).length,
+    envelope_verified: true,
+  };
+}
+
+export function verifyOpen43Q1032AjaxCase(caseId, observations) {
+  expect(caseId === OPEN43_Q1032_CASE_IDS[1], `unsupported Q1032 case: ${caseId}`);
+  const value = object(observations, `${caseId} observations`);
+  expect(JSON.stringify(value.request_form) === JSON.stringify(MEMBERS_AJAX_FORM), "Members Ajax request shape changed");
+  const ajax = verifyAjax(value.response);
+  return { verified: true, ajax };
+}
+
+function verifyDirectoryState(state, label) {
+  const value = object(state, `Q1032 ${label}`);
+  expect(value.members_table === true, `Q1032 ${label} members table is missing`);
+  expect(value.members_pager === true, `Q1032 ${label} members page-one pager is missing`);
+  expect(value.members_script === true, `Q1032 ${label} members module script is missing`);
+  expect(value.searchusers_disabled === true, `Q1032 ${label} SearchUsers disabled state is missing`);
+  expect(value.whoinvited_form === true, `Q1032 ${label} WhoInvited form shell is missing`);
+  return {
+    members_table: value.members_table,
+    members_pager: value.members_pager,
+    members_script: value.members_script,
+    searchusers_disabled: value.searchusers_disabled,
+    whoinvited_form: value.whoinvited_form,
+  };
+}
+
+export function verifyOpen43Q1032BrowserDirectoryCase(caseId, observations, plan) {
+  expect(caseId === OPEN43_Q1032_CASE_IDS[2], `unsupported Q1032 case: ${caseId}`);
+  const value = object(observations, `${caseId} observations`);
+  const saved = object(value.saved_page, "Q1032 browser saved page");
+  expect(saved.slug === plan.saved_page.slug, "Q1032 browser saved slug changed");
+  expect(saved.status === 200, "Q1032 browser saved page did not return 200");
+  expect(saved.url === `${plan.page_origin}/${plan.saved_page.slug}`, "Q1032 browser saved URL is wrong");
+  const initial = verifyDirectoryState(value.initial, "initial directory state");
+  const settled = verifyDirectoryState(value.settled, "settled directory state");
+  expect(Array.isArray(value.request_methods) && value.request_methods.every((method) => ["GET", "HEAD", "OPTIONS"].includes(method)), "Q1032 browser issued a mutating request");
+  expect(Array.isArray(value.failed_requests) && value.failed_requests.length === 0, "Q1032 browser observed failed requests");
+  expect(value.mutation_detected === false, "Q1032 browser mutation was detected");
+  return { verified: true, saved_page_slug: saved.slug, initial, settled };
+}
+
+export { MEMBERS_AJAX_FORM, MEMBERS_PARAMETERS, SEARCHUSERS_DISABLED_SHA256, USERINFO_NO_TARGET_BODY, USERINFO_NO_TARGET_SHA256 };

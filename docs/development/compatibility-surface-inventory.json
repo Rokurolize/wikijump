@@ -37652,7 +37652,9 @@
         "cases": [
           "A1060_BROWSER_REGISTER_JOIN_CREATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue1060-register-join-create-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37692,7 +37694,9 @@
         "cases": [
           "A1060_CONCURRENT_SELF_JOIN_AND_CREATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue1060-register-join-create-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -37775,7 +37779,9 @@
         "cases": [
           "A1060_FRESH_SEED_CARGO_MATRIX"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-issue1060-register-join-create-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -42758,7 +42764,9 @@
         "cases": [
           "Q1032_BROWSER_DIRECTORY_ACTIONS"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1032-members-userinfo-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -42882,7 +42890,9 @@
         "cases": [
           "Q1032_MEMBERS_AJAX_EXACT_CANDIDATE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-q1032-members-userinfo-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",

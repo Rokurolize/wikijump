@@ -10,6 +10,7 @@ import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 const hash = (character) => character.repeat(64);
 const git = (character) => character.repeat(40);
 const SEARCHUSERS_DISABLED = "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
+const AJAX_BODY = '<div id="ml-test">\n<table>\n<tr><td>member</td></tr>\n</table>\n<div style="text-align: center"><span class="pager-no">page 1 of 1</span></div>\n<script>OZONE.ajax.requestModule("membership/MembersListModule")</script>\n</div>';
 
 function identity() {
   return {
@@ -45,7 +46,22 @@ function identity() {
   };
 }
 
-function fakeSession(calls) {
+const PRIVATE_INPUT = {
+  site_id: 6000003,
+  preview_title: "q1032-boundary",
+  saved_page: { page_id: 700, revision_id: 701, slug: "members-directory" },
+  saved_page_source_sha256: "509ffeb30626c5007a60d8005ec9d0ea884b6f4cdec408448521e141181b087a",
+};
+
+const DIRECTORY_STATE = {
+  members_table: true,
+  members_pager: true,
+  members_script: true,
+  searchusers_disabled: true,
+  whoinvited_form: true,
+};
+
+function fakeSession(calls, { badAjax = false } = {}) {
   return {
     pageOrigin: "https://scpaiueouiuiuiui.wikijump.localhost:18443",
     privateInputIdentity: { editor_user_id: 7, fixture_identity_sha256: hash("e") },
@@ -56,23 +72,82 @@ function fakeSession(calls) {
       if (params.wikitext === "[[module SearchUsers]]") return { body: SEARCHUSERS_DISABLED };
       return { body: "\n\n<div class=\"error-block\">No user specified.</div>" };
     },
+    async ajaxModuleConnector(fields, options) {
+      calls.push({ method: "ajax-module-connector", fields, options });
+      return {
+        http_status: 200,
+        content_type: "text/plain; charset=UTF-8",
+        response_body_sha256: hash("f"),
+        json: badAjax
+          ? { status: "ok", body: "<div>no table</div>", jsInclude: [], cssInclude: [], callbackIndex: null }
+          : { status: "ok", body: AJAX_BODY, jsInclude: [], cssInclude: [], callbackIndex: null },
+      };
+    },
+    async pageRequest(slug, options) {
+      calls.push({ method: "page-request", slug, options });
+      return { status: 200, content_type: "text/html; charset=utf-8" };
+    },
   };
 }
 
-test("Q1032 executable case reaches Members and exact static account actor boundaries", async () => {
+function fakeBrowserContexts() {
+  const page = {
+    async evaluate() {
+      return { ...DIRECTORY_STATE };
+    },
+    on() {},
+    off() {},
+    async close() {},
+  };
+  return {
+    async setActiveFixture(fixture) {
+      assert.equal(fixture, "Q1032_BROWSER_DIRECTORY_ACTIONS");
+    },
+    async newCandidateContext() {
+      return { context: { newPage: async () => page }, environment: {} };
+    },
+    async captureCandidateObservation({ page: capturePage, url, onPhase }) {
+      assert.equal(capturePage, page);
+      assert.equal(url, "https://scpaiueouiuiuiui.wikijump.localhost:18443/members-directory");
+      await onPhase("domcontentloaded_immediate_observation");
+      await onPhase("settled");
+      return { navigation_status: 200, final_url: url, capture_error: undefined };
+    },
+  };
+}
+
+test("Q1032 executable case reaches Members, exact static account boundaries, the AMC envelope, and the served directory", async () => {
   const calls = [];
   const selected = createOpen43Q1032CandidateCaseSet({ sessionFactory: () => fakeSession(calls) });
-  const prepared = selected.prepareRun({ candidateIdentity: identity(), privateInput: { site_id: 9, preview_title: "q1032-boundary" }, signal: null });
+  const prepared = selected.prepareRun({ candidateIdentity: identity(), privateInput: PRIVATE_INPUT, signal: null, candidateBrowserContexts: fakeBrowserContexts() });
   const rows = await prepared.execute();
   assert.deepEqual(rows.map(({ case_id }) => case_id), [...OPEN43_Q1032_CASE_IDS]);
-  assert.equal(calls.length, 5);
-  assert.deepEqual(calls.map(({ method }) => method), ["wikidot_members_list_module", "wikidot_page_preview", "wikidot_page_preview", "wikidot_page_preview", "wikidot_page_preview"]);
-  assert.deepEqual(calls.map(({ options }) => options.actor), ["anonymous", "anonymous", "editor", "anonymous", "editor"]);
-  const verified = prepared.verifyCase(rows[0].case_id, rows[0].observations);
-  assert.equal(verified.verified, true);
-  assert.equal(verified.searchusers.actor_invariant_disabled, true);
+  assert.equal(calls.length, 7);
+  assert.deepEqual(calls.map(({ method }) => method), [
+    "wikidot_members_list_module",
+    "wikidot_page_preview",
+    "wikidot_page_preview",
+    "wikidot_page_preview",
+    "wikidot_page_preview",
+    "ajax-module-connector",
+    "page-request",
+  ]);
+  assert.deepEqual(calls.map(({ options }) => options.actor), ["anonymous", "anonymous", "editor", "anonymous", "editor", "anonymous", "anonymous"]);
+  for (const row of rows) {
+    const verified = prepared.verifyCase(row.case_id, row.observations);
+    assert.equal(verified.verified, true, row.case_id);
+  }
   const cleanup = await prepared.cleanup();
   assert.equal(prepared.verifyCleanup(cleanup, []).public_absence_verified, true);
+});
+
+test("Q1032 AJAX case fails closed when the envelope diverges from the live contract", async () => {
+  const calls = [];
+  const selected = createOpen43Q1032CandidateCaseSet({ sessionFactory: () => fakeSession(calls, { badAjax: true }) });
+  const prepared = selected.prepareRun({ candidateIdentity: identity(), privateInput: PRIVATE_INPUT, signal: null, candidateBrowserContexts: fakeBrowserContexts() });
+  const rows = await prepared.execute();
+  const ajaxRow = rows.find(({ case_id }) => case_id === OPEN43_Q1032_CASE_IDS[1]);
+  assert.throws(() => prepared.verifyCase(ajaxRow.case_id, ajaxRow.observations), /Members Ajax body has no table/u);
 });
 
 test("Q1032 case is registered as an executable canonical case set", async () => {

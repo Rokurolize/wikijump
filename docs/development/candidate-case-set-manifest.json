@@ -1,8 +1,8 @@
 {
   "schema": "wikijump.candidate_case_set_manifest.v1",
   "registry": "install/local/wikidot-verification/src/candidate-case-command.mjs#candidateCaseSet",
-  "case_set_count": 45,
-  "execution_case_set_count": 44,
+  "case_set_count": 46,
+  "execution_case_set_count": 45,
   "alias_case_set_count": 1,
   "case_sets": [
     {
@@ -198,6 +198,14 @@
       ]
     },
     {
+      "name": "open43-issue1060-register-join-create",
+      "case_ids": [
+        "A1060_BROWSER_REGISTER_JOIN_CREATE",
+        "A1060_CONCURRENT_SELF_JOIN_AND_CREATE",
+        "A1060_FRESH_SEED_CARGO_MATRIX"
+      ]
+    },
+    {
       "name": "open43-issue775-edit",
       "case_ids": [
         "A775_ACTOR_NAVIGATION_BROWSER"
@@ -276,7 +284,9 @@
     {
       "name": "open43-q1032-members-userinfo",
       "case_ids": [
-        "Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX"
+        "Q1032_EXACT_CANDIDATE_DIRECTORY_MATRIX",
+        "Q1032_MEMBERS_AJAX_EXACT_CANDIDATE",
+        "Q1032_BROWSER_DIRECTORY_ACTIONS"
       ]
     },
     {
