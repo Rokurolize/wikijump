@@ -342,15 +342,16 @@ if (moduleName !== "list/ListPagesModule") throw new Error()
       {
         module_name: "list/ListPagesModule",
         allowed_parameters: listPagesParameters,
-        required_fields: ["module_body"],
+        required_fields: [],
+        module_body: "optional_default_template",
         parameter_order: "insignificant",
-        duplicate_fields: "rejected",
+        duplicate_fields: "last_value",
+        unknown_parameters: "non_data_form_ignored;leading_underscore_rejected",
         value_type: "urlencoded_utf8_string",
         callback_index: "accepted_ignored",
         authentication: "cookies_ignored;wikidot_token7_accepted_ignored",
         success_envelope: "status=ok;body=string",
         failure_envelopes: [
-          "missing_module_body:status=not_ok;message=ListPages module_body is required",
           "render_failure:status=not_ok;message=Unable to render ListPages module"
         ],
         implementation_references: [
@@ -667,7 +668,7 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const result = runCli(root, outputPath)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, "wrote 50 compatibility surfaces to inventory.json\n")
+  assert.equal(result.stdout, "wrote 51 compatibility surfaces to inventory.json\n")
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   assert.equal(inventory.schema, "wikijump.compatibility_surface_inventory.v2")
   assert.equal(inventory.sources.live_observations, "docs/wikidot-specifications/live-observations.json")
@@ -710,12 +711,12 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   }
   assert.deepEqual(inventory.sources.wikidot_py_source, wikidotPySource)
   assert.deepEqual(inventory.counts, {
-    total: 50,
+    total: 51,
     by_kind: {
       catalog_feature: 1,
       deepwell_jsonrpc_method: 1,
       framerail_amc_action_shape: 2,
-      framerail_amc_module_shape: 15,
+      framerail_amc_module_shape: 16,
       framerail_route: 1,
       framerail_server_action: 1,
       framerail_xmlrpc_method: 1,
@@ -729,15 +730,16 @@ test("CLI discovers declared public surfaces and writes deterministic completion
   const listPagesSurfaces = inventory.surfaces
     .filter(({ surface_id }) => surface_id.startsWith("framerail-amc-module:list/ListPagesModule"))
     .map(({ surface_id }) => surface_id)
-  assert.equal(listPagesSurfaces.length, 8)
+  assert.equal(listPagesSurfaces.length, 9)
   assert.ok(listPagesSurfaces.some((id) => id.includes(`parameters=${[...listPagesParameters].sort().join(",")}`)))
   assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:parameter-order=insignificant"))
-  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:duplicate-fields=rejected"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:duplicate-fields=last_value"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:unknown-parameters=non_data_form_ignored;leading_underscore_rejected"))
   assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:value-type=urlencoded_utf8_string"))
   assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored"))
   assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored"))
   assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:success-envelope=status=ok;body=string"))
-  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:failure-envelopes=missing_module_body:status=not_ok;message=ListPages module_body is required|render_failure:status=not_ok;message=Unable to render ListPages module"))
+  assert.ok(listPagesSurfaces.includes("framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module"))
   assert.ok(listPagesSurfaces.every((id) => !id.includes("*")))
   assert.deepEqual(
     inventory.surfaces
@@ -1309,15 +1311,15 @@ test("CLI projects only directly exercised Framerail AMC server tests", async (t
   const rows = inventory.surfaces.filter(({ kind }) =>
     kind === "framerail_amc_action_shape" || kind === "framerail_amc_module_shape"
   )
-  assert.equal(rows.length, 28)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 24)
+  assert.equal(rows.length, 29)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 25)
   const gaps = rows
     .filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0)
     .map(({ surface_id: surfaceId }) => surfaceId)
   assert.deepEqual(gaps, [
     "framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored",
     "framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored",
-    "framerail-amc-module:list/ListPagesModule:failure-envelopes=missing_module_body:status=not_ok;message=ListPages module_body is required|render_failure:status=not_ok;message=Unable to render ListPages module",
+    "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
     "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant"
   ])
   assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)

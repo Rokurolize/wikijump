@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 75,
+    "observation_count": 76,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -2101,7 +2101,8 @@
         "listpages-preview-and-saved-html-context-20260730",
         "listpages-per-argument-source-grammar-20260730",
         "listpages-template-section-and-linked-phase-20260730",
-        "listpages-generated-block-and-heading-boundaries-20260730"
+        "listpages-generated-block-and-heading-boundaries-20260730",
+        "listpages-amc-form-last-value-20260816"
       ]
     },
     {

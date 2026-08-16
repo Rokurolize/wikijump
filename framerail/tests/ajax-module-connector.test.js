@@ -55,6 +55,156 @@ test("dispatches ListPages forms and returns the Wikidot JSON envelope", async (
   assert.equal(response.headers.get("cache-control"), "no-store")
 })
 
+test("ListPages omits module_body for Deepwell's default row template", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=list%2FListPagesModule"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        received = input
+        return { body: "default-row" }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    body: "default-row"
+  })
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    moduleBody: "",
+    parameters: {}
+  })
+})
+
+test("ListPages ignores unknown non-data-form selectors while recognized selectors apply", async () => {
+  const calls = []
+  const forms = [
+    "moduleName=list%2FListPagesModule&module_body=body&category=one&unsupported_future_selector=ignored",
+    "moduleName=list%2FListPagesModule&module_body=body&unsupported_future_selector=ignored&category=one"
+  ]
+
+  for (const form of forms) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: form
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "rows" }
+        }
+      }
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { status: "ok", body: "rows" })
+  }
+
+  assert.deepEqual(calls, [
+    { siteId: 6000006, moduleBody: "body", parameters: { category: "one" } },
+    { siteId: 6000006, moduleBody: "body", parameters: { category: "one" } }
+  ])
+})
+
+test("ListPages keeps the later URL-form value for duplicate scalar fields", async () => {
+  const calls = []
+  const renderListPages = async (input) => {
+    calls.push(input)
+    return { body: input.moduleBody }
+  }
+  const forms = [
+    "moduleName=list%2FListPagesModule&module_body=first&module_body=second&category=one&category=two&wikidot_token7=first-token&wikidot_token7=second-token",
+    "moduleName=list%2FListPagesModule&module_body=second&module_body=first&category=two&category=one&wikidot_token7=second-token&wikidot_token7=first-token"
+  ]
+
+  for (const form of forms) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: form
+      }),
+      { siteId: 6000006, renderListPages }
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), {
+      status: "ok",
+      body: calls.at(-1).moduleBody
+    })
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleBody: "second",
+      parameters: { category: "two" }
+    },
+    {
+      siteId: 6000006,
+      moduleBody: "first",
+      parameters: { category: "one" }
+    }
+  ])
+})
+
+test("ListPages retains fail-closed boundaries for dynamic selectors and invalid UTF-8", async () => {
+  const dynamic = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=list%2FListPagesModule&module_body=ok&_field=1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render dynamic selector shape")
+    }
+  )
+  assert.equal(dynamic.status, 200)
+  assert.deepEqual(await dynamic.json(), {
+    status: "not_ok",
+    message: "Unsupported AJAX module shape: list/ListPagesModule"
+  })
+
+  const malformed = await handleAjaxModuleConnectorRequest(
+    {
+      method: "POST",
+      headers: new Headers({ "content-type": "application/x-www-form-urlencoded" }),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new Uint8Array([
+              ...new TextEncoder().encode(
+                "moduleName=list%2FListPagesModule&module_body="
+              ),
+              0xff
+            ])
+          )
+          controller.close()
+        }
+      })
+    },
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render malformed UTF-8")
+    }
+  )
+  assert.equal(malformed.status, 400)
+  assert.deepEqual(await malformed.json(), {
+    status: "not_ok",
+    message: "The encoded data was not valid for encoding utf-8"
+  })
+})
+
 test("dispatches only the observed MembersListModule read shape", async () => {
   let received
   const response = await handleAjaxModuleConnectorRequest(
@@ -169,17 +319,20 @@ test("fails closed before Deepwell for unobserved MembersListModule shapes", asy
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=membership%2FMembersListModule&group=&group=&order=joined&page=1"
+      body: "moduleName=membership%2FMembersListModule&group=&group=members&order=joined&page=1"
     }),
     {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
       renderMembersList: async () =>
-        assert.fail("duplicate fields must fail before Deepwell")
+        assert.fail("the later duplicate value must fail shape validation")
     }
   )
-  assert.equal(duplicate.status, 400)
-  assert.equal((await duplicate.json()).status, "not_ok")
+  assert.equal(duplicate.status, 200)
+  assert.deepEqual(await duplicate.json(), {
+    status: "not_ok",
+    message: "Unsupported AJAX module shape: membership/MembersListModule"
+  })
 })
 
 test("dispatches the sealed read-only forum modules with Wikidot metadata", async () => {
@@ -752,7 +905,6 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     { unknown: "value" },
     { module_body: "" }
   ]
-  let calls = 0
   const valid = {
     moduleName: "changes/SiteChangesListModule",
     page: "1",
@@ -768,14 +920,13 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     const response = await handleAjaxModuleConnectorRequest(request(form), {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
-      renderSiteChangesModule: async () => {
-        calls += 1
+      renderSiteChangesModule: async () =>
         assert.fail("unobserved SiteChanges shape must fail before Deepwell")
-      }
     })
     assert.equal((await response.json()).status, "not_ok")
   }
 
+  let duplicateReceived
   const duplicate = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
@@ -785,18 +936,20 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
-      renderSiteChangesModule: async () => {
-        calls += 1
-        assert.fail("duplicate SiteChanges field must fail before Deepwell")
+      renderSiteChangesModule: async (input) => {
+        duplicateReceived = input
+        return { status: "ok", body: "rows" }
       }
     }
   )
-  assert.equal(duplicate.status, 400)
-  assert.equal((await duplicate.json()).status, "not_ok")
-  assert.equal(calls, 0)
+  assert.equal(duplicate.status, 200)
+  const duplicateBody = await duplicate.json()
+  assert.equal(duplicateBody.status, "ok")
+  assert.equal(duplicateBody.body, "rows")
+  assert.equal(duplicateReceived.page, "2")
 })
 
-test("fails closed for unsupported modules and duplicate fields", async () => {
+test("fails closed for unsupported modules while duplicate module names keep the later value", async () => {
   const unsupported = await handleAjaxModuleConnectorRequest(
     request({ moduleName: "forum/ForumStartModule", module_body: "" }),
     { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
@@ -806,16 +959,41 @@ test("fails closed for unsupported modules and duplicate fields", async () => {
     message: "Unsupported AJAX module: forum/ForumStartModule"
   })
 
-  const duplicate = await handleAjaxModuleConnectorRequest(
+  let listPagesReceived
+  const unknownThenListPages = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=list%2FListPagesModule&moduleName=list%2FListPagesModule&module_body=x"
+      body: "moduleName=not-a-real-module&moduleName=list%2FListPagesModule&module_body=x"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        listPagesReceived = input
+        return { body: "list-pages" }
+      }
+    }
+  )
+  assert.equal(unknownThenListPages.status, 200)
+  assert.deepEqual(await unknownThenListPages.json(), {
+    status: "ok",
+    body: "list-pages"
+  })
+  assert.equal(listPagesReceived.moduleBody, "x")
+
+  const listPagesThenUnknown = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=list%2FListPagesModule&moduleName=not-a-real-module&module_body=x"
     }),
     { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
   )
-  assert.equal(duplicate.status, 400)
-  assert.equal((await duplicate.json()).status, "not_ok")
+  assert.equal(listPagesThenUnknown.status, 200)
+  assert.deepEqual(await listPagesThenUnknown.json(), {
+    status: "not_ok",
+    message: "Unsupported AJAX module: not-a-real-module"
+  })
 })
 
 test("dispatches wikidot.py page reads without rewriting their request fields", async () => {
@@ -932,15 +1110,10 @@ test("WhoRated pageId zero follows the observed HTTP failure boundary", async ()
   assert.equal((await response.json()).status, "not_ok")
 })
 
-test("WhoRated rejects unknown, duplicate, and malformed request fields", async () => {
+test("WhoRated rejects unknown and malformed request fields", async () => {
   const malformedShapes = [
     request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "+1" }),
-    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "1", extra: "1" }),
-    new Request("http://scp-wiki.local/ajax-module-connector.php", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=pagerate%2FWhoRatedPageModule&pageId=1&pageId=2"
-    })
+    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "1", extra: "1" })
   ]
   let renders = 0
   for (const malformed of malformedShapes) {
@@ -955,6 +1128,28 @@ test("WhoRated rejects unknown, duplicate, and malformed request fields", async 
     assert.equal((await response.json()).status, "not_ok")
   }
   assert.equal(renders, 0)
+
+  let duplicateReceived
+  const duplicate = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=pagerate%2FWhoRatedPageModule&pageId=1&pageId=2"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async (input) => {
+        duplicateReceived = input
+        return { status: "ok", body: "votes" }
+      }
+    }
+  )
+  assert.equal(duplicate.status, 200)
+  const duplicateBody = await duplicate.json()
+  assert.equal(duplicateBody.status, "ok")
+  assert.equal(duplicateBody.body, "votes")
+  assert.equal(duplicateReceived.parameters.pageId, "2")
 })
 
 test("dispatches the exact wikidot.py page revision list shape", async () => {

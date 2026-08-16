@@ -314,9 +314,6 @@ const readUrlEncodedForm = async (request) => {
   const form = new URLSearchParams(body)
   const values = new Map()
   for (const [key, value] of form) {
-    if (values.has(key)) {
-      throw new TypeError(`AJAX Module Connector field is duplicated: ${key}`)
-    }
     values.set(key, value)
   }
   return values
@@ -1231,23 +1228,20 @@ export const handleAjaxModuleConnectorRequest = async (
     })
   }
 
-  const moduleBody = fields.get("module_body")
-  if (moduleBody === undefined) {
-    return jsonResponse({
-      status: "not_ok",
-      message: "ListPages module_body is required"
-    })
-  }
+  const moduleBody = fields.get("module_body") ?? ""
 
   /** @type {Record<string, string>} */
   const parameters = {}
   for (const [key, value] of fields) {
     if (CONTROL_FIELDS.has(key)) continue
-    if (!LIST_PAGES_PARAMETERS.has(key.toLowerCase())) {
+    if (key.startsWith("_")) {
       return jsonResponse({
         status: "not_ok",
         message: `Unsupported AJAX module shape: ${moduleName}`
       })
+    }
+    if (!LIST_PAGES_PARAMETERS.has(key.toLowerCase())) {
+      continue
     }
     parameters[key] = value
   }

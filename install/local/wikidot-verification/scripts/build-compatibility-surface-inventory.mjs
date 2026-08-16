@@ -1808,12 +1808,15 @@ async function discoverFramerailAmc(root) {
   ) {
     throw new Error(`${wireContractPath} ${listPagesModule} allowed_parameters do not match source`)
   }
-  if (JSON.stringify(listPagesContract.required_fields) !== JSON.stringify(["module_body"])) {
-    throw new Error(`${wireContractPath} ${listPagesModule} must require module_body`)
+  if (JSON.stringify(listPagesContract.required_fields) !== JSON.stringify([])) {
+    throw new Error(`${wireContractPath} ${listPagesModule} must not require fields`)
+  }
+  if (listPagesContract.module_body !== "optional_default_template") {
+    throw new Error(`${wireContractPath} ${listPagesModule} must default an omitted module_body`)
   }
   records.push(
     surface({
-      surfaceId: `framerail-amc-module:${listPagesModule}:parameters=${contractParameters.join(",")};module_body=required`,
+      surfaceId: `framerail-amc-module:${listPagesModule}:parameters=${contractParameters.join(",")};module_body=${listPagesContract.module_body}`,
       kind: "framerail_amc_module_shape",
       publicOwner: "framerail",
       publicReference: [wireContractPath, registryPath, ...listPagesContract.implementation_references]
@@ -1822,6 +1825,7 @@ async function discoverFramerailAmc(root) {
   for (const [field, selector] of [
     ["parameter_order", "parameter-order"],
     ["duplicate_fields", "duplicate-fields"],
+    ["unknown_parameters", "unknown-parameters"],
     ["value_type", "value-type"],
     ["callback_index", "callback-index"],
     ["authentication", "authentication"],
@@ -1947,12 +1951,16 @@ const FRAMERAIL_AMC_TESTS = new Map([
     ["dispatches the exact wikidot.py historical source and version shapes"]
   ],
   [
-    "framerail-amc-module:list/ListPagesModule:duplicate-fields=rejected",
-    ["fails closed for unsupported modules and duplicate fields"]
+    "framerail-amc-module:list/ListPagesModule:duplicate-fields=last_value",
+    ["ListPages keeps the later URL-form value for duplicate scalar fields", "fails closed for unsupported modules while duplicate module names keep the later value"]
   ],
   [
-    "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=required",
-    ["dispatches ListPages forms and returns the Wikidot JSON envelope"]
+    "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
+    ["dispatches ListPages forms and returns the Wikidot JSON envelope", "ListPages omits module_body for Deepwell's default row template"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:unknown-parameters=non_data_form_ignored;leading_underscore_rejected",
+    ["ListPages ignores unknown non-data-form selectors while recognized selectors apply", "ListPages retains fail-closed boundaries for dynamic selectors and invalid UTF-8"]
   ],
   [
     "framerail-amc-module:list/ListPagesModule:success-envelope=status=ok;body=string",

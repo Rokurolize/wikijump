@@ -10,15 +10,16 @@
         "offset", "limit", "perpage", "per_page", "separate", "wrapper", "rss", "rsstitle",
         "rssdescription", "rsshome", "rsslimit", "rssonly"
       ],
-      "required_fields": ["module_body"],
+      "required_fields": [],
+      "module_body": "optional_default_template",
       "parameter_order": "insignificant",
-      "duplicate_fields": "rejected",
+      "duplicate_fields": "last_value",
+      "unknown_parameters": "non_data_form_ignored;leading_underscore_rejected",
       "value_type": "urlencoded_utf8_string",
       "callback_index": "accepted_ignored",
       "authentication": "cookies_ignored;wikidot_token7_accepted_ignored",
       "success_envelope": "status=ok;body=string",
       "failure_envelopes": [
-        "missing_module_body:status=not_ok;message=ListPages module_body is required",
         "render_failure:status=not_ok;message=Unable to render ListPages module"
       ],
       "implementation_references": [

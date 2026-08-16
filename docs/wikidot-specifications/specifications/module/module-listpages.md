@@ -612,6 +612,25 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
 
+### The public ListPages AMC form decoder selects the last duplicate value
+
+- Observation ID: `listpages-amc-form-last-value-20260816`
+- Classification: `documentation-correction`
+- Observed at: `2026-08-16`
+- Analysis: Anonymous read-only requests preserved exact URL-encoded duplicate-field order at the public scp-wiki Ajax Module Connector. Reversing duplicate module_body and selector values reversed ListPages output. Reversing duplicate moduleName values selected the later valid or unknown module, and reversing a valid and invalid public wikidot_token7 selected the later success or wrong_token7 result. The two transport controls establish ordered last-value decoding outside the ListPages argument family. Missing module_body is accepted with the default row template and an unknown ListPages selector is ignored. The evidence does not define malformed percent encoding, invalid UTF-8, authenticated duplicate-cookie semantics, or non-form parsing stages.
+
+Normative behavior:
+
+- For an otherwise valid public Ajax Module Connector URL-encoded form, repeated field names select the last occurrence at the evidenced decoder boundary.
+- This last-value rule applies to evidenced ListPages arguments, module identity, and the public wikidot_token7 field; it is not a page-specific content rule.
+- ListPages accepts an omitted module_body by rendering its default row template, and ignores an unknown non-data-form selector in the observed request.
+- Malformed percent encoding and invalid UTF-8 remain outside this observation and must continue to fail closed until separately established.
+
+Evidence:
+
+- `/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest.json` (SHA-256 `bb95244df5a2cdadbed860705199f2de4776970982b4bee8034a82cb88a06771`), cases: none
+- `/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest-v2.json` (SHA-256 `33d3b1361064da1bb200202bf2783ecb88ad2e695bf54d9cbfa4a0150f866e4b`), cases: none
+
 
 
 ## Suggested public TDD seams
