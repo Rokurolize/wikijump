@@ -33,6 +33,99 @@ const NO_MATCH: &str =
     r#"<div class="error-block">Sorry, no match for the embedded content.</div>"#;
 
 #[tokio::test]
+async fn documented_embedding_code_probes_match_frozen_live_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let embed_alias = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "spec-syntax-embed-alias",
+            "wikitext": "before\n[[embed]]\n<p id=\"spec-embed-probe\">hello</p>\n[[/embed]]\nafter",
+        }),
+    );
+    assert!(embed_alias.body.starts_with("<p>before<br>"));
+    assert!(embed_alias.body.contains(NO_MATCH));
+    assert!(embed_alias.body.ends_with("<br>\nafter"));
+    assert!(!embed_alias.body.contains("spec-embed-probe"));
+    assert!(!embed_alias.body.contains("[[embed]]"));
+
+    for (case_id, source, expected) in [
+        (
+            "spec-syntax-iframe-allowed",
+            r#"[[iframe https://example.com/ frameborder="0" width="50%" height="120" scrolling="yes"]]"#,
+            r#"<p><iframe src="https://example.com/" align="" frameborder="0" height="120" scrolling="yes" width="50%" class="" style=""></iframe></p>"#,
+        ),
+        (
+            "spec-syntax-iframe-unknown-attribute",
+            r#"[[iframe https://example.com/ width="50%" probe="1"]]"#,
+            r#"<p><iframe src="https://example.com/" align="" frameborder="" height="" scrolling="" width="50%" class="" style=""></iframe></p>"#,
+        ),
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": case_id,
+                "wikitext": source,
+            }),
+        );
+        assert_eq!(preview.body, expected, "{case_id}");
+    }
+}
+
+#[tokio::test]
+async fn documented_embedaudio_probe_matches_frozen_live_preview() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site.site_id,
+            "title": "spec-syntax-embedaudio-embed",
+            "wikitext": concat!(
+                "[[embedaudio]]\n",
+                r#"<embed src="https://example.com/audio.swf" width="300" height="52">"#,
+                "\n[[/embedaudio]]",
+            ),
+        }),
+    );
+    assert_eq!(preview.body, NO_MATCH);
+}
+
+#[tokio::test]
+async fn arbitrary_embedvideo_host_remains_fail_closed_pending_issue_1042() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site.site_id,
+            "title": "spec-syntax-embedvideo-iframe-security-divergence",
+            "wikitext": concat!(
+                "[[embedvideo]]\n",
+                r#"<iframe src="https://example.com/" width="320" height="180"></iframe>"#,
+                "\n[[/embedvideo]]",
+            ),
+        }),
+    );
+
+    // Frozen Wikidot PagePreview renders this arbitrary HTTPS iframe. Keep
+    // Wikijump's provider allowlist fail-closed until issue #1042 adjudicates
+    // that security divergence instead of silently widening iframe authority.
+    assert_eq!(preview.body, NO_MATCH);
+}
+
+#[tokio::test]
 async fn embedvideo_preview_resolves_only_allowlisted_typed_media() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))

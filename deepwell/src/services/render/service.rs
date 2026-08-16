@@ -38,6 +38,9 @@ use super::compat::preparation::{
     protect_css_modules_before_first_list_pages,
 };
 use super::compat::text_fragments::CompatTextFragments;
+use super::compat::wikidot_iframe::{
+    expand_wikidot_iframe_syntax, has_wikidot_iframe_syntax,
+};
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
@@ -1646,6 +1649,9 @@ impl RenderService {
                     .map_or(page_info.site.as_ref(), |site| site.slug.as_str()),
                 social_site.as_ref().map_or("", |site| site.name.as_str()),
             );
+        }
+        if settings.enable_page_syntax && has_wikidot_iframe_syntax(&wikitext) {
+            wikitext = expand_wikidot_iframe_syntax(wikitext, &mut wikidot_compat_html);
         }
         wikitext = Self::finalize_runtime_module_residuals(
             wikitext,
