@@ -26,7 +26,8 @@ const FIXTURES_PATH = path.join(
   REPOSITORY_ROOT,
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json",
 );
-const BUILD_CANDIDATE = "/home/roku/wjlab/scripts/build-deepwell-candidate.sh";
+const BUILD_CANDIDATE = path.join(SCRIPT_DIR, "build-deepwell-candidate.sh");
+const CANDIDATE_MANIFEST = path.join(SCRIPT_DIR, "candidate-artifact-manifest.py");
 const LEASE = "/home/roku/.local/bin/roku-resource-lease";
 export const REQUIRED_SURFACES = ["heading", "separator", "div", "span", "alignment"];
 const OWNER = "ftml-marker-contract-canary";
@@ -124,7 +125,7 @@ async function runCandidateBuild(args) {
   const deadline = Date.now() + 15 * 60 * 1000;
   for (;;) {
     try {
-      run(BUILD_CANDIDATE, args);
+      run("/usr/bin/bash", [BUILD_CANDIDATE, ...args]);
       return;
     } catch (error) {
       if (
@@ -157,7 +158,7 @@ async function freePort() {
 
 function currentFtmlSha(repository) {
   const source = output("python3", [
-    "/home/roku/wjlab/scripts/candidate-artifact-manifest.py",
+    CANDIDATE_MANIFEST,
     "ftml-sha",
     "--cargo-lock",
     path.join(repository, "deepwell/Cargo.lock"),
