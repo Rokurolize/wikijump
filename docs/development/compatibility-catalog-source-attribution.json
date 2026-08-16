@@ -324,6 +324,42 @@
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"wiki\"" }
       ],
       "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form checkbox and wiki controls match live DOM and storage" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-displaying",
+      "sources": [{ "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" }],
+      "tests": [{ "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_live_checkbox_and_wiki_contract" }]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-hidden-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"hidden\") =>" },
+        { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"hidden\":" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_live_hidden_password_static_url_scalar_contract" }]
+    },
+    {
+      "surface_id": "catalog-feature:layout-custom",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "pub(super) fn finalize_runtime_module_residuals(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "layout_only_modules_page_source_match_live_unavailable_module" }]
+    },
+    {
+      "surface_id": "catalog-feature:layout-forum",
+      "sources": [{ "path": "framerail/src/lib/ForumModuleBody.svelte", "anchor": "<div id=\"page-content\">{@html body}</div>" }],
+      "tests": [{ "path": "framerail/tests/forum-page-content-public-boundary.test.js", "anchor": "forum GET routes enclose populated empty and error bodies in one page-content root" }]
+    },
+    {
+      "surface_id": "catalog-feature:page-tags",
+      "sources": [{ "path": "framerail/src/lib/wikidot/wikidot-page-tags.js", "anchor": "export const buildWikidotPageTagsHtml = (" }],
+      "tests": [{ "path": "framerail/tests/wikidot-found-page-tags-public-boundary.test.js", "anchor": "normal found-page route SSR renders ordered tag links directly in page-tags" }]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-images",
+      "sources": [
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "fn expand_wikidot_image_block_includes(" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }
+      ],
+      "tests": [{ "path": "deepwell/tests/media.rs", "anchor": "image_head_ascii_whitespace_boundary_matches_live_preview_and_saved_page" }]
     }
   ]
 }
