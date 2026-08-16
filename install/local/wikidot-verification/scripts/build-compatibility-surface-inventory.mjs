@@ -1657,8 +1657,11 @@ async function applyFramerailRouteActionEvidence(root, records, sourceRevision) 
     }
     const tests = []
     for (const reference of evidenceRecord.tests) {
+      if (typeof reference !== "string") {
+        throw new Error(`${registryPath} has an invalid test reference for ${record.surface_id}`)
+      }
       const separator = reference.indexOf("::")
-      if (separator <= 0 || separator === reference.length - 2) {
+      if (separator <= 0 || reference.endsWith("::")) {
         throw new Error(`${registryPath} has an invalid test reference for ${record.surface_id}`)
       }
       const testPath = reference.slice(0, separator)
