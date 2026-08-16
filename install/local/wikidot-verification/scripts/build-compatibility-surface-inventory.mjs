@@ -7,6 +7,8 @@ import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
 
+import { CANDIDATE_CASE_SETS } from "../src/candidate-case-command.mjs"
+
 const SCHEMA = "wikijump.compatibility_surface_inventory.v2"
 const SCRIPT_DIRECTORY = path.dirname(fileURLToPath(import.meta.url))
 const DEFAULT_ROOT = path.resolve(SCRIPT_DIRECTORY, "../../../..")
@@ -2844,6 +2846,25 @@ function auditTests(row) {
   ])
 }
 
+function candidateCaseTests() {
+  const references = new Map()
+  for (const [name, registered] of Object.entries(CANDIDATE_CASE_SETS)) {
+    if (registered.aliasOf !== undefined) continue
+    const matches = [...registered.load.toString().matchAll(/import\("(\.\/[^"]+\.mjs)"\)/gu)]
+    if (matches.length !== 1) {
+      throw new Error(`candidate case set ${name} does not expose exactly one executable module import`)
+    }
+    const testPath = `install/local/wikidot-verification/src/${matches[0][1].slice(2)}`
+    for (const caseId of registered.caseIds) {
+      if (references.has(caseId)) {
+        throw new Error(`candidate case ID ${caseId} is registered by multiple execution case sets`)
+      }
+      references.set(caseId, testPath)
+    }
+  }
+  return references
+}
+
 async function authoritativeAuditTests(root, auditPath, issue, sourceRevision) {
   const testsByCase = new Map()
   const descriptors = []
@@ -3037,6 +3058,7 @@ async function discoverOpen43AuditCases(root) {
   }
 
   const records = []
+  const registeredCandidateTests = candidateCaseTests()
   const auditRows = []
   for (const auditPath of routing.source_audits) {
     if (typeof auditPath !== "string" || !auditPath.startsWith("docs/development/")) {
@@ -3100,7 +3122,10 @@ async function discoverOpen43AuditCases(root) {
             cases: [row.case_id],
             tests: uniqueSortedStrings([
               ...auditTests(row),
-              ...(authoritativeTests.get(row.case_id) ?? [])
+              ...(authoritativeTests.get(row.case_id) ?? []),
+              ...(classification === "candidate_required" && registeredCandidateTests.has(row.case_id)
+                ? [registeredCandidateTests.get(row.case_id)]
+                : [])
             ]),
             ...auditCompletion(classification)
           })
