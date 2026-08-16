@@ -1,6 +1,6 @@
-# Detailed source-gap specifications
+# Detailed P1-P8 compatibility contract library
 
-This is the human-readable table of contents for exactly the 57 current source-gap features whose generated specifications contain a normative `detailed-p1-p8` conformance contract. Start here for WBS 2A implementation work, then follow the feature link to the individual specification.
+This is the human-readable table of contents for the 57 features hardened in the 2026-08-16 source-gap snapshot whose generated specifications contain a normative `detailed-p1-p8` conformance contract. It is a stable contract library, not the live implementation queue: select current work from the canonical compatibility ledger, then use this index when the selected feature has a hardened contract.
 
 - Machine-readable contract set: [detailed-feature-contracts.json](detailed-feature-contracts.json)
 - Evidence manifest: [detailed-spec-evidence-20260816.json](detailed-spec-evidence-20260816.json)

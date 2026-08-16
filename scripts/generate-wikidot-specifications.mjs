@@ -1805,9 +1805,9 @@ const detailedSourceGapSections = [...new Set(
     return `## ${category}\n\n${rows}`;
   })
   .join("\n\n");
-const detailedSourceGapIndex = `# Detailed source-gap specifications
+const detailedSourceGapIndex = `# Detailed P1-P8 compatibility contract library
 
-This is the human-readable table of contents for exactly the 57 current source-gap features whose generated specifications contain a normative \`detailed-p1-p8\` conformance contract. Start here for WBS 2A implementation work, then follow the feature link to the individual specification.
+This is the human-readable table of contents for the 57 features hardened in the 2026-08-16 source-gap snapshot whose generated specifications contain a normative \`detailed-p1-p8\` conformance contract. It is a stable contract library, not the live implementation queue: select current work from the canonical compatibility ledger, then use this index when the selected feature has a hardened contract.
 
 - Machine-readable contract set: [detailed-feature-contracts.json](detailed-feature-contracts.json)
 - Evidence manifest: [detailed-spec-evidence-20260816.json](detailed-spec-evidence-20260816.json)
@@ -1828,8 +1828,8 @@ This is the human-readable index of every feature extracted from the frozen loca
 - Corpus pages connected to one or more feature IDs: ${sourcePagesWithFeatures}
 - Corpus pages classified without a feature ID: ${sourcePagesWithoutFeatures}
 - Unclassified corpus pages: 0
-- Detailed P1-P8 source-gap specifications: ${Object.keys(detailedContracts.features).length}
-- Detailed source-gap navigation: [57-feature specification index](DETAILED_SOURCE_GAP_SPECIFICATIONS.md)
+- Hardened P1-P8 snapshot contracts: ${Object.keys(detailedContracts.features).length}
+- Hardened contract navigation: [P1-P8 contract library](DETAILED_SOURCE_GAP_SPECIFICATIONS.md)
 
 Features by category:
 
@@ -1858,14 +1858,14 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 
 - \`catalog.json\` is the authoritative machine-readable feature index.
 - \`CATALOG.md\` is the human-readable index.
-- \`DETAILED_SOURCE_GAP_SPECIFICATIONS.md\` is the human-readable table of contents for exactly the 57 current source-gap features with normative P1-P8 contracts, linking directly to each individual specification.
+- \`DETAILED_SOURCE_GAP_SPECIFICATIONS.md\` is the human-readable library of the 57 features hardened in the 2026-08-16 source-gap snapshot, linking directly to each normative P1-P8 specification. It is not the live work queue.
 - \`source-coverage.json\` proves that all ${pages.size.toLocaleString("en-US")} corpus pages were enumerated and classified, while listing only non-user pages individually.
 - \`live-observations.json\` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
 - \`implementation-ledger.json\` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.
-- \`detailed-feature-contracts.json\` is the machine-readable P1-P8 contract for the 57 source-gap features hardened against current Wikidot evidence.
+- \`detailed-feature-contracts.json\` is the machine-readable P1-P8 contract set for the 57 features hardened in that snapshot against current Wikidot evidence.
 - \`detailed-spec-evidence-20260816.json\` seals the documentation, live Wikidot, and retained evidence used by those detailed contracts without storing credentials or private message content.
 - \`specifications/\` contains exactly one English Markdown specification for every catalog item.
-- \`IMPLEMENTATION_PROMPT.md\` instructs a coding agent to implement the complete catalog using vertical-slice TDD.
+- \`IMPLEMENTATION_PROMPT.md\` gives a coding agent the vertical-slice TDD mechanics for current ledger-selected compatibility work.
 
 ## Interpretation rules
 
@@ -1886,16 +1886,16 @@ node scripts/generate-wikidot-specifications.mjs --check
 Set \`WIKIDOT_DOCUMENTATION_CORPUS\` only when regenerating from a different checkout of the same corpus layout.
 `;
 
-const implementationPrompt = `# Prompt: implement the complete Wikidot feature catalog with TDD
+const implementationPrompt = `# Prompt: implement current Wikidot compatibility work with TDD
 
-Here is the specification set. Implement every feature listed in \`docs/wikidot-specifications/catalog.json\` using test-driven development. Treat the catalog as one coherent compatibility campaign rather than creating one pull request per feature.
+This directory is the complete feature specification set. Select implementation work from the current canonical compatibility ledger and current blocker/issue authority, then use the matching catalog specification with test-driven development. Do not treat the catalog size or the hardened-contract snapshot as a mutable progress queue, and do not create one pull request per feature.
 
 ## Inputs
 
 1. Read the repository's \`AGENTS.md\` completely.
-2. Read \`docs/wikidot-specifications/catalog.json\`. It is the complete work queue; do not substitute a hand-selected subset.
-3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`. For current source-gap implementation work, start from \`docs/wikidot-specifications/DETAILED_SOURCE_GAP_SPECIFICATIONS.md\`, which links exactly the 57 detailed P1-P8 specifications.
-4. For each catalog item, read the exact Markdown file named by its \`specification\` field before designing or changing code.
+2. Read the current canonical compatibility ledger to select the current row/dimension. Then resolve that row in \`docs/wikidot-specifications/catalog.json\`, which is the complete feature index rather than the live queue.
+3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`. \`DETAILED_SOURCE_GAP_SPECIFICATIONS.md\` is the hardened P1-P8 contract library from its frozen snapshot; use it when the selected current feature is present there.
+4. For the selected catalog item, read the exact Markdown file named by its \`specification\` field before designing or changing code.
 5. Use \`docs/wikidot-specifications/source-coverage.json\` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant. User-submitted data-record groups are aggregate-only and are never behavioral evidence.
 6. Follow the repository architecture boundaries: FTML owns syntax parsing and rendering primitives; Wikijump/Deepwell owns site, page, query, import, file, permission, actor, module evaluation, and URL state; Framerail owns HTTP and browser runtime behavior.
 
@@ -1909,9 +1909,9 @@ Here is the specification set. Implement every feature listed in \`docs/wikidot-
 
 ## Mandatory TDD process
 
-Before writing any test, produce a seam map for the current vertical slice and obtain confirmation. State the public interface being tested and why it is the appropriate observable boundary. Suggested seams in each spec are recommendations, not pre-approval.
+Before writing a test, state the seam map for the current vertical slice: the public interface being tested, the authority for the expected behavior, and why that seam is the appropriate observable boundary. Proceed when current authority is sufficient. Seek external/human authority only when the behavior or product/security decision is genuinely underdetermined; ordinary implementation must not stop for ceremonial confirmation. Suggested seams in each spec are recommendations, not pre-approval.
 
-Then repeat this loop for every behavior in every catalog item:
+Then repeat this loop for each selected current behavior:
 
 1. Select one small, user-observable vertical slice.
 2. Write one behavior-focused test through the confirmed public seam.
@@ -1943,7 +1943,7 @@ Add regression tests for every discovered defect. Preserve the original failing 
 
 ## Work tracking
 
-Create a machine-readable implementation ledger keyed by every \`catalog.json\` feature ID. Each entry must record:
+Maintain the existing machine-readable implementation ledger keyed by \`catalog.json\` feature ID; do not create a second progress ledger. Each entry records:
 
 - status: \`pending\`, \`in_progress\`, \`implemented\`, or \`blocked\`;
 - confirmed public seams;
@@ -1971,14 +1971,7 @@ Keep the work in one focused campaign and normal review sequence unless reposito
 
 Run focused tests during each slice, then run formatting, linting, clippy/build checks, relevant integration suites, verifier suites, and browser tests in proportion to the changed surfaces. For browser-visible behavior, capture fresh evidence against exact source, dependency, fixture, and runtime identities and check visible intermediate states as well as settled DOM.
 
-Do not declare completion until:
-
-- every catalog item has a terminal ledger status;
-- every documented behavior has regression coverage;
-- every differential or fuzz result is classified;
-- no known reproducible compatibility gap lacks a fix or concrete blocker;
-- generated catalog/specification validation passes;
-- the normal project review and merge process has completed without force or admin merge.
+Do not declare campaign completion from this feature prompt. Feature work is complete only when its current ledger dimensions satisfy the compatibility charter, and campaign completion remains the authoritative final-zero condition in \`/home/roku/wjlab/plan.md\`. In particular, keep generated specification validation green, classify every discovered differential or fuzz result, leave no known reproducible gap without a fix or concrete blocker, and use the normal review/merge/standing process without force or admin merge.
 
 A merge is not a deployment. After browser-visible changes, refresh the standing runtime and verify the served URL before reporting the behavior fixed.
 `;

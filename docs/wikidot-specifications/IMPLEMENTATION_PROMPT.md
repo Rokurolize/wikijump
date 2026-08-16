@@ -1,13 +1,13 @@
-# Prompt: implement the complete Wikidot feature catalog with TDD
+# Prompt: implement current Wikidot compatibility work with TDD
 
-Here is the specification set. Implement every feature listed in `docs/wikidot-specifications/catalog.json` using test-driven development. Treat the catalog as one coherent compatibility campaign rather than creating one pull request per feature.
+This directory is the complete feature specification set. Select implementation work from the current canonical compatibility ledger and current blocker/issue authority, then use the matching catalog specification with test-driven development. Do not treat the catalog size or the hardened-contract snapshot as a mutable progress queue, and do not create one pull request per feature.
 
 ## Inputs
 
 1. Read the repository's `AGENTS.md` completely.
-2. Read `docs/wikidot-specifications/catalog.json`. It is the complete work queue; do not substitute a hand-selected subset.
-3. Read `docs/wikidot-specifications/CATALOG.md` and `docs/wikidot-specifications/README.md`. For current source-gap implementation work, start from `docs/wikidot-specifications/DETAILED_SOURCE_GAP_SPECIFICATIONS.md`, which links exactly the 57 detailed P1-P8 specifications.
-4. For each catalog item, read the exact Markdown file named by its `specification` field before designing or changing code.
+2. Read the current canonical compatibility ledger to select the current row/dimension. Then resolve that row in `docs/wikidot-specifications/catalog.json`, which is the complete feature index rather than the live queue.
+3. Read `docs/wikidot-specifications/CATALOG.md` and `docs/wikidot-specifications/README.md`. `DETAILED_SOURCE_GAP_SPECIFICATIONS.md` is the hardened P1-P8 contract library from its frozen snapshot; use it when the selected current feature is present there.
+4. For the selected catalog item, read the exact Markdown file named by its `specification` field before designing or changing code.
 5. Use `docs/wikidot-specifications/source-coverage.json` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant. User-submitted data-record groups are aggregate-only and are never behavioral evidence.
 6. Follow the repository architecture boundaries: FTML owns syntax parsing and rendering primitives; Wikijump/Deepwell owns site, page, query, import, file, permission, actor, module evaluation, and URL state; Framerail owns HTTP and browser runtime behavior.
 
@@ -21,9 +21,9 @@ Here is the specification set. Implement every feature listed in `docs/wikidot-s
 
 ## Mandatory TDD process
 
-Before writing any test, produce a seam map for the current vertical slice and obtain confirmation. State the public interface being tested and why it is the appropriate observable boundary. Suggested seams in each spec are recommendations, not pre-approval.
+Before writing a test, state the seam map for the current vertical slice: the public interface being tested, the authority for the expected behavior, and why that seam is the appropriate observable boundary. Proceed when current authority is sufficient. Seek external/human authority only when the behavior or product/security decision is genuinely underdetermined; ordinary implementation must not stop for ceremonial confirmation. Suggested seams in each spec are recommendations, not pre-approval.
 
-Then repeat this loop for every behavior in every catalog item:
+Then repeat this loop for each selected current behavior:
 
 1. Select one small, user-observable vertical slice.
 2. Write one behavior-focused test through the confirmed public seam.
@@ -55,7 +55,7 @@ Add regression tests for every discovered defect. Preserve the original failing 
 
 ## Work tracking
 
-Create a machine-readable implementation ledger keyed by every `catalog.json` feature ID. Each entry must record:
+Maintain the existing machine-readable implementation ledger keyed by `catalog.json` feature ID; do not create a second progress ledger. Each entry records:
 
 - status: `pending`, `in_progress`, `implemented`, or `blocked`;
 - confirmed public seams;
@@ -83,13 +83,6 @@ Keep the work in one focused campaign and normal review sequence unless reposito
 
 Run focused tests during each slice, then run formatting, linting, clippy/build checks, relevant integration suites, verifier suites, and browser tests in proportion to the changed surfaces. For browser-visible behavior, capture fresh evidence against exact source, dependency, fixture, and runtime identities and check visible intermediate states as well as settled DOM.
 
-Do not declare completion until:
-
-- every catalog item has a terminal ledger status;
-- every documented behavior has regression coverage;
-- every differential or fuzz result is classified;
-- no known reproducible compatibility gap lacks a fix or concrete blocker;
-- generated catalog/specification validation passes;
-- the normal project review and merge process has completed without force or admin merge.
+Do not declare campaign completion from this feature prompt. Feature work is complete only when its current ledger dimensions satisfy the compatibility charter, and campaign completion remains the authoritative final-zero condition in `/home/roku/wjlab/plan.md`. In particular, keep generated specification validation green, classify every discovered differential or fuzz result, leave no known reproducible gap without a fix or concrete blocker, and use the normal review/merge/standing process without force or admin merge.
 
 A merge is not a deployment. After browser-visible changes, refresh the standing runtime and verify the served URL before reporting the behavior fixed.
