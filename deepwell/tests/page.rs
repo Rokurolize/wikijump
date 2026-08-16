@@ -2414,6 +2414,136 @@ async fn basic_edit() {
 }
 
 #[tokio::test]
+async fn page_editing_history_preserves_each_page_change_as_a_recoverable_revision() {
+    let mut runner = TestRunner::setup().await;
+
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "page-editing-history-fixture";
+    const MOVED_PAGE_SLUG: &str = "page-editing-history-fixture-moved";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded site should exist")
+        .site;
+    let site_id = site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+    });
+
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "++ One\n\nInitial",
+            "title": "History fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create history fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let content_edit = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "edit page content",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "++ One\n\nSection replacement",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("content edit should create a revision");
+
+    let title_edit = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": content_edit.revision_id,
+            "revision_comments": "edit page title",
+            "user_id": ADMIN_USER_ID,
+            "title": "Renamed history title",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("title edit should create a revision");
+
+    let moved = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "new_slug": MOVED_PAGE_SLUG,
+            "last_revision_id": title_edit.revision_id,
+            "revision_comments": "rename history fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(moved.revision_number, 3);
+
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_number": moved.revision_number,
+            "revision_direction": "before",
+            "limit": 4,
+            "details": {"wikitext": true},
+        }),
+    );
+    let revisions = serde_json::to_value(revisions)
+        .expect("revision history should serialize at the public endpoint");
+    assert_eq!(revisions.as_array().map(Vec::len), Some(4));
+    assert_eq!(
+        revisions
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|revision| revision["revision_number"].as_i64().unwrap())
+            .collect::<Vec<_>>(),
+        vec![3, 2, 1, 0],
+    );
+    assert_eq!(revisions[0]["revision_type"], "move");
+    assert_eq!(revisions[1]["revision_type"], "regular");
+    assert_eq!(revisions[2]["revision_type"], "regular");
+    assert_eq!(revisions[3]["revision_type"], "create");
+    assert_eq!(revisions[2]["wikitext"], "++ One\n\nSection replacement");
+    assert_eq!(revisions[1]["wikitext"], "++ One\n\nSection replacement");
+    assert_eq!(revisions[3]["wikitext"], "++ One\n\nInitial");
+    assert_eq!(revisions[1]["title"], "Renamed history title");
+    assert_eq!(revisions[2]["title"], "History fixture");
+
+    let stale = run_endpoint_err!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "stale edit must not overwrite history",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "stale content",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+}
+
+#[tokio::test]
 async fn article_view_uses_category_license_and_site_fallback() {
     const SITE_SLUG: &str = "test";
     const PAGE_SLUG: &str = "category-license:article";
