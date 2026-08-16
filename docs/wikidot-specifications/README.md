@@ -4,6 +4,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 
 - `catalog.json` is the authoritative machine-readable feature index.
 - `CATALOG.md` is the human-readable index.
+- `DETAILED_SOURCE_GAP_SPECIFICATIONS.md` is the human-readable table of contents for exactly the 57 current source-gap features with normative P1-P8 contracts, linking directly to each individual specification.
 - `source-coverage.json` proves that all 1,806 corpus pages were enumerated and classified, while listing only non-user pages individually.
 - `live-observations.json` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
 - `implementation-ledger.json` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.

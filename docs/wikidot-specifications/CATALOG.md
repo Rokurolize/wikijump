@@ -12,6 +12,7 @@ This is the human-readable index of every feature extracted from the frozen loca
 - Corpus pages classified without a feature ID: 1565
 - Unclassified corpus pages: 0
 - Detailed P1-P8 source-gap specifications: 57
+- Detailed source-gap navigation: [57-feature specification index](DETAILED_SOURCE_GAP_SPECIFICATIONS.md)
 
 Features by category:
 

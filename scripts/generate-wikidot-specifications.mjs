@@ -1787,6 +1787,34 @@ const catalogRows = features
 const categorySummary = Object.entries(catalog.categories)
   .map(([category, count]) => `- \`${category}\`: ${count}`)
   .join("\n");
+const detailedSourceGapFeatures = features.filter(
+  (feature) => detailedContracts.features[feature.id],
+);
+const detailedSourceGapSections = [...new Set(
+  detailedSourceGapFeatures.map((feature) => feature.category),
+)]
+  .sort()
+  .map((category) => {
+    const rows = detailedSourceGapFeatures
+      .filter((feature) => feature.category === category)
+      .map(
+        (feature) =>
+          `- [${feature.title}](${specificationPath(feature)}) (\`${feature.id}\`, \`${feature.documentation_status}\`)`,
+      )
+      .join("\n");
+    return `## ${category}\n\n${rows}`;
+  })
+  .join("\n\n");
+const detailedSourceGapIndex = `# Detailed source-gap specifications
+
+This is the human-readable table of contents for exactly the 57 current source-gap features whose generated specifications contain a normative \`detailed-p1-p8\` conformance contract. Start here for WBS 2A implementation work, then follow the feature link to the individual specification.
+
+- Machine-readable contract set: [detailed-feature-contracts.json](detailed-feature-contracts.json)
+- Evidence manifest: [detailed-spec-evidence-20260816.json](detailed-spec-evidence-20260816.json)
+- Complete 210-feature catalog: [CATALOG.md](CATALOG.md)
+
+${detailedSourceGapSections}
+`;
 const catalogMarkdown = `# Wikidot feature catalog
 
 This is the human-readable index of every feature extracted from the frozen local Wikidot documentation corpus. The authoritative machine-readable form is [catalog.json](catalog.json); source-page disposition is recorded in [source-coverage.json](source-coverage.json).
@@ -1801,6 +1829,7 @@ This is the human-readable index of every feature extracted from the frozen loca
 - Corpus pages classified without a feature ID: ${sourcePagesWithoutFeatures}
 - Unclassified corpus pages: 0
 - Detailed P1-P8 source-gap specifications: ${Object.keys(detailedContracts.features).length}
+- Detailed source-gap navigation: [57-feature specification index](DETAILED_SOURCE_GAP_SPECIFICATIONS.md)
 
 Features by category:
 
@@ -1829,6 +1858,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 
 - \`catalog.json\` is the authoritative machine-readable feature index.
 - \`CATALOG.md\` is the human-readable index.
+- \`DETAILED_SOURCE_GAP_SPECIFICATIONS.md\` is the human-readable table of contents for exactly the 57 current source-gap features with normative P1-P8 contracts, linking directly to each individual specification.
 - \`source-coverage.json\` proves that all ${pages.size.toLocaleString("en-US")} corpus pages were enumerated and classified, while listing only non-user pages individually.
 - \`live-observations.json\` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
 - \`implementation-ledger.json\` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.
@@ -1864,7 +1894,7 @@ Here is the specification set. Implement every feature listed in \`docs/wikidot-
 
 1. Read the repository's \`AGENTS.md\` completely.
 2. Read \`docs/wikidot-specifications/catalog.json\`. It is the complete work queue; do not substitute a hand-selected subset.
-3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`.
+3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`. For current source-gap implementation work, start from \`docs/wikidot-specifications/DETAILED_SOURCE_GAP_SPECIFICATIONS.md\`, which links exactly the 57 detailed P1-P8 specifications.
 4. For each catalog item, read the exact Markdown file named by its \`specification\` field before designing or changing code.
 5. Use \`docs/wikidot-specifications/source-coverage.json\` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant. User-submitted data-record groups are aggregate-only and are never behavioral evidence.
 6. Follow the repository architecture boundaries: FTML owns syntax parsing and rendering primitives; Wikijump/Deepwell owns site, page, query, import, file, permission, actor, module evaluation, and URL state; Framerail owns HTTP and browser runtime behavior.
@@ -1956,6 +1986,7 @@ A merge is not a deployment. After browser-visible changes, refresh the standing
 const expectedFiles = new Map([
   ["README.md", readme],
   ["CATALOG.md", catalogMarkdown],
+  ["DETAILED_SOURCE_GAP_SPECIFICATIONS.md", detailedSourceGapIndex],
   ["catalog.json", serializedCatalog],
   [
     "detailed-feature-contracts.json",
