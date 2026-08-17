@@ -9495,6 +9495,7 @@
           "deepwell/tests/user.rs#regular_account_password_policy_rejects_short_create_passwords",
           "deepwell/tests/user.rs#user_delete_and_its_audit_event_roll_back_together",
           "deepwell/tests/user.rs#user_import_reclaims_existing_wikidot_user",
+          "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
           "deepwell/tests/user.rs#wikidot_user"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
