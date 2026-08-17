@@ -36,6 +36,7 @@ Evidence basis:
 
 - `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
 - `data-form-images-links-youtube` -> `install/local/wikidot-verification/artifacts/data-form-images-links-youtube-live-20260810.json` (SHA-256 `861cb225b63b7a0e3797c1f3a7df90df73bd193c7be2aea42646c601d6873ae3`)
+- `data-form-youtube` -> `install/local/wikidot-verification/artifacts/data-form-youtube-live-20260817.json` (SHA-256 `d0632b08054f856460f7e8c90628feeb287d915025d9f5325bc75005b100d29e`)
 - `syntax-pagepreview` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl` (SHA-256 `6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a`): Seventeen anonymous PagePreview probes cover embedding, iframe filtering, foldable-list initial DOM, links, and social-bookmarking boundaries.
 
 ### P1 - invocation grammar and scalar interpretation
@@ -48,7 +49,7 @@ Evidence basis:
 
 ### P3 - lifecycle, persistence, import, and round trips
 
-- Create/edit MUST round-trip the wiki-field source bytes needed by form_raw. The data-form feature itself MUST NOT fetch YouTube or rewrite provider markup during persistence.
+- Live create/edit/reload round-trips the submitted iframe source exactly as the wiki-field scalar, changing only the containing data-form page revision. The data-form save itself performs no provider fetch and does not rewrite the submitted iframe URL, dimensions, or markup.
 
 ### P4 - actors, permissions, visibility, and privacy
 
@@ -64,11 +65,11 @@ Evidence basis:
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
-- The rendered result is determined by authored [[html]] plus raw field content, not by a special data-form YouTube DOM wrapper. The retained live lane did not safely complete this saved-page path, so implementations MUST verify the exact current saved-page DOM before enabling it.
+- The live editor uses textarea.form-control.form-wiki. On a saved page, an [[html]] block whose entire non-whitespace body is one empty iframe is emitted directly only when it carries at least one recognized iframe attribute and no unknown attribute. Live positive probes cover reordered and single-quoted attributes, HTTP and HTTPS src values, and src, width, height, title, frameborder, allow, referrerpolicy, allowfullscreen, class, style, scrolling, align, sandbox, and loading. An attribute-less iframe, an iframe with an unknown data-* or event-handler attribute, adjacent text or comments, multiple iframes, iframe fallback content, or a raw '<' or '>' inside a quoted attribute value stays behind the hosted html-block-iframe wrapper. %%form_data{video}%% and %%form_raw{video}%% outside [[html]] render the iframe source as inert escaped wiki text and do not create additional iframe elements.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
-- Raw stored embed source must survive edit/reload exactly enough to reproduce the same authored result. Unsupported provider or unsafe markup must follow the HTML/embed fail-closed security boundary rather than a data-form-specific fallback.
+- The raw source restored in the edit control and after reload is exactly the latest submitted value. Data-form substitution does not widen the saved [[html]] runtime boundary: unsupported direct-iframe shapes keep the hosted HTML-block path instead of receiving data-form-specific execution or sanitization semantics. The direct branch is therefore an observed compatibility exception with explicit positive and negative boundaries, not a license to pass arbitrary iframe attributes into the parent page DOM.
 
 
 ## Suggested public TDD seams

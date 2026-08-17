@@ -380,6 +380,7 @@
       "evidence": [
         "current-www-source",
         "data-form-images-links-youtube",
+        "data-form-youtube",
         "syntax-pagepreview"
       ],
       "axes": {
@@ -390,7 +391,7 @@
           "The data-form layer stores wiki-field source; [[html]] ownership and any embedded HTML execution remain the embedding/runtime feature's responsibility. PagePreview currently leaves [[html]] literal, so saved-page behavior MUST NOT be inferred from preview."
         ],
         "P3": [
-          "Create/edit MUST round-trip the wiki-field source bytes needed by form_raw. The data-form feature itself MUST NOT fetch YouTube or rewrite provider markup during persistence."
+          "Live create/edit/reload round-trips the submitted iframe source exactly as the wiki-field scalar, changing only the containing data-form page revision. The data-form save itself performs no provider fetch and does not rewrite the submitted iframe URL, dimensions, or markup."
         ],
         "P4": [
           "Editing requires page edit authority. Rendering embedded remote content remains subject to Wikidot's HTML/embed and browser security boundary; data-form storage does not grant script authority."
@@ -402,10 +403,10 @@
           "Provider requests, iframe/embed URLs, and browser navigation are produced only when the authored saved-page HTML/embed path executes. No remote media request is required during data-form save."
         ],
         "P7": [
-          "The rendered result is determined by authored [[html]] plus raw field content, not by a special data-form YouTube DOM wrapper. The retained live lane did not safely complete this saved-page path, so implementations MUST verify the exact current saved-page DOM before enabling it."
+          "The live editor uses textarea.form-control.form-wiki. On a saved page, an [[html]] block whose entire non-whitespace body is one empty iframe is emitted directly only when it carries at least one recognized iframe attribute and no unknown attribute. Live positive probes cover reordered and single-quoted attributes, HTTP and HTTPS src values, and src, width, height, title, frameborder, allow, referrerpolicy, allowfullscreen, class, style, scrolling, align, sandbox, and loading. An attribute-less iframe, an iframe with an unknown data-* or event-handler attribute, adjacent text or comments, multiple iframes, iframe fallback content, or a raw '<' or '>' inside a quoted attribute value stays behind the hosted html-block-iframe wrapper. %%form_data{video}%% and %%form_raw{video}%% outside [[html]] render the iframe source as inert escaped wiki text and do not create additional iframe elements."
         ],
         "P8": [
-          "Raw stored embed source must survive edit/reload exactly enough to reproduce the same authored result. Unsupported provider or unsafe markup must follow the HTML/embed fail-closed security boundary rather than a data-form-specific fallback."
+          "The raw source restored in the edit control and after reload is exactly the latest submitted value. Data-form substitution does not widen the saved [[html]] runtime boundary: unsupported direct-iframe shapes keep the hosted HTML-block path instead of receiving data-form-specific execution or sanitization semantics. The direct branch is therefore an observed compatibility exception with explicit positive and negative boundaries, not a license to pass arbitrary iframe attributes into the parent page DOM."
         ]
       }
     },

@@ -2575,6 +2575,266 @@ async fn custom_data_form_layout_remains_editable_and_renders_form_variables() {
 }
 
 #[tokio::test]
+async fn data_form_youtube_raw_wiki_executes_only_inside_html_block() {
+    const CATEGORY: &str = "data-form-youtube-contract";
+    const TEMPLATE_SLUG: &str = "data-form-youtube-contract:_template";
+    const TARGET_SLUG: &str = "data-form-youtube-contract:saved";
+    const RAW: &str = r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>"#;
+    const HTML_BLOCK_BOUNDARY_CASES: &[(&str, bool)] = &[
+        (
+            r#"<iframe width="320" height="180" src="https://example.invalid/reordered"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/extra" width="320" height="180" allowfullscreen="allowfullscreen"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="http://example.invalid/http" width="320" height="180"></iframe>"#,
+            true,
+        ),
+        (RAW, true),
+        (
+            r#"<iframe src='https://example.invalid/single-quotes' width='321' height='181'></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/class" width="320" height="180" class="probe-frame"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/style" width="320" height="180" style="border:0"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/scrolling" width="320" height="180" scrolling="no"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/align" width="320" height="180" align="left"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/sandbox" width="320" height="180" sandbox="allow-scripts"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/loading" width="320" height="180" loading="lazy"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/src-only"></iframe>"#,
+            true,
+        ),
+        (r#"<iframe title="probe"></iframe>"#, true),
+        ("<iframe></iframe>", false),
+        (r#"<iframe data-wj-probe="x"></iframe>"#, false),
+        (
+            r#"<iframe src="https://example.invalid/data" width="320" height="180" data-wj-probe="kept-or-dropped"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/onload" width="320" height="180" onload="return false"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/title" width="320" height="180" title="1 > 0"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/title-lt" width="320" height="180" title="1 < 2"></iframe>"#,
+            false,
+        ),
+        (
+            r#"before <iframe src="https://example.invalid/adjacent" width="320" height="180"></iframe> after"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/one" width="320" height="180"></iframe><iframe src="https://example.invalid/two" width="320" height="180"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/fallback" width="320" height="180">fallback</iframe>"#,
+            false,
+        ),
+        (
+            r#"<!--before--><iframe src="https://example.invalid/comment" width="320" height="180"></iframe><!--after-->"#,
+            false,
+        ),
+    ];
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[html]]\n",
+        "%%form_raw{video}%%\n",
+        "[[/html]]\n",
+        "[[div class=\"form-data-control\"]]\n",
+        "%%form_data{video}%%\n",
+        "[[/div]]\n",
+        "[[div class=\"form-raw-outside\"]]\n",
+        "%%form_raw{video}%%\n",
+        "[[/div]]\n",
+        "====\n",
+        "[[form]]\n",
+        "fields:\n",
+        "  video:\n",
+        "    label: Video\n",
+        "    type: wiki\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form YouTube contract test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form YouTube category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-youtube-contract-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    create_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        &format!("video: '{RAW}'"),
+    )
+    .await;
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected data-form YouTube edit view, got {other:?}"),
+    };
+    assert_eq!(editor.values.get("video").map(String::as_str), Some(RAW));
+
+    let rendered = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": TARGET_SLUG, "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected data-form YouTube saved view, got {other:?}"),
+    };
+    assert_eq!(
+        rendered.matches("<iframe").count(),
+        1,
+        "only form_raw inside the authored HTML block may execute an iframe: {rendered}",
+    );
+    assert!(
+        rendered.contains(r#"src="https://www.youtube.com/embed/dQw4w9WgXcQ""#)
+            && rendered.contains(r#"width="560""#)
+            && rendered.contains(r#"height="315""#)
+            && rendered.contains(r#"title="YouTube video player""#)
+            && rendered.contains(r#"referrerpolicy="strict-origin-when-cross-origin""#)
+            && rendered.contains("allowfullscreen"),
+        "the live-observed iframe attributes must survive the saved data-form render: {rendered}",
+    );
+    for class_name in ["form-data-control", "form-raw-outside"] {
+        let marker = format!(r#"<div class="{class_name}">"#);
+        let start = rendered
+            .find(&marker)
+            .unwrap_or_else(|| panic!("missing {class_name} wrapper: {rendered}"));
+        let tail = &rendered[start + marker.len()..];
+        let end = tail
+            .find("</div>")
+            .unwrap_or_else(|| panic!("unterminated {class_name} wrapper: {rendered}"));
+        let body = &tail[..end];
+        assert!(
+            body.contains("&lt;iframe") && !body.contains("<iframe"),
+            "{class_name} must render the raw source as inert wiki text: {body}",
+        );
+    }
+
+    for (index, &(value, direct)) in HTML_BLOCK_BOUNDARY_CASES.iter().enumerate() {
+        let slug = format!("data-form-youtube-html-boundary-{}", index + 1);
+        create_page(
+            &mut runner,
+            site_id,
+            &slug,
+            &format!("[[html]]\n{value}\n[[/html]]"),
+        )
+        .await;
+        let rendered = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": { "slug": &slug, "extra": "" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected data-form YouTube boundary view, got {other:?}"),
+        };
+        assert_eq!(
+            rendered.matches("<iframe").count(),
+            1,
+            "each observed HTML-block boundary case must emit one direct iframe or one hosted wrapper: {rendered}",
+        );
+        assert_eq!(
+            !rendered.contains(r#"class="html-block-iframe""#),
+            direct,
+            "saved [[html]] direct-iframe boundary mismatch for {value}: {rendered}",
+        );
+    }
+}
+
+#[tokio::test]
 async fn page_view_exposes_live_hidden_password_static_url_scalar_contract() {
     let mut runner = TestRunner::setup().await;
     let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))

@@ -493,6 +493,18 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
     )
     .unwrap()
 });
+static WIKIDOT_DIRECT_HTML_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)^\s*(?P<iframe><iframe\b(?P<attrs>[^<>]*)>\s*</iframe\s*>)\s*$"#)
+        .expect("direct Wikidot HTML iframe expression is valid")
+});
+static WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX: LazyLock<Regex> = LazyLock::new(
+    || {
+        Regex::new(
+            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?:"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
+        )
+        .expect("direct Wikidot HTML iframe attribute expression is valid")
+    },
+);
 
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -1843,18 +1855,73 @@ impl RenderService {
             };
             let start = search_start + relative_start;
             let end = start + PLACEHOLDER.len();
-            let iframe = format!(
-                concat!(
-                    r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
-                    r#"frameborder="0" class="html-block-iframe"></iframe>"#,
-                ),
-                escape_list_pages_html_attr(&full_slug),
-                index,
-            );
+            let iframe = Self::wikidot_direct_html_iframe(&html_blocks[index - 1])
+                .map(str::to_owned)
+                .unwrap_or_else(|| {
+                    format!(
+                        concat!(
+                            r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
+                            r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+                        ),
+                        escape_list_pages_html_attr(&full_slug),
+                        index,
+                    )
+                });
             body.replace_range(start..end, &iframe);
             search_start = start + iframe.len();
         }
         body
+    }
+
+    fn wikidot_direct_html_iframe(html_block: &str) -> Option<&str> {
+        const ALLOWED_ATTRIBUTES: &[&str] = &[
+            "align",
+            "allow",
+            "allowfullscreen",
+            "class",
+            "frameborder",
+            "height",
+            "loading",
+            "referrerpolicy",
+            "sandbox",
+            "scrolling",
+            "src",
+            "style",
+            "title",
+            "width",
+        ];
+
+        let captures = WIKIDOT_DIRECT_HTML_IFRAME_REGEX.captures(html_block)?;
+        let attributes = captures
+            .name("attrs")
+            .expect("direct iframe capture has attributes")
+            .as_str();
+        let mut cursor = 0;
+        let mut has_attribute = false;
+        for attribute in
+            WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX.captures_iter(attributes)
+        {
+            let whole = attribute
+                .get(0)
+                .expect("direct iframe attribute capture has whole match");
+            if !attributes[cursor..whole.start()].trim().is_empty() {
+                return None;
+            }
+            let name = attribute
+                .name("name")
+                .expect("direct iframe attribute capture has name")
+                .as_str()
+                .to_ascii_lowercase();
+            if !ALLOWED_ATTRIBUTES.contains(&name.as_str()) {
+                return None;
+            }
+            has_attribute = true;
+            cursor = whole.end();
+        }
+        if !attributes[cursor..].trim().is_empty() || !has_attribute {
+            return None;
+        }
+        captures.name("iframe").map(|iframe| iframe.as_str())
     }
 
     pub(super) async fn render_inner(

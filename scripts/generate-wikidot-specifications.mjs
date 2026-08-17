@@ -296,6 +296,8 @@ const detailedEvidenceAliases = Object.freeze({
     detailedSpecEvidence.retained_repository_evidence?.data_form_file_field,
   "data-form-images-links-youtube":
     detailedSpecEvidence.retained_repository_evidence?.data_form_images_links_youtube,
+  "data-form-youtube":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_youtube,
   "data-form-output-css":
     detailedSpecEvidence.retained_repository_evidence?.data_form_output_css,
   "userinfo-targets":

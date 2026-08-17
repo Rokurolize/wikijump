@@ -1,0 +1,618 @@
+{
+  "schema": "wikidot.live.data-form.youtube.v1",
+  "captured_at_utc": "2026-08-17T09:23:30Z",
+  "site": "sandbox-for-codex",
+  "surface_id": "data-forms-youtube",
+  "actor": "account-a",
+  "fixture_identity": {
+    "template": "dfyt-1786958610-1635805-8776:_template",
+    "target": "dfyt-1786958610-1635805-8776:target"
+  },
+  "template_source": "[[html]]\n%%form_raw{video}%%\n[[/html]]\n[[div class=\"form-data-control\"]]\n%%form_data{video}%%\n[[/div]]\n[[div class=\"form-raw-outside\"]]\n%%form_raw{video}%%\n[[/div]]\n====\n[[form]]\nfields:\n  video:\n    label: Video\n    type: wiki\n[[/form]]",
+  "submitted_values": {
+    "create": "<iframe src=\"https://example.invalid/FW17_EMBED_CREATE\" width=\"320\" height=\"180\"></iframe>",
+    "edit": "<iframe src=\"https://example.invalid/FW17_EMBED_EDIT\" width=\"640\" height=\"360\"></iframe>"
+  },
+  "remote_media_fetches": [],
+  "credentials_exposed": false,
+  "cleanup": {
+    "target_deleted": true,
+    "template_deleted": true,
+    "boundary_pages_deleted": true,
+    "boundary_pages": [
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-1",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-2",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-3",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-4",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-5",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-6",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-7",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-8",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-9",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-10",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-11",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-12",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-13",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-14",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-15",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-16",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-17",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-18",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-19",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-20",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-21",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-22",
+        "deleted": true
+      },
+      {
+        "page": "dfyt-1786958610-1635805-8776-html-boundary-23",
+        "deleted": true
+      }
+    ],
+    "absence_verified": true,
+    "absence_reverification": {
+      "verified_at_utc": "2026-08-17T09:27:01Z",
+      "method": "direct norender/noredirect endpoint returned HTTP 404 for the target, template, and all 23 boundary pages after the capture's final verification request was reset",
+      "all_absent": true
+    }
+  },
+  "create": {
+    "editor": {
+      "form_class": "form-horizontal data-form",
+      "form_fields": "video",
+      "page_id": "",
+      "control": {
+        "tag": "textarea",
+        "classes": [
+          "form-control",
+          "form-wiki"
+        ],
+        "rows": "2",
+        "cols": "40",
+        "text": ""
+      }
+    },
+    "save_receipt": {
+      "status": "ok",
+      "revision_id": 1546064858
+    },
+    "saved_source": "video: '<iframe src=\"https://example.invalid/FW17_EMBED_CREATE\" width=\"320\" height=\"180\"></iframe>'",
+    "display": {
+      "html": "<div id=\"page-content\">\n<p><iframe height=\"180\" src=\"https://example.invalid/FW17_EMBED_CREATE\" width=\"320\"></iframe></p>\n<div class=\"form-data-control\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_CREATE\">https://example.invalid/FW17_EMBED_CREATE</a>\" width=\"320\" height=\"180\"&gt;&lt;/iframe&gt;</p>\n</div>\n<div class=\"form-raw-outside\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_CREATE\">https://example.invalid/FW17_EMBED_CREATE</a>\" width=\"320\" height=\"180\"&gt;&lt;/iframe&gt;</p>\n</div>\n</div>",
+      "visible_text": "<iframe src=\" https://example.invalid/FW17_EMBED_CREATE \" width=\"320\" height=\"180\"></iframe> <iframe src=\" https://example.invalid/FW17_EMBED_CREATE \" width=\"320\" height=\"180\"></iframe>",
+      "iframes": [
+        {
+          "src": "https://example.invalid/FW17_EMBED_CREATE",
+          "width": "320",
+          "height": "180"
+        }
+      ],
+      "form_data_control_html": "<div class=\"form-data-control\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_CREATE\">https://example.invalid/FW17_EMBED_CREATE</a>\" width=\"320\" height=\"180\"&gt;&lt;/iframe&gt;</p>\n</div>",
+      "contains_raw_outside_wrapper_literal": false
+    }
+  },
+  "edit": {
+    "editor": {
+      "form_class": "form-horizontal data-form",
+      "form_fields": "video",
+      "page_id": "1469182772",
+      "control": {
+        "tag": "textarea",
+        "classes": [
+          "form-control",
+          "form-wiki"
+        ],
+        "rows": "2",
+        "cols": "40",
+        "text": "<iframe src=\"https://example.invalid/FW17_EMBED_CREATE\" width=\"320\" height=\"180\"></iframe>"
+      }
+    },
+    "save_receipt": {
+      "status": "ok",
+      "revision_id": 1546064861
+    },
+    "saved_source": "video: '<iframe src=\"https://example.invalid/FW17_EMBED_EDIT\" width=\"640\" height=\"360\"></iframe>'",
+    "display": {
+      "html": "<div id=\"page-content\">\n<p><iframe height=\"360\" src=\"https://example.invalid/FW17_EMBED_EDIT\" width=\"640\"></iframe></p>\n<div class=\"form-data-control\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_EDIT\">https://example.invalid/FW17_EMBED_EDIT</a>\" width=\"640\" height=\"360\"&gt;&lt;/iframe&gt;</p>\n</div>\n<div class=\"form-raw-outside\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_EDIT\">https://example.invalid/FW17_EMBED_EDIT</a>\" width=\"640\" height=\"360\"&gt;&lt;/iframe&gt;</p>\n</div>\n</div>",
+      "visible_text": "<iframe src=\" https://example.invalid/FW17_EMBED_EDIT \" width=\"640\" height=\"360\"></iframe> <iframe src=\" https://example.invalid/FW17_EMBED_EDIT \" width=\"640\" height=\"360\"></iframe>",
+      "iframes": [
+        {
+          "src": "https://example.invalid/FW17_EMBED_EDIT",
+          "width": "640",
+          "height": "360"
+        }
+      ],
+      "form_data_control_html": "<div class=\"form-data-control\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_EDIT\">https://example.invalid/FW17_EMBED_EDIT</a>\" width=\"640\" height=\"360\"&gt;&lt;/iframe&gt;</p>\n</div>",
+      "contains_raw_outside_wrapper_literal": false
+    }
+  },
+  "reload": {
+    "editor": {
+      "form_class": "form-horizontal data-form",
+      "form_fields": "video",
+      "page_id": "1469182772",
+      "control": {
+        "tag": "textarea",
+        "classes": [
+          "form-control",
+          "form-wiki"
+        ],
+        "rows": "2",
+        "cols": "40",
+        "text": "<iframe src=\"https://example.invalid/FW17_EMBED_EDIT\" width=\"640\" height=\"360\"></iframe>"
+      }
+    },
+    "saved_source": "video: '<iframe src=\"https://example.invalid/FW17_EMBED_EDIT\" width=\"640\" height=\"360\"></iframe>'",
+    "display": {
+      "html": "<div id=\"page-content\">\n<p><iframe height=\"360\" src=\"https://example.invalid/FW17_EMBED_EDIT\" width=\"640\"></iframe></p>\n<div class=\"form-data-control\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_EDIT\">https://example.invalid/FW17_EMBED_EDIT</a>\" width=\"640\" height=\"360\"&gt;&lt;/iframe&gt;</p>\n</div>\n<div class=\"form-raw-outside\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_EDIT\">https://example.invalid/FW17_EMBED_EDIT</a>\" width=\"640\" height=\"360\"&gt;&lt;/iframe&gt;</p>\n</div>\n</div>",
+      "visible_text": "<iframe src=\" https://example.invalid/FW17_EMBED_EDIT \" width=\"640\" height=\"360\"></iframe> <iframe src=\" https://example.invalid/FW17_EMBED_EDIT \" width=\"640\" height=\"360\"></iframe>",
+      "iframes": [
+        {
+          "src": "https://example.invalid/FW17_EMBED_EDIT",
+          "width": "640",
+          "height": "360"
+        }
+      ],
+      "form_data_control_html": "<div class=\"form-data-control\">\n<p>&lt;iframe src=\"<a href=\"https://example.invalid/FW17_EMBED_EDIT\">https://example.invalid/FW17_EMBED_EDIT</a>\" width=\"640\" height=\"360\"&gt;&lt;/iframe&gt;</p>\n</div>",
+      "contains_raw_outside_wrapper_literal": false
+    }
+  },
+  "html_block_boundary": [
+    {
+      "name": "reordered-attributes",
+      "source": "<iframe width=\"320\" height=\"180\" src=\"https://example.invalid/reordered\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "width": "320",
+            "height": "180",
+            "src": "https://example.invalid/reordered"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "extra-attribute",
+      "source": "<iframe src=\"https://example.invalid/extra\" width=\"320\" height=\"180\" allowfullscreen=\"allowfullscreen\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/extra",
+            "width": "320",
+            "height": "180",
+            "allowfullscreen": "allowfullscreen"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "http-source",
+      "source": "<iframe src=\"http://example.invalid/http\" width=\"320\" height=\"180\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "http://example.invalid/http",
+            "width": "320",
+            "height": "180"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "modern-youtube",
+      "source": "<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/dQw4w9WgXcQ\" title=\"YouTube video player\" frameborder=\"0\" allow=\"accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share\" referrerpolicy=\"strict-origin-when-cross-origin\" allowfullscreen></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "width": "560",
+            "height": "315",
+            "src": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            "title": "YouTube video player",
+            "frameborder": "0",
+            "allow": "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share",
+            "referrerpolicy": "strict-origin-when-cross-origin",
+            "allowfullscreen": "allowfullscreen"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "single-quoted-attributes",
+      "source": "<iframe src='https://example.invalid/single-quotes' width='321' height='181'></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/single-quotes",
+            "width": "321",
+            "height": "181"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "class-attribute",
+      "source": "<iframe src=\"https://example.invalid/class\" width=\"320\" height=\"180\" class=\"probe-frame\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/class",
+            "width": "320",
+            "height": "180",
+            "class": [
+              "probe-frame"
+            ]
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "style-attribute",
+      "source": "<iframe src=\"https://example.invalid/style\" width=\"320\" height=\"180\" style=\"border:0\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/style",
+            "width": "320",
+            "height": "180",
+            "style": "border:0"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "scrolling-attribute",
+      "source": "<iframe src=\"https://example.invalid/scrolling\" width=\"320\" height=\"180\" scrolling=\"no\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/scrolling",
+            "width": "320",
+            "height": "180",
+            "scrolling": "no"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "align-attribute",
+      "source": "<iframe src=\"https://example.invalid/align\" width=\"320\" height=\"180\" align=\"left\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/align",
+            "width": "320",
+            "height": "180",
+            "align": "left"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "sandbox-attribute",
+      "source": "<iframe src=\"https://example.invalid/sandbox\" width=\"320\" height=\"180\" sandbox=\"allow-scripts\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/sandbox",
+            "width": "320",
+            "height": "180",
+            "sandbox": [
+              "allow-scripts"
+            ]
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "loading-attribute",
+      "source": "<iframe src=\"https://example.invalid/loading\" width=\"320\" height=\"180\" loading=\"lazy\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/loading",
+            "width": "320",
+            "height": "180",
+            "loading": "lazy"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "src-only",
+      "source": "<iframe src=\"https://example.invalid/src-only\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "src": "https://example.invalid/src-only"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "title-only",
+      "source": "<iframe title=\"probe\"></iframe>",
+      "expected_direct": true,
+      "display": {
+        "iframes": [
+          {
+            "title": "probe"
+          }
+        ],
+        "direct": true
+      }
+    },
+    {
+      "name": "attribute-less",
+      "source": "<iframe></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-14/html/53aa8fa14eecccf261aa40c3f33556197b2e840f-7953863931465841763",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "unknown-only",
+      "source": "<iframe data-wj-probe=\"x\"></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-15/html/d5a082b5b4ac05cf3517be044bd7db05cfd1928d-1370159546957659703",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "unknown-data-attribute",
+      "source": "<iframe src=\"https://example.invalid/data\" width=\"320\" height=\"180\" data-wj-probe=\"kept-or-dropped\"></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-16/html/6ba24b3bd181ed980e7d037c647aca4e98bae8f0-941060075498947956",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "event-handler-attribute",
+      "source": "<iframe src=\"https://example.invalid/onload\" width=\"320\" height=\"180\" onload=\"return false\"></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-17/html/a68aeac376f0aa50a1dd93d0f49221d27259a759-3089096481907956416",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "greater-than-in-quoted-value",
+      "source": "<iframe src=\"https://example.invalid/title\" width=\"320\" height=\"180\" title=\"1 > 0\"></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-18/html/92267129c8011f35ea4a5cfabb1339e13acdb591-1436240628617026449",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "less-than-in-quoted-value",
+      "source": "<iframe src=\"https://example.invalid/title-lt\" width=\"320\" height=\"180\" title=\"1 < 2\"></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-19/html/d9c9cbe59bb961ca4c15f7b5c8af7006108dbf9c-4521643221944117279",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "adjacent-text",
+      "source": "before <iframe src=\"https://example.invalid/adjacent\" width=\"320\" height=\"180\"></iframe> after",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-20/html/6fc4a2549ae8d1c5d43b567e8f7f19e55f32d118-13520763451668241",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "multiple-iframes",
+      "source": "<iframe src=\"https://example.invalid/one\" width=\"320\" height=\"180\"></iframe><iframe src=\"https://example.invalid/two\" width=\"320\" height=\"180\"></iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-21/html/cd7ffb589db9746d57c9ef0f098f1a77f249dbf1-12032531411833260875",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "iframe-fallback-content",
+      "source": "<iframe src=\"https://example.invalid/fallback\" width=\"320\" height=\"180\">fallback</iframe>",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-22/html/e86e626c26a13433567082046a3f39ad654424e4-12808476291713025086",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    },
+    {
+      "name": "comment-siblings",
+      "source": "<!--before--><iframe src=\"https://example.invalid/comment\" width=\"320\" height=\"180\"></iframe><!--after-->",
+      "expected_direct": false,
+      "display": {
+        "iframes": [
+          {
+            "src": "/dfyt-1786958610-1635805-8776-html-boundary-23/html/86f660a0ae3bfbf9d192612c3eef4a03c92097e8-13914198651168568095",
+            "allowtransparency": "true",
+            "frameborder": "0",
+            "class": [
+              "html-block-iframe"
+            ]
+          }
+        ],
+        "direct": false
+      }
+    }
+  ],
+  "status": "observed",
+  "cases_fixture": {
+    "path": "install/local/wikidot-verification/fixtures/data-form-youtube/cases.json",
+    "sha256": "2e34f04203047982c429e68702b11753e3b8f85ca52acc0e92f3b2f0fed860ed"
+  }
+}

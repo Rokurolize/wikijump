@@ -97,6 +97,10 @@
       "path": "install/local/wikidot-verification/artifacts/data-form-images-links-youtube-live-20260810.json",
       "sha256": "861cb225b63b7a0e3797c1f3a7df90df73bd193c7be2aea42646c601d6873ae3"
     },
+    "data_form_youtube": {
+      "path": "install/local/wikidot-verification/artifacts/data-form-youtube-live-20260817.json",
+      "sha256": "d0632b08054f856460f7e8c90628feeb287d915025d9f5325bc75005b100d29e"
+    },
     "data_form_output_css": {
       "path": "install/local/wikidot-verification/artifacts/data-form-output-css-hostile-theme-live-20260810.json",
       "sha256": "fdca5d523379c76256f5175d4e88dc7a3ded8e8e004f959cfd6157d4f892fbe0"

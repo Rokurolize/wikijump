@@ -394,6 +394,18 @@
       "tests": [{ "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form checkbox and wiki controls match live DOM and storage" }]
     },
     {
+      "surface_id": "catalog-feature:data-forms-youtube",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn substitute_wikidot_data_form_layout_variables_with_display(" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"wiki\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "data_form_youtube_raw_wiki_executes_only_inside_html_block" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form checkbox and wiki controls match live DOM and storage" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:data-forms-displaying",
       "sources": [{ "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" }],
       "tests": [{ "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_live_checkbox_and_wiki_contract" }]
