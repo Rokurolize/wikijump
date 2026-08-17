@@ -912,6 +912,17 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:unlimited-pages",
+      "sources": [
+        { "path": "deepwell/src/endpoints/page.rs", "anchor": "pub async fn page_create(" },
+        { "path": "deepwell/src/services/page/service.rs", "anchor": "pub async fn create(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "normal_page_create_allocates_category_numbers_without_consuming_conflicts" },
+        { "path": "deepwell/tests/page.rs", "anchor": "component_css_edit_refreshes_only_the_recorded_dependent_page" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:layout-page",
       "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
       "tests": [
