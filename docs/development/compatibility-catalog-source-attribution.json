@@ -938,6 +938,18 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:service-resilience",
+      "sources": [
+        { "path": "deepwell/src/api.rs", "anchor": "Wrap each call in a transaction" },
+        { "path": "install/local/docker-compose.yaml", "anchor": "local-postgres-data:/var/lib/postgresql/data" },
+        { "path": "install/local/docker-compose.yaml", "anchor": "local-minio-data:/data" }
+      ],
+      "tests": [
+        { "path": "deepwell/src/api.rs", "anchor": "registered_rpc_methods_select_transaction_isolation" },
+        { "path": "deepwell/tests/page.rs", "anchor": "file_rollback_revision_and_audit_roll_back_together" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:layout-page",
       "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
       "tests": [
