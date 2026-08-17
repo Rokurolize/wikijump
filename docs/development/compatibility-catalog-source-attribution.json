@@ -973,6 +973,17 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:browser-support",
+      "sources": [
+        { "path": "framerail/src/hooks.server.ts", "anchor": "export const handle: Handle = async ({ event, resolve }) =>" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/page.svelte", "anchor": "use:wikidotLegacyActions={legacyActionParameters}" }
+      ],
+      "tests": [
+        { "path": "framerail/playwright.browser-support.config.ts", "anchor": "projects: [" },
+        { "path": "framerail/tests/browser-support.spec.ts", "anchor": "supported browser families share the same core page and authority boundary" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:layout-page",
       "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
       "tests": [
