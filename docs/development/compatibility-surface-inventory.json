@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "ef19488460e6abf41e1e8d0ba3973d922504358f",
-      "tree": "ca042f4da23541795b2b412a2206f15746cffae6"
+      "commit": "e1052ba3cf64ad7dcee077405b1872cb11379be4",
+      "tree": "d04282086fb7f1c7afbe58b4c475b60eae054903"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "07a2ac3c1bf189ae53384f0bbc6afbf041339ea1d2b6218642b089c784b0f954"
+        "sha256": "141cd7c76794196021ba8bfe94ef845a862db25602892fc3e60b80c05a4eba0f"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -12236,7 +12236,11 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/file_edit_concurrency.rs#concurrent_registered_file_edits_promote_only_the_winning_blob",
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
+          "deepwell/tests/page.rs#revision_diff_returns_typed_lines_without_exposing_hidden_source"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12245,8 +12249,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/file.rs#pub async fn file_edit(",
+          "deepwell/src/endpoints/page_revision.rs#pub async fn page_revision_diff(",
+          "deepwell/src/services/file/service.rs#pub async fn create(",
+          "deepwell/src/services/page_revision/service.rs#pub async fn update("
+        ]
       },
       "candidate": {
         "status": "pending",
