@@ -48,8 +48,10 @@ use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
 use crate::services::data_form::{
-    load_data_form_definitions, parse_observed_wikidot_data_form_values,
-    render_wikidot_data_form_table_with_wiki_html,
+    load_data_form_definitions, load_wikidot_data_form_pagepaths,
+    parse_observed_wikidot_data_form_values,
+    render_wikidot_data_form_table_with_runtime_html,
+    resolve_wikidot_data_form_pagepath_display_values,
 };
 use crate::services::membership::{
     JoinActorState, MembershipBrowserAction, MembershipPolicy, MembershipService,
@@ -751,6 +753,8 @@ impl ViewService {
                     )
                     .await
                     .or_raise(make_error)?;
+                    let viewer_user_id =
+                        user_session.as_ref().map(|session| session.user.user_id);
                     let data_form = {
                         let category = CategoryService::get_optional(
                             ctx,
@@ -759,7 +763,7 @@ impl ViewService {
                         )
                         .await
                         .or_raise(make_error)?;
-                        match category {
+                        let definition_and_values = match category {
                             Some(category)
                                 if category.template_page_id != Some(page.page_id) =>
                             {
@@ -778,11 +782,29 @@ impl ViewService {
                                         &definition,
                                         &wikitext,
                                     )
-                                    .map(|values| DataFormEditor { definition, values })
+                                    .map(|values| (definition, values))
                                 })
                             }
                             None => None,
                             Some(_) => None,
+                        };
+                        match definition_and_values {
+                            Some((definition, values)) => {
+                                let pagepaths = load_wikidot_data_form_pagepaths(
+                                    ctx,
+                                    site_id,
+                                    &definition,
+                                    viewer_user_id,
+                                )
+                                .await
+                                .or_raise(make_error)?;
+                                Some(DataFormEditor {
+                                    definition,
+                                    values,
+                                    pagepaths,
+                                })
+                            }
+                            None => None,
                         }
                     };
                     let compiled_body_html = if let Some(data_form) =
@@ -801,10 +823,21 @@ impl ViewService {
                         )
                         .await
                         .or_raise(make_error)?;
-                        render_wikidot_data_form_table_with_wiki_html(
+                        let pagepath_display_values =
+                            resolve_wikidot_data_form_pagepath_display_values(
+                                ctx,
+                                site_id,
+                                &data_form.definition,
+                                &data_form.values,
+                                viewer_user_id,
+                            )
+                            .await
+                            .or_raise(make_error)?;
+                        render_wikidot_data_form_table_with_runtime_html(
                             &data_form.definition,
                             &data_form.values,
                             &rendered_wiki_values,
+                            &pagepath_display_values,
                         )
                     } else {
                         compiled_body_html
@@ -973,20 +1006,38 @@ impl ViewService {
 
                     if user_can_create_page {
                         let data_form = match create_category.as_ref() {
-                            Some(category) => load_data_form_definitions(
-                                ctx,
-                                std::slice::from_ref(category),
-                            )
-                            .await
-                            .or_raise(make_error)?
-                            .remove(&category.category_id)
-                            .filter(|definition| {
-                                definition.supports_observed_create_edit()
-                            })
-                            .map(|definition| DataFormEditor {
-                                definition,
-                                values: Default::default(),
-                            }),
+                            Some(category) => {
+                                let definition = load_data_form_definitions(
+                                    ctx,
+                                    std::slice::from_ref(category),
+                                )
+                                .await
+                                .or_raise(make_error)?
+                                .remove(&category.category_id)
+                                .filter(|definition| {
+                                    definition.supports_observed_create_edit()
+                                });
+                                match definition {
+                                    Some(definition) => {
+                                        let pagepaths = load_wikidot_data_form_pagepaths(
+                                            ctx,
+                                            site_id,
+                                            &definition,
+                                            user_session
+                                                .as_ref()
+                                                .map(|session| session.user.user_id),
+                                        )
+                                        .await
+                                        .or_raise(make_error)?;
+                                        Some(DataFormEditor {
+                                            definition,
+                                            values: Default::default(),
+                                            pagepaths,
+                                        })
+                                    }
+                                    None => None,
+                                }
+                            }
                             None => None,
                         };
                         (

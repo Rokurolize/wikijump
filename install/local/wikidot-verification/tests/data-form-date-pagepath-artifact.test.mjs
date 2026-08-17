@@ -8,6 +8,10 @@ const pagepathControlFixtureUrl = new URL("../fixtures/data-form-date-pagepath/p
 const pagepathControlArtifactUrl = new URL("../artifacts/data-form-pagepath-control-live-20260817.json", import.meta.url);
 const pagepathCreateNewFixtureUrl = new URL("../fixtures/data-form-date-pagepath/pagepath-create-new-20260817.json", import.meta.url);
 const pagepathCreateNewArtifactUrl = new URL("../artifacts/data-form-pagepath-create-new-live-20260817.json", import.meta.url);
+const pagepathRootBootstrapFixtureUrl = new URL("../fixtures/data-form-date-pagepath/pagepath-root-bootstrap-20260817.json", import.meta.url);
+const pagepathRootBootstrapArtifactUrl = new URL("../artifacts/data-form-pagepath-root-bootstrap-live-20260817.json", import.meta.url);
+const pagepathBacklinksFixtureUrl = new URL("../fixtures/data-form-date-pagepath/pagepath-backlinks-20260817.json", import.meta.url);
+const pagepathBacklinksArtifactUrl = new URL("../artifacts/data-form-pagepath-backlinks-live-20260817.json", import.meta.url);
 
 async function readJson(url) {
   return JSON.parse(await readFile(url, "utf8"));
@@ -225,6 +229,117 @@ test("pagepath Create new mutates the tree before the containing form is saved a
     {value: "", text: "", selected: true},
     {value: "+", text: "Create new", selected: false},
   ]);
+
+  const serialized = JSON.stringify(artifact);
+  for (const forbidden of ["WIKIDOT_SESSION_ID", "WIKIDOT_USERNAME", "WIKIDOT_PASSWORD", "lock_secret", "wikidot_token7"]) {
+    assert.equal(serialized.includes(forbidden), false);
+  }
+});
+
+test("pagepath first root child creates the empty _root through the empty-parent DataFormAction", async () => {
+  const fixture = await readJson(pagepathRootBootstrapFixtureUrl);
+  const artifact = await readJson(pagepathRootBootstrapArtifactUrl);
+
+  assert.equal(artifact.schema, "wikidot.live.data-form.date-pagepath.v1");
+  assert.match(artifact.observed_at, /^2026-08-17T/);
+  assert.equal(artifact.site, fixture.site);
+  assert.equal(artifact.run_id, fixture.run_id);
+  assert.equal(fixture.setup_tree_pages, false);
+  assert.deepEqual(artifact.fixture.identities.requested, fixture.fixture);
+  assert.equal(artifact.fixture.cleanup.all_run_owned_pages_absent, true);
+  assert.deepEqual(artifact.fixture.cleanup.remaining_pages, []);
+
+  const captured = artifact.cases[0];
+  const createNew = captured.result.pagepath_create_new;
+  const treeCategory = fixture.fixture.tree_category;
+  const root = `${treeCategory}:_root`;
+  const alpha = `${treeCategory}:alpha`;
+  assert.equal(captured.submitted, "");
+  assert.equal(captured.result.stored_representation, "");
+  assert.equal(createNew.expected_fullname, alpha);
+  assert.equal(createNew.before.controls.filter(({tag}) => tag === "select").length, 1);
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(createNew.request).filter(([key]) => key !== "callbackIndex")),
+    {
+      action: "DataFormAction",
+      event: "newPage",
+      category: treeCategory,
+      parent: "",
+      title: "alpha",
+      moduleName: "Empty",
+    },
+  );
+  assert.equal(createNew.response.body.status, "ok");
+  assert.equal(createNew.response.body.fullname, alpha);
+  assert.deepEqual(createNew.root_page_after_interaction, {
+    fullname: root,
+    source: "",
+  });
+  assert.equal(createNew.created_page_source, "");
+  assert.equal(createNew.hidden_value_after_interaction, alpha);
+  assert.equal(createNew.saved_page_source_after_interaction, "date_value: ''\norigin: ''");
+  assert.deepEqual(createNew.cancel, {
+    created_page_still_exists: true,
+    created_page_source: "",
+    saved_page_source_after_cancel: "date_value: ''\norigin: ''",
+  });
+  assert.deepEqual(
+    createNew.after_enter.controls
+      .filter(({tag}) => tag === "select")
+      .map(({class: className, options}) => ({className, options})),
+    [
+      {
+        className: `dataform-pagepath-select-children-of-${treeCategory}---_root`,
+        options: [
+          {value: "", text: "", selected: false},
+          {value: alpha, text: "alpha", selected: true},
+          {value: "+", text: "Create new", selected: false},
+        ],
+      },
+      {
+        className: `dataform-pagepath-select-children-of-${treeCategory}---alpha`,
+        options: [
+          {value: "", text: "", selected: true},
+          {value: "+", text: "Create new", selected: false},
+        ],
+      },
+    ],
+  );
+});
+
+test("pagepath stored values participate in the normal Wikidot Backlinks relation", async () => {
+  const fixture = await readJson(pagepathBacklinksFixtureUrl);
+  const artifact = await readJson(pagepathBacklinksArtifactUrl);
+
+  assert.equal(artifact.schema, "wikidot.live.data-form.date-pagepath.v1");
+  assert.match(artifact.observed_at, /^2026-08-17T/);
+  assert.equal(artifact.site, fixture.site);
+  assert.equal(artifact.run_id, fixture.run_id);
+  assert.deepEqual(artifact.fixture.identities.requested, fixture.fixture);
+  assert.equal(artifact.fixture.cleanup.all_run_owned_pages_absent, true);
+  assert.deepEqual(artifact.fixture.cleanup.remaining_pages, []);
+  assert.equal(artifact.cases.length, 1);
+
+  const captured = artifact.cases[0];
+  const backlink = captured.result.pagepath_backlinks;
+  assert.equal(captured.case_id, fixture.pagepath_backlinks.case_id);
+  assert.equal(backlink.target_fullname, captured.submitted);
+  assert.deepEqual(backlink.before, {
+    http_status: 200,
+    links: [],
+    visible_text: "",
+  });
+  assert.deepEqual(backlink.after, {
+    http_status: 200,
+    links: [
+      {
+        href: `/${fixture.fixture.form_category}:${captured.case_id}`,
+        class: "",
+        text: captured.case_id,
+      },
+    ],
+    visible_text: captured.case_id,
+  });
 
   const serialized = JSON.stringify(artifact);
   for (const forbidden of ["WIKIDOT_SESSION_ID", "WIKIDOT_USERNAME", "WIKIDOT_PASSWORD", "lock_secret", "wikidot_token7"]) {

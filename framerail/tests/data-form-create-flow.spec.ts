@@ -148,6 +148,181 @@ test("data-form datepicker selections save the evidenced Unix-second scalar", as
     .toMatchObject({ params: { wikitext: /^date: -?\d+$/u } })
 })
 
+test("pagepath Create new matches the immediate Wikidot tree mutation and survives form cancel", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-pagepath-flow:example/edit/true")
+
+  const hidden = page.locator("input[name='field-origin']")
+  await expect(hidden).toHaveClass("dataform-pagepath-value")
+  await expect(hidden).toHaveValue("")
+  await expect(page.locator("input.dataform-pagepath-category")).toHaveValue(
+    "data-form-pagepath-tree"
+  )
+  await expect(page.locator("input.dataform-pagepath-max-level")).toHaveValue("3")
+
+  const root = page.locator(
+    "select.dataform-pagepath-select-children-of-data-form-pagepath-tree---_root"
+  )
+  await expect(root.locator("option")).toHaveText(["", "alpha", "Create new"])
+  await root.selectOption("data-form-pagepath-tree:alpha")
+  await expect(hidden).toHaveValue("data-form-pagepath-tree:alpha")
+
+  const alpha = page.locator(
+    "select.dataform-pagepath-select-children-of-data-form-pagepath-tree---alpha"
+  )
+  await expect(alpha.locator("option")).toHaveText(["", "beta", "Create new"])
+  await alpha.selectOption("+")
+  const newItem = page.locator(".dataform-pagepath-chooser input.text")
+  await expect(newItem).toHaveValue("New item")
+  await expect(
+    page.locator(".dataform-pagepath-chooser a[href='javascript:;']")
+  ).toHaveText("[x]")
+  await expect(hidden).toHaveValue("data-form-pagepath-tree:alpha")
+
+  await newItem.fill("gamma")
+  await newItem.press("Enter")
+  await expect(hidden).toHaveValue("data-form-pagepath-tree:gamma")
+  await expect(alpha).toHaveValue("data-form-pagepath-tree:gamma")
+  await expect(alpha.locator("option")).toHaveText(["", "beta", "gamma", "Create new"])
+  await expect(
+    page.locator(
+      "select.dataform-pagepath-select-children-of-data-form-pagepath-tree---gamma option"
+    )
+  ).toHaveText(["", "Create new"])
+
+  const writesAfterCreateNew = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writesAfterCreateNew.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-tree:gamma"
+    )
+  ).toMatchObject({
+    params: {
+      slug: "data-form-pagepath-tree:gamma",
+      title: "gamma",
+      wikitext: "",
+      tags: []
+    }
+  })
+  expect(
+    writesAfterCreateNew.parentUpdate.find(
+      (entry: { params: { child?: string } }) =>
+        entry.params.child === "data-form-pagepath-tree:gamma"
+    )
+  ).toMatchObject({
+    params: {
+      child: "data-form-pagepath-tree:gamma",
+      add: ["data-form-pagepath-tree:alpha"]
+    }
+  })
+  expect(
+    writesAfterCreateNew.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-flow:example"
+    )
+  ).toBeUndefined()
+
+  await page.locator("#edit-cancel-button").click()
+  const writesAfterCancel = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(writesAfterCancel.pageCreate).toEqual([])
+  expect(
+    writesAfterCancel.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-flow:example"
+    )
+  ).toBeUndefined()
+  await page.goto("/data-form-pagepath-tree:gamma")
+  await expect(page.locator("#page-title")).toHaveText("gamma")
+})
+
+test("pagepath first root child bootstraps _root and remains selected in the editor", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-pagepath-root-flow:example/edit/true")
+
+  const hidden = page.locator("input[name='field-origin']")
+  const root = page.locator(
+    "select.dataform-pagepath-select-children-of-data-form-pagepath-root-tree---_root"
+  )
+  await expect(root.locator("option")).toHaveText(["", "Create new"])
+
+  await root.selectOption("+")
+  const newItem = page.locator(".dataform-pagepath-chooser input.text")
+  await newItem.fill("alpha")
+  await newItem.press("Enter")
+
+  await expect(hidden).toHaveValue("data-form-pagepath-root-tree:alpha")
+  await expect(root).toHaveValue("data-form-pagepath-root-tree:alpha")
+  await expect(root.locator("option")).toHaveText(["", "alpha", "Create new"])
+  await expect(
+    page.locator(
+      "select.dataform-pagepath-select-children-of-data-form-pagepath-root-tree---alpha option"
+    )
+  ).toHaveText(["", "Create new"])
+
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-root-tree:_root"
+    )
+  ).toMatchObject({
+    params: {
+      slug: "data-form-pagepath-root-tree:_root",
+      title: "Data-form-pagepath-root-tree",
+      wikitext: "",
+      tags: []
+    }
+  })
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-root-tree:alpha"
+    )
+  ).toMatchObject({
+    params: {
+      slug: "data-form-pagepath-root-tree:alpha",
+      title: "alpha",
+      wikitext: "",
+      tags: []
+    }
+  })
+  expect(
+    writes.parentUpdate.find(
+      (entry: { params: { child?: string } }) =>
+        entry.params.child === "data-form-pagepath-root-tree:alpha"
+    )
+  ).toMatchObject({
+    params: {
+      child: "data-form-pagepath-root-tree:alpha",
+      add: ["data-form-pagepath-root-tree:_root"]
+    }
+  })
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-root-flow:example"
+    )
+  ).toBeUndefined()
+
+  await page.locator("#edit-cancel-button").click()
+  await page.goto("/data-form-pagepath-root-tree:alpha")
+  await expect(page.locator("#page-title")).toHaveText("alpha")
+})
+
 test("date options edit reload formats stored seconds and serializes alt fields", async ({
   page,
   request

@@ -101,7 +101,8 @@ pub use self::caddy::CaddyService;
 pub use self::category::CategoryService;
 pub use self::context::{RequestContext, ServiceContext};
 pub use self::data_form::{
-    DataFormDefinition, DataFormEditor, DataFormFieldDefinition, DataFormValueDefinition,
+    DataFormDefinition, DataFormEditor, DataFormFieldDefinition, DataFormPagepathNode,
+    DataFormValueDefinition,
 };
 pub use self::domain::DomainService;
 pub use self::email::EmailService;

@@ -2111,6 +2111,299 @@ async fn page_view_exposes_live_checkbox_and_wiki_contract() {
 }
 
 #[tokio::test]
+async fn pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes() {
+    const FORM_CATEGORY: &str = "data-form-pagepath-contract";
+    const TREE_CATEGORY: &str = "data-form-pagepath-tree";
+    const TEMPLATE_SLUG: &str = "data-form-pagepath-contract:_template";
+    const ROOT_SLUG: &str = "data-form-pagepath-tree:_root";
+    const ALPHA_SLUG: &str = "data-form-pagepath-tree:alpha";
+    const BETA_SLUG: &str = "data-form-pagepath-tree:beta";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  origin:\n",
+        "    label: Origin\n",
+        "    type: pagepath\n",
+        "    category: data-form-pagepath-tree\n",
+        "    max-level: 3\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell pagepath contract test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let form_category =
+        CategoryService::get_or_create(runner.context(), site_id, FORM_CATEGORY)
+            .await
+            .expect("data-form pagepath category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        form_category.category_id,
+        "data-form-pagepath-contract-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": form_category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for (slug, body) in [
+        (ROOT_SLUG, "root"),
+        (ALPHA_SLUG, "[[module Backlinks]]"),
+        (BETA_SLUG, "beta"),
+    ] {
+        create_page(&mut runner, site_id, slug, body).await;
+    }
+    for (parent, child) in [(ROOT_SLUG, ALPHA_SLUG), (ALPHA_SLUG, BETA_SLUG)] {
+        set_page_actor(&mut runner, site_id, child);
+        run_endpoint!(
+            runner,
+            parent_set,
+            json!({
+                "site_id": site_id,
+                "parent": parent,
+                "child": child,
+            }),
+        )
+        .expect("pagepath tree relationship should be created");
+    }
+
+    let create_editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-pagepath-contract:new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => {
+            panic!("pagepath create view must expose the generated editor: {other:?}")
+        }
+    };
+    let origin = create_editor
+        .definition
+        .field("origin")
+        .expect("pagepath field");
+    assert_eq!(origin.field_type.as_deref(), Some("pagepath"));
+    assert_eq!(origin.pagepath_category.as_deref(), Some(TREE_CATEGORY));
+    assert_eq!(origin.pagepath_max_level, Some(3));
+    assert_eq!(
+        create_editor.pagepaths["origin"],
+        vec![
+            deepwell::services::DataFormPagepathNode {
+                fullname: ROOT_SLUG.to_owned(),
+                name: "_root".to_owned(),
+                parent: None,
+            },
+            deepwell::services::DataFormPagepathNode {
+                fullname: ALPHA_SLUG.to_owned(),
+                name: "alpha".to_owned(),
+                parent: Some(ROOT_SLUG.to_owned()),
+            },
+            deepwell::services::DataFormPagepathNode {
+                fullname: BETA_SLUG.to_owned(),
+                name: "beta".to_owned(),
+                parent: Some(ALPHA_SLUG.to_owned()),
+            },
+        ],
+    );
+
+    for (case, stored, expected_visible) in [
+        ("existing", ALPHA_SLUG, Some("alpha")),
+        ("missing", "data-form-pagepath-tree:missing", None),
+        ("cross-category", "data-form-pagepath-outside:alpha", None),
+    ] {
+        let slug = format!("{FORM_CATEGORY}:{case}");
+        let source = format!("origin: '{stored}'");
+        create_page(&mut runner, site_id, &slug, &source).await;
+
+        let editor = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": slug, "extra": "/edit" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: Some(data_form),
+                wikitext,
+                ..
+            } => {
+                assert_eq!(wikitext, source);
+                data_form
+            }
+            other => panic!("pagepath edit view must preserve {case} storage: {other:?}"),
+        };
+        assert_eq!(editor.values["origin"], stored);
+        assert_eq!(
+            editor.pagepaths["origin"],
+            create_editor.pagepaths["origin"]
+        );
+
+        let rendered = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": { "slug": slug, "extra": "" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("pagepath saved view must render {case}: {other:?}"),
+        };
+        assert!(rendered.contains("Origin"), "{rendered}");
+        assert!(
+            !rendered.contains(stored),
+            "raw pagepath fullname leaked: {rendered}"
+        );
+        match expected_visible {
+            Some(value) => assert!(
+                rendered.contains(&format!("<span>{value}</span>")),
+                "{rendered}"
+            ),
+            None => assert!(rendered.contains("<span></span>"), "{rendered}"),
+        }
+        if case == "existing" {
+            let backlinks = match run_endpoint!(
+                runner,
+                page_view,
+                json!({
+                    "site_id": site_id,
+                    "session_token": null,
+                    "route": { "slug": ALPHA_SLUG, "extra": "" },
+                    "locales": ["en-US", "en"],
+                }),
+            ) {
+                GetPageViewOutput::Found {
+                    compiled_body_html, ..
+                } => compiled_body_html,
+                other => panic!("pagepath target backlinks must render: {other:?}"),
+            };
+            assert!(
+                backlinks.contains("/data-form-pagepath-contract:existing"),
+                "pagepath storage must create the Wikidot backlink relation: {backlinks}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw() {
+    const FORM_CATEGORY: &str = "data-form-pagepath-layout";
+    const TEMPLATE_SLUG: &str = "data-form-pagepath-layout:_template";
+    const TARGET_SLUG: &str = "data-form-pagepath-layout-tree:alpha";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "DISPLAY=%%form_data{origin}%% RAW=%%form_raw{origin}%%\n",
+        "====\n",
+        "[[form]]\n",
+        "fields:\n",
+        "  origin:\n",
+        "    label: Origin\n",
+        "    type: pagepath\n",
+        "    category: data-form-pagepath-layout-tree\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, FORM_CATEGORY)
+            .await
+            .expect("custom pagepath layout category should exist");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_page(&mut runner, site_id, TARGET_SLUG, "alpha").await;
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-pagepath-layout:saved",
+        &format!("origin: '{TARGET_SLUG}'"),
+    )
+    .await;
+
+    let rendered = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": "data-form-pagepath-layout:saved", "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("custom pagepath layout must render: {other:?}"),
+    };
+    assert!(
+        rendered.contains(&format!("DISPLAY=alpha RAW={TARGET_SLUG}")),
+        "{rendered}",
+    );
+}
+
+#[tokio::test]
 async fn custom_data_form_layout_remains_editable_and_renders_form_variables() {
     let mut runner = TestRunner::setup().await;
     let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))

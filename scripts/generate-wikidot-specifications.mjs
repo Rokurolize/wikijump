@@ -288,6 +288,10 @@ const detailedEvidenceAliases = Object.freeze({
     detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_control,
   "data-form-pagepath-create-new":
     detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_create_new,
+  "data-form-pagepath-root-bootstrap":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_root_bootstrap,
+  "data-form-pagepath-backlinks":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_backlinks,
   "data-form-file-field":
     detailedSpecEvidence.retained_repository_evidence?.data_form_file_field,
   "data-form-images-links-youtube":

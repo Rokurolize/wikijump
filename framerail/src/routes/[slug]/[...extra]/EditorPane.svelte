@@ -79,6 +79,7 @@
       initialValues={data.data_form.values}
       lastRevisionId={data.page_revision?.revision_id}
       pageId={data.page?.page_id}
+      pagepaths={data.data_form.pagepaths}
       siteId={data.site.site_id}
       slug={params.slug}
     />

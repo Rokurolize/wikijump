@@ -1504,6 +1504,120 @@ test("deletePage fails closed for invalid controls and Deepwell failures", async
   }
 })
 
+test("dispatches pagepath Create new as the observed immediate DataFormAction mutation", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "DataFormAction",
+      event: "newPage",
+      category: "tree",
+      parent: "tree:alpha",
+      title: "gamma",
+      moduleName: "Empty",
+      callbackIndex: "2",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      canCreateNewPage: true,
+      pageExists: async () => false,
+      createNewPage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.fullname, "tree:gamma")
+  assert.equal(body.callbackIndex, "2")
+  assert.equal(Number.isSafeInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(calls, [
+    {
+      slug: "tree:gamma",
+      title: "gamma",
+      wikitext: "",
+      tags: [],
+      parentPage: "tree:alpha"
+    }
+  ])
+})
+
+test("pagepath first root child bootstraps the empty _root before creating the child", async () => {
+  const calls = []
+  const existing = new Set()
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "DataFormAction",
+      event: "newPage",
+      category: "tree-name",
+      parent: "",
+      title: "alpha",
+      moduleName: "Empty",
+      callbackIndex: "2"
+    }),
+    {
+      siteId: 6000006,
+      canCreateNewPage: true,
+      pageExists: async (slug) => existing.has(slug),
+      createNewPage: async (input) => {
+        calls.push(input)
+        existing.add(input.slug)
+      }
+    }
+  )
+
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.fullname, "tree-name:alpha")
+  assert.deepEqual(calls, [
+    {
+      slug: "tree-name:_root",
+      title: "Tree-name",
+      wikitext: "",
+      tags: [],
+      parentPage: null
+    },
+    {
+      slug: "tree-name:alpha",
+      title: "alpha",
+      wikitext: "",
+      tags: [],
+      parentPage: "tree-name:_root"
+    }
+  ])
+})
+
+test("pagepath Create new fails before mutation for unsupported shape, collision, or denied actor", async () => {
+  const base = {
+    action: "DataFormAction",
+    event: "newPage",
+    category: "tree",
+    parent: "tree:alpha",
+    title: "gamma",
+    moduleName: "Empty",
+    callbackIndex: "2"
+  }
+  for (const [form, options] of [
+    [
+      { ...base, extra: "unsupported" },
+      { canCreateNewPage: true, pageExists: async () => false }
+    ],
+    [base, { canCreateNewPage: true, pageExists: async () => true }],
+    [base, { canCreateNewPage: false, pageExists: async () => false }]
+  ]) {
+    let mutated = false
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      ...options,
+      createNewPage: async () => {
+        mutated = true
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+    assert.equal(mutated, false)
+  }
+})
+
 test("dispatches NewPage helper default action with Wikidot edit-routing fields", async () => {
   const pageName = `run-owned:${"x".repeat(51)}`
   const response = await handleAjaxModuleConnectorRequest(

@@ -15,7 +15,17 @@
  *   default_value: string | null
  *   configured_value?: string | null
  *   options?: Record<string, unknown>
+ *   pagepath_category?: string | null
+ *   pagepath_max_level?: number | null
  * }} WikidotDataFormField
+ */
+
+/**
+ * @typedef {{
+ *   fullname: string
+ *   name: string
+ *   parent: string | null
+ * }} WikidotDataFormPagepathNode
  */
 
 /**
@@ -26,11 +36,11 @@
 
 /**
  * @typedef {{
- *   control: "none" | "input" | "existing"
+ *   control: "none" | "input" | "existing" | "pagepath"
  *   inputType: "password" | "text" | null
  *   className: string | null
  *   includeInFormFields: boolean
- *   display: "text" | "masked" | "wiki" | "url" | "date"
+ *   display: "text" | "masked" | "wiki" | "url" | "date" | "pagepath"
  * }} WikidotDataFormFieldPresentation
  */
 
@@ -109,6 +119,14 @@ export const getWikidotDataFormFieldPresentation = (field) => {
         includeInFormFields: true,
         display: "date"
       }
+    case "pagepath":
+      return {
+        control: "pagepath",
+        inputType: null,
+        className: "dataform-pagepath-chooser",
+        includeInFormFields: true,
+        display: "pagepath"
+      }
     default:
       return {
         control: "existing",
@@ -118,6 +136,63 @@ export const getWikidotDataFormFieldPresentation = (field) => {
         display: "text"
       }
   }
+}
+
+/** @param {string} fullname */
+export const wikidotDataFormPagepathSelectorClass = (fullname) =>
+  `dataform-pagepath-select-children-of-${fullname.replaceAll(":", "---")}`
+
+/**
+ * Builds the currently evidenced visible selector chain. A stored fullname
+ * that is absent from the visible configured tree is retained by the
+ * hidden scalar but does not fabricate a selected option.
+ *
+ * @param {WikidotDataFormField} field
+ * @param {WikidotDataFormPagepathNode[]} nodes
+ * @param {string} value
+ */
+export const buildWikidotDataFormPagepathLevels = (field, nodes, value) => {
+  const category = field.pagepath_category ?? ""
+  if (!category) return []
+  const root = `${category}:_root`
+  const byFullname = new Map(nodes.map((node) => [node.fullname, node]))
+  const children = new Map()
+  for (const node of nodes) {
+    if (node.parent === null) continue
+    const siblings = children.get(node.parent) ?? []
+    siblings.push(node)
+    children.set(node.parent, siblings)
+  }
+
+  /** @type {string[]} */
+  const selectedPath = []
+  let selected = byFullname.get(value)
+  const seen = new Set()
+  while (selected && selected.fullname !== root && !seen.has(selected.fullname)) {
+    seen.add(selected.fullname)
+    selectedPath.push(selected.fullname)
+    selected = selected.parent ? byFullname.get(selected.parent) : undefined
+  }
+  if (selected?.fullname !== root) selectedPath.length = 0
+  selectedPath.reverse()
+
+  const maximumLevels =
+    Number.isSafeInteger(field.pagepath_max_level) && (field.pagepath_max_level ?? 0) > 0
+      ? field.pagepath_max_level
+      : nodes.length + 1
+  const levels = []
+  let parent = root
+  for (let index = 0; index < maximumLevels; index += 1) {
+    const selectedFullname = selectedPath[index] ?? ""
+    levels.push({
+      parent,
+      selected: selectedFullname,
+      options: children.get(parent) ?? []
+    })
+    if (!selectedFullname) break
+    parent = selectedFullname
+  }
+  return levels
 }
 
 /** @param {WikidotDataFormDefinition} definition */

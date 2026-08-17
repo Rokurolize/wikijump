@@ -81,6 +81,14 @@
       "path": "install/local/wikidot-verification/artifacts/data-form-pagepath-create-new-live-20260817.json",
       "sha256": "7df88eff26958cf9e3140e2fc153543837a9b77fb01dc2a5f97fa085acb02a76"
     },
+    "data_form_pagepath_root_bootstrap": {
+      "path": "install/local/wikidot-verification/artifacts/data-form-pagepath-root-bootstrap-live-20260817.json",
+      "sha256": "25d928f2a2f99214c08bc97afed9bf9b878fb23ce3eba06bad9345ee64a46e4e"
+    },
+    "data_form_pagepath_backlinks": {
+      "path": "install/local/wikidot-verification/artifacts/data-form-pagepath-backlinks-live-20260817.json",
+      "sha256": "dd8a5acca60ae4eea032b77683ffb15ec33b0d8227f58df36a049a9f9df8b6a9"
+    },
     "data_form_file_field": {
       "path": "install/local/wikidot-verification/artifacts/data-form-file-field-live-20260810.json",
       "sha256": "d524bb00bb7ca6d5ec135a00ed1b796b50f7f1a3781ef00c3dd9b09e877e69f7"

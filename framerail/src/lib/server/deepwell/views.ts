@@ -168,6 +168,13 @@ export interface DataFormFieldDefinition {
   before: string
   after: string
   join: boolean
+  pagepath_category: Nullable<string>
+  pagepath_max_level: Nullable<number>
+}
+export interface DataFormPagepathNode {
+  fullname: string
+  name: string
+  parent: Nullable<string>
 }
 export interface DataFormDefinition {
   fields: DataFormFieldDefinition[]
@@ -176,6 +183,7 @@ export interface DataFormDefinition {
 export interface DataFormEditor {
   definition: DataFormDefinition
   values: Record<string, string>
+  pagepaths: Record<string, DataFormPagepathNode[]>
 }
 interface PageViewMissing {
   type: "missing"

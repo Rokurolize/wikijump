@@ -2,10 +2,12 @@ import { strict as assert } from "node:assert"
 import test from "node:test"
 
 import {
+  buildWikidotDataFormPagepathLevels,
   buildWikidotDataFormState,
   getWikidotDataFormFieldPresentation,
   serializeWikidotDataFormSource,
   wikidotDataFormFieldNames,
+  wikidotDataFormPagepathSelectorClass,
   wikidotDataFormUrlDisplay
 } from "../src/lib/wikidot/wikidot-data-form.js"
 
@@ -207,4 +209,64 @@ test("date fields expose options and preserve accepted and malformed submitted s
       `date: ${value}`
     )
   }
+})
+
+test("pagepath fields preserve raw fullnames while projecting the evidenced selector chain", () => {
+  const pagepath = {
+    ...field("origin", "pagepath"),
+    label: "Origin",
+    pagepath_category: "tree",
+    pagepath_max_level: 3
+  }
+  const definition = { default_layout: true, fields: [pagepath] }
+  const nodes = [
+    { fullname: "tree:_root", name: "_root", parent: null },
+    { fullname: "tree:alpha", name: "alpha", parent: "tree:_root" },
+    { fullname: "tree:beta", name: "beta", parent: "tree:alpha" }
+  ]
+
+  assert.deepEqual(getWikidotDataFormFieldPresentation(pagepath), {
+    control: "pagepath",
+    inputType: null,
+    className: "dataform-pagepath-chooser",
+    includeInFormFields: true,
+    display: "pagepath"
+  })
+  assert.deepEqual(buildWikidotDataFormState(definition, {}), { origin: "" })
+  assert.deepEqual(buildWikidotDataFormState(definition, { origin: "tree:beta" }), {
+    origin: "tree:beta"
+  })
+  assert.equal(
+    serializeWikidotDataFormSource(definition, { origin: "tree:beta" }),
+    "origin: 'tree:beta'"
+  )
+  assert.equal(
+    serializeWikidotDataFormSource(definition, { origin: "outside:alpha" }),
+    "origin: 'outside:alpha'"
+  )
+  assert.equal(
+    wikidotDataFormPagepathSelectorClass("tree:alpha"),
+    "dataform-pagepath-select-children-of-tree---alpha"
+  )
+
+  assert.deepEqual(buildWikidotDataFormPagepathLevels(pagepath, nodes, "tree:beta"), [
+    {
+      parent: "tree:_root",
+      selected: "tree:alpha",
+      options: [{ fullname: "tree:alpha", name: "alpha", parent: "tree:_root" }]
+    },
+    {
+      parent: "tree:alpha",
+      selected: "tree:beta",
+      options: [{ fullname: "tree:beta", name: "beta", parent: "tree:alpha" }]
+    },
+    { parent: "tree:beta", selected: "", options: [] }
+  ])
+  assert.deepEqual(buildWikidotDataFormPagepathLevels(pagepath, nodes, "outside:alpha"), [
+    {
+      parent: "tree:_root",
+      selected: "",
+      options: [{ fullname: "tree:alpha", name: "alpha", parent: "tree:_root" }]
+    }
+  ])
 })

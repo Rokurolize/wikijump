@@ -4,10 +4,12 @@
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { pageMutationDestinationSlug } from "$lib/page-mutation-destination"
   import {
+    buildWikidotDataFormPagepathLevels,
     buildWikidotDataFormState,
     getWikidotDataFormFieldPresentation,
     serializeWikidotDataFormSource,
-    wikidotDataFormFieldNames
+    wikidotDataFormFieldNames,
+    wikidotDataFormPagepathSelectorClass
   } from "$lib/wikidot/wikidot-data-form.js"
   import WikidotDataFormMatchWorker from "$lib/wikidot/wikidot-data-form-match.worker.ts?worker"
   import { superForm } from "sveltekit-superforms"
@@ -15,7 +17,10 @@
   import { SvelteMap } from "svelte/reactivity"
   import { mountWikidotDatePicker } from "$lib/wikidot/wikidot-date-picker.js"
 
-  import type { DataFormDefinition } from "$lib/server/deepwell/views"
+  import type {
+    DataFormDefinition,
+    DataFormPagepathNode
+  } from "$lib/server/deepwell/views"
   import type { buildPageForms } from "$lib/server/load/page/page-forms"
 
   type PageEditForm = Awaited<ReturnType<typeof buildPageForms>>["pageEditForm"]
@@ -30,6 +35,7 @@
     initialTags = "",
     initialComments = "",
     initialParent = "",
+    pagepaths = {},
     siteId,
     pageId,
     lastRevisionId,
@@ -45,6 +51,7 @@
     initialTags?: string
     initialComments?: string
     initialParent?: string
+    pagepaths?: Record<string, DataFormPagepathNode[]>
     siteId: number
     pageId?: number
     lastRevisionId?: number
@@ -64,6 +71,12 @@
       )
     )
   )
+  let pagepathNodes = $state<Record<string, DataFormPagepathNode[]>>(
+    untrack(() => structuredClone(pagepaths))
+  )
+  let pagepathCreateNew = $state<
+    Record<string, { parent: string; value: string } | undefined>
+  >({})
   const validationErrors = new SvelteMap<string, string>()
   const category = $derived(
     slug.includes(":") ? slug.slice(0, slug.indexOf(":")) : "_default"
@@ -85,6 +98,70 @@
     }
     return groups
   })
+
+  function setPagepathValue(fieldName: string, parent: string, selected: string) {
+    if (selected === "+") {
+      pagepathCreateNew[fieldName] = { parent, value: "New item" }
+      return
+    }
+    pagepathCreateNew[fieldName] = undefined
+    values[fieldName] = selected || (parent.endsWith(":_root") ? "" : parent)
+  }
+
+  async function createPagepathChild(
+    field: DataFormDefinition["fields"][number],
+    levelIndex: number
+  ) {
+    const pending = pagepathCreateNew[field.name]
+    const treeCategory = field.pagepath_category
+    if (!pending || !treeCategory) return
+    const title = pending.value
+    const rootFullname = `${treeCategory}:_root`
+    const response = await fetch("/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      credentials: "same-origin",
+      body: new URLSearchParams({
+        action: "DataFormAction",
+        event: "newPage",
+        category: treeCategory,
+        parent: pending.parent === rootFullname ? "" : pending.parent,
+        title,
+        moduleName: "Empty",
+        callbackIndex: String(levelIndex + 1)
+      })
+    })
+    const result = await response.json()
+    if (!response.ok || result?.status !== "ok" || typeof result.fullname !== "string") {
+      validationErrors.set(
+        field.name,
+        result?.message || "An error occurred while processing the request."
+      )
+      return
+    }
+    const fullname = result.fullname
+    pagepathNodes[field.name] ??= []
+    if (
+      pending.parent === rootFullname &&
+      !pagepathNodes[field.name].some((node) => node.fullname === rootFullname)
+    ) {
+      pagepathNodes[field.name].push({
+        fullname: rootFullname,
+        name: "_root",
+        parent: null
+      })
+    }
+    if (!pagepathNodes[field.name].some((node) => node.fullname === fullname)) {
+      pagepathNodes[field.name].push({
+        fullname,
+        name: title,
+        parent: pending.parent
+      })
+    }
+    values[field.name] = fullname
+    pagepathCreateNew[field.name] = undefined
+    validationErrors.delete(field.name)
+  }
 
   onMount(() => {
     const cleanups = definition.fields.flatMap((field) => {
@@ -438,6 +515,76 @@
                 ? `${field.before} `
                 : " "}{#if field.field_type === "static"}
                 {field.configured_value ?? ""}
+              {:else if field.field_type === "pagepath"}
+                {@const levels = buildWikidotDataFormPagepathLevels(
+                  field,
+                  pagepathNodes[field.name] ?? [],
+                  values[field.name] ?? ""
+                )}
+                <div class="dataform-pagepath-chooser">
+                  <input
+                    name={`field-${field.name}`}
+                    class="dataform-pagepath-value"
+                    type="hidden"
+                    value={values[field.name] ?? ""}
+                  />
+                  <input
+                    class="dataform-pagepath-category"
+                    type="hidden"
+                    value={field.pagepath_category ?? ""}
+                  />
+                  <input
+                    class="dataform-pagepath-max-level"
+                    type="hidden"
+                    value={field.pagepath_max_level ?? ""}
+                  />
+                  {#each levels as level, levelIndex (`${field.name}:${level.parent}`)}
+                    {#if levelIndex > 0}
+                      /
+                    {/if}<select
+                      class={wikidotDataFormPagepathSelectorClass(level.parent)}
+                      onchange={(event) =>
+                        setPagepathValue(
+                          field.name,
+                          level.parent,
+                          event.currentTarget.value
+                        )}
+                    >
+                      <option selected={level.selected === ""} value=""></option>
+                      {#each level.options as option (option.fullname)}
+                        <option
+                          selected={level.selected === option.fullname}
+                          value={option.fullname}>{option.name}</option
+                        >
+                      {/each}
+                      <option
+                        selected={pagepathCreateNew[field.name]?.parent === level.parent}
+                        value="+">Create new</option
+                      >
+                    </select>{#if pagepathCreateNew[field.name]?.parent === level.parent}
+                      {@const pending = pagepathCreateNew[field.name]}
+                      <input
+                        class="text"
+                        oninput={(event) => {
+                          if (pending) pending.value = event.currentTarget.value
+                        }}
+                        onkeydown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault()
+                            void createPagepathChild(field, levelIndex)
+                          }
+                        }}
+                        type="text"
+                        value={pending?.value ?? "New item"}
+                      />
+                      <!-- svelte-ignore a11y_invalid_attribute -->
+                      <a
+                        href="javascript:;"
+                        onclick={() => (pagepathCreateNew[field.name] = undefined)}>[x]</a
+                      >
+                    {/if}
+                  {/each}
+                </div>
               {:else if field.field_type === "date"}
                 {@const presentation = getWikidotDataFormFieldPresentation(field)}
                 <input

@@ -286,6 +286,40 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:data-forms-pagepath",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub async fn resolve_wikidot_data_form_pagepath_display_values(" },
+        { "path": "deepwell/src/services/page_revision/service.rs", "anchor": "let pagepath_backlinks = match BlueprintPageService::get_page_template(" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"pagepath\"" },
+        { "path": "framerail/src/lib/server/ajax-module-connector.js", "anchor": "const DATA_FORM_ACTION = \"DataFormAction\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes" },
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw" },
+        { "path": "framerail/tests/ajax-module-connector.test.js", "anchor": "pagepath first root child bootstraps the empty _root before creating the child" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "pagepath Create new matches the immediate Wikidot tree mutation and survives form cancel" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "pagepath first root child bootstraps _root and remains selected in the editor" },
+        { "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "pagepath fields preserve raw fullnames while projecting the evidenced selector chain" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-pagepath-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub async fn resolve_wikidot_data_form_pagepath_display_values(" },
+        { "path": "deepwell/src/services/page_revision/service.rs", "anchor": "let pagepath_backlinks = match BlueprintPageService::get_page_template(" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"pagepath\"" },
+        { "path": "framerail/src/lib/server/ajax-module-connector.js", "anchor": "const DATA_FORM_ACTION = \"DataFormAction\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes" },
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw" },
+        { "path": "framerail/tests/ajax-module-connector.test.js", "anchor": "pagepath first root child bootstraps the empty _root before creating the child" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "pagepath Create new matches the immediate Wikidot tree mutation and survives form cancel" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "pagepath first root child bootstraps _root and remains selected in the editor" },
+        { "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "pagepath fields preserve raw fullnames while projecting the evidenced selector chain" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:data-forms-deleting-form",
       "sources": [
         { "path": "deepwell/src/services/data_form.rs", "anchor": "fn wikidot_data_form_comment_wrapper(" }

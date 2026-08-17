@@ -13,6 +13,8 @@ const DATA_FORM_PROPERTIES_CREATE_SLUG = "data-form-properties-flow:example"
 const DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG = "data-form-checkbox-wiki-flow:example"
 const DATA_FORM_DATE_CREATE_SLUG = "data-form-date-field-flow:example"
 const DATA_FORM_DATE_OPTIONS_CREATE_SLUG = "data-form-date-options-flow:example"
+const DATA_FORM_PAGEPATH_CREATE_SLUG = "data-form-pagepath-flow:example"
+const DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG = "data-form-pagepath-root-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -119,6 +121,52 @@ const DATA_FORM_DATE_OPTIONS_DEFINITION = {
       join: false
     }
   ]
+}
+const DATA_FORM_PAGEPATH_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "origin",
+      label: "Origin",
+      hint: "",
+      field_type: "pagepath",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      options: {},
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      pagepath_category: "data-form-pagepath-tree",
+      pagepath_max_level: 3
+    }
+  ]
+}
+const DATA_FORM_PAGEPATH_NODES = {
+  origin: [
+    { fullname: "data-form-pagepath-tree:_root", name: "_root", parent: null },
+    {
+      fullname: "data-form-pagepath-tree:alpha",
+      name: "alpha",
+      parent: "data-form-pagepath-tree:_root"
+    },
+    {
+      fullname: "data-form-pagepath-tree:beta",
+      name: "beta",
+      parent: "data-form-pagepath-tree:alpha"
+    }
+  ]
+}
+const DATA_FORM_PAGEPATH_ROOT_DEFINITION = {
+  ...DATA_FORM_PAGEPATH_DEFINITION,
+  fields: DATA_FORM_PAGEPATH_DEFINITION.fields.map((field) => ({
+    ...field,
+    pagepath_category: "data-form-pagepath-root-tree"
+  }))
 }
 const DATA_FORM_CONTROLS_DEFINITION = {
   default_layout: true,
@@ -580,24 +628,64 @@ const missingPageArticleViewResult = (route) => ({
       selected_template_page_id: null,
       data_form:
         route.slug === DATA_FORM_CREATE_SLUG
-          ? { definition: DATA_FORM_DEFINITION, values: {} }
+          ? { definition: DATA_FORM_DEFINITION, values: {}, pagepaths: {} }
           : route.slug === DATA_FORM_DATE_CREATE_SLUG
-            ? { definition: DATA_FORM_DATE_DEFINITION, values: {} }
+            ? { definition: DATA_FORM_DATE_DEFINITION, values: {}, pagepaths: {} }
             : route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG
-              ? { definition: DATA_FORM_DATE_OPTIONS_DEFINITION, values: {} }
-              : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
-                ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
-                : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
-                  ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
-                  : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
-                    ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
-                    : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
-                      ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
-                      : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
-                        ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
-                        : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
-                          ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
-                          : null
+              ? {
+                  definition: DATA_FORM_DATE_OPTIONS_DEFINITION,
+                  values: {},
+                  pagepaths: {}
+                }
+              : route.slug === DATA_FORM_PAGEPATH_CREATE_SLUG
+                ? {
+                    definition: DATA_FORM_PAGEPATH_DEFINITION,
+                    values: {},
+                    pagepaths: DATA_FORM_PAGEPATH_NODES
+                  }
+                : route.slug === DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG
+                  ? {
+                      definition: DATA_FORM_PAGEPATH_ROOT_DEFINITION,
+                      values: {},
+                      pagepaths: { origin: [] }
+                    }
+                  : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
+                    ? {
+                        definition: DATA_FORM_CONTROLS_DEFINITION,
+                        values: {},
+                        pagepaths: {}
+                      }
+                    : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
+                      ? {
+                          definition: DATA_FORM_REGEX_BUDGET_DEFINITION,
+                          values: {},
+                          pagepaths: {}
+                        }
+                      : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
+                        ? {
+                            definition: DATA_FORM_INVALID_REGEX_DEFINITION,
+                            values: {},
+                            pagepaths: {}
+                          }
+                        : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
+                          ? {
+                              definition: DATA_FORM_EMPTY_SELECT_DEFINITION,
+                              values: {},
+                              pagepaths: {}
+                            }
+                          : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
+                            ? {
+                                definition: DATA_FORM_PROPERTIES_DEFINITION,
+                                values: {},
+                                pagepaths: {}
+                              }
+                            : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
+                              ? {
+                                  definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION,
+                                  values: {},
+                                  pagepaths: {}
+                                }
+                              : null
     }
   }
 })
@@ -630,7 +718,9 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     (pageForArticleRoute(rpcRequest.params.route) ||
       ((rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG ||
         rpcRequest.params.route.slug === DATA_FORM_DATE_CREATE_SLUG ||
-        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG) &&
+        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_PAGEPATH_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG) &&
         rpcRequest.params.route.extra === "") ||
       NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
   ) {

@@ -193,6 +193,7 @@
             initialTags={errorData.options.tags ?? ""}
             initialTitle={missingPageTitle}
             initialValues={errorData.data_form.values}
+            pagepaths={errorData.data_form.pagepaths}
             siteId={errorData.site.site_id}
             slug={missingPageSlug}
           />

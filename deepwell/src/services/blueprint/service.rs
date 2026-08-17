@@ -24,7 +24,9 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::site::Model as SiteModel;
 use crate::services::ServiceContext;
 use crate::services::data_form::{
-    parse_wikidot_data_form_definition, substitute_wikidot_data_form_layout_variables,
+    parse_wikidot_data_form_definition,
+    resolve_wikidot_data_form_pagepath_display_values,
+    substitute_wikidot_data_form_layout_variables_with_display,
     wikidot_data_form_custom_layout_source,
 };
 use crate::services::page_query::parse_static_wikidot_data_form_values;
@@ -165,10 +167,19 @@ impl BlueprintPageService {
                 return Ok(layout.to_owned());
             }
             let values = parse_static_wikidot_data_form_values(&wikitext);
-            return Ok(substitute_wikidot_data_form_layout_variables(
+            let display_values = resolve_wikidot_data_form_pagepath_display_values(
+                ctx,
+                site_id,
+                &definition,
+                &values,
+                ctx.request().user_id,
+            )
+            .await?;
+            return Ok(substitute_wikidot_data_form_layout_variables_with_display(
                 layout,
                 &definition,
                 &values,
+                &display_values,
             ));
         }
 

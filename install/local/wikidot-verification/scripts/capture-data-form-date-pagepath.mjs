@@ -63,6 +63,27 @@ function visibleText(html) {
     .trim();
 }
 
+function pageContentLinks(html) {
+  const pageContent = html.match(/<div id="page-content"[^>]*>([\s\S]*?)<div class="page-tags"/u)?.[1]
+    ?? html.match(/<div id="page-content"[^>]*>([\s\S]*?)<div class="page-info-break"/u)?.[1]
+    ?? "";
+  const root = parseFragment(pageContent);
+  const links = [];
+  const visit = (node) => {
+    if (node.tagName === "a") {
+      const attributes = nodeAttributes(node);
+      links.push({
+        href: attributes.href ?? "",
+        class: attributes.class ?? "",
+        text: normalizedNodeText(node).replace(/\s+/gu, " ").trim(),
+      });
+    }
+    for (const child of node.childNodes ?? []) visit(child);
+  };
+  visit(root);
+  return links;
+}
+
 function fieldValues(body, name) {
   const values = [];
   const pattern = new RegExp(`<[^>]+name=["']${name}["'][^>]*>`, "giu");
@@ -423,6 +444,8 @@ async function capturePagepathCreateNew({
     const afterEnter = await browserPagepathProjection(group);
     const created = await client.source(expectedFullname);
     if (!created) throw new Error(`pagepath Create new did not create ${expectedFullname}`);
+    const rootFullname = `${treeCategory}:_root`;
+    const rootPage = await client.source(rootFullname);
     const saved = await client.source(slug);
     if (!saved) throw new Error("pagepath source page disappeared during Create new interaction");
     const hiddenValueAfterInteraction = await valueInput.inputValue();
@@ -444,6 +467,9 @@ async function capturePagepathCreateNew({
         body: responseBody,
       },
       after_enter: afterEnter,
+      root_page_after_interaction: rootPage
+        ? {fullname: rootFullname, source: rootPage.source}
+        : null,
       created_page_source: created.source,
       saved_page_source_after_interaction: saved.source,
       hidden_value_after_interaction: hiddenValueAfterInteraction,
@@ -491,35 +517,51 @@ async function main(argv) {
   try {
     const {template, tree_pages: treePages} = fixture.fixture;
     const createNewPlan = fixture.pagepath_create_new ?? null;
+    const backlinksPlan = fixture.pagepath_backlinks ?? null;
+    const treeTemplate = backlinksPlan
+      ? `${fixture.fixture.tree_category}:_template`
+      : null;
     const browserCreatedFullname = createNewPlan
       ? `${fixture.fixture.tree_category}:${createNewPlan.title}`
       : null;
     if (browserCreatedFullname) browserCreated.add(browserCreatedFullname);
     const allTargets = fixture.cases.map(({case_id}) => `${fixture.fixture.form_category}:${case_id}`);
-    for (const slug of [template, ...treePages, ...allTargets, ...(browserCreatedFullname ? [browserCreatedFullname] : [])]) {
+    for (const slug of [template, ...treePages, ...allTargets, ...(browserCreatedFullname ? [browserCreatedFullname] : []), ...(treeTemplate ? [treeTemplate] : [])]) {
       if ((await client.source(slug)) !== null) throw new Error(`run-owned fixture already exists: ${slug}`);
     }
 
     const authoredTemplate = templateSource(fixture.fixture.tree_category);
     created.set(template, authoredTemplate);
     await client.saveGeneric(template, "FW-10 data form template", authoredTemplate);
-    const treeSources = new Map([
-      [treePages[0], "FW-10 pagepath root"],
-      [treePages[1], "FW-10 pagepath alpha"],
-      [treePages[2], "FW-10 pagepath beta"],
-    ]);
-    for (const [slug, source] of treeSources) {
-      created.set(slug, source);
-      await client.saveGeneric(slug, slug.split(":")[1], source);
+    if (treeTemplate) {
+      const source = "[[module Backlinks]]";
+      created.set(treeTemplate, source);
+      await client.saveGeneric(treeTemplate, "FW-10 pagepath tree template", source);
     }
-    await client.setParent(treePages[1], treePages[0]);
-    await client.setParent(treePages[2], treePages[1]);
+    if (fixture.setup_tree_pages !== false) {
+      const treeSources = new Map([
+        [treePages[0], "FW-10 pagepath root"],
+        [treePages[1], "FW-10 pagepath alpha"],
+        [treePages[2], "FW-10 pagepath beta"],
+      ]);
+      for (const [slug, source] of treeSources) {
+        created.set(slug, source);
+        await client.saveGeneric(slug, slug.split(":")[1], source);
+      }
+      await client.setParent(treePages[1], treePages[0]);
+      await client.setParent(treePages[2], treePages[1]);
+    } else if (createNewPlan) {
+      browserCreated.add(`${fixture.fixture.tree_category}:_root`);
+    }
 
     for (const declared of fixture.cases) {
       const slug = `${fixture.fixture.form_category}:${declared.case_id}`;
       const values = declared.surface_id === "data-forms-date-field"
         ? {date_value: declared.submitted, origin: ""}
         : {date_value: "", origin: declared.submitted};
+      const backlinkBefore = backlinksPlan?.case_id === declared.case_id
+        ? await client.get(declared.submitted, false)
+        : null;
       const attempt = await client.saveForm(slug, declared.case_id, values);
       const saved = await client.source(slug);
       const validation = validationMessages(attempt.response.body ?? "");
@@ -535,7 +577,7 @@ async function main(argv) {
             slug,
             fieldName: `field-${field}`,
             treeCategory: fixture.fixture.tree_category,
-            parentFullname: declared.submitted,
+            parentFullname: createNewPlan.parent_fullname ?? declared.submitted,
             title: createNewPlan.title,
           })
         : undefined;
@@ -545,6 +587,9 @@ async function main(argv) {
       const reloadValues = fieldValues(reload.body, `field-${field}`);
       const createValues = fieldValues(attempt.initial.body, `field-${field}`);
       const stored = saved ? storedValue(saved.source, field) : null;
+      const backlinkAfter = backlinksPlan?.case_id === declared.case_id
+        ? await client.get(declared.submitted, false)
+        : null;
       const pagepathControl = args.capturePagepathControl && declared.surface_id.startsWith("data-forms-pagepath")
         ? {
             create: pagepathControlProjection(attempt.initial.body, `field-${field}`),
@@ -584,6 +629,23 @@ async function main(argv) {
           reload_form_sha256: sha256(reload.body),
           ...(pagepathControl ? {pagepath_control: pagepathControl} : {}),
           ...(pagepathCreateNew ? {pagepath_create_new: pagepathCreateNew} : {}),
+          ...(backlinkBefore && backlinkAfter
+            ? {
+                pagepath_backlinks: {
+                  target_fullname: declared.submitted,
+                  before: {
+                    http_status: backlinkBefore.status,
+                    links: pageContentLinks(backlinkBefore.html),
+                    visible_text: visibleText(backlinkBefore.html),
+                  },
+                  after: {
+                    http_status: backlinkAfter.status,
+                    links: pageContentLinks(backlinkAfter.html),
+                    visible_text: visibleText(backlinkAfter.html),
+                  },
+                },
+              }
+            : {}),
         },
       });
     }
@@ -609,6 +671,7 @@ async function main(argv) {
   const requestedPages = [
     fixture.fixture.template,
     ...fixture.fixture.tree_pages,
+    ...(fixture.pagepath_backlinks ? [`${fixture.fixture.tree_category}:_template`] : []),
     ...fixture.cases.map(({case_id}) => `${fixture.fixture.form_category}:${case_id}`),
     ...(fixture.pagepath_create_new ? [`${fixture.fixture.tree_category}:${fixture.pagepath_create_new.title}`] : []),
   ];

@@ -38,6 +38,8 @@ Evidence basis:
 - `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
 - `data-form-pagepath-control` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-control-live-20260817.json` (SHA-256 `d26fca2c8c98afae2b1cf5c37ca75c82eb94d5ad0b5a7609d5652236694a385d`)
 - `data-form-pagepath-create-new` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-create-new-live-20260817.json` (SHA-256 `7df88eff26958cf9e3140e2fc153543837a9b77fb01dc2a5f97fa085acb02a76`)
+- `data-form-pagepath-root-bootstrap` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-root-bootstrap-live-20260817.json` (SHA-256 `25d928f2a2f99214c08bc97afed9bf9b878fb23ce3eba06bad9345ee64a46e4e`)
+- `data-form-pagepath-backlinks` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-backlinks-live-20260817.json` (SHA-256 `dd8a5acca60ae4eea032b77683ffb15ec33b0d8227f58df36a049a9f9df8b6a9`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -49,7 +51,7 @@ Evidence basis:
 
 ### P3 - lifecycle, persistence, import, and round trips
 
-- Live create/edit/reload accepts and stores the submitted fullname verbatim, including nonexistent and cross-category values. Implementation MUST reproduce that save boundary rather than enforcing documentation-implied referential validation on submission. Create new immediately creates an empty page in the configured tree category and changes the editor's hidden field value without changing the containing page source until that page is separately saved.
+- Live create/edit/reload accepts and stores the submitted fullname verbatim, including nonexistent and cross-category values. Implementation MUST reproduce that save boundary rather than enforcing documentation-implied referential validation on submission. Create new immediately creates an empty page in the configured tree category and changes the editor's hidden field value without changing the containing page source until that page is separately saved. The first root-level child also creates the previously absent empty <category>:_root page; merely rendering or opening the editor does not create _root.
 
 ### P4 - actors, permissions, visibility, and privacy
 
@@ -61,7 +63,7 @@ Evidence basis:
 
 ### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
 
-- The field is served through PageEditModule and saved page rendering; target navigation uses ordinary page URLs. Its Create new mutation is DataFormAction/newPage with exact category, parent, and title scalars and an Empty module response target.
+- The field is served through PageEditModule and saved page rendering; target navigation uses ordinary page URLs. A non-empty saved field value is also a normal incoming-link relation from the containing page to the target, so [[module Backlinks]] on the target lists the data-form page after save. Its Create new mutation is DataFormAction/newPage with exact category, parent, and title scalars and an Empty module response target.
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 

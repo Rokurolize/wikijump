@@ -35,6 +35,9 @@ use crate::models::page_revision::{
 use crate::models::text::{self, Entity as Text};
 use crate::services::ServiceContext;
 use crate::services::audit::{AuditEvent, AuditService};
+use crate::services::data_form::{
+    parse_observed_wikidot_data_form_values, parse_wikidot_data_form_definition,
+};
 use crate::services::page_query::parse_static_wikidot_data_form_values;
 use crate::services::render::render_dependency::wikitext_needs_latest_revision_for_render;
 use crate::services::render::{
@@ -52,7 +55,7 @@ use crate::types::{
 use crate::types::{Maybe, Reference};
 use crate::utils::{ConvertToI32, now};
 use crate::utils::{locale_for_ftml, split_category, split_category_name, trim_default};
-use ftml::data::PageInfo;
+use ftml::data::{PageInfo, PageRef};
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
 use paste::paste;
@@ -1094,6 +1097,34 @@ impl PageRevisionService {
         let (category_slug, page_slug) = split_category(slug);
         let current_page_data_form_values =
             parse_static_wikidot_data_form_values(&wikitext);
+        let pagepath_backlinks = match BlueprintPageService::get_page_template(
+            ctx,
+            site_id,
+            category_slug,
+            page_slug,
+        )
+        .await
+        .or_raise(make_error)?
+        {
+            Some(template) => parse_wikidot_data_form_definition(&template)
+                .filter(|definition| definition.supports_observed_create_edit())
+                .and_then(|definition| {
+                    parse_observed_wikidot_data_form_values(&definition, &wikitext)
+                        .map(|values| (definition, values))
+                })
+                .map(|(definition, values)| {
+                    definition
+                        .fields
+                        .iter()
+                        .filter(|field| field.field_type.as_deref() == Some("pagepath"))
+                        .filter_map(|field| values.get(&field.name))
+                        .filter(|value| !value.is_empty())
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default(),
+            None => Vec::new(),
+        };
         let wikitext = BlueprintPageService::apply_page_template(
             ctx,
             site_id,
@@ -1115,7 +1146,7 @@ impl PageRevisionService {
         };
 
         // Parse and render
-        let output = if let Some(trace) = trace {
+        let mut output = if let Some(trace) = trace {
             debug_assert!(allow_corpus_dense_includes);
             RenderService::render_corpus_page_traced(
                 ctx, wikitext, &page_info, layout, id, trace,
@@ -1137,6 +1168,12 @@ impl PageRevisionService {
             .await
         }
         .or_raise(make_error)?;
+
+        output
+            .html_output
+            .backlinks
+            .internal_links
+            .extend(pagepath_backlinks.into_iter().map(PageRef::page_only));
 
         // Update backlinks
         {

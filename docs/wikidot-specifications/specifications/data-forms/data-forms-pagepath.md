@@ -39,6 +39,8 @@ Evidence basis:
 - `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
 - `data-form-pagepath-control` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-control-live-20260817.json` (SHA-256 `d26fca2c8c98afae2b1cf5c37ca75c82eb94d5ad0b5a7609d5652236694a385d`)
 - `data-form-pagepath-create-new` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-create-new-live-20260817.json` (SHA-256 `7df88eff26958cf9e3140e2fc153543837a9b77fb01dc2a5f97fa085acb02a76`)
+- `data-form-pagepath-root-bootstrap` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-root-bootstrap-live-20260817.json` (SHA-256 `25d928f2a2f99214c08bc97afed9bf9b878fb23ce3eba06bad9345ee64a46e4e`)
+- `data-form-pagepath-backlinks` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-backlinks-live-20260817.json` (SHA-256 `dd8a5acca60ae4eea032b77683ffb15ec33b0d8227f58df36a049a9f9df8b6a9`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -50,7 +52,7 @@ Evidence basis:
 
 ### P3 - lifecycle, persistence, import, and round trips
 
-- Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation. The browser Create new path is a separate immediate mutation: pressing Enter after choosing Create new creates an empty tree page before the containing data-form page is saved, updates only the editor's hidden pagepath value, and leaves the containing page source unchanged until a later save.
+- Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation. The browser Create new path is a separate immediate mutation: pressing Enter after choosing Create new creates an empty tree page before the containing data-form page is saved, updates only the editor's hidden pagepath value, and leaves the containing page source unchanged until a later save. When the configured tree has no _root yet, the first root-level Create new posts parent as the empty string and Wikidot creates both an empty <category>:_root page and the requested empty child page in that one successful interaction.
 
 ### P4 - actors, permissions, visibility, and privacy
 
@@ -62,7 +64,7 @@ Evidence basis:
 
 ### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
 
-- Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries. Create new posts DataFormAction/newPage through ajax-module-connector.php with category, parent, title, moduleName=Empty, and callbackIndex; the successful JSON response returns status=ok and the new fullname.
+- Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries. A saved pagepath value also enters Wikidot's ordinary incoming-link graph: a target page using [[module Backlinks]] has no row before the containing data-form page is saved and gains a link to that containing page after save. Create new posts DataFormAction/newPage through ajax-module-connector.php with category, parent, title, moduleName=Empty, and callbackIndex; the successful JSON response returns status=ok and the new fullname. A first root child uses parent='' even though the visible selector class is rooted at <category>:_root; the server bootstraps that empty _root page as part of the mutation.
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 

@@ -13,9 +13,17 @@
 //! Wikidot category-template data-form definitions.
 
 use crate::error::prelude::Result;
+use crate::models::page::Model as PageModel;
 use crate::models::page_category;
 use crate::services::ServiceContext;
+use crate::services::category::CategoryService;
+use crate::services::page::PageService;
 use crate::services::page_revision::PageRevisionService;
+use crate::services::parent::ParentService;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::types::{Action, PageOrder, Permission, Reference, Resource};
+use crate::utils::split_category;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
@@ -32,6 +40,15 @@ pub struct DataFormEditor {
     pub definition: DataFormDefinition,
     #[serde(default)]
     pub values: BTreeMap<String, String>,
+    #[serde(default)]
+    pub pagepaths: BTreeMap<String, Vec<DataFormPagepathNode>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct DataFormPagepathNode {
+    pub fullname: String,
+    pub name: String,
+    pub parent: Option<String>,
 }
 
 impl DataFormDefinition {
@@ -137,6 +154,28 @@ impl DataFormDefinition {
                                 "label", "type", "width", "options",
                             ])
                     }
+                    Some("pagepath") => {
+                        field.configured_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && !field.has_text_specific_properties
+                            && field.hint.is_empty()
+                            && field.before.is_empty()
+                            && field.after.is_empty()
+                            && !field.join
+                            && field.pagepath_options_valid
+                            && field
+                                .pagepath_category
+                                .as_ref()
+                                .is_some_and(|category| !category.is_empty())
+                            && field.has_only_properties(&[
+                                "label",
+                                "type",
+                                "category",
+                                "default",
+                                "max-level",
+                            ])
+                    }
                     _ => false,
                 })
     }
@@ -164,12 +203,18 @@ pub struct DataFormFieldDefinition {
     pub after: String,
     #[serde(default)]
     pub join: bool,
+    #[serde(default)]
+    pub pagepath_category: Option<String>,
+    #[serde(default)]
+    pub pagepath_max_level: Option<usize>,
     #[serde(skip)]
     has_text_specific_properties: bool,
     #[serde(skip)]
     has_values_property: bool,
     #[serde(skip)]
     options_valid: bool,
+    #[serde(skip)]
+    pagepath_options_valid: bool,
     #[serde(skip)]
     authored_width: Option<String>,
     #[serde(skip)]
@@ -196,9 +241,12 @@ impl Default for DataFormFieldDefinition {
             before: String::new(),
             after: String::new(),
             join: false,
+            pagepath_category: None,
+            pagepath_max_level: None,
             has_text_specific_properties: false,
             has_values_property: false,
             options_valid: true,
+            pagepath_options_valid: true,
             authored_width: None,
             authored_height: None,
             authored_properties: BTreeSet::new(),
@@ -273,6 +321,139 @@ pub async fn load_data_form_definitions(
     }
 
     Ok(definitions)
+}
+
+async fn wikidot_data_form_page_is_viewable(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+    page: &PageModel,
+) -> Result<bool> {
+    PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: viewer_user_id,
+            site_id: page.site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+}
+
+pub async fn resolve_wikidot_data_form_pagepath_display_values(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    viewer_user_id: Option<i64>,
+) -> Result<BTreeMap<String, String>> {
+    let mut display_values = BTreeMap::new();
+    for field in definition
+        .fields
+        .iter()
+        .filter(|field| field.field_type.as_deref() == Some("pagepath"))
+    {
+        let raw_value = values.get(&field.name).map(String::as_str).unwrap_or("");
+        if raw_value.is_empty() {
+            display_values.insert(field.name.clone(), String::new());
+            continue;
+        }
+        let expected_category_id = match field.pagepath_category.as_deref() {
+            Some(category) => CategoryService::get_optional(
+                ctx,
+                site_id,
+                Reference::Slug(Cow::Borrowed(category)),
+            )
+            .await?
+            .map(|category| category.category_id),
+            None => None,
+        };
+        let page = PageService::get_optional(
+            ctx,
+            site_id,
+            Reference::Slug(Cow::Borrowed(raw_value)),
+        )
+        .await?;
+        let display = match page {
+            Some(page)
+                if expected_category_id == Some(page.page_category_id)
+                    && wikidot_data_form_page_is_viewable(ctx, viewer_user_id, &page)
+                        .await? =>
+            {
+                split_category(&page.slug).1.to_owned()
+            }
+            _ => String::new(),
+        };
+        display_values.insert(field.name.clone(), display);
+    }
+    Ok(display_values)
+}
+
+pub async fn load_wikidot_data_form_pagepaths(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    definition: &DataFormDefinition,
+    viewer_user_id: Option<i64>,
+) -> Result<BTreeMap<String, Vec<DataFormPagepathNode>>> {
+    let mut pagepaths = BTreeMap::new();
+    for field in definition
+        .fields
+        .iter()
+        .filter(|field| field.field_type.as_deref() == Some("pagepath"))
+    {
+        let Some(category_name) = field.pagepath_category.as_deref() else {
+            continue;
+        };
+        let Some(category) = CategoryService::get_optional(
+            ctx,
+            site_id,
+            Reference::Slug(Cow::Borrowed(category_name)),
+        )
+        .await?
+        else {
+            pagepaths.insert(field.name.clone(), Vec::new());
+            continue;
+        };
+        let pages = PageService::get_all(
+            ctx,
+            site_id,
+            Some(Reference::Id(category.category_id)),
+            Some(false),
+            PageOrder::default(),
+        )
+        .await?;
+        let mut visible_pages = Vec::new();
+        for page in pages {
+            if wikidot_data_form_page_is_viewable(ctx, viewer_user_id, &page).await? {
+                visible_pages.push(page);
+            }
+        }
+        let slug_by_id = visible_pages
+            .iter()
+            .map(|page| (page.page_id, page.slug.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let mut nodes = Vec::with_capacity(visible_pages.len());
+        for page in visible_pages {
+            let relationships =
+                ParentService::get_parents(ctx, site_id, Reference::Id(page.page_id))
+                    .await?;
+            let parent = match relationships.as_slice() {
+                [relationship] => slug_by_id.get(&relationship.parent_page_id).cloned(),
+                _ => None,
+            };
+            nodes.push(DataFormPagepathNode {
+                fullname: page.slug.clone(),
+                name: split_category(&page.slug).1.to_owned(),
+                parent,
+            });
+        }
+        pagepaths.insert(field.name.clone(), nodes);
+    }
+    Ok(pagepaths)
 }
 
 pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition> {
@@ -507,6 +688,40 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                     }
                     current_values_field = None;
                 }
+                "category" => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.pagepath_category.is_some())
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        let category = unquote_wikidot_data_form_scalar(value).to_owned();
+                        if category.is_empty() {
+                            field.pagepath_options_valid = false;
+                        }
+                        field.pagepath_category = Some(category);
+                    }
+                    current_values_field = None;
+                }
+                "max-level" => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.pagepath_max_level.is_some())
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        let raw = unquote_wikidot_data_form_scalar(value);
+                        match raw.parse::<usize>() {
+                            Ok(level) if level > 0 => {
+                                field.pagepath_max_level = Some(level)
+                            }
+                            _ => field.pagepath_options_valid = false,
+                        }
+                    }
+                    current_values_field = None;
+                }
                 "values" if value.is_empty() => {
                     if definition
                         .field(field_name)
@@ -692,6 +907,20 @@ pub fn substitute_wikidot_data_form_layout_variables(
     definition: &DataFormDefinition,
     values: &BTreeMap<String, String>,
 ) -> String {
+    substitute_wikidot_data_form_layout_variables_with_display(
+        layout,
+        definition,
+        values,
+        &BTreeMap::new(),
+    )
+}
+
+pub fn substitute_wikidot_data_form_layout_variables_with_display(
+    layout: &str,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    display_values: &BTreeMap<String, String>,
+) -> String {
     let mut output = String::with_capacity(layout.len());
     let mut rest = layout;
 
@@ -720,7 +949,15 @@ pub fn substitute_wikidot_data_form_layout_variables(
             .filter(|field| {
                 matches!(
                     field.field_type.as_deref(),
-                    Some("text" | "select" | "checkbox" | "wiki" | "url" | "date")
+                    Some(
+                        "text"
+                            | "select"
+                            | "checkbox"
+                            | "wiki"
+                            | "url"
+                            | "date"
+                            | "pagepath"
+                    )
                 )
             })
             .map(|field| {
@@ -737,6 +974,9 @@ pub fn substitute_wikidot_data_form_layout_variables(
                         format!("http://{value}")
                     }
                     Some("url") if valid_wikidot_ftp_url(value) => value.to_owned(),
+                    Some("pagepath") => {
+                        display_values.get(field_name).cloned().unwrap_or_default()
+                    }
                     _ => value.to_owned(),
                 };
                 let new_window_url = field.field_type.as_deref() == Some("url")
@@ -821,6 +1061,7 @@ pub fn parse_observed_wikidot_data_form_values(
                 }
             }
             Some("date") => parse_wikidot_stored_date_scalar(raw_value)?,
+            Some("pagepath") => parse_wikidot_stored_text_scalar(raw_value)?,
             _ => return None,
         };
         let canonical = match field.field_type.as_deref() {
@@ -835,6 +1076,7 @@ pub fn parse_observed_wikidot_data_form_values(
             // Wikidot stores date submissions verbatim, including malformed
             // values observed at the authenticated save boundary.
             Some("date") => raw_value.to_owned(),
+            Some("pagepath") => serialize_wikidot_stored_text_scalar(&value),
             _ => return None,
         };
         if canonical != raw_value {
@@ -857,6 +1099,20 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
     definition: &DataFormDefinition,
     values: &BTreeMap<String, String>,
     rendered_wiki_values: &BTreeMap<String, String>,
+) -> String {
+    render_wikidot_data_form_table_with_runtime_html(
+        definition,
+        values,
+        rendered_wiki_values,
+        &BTreeMap::new(),
+    )
+}
+
+pub fn render_wikidot_data_form_table_with_runtime_html(
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    rendered_wiki_values: &BTreeMap<String, String>,
+    display_values: &BTreeMap<String, String>,
 ) -> String {
     let mut html = String::from(r#"<table class="form-table"><tbody>"#);
     for (index, field) in definition.fields.iter().enumerate() {
@@ -881,10 +1137,13 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
             }
         }
         let raw_value = values.get(&field.name).map(String::as_str).unwrap_or("");
-        let display_value = if field.field_type.as_deref() == Some("select") {
-            field.value_label(raw_value).unwrap_or(raw_value)
-        } else {
-            raw_value
+        let display_value = match field.field_type.as_deref() {
+            Some("select") => field.value_label(raw_value).unwrap_or(raw_value),
+            Some("pagepath") => display_values
+                .get(&field.name)
+                .map(String::as_str)
+                .unwrap_or(""),
+            _ => raw_value,
         };
         if matches!(field.field_type.as_deref(), Some("wiki" | "static")) {
             html.push_str(r#"<div class="form-value field-"#);

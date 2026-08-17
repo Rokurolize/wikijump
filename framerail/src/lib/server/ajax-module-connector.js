@@ -78,6 +78,18 @@ const LIST_PAGES_PARAMETERS = new Set([
 ])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
+const DATA_FORM_ACTION = "DataFormAction"
+const DATA_FORM_NEW_PAGE_EVENT = "newPage"
+const DATA_FORM_NEW_PAGE_FIELDS = new Set([
+  "action",
+  "event",
+  "category",
+  "parent",
+  "title",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex"
+])
 const PAGE_DISCUSSION_ACTION = "ForumAction"
 const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
 const EDIT_META_MODULE = "edit/EditMetaModule"
@@ -832,6 +844,78 @@ export const handleAjaxModuleConnectorRequest = async (
         CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
         cssInclude: [],
         jsInclude: []
+      })
+    }
+  }
+
+  if (
+    fields.get("action") === DATA_FORM_ACTION &&
+    fields.get("event") === DATA_FORM_NEW_PAGE_EVENT
+  ) {
+    const category = fieldValue(fields, "category")
+    const parentPage = fieldValue(fields, "parent")
+    const title = fieldValue(fields, "title")
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const supportedShape =
+      moduleName === "Empty" &&
+      category.length > 0 &&
+      title.length > 0 &&
+      [...fields.keys()].every((field) => DATA_FORM_NEW_PAGE_FIELDS.has(field))
+    if (
+      !supportedShape ||
+      !createNewPage ||
+      !(await resolveCanCreateNewPage(canCreateNewPage))
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    }
+
+    const fullname = toWikidotUnixName({
+      pageName: title,
+      categoryName: category
+    })
+    if (!fullname || (pageExists && (await pageExists(fullname)))) {
+      return jsonResponse({
+        status: "not_ok",
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    }
+    try {
+      const rootFullname = `${category}:_root`
+      if (parentPage === "" && (!pageExists || !(await pageExists(rootFullname)))) {
+        await createNewPage({
+          slug: rootFullname,
+          title: category.charAt(0).toUpperCase() + category.slice(1),
+          wikitext: "",
+          tags: [],
+          parentPage: null
+        })
+      }
+      await createNewPage({
+        slug: fullname,
+        title,
+        wikitext: "",
+        tags: [],
+        parentPage: parentPage || rootFullname
+      })
+      return jsonResponse({
+        status: "ok",
+        fullname,
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    } catch (error) {
+      console.error("AJAX DataForm pagepath creation failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
       })
     }
   }

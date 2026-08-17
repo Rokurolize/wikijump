@@ -309,7 +309,9 @@
         "data-form-public-demos",
         "data-form-date-pagepath",
         "data-form-pagepath-control",
-        "data-form-pagepath-create-new"
+        "data-form-pagepath-create-new",
+        "data-form-pagepath-root-bootstrap",
+        "data-form-pagepath-backlinks"
       ],
       "axes": {
         "P1": [
@@ -319,7 +321,7 @@
           "Pagepath values are field scalars inside the form YAML; tree rendering and hierarchy are ordinary page/category relationships rather than a second parser grammar."
         ],
         "P3": [
-          "Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation. The browser Create new path is a separate immediate mutation: pressing Enter after choosing Create new creates an empty tree page before the containing data-form page is saved, updates only the editor's hidden pagepath value, and leaves the containing page source unchanged until a later save."
+          "Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation. The browser Create new path is a separate immediate mutation: pressing Enter after choosing Create new creates an empty tree page before the containing data-form page is saved, updates only the editor's hidden pagepath value, and leaves the containing page source unchanged until a later save. When the configured tree has no _root yet, the first root-level Create new posts parent as the empty string and Wikidot creates both an empty <category>:_root page and the requested empty child page in that one successful interaction."
         ],
         "P4": [
           "Selecting or displaying a pagepath MUST NOT reveal an inaccessible target page. A stored fullname may exist without granting permission to view that page."
@@ -328,7 +330,7 @@
           "Hierarchy/navigation follows the configured tree relationships without validating the stored scalar. A fresh editor for a category rooted at _root exposes the visible root children plus a Create new sentinel. Editing a stored first-level node exposes one additional child selector; editing a stored second-level node exposes another selector through the configured max-level. Missing and cross-category stored values remain in the hidden scalar while the visible chooser falls back to the root selector. Creating gamma beneath alpha inserts gamma into alpha's selector and opens one further selector for gamma within the configured max-level."
         ],
         "P6": [
-          "Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries. Create new posts DataFormAction/newPage through ajax-module-connector.php with category, parent, title, moduleName=Empty, and callbackIndex; the successful JSON response returns status=ok and the new fullname."
+          "Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries. A saved pagepath value also enters Wikidot's ordinary incoming-link graph: a target page using [[module Backlinks]] has no row before the containing data-form page is saved and gains a link to that containing page after save. Create new posts DataFormAction/newPage through ajax-module-connector.php with category, parent, title, moduleName=Empty, and callbackIndex; the successful JSON response returns status=ok and the new fullname. A first root child uses parent='' even though the visible selector class is rooted at <category>:_root; the server bootstraps that empty _root page as part of the mutation."
         ],
         "P7": [
           "When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display. The generated editor wraps the field in .form-group/.form-value.field-origin and a .dataform-pagepath-chooser containing hidden value/category/max-level inputs plus ordered select controls whose classes encode the parent fullname. Each selector begins with an empty option and ends with value '+' / text 'Create new'. Choosing Create new appends an input.text initially containing 'New item' and a javascript:; '[x]' cancel link; successful creation replaces that transient input with the newly selected page option and the next child selector."
@@ -343,7 +345,9 @@
         "current-www-source",
         "data-form-date-pagepath",
         "data-form-pagepath-control",
-        "data-form-pagepath-create-new"
+        "data-form-pagepath-create-new",
+        "data-form-pagepath-root-bootstrap",
+        "data-form-pagepath-backlinks"
       ],
       "axes": {
         "P1": [
@@ -353,7 +357,7 @@
           "The pagepath field is declared in the YAML fields map; its configuration determines the browser selector/tree presentation but does not create a new page-link syntax."
         ],
         "P3": [
-          "Live create/edit/reload accepts and stores the submitted fullname verbatim, including nonexistent and cross-category values. Implementation MUST reproduce that save boundary rather than enforcing documentation-implied referential validation on submission. Create new immediately creates an empty page in the configured tree category and changes the editor's hidden field value without changing the containing page source until that page is separately saved."
+          "Live create/edit/reload accepts and stores the submitted fullname verbatim, including nonexistent and cross-category values. Implementation MUST reproduce that save boundary rather than enforcing documentation-implied referential validation on submission. Create new immediately creates an empty page in the configured tree category and changes the editor's hidden field value without changing the containing page source until that page is separately saved. The first root-level child also creates the previously absent empty <category>:_root page; merely rendering or opening the editor does not create _root."
         ],
         "P4": [
           "The field editor follows containing-page edit permissions. Resolution/display of a stored target MUST separately apply target visibility so a hidden node is not disclosed."
@@ -362,7 +366,7 @@
           "Configured category and max-level are emitted into hidden chooser inputs and determine the visible selector chain. The stored scalar itself remains one fullname. Existing stored nodes expand their ancestor/child selector chain; nonexistent and cross-category values remain stored but do not fabricate a selected node. A newly created child is inserted into its parent's selector, selected, and followed by another child selector while depth remains. No implicit pagination is introduced."
         ],
         "P6": [
-          "The field is served through PageEditModule and saved page rendering; target navigation uses ordinary page URLs. Its Create new mutation is DataFormAction/newPage with exact category, parent, and title scalars and an Empty module response target."
+          "The field is served through PageEditModule and saved page rendering; target navigation uses ordinary page URLs. A non-empty saved field value is also a normal incoming-link relation from the containing page to the target, so [[module Backlinks]] on the target lists the data-form page after save. Its Create new mutation is DataFormAction/newPage with exact category, parent, and title scalars and an Empty module response target."
         ],
         "P7": [
           "Resolved stored values display their page-name label; unresolved values remain stored without a fabricated link/label in the captured saved output. The observed editor uses .dataform-pagepath-value, .dataform-pagepath-category, and .dataform-pagepath-max-level hidden inputs, followed by select elements named by CSS class dataform-pagepath-select-children-of-<category>---<parent>. Options preserve the exact empty / visible child / '+' Create new ordering. Selecting '+' exposes input.text with value 'New item' and a '[x]' javascript:; link before the mutation runs."
