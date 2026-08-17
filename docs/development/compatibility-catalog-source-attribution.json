@@ -457,6 +457,19 @@
       "tests": [{ "path": "deepwell/tests/site.rs", "anchor": "platform_hostname_policy_covers_site_and_alias_lifecycle_paths" }]
     },
     {
+      "surface_id": "catalog-feature:hosted-wiki-platform",
+      "sources": [
+        { "path": "deepwell/src/services/site/service.rs", "anchor": "pub async fn create(" },
+        { "path": "deepwell/src/services/page/service.rs", "anchor": "pub async fn create(" },
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "{%- macro render_preferred_domain(site_id, site_slug, domain, www_redirect) %}" },
+        { "path": "deepwell/src/services/view/service.rs", "anchor": "pub async fn article(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/site.rs", "anchor": "hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints" },
+        { "path": "deepwell/src/services/caddy/test.rs", "anchor": "fn generate_caddyfiles()" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:expressions",
       "sources": [
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },

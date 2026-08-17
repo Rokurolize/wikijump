@@ -40,6 +40,7 @@ use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
+use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::site::{CreateSite, SiteService, UpdateSiteBody};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{
@@ -50,6 +51,7 @@ use sea_orm::{
     QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use serde_json::json;
+use std::borrow::Cow;
 use std::sync::atomic::{AtomicU64, Ordering};
 use str_macro::str;
 
@@ -128,6 +130,62 @@ async fn grant_site_edit(runner: &TestRunner, site_id: i64, user_id: i64, n: u64
     .expect("failed to grant site editor role to user");
 }
 
+async fn grant_site_page_create(runner: &TestRunner, site_id: i64, user_id: i64, n: u64) {
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("Site Page Creator {n}"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("failed to create page-creator role");
+
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: vec![
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::Create,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::View,
+                },
+            ],
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("failed to grant page-create permission to role");
+
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("failed to grant page-creator role to user");
+}
+
 async fn create_site(runner: &TestRunner, n: u64) -> i64 {
     SiteService::create(
         runner.context(),
@@ -184,6 +242,109 @@ async fn public_site_create_audits_authenticated_actor_and_supplied_ip_once() {
     assert_eq!(events.len(), 1, "successful public creation audits once");
     assert_eq!(events[0].user_id, Some(actor_user_id));
     assert_eq!(events[0].ip_address, common::IP_ADDRESS.to_string());
+}
+
+#[tokio::test]
+async fn hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "hosted-site-owner").await;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: actor_user_id,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell hosted-site isolation test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("hosted-site owner session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let mut sites = Vec::new();
+    for suffix in ["alpha", "beta"] {
+        let site = run_endpoint!(
+            runner,
+            site_create,
+            json!({
+                "slug": format!("hosted-isolation-{n}-{suffix}"),
+                "name": format!("Hosted isolation {n} {suffix}"),
+                "tagline": "",
+                "description": format!("Hosted site isolation fixture {suffix}"),
+                "default_page": null,
+                "layout": "wikidot",
+                "license": "cc-by-sa-4.0",
+                "locale": "en",
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        grant_site_page_create(&runner, site.site_id, actor_user_id, n).await;
+        sites.push((suffix, site));
+    }
+
+    for (suffix, site) in &sites {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(actor_user_id),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Slug(Cow::Borrowed("shared-page"))),
+        });
+        let page = run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site.site_id,
+                "wikitext": format!("Hosted content {suffix}"),
+                "title": format!("Hosted page {suffix}"),
+                "alt_title": null,
+                "slug": "shared-page",
+                "layout": "wikidot",
+                "revision_comments": "create hosted isolation page",
+                "user_id": actor_user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_eq!(page.slug, "shared-page");
+    }
+
+    for (suffix, site) in &sites {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(actor_user_id),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Slug(Cow::Borrowed("shared-page"))),
+        });
+        let view = run_endpoint!(
+            runner,
+            article_view,
+            json!({
+                "site_id": site.site_id,
+                "session_token": session_token,
+                "route": { "slug": "shared-page", "extra": "" },
+                "locales": ["en"],
+            }),
+        );
+        let body = match view.page {
+            deepwell::services::view::GetPageViewOutput::Found {
+                compiled_body_html,
+                ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected hosted page to resolve in its own site, got {other:?}")
+            }
+        };
+        assert!(body.contains(&format!("Hosted content {suffix}")));
+        let other = if *suffix == "alpha" { "beta" } else { "alpha" };
+        assert!(
+            !body.contains(&format!("Hosted content {other}")),
+            "same-slug content from another hosted site leaked into site {}: {body}",
+            site.site_id,
+        );
+    }
 }
 
 #[tokio::test]
