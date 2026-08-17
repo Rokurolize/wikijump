@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "967df8ab97aa359975bb3aea5562ac51556adcf4",
-      "tree": "a73f47341bd16ef841fa7ab5548d2d60100a1824"
+      "commit": "a063aafa349ea8b78f0689ccb4f8e501cf83812a",
+      "tree": "6e0823adf1f46f21abf22b49caa872d01974ead9"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "55e4addc0df9c2cc5ebfd7c1605262ab5829e21964d2487170b746ff6d2a94d8"
+        "sha256": "ba2c562ea5f79c3e1b08455606c5254aad82f14ac3f16005522b1f1efd33eb11"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11157,7 +11157,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "05e3412da2712ab1e67e5ac02b2ba327b0802540c81bfa43672bab93489f7f3b"
+        "sha256": "26dce428f281db9fa5aaa6c1896a6e1d9ae8135beb9db884eb2cc892f9e99166"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -20007,7 +20007,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#foldable_list_initial_dom_matches_frozen_live_page_preview"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20016,8 +20018,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"cde07d97aaa8e706556030d4d1f9be3d441b7285\" }",
+          "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);"
+        ]
       },
       "candidate": {
         "status": "pending",
