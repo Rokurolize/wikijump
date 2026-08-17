@@ -470,6 +470,20 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:collaborative-editing",
+      "sources": [
+        { "path": "deepwell/src/services/page_revision/service.rs", "anchor": "pub async fn update(" },
+        { "path": "deepwell/src/endpoints/page_revision.rs", "anchor": "pub async fn page_revision_diff(" },
+        { "path": "deepwell/src/services/file/service.rs", "anchor": "pub async fn create(" },
+        { "path": "deepwell/src/endpoints/file.rs", "anchor": "pub async fn file_edit(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "page_editing_history_preserves_each_page_change_as_a_recoverable_revision" },
+        { "path": "deepwell/tests/page.rs", "anchor": "revision_diff_returns_typed_lines_without_exposing_hidden_source" },
+        { "path": "deepwell/tests/file_edit_concurrency.rs", "anchor": "concurrent_registered_file_edits_promote_only_the_winning_blob" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:expressions",
       "sources": [
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },
