@@ -105,11 +105,11 @@ const AUDITED_CATALOG_FALLBACK = Object.freeze({
 const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   count: 195,
   surface_ids_sha256: "3a2cf09c168b37eb4539336cca7807f06585ece006a3327c2b2093b327424377",
-  mapping_sha256: "bf8c3ed6eebb5592cef108488dcc6c285d9b39eaf5224f8616a71f4b30708082",
+  mapping_sha256: "8c93b696804916d83fb1c486c35cfb1a742530d5a5821d577a30cb232886af87",
   fallback_issue: 1387,
-  fallback_count: 183,
-  fallback_surface_ids_sha256: "099e4b58d64be1758cb0df253e224419032a52b6066f911fe8e21fec5b796074",
-  fallback_mapping_sha256: "db854ca4e40491f39575e2fe35d4925590abecb0058200db7e48f1dbb1256dd8"
+  fallback_count: 182,
+  fallback_surface_ids_sha256: "228ffac78d4826a27a0a3242b7a243d3887de572e3a67628859c41266903d378",
+  fallback_mapping_sha256: "9ec6fdb2f71886a7c0bb7e1d57e607c7676facf11416880d230624f09aea6b76"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
   deepwell_jsonrpc_method: Object.freeze({ count: 163, surface_ids_sha256: "307624e11c494a0fc894236e9f1c3da6665833ec7778418afe1116f39eea1a12", mapping_sha256: "4db63ea2576db5fa7df9993c3d1a56d646d5f089b65ad18b69a262494039e297" }),
@@ -186,6 +186,7 @@ const CATALOG_FEATURE_ISSUE_EXCEPTIONS = new Map([
   ["catalog-feature:module-forumstart", 1034],
   ["catalog-feature:module-forumthread", 1034],
   ["catalog-feature:module-frontforum", 1034],
+  ["catalog-feature:module-frontspecialmini", 1389],
   ["catalog-feature:module-managesite", 1038],
   ["catalog-feature:module-members", 1032],
   ["catalog-feature:module-petitionadmin", 1038],

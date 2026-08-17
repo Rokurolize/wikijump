@@ -950,6 +950,19 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:managed-hosting",
+      "sources": [
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "import reverse_proxy_framerail" },
+        { "path": "deepwell/src/services/domain/service.rs", "anchor": "pub async fn site_from_custom_domain_optional(" },
+        { "path": "install/local/docker-compose.yaml", "anchor": "local-postgres-data:/var/lib/postgresql/data" },
+        { "path": "install/local/docker-compose.yaml", "anchor": "local-minio-data:/data" }
+      ],
+      "tests": [
+        { "path": "deepwell/src/services/caddy/test.rs", "anchor": "fn generate_caddyfiles()" },
+        { "path": "deepwell/src/services/caddy/test.rs", "anchor": "generated_caddyfile_routes_exact_default_code_path_to_files_domain" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:layout-page",
       "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
       "tests": [
