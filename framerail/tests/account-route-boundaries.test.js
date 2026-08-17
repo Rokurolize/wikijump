@@ -127,7 +127,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.equal(register.isLoggedIn, false)
   assert.equal(register.registerForm.valid, false)
   assert.equal(settings.displaySettingsForm.data.locales, "en-US ja-JP")
-  assert.equal(settings.forumSignatureForm.data.signature, "**Stored signature**")
+  assert.equal(settings.displaySettingsForm.data.signature, "**Stored signature**")
   const settingsTranslate = translateCalls.find(
     (params) =>
       params.messages?.settings && params.messages?.["user-profile-info.locales"]
@@ -139,7 +139,7 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
 })
 
-test("forum signature settings bind the mutation to the current account", async () => {
+test("display settings persist the forum signature through the existing account mutation", async () => {
   const calls = []
   client.request = async (method, params, context) => {
     calls.push({ method, params, context })
@@ -159,9 +159,10 @@ test("forum signature settings bind the mutation to the current account", async 
   }
 
   const formData = new FormData()
+  formData.set("locales", "en-US en")
   formData.set("signature", "**Forum signature**\nSecond line")
-  const result = await routes.settings.actions.forumSignature({
-    request: new Request("https://wikijump.test/-/settings?/forumSignature", {
+  const result = await routes.settings.actions.display({
+    request: new Request("https://wikijump.test/-/settings?/display", {
       method: "POST",
       headers: siteHeaders,
       body: formData
@@ -186,6 +187,7 @@ test("forum signature settings bind the mutation to the current account", async 
         user: 41,
         ip_address: "192.0.2.41",
         bypass_filter: false,
+        locales: ["en-US", "en"],
         forum_signature: "**Forum signature**\nSecond line"
       },
       context: { siteId: 17, page: "-/settings", sessionToken: "account-session" }
@@ -194,9 +196,10 @@ test("forum signature settings bind the mutation to the current account", async 
 
   calls.length = 0
   const tooManyLines = new FormData()
+  tooManyLines.set("locales", "en-US en")
   tooManyLines.set("signature", "one\ntwo\nthree\nfour\nfive")
-  const rejected = await routes.settings.actions.forumSignature({
-    request: new Request("https://wikijump.test/-/settings?/forumSignature", {
+  const rejected = await routes.settings.actions.display({
+    request: new Request("https://wikijump.test/-/settings?/display", {
       method: "POST",
       headers: siteHeaders,
       body: tooManyLines

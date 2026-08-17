@@ -24,12 +24,11 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
 
   const locales = parentData.user_session.user.locales?.join(" ") ?? ""
   const displaySettingsForm = await superValidate(
-    { locales },
+    {
+      locales,
+      signature: parentData.user_session.user.forum_signature ?? ""
+    },
     valibot(userDisplaySettingsSchema)
-  )
-  const forumSignatureForm = await superValidate(
-    { signature: parentData.user_session.user.forum_signature ?? "" },
-    valibot(userForumSignatureSettingsSchema)
   )
   const internationalization = await translate(
     parentData.locales,
@@ -45,7 +44,6 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
   return {
     ...parentData,
     displaySettingsForm,
-    forumSignatureForm,
     internationalization
   }
 }
@@ -59,6 +57,10 @@ export async function userDisplaySettingsAction({
   const form = await superValidate(request, valibot(userDisplaySettingsSchema))
   if (!form.valid) {
     return fail(400, { form })
+  }
+  const signature = form.data.signature.replace(/\r\n?/g, "\n")
+  if (signature.split("\n").length > 4) {
+    return fail(400, { form, message: "Forum signatures are limited to four lines." })
   }
 
   const sessionToken = cookies.get("wikijump_token")
@@ -74,7 +76,7 @@ export async function userDisplaySettingsAction({
     await userEdit(
       session.user_id,
       getClientAddress(),
-      { locales },
+      { locales, forumSignature: signature || null },
       getRequestContext(locals)
     )
     return { form }
@@ -84,40 +86,7 @@ export async function userDisplaySettingsAction({
 }
 
 export const userDisplaySettingsSchema = object({
-  locales: pipe(string(), minLength(1, "At least one display language is required."))
-})
-
-export async function userForumSignatureSettingsAction({
-  request,
-  cookies,
-  getClientAddress,
-  locals
-}: RequestEvent) {
-  const form = await superValidate(request, valibot(userForumSignatureSettingsSchema))
-  if (!form.valid) return fail(400, { form })
-  const signature = form.data.signature.replace(/\r\n?/g, "\n")
-  if (signature.split("\n").length > 4) {
-    return fail(400, { form, message: "Forum signatures are limited to four lines." })
-  }
-
-  const sessionToken = cookies.get("wikijump_token")
-  if (!sessionToken) return failForMissingSession({ form })
-
-  try {
-    const session = requireActionSession(await authGetSession(sessionToken))
-    await userEdit(
-      session.user_id,
-      getClientAddress(),
-      { forumSignature: signature || null },
-      getRequestContext(locals)
-    )
-    return { form }
-  } catch (error) {
-    return failForActionError(error, { form })
-  }
-}
-
-export const userForumSignatureSettingsSchema = object({
+  locales: pipe(string(), minLength(1, "At least one display language is required.")),
   signature: pipe(
     string(),
     maxLength(400, "Forum signatures are limited to 400 characters.")

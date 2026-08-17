@@ -637,12 +637,12 @@
       "sources": [
         { "path": "deepwell/src/services/user/service.rs", "anchor": "fn validate_forum_signature(" },
         { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "pub(super) async fn render_forum_signature_html(" },
-        { "path": "framerail/src/lib/server/load/user-settings.ts", "anchor": "export async function userForumSignatureSettingsAction(" }
+        { "path": "framerail/src/lib/server/load/user-settings.ts", "anchor": "export async function userDisplaySettingsAction(" }
       ],
       "tests": [
         { "path": "deepwell/tests/user.rs", "anchor": "user_mutations_enforce_request_actor_and_staff_only_fields" },
         { "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" },
-        { "path": "framerail/tests/account-route-boundaries.test.js", "anchor": "forum signature settings bind the mutation to the current account" }
+        { "path": "framerail/tests/account-route-boundaries.test.js", "anchor": "display settings persist the forum signature through the existing account mutation" }
       ]
     },
     {
