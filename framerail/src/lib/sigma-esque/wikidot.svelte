@@ -92,6 +92,14 @@
     display: block;
   }
 
+  // Wikidot's base stylesheet expects legacy JavaScript to open this menu.
+  // Imported themes such as Basalt already implement the hover/focus state in
+  // CSS; this fallback keeps the same account menu usable on ordinary themes.
+  #login-status:hover > #account-options,
+  #login-status:focus-within > #account-options {
+    display: block;
+  }
+
   details.collapsible-block:not([open]) .collapsible-block-unfolded-link {
     display: none;
   }

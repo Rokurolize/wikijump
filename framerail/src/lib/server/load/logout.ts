@@ -62,7 +62,7 @@ export async function logoutAction({ cookies, request }: RequestEvent) {
     }
   }
 
-  deleteSessionCookie(cookies)
+  deleteSessionCookie(cookies, request.url)
 
   return { success: true }
 }

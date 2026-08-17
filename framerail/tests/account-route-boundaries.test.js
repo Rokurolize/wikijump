@@ -123,6 +123,72 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
 })
 
+test("login shares a session across native Wikijump wiki hosts but not custom domains", async () => {
+  const previousFramerailEnv = process.env.FRAMERAIL_ENV
+  process.env.FRAMERAIL_ENV = "local"
+
+  try {
+    client.request = async (method, params) => {
+      if (method === "login") {
+        assert.equal(params.name_or_email, "account-fixture")
+        assert.equal(params.password, "fixture-password")
+        return { session_token: "shared-account-session", needs_mfa: false }
+      }
+      if (method === "session_get") {
+        assert.deepEqual(params, ["shared-account-session"])
+        return {
+          session_token: "shared-account-session",
+          user_id: 41,
+          created_at: "2026-08-10T00:00:00Z",
+          expires_at: "2026-08-11T00:00:00Z",
+          ip_address: "192.0.2.41",
+          user_agent: "account route test",
+          restricted: false
+        }
+      }
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
+
+    const login = async (origin) => {
+      const formData = new FormData()
+      formData.set("nameOrEmail", "account-fixture")
+      formData.set("password", "fixture-password")
+      const setCookies = []
+      const result = await routes.login.actions.default({
+        request: new Request(`${origin}/-/login`, {
+          method: "POST",
+          headers: siteHeaders,
+          body: formData
+        }),
+        getClientAddress: () => "192.0.2.41",
+        cookies: {
+          set: (name, value, options) => setCookies.push({ name, value, options })
+        }
+      })
+      assert.equal(result.isLoggedIn, true)
+      assert.equal(result.needsMfa, false)
+      assert.equal(result.session_token, undefined)
+      assert.equal(setCookies.length, 1)
+      return setCookies[0]
+    }
+
+    const nativeCookie = await login("https://scp-wiki.wikijump.localhost")
+    assert.equal(nativeCookie.name, "wikijump_token")
+    assert.equal(nativeCookie.value, "shared-account-session")
+    assert.equal(nativeCookie.options.domain, "wikijump.localhost")
+    assert.equal(nativeCookie.options.path, "/")
+    assert.equal(nativeCookie.options.httpOnly, true)
+    assert.equal(nativeCookie.options.secure, true)
+    assert.equal(nativeCookie.options.sameSite, "lax")
+
+    const customDomainCookie = await login("https://wiki.example.test")
+    assert.equal(customDomainCookie.options.domain, undefined)
+  } finally {
+    if (previousFramerailEnv === undefined) delete process.env.FRAMERAIL_ENV
+    else process.env.FRAMERAIL_ENV = previousFramerailEnv
+  }
+})
+
 test("legacy user slug route fails closed for imported profiles", async () => {
   client.request = async (method) => {
     if (method === "translate") return {}

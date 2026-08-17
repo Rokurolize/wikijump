@@ -3,6 +3,7 @@ import defaults from "$lib/defaults"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { authLogin } from "$lib/server/auth/login"
 import { authMfaVerify } from "$lib/server/auth/mfa"
+import { setSessionCookie } from "$lib/server/auth/session-cookie"
 import { translate } from "$lib/server/deepwell/translate"
 import {
   clearLoginPassword,
@@ -88,7 +89,7 @@ export async function loginAction({ request, getClientAddress, cookies }: Reques
         ipAddress,
         userAgent
       )
-      await setSessionCookie(cookies, sessionToken)
+      await setAuthenticatedSessionCookie(cookies, sessionToken, request.url)
 
       return redactAuthActionPayload(
         {
@@ -124,7 +125,7 @@ export async function loginAction({ request, getClientAddress, cookies }: Reques
     const res = await authLogin(data.nameOrEmail, data.password, ipAddress, userAgent)
 
     if (res.session_token && !res.needs_mfa) {
-      await setSessionCookie(cookies, res.session_token)
+      await setAuthenticatedSessionCookie(cookies, res.session_token, request.url)
     }
 
     return redactAuthActionPayload(
@@ -148,13 +149,11 @@ const loginSchema = object({
   password: pipe(string(), minLength(1))
 })
 
-async function setSessionCookie(cookies: Cookies, sessionToken: string) {
+async function setAuthenticatedSessionCookie(
+  cookies: Cookies,
+  sessionToken: string,
+  requestUrl: string
+) {
   const session = requireActionSession(await authGetSession(sessionToken))
-  cookies.set("wikijump_token", sessionToken, {
-    path: "/",
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    expires: new Date(session.expires_at)
-  })
+  setSessionCookie(cookies, sessionToken, session.expires_at, requestUrl)
 }

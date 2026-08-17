@@ -76,7 +76,7 @@ export async function loadPreload(request: Request, cookies: Cookies) {
   } catch (error) {
     if (!sessionToken || !isInvalidSessionTokenError(error)) throw error
 
-    deleteSessionCookie(cookies)
+    deleteSessionCookie(cookies, request.url)
     response = await preloadView(siteId, backendLocales, undefined)
   }
 

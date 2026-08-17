@@ -9,6 +9,7 @@
   import { Layout } from "$lib/types"
   import {
     WIKIDOT_POWERED_BY,
+    buildWikidotAccountLabels,
     buildWikidotFooterLinks,
     buildWikidotLicenseHtml,
     buildWikidotLoginLabels,
@@ -89,6 +90,7 @@
   const wikidotLocale = $derived(canonicalView.locale)
   const wikidotFooterLinks = $derived(buildWikidotFooterLinks(wikidotLocale))
   const wikidotLoginLabels = $derived(buildWikidotLoginLabels(wikidotLocale))
+  const wikidotAccountLabels = $derived(buildWikidotAccountLabels(wikidotLocale))
   const wikidotLicenseHtml = $derived(
     buildWikidotLicenseHtml({
       licenseName: canonicalView.licenseName,
@@ -289,12 +291,23 @@
     {/snippet}
 
     {#snippet loginStatus()}
-      {#if isImportedWikidotLayout && !useSandboxWikidotChrome && wikidotSessionUserName}
+      {#if !useSandboxWikidotChrome && wikidotSessionUserName}
         <div id="login-status">
+          <a id="my-account" href={resolve("/-/user", {})}>{wikidotSessionUserName}</a>
           <span class="printuser">{wikidotSessionUserName}</span>
-          <span> | </span>
-          <span>My account</span>
-          <span> ▼</span>
+          <div id="account-options">
+            <ul>
+              <li>
+                <a href={resolve("/-/user", {})}>{wikidotAccountLabels.myAccount}</a>
+              </li>
+              <li>
+                <a href={resolve("/-/settings", {})}>{wikidotAccountLabels.settings}</a>
+              </li>
+              <li>
+                <a href={resolve("/-/logout", {})}>{wikidotAccountLabels.signOut}</a>
+              </li>
+            </ul>
+          </div>
         </div>
       {:else if !useSandboxWikidotChrome && !viewData?.user_session}
         <div id="login-status">
