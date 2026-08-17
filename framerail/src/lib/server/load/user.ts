@@ -177,6 +177,7 @@ export function sanitizeUserData(
       "email_validation_info",
       "email_validation_at",
       "locales",
+      "forum_signature",
       "real_name",
       "gender",
       "birthday",

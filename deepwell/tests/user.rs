@@ -1081,6 +1081,53 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
     );
     assert_str_eq!(updated.biography, Some("self-service edit"));
 
+    let updated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "forum_signature": "**Forum signature**\nSecond line",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_str_eq!(
+        updated.forum_signature,
+        Some("**Forum signature**\nSecond line"),
+    );
+
+    for invalid_signature in ["x".repeat(401), "one\ntwo\nthree\nfour\nfive".to_owned()] {
+        let error = run_endpoint_err!(
+            runner,
+            user_edit,
+            json!({
+                "user": target.user_id,
+                "forum_signature": invalid_signature,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+    let unchanged = run_endpoint!(runner, user_get, json!({"user": target.user_id}))
+        .expect("signature target should still exist")
+        .user
+        .unwrap_wikijump()
+        .expect("signature target should remain a Wikijump user");
+    assert_str_eq!(
+        unchanged.forum_signature,
+        Some("**Forum signature**\nSecond line"),
+    );
+
+    let cleared = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "forum_signature": "",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(cleared.forum_signature.is_none());
+
     let error = run_endpoint_err!(
         runner,
         user_edit,

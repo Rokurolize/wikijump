@@ -233,6 +233,7 @@ struct RecentPostCandidate {
     wikidot_user_slug: Option<String>,
     local_user_name: Option<String>,
     local_user_slug: Option<String>,
+    forum_signature: Option<String>,
 }
 
 #[derive(Debug)]
@@ -249,6 +250,21 @@ struct RecentPost {
     created_at: time::OffsetDateTime,
     title: String,
     compiled_html: String,
+    signature_html: Option<String>,
+}
+
+pub(super) async fn render_forum_signature_html(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    source: Option<&str>,
+) -> Result<Option<String>> {
+    let Some(source) = source.filter(|source| !source.is_empty()) else {
+        return Ok(None);
+    };
+    let output =
+        RenderService::render_wikidot_syntax_preview(ctx, site_id, "", source.to_owned())
+            .await?;
+    Ok(Some(output.html_output.body))
 }
 
 #[derive(Debug)]
@@ -652,7 +668,7 @@ pub(super) async fn load_recent_posts_page(
                 pr.title AS page_title, fp.user_id, fp.created_at, fpr.title, \
                 fpr.compiled_html_hash, wu.name AS wikidot_user_name, \
                 wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, \
-                local_user.slug AS local_user_slug \
+                local_user.slug AS local_user_slug, local_user.forum_signature \
          FROM forum_post fp \
          JOIN forum_thread t ON t.forum_thread_id = fp.forum_thread_id \
                             AND t.site_id = fp.site_id AND t.deleted_at IS NULL \
@@ -705,6 +721,7 @@ pub(super) async fn load_recent_posts_page(
         .div_ceil(RECENT_POSTS_PER_PAGE)
         .max(page as usize) as u32;
     let mut posts = Vec::with_capacity(end.saturating_sub(start));
+    let mut signature_cache = BTreeMap::<String, String>::new();
     let drain_start = start.min(visible.len());
     for candidate in visible.drain(drain_start..end) {
         let compiled_html = TextService::get(ctx, &candidate.compiled_html_hash)
@@ -729,6 +746,21 @@ pub(super) async fn load_recent_posts_page(
             created_at: candidate.created_at,
             title: candidate.title,
             compiled_html,
+            signature_html: match candidate.forum_signature.as_deref() {
+                Some(source) if !source.is_empty() => {
+                    if let Some(rendered) = signature_cache.get(source) {
+                        Some(rendered.clone())
+                    } else {
+                        let rendered =
+                            render_forum_signature_html(ctx, site_id, Some(source))
+                                .await?
+                                .expect("non-empty signature source renders a signature");
+                        signature_cache.insert(source.to_owned(), rendered.clone());
+                        Some(rendered)
+                    }
+                }
+                _ => None,
+            },
         });
     }
     Ok(Some(RecentPostsPage {
@@ -834,7 +866,7 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
         );
         write!(
             &mut output,
-            "<div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"title\" id=\"post-title-{}\"><a href=\"{}\">{}</a></div><div class=\"info\">{} {}<br/>in discussion <a href=\"/forum/c-{}/{}\">{} / {}</a> &raquo; <a href=\"{}\">{}</a></div></div><div class=\"content\" id=\"post-content-{}\">{}</div><div class=\"options\"></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"title\" href=\"javascript:;\" >{}</a> by {}, {}</div></div>",
+            "<div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"title\" id=\"post-title-{}\"><a href=\"{}\">{}</a></div><div class=\"info\">{} {}<br/>in discussion <a href=\"/forum/c-{}/{}\">{} / {}</a> &raquo; <a href=\"{}\">{}</a></div></div><div class=\"content\" id=\"post-content-{}\">{}</div>{}<div class=\"options\"></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"title\" href=\"javascript:;\" >{}</a> by {}, {}</div></div>",
             post.forum_post_id,
             post.forum_post_id,
             escape_list_pages_html_attr(&post_path),
@@ -849,6 +881,11 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
             escape_list_pages_html_text(discussion_title),
             post.forum_post_id,
             post.compiled_html,
+            post.signature_html.as_ref().map_or_else(String::new, |signature| {
+                format!(
+                    r#"<div class="signature"><hr class="signature-separator"/>{signature}</div>"#,
+                )
+            }),
             post.forum_post_id,
             escape_list_pages_html_text(&post.title),
             user,

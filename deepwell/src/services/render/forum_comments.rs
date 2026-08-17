@@ -192,7 +192,7 @@ async fn load_comment_nodes(
                     "revision.user_id AS revision_user_id, revision.title, ",
                     "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
                     "wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, ",
-                    "local_user.slug AS local_user_slug, ",
+                    "local_user.slug AS local_user_slug, local_user.forum_signature, ",
                     "revision_wu.name AS revision_wikidot_user_name, ",
                     "revision_wu.slug AS revision_wikidot_user_slug, ",
                     "revision_local.name AS revision_local_user_name, ",
@@ -227,7 +227,7 @@ async fn load_comment_nodes(
         return Ok(None);
     }
 
-    let posts = hydrate_forum_posts(ctx, candidates).await?;
+    let posts = hydrate_forum_posts(ctx, site_id, candidates).await?;
     let mut posts_by_parent = BTreeMap::<Option<i64>, Vec<ForumThreadPostView>>::new();
     for post in posts {
         posts_by_parent

@@ -1,6 +1,7 @@
 import {
   loadUserSettings,
-  userDisplaySettingsAction
+  userDisplaySettingsAction,
+  userForumSignatureSettingsAction
 } from "$lib/server/load/user-settings"
 
 export async function load({ parent }) {
@@ -8,5 +9,6 @@ export async function load({ parent }) {
 }
 
 export const actions = {
-  display: userDisplaySettingsAction
+  display: userDisplaySettingsAction,
+  forumSignature: userForumSignatureSettingsAction
 }

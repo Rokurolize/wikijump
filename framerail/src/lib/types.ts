@@ -121,6 +121,7 @@ export interface UserModel {
   multi_factor_recovery_codes: Nullable<string[]>
   locales: string[]
   avatar_s3_hash: Nullable<number[]>
+  forum_signature: Nullable<string>
   real_name: Nullable<string>
   gender: Nullable<string>
   birthday: Nullable<string>

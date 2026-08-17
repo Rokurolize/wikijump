@@ -995,6 +995,10 @@ pub struct UserFields<'a> {
     // NOTE: This is simply whether an avatar is set or not, not its value.
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub avatar: Maybe<bool>,
+    // NOTE: Forum signature source is user-authored content. Audit only the
+    // presence transition so private account history does not duplicate it.
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub forum_signature: Maybe<bool>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub real_name: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]

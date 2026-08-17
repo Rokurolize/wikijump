@@ -615,6 +615,7 @@ impl UserService {
 
                 // set manually, down below
                 avatar_uploaded_blob_id: Maybe::Unset,
+                forum_signature: Maybe::Unset,
 
                 // bio fields
                 real_name: Maybe::Set(real_name),
@@ -802,6 +803,10 @@ impl UserService {
             )
         };
 
+        if let Maybe::Set(Some(signature)) = &input.forum_signature {
+            validate_forum_signature(signature)?;
+        }
+
         // Gather data for audit log entry
         {
             let mut previous_fields = UserFields::default();
@@ -858,6 +863,16 @@ impl UserService {
             if let Maybe::Set(blob_id) = &input.avatar_uploaded_blob_id {
                 previous_fields.avatar = Maybe::Set(blob_id.is_some());
                 changed_fields.avatar = Maybe::Set(blob_id.is_some());
+            }
+            if let Maybe::Set(signature) = &input.forum_signature {
+                previous_fields.forum_signature = Maybe::Set(
+                    user.forum_signature
+                        .as_deref()
+                        .is_some_and(|value| !value.is_empty()),
+                );
+                changed_fields.forum_signature = Maybe::Set(
+                    signature.as_deref().is_some_and(|value| !value.is_empty()),
+                );
             }
 
             AuditService::log(
@@ -1024,6 +1039,10 @@ impl UserService {
             };
 
             model.avatar_s3_hash = Set(s3_hash);
+        }
+
+        if let Maybe::Set(signature) = input.forum_signature {
+            model.forum_signature = Set(signature.filter(|value| !value.is_empty()));
         }
 
         // Update user
@@ -1492,6 +1511,22 @@ impl UserService {
         debug!("Got next user ID {user_id} in sequence from known_user");
         Ok(user_id)
     }
+}
+
+fn validate_forum_signature(signature: &str) -> Result<()> {
+    if signature.chars().count() > 400 {
+        bail!(Error::new(
+            "forum signature cannot exceed 400 characters",
+            ErrorType::BadRequest,
+        ));
+    }
+    if signature.split('\n').count() > 4 {
+        bail!(Error::new(
+            "forum signature cannot exceed 4 lines",
+            ErrorType::BadRequest,
+        ));
+    }
+    Ok(())
 }
 
 fn is_verified_email_unique_violation(error: &DbErr) -> bool {

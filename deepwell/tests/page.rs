@@ -85,12 +85,13 @@ use deepwell::services::score::ScoreValue as QueryScoreValue;
 use deepwell::services::session::CreateSession;
 use deepwell::services::site::UpdateSiteBody;
 use deepwell::services::text_block::{MIME_HTML, TextBlock};
+use deepwell::services::user::UpdateUserBody;
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
     PageService, RelationService, RenderService, RequestContext, ServiceContext,
     SessionService, SettingsService, SiteService, TextBlockService, TextService,
-    ThemeSetting,
+    ThemeSetting, UserService,
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
@@ -14732,6 +14733,20 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
         "{empty_recent_posts}",
     );
 
+    UserService::update(
+        runner.context(),
+        Reference::Id(SAMPLE_USER_ID),
+        common::IP_ADDRESS,
+        UpdateUserBody {
+            forum_signature: Maybe::Set(Some(
+                "**Forum signature**\nSecond line".to_owned(),
+            )),
+            ..Default::default()
+        },
+    )
+    .await
+    .expect("forum signature fixture should be stored on the posting user");
+
     for number in 0..21 {
         let thread = create_thread(
             &runner,
@@ -15577,6 +15592,14 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
                 r#"<div class="post-container" id="fpc-{root_id}">"#,
             ))
             && thread_ajax.body.contains("Visible Post 00 edited")
+            && thread_ajax
+                .body
+                .contains(r#"<div class="signature"><hr class="signature-separator"/>"#)
+            && thread_ajax
+                .body
+                .contains("<strong>Forum signature</strong>")
+            && thread_ajax.body.contains("Second line")
+            && !thread_ajax.body.contains("**Forum signature**")
             && thread_ajax.body.contains(r#"<div class="changes">"#)
             && thread_ajax.body.contains("Last edited on")
             && thread_ajax
@@ -15619,6 +15642,9 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && !thread_posts_ajax.body.contains("Visible Post 20")
             && !thread_posts_ajax.body.contains("Private Newest Post")
             && thread_posts_ajax.body.contains("Visible Post 00 edited")
+            && thread_posts_ajax
+                .body
+                .contains(r#"<div class="signature"><hr class="signature-separator"/>"#)
             && thread_posts_ajax.body.contains("Last edited on")
             && !thread_posts_ajax.body.contains("Edit")
             && !thread_posts_ajax.body.contains("Delete"),
@@ -15687,6 +15713,9 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             .starts_with(r#"<div id="recent-posts-container">"#)
             && recent_posts_ajax.body.contains("Visible Post 21")
             && recent_posts_ajax.body.contains("Public Page Comment")
+            && recent_posts_ajax
+                .body
+                .contains(r#"<div class="signature"><hr class="signature-separator"/>"#)
             && !recent_posts_ajax.body.contains("Private Newest Post")
             && !recent_posts_ajax.body.contains("Hidden Newest Post"),
         "{}",

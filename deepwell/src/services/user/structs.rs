@@ -302,6 +302,7 @@ pub struct UpdateUserBody {
     pub password: Maybe<String>,
     pub locales: Maybe<Vec<String>>,
     pub avatar_uploaded_blob_id: Maybe<Option<String>>,
+    pub forum_signature: Maybe<Option<String>>,
     pub real_name: Maybe<Option<String>>,
     pub gender: Maybe<Option<String>>,
     pub birthday: Maybe<Option<Date>>,
@@ -481,6 +482,7 @@ fn user_serialization() {
             multi_factor_recovery_codes: None,
             locales: vec![str!("en")],
             avatar_s3_hash: None,
+            forum_signature: None,
             real_name: None,
             gender: None,
             birthday: Some(date!(1970 - 01 - 01)),
@@ -512,6 +514,7 @@ fn user_serialization() {
     "en"
   ],
   "avatar_s3_hash": null,
+  "forum_signature": null,
   "real_name": null,
   "gender": null,
   "birthday": "1970-01-01",
@@ -543,6 +546,7 @@ fn user_serialization() {
             multi_factor_recovery_codes: None,
             locales: vec![str!("en")],
             avatar_s3_hash: None,
+            forum_signature: None,
             real_name: None,
             gender: None,
             birthday: None,
@@ -574,6 +578,7 @@ fn user_serialization() {
     "en"
   ],
   "avatar_s3_hash": null,
+  "forum_signature": null,
   "real_name": null,
   "gender": null,
   "birthday": null,
@@ -610,6 +615,7 @@ fn user_serialization() {
             ]),
             locales: vec![str!("fr"), str!("de")],
             avatar_s3_hash: Some(vec![0; 4]), // actually 64 long
+            forum_signature: None,
             real_name: Some(str!("Bot McMuffin")),
             gender: Some(str!("sans genre")),
             birthday: Some(date!(2005 - 05 - 05)),
@@ -652,6 +658,7 @@ fn user_serialization() {
     0,
     0
   ],
+  "forum_signature": null,
   "real_name": "Bot McMuffin",
   "gender": "sans genre",
   "birthday": "2005-05-05",

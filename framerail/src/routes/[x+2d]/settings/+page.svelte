@@ -10,6 +10,9 @@
   let savedLocales = $state(
     untrack(() => data.user_session?.user.locales?.join(" ") ?? "")
   )
+  let savedSignature = $state(
+    untrack(() => data.user_session?.user.forum_signature ?? "")
+  )
 
   const { form, enhance } = superForm(
     untrack(() => data.displaySettingsForm),
@@ -17,6 +20,24 @@
       onResult: async ({ result }) => {
         if (result.type === "success") {
           savedLocales = $form.locales
+          await invalidateAll()
+        } else if (result.type === "failure" && result.data) {
+          errorPopupState.current = {
+            state: true,
+            message: result.data.message,
+            data: result.data
+          }
+        }
+      }
+    }
+  )
+
+  const { form: signatureForm, enhance: signatureEnhance } = superForm(
+    untrack(() => data.forumSignatureForm),
+    {
+      onResult: async ({ result }) => {
+        if (result.type === "success") {
+          savedSignature = $signatureForm.signature
           await invalidateAll()
         } else if (result.type === "failure" && result.data) {
           errorPopupState.current = {
@@ -57,11 +78,46 @@
   </div>
 </form>
 
+<form
+  id="forum-signature-form"
+  action="?/forumSignature"
+  method="POST"
+  use:signatureEnhance
+>
+  <label for="forum-signature-source"> Forum signature </label>
+  <textarea
+    id="forum-signature-source"
+    name="signature"
+    maxlength="400"
+    rows="4"
+    bind:value={$signatureForm.signature}></textarea>
+  <p class="settings-note">
+    400 characters maximum. Only 4 lines. Wiki syntax is supported.
+  </p>
+  <div class="action-row user-settings-actions">
+    <button
+      class="action-button button-cancel clickable"
+      onclick={() => ($signatureForm.signature = savedSignature)}
+      type="button"
+    >
+      {data.internationalization?.cancel}
+    </button>
+    <button class="action-button button-save clickable" type="submit">
+      {data.internationalization?.save}
+    </button>
+  </div>
+</form>
+
 <style lang="scss">
-  #user-settings-form {
+  #user-settings-form,
+  #forum-signature-form {
     display: grid;
     gap: 0.75rem;
     max-width: 40rem;
+  }
+
+  #forum-signature-source {
+    min-height: 7rem;
   }
 
   .user-settings-actions {

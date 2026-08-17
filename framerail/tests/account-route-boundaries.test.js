@@ -56,8 +56,12 @@ const pageRequest = (path) =>
 
 test("account route loads expose their public SvelteKit page data", async () => {
   const userViewNames = []
+  const translateCalls = []
   client.request = async (method, params) => {
-    if (method === "translate") return {}
+    if (method === "translate") {
+      translateCalls.push(params)
+      return {}
+    }
     if (method === "user_view") {
       userViewNames.push(params.user)
       return {
@@ -96,7 +100,13 @@ test("account route loads expose their public SvelteKit page data", async () => 
   const settings = await routes.settings.load({
     parent: async () => ({
       ...parentData,
-      user_session: { user: { user_id: 41, locales: ["en-US", "ja-JP"] } }
+      user_session: {
+        user: {
+          user_id: 41,
+          locales: ["en-US", "ja-JP"],
+          forum_signature: "**Stored signature**"
+        }
+      }
     })
   })
   const user = await routes.user.load({
@@ -117,10 +127,86 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.equal(register.isLoggedIn, false)
   assert.equal(register.registerForm.valid, false)
   assert.equal(settings.displaySettingsForm.data.locales, "en-US ja-JP")
+  assert.equal(settings.forumSignatureForm.data.signature, "**Stored signature**")
+  const settingsTranslate = translateCalls.find(
+    (params) =>
+      params.messages?.settings && params.messages?.["user-profile-info.locales"]
+  )
+  assert.deepEqual(settingsTranslate?.strip_message_keys, [])
   assert.equal(user.view, "user_found")
   assert.equal(user.user.slug, "account-fixture")
   assert.equal(userSlug.view, "user_found")
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
+})
+
+test("forum signature settings bind the mutation to the current account", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") {
+      return {
+        session_token: "account-session",
+        user_id: 41,
+        created_at: "2026-08-10T00:00:00Z",
+        expires_at: "2026-08-11T00:00:00Z",
+        ip_address: "192.0.2.41",
+        user_agent: "account route test",
+        restricted: false
+      }
+    }
+    if (method === "user_edit") return { user_id: 41 }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const formData = new FormData()
+  formData.set("signature", "**Forum signature**\nSecond line")
+  const result = await routes.settings.actions.forumSignature({
+    request: new Request("https://wikijump.test/-/settings?/forumSignature", {
+      method: "POST",
+      headers: siteHeaders,
+      body: formData
+    }),
+    cookies: { get: () => "account-session" },
+    getClientAddress: () => "192.0.2.41",
+    locals: {
+      requestContext: {
+        siteId: 17,
+        page: "-/settings",
+        sessionToken: "account-session"
+      }
+    }
+  })
+
+  assert.equal(result.form.valid, true)
+  assert.deepEqual(calls, [
+    { method: "session_get", params: ["account-session"], context: undefined },
+    {
+      method: "user_edit",
+      params: {
+        user: 41,
+        ip_address: "192.0.2.41",
+        bypass_filter: false,
+        forum_signature: "**Forum signature**\nSecond line"
+      },
+      context: { siteId: 17, page: "-/settings", sessionToken: "account-session" }
+    }
+  ])
+
+  calls.length = 0
+  const tooManyLines = new FormData()
+  tooManyLines.set("signature", "one\ntwo\nthree\nfour\nfive")
+  const rejected = await routes.settings.actions.forumSignature({
+    request: new Request("https://wikijump.test/-/settings?/forumSignature", {
+      method: "POST",
+      headers: siteHeaders,
+      body: tooManyLines
+    }),
+    cookies: { get: () => "account-session" },
+    getClientAddress: () => "192.0.2.41",
+    locals: { requestContext: { siteId: 17, page: "-/settings" } }
+  })
+  assert.equal(rejected.status, 400)
+  assert.equal(calls.length, 0)
 })
 
 test("login shares a session across native Wikijump wiki hosts but not custom domains", async () => {

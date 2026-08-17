@@ -11,7 +11,7 @@ import { parseUserLocalePreferences } from "$lib/user-settings.js"
 import { fail, redirect } from "@sveltejs/kit"
 import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { minLength, object, pipe, string } from "valibot"
+import { maxLength, minLength, object, pipe, string } from "valibot"
 
 import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import type { RequestEvent } from "@sveltejs/kit"
@@ -27,16 +27,25 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
     { locales },
     valibot(userDisplaySettingsSchema)
   )
-  const internationalization = await translate(parentData.locales, {
-    settings: {},
-    save: {},
-    cancel: {},
-    "user-profile-info.locales": {}
-  })
+  const forumSignatureForm = await superValidate(
+    { signature: parentData.user_session.user.forum_signature ?? "" },
+    valibot(userForumSignatureSettingsSchema)
+  )
+  const internationalization = await translate(
+    parentData.locales,
+    {
+      settings: {},
+      save: {},
+      cancel: {},
+      "user-profile-info.locales": {}
+    },
+    []
+  )
 
   return {
     ...parentData,
     displaySettingsForm,
+    forumSignatureForm,
     internationalization
   }
 }
@@ -76,4 +85,41 @@ export async function userDisplaySettingsAction({
 
 export const userDisplaySettingsSchema = object({
   locales: pipe(string(), minLength(1, "At least one display language is required."))
+})
+
+export async function userForumSignatureSettingsAction({
+  request,
+  cookies,
+  getClientAddress,
+  locals
+}: RequestEvent) {
+  const form = await superValidate(request, valibot(userForumSignatureSettingsSchema))
+  if (!form.valid) return fail(400, { form })
+  const signature = form.data.signature.replace(/\r\n?/g, "\n")
+  if (signature.split("\n").length > 4) {
+    return fail(400, { form, message: "Forum signatures are limited to four lines." })
+  }
+
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) return failForMissingSession({ form })
+
+  try {
+    const session = requireActionSession(await authGetSession(sessionToken))
+    await userEdit(
+      session.user_id,
+      getClientAddress(),
+      { forumSignature: signature || null },
+      getRequestContext(locals)
+    )
+    return { form }
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+}
+
+export const userForumSignatureSettingsSchema = object({
+  signature: pipe(
+    string(),
+    maxLength(400, "Forum signatures are limited to 400 characters.")
+  )
 })

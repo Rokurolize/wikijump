@@ -47,6 +47,7 @@ interface UserEditParams {
   password?: Optional<string>
   locales?: Optional<string[]>
   avatar?: Optional<File>
+  forumSignature?: Optional<Nullable<string>>
   realName?: Optional<Nullable<string>>
   gender?: Optional<Nullable<string>>
   birthday?: Optional<Nullable<string>>
@@ -65,6 +66,7 @@ const directUserEditFields = [
 ] as const
 
 const nullableUserEditFields = [
+  ["forumSignature", "forum_signature"],
   ["realName", "real_name"],
   ["gender", "gender"],
   ["location", "location"],
