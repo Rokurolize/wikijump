@@ -559,6 +559,14 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "page_render_basalt_rate_does_not_claim_active_iftags_through_eof" }]
     },
     {
+      "surface_id": "catalog-feature:syntax-foldable-list",
+      "sources": [
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"cde07d97aaa8e706556030d4d1f9be3d441b7285\" }" },
+        { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "foldable_list_initial_dom_matches_frozen_live_page_preview" }]
+    },
+    {
       "surface_id": "catalog-feature:syntax-include",
       "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) async fn expand_includes(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "include_parser_functions_follow_argument_and_caller_ownership_phases" }]

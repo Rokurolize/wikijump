@@ -11267,6 +11267,53 @@ async fn syntax_links_match_frozen_live_semantics_with_documented_security_diver
 }
 
 #[tokio::test]
+async fn foldable_list_initial_dom_matches_frozen_live_page_preview() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Foldable list initial DOM",
+            "wikitext": concat!(
+                "[[div class=\"foldable-list-container\"]]\n",
+                "* Main\n",
+                " * Child\n",
+                "  * Grandchild\n",
+                "[[/div]]",
+            ),
+        }),
+    );
+
+    let html = preview.body;
+    // Wikidot inserts serialization-only newlines between adjacent tags at
+    // this boundary. Compare the DOM-bearing tag/text sequence rather than
+    // requiring those non-visible whitespace text nodes from the raw AJAX
+    // response.
+    let normalized = html.replace(">\n<", "><");
+    assert!(
+        normalized.contains(concat!(
+            "<div class=\"foldable-list-container\"><ul><li>Main\n",
+            "<ul><li>Child\n",
+            "<ul>",
+            "<li>Grandchild</li></ul></li></ul></li></ul></div>",
+        ),),
+        "public preview must preserve the frozen foldable-list container and authored nested-list DOM:\n{html}",
+    );
+    assert!(!html.contains("foldable-list-toggle"));
+}
+
+#[tokio::test]
 async fn social_syntax_matches_frozen_live_service_selection_and_widget_identity() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
