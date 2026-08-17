@@ -489,6 +489,17 @@
       "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "url-default-schema-applies-to-display without rewriting storage" }]
     },
     {
+      "surface_id": "catalog-feature:data-forms-css-styling",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_live_text_and_select_control_contract" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form create flow renders controls and stores Wikidot source" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:data-forms-howto",
       "sources": [
         { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },

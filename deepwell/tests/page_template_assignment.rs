@@ -1263,6 +1263,42 @@ quoted: false_value"#;
         ]),
     );
 
+    let rendered_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-control-contract:saved",
+                "extra": ""
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            compiled_body_html,
+            ..
+        } => compiled_body_html,
+        other => panic!("expected saved data-form public rendering, got {other:?}"),
+    };
+    for expected in [
+        r#"<table class="form-table">"#,
+        r#"<tr class="form-row">"#,
+        r#"<td class="form-labels"><span class="form-label">Plain text</span></td>"#,
+        r#"<td class="form-values"><span>"#,
+    ] {
+        assert!(
+            rendered_html.contains(expected),
+            "saved data-form HTML must retain the live-observed CSS hook {expected:?}: {rendered_html}",
+        );
+    }
+    assert!(
+        !rendered_html.contains("row-1") && !rendered_html.contains("field-plain"),
+        "default text/select saved output must not invent documentation-only row/value hooks absent from the live capture: {rendered_html}",
+    );
+
     for (slug, source) in [
         (
             "data-form-control-contract:unquoted-number",

@@ -26,12 +26,21 @@ test("data-form create flow renders controls and stores Wikidot source", async (
   await expect(page.locator("textarea.debug")).toHaveCount(0)
   await expect(page.locator("#page-content")).toHaveCount(0)
   await expect(page.getByText("UNTRANSLATED:Page not found")).toHaveCount(0)
-  await expect(page.locator("#edit-page-form")).toHaveClass(/(?:^|\s)data-form(?:\s|$)/u)
+  await expect(page.locator("#edit-page-form")).toHaveClass("form-horizontal data-form")
   await expect(page.locator("input[name='form-use']")).toHaveValue("true")
   await expect(page.locator("input[name='form-fields']")).toHaveValue("name,choice")
   await expect(page.locator("#edit-page-title")).toHaveValue("Example")
   await expect(page.locator("input[name='field-name']")).toHaveValue("")
+  await expect(page.locator("input[name='field-name']")).toHaveClass(
+    "form-control form-text"
+  )
   await expect(page.locator("input[name='field-choice'][value='b']")).toBeChecked()
+  await expect(page.locator("input[name='field-choice'][value='a']")).toHaveClass(
+    "form-select"
+  )
+  await expect(page.locator("input[name='field-choice'][value='b']")).toHaveClass(
+    "form-select"
+  )
 
   await page.locator("input[name='field-name']").press("Enter")
   const writesAfterEnter = await request

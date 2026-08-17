@@ -15,7 +15,7 @@
       ],
       "axes": {
         "P1": [
-          "A data-form template may be styled by site CSS or page CSS; the documented CSS hooks are form-table, form-row row-{row number}, form-labels, form-label, form-values, form-value field-{field name}, form-error, form-{field type}, and form-message."
+          "A data-form template may be styled by site CSS or page CSS. Documentation lists form-table, form-row row-{row number}, form-labels, form-label, form-values, form-value field-{field name}, form-error, form-{field type}, and form-message as styling hooks, but current authenticated live create/save evidence overrides that list for the observed default text/select path: the editor exposes form-horizontal data-form plus form-text/form-select control classes, while saved output exposes form-table, form-row, form-labels, form-label, and form-values and uses plain value spans. Documentation-only hooks that are absent from that live path MUST NOT be fabricated there without a separate live observation establishing the context in which they appear."
         ],
         "P2": [
           "CSS styling does not change YAML or [[form]] parsing. Styling applies only after a valid data-form template has produced its editor or saved-field DOM."
@@ -30,10 +30,10 @@
           "CSS styling has no independent selection, counting, ordering, or pagination semantics; those remain owned by the field and query features being styled."
         ],
         "P6": [
-          "The saved page and editor MUST expose the documented class hooks on their public HTML boundary; CSS loading follows the ordinary site/page CSS routes rather than a data-form-specific network API."
+          "The saved page and editor MUST expose the class hooks established for their exact live-observed field and rendering context. CSS loading follows the ordinary site/page CSS routes rather than a data-form-specific network API; no data-form-only stylesheet transport is inferred."
         ],
         "P7": [
-          "Saved data-form output MUST retain table.form-table, tr.form-row, label/value cell structure, and field-specific class hooks. The hostile-theme capture did not establish computed-style parity, so no extra layout or cascade rule beyond the documented hooks is invented."
+          "For the current live-observed default text/select saved-page path, output MUST retain table.form-table, tr.form-row, td.form-labels/span.form-label, td.form-values, and the plain value span structure; it MUST NOT invent row-number or field-specific value classes absent from that capture. Editor-side field/control classes remain governed by the separately observed generated editor. The hostile-theme capture established no computed-style parity, so no extra layout, cascade, or documentation-only hook requirement is invented for an unobserved context."
         ],
         "P8": [
           "Adding or removing CSS MUST NOT alter persistence or create partial saves. Browser-computed cascade behavior that is not fixed by the documented hook model remains ordinary CSS behavior rather than a data-form-specific compatibility rule."
