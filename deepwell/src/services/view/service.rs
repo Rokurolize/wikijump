@@ -786,8 +786,9 @@ impl ViewService {
                         }
                     };
                     let compiled_body_html = if let Some(data_form) =
-                        data_form.as_ref().filter(|_| page_extra.is_empty())
-                    {
+                        data_form.as_ref().filter(|data_form| {
+                            page_extra.is_empty() && data_form.definition.default_layout
+                        }) {
                         let rendered_wiki_values = render_wikidot_data_form_wiki_values(
                             ctx,
                             data_form,

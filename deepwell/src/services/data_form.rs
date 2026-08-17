@@ -48,14 +48,13 @@ impl DataFormDefinition {
             && self.fields.iter().any(|field| {
                 matches!(
                     field.field_type.as_deref(),
-                    Some("hidden" | "password" | "static" | "url")
+                    Some("hidden" | "password" | "static")
                 )
             })
         {
             return false;
         }
         self.observed_create_edit_compatible
-            && self.default_layout
             && !self.fields.is_empty()
             && self
                 .fields
@@ -282,10 +281,10 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
     let end = wikitext[start..].find("[[/form]]")? + start;
     let form_close_end = end + "[[/form]]".len();
     let body = &wikitext[start..end];
+    let prefix = &wikitext[..form_start];
+    let custom_layout = wikidot_data_form_custom_layout_source_from_prefix(prefix);
     let mut definition = DataFormDefinition {
-        default_layout: !wikitext[..form_start]
-            .lines()
-            .any(|line| line.trim() == "===="),
+        default_layout: !prefix.lines().any(|line| line.trim() == "===="),
         observed_create_edit_compatible: wikitext
             .lines()
             .filter(|line| line.trim() == "[[form]]")
@@ -296,9 +295,8 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                 .filter(|line| line.trim() == "[[/form]]")
                 .count()
                 == 1
-            && wikitext[..form_start]
-                .lines()
-                .all(|line| line.trim().is_empty())
+            && (prefix.lines().all(|line| line.trim().is_empty())
+                || custom_layout.is_some())
             && wikitext[form_close_end..]
                 .lines()
                 .all(|line| line.trim().is_empty()),
@@ -644,6 +642,120 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
     }
     definition.observed_create_edit_compatible &= saw_fields;
     Some(definition)
+}
+
+/// Returns the authored presentation portion of a documented custom data-form
+/// category template.
+///
+/// Wikidot uses one standalone `====` line immediately before the `[[form]]`
+/// block as the boundary between the page layout and the form definition. We
+/// deliberately reject ambiguous multiple separators and non-whitespace
+/// material between the separator and the form block.
+pub fn wikidot_data_form_custom_layout_source(wikitext: &str) -> Option<&str> {
+    let form_start = wikitext.find("[[form]]")?;
+    wikidot_data_form_custom_layout_source_from_prefix(&wikitext[..form_start])
+}
+
+fn wikidot_data_form_custom_layout_source_from_prefix(prefix: &str) -> Option<&str> {
+    let mut offset = 0usize;
+    let mut separator_start = None;
+    for segment in prefix.split_inclusive('\n') {
+        let line = segment.strip_suffix('\n').unwrap_or(segment);
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        if line.trim() == "====" {
+            if separator_start.is_some() {
+                return None;
+            }
+            separator_start = Some(offset);
+        } else if separator_start.is_some() && !line.trim().is_empty() {
+            return None;
+        }
+        offset += segment.len();
+    }
+
+    separator_start.map(|start| &prefix[..start])
+}
+
+/// Expands the documented direct-page `form_data` and `form_raw` variables in
+/// a custom data-form layout before normal Wikidot parsing.
+///
+/// Only field types whose current create/edit scalar contract is established
+/// are expanded here. Unsupported field types remain literal rather than
+/// acquiring guessed display semantics.
+pub fn substitute_wikidot_data_form_layout_variables(
+    layout: &str,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+) -> String {
+    let mut output = String::with_capacity(layout.len());
+    let mut rest = layout;
+
+    while let Some(relative_start) = rest.find("%%form_") {
+        output.push_str(&rest[..relative_start]);
+        let candidate = &rest[relative_start..];
+        let (prefix, raw) = if candidate.starts_with("%%form_data{") {
+            ("%%form_data{", false)
+        } else if candidate.starts_with("%%form_raw{") {
+            ("%%form_raw{", true)
+        } else {
+            output.push_str("%%form_");
+            rest = &candidate["%%form_".len()..];
+            continue;
+        };
+        let Some(relative_end) = candidate[prefix.len()..].find("}%%") else {
+            output.push_str(prefix);
+            rest = &candidate[prefix.len()..];
+            continue;
+        };
+        let field_end = prefix.len() + relative_end;
+        let field_name = &candidate[prefix.len()..field_end];
+        let token_end = field_end + "}%%".len();
+        let replacement = definition
+            .field(field_name)
+            .filter(|field| {
+                matches!(
+                    field.field_type.as_deref(),
+                    Some("text" | "select" | "checkbox" | "wiki" | "url" | "date")
+                )
+            })
+            .map(|field| {
+                let value = values.get(field_name).map(String::as_str).unwrap_or("");
+                if raw {
+                    return (value.to_owned(), false);
+                }
+                let replacement = match field.field_type.as_deref() {
+                    Some("select") => field
+                        .value_label(value)
+                        .map(str::to_owned)
+                        .unwrap_or_else(|| value.to_owned()),
+                    Some("url") if valid_wikidot_bare_url_scalar(value) => {
+                        format!("http://{value}")
+                    }
+                    Some("url") if valid_wikidot_ftp_url(value) => value.to_owned(),
+                    _ => value.to_owned(),
+                };
+                let new_window_url = field.field_type.as_deref() == Some("url")
+                    && output.ends_with('*')
+                    && (valid_wikidot_bare_url_scalar(value)
+                        || valid_wikidot_ftp_url(value));
+                if new_window_url {
+                    (format!("[*{replacement} {replacement}]"), true)
+                } else {
+                    (replacement, false)
+                }
+            });
+        if let Some((replacement, strip_new_window_marker)) = replacement {
+            if strip_new_window_marker {
+                output.pop();
+            }
+            output.push_str(&replacement);
+        } else {
+            output.push_str(&candidate[..token_end]);
+        }
+        rest = &candidate[token_end..];
+    }
+    output.push_str(rest);
+    output
 }
 
 pub fn parse_observed_wikidot_data_form_values(
@@ -1353,7 +1465,70 @@ fields:
         .expect("data form");
 
         assert!(!definition.default_layout);
-        assert!(!definition.supports_observed_create_edit());
+        assert!(definition.supports_observed_create_edit());
+    }
+
+    #[test]
+    fn custom_layout_separator_must_be_unique_and_immediately_precede_form() {
+        assert_eq!(
+            wikidot_data_form_custom_layout_source(
+                "before\r\n====\r\n\r\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]",
+            ),
+            Some("before\r\n"),
+        );
+        assert!(
+            wikidot_data_form_custom_layout_source(
+                "before\n====\nafter\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]",
+            )
+            .is_none(),
+        );
+        assert!(
+            wikidot_data_form_custom_layout_source(
+                "before\n====\n====\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]",
+            )
+            .is_none(),
+        );
+    }
+
+    #[test]
+    fn custom_layout_variables_expand_only_established_field_contracts() {
+        let definition = parse_wikidot_data_form_definition(
+            r#"[[form]]
+fields:
+  priority:
+    type: select
+    values:
+      normal: Normal
+      urgent: Urgent
+  website:
+    type: url
+  target:
+    type: text
+[[/form]]"#,
+        )
+        .expect("data form");
+        let values = BTreeMap::from([
+            ("priority".to_owned(), "urgent".to_owned()),
+            ("target".to_owned(), "missing-target".to_owned()),
+            ("website".to_owned(), "example.com/alpha".to_owned()),
+        ]);
+
+        assert_eq!(
+            substitute_wikidot_data_form_layout_variables(
+                concat!(
+                    "%%form_raw{priority}%%|%%form_data{priority}%%|",
+                    "%%form_data{website}%%|*%%form_data{website}%%|%%form_data{target}%%|",
+                    "%%form_data{unknown}%%|%%form_bad{target}%%",
+                ),
+                &definition,
+                &values,
+            ),
+            concat!(
+                "urgent|Urgent|http://example.com/alpha|",
+                "[*http://example.com/alpha http://example.com/alpha]|missing-target|",
+                "%%form_data{unknown}%%|%%form_bad{target}%%",
+            ),
+        );
     }
 
     #[test]

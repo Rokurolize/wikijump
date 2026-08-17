@@ -1924,6 +1924,177 @@ async fn page_view_exposes_live_checkbox_and_wiki_contract() {
 }
 
 #[tokio::test]
+async fn custom_data_form_layout_remains_editable_and_renders_form_variables() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell custom data-form layout test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    const CATEGORY: &str = "data-form-custom-layout";
+    let template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-custom-layout:_template",
+        concat!(
+            "[[module css]]\n",
+            ".urgent { color: red; font-weight: bold; }\n",
+            "[[/module]]\n",
+            "[[span class=\"%%form_raw{priority}%%\"]]%%form_data{priority}%%[[/span]]\n",
+            "External: *%%form_data{website}%%\n",
+            "Internal: [[[%%form_data{target}%%]]]\n",
+            "====\n",
+            "[[form]]\n",
+            "fields:\n",
+            "  priority:\n",
+            "    label: Priority\n",
+            "    type: select\n",
+            "    values:\n",
+            "      normal: Normal\n",
+            "      urgent: Urgent\n",
+            "  website:\n",
+            "    label: Website\n",
+            "    type: url\n",
+            "  target:\n",
+            "    label: Target\n",
+            "    type: text\n",
+            "[[/form]]",
+        ),
+    )
+    .await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "custom-data-form-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let create_definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-custom-layout:new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => panic!("expected custom-layout create form, got {other:?}"),
+    };
+    assert!(!create_definition.default_layout);
+
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-custom-layout:saved",
+        "priority: urgent\nwebsite: example.com/alpha\ntarget: missing-target",
+    )
+    .await;
+
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-custom-layout:saved", "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected custom-layout edit form, got {other:?}"),
+    };
+    assert_eq!(
+        editor.values,
+        BTreeMap::from([
+            ("priority".to_owned(), "urgent".to_owned()),
+            ("target".to_owned(), "missing-target".to_owned()),
+            ("website".to_owned(), "example.com/alpha".to_owned()),
+        ]),
+    );
+
+    let (rendered_html, rendered_styles) = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": "data-form-custom-layout:saved", "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html,
+            compiled_body_styles,
+            ..
+        } => (compiled_body_html, compiled_body_styles),
+        other => panic!("expected custom-layout saved page, got {other:?}"),
+    };
+    assert!(
+        rendered_html.contains(r#"<span class="urgent">Urgent</span>"#),
+        "form_raw must retain the stored select key while form_data emits its label: {rendered_html}",
+    );
+    assert!(
+        rendered_html.contains(
+            r#"href="http://example.com/alpha" target="_blank" rel="noopener noreferrer""#,
+        ),
+        "url form_data must use the documented default http scheme and leading-star new-window link semantics: {rendered_html}",
+    );
+    assert!(
+        rendered_html.contains(r#"class="newpage" href="/missing-target""#),
+        "text form_data inside ordinary internal-link syntax must use normal link resolution: {rendered_html}",
+    );
+    assert!(
+        rendered_styles
+            .iter()
+            .any(|css| css.contains(".urgent { color: red; font-weight: bold; }")),
+        "custom-layout CSS must flow through the ordinary page/site style channel: {rendered_styles:?}",
+    );
+    assert!(!rendered_html.contains("[[form]]"));
+    assert!(!rendered_html.contains("%%form_data"));
+    assert!(!rendered_html.contains("%%form_raw"));
+}
+
+#[tokio::test]
 async fn page_view_exposes_live_hidden_password_static_url_scalar_contract() {
     let mut runner = TestRunner::setup().await;
     let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))

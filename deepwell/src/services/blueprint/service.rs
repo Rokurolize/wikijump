@@ -23,6 +23,11 @@ use super::template::{compose_template, exact_template_slug};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::site::Model as SiteModel;
 use crate::services::ServiceContext;
+use crate::services::data_form::{
+    parse_wikidot_data_form_definition, substitute_wikidot_data_form_layout_variables,
+    wikidot_data_form_custom_layout_source,
+};
+use crate::services::page_query::parse_static_wikidot_data_form_values;
 use crate::services::{PageRevisionService, PageService, RenderService, TextService};
 use crate::types::Reference;
 use crate::utils::{split_category, strip_fluent_control_chars};
@@ -151,6 +156,21 @@ impl BlueprintPageService {
         else {
             return Ok(wikitext);
         };
+
+        if let Some(definition) = parse_wikidot_data_form_definition(&template)
+            && !definition.default_layout
+            && let Some(layout) = wikidot_data_form_custom_layout_source(&template)
+        {
+            if !definition.supports_observed_create_edit() {
+                return Ok(layout.to_owned());
+            }
+            let values = parse_static_wikidot_data_form_values(&wikitext);
+            return Ok(substitute_wikidot_data_form_layout_variables(
+                layout,
+                &definition,
+                &values,
+            ));
+        }
 
         Ok(compose_template(&template, &wikitext))
     }

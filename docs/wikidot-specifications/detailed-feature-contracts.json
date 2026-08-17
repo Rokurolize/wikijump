@@ -263,7 +263,7 @@
           "The public saved-page HTML is the conformance boundary for emitted class names and markup; CSS is obtained through ordinary page/site CSS resources."
         ],
         "P7": [
-          "The output MUST preserve the documented form-value/field-{name} hooks and any explicitly authored value-derived classes. The hostile-theme run did not establish a general computed-style override rule, so no extra cascade guarantee is invented."
+          "The custom output MUST preserve explicitly authored value-derived classes such as a class populated from %%form_raw{field}%%. Documentation-only default-table hooks are not a prerequisite for this custom-layout feature when live default text/select output omits them. The hostile-theme run did not establish a general computed-style override rule, so no extra cascade guarantee is invented."
         ],
         "P8": [
           "A value change and reload MUST converge on one class/output state. A failed save MUST leave both stored value and rendered style selection at the prior revision."

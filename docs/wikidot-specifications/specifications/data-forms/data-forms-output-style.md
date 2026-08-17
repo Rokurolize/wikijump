@@ -64,7 +64,7 @@ Evidence basis:
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
-- The output MUST preserve the documented form-value/field-{name} hooks and any explicitly authored value-derived classes. The hostile-theme run did not establish a general computed-style override rule, so no extra cascade guarantee is invented.
+- The custom output MUST preserve explicitly authored value-derived classes such as a class populated from %%form_raw{field}%%. Documentation-only default-table hooks are not a prerequisite for this custom-layout feature when live default text/select output omits them. The hostile-theme run did not establish a general computed-style override rule, so no extra cascade guarantee is invented.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
