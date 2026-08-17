@@ -11969,6 +11969,84 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
 }
 
 #[tokio::test]
+async fn currencyconvert_executes_only_on_the_www_plans_system_page() {
+    const SOURCE: &str = concat!(
+        "BEFORE\n",
+        "[[module CurrencyConvert]]\n",
+        "[[div class=\"plan-price\"]]\n",
+        "$49.90\n",
+        "[[/div]]\n",
+        "[[/module]]\n",
+        "AFTER",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let www = run_endpoint!(runner, site_get, json!({"site": "www"}))
+        .expect("seeded www system site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        www.site_id,
+        "plans",
+        "Subscription plans",
+        SOURCE,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(www.site_id),
+        ..Default::default()
+    });
+    let plans = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": www.site_id,
+            "session_token": null,
+            "route": {"slug": "plans", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found www plans view, got {other:?}"),
+    };
+    assert!(
+        plans.contains("BEFORE")
+            && plans.contains(r#"<div class="plan-price">"#)
+            && plans.contains("$49.90")
+            && plans.contains("AFTER")
+            && !plans.contains("CurrencyConvert")
+            && !plans.contains("No such module"),
+        "the www plans system page should consume CurrencyConvert and render its body:\n{plans}",
+    );
+
+    let ordinary = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded ordinary test site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(ordinary.site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": ordinary.site_id,
+            "title": "CurrencyConvert ordinary page control",
+            "wikitext": SOURCE,
+        }),
+    );
+    assert!(
+        preview.body.contains("No such module")
+            && preview.body.contains("CurrencyConvert"),
+        "ordinary pages must keep CurrencyConvert on Wikidot's unknown-module boundary:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
 async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries() {
     async fn load_forum_mini_page_view(
         runner: &TestRunner,

@@ -203,6 +203,10 @@ static ADSENSEUNIT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+AdSenseUnit\b(?:[^\]"]+|"[^"]*")*\]\]"#)
         .expect("AdSenseUnit module expression is valid")
 });
+static CURRENCY_CONVERT_SYSTEM_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?s)\[\[module CurrencyConvert\]\](?P<body>.*?)\[\[/module\]\]"#)
+        .expect("CurrencyConvert system module expression is valid")
+});
 static RUNTIME_MODULE_RESIDUAL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r#"(?is)\[\[module[ \t]+(?P<name>Redirect|NewPage|PagesByTag|LoginStatus|NaviBar|FooterBar|PageOptionsBottom|AdModuleAboveContent|AdModuleBelowContent|AdModuleAboveSidebar|AdModuleBelowSidebar|AdModuleBelowFooter)\b(?P<head>(?:[^\]"'\r\n]+|"[^"]*"|'[^']*')*)\]\]"#,
@@ -2018,6 +2022,44 @@ impl RenderService {
         output
     }
 
+    fn expand_www_currency_convert_system_module(
+        wikitext: String,
+        page_info: &PageInfo<'_>,
+        settings: &WikitextSettings,
+    ) -> String {
+        if !settings.enable_page_syntax
+            || page_info.site.as_ref() != "www"
+            || page_info.page.as_ref() != "plans"
+            || !CURRENCY_CONVERT_SYSTEM_MODULE_REGEX.is_match(&wikitext)
+        {
+            return wikitext;
+        }
+
+        let literal_regions =
+            LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for captures in CURRENCY_CONVERT_SYSTEM_MODULE_REGEX.captures_iter(&wikitext) {
+            let matched = captures
+                .get(0)
+                .expect("CurrencyConvert capture always has a complete match");
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            let body = captures
+                .name("body")
+                .expect("CurrencyConvert capture always has a body");
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(body.as_str());
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return wikitext;
+        }
+        output.push_str(&wikitext[cursor..]);
+        output
+    }
+
     pub(super) async fn expand_secondary_runtime_modules(
         ctx: &ServiceContext<'_>,
         mut wikitext: String,
@@ -2029,6 +2071,9 @@ impl RenderService {
     ) -> Result<String> {
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
+        wikitext = Self::expand_www_currency_convert_system_module(
+            wikitext, page_info, settings,
+        );
         wikitext = {
             let _stage = StageGuard::new(options.trace, CorpusRenderStage::CountPages);
             Self::expand_count_pages(

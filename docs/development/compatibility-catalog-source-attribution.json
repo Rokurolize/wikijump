@@ -173,6 +173,11 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:module-currencyconvert",
+      "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_www_currency_convert_system_module(" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "currencyconvert_executes_only_on_the_www_plans_system_page" }]
+    },
+    {
       "surface_id": "catalog-feature:module-miniactivethreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
@@ -806,6 +811,17 @@
         { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "# Custom domains" }
       ],
       "tests": [{ "path": "deepwell/src/services/caddy/test.rs", "anchor": "fn generate_caddyfiles()" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-https",
+      "sources": [
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "redir https://{{ domain }}{uri}" },
+        { "path": "deepwell/src/services/caddy/service.rs", "anchor": "should_use_wildcard: wildcard_cert.is_some() || *local" }
+      ],
+      "tests": [
+        { "path": "deepwell/src/services/caddy/test.rs", "anchor": "fn generate_caddyfiles()" },
+        { "path": "deepwell/src/services/caddy/test.rs", "anchor": "generated_caddyfile_routes_exact_default_code_path_to_files_domain" }
+      ]
     },
     {
       "surface_id": "catalog-feature:favicons",
