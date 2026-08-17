@@ -282,7 +282,9 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
     let form_close_end = end + "[[/form]]".len();
     let body = &wikitext[start..end];
     let prefix = &wikitext[..form_start];
+    let suffix = &wikitext[form_close_end..];
     let custom_layout = wikidot_data_form_custom_layout_source_from_prefix(prefix);
+    let comment_wrapped = wikidot_data_form_comment_wrapper(prefix, suffix);
     let mut definition = DataFormDefinition {
         default_layout: !prefix.lines().any(|line| line.trim() == "===="),
         observed_create_edit_compatible: wikitext
@@ -295,11 +297,10 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                 .filter(|line| line.trim() == "[[/form]]")
                 .count()
                 == 1
-            && (prefix.lines().all(|line| line.trim().is_empty())
+            && (((prefix.lines().all(|line| line.trim().is_empty())
                 || custom_layout.is_some())
-            && wikitext[form_close_end..]
-                .lines()
-                .all(|line| line.trim().is_empty()),
+                && suffix.lines().all(|line| line.trim().is_empty()))
+                || comment_wrapped),
         ..Default::default()
     };
     let mut in_fields = false;
@@ -642,6 +643,10 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
     }
     definition.observed_create_edit_compatible &= saw_fields;
     Some(definition)
+}
+
+fn wikidot_data_form_comment_wrapper(prefix: &str, suffix: &str) -> bool {
+    prefix.trim() == "[!--" && suffix.trim() == "--]"
 }
 
 /// Returns the authored presentation portion of a documented custom data-form

@@ -993,6 +993,193 @@ async fn assigned_data_form_template_edit_invalidates_warm_imported_article_cach
 }
 
 #[tokio::test]
+async fn data_form_template_deletion_requires_actual_form_removal() {
+    const CATEGORY: &str = "data-form-template-deletion";
+    const TEMPLATE_SLUG: &str = "data-form-template-deletion:_template";
+    const PAGE_SLUG: &str = "data-form-template-deletion:saved";
+    const SAVED_SOURCE: &str = "name: 'Retained value'";
+    const ACTIVE_TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Retained label\n",
+        "    type: text\n",
+        "[[/form]]",
+    );
+    const COMMENTED_TEMPLATE_SOURCE: &str = concat!(
+        "[!--\n",
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Retained label\n",
+        "    type: text\n",
+        "[[/form]]\n",
+        "--]",
+    );
+    const RENAMED_TEMPLATE_SOURCE: &str = concat!(
+        "[[x-form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Retained label\n",
+        "    type: text\n",
+        "[[/x-form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form template deletion test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, ACTIVE_TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form deletion category should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_page(&mut runner, site_id, PAGE_SLUG, SAVED_SOURCE).await;
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, SAVED_SOURCE);
+            assert_eq!(data_form.values["name"], "Retained value");
+        }
+        other => {
+            panic!("active category template must expose the data-form editor: {other:?}")
+        }
+    }
+
+    set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
+    let commented = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TEMPLATE_SLUG,
+            "last_revision_id": template.revision_id,
+            "revision_comments": "comment data-form template without deleting it",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": COMMENTED_TEMPLATE_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("commented template edit should create a revision");
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, SAVED_SOURCE);
+            assert_eq!(data_form.values["name"], "Retained value");
+        }
+        other => panic!(
+            "commenting out [[form]] must not delete the category data form: {other:?}"
+        ),
+    }
+
+    set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TEMPLATE_SLUG,
+            "last_revision_id": commented.revision_id,
+            "revision_comments": "rename data-form construct to delete it",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": RENAMED_TEMPLATE_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("renamed template edit should create a revision");
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            wikitext,
+            ..
+        } => assert_eq!(wikitext, SAVED_SOURCE),
+        other => {
+            panic!("renaming [[form]] must restore the ordinary page editor: {other:?}")
+        }
+    }
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-template-deletion:new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: None, ..
+        } => {}
+        other => {
+            panic!("renamed [[form]] must disable the generated create editor: {other:?}")
+        }
+    }
+}
+
+#[tokio::test]
 async fn page_view_exposes_live_text_and_select_control_contract() {
     const CATEGORY: &str = "data-form-control-contract";
     const TEMPLATE_SOURCE: &str = concat!(

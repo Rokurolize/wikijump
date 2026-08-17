@@ -286,6 +286,15 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:data-forms-deleting-form",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "fn wikidot_data_form_comment_wrapper(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "data_form_template_deletion_requires_actual_form_removal" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:data-forms-creating-new-page",
       "sources": [
         { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "pageId: creating ? 0 : pageId" },
