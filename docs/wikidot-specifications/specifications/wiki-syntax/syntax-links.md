@@ -64,10 +64,34 @@ Evidence basis:
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
 - Email syntax renders as span.wiki-email with scrambled visible text. Anchor href/text/target/class and InterWiki onclick behavior are compatibility-sensitive at the rendered DOM boundary.
+- For new-window anchors, live Wikidot emits target="_blank" without a rel attribute. The local runtime deliberately adds rel="noopener noreferrer" as an accepted security divergence (reverse-tabnabbing hardening); see the syntax-links-noopener-security-divergence-20260817 live observation. This hardening is not exact DOM parity and must not be silently removed or silently presented as Wikidot-identical.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
 - Malformed or unsupported magic options MUST NOT acquire mutation authority. Navigation/back-forward behavior follows the resulting URL; render-time recognition must remain deterministic and safe under unusual characters and escaping.
+
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Wikidot new-window links carry no rel; the local runtime adds an accepted noopener hardening
+
+- Observation ID: `syntax-links-noopener-security-divergence-20260817`
+- Classification: `documentation-correction`
+- Observed at: `2026-08-17`
+- Analysis: Frozen anonymous Wikidot PagePreview evidence for the single-bracket external new-window form [*https://example.com/ Example] renders <a href="https://example.com/" target="_blank">Example</a> with no rel attribute. The local runtime renders the identical anchor with an additional rel="noopener noreferrer" hardening. This is a deliberate security divergence: removing the hardening to byte-match live Wikidot would weaken reverse-tabnabbing protection for byte-equivalence, which the compatibility charter does not permit. The divergence is classified as an accepted security divergence and is not exact Wikidot parity.
+
+Normative behavior:
+
+- Live Wikidot renders new-window external links as target="_blank" anchors without a rel attribute.
+- The local runtime preserves the rel="noopener noreferrer" hardening on the same anchors as an accepted security divergence.
+- The divergence is a deliberate security hardening, not exact DOM parity; it must not be silently removed, and it must not be silently presented as Wikidot-identical.
+
+Evidence:
+
+- `/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl` (SHA-256 `6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a`), cases: `spec-syntax-link-external-new-window`
+
 
 
 ## Suggested public TDD seams

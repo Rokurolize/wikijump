@@ -3126,6 +3126,30 @@
           ]
         }
       ]
+    },
+    {
+      "id": "syntax-links-noopener-security-divergence-20260817",
+      "title": "Wikidot new-window links carry no rel; the local runtime adds an accepted noopener hardening",
+      "feature_ids": [
+        "syntax-links"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-08-17",
+      "analysis": "Frozen anonymous Wikidot PagePreview evidence for the single-bracket external new-window form [*https://example.com/ Example] renders <a href=\"https://example.com/\" target=\"_blank\">Example</a> with no rel attribute. The local runtime renders the identical anchor with an additional rel=\"noopener noreferrer\" hardening. This is a deliberate security divergence: removing the hardening to byte-match live Wikidot would weaken reverse-tabnabbing protection for byte-equivalence, which the compatibility charter does not permit. The divergence is classified as an accepted security divergence and is not exact Wikidot parity.",
+      "normative_behavior": [
+        "Live Wikidot renders new-window external links as target=\"_blank\" anchors without a rel attribute.",
+        "The local runtime preserves the rel=\"noopener noreferrer\" hardening on the same anchors as an accepted security divergence.",
+        "The divergence is a deliberate security hardening, not exact DOM parity; it must not be silently removed, and it must not be silently presented as Wikidot-identical."
+      ],
+      "evidence": [
+        {
+          "path": "/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl",
+          "sha256": "6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a",
+          "case_ids": [
+            "spec-syntax-link-external-new-window"
+          ]
+        }
+      ]
     }
   ]
 }
