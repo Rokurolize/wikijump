@@ -161,6 +161,18 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "static_account_modules_match_live_preview_and_page_view_basics" }]
     },
     {
+      "surface_id": "catalog-feature:module-join",
+      "sources": [
+        { "path": "deepwell/src/services/render/membership_actions.rs", "anchor": "pub fn from_wikidot_source(source: &str) -> Self" },
+        { "path": "deepwell/src/services/membership/service.rs", "anchor": "pub async fn join(" }
+      ],
+      "tests": [
+        { "path": "deepwell/src/services/render/membership_actions.rs", "anchor": "saved_join_binding_resolves_only_the_exact_registry_entry" },
+        { "path": "deepwell/tests/role.rs", "anchor": "ordinary_user_joins_only_the_editable_site_then_creates_a_page" },
+        { "path": "framerail/tests/wikidot-legacy-actions.test.js", "anchor": "Join binds exact renderer DOM out of band and remains busy through reload" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:module-miniactivethreads",
       "sources": [{ "path": "deepwell/src/services/render/forum_mini.rs", "anchor": "expand_forum_mini_modules" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries" }]
@@ -656,6 +668,18 @@
       "tests": [{ "path": "framerail/tests/wikidot-collapsible.spec.ts", "anchor": "Wikidot-compatible collapsibles preserve legacy interaction" }]
     },
     {
+      "surface_id": "catalog-feature:syntax-embedding",
+      "sources": [
+        { "path": "deepwell/src/services/render/compat/wikidot_embed.rs", "anchor": "pub(in crate::services::render) fn protect_wikidot_embed_iframes(" },
+        { "path": "deepwell/src/services/render/compat/wikidot_embed_video.rs", "anchor": "pub(in crate::services::render) fn resolve_wikidot_embed_video_requirements(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/media.rs", "anchor": "documented_embedaudio_probe_matches_frozen_live_preview" },
+        { "path": "deepwell/tests/media.rs", "anchor": "embedvideo_preview_resolves_only_allowlisted_typed_media" },
+        { "path": "deepwell/tests/media.rs", "anchor": "embedvideo_preview_fails_closed_for_unsupported_media" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:syntax-embedding-code",
       "sources": [
         { "path": "deepwell/src/services/render/compat/wikidot_iframe.rs", "anchor": "pub(in crate::services::render) fn expand_wikidot_iframe_syntax(" },
@@ -664,6 +688,19 @@
       ],
       "tests": [
         { "path": "deepwell/tests/media.rs", "anchor": "documented_embedding_code_probes_match_frozen_live_preview" },
+        { "path": "deepwell/tests/page.rs", "anchor": "wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:syntax-engine",
+      "sources": [
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"cde07d97aaa8e706556030d4d1f9be3d441b7285\" }" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub async fn render(" },
+        { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "documented_expression_parser_functions_render_at_the_public_preview_seam" },
+        { "path": "deepwell/tests/page.rs", "anchor": "page_view_rerenders_stale_persisted_compiled_artifact" },
         { "path": "deepwell/tests/page.rs", "anchor": "wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them" }
       ]
     },
@@ -740,6 +777,37 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "article_view_uses_category_license_and_site_fallback" }]
     },
     {
+      "surface_id": "catalog-feature:account-lifecycle",
+      "sources": [
+        { "path": "deepwell/src/endpoints/user.rs", "anchor": "pub async fn user_create(" },
+        { "path": "deepwell/src/endpoints/user.rs", "anchor": "pub async fn user_delete(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/user.rs", "anchor": "user_create_only_verified_email_blocks_conflict" },
+        { "path": "deepwell/tests/user.rs", "anchor": "user_delete_and_its_audit_event_roll_back_together" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:avatars",
+      "sources": [
+        { "path": "deepwell/src/services/user/service.rs", "anchor": "BlobService::finish_avatar_upload(" },
+        { "path": "framerail/src/lib/server/wikidot-user-info.js", "anchor": "user.avatar_s3_hash !== null && loadAvatar" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/user.rs", "anchor": "oversized_avatar_rejection_does_not_promote_blob_or_change_target" },
+        { "path": "framerail/tests/wikidot-user-info-target-route.test.js", "anchor": "UserInfo exposes an avatar only through the existing trusted file seam" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:custom-domains",
+      "sources": [
+        { "path": "deepwell/src/endpoints/domain.rs", "anchor": "pub async fn site_custom_domain_create(" },
+        { "path": "deepwell/src/services/domain/service.rs", "anchor": "pub async fn site_from_custom_domain_optional(" },
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "# Custom domains" }
+      ],
+      "tests": [{ "path": "deepwell/src/services/caddy/test.rs", "anchor": "fn generate_caddyfiles()" }]
+    },
+    {
       "surface_id": "catalog-feature:favicons",
       "sources": [
         { "path": "deepwell/src/services/site/service.rs", "anchor": "fn validate_site_icon_source(" },
@@ -748,12 +816,47 @@
       "tests": [{ "path": "framerail/tests/site-icons.test.js", "anchor": "favicon declaration keeps Wikidot's local route rather than the configured source" }]
     },
     {
+      "surface_id": "catalog-feature:karma",
+      "sources": [
+        { "path": "deepwell/src/services/user/structs.rs", "anchor": "user_karma: karma" },
+        { "path": "framerail/src/lib/server/wikidot-user-info.js", "anchor": "const karmaLevel = imported" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries" },
+        { "path": "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js", "anchor": "UserInfo projects imported free accounts and the observed none/high karma labels" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:private-messages",
+      "sources": [
+        { "path": "deepwell/src/services/message/service.rs", "anchor": "pub async fn create_draft(" },
+        { "path": "deepwell/src/services/message/service.rs", "anchor": "pub async fn send(" },
+        { "path": "deepwell/src/endpoints/message.rs", "anchor": "pub async fn message_draft_send(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/message.rs", "anchor": "message_draft_mutations_do_not_reveal_foreign_drafts" },
+        { "path": "deepwell/tests/message.rs", "anchor": "message_draft_lifecycle_sends_and_deletes_drafts" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:roles-and-permissions",
       "sources": [
         { "path": "deepwell/src/services/permission/service.rs", "anchor": "pub async fn check_user_can<'a>(" },
         { "path": "deepwell/src/services/role/service.rs", "anchor": "pub async fn grant_role_to_user(" }
       ],
       "tests": [{ "path": "deepwell/tests/permission.rs", "anchor": "async fn check_user_can()" }]
+    },
+    {
+      "surface_id": "catalog-feature:user-roles",
+      "sources": [
+        { "path": "deepwell/src/services/role/service.rs", "anchor": "pub async fn grant_role_to_user(" },
+        { "path": "deepwell/src/services/role/service.rs", "anchor": "pub async fn revoke_role_from_user(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/role.rs", "anchor": "role_create_and_list" },
+        { "path": "deepwell/tests/role.rs", "anchor": "grant_and_revoke_role" },
+        { "path": "deepwell/tests/role.rs", "anchor": "role_assignment_and_membership_require_role_assign" }
+      ]
     },
     {
       "surface_id": "catalog-feature:site-membership",
