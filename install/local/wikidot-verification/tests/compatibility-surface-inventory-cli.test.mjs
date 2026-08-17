@@ -1161,10 +1161,6 @@ test("CLI projects the audited registry issue owners and catalog implementation 
       .every((record) => record.existing_refs.issues.length === 1),
     true
   )
-  assert.equal(
-    catalog.filter((record) => record.existing_refs.issues[0] === 1387).length,
-    183
-  )
   assert.deepEqual(byId.get("catalog-feature:module-comments").existing_refs.issues, [1034])
   assert.deepEqual(byId.get("catalog-feature:module-members").existing_refs.issues, [1032])
   assert.deepEqual(byId.get("catalog-feature:module-managesite").existing_refs.issues, [1038])

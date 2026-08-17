@@ -148,7 +148,8 @@
           "deepwell/tests/page.rs#public_membership_module_states_are_distinct_and_opaque",
           "deepwell/tests/page.rs#renderer_epoch_invalidates_pre_freeze_compiled_artifacts",
           "deepwell/tests/page.rs#wikidot_files_saved_view_hides_rows_without_module_instance_authority",
-          "deepwell/tests/page_meta_tag.rs#page_meta_tag_overrides_site_tag_in_effective_reads_and_article_view"
+          "deepwell/tests/page_meta_tag.rs#page_meta_tag_overrides_site_tag_in_effective_reads_and_article_view",
+          "deepwell/tests/site.rs#hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
       }
@@ -1730,11 +1731,17 @@
           "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared",
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
+          "deepwell/tests/page_template_assignment.rs#data_form_youtube_raw_wiki_executes_only_inside_html_block",
           "deepwell/tests/page_template_assignment.rs#empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "deepwell/tests/page_template_assignment.rs#page_view_and_edit_round_trip_date_field_scalars_and_options",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_category_data_form_definition_in_template_order",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_hidden_password_static_url_scalar_contract",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
+          "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
           "deepwell/tests/site.rs#category_navigation_update_requires_site_edit_and_supports_inheritance"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -4606,6 +4613,7 @@
           "deepwell/tests/page.rs#orphanedpages_module_refreshes_after_linker_soft_delete",
           "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
           "deepwell/tests/page.rs#page_delete_ignores_deleted_include_consumers_during_outdating",
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_get_files_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
@@ -4649,6 +4657,7 @@
           "deepwell/tests/permission.rs#page_view_permission_endpoint_hides_missing_and_private_pages",
           "deepwell/tests/rated_pages.rs#ratedpages_renders_live_top_rated_box_and_rating_filters",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page",
+          "deepwell/tests/site.rs#hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints",
           "deepwell/tests/vote.rs#vote_set_rejects_out_of_domain_values_before_persistence"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -4811,6 +4820,7 @@
           "deepwell/tests/page.rs#listpages_metadata_selectors_honor_target_view_permissions",
           "deepwell/tests/page.rs#listpages_template_selectors_can_use_current_page_data_form_values",
           "deepwell/tests/page.rs#nextpreviouspage_module_renders_live_selection_templates_and_runtime_updates",
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_mutations_require_page_permissions",
           "deepwell/tests/page.rs#page_query_revision_order_keeps_unrequested_count_out_of_results",
           "deepwell/tests/page.rs#page_revision_range_returns_resolved_authors_and_hides_missing_identities",
@@ -4822,7 +4832,9 @@
           "deepwell/tests/page.rs#wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page",
           "deepwell/tests/page_lifecycle_identity.rs#lifecycle_identity_preserves_imported_native_and_mixed_display_names",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
           "deepwell/tests/page_template_assignment.rs#empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "deepwell/tests/page_template_assignment.rs#page_view_and_edit_round_trip_date_field_scalars_and_options",
           "deepwell/tests/template.rs#template_edit_and_deletion_change_existing_page_on_rerender"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -6069,6 +6081,7 @@
         "reference": "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
         "alternatives": [
           "deepwell/tests/page.rs#basic_move",
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_move_renders_with_destination_category_context",
           "deepwell/tests/page.rs#page_move_requires_destination_create_permission",
           "deepwell/tests/page.rs#pages_by_tag_saved_page_views_follow_current_tagged_page_state"
@@ -6593,8 +6606,9 @@
       "transaction_isolation": "default",
       "test_witness": {
         "kind": "endpoint_behavioral",
-        "reference": "deepwell/tests/page.rs#page_revision_range_returns_resolved_authors_and_hides_missing_identities",
+        "reference": "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
         "alternatives": [
+          "deepwell/tests/page.rs#page_revision_range_returns_resolved_authors_and_hides_missing_identities",
           "deepwell/tests/page.rs#page_revision_reads_require_page_view_permission"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -6895,6 +6909,7 @@
           "deepwell/tests/page.rs#categories_runtime_inventory_is_scoped_to_the_request_actor",
           "deepwell/tests/page.rs#childpages_module_renders_live_child_list_and_empty_state",
           "deepwell/tests/page.rs#countpages_saved_page_views_follow_current_matching_page_state",
+          "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page",
           "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
           "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
@@ -6945,11 +6960,17 @@
           "deepwell/tests/page.rs#wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them",
           "deepwell/tests/page.rs#wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars",
           "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
+          "deepwell/tests/page_template_assignment.rs#data_form_youtube_raw_wiki_executes_only_inside_html_block",
           "deepwell/tests/page_template_assignment.rs#empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "deepwell/tests/page_template_assignment.rs#page_view_and_edit_round_trip_date_field_scalars_and_options",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_category_data_form_definition_in_template_order",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_hidden_password_static_url_scalar_contract",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
+          "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
           "deepwell/tests/rated_pages.rs#ratedpages_renders_live_top_rated_box_and_rating_filters",
           "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page"
         ],
@@ -7479,6 +7500,7 @@
         "reference": "deepwell/tests/list_pages.rs#child_listpages_expands_site_domain_and_parent_fullname",
         "alternatives": [
           "deepwell/tests/page.rs#parent_mutations_require_child_page_edit_permission",
+          "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
           "deepwell/tests/parent.rs#changed_parent_relationships_queue_parent_rerenders"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -8121,6 +8143,7 @@
         "kind": "endpoint_behavioral",
         "reference": "deepwell/tests/site.rs#anonymous_site_create_emits_no_event",
         "alternatives": [
+          "deepwell/tests/site.rs#hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints",
           "deepwell/tests/site.rs#public_site_create_audits_authenticated_actor_and_supplied_ip_once"
         ],
         "source_contract_reference": "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
@@ -8318,8 +8341,11 @@
           "deepwell/tests/list_pages_random.rs#random_listpages_cache_refreshes_expires_and_separates_body_and_page",
           "deepwell/tests/list_pages_random.rs#random_listpages_handles_empty_singleton_and_multiple_modules",
           "deepwell/tests/list_pages_random.rs#wikidot_ajax_random_listpages_rejects_invalid_pager_values",
+          "deepwell/tests/media.rs#arbitrary_embedvideo_host_remains_fail_closed_pending_issue_1042",
           "deepwell/tests/media.rs#authored_embedvideo_marker_cannot_forge_a_typed_requirement",
           "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom",
+          "deepwell/tests/media.rs#documented_embedaudio_probe_matches_frozen_live_preview",
+          "deepwell/tests/media.rs#documented_embedding_code_probes_match_frozen_live_preview",
           "deepwell/tests/media.rs#embedvideo_preview_and_saved_page_share_rendered_body",
           "deepwell/tests/media.rs#embedvideo_preview_fails_closed_for_unsupported_media",
           "deepwell/tests/media.rs#embedvideo_preview_resolves_only_allowlisted_typed_media",
@@ -8379,11 +8405,14 @@
           "deepwell/tests/page.rs#countpages_unprefixed_tags_use_or_semantics",
           "deepwell/tests/page.rs#countpages_with_limit_defaults_to_current_category",
           "deepwell/tests/page.rs#countpages_without_selectors_uses_current_category_and_normal_page_defaults",
+          "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page",
           "deepwell/tests/page.rs#current_page_listpages_created_by_uses_creation_revision",
           "deepwell/tests/page.rs#deleted_category_navigation_does_not_fall_back_to_site_navigation",
           "deepwell/tests/page.rs#deleted_site_navigation_is_absent_from_found_and_missing_page_views",
+          "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
           "deepwell/tests/page.rs#exact_name_listpages_batch_preserves_order_duplicates_and_permissions",
           "deepwell/tests/page.rs#excessive_score_selectors_preserve_listpages_and_countpages_modules",
+          "deepwell/tests/page.rs#expression_size_boundary_fails_closed_at_the_public_preview_seam",
           "deepwell/tests/page.rs#failed_page_create_rolls_back_its_allocated_number",
           "deepwell/tests/page.rs#fallback_link_title_batch_preserves_singular_duplicate_permission",
           "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
@@ -8404,6 +8433,7 @@
           "deepwell/tests/page.rs#first_revision_rerenders_included_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tag_dependent_countpages",
           "deepwell/tests/page.rs#first_revision_rerenders_tagcloud",
+          "deepwell/tests/page.rs#foldable_list_initial_dom_matches_frozen_live_page_preview",
           "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
           "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
@@ -8527,6 +8557,7 @@
           "deepwell/tests/page.rs#page_backlinks_view_filters_before_exposing_titles_and_slugs",
           "deepwell/tests/page.rs#page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision",
           "deepwell/tests/page.rs#page_delete_ignores_deleted_include_consumers_during_outdating",
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision",
           "deepwell/tests/page.rs#page_get_deleted_filters_pages_by_delete_permission",
           "deepwell/tests/page.rs#page_get_files_requires_parent_page_view_permission",
           "deepwell/tests/page.rs#page_get_score_requires_view_permission_and_site_ownership",
@@ -8610,7 +8641,9 @@
           "deepwell/tests/page.rs#site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets",
           "deepwell/tests/page.rs#site_utility_modules_preserve_literal_and_reject_unsupported_shapes",
           "deepwell/tests/page.rs#sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+          "deepwell/tests/page.rs#social_syntax_matches_frozen_live_service_selection_and_widget_identity",
           "deepwell/tests/page.rs#static_account_modules_match_live_preview_and_page_view_basics",
+          "deepwell/tests/page.rs#syntax_links_match_frozen_live_semantics_with_documented_security_divergence",
           "deepwell/tests/page.rs#tagcloud_module_filters_anonymous_hidden_category_pages_before_loading_tags",
           "deepwell/tests/page.rs#tagcloud_module_renders_live_category_links_styles_and_boolean_quirks",
           "deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error",
@@ -8656,11 +8689,17 @@
           "deepwell/tests/page_lock.rs#page_lock_endpoints_require_site_membership_and_page_view_history_permission",
           "deepwell/tests/page_template_assignment.rs#assigned_data_form_template_edit_invalidates_warm_imported_article_cache",
           "deepwell/tests/page_template_assignment.rs#category_page_template_prefills_new_page_source_and_can_be_cleared",
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
+          "deepwell/tests/page_template_assignment.rs#data_form_youtube_raw_wiki_executes_only_inside_html_block",
           "deepwell/tests/page_template_assignment.rs#empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle",
+          "deepwell/tests/page_template_assignment.rs#page_view_and_edit_round_trip_date_field_scalars_and_options",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_category_data_form_definition_in_template_order",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_checkbox_and_wiki_contract",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_hidden_password_static_url_scalar_contract",
           "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
+          "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
           "deepwell/tests/parent.rs#changed_parent_relationships_queue_parent_rerenders",
           "deepwell/tests/parent.rs#direct_parent_metadata_hides_an_unviewable_child_or_parent",
           "deepwell/tests/parent.rs#direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents",
@@ -10356,8 +10395,11 @@
         "reference": "deepwell/tests/list_pages.rs#imported_revision_count_adds_local_lifecycle_revisions_for_order_and_substitution",
         "alternatives": [
           "deepwell/tests/list_pages.rs#syntax_preview_preserves_delayed_listpages_literal",
+          "deepwell/tests/media.rs#arbitrary_embedvideo_host_remains_fail_closed_pending_issue_1042",
           "deepwell/tests/media.rs#authored_embedvideo_marker_cannot_forge_a_typed_requirement",
           "deepwell/tests/media.rs#current_ftml_pin_preserves_promoted_image_dom",
+          "deepwell/tests/media.rs#documented_embedaudio_probe_matches_frozen_live_preview",
+          "deepwell/tests/media.rs#documented_embedding_code_probes_match_frozen_live_preview",
           "deepwell/tests/media.rs#embedvideo_preview_and_saved_page_share_rendered_body",
           "deepwell/tests/media.rs#embedvideo_preview_fails_closed_for_unsupported_media",
           "deepwell/tests/media.rs#embedvideo_preview_resolves_only_allowlisted_typed_media",
@@ -10370,7 +10412,11 @@
           "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models",
           "deepwell/tests/page.rs#backlinks_module_page_preview_renders_current_page_incoming_links",
           "deepwell/tests/page.rs#backlinks_page_preview_controls_identity_visibility_and_scan_boundaries",
+          "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page",
+          "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
+          "deepwell/tests/page.rs#expression_size_boundary_fails_closed_at_the_public_preview_seam",
           "deepwell/tests/page.rs#featuredsite_fails_closed_without_a_local_featured_site_authority",
+          "deepwell/tests/page.rs#foldable_list_initial_dom_matches_frozen_live_page_preview",
           "deepwell/tests/page.rs#forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_modules_match_live_missing_context_and_owner_boundaries",
           "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
@@ -10395,7 +10441,9 @@
           "deepwell/tests/page.rs#simpletodo_and_sendinvitations_modules_match_live_preview_basics",
           "deepwell/tests/page.rs#site_utility_modules_preserve_literal_and_reject_unsupported_shapes",
           "deepwell/tests/page.rs#sitechanges_default_snapshot_filters_before_the_initial_page_limit",
+          "deepwell/tests/page.rs#social_syntax_matches_frozen_live_service_selection_and_widget_identity",
           "deepwell/tests/page.rs#static_account_modules_match_live_preview_and_page_view_basics",
+          "deepwell/tests/page.rs#syntax_links_match_frozen_live_semantics_with_documented_security_divergence",
           "deepwell/tests/page.rs#tagcloud_module_renders_live_sitewide_skip_3d_and_color_error",
           "deepwell/tests/page.rs#typed_sitegrid_empty_body_matches_frozen_preview_and_saved_state",
           "deepwell/tests/page.rs#wikidot_files_and_flickr_modules_match_the_frozen_empty_contracts",

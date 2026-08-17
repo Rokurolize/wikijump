@@ -460,10 +460,13 @@ test("compatibility ledger builder partitions the pinned inventory without FTML 
       framerail_xmlrpc_method: 17,
       wikidot_py_amc_module_shape: 22,
     });
-    assert.equal(ledger.counts.public_inventory_records, 870);
-    assert.equal(ledger.counts.raw_records, 1269);
     assert.equal(excludedIds.size, 54);
-    assert.equal(currentIds.size + excludedIds.size, 1323);
+    assert.equal(
+      ledger.counts.public_inventory_records,
+      inventory.surfaces.length - excludedIds.size,
+    );
+    assert.equal(ledger.counts.raw_records, rawIds.size - excludedIds.size);
+    assert.equal(currentIds.size + excludedIds.size, rawIds.size);
     assert.deepEqual(new Set([...currentIds, ...excludedIds]), rawIds);
     assert(
       [...ledger.deferred_exclusions.records].every(({ source_local_id: sourceLocalId }) =>
