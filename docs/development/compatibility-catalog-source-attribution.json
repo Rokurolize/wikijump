@@ -489,6 +489,33 @@
       "tests": [{ "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "url-default-schema-applies-to-display without rewriting storage" }]
     },
     {
+      "surface_id": "catalog-feature:data-forms-howto",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction(event: RequestEvent)" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_category_data_form_definition_in_template_order" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form create flow renders controls and stores Wikidot source" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-overview",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition>" },
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn render_wikidot_data_form_table_with_wiki_html(" },
+        { "path": "framerail/src/lib/server/load/page/page-edit-actions.ts", "anchor": "export async function pageEditAction(event: RequestEvent)" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "class=\"form-horizontal data-form\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_category_data_form_definition_in_template_order" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form create flow renders controls and stores Wikidot source" },
+        { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form edit flow restores and updates saved field values" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:syntax-attachment",
       "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn localize_wikidot_local_file_urls(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "listpages_content_executes_attachment_syntax_with_selected_page_owner" }]
