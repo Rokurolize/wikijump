@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "f5c95abf9e3b1c4bf7d8eec3047d260b9818a1fd",
-      "tree": "bb16465ffed22eea8d528406c8b12fef676c2d26"
+      "commit": "f525a7a4b4bb88ea06dde12be995f32f34886c9e",
+      "tree": "f412f08cd7ce9b6c515964fa31adaa2ed86cea46"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "c777acf04ed4bc7a3dcf04e5511a92a35aa26b05427164da040f08fc8483b63e"
+        "sha256": "bca26141a5d1abfd2e924bcc8c317f470d4960b886731c058d6fdbc703353012"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11157,19 +11157,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "26dce428f281db9fa5aaa6c1896a6e1d9ae8135beb9db884eb2cc892f9e99166"
+        "sha256": "5577c7fa7773d2ddd368c139bc02ba71e7cd3023e03fb0cbbf1e4f5232726742"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "7864c18f6045bc32dbe050844c6653364992be41e76fb41878e42273bd53b10a"
+        "sha256": "53001079b8085ce1b6c2e17c55bf7666122dfdfc6434ebad4f6f1a8ea56b382b"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "c14ae278bf1572a46ae6b08027cbea94a8fe44518ecc7b5e7ddf38d12a4f2552"
+        "sha256": "22253fc496df0883e764f1247a37dd2b5793edf31f92e4723c9369bfd1cd54bf"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "78636d4172bdbd92bc12bd81a0331254198305b6739fcbfe0f813fb116b646c9"
+        "sha256": "5a04bf7d1b8d36696492dca1347ec7b31b042e39c42d9f33a8ce9d834b2edf56"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11389,7 +11389,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "c14ae278bf1572a46ae6b08027cbea94a8fe44518ecc7b5e7ddf38d12a4f2552"
+        "sha256": "22253fc496df0883e764f1247a37dd2b5793edf31f92e4723c9369bfd1cd54bf"
       },
       {
         "path": "wws/src/route.rs",
@@ -13849,7 +13849,8 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam"
+          "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
+          "deepwell/tests/page.rs#expression_size_boundary_fails_closed_at_the_public_preview_seam"
         ]
       },
       "evidence": {
