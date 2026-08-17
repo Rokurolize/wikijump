@@ -923,6 +923,21 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:search-language",
+      "sources": [
+        { "path": "deepwell/src/services/render/search_feed.rs", "anchor": "fn expand_search_all_modules(" },
+        { "path": "deepwell/src/services/render/search_feed.rs", "anchor": "pub(super) fn expand_search_feed_modules(" },
+        { "path": "framerail/src/lib/wikidot/wikidot-search.js", "anchor": "export const wikidotSearchPath =" },
+        { "path": "framerail/src/lib/wikidot/wikidot-search.js", "anchor": "export const wikidotSearchAllPath =" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "search_and_feed_modules_match_live_preview_and_page_view_boundaries" },
+        { "path": "deepwell/tests/page.rs", "anchor": "searchall_module_matches_live_form_and_unavailable_route_contract" },
+        { "path": "framerail/tests/wikidot-search.test.js", "anchor": "Wikidot SearchAll preserves its area and path-encodes the submitted query" },
+        { "path": "framerail/tests/wikidot-chrome.spec.ts", "anchor": "SearchAll module submits the selected live area route" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:layout-page",
       "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
       "tests": [
