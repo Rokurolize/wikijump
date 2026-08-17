@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "a063aafa349ea8b78f0689ccb4f8e501cf83812a",
-      "tree": "6e0823adf1f46f21abf22b49caa872d01974ead9"
+      "commit": "136749e3cf44813252dbbcfe3d4384534f6bd66c",
+      "tree": "ed3874886b68787378ecbc467818f0e27370cdea"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "ba2c562ea5f79c3e1b08455606c5254aad82f14ac3f16005522b1f1efd33eb11"
+        "sha256": "a32d9ac013327ff64a8487a25d933438097e047f4e16ea483daa1d4d4b5a1349"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -12578,7 +12578,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_live_text_and_select_control_contract",
+          "framerail/tests/data-form-create-flow.spec.ts#data-form create flow renders controls and stores Wikidot source"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12587,8 +12590,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#pub fn render_wikidot_data_form_table_with_wiki_html(",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#class=\"form-horizontal data-form\""
+        ]
       },
       "candidate": {
         "status": "pending",
