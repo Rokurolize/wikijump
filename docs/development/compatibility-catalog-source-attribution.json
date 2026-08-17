@@ -457,6 +457,14 @@
       "tests": [{ "path": "deepwell/tests/site.rs", "anchor": "platform_hostname_policy_covers_site_and_alias_lifecycle_paths" }]
     },
     {
+      "surface_id": "catalog-feature:expressions",
+      "sources": [
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },
+        { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "documented_expression_parser_functions_render_at_the_public_preview_seam" }]
+    },
+    {
       "surface_id": "catalog-feature:data-forms-password-field",
       "sources": [
         { "path": "deepwell/src/services/data_form.rs", "anchor": "Some(\"password\") =>" },
