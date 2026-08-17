@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "136749e3cf44813252dbbcfe3d4384534f6bd66c",
-      "tree": "ed3874886b68787378ecbc467818f0e27370cdea"
+      "commit": "4876263638aa16e1898972ab7b181e705b51e5d8",
+      "tree": "c9dcd8d219d87a17e7c4abe40dbb4e459aab07d9"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "a32d9ac013327ff64a8487a25d933438097e047f4e16ea483daa1d4d4b5a1349"
+        "sha256": "bb0e29e63968697a07f2641ef4fe4839a17cdc6c9e4e5aef2b16b31f0e9aa016"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -20473,7 +20473,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#syntax_links_match_frozen_live_semantics_with_documented_security_divergence",
+          "deepwell/tests/page.rs#wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20482,8 +20485,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"cde07d97aaa8e706556030d4d1f9be3d441b7285\" }",
+          "deepwell/src/services/render/compat/wikidot_link_protection.rs#pub(in crate::services::render) fn build_wikidot_wikipedia_link(",
+          "deepwell/src/services/render/compat/wikidot_link_protection.rs#pub(in crate::services::render) fn protect_wikidot_compat_links("
+        ]
       },
       "candidate": {
         "status": "pending",
