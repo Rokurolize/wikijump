@@ -963,6 +963,16 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:subscription-plan-matrix",
+      "sources": [
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_www_currency_convert_system_module(" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) async fn render_inner(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "currencyconvert_executes_only_on_the_www_plans_system_page" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:layout-page",
       "sources": [{ "path": "framerail/src/lib/sigma-esque/wikidot.svelte", "anchor": "<div id=\"container\">" }],
       "tests": [
