@@ -77,6 +77,21 @@ test("hidden-configured-value-edit-reload remains configured and has no control"
   assert.deepEqual(wikidotDataFormFieldNames(definition), [])
 })
 
+test("file field exposes only Wikidot's observed hidden upload-state control", () => {
+  const fileField = field("document", "file")
+  const definition = { default_layout: true, fields: [fileField] }
+
+  assert.deepEqual(buildWikidotDataFormState(definition, {}), { document: "" })
+  assert.deepEqual(getWikidotDataFormFieldPresentation(fileField), {
+    control: "file-hidden",
+    inputType: null,
+    className: "dataform-file-value",
+    includeInFormFields: true,
+    display: "text"
+  })
+  assert.deepEqual(wikidotDataFormFieldNames(definition), ["document"])
+})
+
 test("password-create-plaintext-source-masked-display exposes the password control contract", () => {
   const password = field("scalar", "password")
   const definition = { default_layout: true, fields: [password] }

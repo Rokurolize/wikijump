@@ -36,7 +36,7 @@
 
 /**
  * @typedef {{
- *   control: "none" | "input" | "existing" | "pagepath"
+ *   control: "none" | "input" | "existing" | "pagepath" | "file-hidden"
  *   inputType: "password" | "text" | null
  *   className: string | null
  *   includeInFormFields: boolean
@@ -126,6 +126,14 @@ export const getWikidotDataFormFieldPresentation = (field) => {
         className: "dataform-pagepath-chooser",
         includeInFormFields: true,
         display: "pagepath"
+      }
+    case "file":
+      return {
+        control: "file-hidden",
+        inputType: null,
+        className: "dataform-file-value",
+        includeInFormFields: true,
+        display: "text"
       }
     default:
       return {

@@ -1015,7 +1015,7 @@ impl ViewService {
                                 .or_raise(make_error)?
                                 .remove(&category.category_id)
                                 .filter(|definition| {
-                                    definition.supports_observed_create_edit()
+                                    definition.supports_observed_editor()
                                 });
                                 match definition {
                                     Some(definition) => {

@@ -900,6 +900,97 @@ async fn page_view_and_edit_round_trip_date_field_scalars_and_options() {
 }
 
 #[tokio::test]
+async fn page_view_exposes_file_data_form_create_control_without_write_lifecycle() {
+    const CATEGORY: &str = "data-form-file-field-public";
+    const TEMPLATE_SLUG: &str = "data-form-file-field-public:_template";
+    const PAGE_SLUG: &str = "data-form-file-field-public:target";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  document:\n",
+        "    type: file\n",
+        "    label: Upload document\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form file-field test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("file-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-file-field-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => {
+            assert!(data_form.definition.supports_observed_editor());
+            assert!(!data_form.definition.supports_observed_create_edit());
+            assert_eq!(
+                data_form
+                    .definition
+                    .field("document")
+                    .and_then(|field| field.field_type.as_deref()),
+                Some("file"),
+            );
+            assert!(data_form.values.is_empty());
+        }
+        other => {
+            panic!("file field must expose the observed create-form boundary: {other:?}")
+        }
+    }
+}
+
+#[tokio::test]
 async fn assigned_data_form_template_edit_invalidates_warm_imported_article_cache() {
     const CATEGORY: &str = "data-form-template-cache-lifecycle";
     const TEMPLATE_SLUG: &str = "data-form-template-cache-lifecycle:_template";

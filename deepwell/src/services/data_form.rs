@@ -179,6 +179,63 @@ impl DataFormDefinition {
                     _ => false,
                 })
     }
+
+    /// Returns whether the generated editor shape is live-observed even when
+    /// its mutation lifecycle is not.
+    ///
+    /// Wikidot's file field is currently evidenced only as a hidden
+    /// `dataform-file-value` control. Upload, storage-page, replacement, and
+    /// cleanup semantics remain deliberately unsupported. This separate gate
+    /// lets the public create view reproduce that observed control without
+    /// treating a file value as an ordinary writable text scalar.
+    pub fn supports_observed_editor(&self) -> bool {
+        if self.supports_observed_create_edit() {
+            return true;
+        }
+        if !self.observed_create_edit_compatible
+            || self.fields.is_empty()
+            || !self
+                .fields
+                .iter()
+                .any(|field| field.field_type.as_deref() == Some("file"))
+            || (self.fields.len() != 1
+                && self.fields.iter().any(|field| {
+                    matches!(
+                        field.field_type.as_deref(),
+                        Some("hidden" | "password" | "static")
+                    )
+                }))
+        {
+            return false;
+        }
+
+        self.fields.iter().all(|field| {
+            if field.field_type.as_deref() == Some("file") {
+                return field.configured_value.is_none()
+                    && field.default_value.is_none()
+                    && !field.has_values_property
+                    && field.values.is_empty()
+                    && !field.has_text_specific_properties
+                    && field.hint.is_empty()
+                    && field.before.is_empty()
+                    && field.after.is_empty()
+                    && !field.join
+                    && field.pagepath_max_level.is_none()
+                    && field
+                        .pagepath_category
+                        .as_ref()
+                        .is_none_or(|category| !category.is_empty())
+                    && field.has_only_properties(&["label", "type", "category"]);
+            }
+
+            let single_field_definition = Self {
+                fields: vec![field.clone()],
+                default_layout: self.default_layout,
+                observed_create_edit_compatible: true,
+            };
+            single_field_definition.supports_observed_create_edit()
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -1803,6 +1860,26 @@ fields:
         .expect("data form");
 
         assert!(!definition.supports_observed_create_edit());
+    }
+
+    #[test]
+    fn file_field_exposes_only_the_observed_editor_boundary() {
+        let definition = parse_wikidot_data_form_definition(concat!(
+            "[[form]]\n",
+            "fields:\n",
+            "  document:\n",
+            "    type: file\n",
+            "    label: Upload document\n",
+            "    category: file-storage\n",
+            "[[/form]]",
+        ))
+        .expect("data form");
+
+        assert!(definition.supports_observed_editor());
+        assert!(!definition.supports_observed_create_edit());
+        let field = definition.field("document").expect("file field");
+        assert_eq!(field.field_type.as_deref(), Some("file"));
+        assert_eq!(field.pagepath_category.as_deref(), Some("file-storage"));
     }
 
     #[test]

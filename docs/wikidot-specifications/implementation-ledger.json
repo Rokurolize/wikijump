@@ -547,15 +547,49 @@
       ]
     },
     "data-forms-file-field": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Authenticated live Wikidot edit/PageEditModule create-form preflight for default and explicit file categories",
+        "Deepwell public missing-page page_view exposes the observed file-field definition without treating the upload lifecycle as writable",
+        "Framerail generated create form exposes input[name=field-<name>].dataform-file-value as a hidden control and fails closed before page mutation"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "file_field_exposes_only_the_observed_editor_boundary",
+          "scope": "file definitions are eligible for the observed editor boundary but remain ineligible for ordinary create/edit serialization"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_file_data_form_create_control_without_write_lifecycle",
+          "scope": "authenticated public missing-page view exposes the file-field create definition while keeping ordinary scalar write support disabled"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
+          "name": "file field exposes only Wikidot's observed hidden upload-state control",
+          "scope": "frontend field projection binds the observed hidden dataform-file-value control and keeps it in the formFields inventory"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs",
+          "name": "retained file-field live artifact boundary",
+          "scope": "retained live evidence fixes the hidden control shape, absent standalone upload route, blocked multipart lifecycle, and cleanup proof"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-file-field.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-file-field-live-20260810.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The observed generated create-form control is implemented. File upload submission, saved-source representation, storage-page category selection, replacement/retention, duplicate filename normalization, validation and permissions, ListPages/Gallery behavior, and browser-visible upload intervals remain deliberately fail-closed because the retained live run did not establish cleanup-safe public multipart upload and attachment cleanup operations."
+      ]
     },
     "data-forms-hidden-field": {
       "status": "in_progress",
@@ -677,15 +711,48 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-images": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Authenticated live Wikidot generated image file-field create form exposes only the hidden dataform-file-value control",
+        "Deepwell and Framerail expose that observed file-field create boundary without fabricating an image upload URL or storage lifecycle"
+      ],
+      "tests": [
+        {
+          "path": "deepwell/src/services/data_form.rs",
+          "name": "file_field_exposes_only_the_observed_editor_boundary",
+          "scope": "the file type used by data-form image layouts is recognized only at the observed editor boundary"
+        },
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "page_view_exposes_file_data_form_create_control_without_write_lifecycle",
+          "scope": "public create-view projection exposes the file definition while the unobserved upload lifecycle remains non-writable"
+        },
+        {
+          "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js",
+          "name": "file field exposes only Wikidot's observed hidden upload-state control",
+          "scope": "image/file create forms use the live hidden control rather than an invented native file input"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs",
+          "name": "retained images live artifact boundary",
+          "scope": "retained live evidence fixes the hidden image-file control and records that upload/display/storage phases were not observed"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/view/service.rs",
+        "framerail/src/lib/wikidot/wikidot-data-form.js",
+        "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+      ],
       "documentation_evidence": [
         "specifications/data-forms/data-forms-images.md"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/data-form-images-links-youtube-live-20260810.json"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "No upload was performed in retained live evidence because exact public attachment cleanup for the separate storage page was unavailable. form_raw output after a real image upload, saved storage, edit/reload, default-image substitution, and remote media behavior therefore remain unimplemented rather than inferred."
+      ]
     },
     "data-forms-links": {
       "status": "pending",
@@ -5105,10 +5172,34 @@
   },
   "data-forms-file-field": {
     "issue_scope": {
-      "status": "unresolved",
-      "references": []
+      "status": "resolved",
+      "references": [
+        1504
+      ]
     },
-    "owners": []
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#file_field_exposes_only_the_observed_editor_boundary",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_file_data_form_create_control_without_write_lifecycle"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#file field exposes only Wikidot's observed hidden upload-state control"
+        ]
+      }
+    ]
   },
   "data-forms-hidden-field": {
     "issue_scope": {
@@ -5179,10 +5270,34 @@
   },
   "data-forms-images": {
     "issue_scope": {
-      "status": "unresolved",
-      "references": []
+      "status": "resolved",
+      "references": [
+        1504
+      ]
     },
-    "owners": []
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/src/services/data_form.rs#file_field_exposes_only_the_observed_editor_boundary",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_file_data_form_create_control_without_write_lifecycle"
+        ]
+      },
+      {
+        "owner": "wikijump.framerail",
+        "source_references": [
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte"
+        ],
+        "test_references": [
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#file field exposes only Wikidot's observed hidden upload-state control"
+        ]
+      }
+    ]
   },
   "data-forms-links": {
     "issue_scope": {

@@ -74,6 +74,9 @@
   let pagepathNodes = $state<Record<string, DataFormPagepathNode[]>>(
     untrack(() => structuredClone(pagepaths))
   )
+  const writeSupported = $derived(
+    !definition.fields.some((field) => field.field_type === "file")
+  )
   let pagepathCreateNew = $state<
     Record<string, { parent: string; value: string } | undefined>
   >({})
@@ -414,6 +417,25 @@
     }
   )
 
+  function failClosedFileFieldForm(formElement: HTMLFormElement) {
+    const preventUnsupportedWrite = (event: SubmitEvent) => {
+      event.preventDefault()
+      errorPopupState.current = {
+        state: true,
+        message: "An error occurred while processing the request.",
+        data: {}
+      }
+    }
+    formElement.addEventListener("submit", preventUnsupportedWrite)
+    return {
+      destroy() {
+        formElement.removeEventListener("submit", preventUnsupportedWrite)
+      }
+    }
+  }
+
+  const formEnhance = $derived(writeSupported ? enhance : failClosedFileFieldForm)
+
   $form.title = untrack(() => initialTitle)
   $form.altTitle = untrack(() => initialAltTitle)
   $form.wikitext = untrack(() => initialSource)
@@ -437,10 +459,10 @@
 <form
   id="edit-page-form"
   class="form-horizontal data-form"
-  action="?/edit"
-  method="POST"
+  action={writeSupported ? "?/edit" : undefined}
+  method={writeSupported ? "POST" : undefined}
   role="form"
-  use:enhance
+  use:formEnhance
 >
   <input name="page_id" type="hidden" value={pageId ?? ""} />
   <input name="form-use" type="hidden" value="true" />
@@ -585,6 +607,13 @@
                     {/if}
                   {/each}
                 </div>
+              {:else if field.field_type === "file"}
+                <input
+                  name={`field-${field.name}`}
+                  class="dataform-file-value"
+                  type="hidden"
+                  value={values[field.name] ?? ""}
+                />
               {:else if field.field_type === "date"}
                 {@const presentation = getWikidotDataFormFieldPresentation(field)}
                 <input
