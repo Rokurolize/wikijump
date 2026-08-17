@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "b083f978c8d66b702bf9803b5e0fc23de994e193",
-      "tree": "1a6ab11cda166ced34e891184e044efb383cef08"
+      "commit": "86565a1eafa1fb0ca510e8218bb9cacf1f17d599",
+      "tree": "a5b950bd33b01c367c87a82ced3024a666193ef2"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "bca26141a5d1abfd2e924bcc8c317f470d4960b886731c058d6fdbc703353012"
+        "sha256": "ee13131e36ec4125c848e52cae523bb1855362208c87085b11bd7011ba83342d"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -12736,7 +12736,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12745,8 +12747,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#fn wikidot_data_form_comment_wrapper("
+        ]
       },
       "candidate": {
         "status": "pending",
