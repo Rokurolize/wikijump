@@ -19,3 +19,7 @@ The frozen `tests--fixtures--parity-gaps--wikidot-button-set-tags-backslash` ref
 ## `#expr` does not enforce the documented 256-character limit
 
 Anonymous PagePreview observations on August 17, 2026 show expressions of 255, 256, and 257 bytes evaluating, followed by constant-complexity probes through 131072 bytes that also evaluate. The evidence is retained by the `expressions-live-probes`, `expressions-length-probes`, and `expressions-length-boundary-probes` observations. A local 256-byte rejection is therefore an implementation limit, not Wikidot parity. Resource bounds should follow observed Wikidot behavior rather than substituting the obsolete documentation limit.
+
+## Pagepath `Create new` commits before the containing form
+
+The August 17, 2026 `data-form-pagepath-create-new-live-20260817` observation shows that choosing `Create new`, entering a child name, and pressing Enter immediately posts `DataFormAction/newPage`. Wikidot creates an empty child page and updates only the editor's hidden pagepath value; the containing data-form page still has its previous stored source. Cancelling the containing page editor leaves the newly created child page in place. This is intentionally non-transactional from the containing form's perspective. Delaying tree-page creation until the form's Save action, or automatically deleting the child on Cancel, would be safer but would not reproduce Wikidot's observed behavior.

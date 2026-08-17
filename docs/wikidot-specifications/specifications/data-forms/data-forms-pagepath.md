@@ -38,6 +38,7 @@ Evidence basis:
 - `data-form-public-demos` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl` (SHA-256 `54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5`): The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen.
 - `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
 - `data-form-pagepath-control` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-control-live-20260817.json` (SHA-256 `d26fca2c8c98afae2b1cf5c37ca75c82eb94d5ad0b5a7609d5652236694a385d`)
+- `data-form-pagepath-create-new` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-create-new-live-20260817.json` (SHA-256 `7df88eff26958cf9e3140e2fc153543837a9b77fb01dc2a5f97fa085acb02a76`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -49,7 +50,7 @@ Evidence basis:
 
 ### P3 - lifecycle, persistence, import, and round trips
 
-- Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation.
+- Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation. The browser Create new path is a separate immediate mutation: pressing Enter after choosing Create new creates an empty tree page before the containing data-form page is saved, updates only the editor's hidden pagepath value, and leaves the containing page source unchanged until a later save.
 
 ### P4 - actors, permissions, visibility, and privacy
 
@@ -57,19 +58,19 @@ Evidence basis:
 
 ### P5 - selection, ordering, counting, and pagination
 
-- Hierarchy/navigation follows the configured tree relationships without validating the stored scalar. A fresh editor for a category rooted at _root exposes the visible root children plus a Create new sentinel. Editing a stored first-level node exposes one additional child selector; editing a stored second-level node exposes another selector through the configured max-level. Missing and cross-category stored values remain in the hidden scalar while the visible chooser falls back to the root selector.
+- Hierarchy/navigation follows the configured tree relationships without validating the stored scalar. A fresh editor for a category rooted at _root exposes the visible root children plus a Create new sentinel. Editing a stored first-level node exposes one additional child selector; editing a stored second-level node exposes another selector through the configured max-level. Missing and cross-category stored values remain in the hidden scalar while the visible chooser falls back to the root selector. Creating gamma beneath alpha inserts gamma into alpha's selector and opens one further selector for gamma within the configured max-level.
 
 ### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
 
-- Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries.
+- Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries. Create new posts DataFormAction/newPage through ajax-module-connector.php with category, parent, title, moduleName=Empty, and callbackIndex; the successful JSON response returns status=ok and the new fullname.
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
-- When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display. The generated editor wraps the field in .form-group/.form-value.field-origin and a .dataform-pagepath-chooser containing hidden value/category/max-level inputs plus ordered select controls whose classes encode the parent fullname. Each selector begins with an empty option and ends with value '+' / text 'Create new'.
+- When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display. The generated editor wraps the field in .form-group/.form-value.field-origin and a .dataform-pagepath-chooser containing hidden value/category/max-level inputs plus ordered select controls whose classes encode the parent fullname. Each selector begins with an empty option and ends with value '+' / text 'Create new'. Choosing Create new appends an input.text initially containing 'New item' and a javascript:; '[x]' cancel link; successful creation replaces that transient input with the newly selected page option and the next child selector.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
-- Create/edit/reload MUST preserve the exact stored fullname. Tree mutations, rename/delete propagation, and cache convergence beyond the documented examples require their own live evidence and MUST NOT be inferred from the scalar alone.
+- Create/edit/reload MUST preserve the exact stored fullname. Create new is intentionally non-atomic with the containing form: the empty child page exists immediately after DataFormAction/newPage, and cancelling the containing page editor does not remove it or change the containing page's stored source. Wikijump parity MUST preserve this observed side-effect timing rather than deferring tree-page creation until the parent form save. Rename/delete propagation and other failure/retry boundaries still require their own live evidence and MUST NOT be inferred.
 
 
 ## Suggested public TDD seams

@@ -5,6 +5,7 @@ import {fileURLToPath} from "node:url";
 
 import {parseFragment} from "parse5";
 
+import {defaultBrowserRoot, loadPlaywright} from "../src/browser-session.mjs";
 import {visibleText as parsedVisibleText} from "../src/syntax-differential.mjs";
 
 const ORIGIN = "http://sandbox-for-codex.wikidot.com";
@@ -19,11 +20,17 @@ function sha256(value) {
 }
 
 function parseArgs(argv) {
-  const args = {cases: defaultCases, output: defaultOutput, capturePagepathControl: false};
+  const args = {
+    cases: defaultCases,
+    output: defaultOutput,
+    capturePagepathControl: false,
+    capturePagepathCreateNew: false,
+  };
   for (let index = 2; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--cases" || flag === "--output") args[flag.slice(2)] = path.resolve(argv[++index]);
     else if (flag === "--capture-pagepath-control") args.capturePagepathControl = true;
+    else if (flag === "--capture-pagepath-create-new") args.capturePagepathCreateNew = true;
     else throw new Error(`unknown argument: ${flag}`);
   }
   return args;
@@ -142,6 +149,20 @@ function pagepathControlProjection(body, fieldName) {
   const valueContainer = controls.find((control) => control.tag === "input" && control.name === fieldName);
   return {
     wrapper_class: nodeAttributes(controlRoot).class ?? "",
+    chooser_class: (() => {
+      let found = null;
+      const visit = (node) => {
+        if (found) return;
+        const classes = nodeAttributes(node).class?.split(/\s+/u) ?? [];
+        if (classes.includes("dataform-pagepath-chooser")) {
+          found = nodeAttributes(node).class;
+          return;
+        }
+        for (const child of node.childNodes ?? []) visit(child);
+      };
+      visit(controlRoot);
+      return found;
+    })(),
     label_class: label ? nodeAttributes(label).class ?? "" : "",
     label_text: label ? normalizedNodeText(label).replace(/\s+/gu, " ").trim() : "",
     value: valueContainer?.value ?? null,
@@ -161,6 +182,7 @@ class WikidotSession {
     const cookies = response.headers.getSetCookie();
     const session = cookies.map((cookie) => cookie.match(/^WIKIDOT_SESSION_ID=([^;]+)/u)?.[1]).find(Boolean);
     if (response.status !== 200 || !session) throw new Error("Wikidot authentication failed");
+    this.sessionId = session;
     this.cookie = `wikidot_token7=${TOKEN};WIKIDOT_SESSION_ID=${session};`;
   }
 
@@ -277,6 +299,165 @@ class WikidotSession {
   }
 }
 
+function safeAjaxRequestFields(postData) {
+  const fields = {};
+  for (const [key, value] of new URLSearchParams(postData ?? "")) {
+    if (["wikidot_token7", "lock_id", "lock_secret"].includes(key)) continue;
+    fields[key] = value;
+  }
+  return fields;
+}
+
+async function browserPagepathProjection(group) {
+  return await group.evaluate((root) => {
+    const normalize = (value) => (value ?? "").replace(/\s+/gu, " ").trim();
+    const chooser = root.querySelector(".dataform-pagepath-chooser");
+    return {
+      wrapper_class: root.className ?? "",
+      chooser_class: chooser?.className ?? null,
+      text: normalize(root.textContent),
+      controls: [...root.querySelectorAll("input,select,a")].map((element) => {
+        if (element instanceof HTMLSelectElement) {
+          return {
+            tag: "select",
+            class: element.className,
+            value: element.value,
+            options: [...element.options].map((option) => ({
+              value: option.value,
+              text: normalize(option.textContent),
+              selected: option.selected,
+            })),
+          };
+        }
+        if (element instanceof HTMLInputElement) {
+          return {
+            tag: "input",
+            class: element.className,
+            name: element.getAttribute("name"),
+            type: element.type,
+            value: element.value,
+          };
+        }
+        return {
+          tag: "a",
+          class: element.className,
+          text: normalize(element.textContent),
+          href: element.getAttribute("href"),
+        };
+      }),
+    };
+  });
+}
+
+async function capturePagepathCreateNew({
+  client,
+  slug,
+  fieldName,
+  treeCategory,
+  parentFullname,
+  title,
+}) {
+  const expectedFullname = `${treeCategory}:${title}`;
+  const {chromium} = loadPlaywright(defaultBrowserRoot());
+  const browser = await chromium.launch({headless: true});
+  try {
+    const context = await browser.newContext({userAgent: "WikidotPy"});
+    await context.addCookies([
+      {
+        name: "WIKIDOT_SESSION_ID",
+        value: client.sessionId,
+        domain: ".wikidot.com",
+        path: "/",
+      },
+      {
+        name: "wikidot_token7",
+        value: TOKEN,
+        domain: ".wikidot.com",
+        path: "/",
+      },
+    ]);
+    const page = await context.newPage();
+    await page.goto(`${ORIGIN}/${slug}`, {waitUntil: "load"});
+    const editButton = page.locator("#edit-button");
+    if (await editButton.count() !== 1) throw new Error("authenticated Wikidot Edit control is absent");
+    const editResponsePromise = page.waitForResponse((response) => {
+      if (!response.url().includes("/ajax-module-connector.php")) return false;
+      return safeAjaxRequestFields(response.request().postData()).moduleName === "edit/PageEditModule";
+    }, {timeout: 15_000});
+    await editButton.click();
+    await editResponsePromise;
+
+    const valueInput = page.locator(`input[name="${fieldName}"]`);
+    await valueInput.waitFor({state: "attached", timeout: 15_000});
+    const group = valueInput.locator("xpath=ancestor::div[contains(concat(' ', normalize-space(@class), ' '), ' form-group ')]");
+    const childSelector = group.locator(
+      `select.dataform-pagepath-select-children-of-${parentFullname.replace(":", "---")}`,
+    );
+    if (await childSelector.count() !== 1) throw new Error("pagepath child selector is absent");
+
+    const before = await browserPagepathProjection(group);
+    await childSelector.selectOption("+");
+    const newItemInput = group.locator('input.text:not([type="hidden"])');
+    await newItemInput.waitFor({state: "visible", timeout: 10_000});
+    const afterCreateNewSelection = await browserPagepathProjection(group);
+    const initialInputValue = await newItemInput.inputValue();
+    await newItemInput.fill(title);
+
+    const responsePromise = page.waitForResponse((response) => {
+      if (!response.url().includes("/ajax-module-connector.php")) return false;
+      const fields = safeAjaxRequestFields(response.request().postData());
+      return fields.action === "DataFormAction" && fields.event === "newPage";
+    }, {timeout: 10_000});
+    await newItemInput.press("Enter");
+    const response = await responsePromise;
+    const responseBody = await response.json();
+    await page.waitForFunction(
+      ({selector, expected}) => document.querySelector(selector)?.value === expected,
+      {selector: `input[name="${fieldName}"]`, expected: expectedFullname},
+      {timeout: 10_000},
+    );
+    await group.locator(
+      `select.dataform-pagepath-select-children-of-${expectedFullname.replace(":", "---")}`,
+    ).waitFor({state: "attached", timeout: 10_000});
+
+    const afterEnter = await browserPagepathProjection(group);
+    const created = await client.source(expectedFullname);
+    if (!created) throw new Error(`pagepath Create new did not create ${expectedFullname}`);
+    const saved = await client.source(slug);
+    if (!saved) throw new Error("pagepath source page disappeared during Create new interaction");
+    const hiddenValueAfterInteraction = await valueInput.inputValue();
+    const cancelButton = page.locator("#edit-cancel-button");
+    if (await cancelButton.count() !== 1) throw new Error("Wikidot page editor Cancel control is absent");
+    await cancelButton.click();
+    await valueInput.waitFor({state: "detached", timeout: 10_000});
+    const createdAfterCancel = await client.source(expectedFullname);
+    const savedAfterCancel = await client.source(slug);
+    if (!savedAfterCancel) throw new Error("pagepath source page disappeared after cancelling the editor");
+    return {
+      expected_fullname: expectedFullname,
+      initial_input_value: initialInputValue,
+      before,
+      after_create_new_selection: afterCreateNewSelection,
+      request: safeAjaxRequestFields(response.request().postData()),
+      response: {
+        http_status: response.status(),
+        body: responseBody,
+      },
+      after_enter: afterEnter,
+      created_page_source: created.source,
+      saved_page_source_after_interaction: saved.source,
+      hidden_value_after_interaction: hiddenValueAfterInteraction,
+      cancel: {
+        created_page_still_exists: createdAfterCancel !== null,
+        created_page_source: createdAfterCancel?.source ?? null,
+        saved_page_source_after_cancel: savedAfterCancel.source,
+      },
+    };
+  } finally {
+    await browser.close();
+  }
+}
+
 function templateSource(treeCategory) {
   return `[[form]]\nfields:\n  date_value:\n    label: Date value\n    type: date\n    options:\n      dateFormat: 'mm/dd/yy'\n  origin:\n    label: Origin\n    type: pagepath\n    category: ${treeCategory}\n    max-level: 3\n[[/form]]\n====\nDATE-DATA-BEGIN\n%%form_data{date_value}%%\nDATE-DATA-END\nDATE-FORMATTED-BEGIN\n[[date %%form_data{date_value}%% format="%Y-%m-%d %H:%M:%S %z"]]\nDATE-FORMATTED-END\nPAGEPATH-DATA-BEGIN\n%%form_data{origin}%%\nPAGEPATH-DATA-END`;
 }
@@ -302,14 +483,20 @@ async function main(argv) {
 
   const client = new WikidotSession();
   const created = new Map();
+  const browserCreated = new Set();
   const cleanup = [];
   const cases = [];
   let primaryError = null;
   await client.login(username, password);
   try {
     const {template, tree_pages: treePages} = fixture.fixture;
+    const createNewPlan = fixture.pagepath_create_new ?? null;
+    const browserCreatedFullname = createNewPlan
+      ? `${fixture.fixture.tree_category}:${createNewPlan.title}`
+      : null;
+    if (browserCreatedFullname) browserCreated.add(browserCreatedFullname);
     const allTargets = fixture.cases.map(({case_id}) => `${fixture.fixture.form_category}:${case_id}`);
-    for (const slug of [template, ...treePages, ...allTargets]) {
+    for (const slug of [template, ...treePages, ...allTargets, ...(browserCreatedFullname ? [browserCreatedFullname] : [])]) {
       if ((await client.source(slug)) !== null) throw new Error(`run-owned fixture already exists: ${slug}`);
     }
 
@@ -340,9 +527,20 @@ async function main(argv) {
       if (accepted) created.set(slug, saved.source);
       if (declared.control === "positive" && !accepted) throw new Error(`${declared.case_id} did not produce the required accepted control`);
       const rendered = accepted ? await client.get(slug, false) : {status: 404, html: ""};
+      const field = declared.surface_id === "data-forms-date-field" ? "date_value" : "origin";
+      const pagepathCreateNew = args.capturePagepathCreateNew
+        && createNewPlan?.case_id === declared.case_id
+        ? await capturePagepathCreateNew({
+            client,
+            slug,
+            fieldName: `field-${field}`,
+            treeCategory: fixture.fixture.tree_category,
+            parentFullname: declared.submitted,
+            title: createNewPlan.title,
+          })
+        : undefined;
       const edit = await client.editForm(slug, true);
       const reload = await client.editForm(slug, true);
-      const field = declared.surface_id === "data-forms-date-field" ? "date_value" : "origin";
       const editValues = fieldValues(edit.body, `field-${field}`);
       const reloadValues = fieldValues(reload.body, `field-${field}`);
       const createValues = fieldValues(attempt.initial.body, `field-${field}`);
@@ -385,12 +583,20 @@ async function main(argv) {
           edit_form_sha256: sha256(edit.body),
           reload_form_sha256: sha256(reload.body),
           ...(pagepathControl ? {pagepath_control: pagepathControl} : {}),
+          ...(pagepathCreateNew ? {pagepath_create_new: pagepathCreateNew} : {}),
         },
       });
     }
   } catch (error) {
     primaryError = error;
   } finally {
+    for (const slug of [...browserCreated].reverse()) {
+      try {
+        cleanup.push(await client.remove(slug));
+      } catch (error) {
+        cleanup.push({slug, status: "cleanup_failed", error: error.message});
+      }
+    }
     for (const [slug, source] of [...created.entries()].reverse()) {
       try {
         cleanup.push(await client.remove(slug, source));
@@ -400,7 +606,12 @@ async function main(argv) {
     }
   }
 
-  const requestedPages = [fixture.fixture.template, ...fixture.fixture.tree_pages, ...fixture.cases.map(({case_id}) => `${fixture.fixture.form_category}:${case_id}`)];
+  const requestedPages = [
+    fixture.fixture.template,
+    ...fixture.fixture.tree_pages,
+    ...fixture.cases.map(({case_id}) => `${fixture.fixture.form_category}:${case_id}`),
+    ...(fixture.pagepath_create_new ? [`${fixture.fixture.tree_category}:${fixture.pagepath_create_new.title}`] : []),
+  ];
   const remaining = [];
   for (const slug of requestedPages) if ((await client.source(slug)) !== null) remaining.push(slug);
   if (primaryError) throw primaryError;

@@ -6,6 +6,8 @@ const fixtureUrl = new URL("../fixtures/data-form-date-pagepath/cases.json", imp
 const artifactUrl = new URL("../artifacts/data-form-date-pagepath-live-20260810.json", import.meta.url);
 const pagepathControlFixtureUrl = new URL("../fixtures/data-form-date-pagepath/pagepath-control-20260817.json", import.meta.url);
 const pagepathControlArtifactUrl = new URL("../artifacts/data-form-pagepath-control-live-20260817.json", import.meta.url);
+const pagepathCreateNewFixtureUrl = new URL("../fixtures/data-form-date-pagepath/pagepath-create-new-20260817.json", import.meta.url);
+const pagepathCreateNewArtifactUrl = new URL("../artifacts/data-form-pagepath-create-new-live-20260817.json", import.meta.url);
 
 async function readJson(url) {
   return JSON.parse(await readFile(url, "utf8"));
@@ -138,6 +140,94 @@ test("pagepath control artifact preserves the live initial tree controls and ver
 
   const serialized = JSON.stringify(artifact);
   for (const forbidden of ["WIKIDOT_SESSION_ID", "WIKIDOT_USERNAME", "WIKIDOT_PASSWORD"]) {
+    assert.equal(serialized.includes(forbidden), false);
+  }
+});
+
+test("pagepath Create new mutates the tree before the containing form is saved and survives cancel", async () => {
+  const fixture = await readJson(pagepathCreateNewFixtureUrl);
+  const artifact = await readJson(pagepathCreateNewArtifactUrl);
+
+  assert.equal(artifact.schema, "wikidot.live.data-form.date-pagepath.v1");
+  assert.match(artifact.observed_at, /^2026-08-17T/);
+  assert.equal(artifact.site, fixture.site);
+  assert.equal(artifact.run_id, fixture.run_id);
+  assert.deepEqual(artifact.surface_ids, fixture.surface_ids);
+  assert.deepEqual(artifact.fixture.identities.requested, fixture.fixture);
+  assert.equal(artifact.fixture.cleanup.all_run_owned_pages_absent, true);
+  assert.deepEqual(artifact.fixture.cleanup.remaining_pages, []);
+  assert.equal(artifact.cases.length, 1);
+
+  const captured = artifact.cases[0];
+  const declared = fixture.cases[0];
+  const createNew = captured.result.pagepath_create_new;
+  const treeCategory = fixture.fixture.tree_category;
+  const alpha = `${treeCategory}:alpha`;
+  const beta = `${treeCategory}:beta`;
+  const gamma = `${treeCategory}:${fixture.pagepath_create_new.title}`;
+
+  assert.equal(captured.case_id, declared.case_id);
+  assert.equal(captured.submitted, alpha);
+  assert.equal(captured.result.stored_representation, alpha);
+  assert.equal(createNew.expected_fullname, gamma);
+  assert.equal(createNew.initial_input_value, "New item");
+  assert.equal(createNew.before.chooser_class, "dataform-pagepath-chooser");
+  assert.equal(createNew.after_create_new_selection.chooser_class, "dataform-pagepath-chooser");
+  assert.deepEqual(
+    createNew.after_create_new_selection.controls.slice(-2),
+    [
+      {tag: "input", class: "text", name: null, type: "text", value: "New item"},
+      {tag: "a", class: "", text: "[x]", href: "javascript:;"},
+    ],
+  );
+
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(createNew.request).filter(([key]) => key !== "callbackIndex")),
+    {
+      action: "DataFormAction",
+      event: "newPage",
+      category: treeCategory,
+      parent: alpha,
+      title: fixture.pagepath_create_new.title,
+      moduleName: "Empty",
+    },
+  );
+  assert.equal(typeof createNew.request.callbackIndex, "string");
+  assert.equal(createNew.response.http_status, 200);
+  assert.equal(createNew.response.body.status, "ok");
+  assert.equal(createNew.response.body.fullname, gamma);
+  assert.equal(Number.isInteger(createNew.response.body.CURRENT_TIMESTAMP), true);
+  assert.equal(createNew.response.body.callbackIndex, createNew.request.callbackIndex);
+  assert.equal(createNew.created_page_source, "");
+  assert.equal(createNew.hidden_value_after_interaction, gamma);
+  assert.equal(createNew.saved_page_source_after_interaction, `date_value: ''\norigin: '${alpha}'`);
+  assert.deepEqual(createNew.cancel, {
+    created_page_still_exists: true,
+    created_page_source: "",
+    saved_page_source_after_cancel: `date_value: ''\norigin: '${alpha}'`,
+  });
+
+  const alphaSelector = createNew.after_enter.controls.find(
+    ({tag, class: className}) => tag === "select" && className.endsWith("---alpha"),
+  );
+  const gammaSelector = createNew.after_enter.controls.find(
+    ({tag, class: className}) => tag === "select" && className.endsWith("---gamma"),
+  );
+  assert.ok(alphaSelector);
+  assert.deepEqual(alphaSelector.options, [
+    {value: "", text: "", selected: false},
+    {value: beta, text: "beta", selected: false},
+    {value: gamma, text: "gamma", selected: true},
+    {value: "+", text: "Create new", selected: false},
+  ]);
+  assert.ok(gammaSelector);
+  assert.deepEqual(gammaSelector.options, [
+    {value: "", text: "", selected: true},
+    {value: "+", text: "Create new", selected: false},
+  ]);
+
+  const serialized = JSON.stringify(artifact);
+  for (const forbidden of ["WIKIDOT_SESSION_ID", "WIKIDOT_USERNAME", "WIKIDOT_PASSWORD", "lock_secret", "wikidot_token7"]) {
     assert.equal(serialized.includes(forbidden), false);
   }
 });
