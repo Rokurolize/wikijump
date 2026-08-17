@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "12fc72cb0629386f35131115266bbeee048339fb",
-      "tree": "2066fc1d9a8b81f00ddc313ebb23145dbb0b86ee"
+      "commit": "ef19488460e6abf41e1e8d0ba3973d922504358f",
+      "tree": "ca042f4da23541795b2b412a2206f15746cffae6"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "2b407afb1c7bda8d74faa6bc42e6a9c533d4d71a9ba32039586f333a5ba9dee8"
+        "sha256": "07a2ac3c1bf189ae53384f0bbc6afbf041339ea1d2b6218642b089c784b0f954"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -14230,7 +14230,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/caddy/test.rs#fn generate_caddyfiles()",
+          "deepwell/tests/site.rs#hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14239,8 +14242,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/caddy/caddyfile.j2#{%- macro render_preferred_domain(site_id, site_slug, domain, www_redirect) %}",
+          "deepwell/src/services/page/service.rs#pub async fn create(",
+          "deepwell/src/services/site/service.rs#pub async fn create(",
+          "deepwell/src/services/view/service.rs#pub async fn article("
+        ]
       },
       "candidate": {
         "status": "pending",
