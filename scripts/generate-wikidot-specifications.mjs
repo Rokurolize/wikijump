@@ -284,6 +284,8 @@ const detailedEvidenceAliases = Object.freeze({
     detailedSpecEvidence.retained_repository_evidence?.data_form_create_edit,
   "data-form-date-pagepath":
     detailedSpecEvidence.retained_repository_evidence?.data_form_date_pagepath,
+  "data-form-pagepath-control":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_control,
   "data-form-file-field":
     detailedSpecEvidence.retained_repository_evidence?.data_form_file_field,
   "data-form-images-links-youtube":
@@ -1912,6 +1914,7 @@ This directory is the complete feature specification set. Select implementation 
 - Live Wikidot is the behavioral oracle when the snapshot is ambiguous, incomplete, contradictory, or wrong.
 - For an \`invocation-only\`, \`high-level-documentation\`, or \`partially-documented\` item, do not invent missing semantics. Design a minimal live-oracle experiment, preserve the evidence and exact fixture, update the specification, and then implement the observed behavior.
 - Unsupported or unverified input must fail closed, remain literal, or use an evidenced fallback. It must not silently broaden queries or permissions.
+- Once live evidence establishes a behavior, reproduce that boundary even when it is less defensive than a modern implementation would normally choose. Do not keep a stricter security or resource behavior merely as hardening. Record concerning oracle behavior in \`docs/wikidot-compatibility-security.md\`; any stricter intentional divergence requires an explicit product decision and is not exact parity.
 
 ## Mandatory TDD process
 

@@ -36,6 +36,7 @@ Evidence basis:
 
 - `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
 - `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
+- `data-form-pagepath-control` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-control-live-20260817.json` (SHA-256 `d26fca2c8c98afae2b1cf5c37ca75c82eb94d5ad0b5a7609d5652236694a385d`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -55,7 +56,7 @@ Evidence basis:
 
 ### P5 - selection, ordering, counting, and pagination
 
-- Configured tree depth/category affects the choices shown by the editor where observed; the stored scalar itself remains one fullname. No implicit pagination is introduced.
+- Configured category and max-level are emitted into hidden chooser inputs and determine the visible selector chain. The stored scalar itself remains one fullname. Existing stored nodes expand their ancestor/child selector chain; nonexistent and cross-category values remain stored but do not fabricate a selected node. No implicit pagination is introduced.
 
 ### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
 
@@ -63,7 +64,7 @@ Evidence basis:
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
-- Resolved stored values display their page-name label; unresolved values remain stored without a fabricated link/label in the captured saved output.
+- Resolved stored values display their page-name label; unresolved values remain stored without a fabricated link/label in the captured saved output. The observed editor uses .dataform-pagepath-value, .dataform-pagepath-category, and .dataform-pagepath-max-level hidden inputs, followed by select elements named by CSS class dataform-pagepath-select-children-of-<category>---<parent>. Options preserve the exact empty / visible child / '+' Create new ordering.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 

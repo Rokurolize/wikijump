@@ -19,10 +19,11 @@ function sha256(value) {
 }
 
 function parseArgs(argv) {
-  const args = {cases: defaultCases, output: defaultOutput};
+  const args = {cases: defaultCases, output: defaultOutput, capturePagepathControl: false};
   for (let index = 2; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--cases" || flag === "--output") args[flag.slice(2)] = path.resolve(argv[++index]);
+    else if (flag === "--capture-pagepath-control") args.capturePagepathControl = true;
     else throw new Error(`unknown argument: ${flag}`);
   }
   return args;
@@ -69,6 +70,84 @@ function validationMessages(body) {
   return [...body.matchAll(/<span class="form-message text-danger"[^>]*>([\s\S]*?)<\/span>/giu)]
     .map((match) => decodeHtml(match[1]).trim())
     .filter(Boolean);
+}
+
+function decodeViewSource(fragment) {
+  return decodeHtml(fragment.replace(/<br\s*\/?>/giu, ""))
+    .replace(/^\n/u, "")
+    .replace(/\n$/u, "")
+    .split("\n")
+    .map((line) => line.replace(/^\u00a0+/u, (indent) => " ".repeat(indent.length)).replace(/^\t/u, ""))
+    .join("\n");
+}
+
+function nodeAttributes(node) {
+  return Object.fromEntries((node.attrs ?? []).map(({name, value}) => [name, value]));
+}
+
+function normalizedNodeText(node) {
+  if (node.nodeName === "#text") return node.value;
+  return (node.childNodes ?? []).map(normalizedNodeText).join("");
+}
+
+function pagepathControlProjection(body, fieldName) {
+  const root = parseFragment(body);
+  let namedControl = null;
+  const findNamedControl = (node) => {
+    if (namedControl) return;
+    if (nodeAttributes(node).name === fieldName) {
+      namedControl = node;
+      return;
+    }
+    for (const child of node.childNodes ?? []) findNamedControl(child);
+  };
+  findNamedControl(root);
+  if (!namedControl) throw new Error(`pagepath control ${fieldName} is absent`);
+
+  let controlRoot = namedControl;
+  for (let node = namedControl; node; node = node.parentNode) {
+    controlRoot = node;
+    const classes = nodeAttributes(node).class?.split(/\s+/u) ?? [];
+    if (classes.includes("form-group")) break;
+  }
+  const controls = [];
+  const collectControls = (node) => {
+    if (node.tagName === "input") {
+      const attributes = nodeAttributes(node);
+      controls.push({
+        tag: "input",
+        class: attributes.class ?? "",
+        name: attributes.name ?? null,
+        type: attributes.type ?? null,
+        value: attributes.value ?? "",
+      });
+    } else if (node.tagName === "select") {
+      const attributes = nodeAttributes(node);
+      controls.push({
+        tag: "select",
+        class: attributes.class ?? "",
+        options: (node.childNodes ?? [])
+          .filter((child) => child.tagName === "option")
+          .map((option) => ({
+            value: nodeAttributes(option).value ?? "",
+            text: normalizedNodeText(option).replace(/\s+/gu, " ").trim(),
+          })),
+      });
+    }
+    for (const child of node.childNodes ?? []) collectControls(child);
+  };
+  collectControls(controlRoot);
+  const label = (controlRoot.childNodes ?? [])
+    .find((child) => child.tagName === "label");
+  const valueContainer = controls.find((control) => control.tag === "input" && control.name === fieldName);
+  return {
+    wrapper_class: nodeAttributes(controlRoot).class ?? "",
+    label_class: label ? nodeAttributes(label).class ?? "" : "",
+    label_text: label ? normalizedNodeText(label).replace(/\s+/gu, " ").trim() : "",
+    value: valueContainer?.value ?? null,
+    controls,
+    text: normalizedNodeText(controlRoot).replace(/\s+/gu, " ").trim(),
+  };
 }
 
 class WikidotSession {
@@ -122,8 +201,7 @@ class WikidotSession {
     const response = await this.amc({moduleName: "viewsource/ViewSourceModule", page_id: String(page.id)});
     const fragment = response.body?.match(/<div class="page-source"[^>]*>([\s\S]*?)<\/div>/u)?.[1];
     if (typeof fragment !== "string") throw new Error(`source unavailable for ${slug}`);
-    const text = decodeHtml(fragment.replace(/<br\s*\/?>/giu, "")).replace(/^\n/u, "").replace(/\n$/u, "");
-    return {id: page.id, source: text.split("\n").map((line) => line.replace(/^\t/u, "")).join("\n")};
+    return {id: page.id, source: decodeViewSource(fragment)};
   }
 
   async editForm(slug, forceLock = false) {
@@ -215,7 +293,7 @@ async function main(argv) {
   const args = parseArgs(argv);
   const fixtureBytes = await readFile(args.cases, "utf8");
   const fixture = JSON.parse(fixtureBytes);
-  if (fixture.schema !== "wikidot.live.data-form.date-pagepath.cases.v1" || fixture.site !== "sandbox-for-codex" || !/^dfdp-20260810-[a-z][0-9]$/u.test(fixture.run_id)) throw new Error("fixture identity is outside the FW-10 contract");
+  if (fixture.schema !== "wikidot.live.data-form.date-pagepath.cases.v1" || fixture.site !== "sandbox-for-codex" || !/^dfdp-[0-9]{8}-[a-z][0-9]$/u.test(fixture.run_id)) throw new Error("fixture identity is outside the data-form date/pagepath contract");
   const username = process.env.WIKIDOT_USERNAME;
   const password = process.env.WIKIDOT_PASSWORD;
   delete process.env.WIKIDOT_USERNAME;
@@ -269,6 +347,13 @@ async function main(argv) {
       const reloadValues = fieldValues(reload.body, `field-${field}`);
       const createValues = fieldValues(attempt.initial.body, `field-${field}`);
       const stored = saved ? storedValue(saved.source, field) : null;
+      const pagepathControl = args.capturePagepathControl && declared.surface_id.startsWith("data-forms-pagepath")
+        ? {
+            create: pagepathControlProjection(attempt.initial.body, `field-${field}`),
+            edit: pagepathControlProjection(edit.body, `field-${field}`),
+            reload: pagepathControlProjection(reload.body, `field-${field}`),
+          }
+        : undefined;
       cases.push({
         case_id: declared.case_id,
         surface_id: declared.surface_id,
@@ -299,6 +384,7 @@ async function main(argv) {
           reload_field_values: reloadValues,
           edit_form_sha256: sha256(edit.body),
           reload_form_sha256: sha256(reload.body),
+          ...(pagepathControl ? {pagepath_control: pagepathControl} : {}),
         },
       });
     }

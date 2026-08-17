@@ -125,28 +125,28 @@
       }
     },
     "data-forms-pagepath": {
-      "evidence": ["current-www-source", "data-form-public-demos", "data-form-date-pagepath"],
+      "evidence": ["current-www-source", "data-form-public-demos", "data-form-date-pagepath", "data-form-pagepath-control"],
       "axes": {
         "P1": ["Pagepath represents a stored page fullname used as one node in an authored tree/category. The documentation describes category-scoped trees and a pagepath field selecting nodes in that tree."],
         "P2": ["Pagepath values are field scalars inside the form YAML; tree rendering and hierarchy are ordinary page/category relationships rather than a second parser grammar."],
         "P3": ["Live saves stored submitted fullnames verbatim and round-tripped them through edit/reload, including existing first/second-level nodes, a nonexistent node, and a cross-category fullname. The server save seam therefore MUST NOT invent existence/category validation."],
         "P4": ["Selecting or displaying a pagepath MUST NOT reveal an inaccessible target page. A stored fullname may exist without granting permission to view that page."],
-        "P5": ["Hierarchy/navigation may order nodes by the configured tree relationships, but the stored scalar itself does not imply an automatically validated parent chain. Missing targets observed live produce no visible resolved node label."],
+        "P5": ["Hierarchy/navigation follows the configured tree relationships without validating the stored scalar. A fresh editor for a category rooted at _root exposes the visible root children plus a Create new sentinel. Editing a stored first-level node exposes one additional child selector; editing a stored second-level node exposes another selector through the configured max-level. Missing and cross-category stored values remain in the hidden scalar while the visible chooser falls back to the root selector."],
         "P6": ["Pagepath display resolves the stored fullname through normal Wikidot page routing. The editor and saved page use ordinary PageEditModule/page GET boundaries."],
-        "P7": ["When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display."],
+        "P7": ["When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display. The generated editor wraps the field in .form-group/.form-value.field-origin and a .dataform-pagepath-chooser containing hidden value/category/max-level inputs plus ordered select controls whose classes encode the parent fullname. Each selector begins with an empty option and ends with value '+' / text 'Create new'."],
         "P8": ["Create/edit/reload MUST preserve the exact stored fullname. Tree mutations, rename/delete propagation, and cache convergence beyond the documented examples require their own live evidence and MUST NOT be inferred from the scalar alone."]
       }
     },
     "data-forms-pagepath-field": {
-      "evidence": ["current-www-source", "data-form-date-pagepath"],
+      "evidence": ["current-www-source", "data-form-date-pagepath", "data-form-pagepath-control"],
       "axes": {
         "P1": ["The field type is pagepath and accepts the documented tree/category and depth configuration. Its submitted value is a page fullname, not an internal numeric page ID."],
         "P2": ["The pagepath field is declared in the YAML fields map; its configuration determines the browser selector/tree presentation but does not create a new page-link syntax."],
         "P3": ["Live create/edit/reload accepts and stores the submitted fullname verbatim, including nonexistent and cross-category values. Implementation MUST reproduce that save boundary rather than enforcing documentation-implied referential validation on submission."],
         "P4": ["The field editor follows containing-page edit permissions. Resolution/display of a stored target MUST separately apply target visibility so a hidden node is not disclosed."],
-        "P5": ["Configured tree depth/category affects the choices shown by the editor where observed; the stored scalar itself remains one fullname. No implicit pagination is introduced."],
+        "P5": ["Configured category and max-level are emitted into hidden chooser inputs and determine the visible selector chain. The stored scalar itself remains one fullname. Existing stored nodes expand their ancestor/child selector chain; nonexistent and cross-category values remain stored but do not fabricate a selected node. No implicit pagination is introduced."],
         "P6": ["The field is served through PageEditModule and saved page rendering; target navigation uses ordinary page URLs."],
-        "P7": ["Resolved stored values display their page-name label; unresolved values remain stored without a fabricated link/label in the captured saved output."],
+        "P7": ["Resolved stored values display their page-name label; unresolved values remain stored without a fabricated link/label in the captured saved output. The observed editor uses .dataform-pagepath-value, .dataform-pagepath-category, and .dataform-pagepath-max-level hidden inputs, followed by select elements named by CSS class dataform-pagepath-select-children-of-<category>---<parent>. Options preserve the exact empty / visible child / '+' Create new ordering."],
         "P8": ["Malformed-looking values observed at the direct save seam still round-trip. Client-side choice restrictions MUST NOT be mistaken for server-side validation unless live evidence proves the rejection boundary."]
       }
     },

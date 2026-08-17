@@ -37,6 +37,7 @@ Evidence basis:
 - `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
 - `data-form-public-demos` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl` (SHA-256 `54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5`): The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen.
 - `data-form-date-pagepath` -> `install/local/wikidot-verification/artifacts/data-form-date-pagepath-live-20260810.json` (SHA-256 `b19fcceb3dd2c6e597d54787d90f762d6c1b96b93a2a71a0d1c18cc1cae84dd4`)
+- `data-form-pagepath-control` -> `install/local/wikidot-verification/artifacts/data-form-pagepath-control-live-20260817.json` (SHA-256 `d26fca2c8c98afae2b1cf5c37ca75c82eb94d5ad0b5a7609d5652236694a385d`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -56,7 +57,7 @@ Evidence basis:
 
 ### P5 - selection, ordering, counting, and pagination
 
-- Hierarchy/navigation may order nodes by the configured tree relationships, but the stored scalar itself does not imply an automatically validated parent chain. Missing targets observed live produce no visible resolved node label.
+- Hierarchy/navigation follows the configured tree relationships without validating the stored scalar. A fresh editor for a category rooted at _root exposes the visible root children plus a Create new sentinel. Editing a stored first-level node exposes one additional child selector; editing a stored second-level node exposes another selector through the configured max-level. Missing and cross-category stored values remain in the hidden scalar while the visible chooser falls back to the root selector.
 
 ### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
 
@@ -64,7 +65,7 @@ Evidence basis:
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
-- When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display.
+- When the stored fullname resolves, live saved output displays the target page name such as alpha or beta; unresolved/cross-category values remain stored but did not produce a visible resolved node in the captured display. The generated editor wraps the field in .form-group/.form-value.field-origin and a .dataform-pagepath-chooser containing hidden value/category/max-level inputs plus ordered select controls whose classes encode the parent fullname. Each selector begins with an empty option and ends with value '+' / text 'Create new'.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
