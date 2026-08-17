@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "d5b1b3c191eac0ddeb4bd77326251a3f06415f9d",
-      "tree": "ccee1b8236c65e9fa4b25da9f849840ef7141110"
+      "commit": "aa983f6f6ed664ac7151007d04135d8431d0e61e",
+      "tree": "2b56ebdf2427d2a4680033376bfdd2e56b079823"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "0ea7eb686357deb6240d86d71a250bc380e4f172d59963501517b89cc0e6723d"
+        "sha256": "f0df8acd50310464f16bd9f81d44c1f2746baa35f85cf35a3eba6df439af425c"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -13802,7 +13802,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13811,8 +13813,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);",
+          "deepwell/src/services/render/service.rs#pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String"
+        ]
       },
       "candidate": {
         "status": "pending",
