@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "4876263638aa16e1898972ab7b181e705b51e5d8",
-      "tree": "c9dcd8d219d87a17e7c4abe40dbb4e459aab07d9"
+      "commit": "12fc72cb0629386f35131115266bbeee048339fb",
+      "tree": "2066fc1d9a8b81f00ddc313ebb23145dbb0b86ee"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "bb0e29e63968697a07f2641ef4fe4839a17cdc6c9e4e5aef2b16b31f0e9aa016"
+        "sha256": "2b407afb1c7bda8d74faa6bc42e6a9c533d4d71a9ba32039586f333a5ba9dee8"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -13118,7 +13118,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#url-default-schema-applies-to-display without rewriting storage"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13127,8 +13130,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
+          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables(",
+          "deepwell/src/services/view/service.rs#data_form.definition.default_layout",
+          "framerail/src/lib/wikidot/wikidot-data-form.js#export const wikidotDataFormUrlDisplay = (value) =>"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13158,7 +13166,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13167,8 +13177,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/blueprint/service.rs#pub(crate) async fn apply_page_template(",
+          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables(",
+          "deepwell/src/services/view/service.rs#data_form.definition.default_layout"
+        ]
       },
       "candidate": {
         "status": "pending",
