@@ -7,6 +7,18 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
     },
     {
+      "surface_id": "catalog-feature:community-site-directory",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn supports_observed_create_edit(&self) -> bool" },
+        { "path": "deepwell/src/services/view/service.rs", "anchor": "definition.supports_observed_create_edit()" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "serializeWikidotDataFormSource" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_category_data_form_definition_in_template_order" },
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "custom_data_form_layout_remains_editable_and_renders_form_variables" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:module-ad",
       "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_ad_modules(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "ad_module_page_source_matches_live_empty_output" }]
