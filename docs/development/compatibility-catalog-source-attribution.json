@@ -578,6 +578,18 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "foldable_list_initial_dom_matches_frozen_live_page_preview" }]
     },
     {
+      "surface_id": "catalog-feature:syntax-links",
+      "sources": [
+        { "path": "deepwell/Cargo.toml", "anchor": "ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"cde07d97aaa8e706556030d4d1f9be3d441b7285\" }" },
+        { "path": "deepwell/src/services/render/compat/wikidot_link_protection.rs", "anchor": "pub(in crate::services::render) fn protect_wikidot_compat_links(" },
+        { "path": "deepwell/src/services/render/compat/wikidot_link_protection.rs", "anchor": "pub(in crate::services::render) fn build_wikidot_wikipedia_link(" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "syntax_links_match_frozen_live_semantics_with_documented_security_divergence" },
+        { "path": "deepwell/tests/page.rs", "anchor": "wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:syntax-include",
       "sources": [{ "path": "deepwell/src/services/render/service.rs", "anchor": "pub(in crate::services::render) async fn expand_includes(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "include_parser_functions_follow_argument_and_caller_ownership_phases" }]
