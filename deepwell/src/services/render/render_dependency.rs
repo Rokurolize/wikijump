@@ -69,6 +69,8 @@ const MODULE_QUERY_NAMES: &[&str] = &[
     "listpages",
     "backlinks",
     "tagcloud",
+    "frontspecialmini",
+    "sitestagcloud",
     "ratedpages",
     "childpages",
     "nextpage",
@@ -79,6 +81,8 @@ const MODULE_QUERY_NAMES: &[&str] = &[
 const MODULE_VIEWER_NAMES: &[&str] = &[
     "rate",
     "newpage",
+    "createaccount",
+    "newsite",
     "clone",
     "join",
     "membershipapply",
@@ -86,6 +90,7 @@ const MODULE_VIEWER_NAMES: &[&str] = &[
     "managesite",
     "petitionadmin",
 ];
+const MODULE_REQUEST_NAMES: &[&str] = &["deleteaccount"];
 const MODULE_STATIC_NAMES: &[&str] = &["css"];
 
 static INCLUDE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -211,6 +216,11 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
 
         if MODULE_VIEWER_NAMES.contains(&name.as_str()) {
             classes.insert(RenderDependencyClass::ViewerDependent);
+            continue;
+        }
+
+        if MODULE_REQUEST_NAMES.contains(&name.as_str()) {
+            classes.insert(RenderDependencyClass::RequestDependent);
             continue;
         }
 
@@ -564,6 +574,8 @@ mod tests {
         for source in [
             "[[module Rate]]",
             "[[module NewPage]]",
+            "[[module CreateAccount]]",
+            "[[module NewSite]]",
             "[[module Clone]]",
             "[[module Join]]",
             "[[module MembershipApply]]",
@@ -576,6 +588,21 @@ mod tests {
             assert!(classes.contains(RenderDependencyClass::ViewerDependent));
             assert!(!classes.contains(RenderDependencyClass::RevisionLocal));
         }
+    }
+
+    #[test]
+    fn hardened_www_system_modules_keep_their_runtime_dependency_classes() {
+        for source in [
+            "[[module FrontSpecialMini]]",
+            "[[module SitesTagCloud limit=\"200\"]]",
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(classes.contains(RenderDependencyClass::QueryDependent));
+            assert!(!classes.contains(RenderDependencyClass::UnsupportedUnverified));
+        }
+        let delete_account = classify_render_dependencies("[[module DeleteAccount]]");
+        assert!(delete_account.contains(RenderDependencyClass::RequestDependent));
+        assert!(!delete_account.contains(RenderDependencyClass::UnsupportedUnverified));
     }
 
     #[test]

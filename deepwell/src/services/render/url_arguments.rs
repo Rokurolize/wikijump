@@ -194,6 +194,22 @@ fn list_pages_argument_key<'a>(
 /// not required for a request path to affect the rendered result.
 static LIST_PAGES_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listpages\b").unwrap());
+static WWW_SPECIAL_RUNTIME_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?is)\[\[\s*module\s+(?:createaccount|deleteaccount|frontspecialmini|newsite|sitestagcloud)\b",
+    )
+    .expect("www special runtime-module expression should compile")
+});
+
+fn wikitext_has_www_special_runtime_module(wikitext: &str) -> bool {
+    if !WWW_SPECIAL_RUNTIME_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literals = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    WWW_SPECIAL_RUNTIME_MODULE_REGEX
+        .find_iter(wikitext)
+        .any(|module| !literals.contains(module.start()))
+}
 
 /// Whether this wikitext holds a module whose output depends on the request's
 /// URL path arguments.
@@ -227,6 +243,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || wikitext_has_executable_count_pages_module(wikitext)
         || wikitext_has_executable_tag_cloud_module(wikitext)
         || wikitext_has_runtime_dependent_new_page_module(wikitext)
+        || wikitext_has_www_special_runtime_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || BACKLINKS_MODULE_REGEX.is_match(wikitext)
         || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
@@ -458,6 +475,23 @@ mod tests {
             assert!(!wikitext_requires_runtime_render(source), "{source}");
             assert!(!wikitext_reads_url_arguments(source), "{source}");
         }
+    }
+
+    #[test]
+    fn hardened_www_system_modules_require_view_time_rendering() {
+        for source in [
+            "[[module CreateAccount]]",
+            "[[module DeleteAccount]]",
+            "[[module FrontSpecialMini]]",
+            "[[module NewSite]]",
+            "[[module SitesTagCloud limit=\"200\"]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+        assert!(!wikitext_requires_runtime_render(
+            "[[code]]\n[[module CreateAccount]]\n[[/code]]"
+        ));
     }
 
     #[test]

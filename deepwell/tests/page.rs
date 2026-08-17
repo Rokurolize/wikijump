@@ -12082,6 +12082,185 @@ async fn currencyconvert_executes_only_on_the_www_plans_system_page() {
 }
 
 #[tokio::test]
+async fn hardened_www_special_modules_execute_only_on_their_system_pages() {
+    let mut runner = TestRunner::setup().await;
+    let www = run_endpoint!(runner, site_get, json!({"site": "www"}))
+        .expect("seeded www system site should exist")
+        .site;
+    for (slug, title, source) in [
+        ("start:start", "Wikidot start", "[[module CreateAccount]]"),
+        (
+            "action:deleteaccount",
+            "Delete account",
+            "[[module DeleteAccount]]",
+        ),
+        (
+            "inc:what-is-wikidot",
+            "What is Wikidot",
+            "[[module FrontSpecialMini]]",
+        ),
+        ("new-site", "New site", "[[module NewSite]]"),
+        (
+            "search",
+            "Search sites",
+            "[[module SitesTagCloud limit=\"200\"]]",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, www.site_id, slug, title, source).await;
+    }
+
+    let anonymous_view = async |runner: &mut TestRunner, slug: &str| {
+        runner.set_request_context(RequestContext {
+            site_id: Some(www.site_id),
+            ..Default::default()
+        });
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": www.site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found www special view for {slug}, got {other:?}"),
+        }
+    };
+
+    let create_account = anonymous_view(&mut runner, "start:start").await;
+    assert!(
+        create_account.contains("create-account-form")
+            && create_account.contains("Create account")
+            && create_account.contains("Please leave this checkbox blank")
+            && create_account.contains("Terms of Service")
+            && !create_account.contains("No such module"),
+        "anonymous www start page must render CreateAccount:\n{create_account}",
+    );
+    let delete_account = anonymous_view(&mut runner, "action:deleteaccount").await;
+    assert_eq!(
+        delete_account.trim(),
+        "<div class=\"error-block\">Invalid verification code. If you are terminating your account, please start again</div>",
+    );
+    let front_special = anonymous_view(&mut runner, "inc:what-is-wikidot").await;
+    assert!(
+        front_special.contains(r#"class="wikidot-front-special-stats""#)
+            && front_special.contains("pages <span class=\"number\">")
+            && front_special.contains("edits today <span class=\"number\">")
+            && front_special.contains("people <span class=\"number\">")
+            && front_special.contains("signed-up today <span class=\"number\">"),
+        "FrontSpecialMini must render four volatile aggregate counters:\n{front_special}",
+    );
+    let new_site = anonymous_view(&mut runner, "new-site").await;
+    assert!(
+        new_site.contains(r#"id="new-site-box""#)
+            && new_site.contains("We need you to have an account to create a new site")
+            && new_site.contains("Sign in")
+            && new_site.contains("Create account"),
+        "anonymous NewSite must render the frozen sign-in/create-account state:\n{new_site}",
+    );
+    let tag_cloud = anonymous_view(&mut runner, "search").await;
+    assert!(
+        tag_cloud.contains(r#"class="sites-tag-cloud-box""#),
+        "SitesTagCloud must own the www search system-page wrapper:\n{tag_cloud}",
+    );
+
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "www special module actor test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(www.site_id),
+        ..Default::default()
+    });
+    let authenticated_start = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": www.site_id,
+            "session_token": session_token.clone(),
+            "route": {"slug": "start:start", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected authenticated www start view, got {other:?}"),
+    };
+    assert!(
+        authenticated_start.contains("Hello,")
+            && authenticated_start.contains("My Account")
+            && !authenticated_start.contains("createaccount-form"),
+        "authenticated CreateAccount must render Wikidot's account greeting state:\n{authenticated_start}",
+    );
+    let authenticated_new_site = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": www.site_id,
+            "session_token": session_token,
+            "route": {"slug": "new-site", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected authenticated www new-site view, got {other:?}"),
+    };
+    assert!(
+        authenticated_new_site.contains(r#"id="new-site-form""#)
+            && authenticated_new_site.contains("Title")
+            && authenticated_new_site.contains("Web address")
+            && authenticated_new_site.contains("Language")
+            && authenticated_new_site.contains("privacy"),
+        "authenticated NewSite must render the site-creation form state:\n{authenticated_new_site}",
+    );
+
+    let ordinary = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded ordinary test site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(ordinary.site_id),
+        ..Default::default()
+    });
+    for name in [
+        "CreateAccount",
+        "DeleteAccount",
+        "FrontSpecialMini",
+        "NewSite",
+        "SitesTagCloud",
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": ordinary.site_id,
+                "title": format!("{name} ordinary control"),
+                "wikitext": format!("[[module {name}]]"),
+            }),
+        );
+        assert!(
+            preview.body.contains("No such module") && preview.body.contains(name),
+            "ordinary pages must retain Wikidot's unknown-module boundary for {name}:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries() {
     async fn load_forum_mini_page_view(
         runner: &TestRunner,

@@ -2,9 +2,127 @@
   "schema": "wikijump.compatibility_catalog_source_attribution.v1",
   "records": [
     {
+      "surface_id": "catalog-feature:advertising",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "data-id=\"sm-ads\"" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
       "surface_id": "catalog-feature:module-ad",
       "sources": [{ "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "fn expand_ad_modules(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "ad_module_page_source_matches_live_empty_output" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-createaccount",
+      "sources": [
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" },
+        { "path": "deepwell/src/services/render/url_arguments.rs", "anchor": "wikitext_has_www_special_runtime_module" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" },
+        { "path": "deepwell/src/services/render/render_dependency.rs", "anchor": "hardened_www_system_modules_keep_their_runtime_dependency_classes" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:module-deleteaccount",
+      "sources": [
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_DELETE_ACCOUNT_INVALID_CODE_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-frontspecialmini",
+      "sources": [
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_front_special_mini" },
+        { "path": "deepwell/src/services/render/url_arguments.rs", "anchor": "WWW_SPECIAL_RUNTIME_MODULE_REGEX" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-newsite",
+      "sources": [
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_NEW_SITE_ANONYMOUS_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_NEW_SITE_AUTHENTICATED_HTML" },
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_special_system_module" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
+    },
+    {
+      "surface_id": "catalog-feature:module-sitestagcloud",
+      "sources": [
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "render_www_sites_tag_cloud" },
+        { "path": "deepwell/src/services/render/runtime_modules.rs", "anchor": "WWW_SPECIAL_SYSTEM_MODULE_REGEX" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "hardened_www_special_modules_execute_only_on_their_system_pages" }]
+    },
+    {
+      "surface_id": "catalog-feature:private-sites",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "data-id=\"sm-access-policy\"" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
+      "surface_id": "catalog-feature:outgoing-pingbacks",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "data-id=\"sm-pingbacks\"" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-backups",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "data-id=\"sm-backup\"" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-cloning",
+      "sources": [
+        { "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "data-id=\"sm-clonesite\"" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "render_clone_module" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-lifecycle-limits",
+      "sources": [
+        { "path": "deepwell/src/endpoints/site.rs", "anchor": "pub async fn site_create(" },
+        { "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "data-id=\"sm-deletesite\"" }
+      ],
+      "tests": [{ "path": "deepwell/tests/site.rs", "anchor": "public_site_create_audits_authenticated_actor_and_supplied_ip_once" }]
+    },
+    {
+      "surface_id": "catalog-feature:site-storage",
+      "sources": [
+        { "path": "deepwell/src/services/blob/service.rs", "anchor": "if blob_size > config.maximum_blob_size" },
+        { "path": "deepwell/src/services/file/service.rs", "anchor": "pub async fn create(" }
+      ],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "file_create_public_endpoint_audits_success_once_and_not_denial" }]
+    },
+    {
+      "surface_id": "catalog-feature:subscriptions-plans",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "Pro Plus" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
+    },
+    {
+      "surface_id": "catalog-feature:thumbnails",
+      "sources": [
+        { "path": "wws/src/route.rs", "anchor": "/local--resized-images/{page_slug}/{filename}/{variant}" },
+        { "path": "wws/src/handler/resized_image.rs", "anchor": "pub async fn handle_resized_image(" }
+      ],
+      "tests": [{ "path": "wws/src/handler/resized_image.rs", "anchor": "public_router_serves_documented_variants_and_cheap_conditional_head" }]
+    },
+    {
+      "surface_id": "catalog-feature:watching-notifications",
+      "sources": [
+        { "path": "deepwell/src/endpoints/page.rs", "anchor": "pub async fn page_watchers(" },
+        { "path": "deepwell/src/services/relation/page_watch.rs", "anchor": "pub async fn get_active_page_watcher_ids(" },
+        { "path": "framerail/src/lib/wikidot/wikidot-page-watch.js", "anchor": "export const buildWikidotPageWatchLabel" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page.rs", "anchor": "page_watchers_returns_active_typed_identities_in_deterministic_order" },
+        { "path": "framerail/tests/wikidot-page-watch.test.js", "anchor": "renders authenticated sandbox site watch text" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:web-statistics",
+      "sources": [{ "path": "deepwell/src/services/render/site_utility_modules/admin_read_models.rs", "anchor": "Web statistics" }],
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models" }]
     },
     {
       "surface_id": "catalog-feature:module-admoduleabovecontent",
@@ -300,6 +418,31 @@
         { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_and_edit_round_trip_date_field_scalars_and_options" },
         { "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "date fields expose options and preserve accepted and malformed submitted scalars" },
         { "path": "framerail/tests/data-form-create-flow.spec.ts", "anchor": "data-form datepicker selections save the evidenced Unix-second scalar" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-file-field",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn supports_observed_editor(&self) -> bool" },
+        { "path": "deepwell/src/services/view/service.rs", "anchor": "definition.supports_observed_editor()" },
+        { "path": "framerail/src/lib/wikidot/wikidot-data-form.js", "anchor": "case \"file\":" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"file\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_file_data_form_create_control_without_write_lifecycle" },
+        { "path": "framerail/tests/wikidot-data-form-scalar-fields.test.js", "anchor": "file field exposes only Wikidot's observed hidden upload-state control" },
+        { "path": "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs", "anchor": "file-field artifact has the exact public evidence identity and no secret material" }
+      ]
+    },
+    {
+      "surface_id": "catalog-feature:data-forms-images",
+      "sources": [
+        { "path": "deepwell/src/services/data_form.rs", "anchor": "pub fn supports_observed_editor(&self) -> bool" },
+        { "path": "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte", "anchor": "field.field_type === \"file\"" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/page_template_assignment.rs", "anchor": "page_view_exposes_file_data_form_create_control_without_write_lifecycle" },
+        { "path": "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs", "anchor": "media and links artifact has the exact independent feature contract" }
       ]
     },
     {
