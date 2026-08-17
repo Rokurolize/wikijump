@@ -10939,8 +10939,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "e1052ba3cf64ad7dcee077405b1872cb11379be4",
-      "tree": "d04282086fb7f1c7afbe58b4c475b60eae054903"
+      "commit": "f5c95abf9e3b1c4bf7d8eec3047d260b9818a1fd",
+      "tree": "bb16465ffed22eea8d528406c8b12fef676c2d26"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -11089,7 +11089,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "141cd7c76794196021ba8bfe94ef845a862db25602892fc3e60b80c05a4eba0f"
+        "sha256": "c777acf04ed4bc7a3dcf04e5511a92a35aa26b05427164da040f08fc8483b63e"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -18927,7 +18927,13 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/caddy/test.rs#fn generate_caddyfiles()",
+          "deepwell/tests/auth.rs#restricted_mfa_sessions_are_not_normal_login_sessions",
+          "deepwell/tests/auth.rs#unrestricted_sessions_still_get_and_renew_normally",
+          "deepwell/tests/session_token_logging.rs#session_lifecycle_does_not_log_bearer_values",
+          "framerail/tests/auth-form-redaction.test.js#login action forms do not serialize the submitted password"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18936,8 +18942,16 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/auth.rs#pub async fn auth_login(",
+          "deepwell/src/endpoints/auth.rs#pub async fn auth_logout(",
+          "deepwell/src/services/authentication/service.rs#pub async fn auth_password(",
+          "deepwell/src/services/caddy/caddyfile.j2#{%- macro render_preferred_domain(site_id, site_slug, domain, www_redirect) %}",
+          "deepwell/src/services/password.rs#pub async fn verify(",
+          "framerail/src/lib/server/load/login.ts#export async function loginAction({ request, getClientAddress, cookies }: RequestEvent)",
+          "framerail/src/lib/server/load/logout.ts#export async function logoutAction({ cookies, request }: RequestEvent)"
+        ]
       },
       "candidate": {
         "status": "pending",
