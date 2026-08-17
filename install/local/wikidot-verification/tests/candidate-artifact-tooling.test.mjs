@@ -75,6 +75,17 @@ test("candidate artifact tooling is source-owned and fail-closed", () => {
   assert.equal(help.status, 0, help.stderr);
   assert.match(help.stdout, /build-deepwell-candidate\.sh/u);
 
+  const buildWrapperSource = fs.readFileSync(buildWrapper, "utf8");
+  assert.match(
+    buildWrapperSource,
+    /MANIFEST_TOOL=\(python3 "\$SCRIPT_DIR\/candidate-artifact-manifest\.py"\)/u,
+  );
+  assert.match(
+    buildWrapperSource,
+    /"\$\{MANIFEST_TOOL\[@\]\}" ftml-sha --cargo-lock/u,
+  );
+  assert.match(buildWrapperSource, /"\$\{MANIFEST_TOOL\[@\]\}" create/u);
+
   for (const relative of [
     "install/local/wikidot-verification/scripts/run-ftml-marker-contract-canary.mjs",
     "install/local/wikidot-verification/src/listpages-runtime-authority.mjs",

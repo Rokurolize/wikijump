@@ -166,8 +166,8 @@ test("supported wikidot.py request bodies behave identically when only the targe
   }
 })
 
-test("ListPages rejects parameters outside the explicit compatibility allowlist", async () => {
-  let rendered = false
+test("ListPages ignores unknown non-data-form parameters outside the compatibility allowlist", async () => {
+  let renderedParameters = null
   const response = await handleAjaxModuleConnectorRequest(
     new Request("https://scp-wiki.wikijump.localhost/ajax-module-connector.php", {
       method: "POST",
@@ -180,16 +180,13 @@ test("ListPages rejects parameters outside the explicit compatibility allowlist"
     }),
     {
       siteId: 6000006,
-      renderListPages: async () => {
-        rendered = true
-        return { body: "unexpected" }
+      renderListPages: async ({ parameters }) => {
+        renderedParameters = parameters
+        return { body: "%%fullname%%" }
       }
     }
   )
 
-  assert.equal(rendered, false)
-  assert.deepEqual(await response.json(), {
-    status: "not_ok",
-    message: "Unsupported AJAX module shape: list/ListPagesModule"
-  })
+  assert.deepEqual(renderedParameters, {})
+  assert.deepEqual(await response.json(), { status: "ok", body: "%%fullname%%" })
 })

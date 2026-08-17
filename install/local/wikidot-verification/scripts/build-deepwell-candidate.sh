@@ -6,7 +6,7 @@ usage() {
 }
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-MANIFEST_TOOL="$SCRIPT_DIR/candidate-artifact-manifest.py"
+MANIFEST_TOOL=(python3 "$SCRIPT_DIR/candidate-artifact-manifest.py")
 
 REPO=
 TARGET_DIR=
@@ -65,7 +65,7 @@ LOCK_SHA=$(sha256sum "$REPO/deepwell/Cargo.lock" | awk '{print $1}')
 ARTIFACT_KEY_COMMAND=(
   /home/roku/.local/bin/roku-resource-lease artifact-key
   --repo "$REPO"
-  --ftml-sha "$("$MANIFEST_TOOL" ftml-sha --cargo-lock "$REPO/deepwell/Cargo.lock")"
+  --ftml-sha "$("${MANIFEST_TOOL[@]}" ftml-sha --cargo-lock "$REPO/deepwell/Cargo.lock")"
   --ftml-source-id clean
   --profile "$PROFILE"
   --package deepwell
@@ -127,7 +127,7 @@ jq -n \
   '{schema:"roku.artifact_key_build_receipt.v1",wrapper_version:1,build_command:$command,started_at:$started_at,finished_at:$finished_at,cargo_lock_sha256:{before:$lock_before,after:$lock_after},binary_sha256:$binary_sha256,before:$before,after:$after}' >"$RECEIPT"
 
 CREATE=(
-  "$MANIFEST_TOOL" create
+  "${MANIFEST_TOOL[@]}" create
   --repo "$REPO"
   --binary "$BINARY"
   --cargo-lock "$REPO/deepwell/Cargo.lock"
