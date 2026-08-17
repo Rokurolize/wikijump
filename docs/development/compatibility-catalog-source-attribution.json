@@ -484,6 +484,25 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:secure-login",
+      "sources": [
+        { "path": "deepwell/src/endpoints/auth.rs", "anchor": "pub async fn auth_login(" },
+        { "path": "deepwell/src/endpoints/auth.rs", "anchor": "pub async fn auth_logout(" },
+        { "path": "deepwell/src/services/authentication/service.rs", "anchor": "pub async fn auth_password(" },
+        { "path": "deepwell/src/services/password.rs", "anchor": "pub async fn verify(" },
+        { "path": "framerail/src/lib/server/load/login.ts", "anchor": "export async function loginAction({ request, getClientAddress, cookies }: RequestEvent)" },
+        { "path": "framerail/src/lib/server/load/logout.ts", "anchor": "export async function logoutAction({ cookies, request }: RequestEvent)" },
+        { "path": "deepwell/src/services/caddy/caddyfile.j2", "anchor": "{%- macro render_preferred_domain(site_id, site_slug, domain, www_redirect) %}" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/auth.rs", "anchor": "unrestricted_sessions_still_get_and_renew_normally" },
+        { "path": "deepwell/tests/auth.rs", "anchor": "restricted_mfa_sessions_are_not_normal_login_sessions" },
+        { "path": "deepwell/tests/session_token_logging.rs", "anchor": "session_lifecycle_does_not_log_bearer_values" },
+        { "path": "framerail/tests/auth-form-redaction.test.js", "anchor": "login action forms do not serialize the submitted password" },
+        { "path": "deepwell/src/services/caddy/test.rs", "anchor": "fn generate_caddyfiles()" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:expressions",
       "sources": [
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },
