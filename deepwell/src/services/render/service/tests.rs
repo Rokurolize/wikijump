@@ -5957,6 +5957,7 @@ fn localizes_matching_wikidot_local_file_urls() {
         r#"<a href='https://scp-wiki.wdfiles.com:443/local--files/scp-9506/NAME%20HERE.png'>"#,
         r#"file</a>"#,
         r#"<img class="image crom-thumbnail" src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.com/local--files/scp-9506/NFSI.png">"#,
+        r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
         r#"<style>:root{--logo:url(http://scp-wiki.wikidot.com/local--files/scp-9506/NFSI.png)}</style>"#,
         r#"<style>.quoted{background:url('http://scp-wiki.wikidot.com/local--files/scp-9506/BG.png')}</style>"#,
         r#"<style>@import "https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1";</style>"#,
@@ -5971,6 +5972,7 @@ fn localizes_matching_wikidot_local_file_urls() {
             r#"<a href='https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NAME%20HERE.png'>"#,
             r#"file</a>"#,
             r#"<img class="image crom-thumbnail" src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png">"#,
+            r#"<img src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
             r#"<style>:root{--logo:url(https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png)}</style>"#,
             r#"<style>.quoted{background:url('https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/BG.png')}</style>"#,
             r#"<style>@import "https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--code/theme%3Abasalt/1";</style>"#,
@@ -6746,7 +6748,7 @@ fn rate_module_plusminus_body_is_consumed_like_live_wikidot() {
 }
 
 #[test]
-fn rate_module_body_does_not_revisit_nested_rate_heads() {
+fn rate_module_balanced_scope_does_not_bind_nested_closer_to_outer_rate() {
     let source = concat!(
         "[[module Rate]]\n",
         "body before a later rate head\n",
@@ -6773,9 +6775,13 @@ fn rate_module_body_does_not_revisit_nested_rate_heads() {
         &mut compat_text,
     );
 
-    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 1,);
+    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 2,);
     assert!(protected.ends_with("\nvisible tail\n"), "{protected}");
     assert!(!protected.contains("[[module Rate]]"), "{protected}");
+    assert!(
+        protected.contains("body before a later rate head"),
+        "{protected}"
+    );
 }
 
 #[test]

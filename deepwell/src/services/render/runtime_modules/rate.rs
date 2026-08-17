@@ -14,7 +14,12 @@
 
 use super::*;
 
-fn rate_module_occurrence_body(source: &str, open_end: usize) -> (usize, Option<&str>) {
+fn rate_module_occurrence_body<'a>(
+    source: &'a str,
+    module_start: usize,
+    open_end: usize,
+    literal_regions: &LiteralRegionIndex,
+) -> (usize, Option<&'a str>) {
     let suffix = &source[open_end..];
     if suffix.starts_with("[[/module]]") {
         return (open_end + "[[/module]]".len(), Some(""));
@@ -28,17 +33,11 @@ fn rate_module_occurrence_body(source: &str, open_end: usize) -> (usize, Option<
         return (open_end, None);
     }
 
-    match suffix
-        .to_ascii_lowercase()
-        .find("[[/module]]")
-        .map(|offset| open_end + offset)
-    {
-        Some(close_start) => (
-            close_start + "[[/module]]".len(),
-            Some(&source[open_end..close_start]),
-        ),
-        None => (open_end, None),
-    }
+    let Some(close) = matching_source_scope_close(source, literal_regions, module_start)
+    else {
+        return (open_end, None);
+    };
+    (close.end, Some(&source[open_end..close.start]))
 }
 
 fn rate_module_footnote_scope_ends(
@@ -97,7 +96,12 @@ impl RenderService {
             {
                 continue;
             }
-            let (occurrence_end, _) = rate_module_occurrence_body(source, matched.end());
+            let (occurrence_end, _) = rate_module_occurrence_body(
+                source,
+                matched.start(),
+                matched.end(),
+                &literal_regions,
+            );
             cursor = occurrence_end;
             if rate_module_is_inside_footnote_scope(
                 &footnote_ranges,
@@ -139,8 +143,12 @@ impl RenderService {
             {
                 continue;
             }
-            let (occurrence_end, _) =
-                rate_module_occurrence_body(&wikitext, matched.end());
+            let (occurrence_end, _) = rate_module_occurrence_body(
+                &wikitext,
+                matched.start(),
+                matched.end(),
+                &literal_regions,
+            );
             if rate_module_is_inside_footnote_scope(
                 &footnote_ranges,
                 matched.start(),
@@ -192,8 +200,12 @@ impl RenderService {
             {
                 continue;
             }
-            let (occurrence_end, body) =
-                rate_module_occurrence_body(&wikitext, matched.end());
+            let (occurrence_end, body) = rate_module_occurrence_body(
+                &wikitext,
+                matched.start(),
+                matched.end(),
+                &literal_regions,
+            );
             output.push_str(&wikitext[cursor..matched.start()]);
             if rate_module_is_inside_footnote_scope(
                 &footnote_ranges,
@@ -235,7 +247,8 @@ impl RenderService {
 
 #[cfg(test)]
 mod tests {
-    use super::rate_module_is_inside_footnote_scope;
+    use super::{rate_module_is_inside_footnote_scope, rate_module_occurrence_body};
+    use crate::services::render::literal_regions::LiteralRegionIndex;
 
     #[test]
     fn footnote_scope_lookup_uses_the_longest_enclosing_range() {
@@ -243,5 +256,24 @@ mod tests {
         assert!(rate_module_is_inside_footnote_scope(&ranges, 15, 70));
         assert!(!rate_module_is_inside_footnote_scope(&ranges, 15, 81));
         assert!(!rate_module_is_inside_footnote_scope(&ranges, 80, 81));
+    }
+
+    #[test]
+    fn unclosed_rate_does_not_claim_a_later_module_closer() {
+        let source = concat!(
+            "[[module Rate]]\n",
+            "visible tail before sibling\n",
+            "[[module CSS]]\n",
+            ".sibling { display: block; }\n",
+            "[[/module]]\n",
+            "visible tail after sibling\n",
+        );
+        let open_end = "[[module Rate]]".len();
+        let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(source);
+
+        assert_eq!(
+            rate_module_occurrence_body(source, 0, open_end, &literal_regions),
+            (open_end, None),
+        );
     }
 }

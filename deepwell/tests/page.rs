@@ -8339,6 +8339,41 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
 }
 
 #[tokio::test]
+async fn page_render_bodyless_rate_does_not_claim_a_later_sibling_module_closer() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("rate-sibling-module-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Rate Sibling Module Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let source = concat!(
+        "[[module Rate]]\n",
+        "[[div class=\"article-start\"]]VISIBLE ARTICLE BODY[[/div]]\n",
+        "[[module CSS]]\n",
+        ".sibling { display: block; }\n",
+        "[[/module]]\n",
+        "VISIBLE ARTICLE TAIL\n",
+    );
+
+    let output =
+        RenderService::render(runner.context(), source.to_owned(), &page_info, &settings)
+            .await
+            .expect("bodyless Rate followed by a sibling module should render");
+    let html = output.html_output.body;
+
+    assert!(html.contains("VISIBLE ARTICLE BODY"), "{html}");
+    assert!(html.contains("VISIBLE ARTICLE TAIL"), "{html}");
+    assert_eq!(html.matches(r#"class="page-rate-widget-box""#).count(), 1);
+    assert!(!html.contains("[[module CSS]]"), "{html}");
+}
+
+#[tokio::test]
 async fn page_render_basalt_rate_does_not_claim_active_iftags_through_eof() {
     let runner = TestRunner::setup().await;
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
