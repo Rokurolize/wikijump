@@ -1012,11 +1012,14 @@
     },
     "expressions": {
       "evidence": [
-        "current-www-source"
+        "current-www-source",
+        "expressions-live-probes",
+        "expressions-length-probes",
+        "expressions-length-boundary-probes"
       ],
       "axes": {
         "P1": [
-          "Support the documented expression grammar and parser functions, including #expr, #if, #ifexpr, arithmetic/comparison/boolean operators, variables/coercions, abs/min/max, and the documented maximum expression length of 256 characters."
+          "Support the documented expression grammar and parser functions, including #expr, #if, #ifexpr, arithmetic/comparison/boolean operators, variables/coercions, and abs/min/max. The frozen documentation states a 256-character expression maximum, but live Wikidot evaluates expressions of at least 131072 bytes; see the expressions-size-boundary-unenforced-20260817 live observation. The local runtime deliberately keeps its deterministic 256-byte fail-closed budget as a documented resource/security divergence and does not guess a higher live boundary."
         ],
         "P2": [
           "Expressions are parsed in the documented parser-function context with their nesting and delimiter rules. Expression parsing MUST NOT consume surrounding literal/source ownership beyond the function invocation."
@@ -1037,7 +1040,7 @@
           "The visible output is the evaluated scalar/text chosen by the parser function; expression mechanics MUST NOT inject unrelated wrapper DOM."
         ],
         "P8": [
-          "The 256-character bound and malformed-expression handling are resource/safety constraints. Divide-by-zero, invalid tokens, and unsupported operations MUST follow live/FTML error behavior without hanging or widening evaluation."
+          "The local 256-byte expression bound and malformed-expression handling are deterministic resource/safety constraints. An over-budget or non-ASCII expression renders as literal source (fails closed) instead of evaluating. This is a deliberate stricter local divergence from live Wikidot, which evaluates far larger expressions; the divergence must remain documented and tested and must not be widened without new bounded live evidence. Divide-by-zero, invalid tokens, and unsupported operations MUST follow live/FTML error behavior without hanging or widening evaluation."
         ]
       }
     },

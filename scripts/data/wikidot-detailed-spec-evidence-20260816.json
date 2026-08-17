@@ -47,6 +47,21 @@
       "path": "/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl",
       "sha256": "54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5",
       "claim": "The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen."
+    },
+    "expressions_live_probes": {
+      "path": "/home/roku/wjlab/evidence/expressions-live-20260817/references.jsonl",
+      "sha256": "a9aff67a1006405632116d6a8836dc208d9222ae864b41df0f0f3f8e08908f78",
+      "claim": "Anonymous live #if/#expr probes: lowercase null is false, uppercase NULL is true, and 255-, 256-, and 257-byte repeated-addition expressions all evaluate."
+    },
+    "expressions_length_probes": {
+      "path": "/home/roku/wjlab/evidence/expressions-length-live-20260817/references.jsonl",
+      "sha256": "658b72927061b9db96728fe9b09e491cdc82a5885d5dcbabeb404afe075d324b",
+      "claim": "Constant-complexity one-operation expressions of 257 to 8192 bytes all render <p>1</p>; live does not enforce the documented 256-character bound."
+    },
+    "expressions_length_boundary_probes": {
+      "path": "/home/roku/wjlab/evidence/expressions-length-boundary-live-20260817/references.jsonl",
+      "sha256": "e06e13e9742b7874f23b185fc78cb79c4eff120c7a2d7170ffc31731d480d405",
+      "claim": "Constant-complexity one-operation expressions of 16384 to 131072 bytes all render <p>1</p> with a 4-byte control; the live expression-size boundary lies beyond the bounded probe envelope."
     }
   },
   "retained_repository_evidence": {
@@ -80,7 +95,7 @@
     },
     "canonical_live_observations": {
       "path": "scripts/data/wikidot-live-observations.json",
-      "sha256": "78636d4172bdbd92bc12bd81a0331254198305b6739fcbfe0f813fb116b646c9"
+      "sha256": "5a04bf7d1b8d36696492dca1347ec7b31b042e39c42d9f33a8ce9d834b2edf56"
     }
   },
   "redaction": {

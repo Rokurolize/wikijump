@@ -3076,6 +3076,56 @@
           "case_ids": []
         }
       ]
+    },
+    {
+      "id": "expressions-size-boundary-unenforced-20260817",
+      "title": "Live Wikidot does not enforce the documented 256-character expression bound",
+      "feature_ids": [
+        "expressions"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-08-17",
+      "analysis": "Anonymous edit/PagePreviewModule probes isolate the expression-size boundary on sandbox-for-codex. Repeated-addition chains of exactly 255, 256, and 257 bytes all evaluate. One-operation expressions padded with ASCII spaces to 257, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, and 131072 bytes all evaluate to <p>1</p>; a 4-byte control evaluates identically. Current live Wikidot therefore does not enforce the frozen documentation's 256-character expression maximum within the bounded probe envelope. The local FTML runtime deliberately keeps its deterministic 256-byte fail-closed budget as a documented resource/security divergence: over-budget expressions remain literal instead of evaluating. No raised replacement boundary is inferred from these observations.",
+      "normative_behavior": [
+        "Anonymous live Wikidot evaluates #expr expressions of at least 131072 bytes; the documented 256-character maximum is not enforced at the observed live boundary.",
+        "The local runtime keeps a deterministic 256-byte expression budget. An over-budget #expr invocation renders as literal source (fails closed) rather than evaluating.",
+        "The divergence is a deliberate stricter local resource/security bound, not exact live parity; it must not be silently widened without new bounded live evidence.",
+        "Operation, parenthesis, document-candidate, and non-ASCII budgets remain unchanged and independent of the byte-size bound."
+      ],
+      "evidence": [
+        {
+          "path": "/home/roku/wjlab/evidence/expressions-live-20260817/references.jsonl",
+          "sha256": "a9aff67a1006405632116d6a8836dc208d9222ae864b41df0f0f3f8e08908f78",
+          "case_ids": [
+            "expressions-expr-255",
+            "expressions-expr-256",
+            "expressions-expr-257"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/expressions-length-live-20260817/references.jsonl",
+          "sha256": "658b72927061b9db96728fe9b09e491cdc82a5885d5dcbabeb404afe075d324b",
+          "case_ids": [
+            "expressions-space-padded-257",
+            "expressions-space-padded-512",
+            "expressions-space-padded-1024",
+            "expressions-space-padded-2048",
+            "expressions-space-padded-4096",
+            "expressions-space-padded-8192"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/expressions-length-boundary-live-20260817/references.jsonl",
+          "sha256": "e06e13e9742b7874f23b185fc78cb79c4eff120c7a2d7170ffc31731d480d405",
+          "case_ids": [
+            "expressions-space-padded-16384",
+            "expressions-space-padded-32768",
+            "expressions-space-padded-65536",
+            "expressions-space-padded-131072",
+            "expressions-small-control"
+          ]
+        }
+      ]
     }
   ]
 }

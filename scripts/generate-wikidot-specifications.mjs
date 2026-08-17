@@ -274,6 +274,12 @@ const detailedEvidenceAliases = Object.freeze({
     detailedSpecEvidence.captures?.account_upgrade_nonpro,
   "data-form-public-demos":
     detailedSpecEvidence.captures?.data_form_public_demos,
+  "expressions-live-probes":
+    detailedSpecEvidence.captures?.expressions_live_probes,
+  "expressions-length-probes":
+    detailedSpecEvidence.captures?.expressions_length_probes,
+  "expressions-length-boundary-probes":
+    detailedSpecEvidence.captures?.expressions_length_boundary_probes,
   "data-form-create-edit":
     detailedSpecEvidence.retained_repository_evidence?.data_form_create_edit,
   "data-form-date-pagepath":

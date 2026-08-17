@@ -2594,6 +2594,45 @@ async fn documented_expression_parser_functions_render_at_the_public_preview_sea
 }
 
 #[tokio::test]
+async fn expression_size_boundary_fails_closed_at_the_public_preview_seam() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    let at_bound = format!("[[#expr 1{}+0]]", " ".repeat(253));
+    let over_bound = format!("[[#expr 1{}+0]]", " ".repeat(254));
+    assert_eq!(at_bound.len() - 10, 256);
+    assert_eq!(over_bound.len() - 10, 257);
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Expression size boundary",
+            "wikitext": format!("AT_BOUND={at_bound}\nOVER_BOUND={over_bound}"),
+        }),
+    );
+
+    assert!(
+        preview.body.contains("AT_BOUND=1"),
+        "the 256-byte expression must still evaluate:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("OVER_BOUND=1"),
+        "the 257-byte expression must not evaluate:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("OVER_BOUND=[[#expr 1 +0]]"),
+        "the 257-byte expression must remain literal and unevaluated (fail closed):\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
 async fn article_view_uses_category_license_and_site_fallback() {
     const SITE_SLUG: &str = "test";
     const PAGE_SLUG: &str = "category-license:article";

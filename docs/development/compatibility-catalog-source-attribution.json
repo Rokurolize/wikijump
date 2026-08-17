@@ -508,7 +508,7 @@
         { "path": "deepwell/src/services/render/service.rs", "anchor": "pub(super) fn resolve_wikidot_parser_functions(value: &str) -> String" },
         { "path": "deepwell/src/services/render/page_preview.rs", "anchor": "WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);" }
       ],
-      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "documented_expression_parser_functions_render_at_the_public_preview_seam" }]
+      "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "documented_expression_parser_functions_render_at_the_public_preview_seam" }, { "path": "deepwell/tests/page.rs", "anchor": "expression_size_boundary_fails_closed_at_the_public_preview_seam" }]
     },
     {
       "surface_id": "catalog-feature:data-forms-password-field",

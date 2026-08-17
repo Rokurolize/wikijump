@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 76,
+    "observation_count": 77,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -3426,7 +3426,9 @@
         "Rendered HTML/DOM at the saved-page boundary for context-dependent forms"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "expressions-size-boundary-unenforced-20260817"
+      ]
     },
     {
       "id": "favicons",
