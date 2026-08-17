@@ -63,6 +63,7 @@ export const localizeWikidotThemeUrl = (themeUrl, origin) => {
   parsed.protocol = localOrigin.hostname.endsWith(".wikijump.localhost")
     ? "https:"
     : localOrigin.protocol
-  parsed.host = localHost
+  parsed.hostname = localHost
+  parsed.port = localOrigin.port
   return parsed.toString()
 }

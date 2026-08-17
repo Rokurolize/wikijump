@@ -167,7 +167,13 @@ export const handle: Handle = async ({ event, resolve }) => {
       ),
     resolveResponse: resolveWithWikidotRequestInfo,
     applySecurityHeaders: (response) =>
-      applyStaticSecurityHeaders(response, event.url.pathname, siteSlug),
+      applyStaticSecurityHeaders(
+        response,
+        event.url.pathname,
+        siteSlug,
+        undefined,
+        event.url.origin
+      ),
     writeResolvedResponse: async (response) => {
       const writeGate = canUseAnonymousArticleResponseCache(event, siteId, siteSlug)
       if (writeGate.cacheable) {

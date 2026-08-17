@@ -198,6 +198,13 @@ test("localizes Wikidot local file and code theme URLs to the local file host", 
   )
   assert.equal(
     localizeWikidotThemeUrl(
+      "https://scp-wiki.wdfiles.com/local--code/theme:basalt/1",
+      "https://scp-wiki.wikijump.localhost:18443"
+    ),
+    "https://scp-wiki.wjfiles.localhost:18443/local--code/theme:basalt/1"
+  )
+  assert.equal(
+    localizeWikidotThemeUrl(
       "https://cdn.scpwiki.com/theme/en/basalt/normalize-min.css",
       "https://scp-wiki.wikijump.localhost"
     ),
