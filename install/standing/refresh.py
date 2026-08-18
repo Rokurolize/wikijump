@@ -14,6 +14,8 @@ import subprocess
 import tempfile
 import time
 
+from merge_identity import validate_candidate_merge
+
 
 SERVICES = ("deepwell", "framerail", "wws")
 RUNTIME_SERVICES = (
@@ -22,6 +24,7 @@ RUNTIME_SERVICES = (
     "wws",
     "caddy",
 )
+PROTECTED_VOLUMES = ("runtime50x-postgres-data", "runtime50x-files-data")
 PROMOTION_PRECONDITION_SCHEMA = "wikijump.standing_promotion_precondition.v1"
 DEFAULT_RUNTIME_HOME = Path("/home/roku/wjlab/runtime/wikijump-standing")
 RUNTIME_DIFFERENTIAL_IDENTITY = "runtime-differential-identity.json"
@@ -475,7 +478,7 @@ def prepared_resource_expiry(receipt: dict[str, object]) -> str:
 
 def load_prepared_receipt(
     path: Path, source_root: Path, identity: dict[str, str]
-) -> tuple[dict[str, object], str]:
+) -> tuple[dict[str, object], str, dict[str, object]]:
     receipt = json.loads(path.read_text(encoding="utf-8"))
     if (
         receipt.get("schema_version") != 1
@@ -511,17 +514,13 @@ def load_prepared_receipt(
         raise ValueError(
             "prepared receipt run ID does not match its promotion precondition"
         )
-    for section in ("candidate", "build"):
-        values = proof.get(section)
-        if (
-            not isinstance(values, dict)
-            or values.get("wikijump_commit") != identity["wikijump_sha"]
-            or values.get("wikijump_tree") != identity["wikijump_tree"]
-            or values.get("ftml_sha") != identity["ftml_sha"]
-        ):
-            raise ValueError(
-                f"prepared receipt promotion precondition {section} identity is stale"
-            )
+    validate_candidate_merge(
+        source_root,
+        identity,
+        proof.get("candidate"),
+        proof.get("build"),
+        command,
+    )
     for key in ("wikijump_sha", "wikijump_tree", "ftml_sha", "dependency_lock_sha256"):
         if receipt.get(key) != identity[key]:
             raise ValueError(
@@ -534,6 +533,7 @@ def load_prepared_receipt(
         )
     profiles = {"deepwell": "release", "framerail": "built", "wws": "release"}
     dockerfiles = receipt.get("dockerfiles")
+    sealed_images = proof.get("build", {}).get("images")
     for service in SERVICES:
         image = images.get(service)
         if not isinstance(image, dict):
@@ -550,6 +550,10 @@ def load_prepared_receipt(
             raise ValueError(
                 f"prepared image {service} does not use its immutable image ID"
             )
+        if not isinstance(sealed_images, dict) or sealed_images.get(service) != image_id:
+            raise ValueError(
+                f"prepared image {service} does not match the sealed candidate build"
+            )
         if image.get("profile") != profiles[service]:
             raise ValueError(
                 f"prepared image {service} profile is not {profiles[service]}"
@@ -560,7 +564,7 @@ def load_prepared_receipt(
         ):
             raise ValueError(f"prepared image {service} Dockerfile identity is stale")
     prepared_resource_expiry(receipt)
-    return receipt, file_sha256(path)
+    return receipt, file_sha256(path), proof
 
 
 def runtime_differential_identity(
@@ -670,7 +674,7 @@ def main() -> int:
             "promotion receipt path already exists; use a fresh receipt path"
         )
     prepared_receipt_path = args.prepared_receipt.resolve()
-    prepared_receipt, prepared_receipt_sha256 = load_prepared_receipt(
+    prepared_receipt, prepared_receipt_sha256, promotion_precondition = load_prepared_receipt(
         prepared_receipt_path, source_root, identity
     )
     environment = read_environment(runtime_home / ".env")
@@ -707,12 +711,18 @@ def main() -> int:
                 f"prepared image {service} changed: expected {expected}, got {images[service]['id']}"
             )
         labels = images[service].get("labels")
+        candidate = promotion_precondition["candidate"]
         if (
             not isinstance(labels, dict)
-            or labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]
+            or labels.get("com.rokurolize.wikijump.sha")
+            != candidate["wikijump_commit"]
+            or labels.get("com.rokurolize.wikijump.tree")
+            != candidate["wikijump_tree"]
+            or labels.get("com.rokurolize.wikijump.ftml_sha")
+            != candidate["ftml_sha"]
         ):
             raise RuntimeError(
-                f"prepared image {service} is not labelled for this source"
+                f"prepared image {service} is not labelled for the sealed candidate source"
             )
 
     expiry = prepared_resource_expiry(prepared_receipt)
@@ -806,8 +816,9 @@ def main() -> int:
         differential_identity_published = True
         receipt: dict[str, object] = {
             "schema_version": 1,
+            "kind": "standing-promotion",
             "status": "pass",
-            "run_id": prepared_receipt_sha256,
+            "run_id": prepared_receipt["run_id"],
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(UTC).isoformat(),
             "activation_duration_seconds": time.monotonic() - activation_started,
@@ -817,33 +828,17 @@ def main() -> int:
             "health_duration_seconds": health_completed - health_started,
             "canary_duration_seconds": canary_completed - canary_started,
             **identity,
+            "promotion_precondition": prepared_receipt["promotion_precondition"],
             "runtime_home": str(runtime_home),
             "prepared_receipt": {
                 "path": str(prepared_receipt_path),
                 "sha256": prepared_receipt_sha256,
-                "completed_at": prepared_receipt.get("completed_at"),
-                "duration_seconds": prepared_receipt.get("duration_seconds"),
             },
             "project_name": "wikijump-standing",
             "network_name": network_name,
             "images": images,
-            "containers": {
-                "before": previous_runtime,
-                "after": candidate_runtime,
-                "port_443_owner": candidate_port_443_owner,
-                "rollback_park": parked,
-            },
-            "runtime_images": {
-                "before": previous_runtime_images,
-                "after": candidate_runtime_images,
-            },
-            "rollback": {
-                "status": "parked",
-                "containers": {
-                    service: parked[service]["container"] for service in SERVICES
-                },
-                "port_443_owner_before": previous_port_443_owner,
-            },
+            "rollback_images": rollback_images,
+            "protected_volumes": list(PROTECTED_VOLUMES),
             "runtime_differential_identity": {
                 "path": str(differential_identity_path),
                 "sha256": file_sha256(differential_identity_path),
@@ -855,12 +850,20 @@ def main() -> int:
                 "status": "pass",
                 "required_markers": ["scp-9506", "page-content"],
             },
-            "resource_disposition": {
-                "containers": {
-                    service: {"owner": "standing-runtime", "keep_until": expiry}
-                    for service in SERVICES
+            "cleanup": {
+                "status": "pass",
+                "candidate_receipt": {
+                    "path": str(prepared_receipt_path),
+                    "sha256": prepared_receipt_sha256,
                 },
-                "images": {
+                "receipt": {
+                    "path": str(prepared_receipt_path),
+                    "sha256": prepared_receipt_sha256,
+                },
+                "superseded_images": [],
+            },
+            "resource_disposition": {
+                "active": {
                     service: {
                         "owner": "standing-runtime",
                         "keep_until": expiry,
@@ -873,11 +876,10 @@ def main() -> int:
                         "owner": "standing-runtime-rollback",
                         "keep_until": expiry,
                         "id": rollback_images[service]["id"],
-                        "container_id": parked[service]["container"]["container_id"],
                     }
                     for service in SERVICES
                 },
-                "volumes": "untouched",
+                "volumes": "protected-and-untouched",
                 "worktrees": "none created",
                 "target_directories": "none created",
             },

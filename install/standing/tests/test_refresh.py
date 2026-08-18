@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import hashlib
 import json
+from contextlib import contextmanager
 from pathlib import Path
 import subprocess
 import sys
@@ -11,10 +12,23 @@ import unittest
 
 
 SCRIPT = Path(__file__).parents[1] / "refresh.py"
+sys.path.insert(0, str(SCRIPT.parent))
 SPEC = importlib.util.spec_from_file_location("standing_refresh", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 REFRESH = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(REFRESH)
+
+
+@contextmanager
+def merged_candidate(identity: dict[str, str], candidate_commit: str = "9" * 40):
+    original_command = REFRESH.command
+    REFRESH.command = lambda *args, cwd, capture=True: " ".join(
+        (identity["wikijump_sha"], "8" * 40, candidate_commit)
+    )
+    try:
+        yield
+    finally:
+        REFRESH.command = original_command
 
 
 class RefreshStandingTest(unittest.TestCase):
@@ -239,14 +253,18 @@ class RefreshStandingTest(unittest.TestCase):
                     "status": "pass",
                     "run_id": "candidate-run-001122334455",
                     "candidate": {
-                        "wikijump_commit": identity["wikijump_sha"],
+                        "wikijump_commit": "9" * 40,
                         "wikijump_tree": identity["wikijump_tree"],
                         "ftml_sha": identity["ftml_sha"],
                     },
                     "build": {
-                        "wikijump_commit": identity["wikijump_sha"],
+                        "wikijump_commit": "9" * 40,
                         "wikijump_tree": identity["wikijump_tree"],
                         "ftml_sha": identity["ftml_sha"],
+                        "images": {
+                            service: "sha256:" + "e" * 64
+                            for service in REFRESH.SERVICES
+                        },
                     },
                 }
             ),
@@ -403,8 +421,39 @@ class RefreshStandingTest(unittest.TestCase):
             deepwell["reference"] = "sha256:" + "f" * 64
             path = root / "prepared.json"
             path.write_text(json.dumps(receipt), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "immutable image ID"):
-                REFRESH.load_prepared_receipt(path, root, identity)
+            with merged_candidate(identity):
+                with self.assertRaisesRegex(ValueError, "immutable image ID"):
+                    REFRESH.load_prepared_receipt(path, root, identity)
+
+    def test_prepared_receipt_accepts_candidate_proof_from_the_parent_of_the_merged_tree(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            receipt, identity = self.prepared_receipt_fixture(root)
+            proof_ref = receipt["promotion_precondition"]
+            assert isinstance(proof_ref, dict)
+            proof_path = Path(str(proof_ref["path"]))
+            proof = json.loads(proof_path.read_text(encoding="utf-8"))
+            candidate_commit = "9" * 40
+            for section in ("candidate", "build"):
+                proof[section]["wikijump_commit"] = candidate_commit
+            proof_path.write_text(json.dumps(proof), encoding="utf-8")
+            proof_ref["sha256"] = hashlib.sha256(proof_path.read_bytes()).hexdigest()
+            path = root / "prepared.json"
+            path.write_text(json.dumps(receipt), encoding="utf-8")
+            original_command = REFRESH.command
+            try:
+                REFRESH.command = lambda *args, cwd, capture=True: " ".join(
+                    (identity["wikijump_sha"], "8" * 40, candidate_commit)
+                )
+                loaded, _, loaded_proof = REFRESH.load_prepared_receipt(
+                    path, root, identity
+                )
+                self.assertEqual(loaded["run_id"], proof["run_id"])
+                self.assertEqual(
+                    loaded_proof["candidate"]["wikijump_commit"], candidate_commit
+                )
+            finally:
+                REFRESH.command = original_command
 
     def test_prepared_receipt_binds_the_promotion_precondition_run_id(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
@@ -413,8 +462,9 @@ class RefreshStandingTest(unittest.TestCase):
             receipt["run_id"] = "candidate-run-other"
             path = root / "prepared.json"
             path.write_text(json.dumps(receipt), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "run ID"):
-                REFRESH.load_prepared_receipt(path, root, identity)
+            with merged_candidate(identity):
+                with self.assertRaisesRegex(ValueError, "run ID"):
+                    REFRESH.load_prepared_receipt(path, root, identity)
 
     def test_prepared_receipt_rejects_unsafe_resource_expiry(self) -> None:
         invalid_expiries: tuple[object, ...] = (
@@ -438,8 +488,9 @@ class RefreshStandingTest(unittest.TestCase):
                 receipt, identity = self.prepared_receipt_fixture(root, expiry=expiry)
                 path = root / "prepared.json"
                 path.write_text(json.dumps(receipt), encoding="utf-8")
-                with self.assertRaisesRegex(ValueError, "resource expiry"):
-                    REFRESH.load_prepared_receipt(path, root, identity)
+                with merged_candidate(identity):
+                    with self.assertRaisesRegex(ValueError, "resource expiry"):
+                        REFRESH.load_prepared_receipt(path, root, identity)
 
     def test_prepared_receipt_accepts_canonical_resource_expiry(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
@@ -447,7 +498,8 @@ class RefreshStandingTest(unittest.TestCase):
             receipt, identity = self.prepared_receipt_fixture(root)
             path = root / "prepared.json"
             path.write_text(json.dumps(receipt), encoding="utf-8")
-            loaded, _ = REFRESH.load_prepared_receipt(path, root, identity)
+            with merged_candidate(identity):
+                loaded, _, _ = REFRESH.load_prepared_receipt(path, root, identity)
             self.assertEqual(
                 loaded["resource_disposition"], receipt["resource_disposition"]
             )

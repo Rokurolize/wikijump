@@ -12,6 +12,7 @@ import {verifyStandingPromotionPrecondition} from "./scripts/verify-promotion-pr
 const REQUIRED = Object.freeze([
   "source-root",
   "candidate-receipt",
+  "final-frozen-receipt",
   "candidate-identity",
   "live-reference",
   "live-completion-policy",
@@ -52,7 +53,7 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return `Usage: promote.mjs --source-root DIR --candidate-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIR --staging-home DIR --admission-output FILE --promotion-precondition FILE --prepared-receipt FILE --runtime-home DIR --standing-receipt FILE`;
+  return `Usage: promote.mjs --source-root DIR --candidate-receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIR --staging-home DIR --admission-output FILE --promotion-precondition FILE --prepared-receipt FILE --runtime-home DIR --standing-receipt FILE`;
 }
 
 function sha256(bytes) {
@@ -111,6 +112,7 @@ export async function runPromotion(rawArgs, {
     stage = "promotion-precondition";
     const promotion = await verifyPromotion({
       receiptPath: args.candidateReceipt,
+      finalFrozenReceiptPath: args.finalFrozenReceipt,
       candidateIdentityPath: args.candidateIdentity,
       liveReferencePath: args.liveReference,
       liveCompletionPolicyPath: args.liveCompletionPolicy,

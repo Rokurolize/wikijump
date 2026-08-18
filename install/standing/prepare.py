@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build immutable standing application images for a later fast activation."""
+"""Bind sealed candidate application images to the exact merged standing source."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ from pathlib import Path
 import re
 import subprocess
 import time
+
+from merge_identity import validate_candidate_merge
 
 
 SERVICES = ("deepwell", "framerail", "wws")
@@ -32,7 +34,9 @@ def file_sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def load_promotion_precondition(path: Path, identity: dict[str, str]) -> tuple[dict[str, object], dict[str, str]]:
+def load_promotion_precondition(
+    path: Path, source_root: Path, identity: dict[str, str]
+) -> tuple[dict[str, object], dict[str, str]]:
     if path.is_symlink():
         raise ValueError("promotion precondition must be a regular file")
     path = path.resolve()
@@ -44,13 +48,9 @@ def load_promotion_precondition(path: Path, identity: dict[str, str]) -> tuple[d
         raise ValueError("promotion precondition is not a passing canonical receipt")
     if not isinstance(proof.get("run_id"), str) or not proof["run_id"]:
         raise ValueError("promotion precondition has no run ID")
-    for section in ("candidate", "build"):
-        values = proof.get(section)
-        if not isinstance(values, dict):
-            raise ValueError(f"promotion precondition has no {section} identity")
-        for key, identity_key in (("wikijump_commit", "wikijump_sha"), ("wikijump_tree", "wikijump_tree"), ("ftml_sha", "ftml_sha")):
-            if values.get(key) != identity[identity_key]:
-                raise ValueError(f"promotion precondition {section} {key} does not match the source checkout")
+    candidate = proof.get("candidate")
+    build = proof.get("build")
+    validate_candidate_merge(source_root, identity, candidate, build, command)
     if not isinstance(proof["candidate"].get("artifact_key"), str) or not re.fullmatch(r"[0-9a-f]{64}", proof["candidate"]["artifact_key"]):
         raise ValueError("promotion precondition has no candidate artifact key")
     images = proof["build"].get("images")
@@ -82,31 +82,6 @@ def repository_identity(source_root: Path) -> dict[str, str]:
     }
 
 
-def build_command(
-    source_root: Path, service: str, iidfile: Path, identity: dict[str, str], expiry: str
-) -> list[str]:
-    args = [
-        "docker",
-        "build",
-        "--file",
-        str(source_root / "install" / "prod" / service / "Dockerfile"),
-        "--label",
-        "com.rokurolize.wikijump.owner=standing-image-preparation",
-        "--label",
-        f"com.rokurolize.wikijump.expiry={expiry}",
-        "--label",
-        f"com.rokurolize.wikijump.sha={identity['wikijump_sha']}",
-        "--label",
-        f"com.rokurolize.wikijump.ftml_sha={identity['ftml_sha']}",
-        "--label",
-        f"com.rokurolize.wikijump.profile={BUILD_PROFILES[service]}",
-    ]
-    if service == "framerail":
-        args.extend(("--build-arg", "FRAMERAIL_ENV=local"))
-    args.extend(("--iidfile", str(iidfile), str(source_root)))
-    return args
-
-
 def image_identity(reference: str, cwd: Path) -> dict[str, object]:
     raw = command("docker", "image", "inspect", reference, "--format", "{{json .}}", cwd=cwd)
     image = json.loads(raw)
@@ -122,6 +97,48 @@ def image_identity(reference: str, cwd: Path) -> dict[str, object]:
     }
 
 
+def prepare_candidate_images(
+    promotion_precondition: dict[str, object], source_root: Path
+) -> dict[str, dict[str, object]]:
+    candidate = promotion_precondition.get("candidate")
+    build = promotion_precondition.get("build")
+    if not isinstance(candidate, dict) or not isinstance(build, dict):
+        raise ValueError("promotion precondition source identity is incomplete")
+    sealed_images = build.get("images")
+    if not isinstance(sealed_images, dict):
+        raise ValueError("promotion precondition has no sealed image inventory")
+    expected_labels = {
+        "com.rokurolize.wikijump.owner": "promotion-candidate-build",
+        "com.rokurolize.wikijump.sha": candidate["wikijump_commit"],
+        "com.rokurolize.wikijump.tree": candidate["wikijump_tree"],
+        "com.rokurolize.wikijump.ftml_sha": candidate["ftml_sha"],
+        "com.rokurolize.wikijump.profile": "production-build",
+    }
+    images: dict[str, dict[str, object]] = {}
+    for service in SERVICES:
+        image_id = sealed_images.get(service)
+        if not isinstance(image_id, str) or not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", image_id
+        ):
+            raise ValueError(
+                f"promotion precondition has no immutable {service} image"
+            )
+        image = image_identity(image_id, source_root)
+        if image.get("id") != image_id:
+            raise ValueError(f"candidate image {service} changed after verification")
+        labels = image.get("labels")
+        if not isinstance(labels, dict) or any(
+            labels.get(key) != value for key, value in expected_labels.items()
+        ):
+            raise ValueError(
+                f"candidate image {service} provenance does not match the sealed build"
+            )
+        image["reference"] = image_id
+        image["profile"] = BUILD_PROFILES[service]
+        images[service] = image
+    return images
+
+
 def validate_prepared_receipt(
     receipt: dict[str, object], source_root: Path, identity: dict[str, str]
 ) -> None:
@@ -132,7 +149,9 @@ def validate_prepared_receipt(
     proof_ref = receipt.get("promotion_precondition")
     if not isinstance(proof_ref, dict):
         raise ValueError("prepared receipt has no promotion precondition")
-    proof, actual_ref = load_promotion_precondition(Path(proof_ref.get("path", "")), identity)
+    proof, actual_ref = load_promotion_precondition(
+        Path(proof_ref.get("path", "")), source_root, identity
+    )
     if proof_ref != actual_ref:
         raise ValueError("prepared receipt promotion precondition is stale")
     if receipt.get("run_id") != proof.get("run_id"):
@@ -143,6 +162,7 @@ def validate_prepared_receipt(
     images = receipt.get("images")
     if not isinstance(images, dict) or set(images) != set(SERVICES):
         raise ValueError("prepared receipt must contain exactly the three application images")
+    sealed_images = proof.get("build", {}).get("images")
     for service in SERVICES:
         image = images[service]
         if not isinstance(image, dict):
@@ -153,6 +173,10 @@ def validate_prepared_receipt(
             raise ValueError(f"prepared image {service} is not bound to an image digest")
         if reference != image_id:
             raise ValueError(f"prepared image {service} does not use its immutable image ID")
+        if not isinstance(sealed_images, dict) or sealed_images.get(service) != image_id:
+            raise ValueError(
+                f"prepared image {service} does not match the sealed candidate build"
+            )
         dockerfile = source_root / "install" / "prod" / service / "Dockerfile"
         dockerfiles = receipt.get("dockerfiles")
         if not isinstance(dockerfiles, dict) or dockerfiles.get(service) != file_sha256(dockerfile):
@@ -184,28 +208,12 @@ def main() -> int:
     started_monotonic = time.monotonic()
     expiry = (started_at + timedelta(days=args.expiry_days)).isoformat()
     identity = repository_identity(source_root)
-    promotion_precondition, promotion_precondition_ref = load_promotion_precondition(args.promotion_precondition, identity)
-    images: dict[str, dict[str, object]] = {}
-    for service in SERVICES:
-        iidfile = output.with_name(f".{output.name}.{service}.iid")
-        if iidfile.exists() or iidfile.is_symlink():
-            raise ValueError(f"image identity output already exists: {iidfile}")
-        try:
-            command(
-                *build_command(source_root, service, iidfile, identity, expiry),
-                cwd=source_root,
-                capture=False,
-            )
-            image_id = iidfile.read_text(encoding="utf-8").strip()
-            image = image_identity(image_id, source_root)
-            image["reference"] = image["id"]
-        finally:
-            iidfile.unlink(missing_ok=True)
-        image.update({"profile": BUILD_PROFILES[service], "expiry": expiry})
-        labels = image.get("labels")
-        if not isinstance(labels, dict) or labels.get("com.rokurolize.wikijump.sha") != identity["wikijump_sha"]:
-            raise ValueError(f"prepared image {service} is missing its source identity label")
-        images[service] = image
+    promotion_precondition, promotion_precondition_ref = load_promotion_precondition(
+        args.promotion_precondition, source_root, identity
+    )
+    images = prepare_candidate_images(promotion_precondition, source_root)
+    for image in images.values():
+        image["expiry"] = expiry
     if repository_identity(source_root) != identity:
         raise RuntimeError("source identity changed during image preparation")
     receipt: dict[str, object] = {

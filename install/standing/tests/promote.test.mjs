@@ -24,6 +24,7 @@ function options(root) {
   return {
     "source-root": root,
     "candidate-receipt": file("candidate.json"),
+    "final-frozen-receipt": file("final-frozen.json"),
     "candidate-identity": file("identity.json"),
     "live-reference": file("live.json"),
     "live-completion-policy": file("policy.json"),
@@ -59,9 +60,9 @@ test("promotion controller stops before the next side effect when a stage fails"
     fs.writeFileSync(args["standing-receipt"], "standing");
     return JSON.stringify({status: "pass", receipt: args["standing-receipt"]});
   };
-  const verifyPromotion = async ({outputPath, verifyAdmission, receiptPath, candidateIdentityPath, liveReferencePath, liveCompletionPolicyPath, buildEvidencePath, stagingHomePath}) => {
+  const verifyPromotion = async ({outputPath, verifyAdmission, receiptPath, finalFrozenReceiptPath, candidateIdentityPath, liveReferencePath, liveCompletionPolicyPath, buildEvidencePath, stagingHomePath}) => {
     calls.push("promotion-precondition");
-    assert.deepEqual({receiptPath, candidateIdentityPath, liveReferencePath, liveCompletionPolicyPath, buildEvidencePath, stagingHomePath}, {receiptPath: args["candidate-receipt"], candidateIdentityPath: args["candidate-identity"], liveReferencePath: args["live-reference"], liveCompletionPolicyPath: args["live-completion-policy"], buildEvidencePath: args["build-evidence"], stagingHomePath: args["staging-home"]});
+    assert.deepEqual({receiptPath, finalFrozenReceiptPath, candidateIdentityPath, liveReferencePath, liveCompletionPolicyPath, buildEvidencePath, stagingHomePath}, {receiptPath: args["candidate-receipt"], finalFrozenReceiptPath: args["final-frozen-receipt"], candidateIdentityPath: args["candidate-identity"], liveReferencePath: args["live-reference"], liveCompletionPolicyPath: args["live-completion-policy"], buildEvidencePath: args["build-evidence"], stagingHomePath: args["staging-home"]});
     assert.equal((await verifyAdmission()).schema, "admission");
     fs.writeFileSync(outputPath, "promotion");
     return {output: {path: outputPath, sha256: sha256("promotion")}};
