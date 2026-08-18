@@ -398,9 +398,6 @@ function effectiveServiceConfiguration(inspect, role) {
               aliases: Array.isArray(network?.Aliases)
                 ? [...network.Aliases].sort()
                 : [],
-              gateway: network?.Gateway ?? null,
-              ipv6_gateway: network?.IPv6Gateway ?? null,
-              network_id: network?.NetworkID ?? null,
             },
           ]),
       ),
