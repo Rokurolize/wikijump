@@ -8,6 +8,7 @@ import {
   PROMOTION_IMAGE_ROLES,
   buildPromotionCandidateImages,
   promotionImageBuildPlan,
+  promotionSourceIdentity,
 } from "../scripts/build-promotion-candidate-images.mjs";
 
 test("promotion candidate image build seals all seven production runtime roles", async (t) => {
@@ -52,4 +53,12 @@ test("promotion image plan uses production application images and a candidate-se
   assert.deepEqual(plan.find(({role}) => role === "framerail").build_args, ["FRAMERAIL_ENV=local", "FRAMERAIL_CSRF_CHECK_ORIGIN=true"]);
   const deepwellDockerfile = await fs.readFile("install/prod/deepwell/Dockerfile", "utf8");
   assert.match(deepwellDockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
+});
+
+test("promotion source identity ignores unrelated operator overlays but rejects build-input dirt", async () => {
+  const sourceRoot = path.resolve(".");
+  const identity = await promotionSourceIdentity(sourceRoot);
+  assert.match(identity.wikijump_commit, /^[0-9a-f]{40}$/u);
+  assert.match(identity.wikijump_tree, /^[0-9a-f]{40}$/u);
+  assert.match(identity.ftml_sha, /^[0-9a-f]{40}$/u);
 });

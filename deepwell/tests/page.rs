@@ -211,22 +211,78 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
     });
 
     let cases = [
-        ("bibliography", "((bibcite alpha))\n[[bibliography]]\n: alpha : Public preview bibliography marker\n[[/bibliography]]", "[[bibliography]]"),
-        ("block-formatting", "[[=]]\nPublic preview centered marker\n[[/=]]", "[[=]]"),
-        ("block-quotes", "> Public preview quote marker", "> Public preview quote marker"),
-        ("code-blocks", "[[code]]\nPublic preview code marker\n[[/code]]", "[[code]]"),
+        (
+            "bibliography",
+            "((bibcite alpha))\n[[bibliography]]\n: alpha : Public preview bibliography marker\n[[/bibliography]]",
+            "[[bibliography]]",
+        ),
+        (
+            "block-formatting",
+            "[[=]]\nPublic preview centered marker\n[[/=]]",
+            "[[=]]",
+        ),
+        (
+            "block-quotes",
+            "> Public preview quote marker",
+            "> Public preview quote marker",
+        ),
+        (
+            "code-blocks",
+            "[[code]]\nPublic preview code marker\n[[/code]]",
+            "[[code]]",
+        ),
         ("date", "[[date 1237135440 format=\"%e %b %Y\"]]", "[[date"),
-        ("definition-lists", ": Public preview term : Public preview definition", ": Public preview term :"),
-        ("footnotes", "Public preview footnote marker[[footnote]]Public preview note body[[/footnote]]\n[[footnoteblock]]", "[[footnote]]"),
-        ("headings", "+ Public preview heading marker", "+ Public preview heading marker"),
-        ("horizontal-rules", "Public preview before rule\n----\nPublic preview after rule", "----"),
-        ("inline-formatting", "**Public preview bold marker**", "**Public preview bold marker**"),
-        ("lists", "* Public preview list marker", "* Public preview list marker"),
+        (
+            "definition-lists",
+            ": Public preview term : Public preview definition",
+            ": Public preview term :",
+        ),
+        (
+            "footnotes",
+            "Public preview footnote marker[[footnote]]Public preview note body[[/footnote]]\n[[footnoteblock]]",
+            "[[footnote]]",
+        ),
+        (
+            "headings",
+            "+ Public preview heading marker",
+            "+ Public preview heading marker",
+        ),
+        (
+            "horizontal-rules",
+            "Public preview before rule\n----\nPublic preview after rule",
+            "----",
+        ),
+        (
+            "inline-formatting",
+            "**Public preview bold marker**",
+            "**Public preview bold marker**",
+        ),
+        (
+            "lists",
+            "* Public preview list marker",
+            "* Public preview list marker",
+        ),
         ("math", "[[math]]\nx^2\n[[/math]]", "[[math]]"),
-        ("notes", "[[note]]\nPublic preview note marker\n[[/note]]", "[[note]]"),
-        ("table-of-contents", "[[toc]]\n+ Public preview toc heading", "[[toc]]"),
-        ("tables", "|| Public preview table marker ||", "|| Public preview table marker ||"),
-        ("text-size", "[[size 150%]]Public preview size marker[[/size]]", "[[size 150%]]"),
+        (
+            "notes",
+            "[[note]]\nPublic preview note marker\n[[/note]]",
+            "[[note]]",
+        ),
+        (
+            "table-of-contents",
+            "[[toc]]\n+ Public preview toc heading",
+            "[[toc]]",
+        ),
+        (
+            "tables",
+            "|| Public preview table marker ||",
+            "|| Public preview table marker ||",
+        ),
+        (
+            "text-size",
+            "[[size 150%]]Public preview size marker[[/size]]",
+            "[[size 150%]]",
+        ),
     ];
 
     for (label, wikitext, forbidden_literal) in cases {
@@ -255,8 +311,16 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
             "wikitext": "Public preview paragraph one\n\nPublic preview paragraph two",
         }),
     );
-    assert!(paragraphs.body.contains("<p>Public preview paragraph one</p>"));
-    assert!(paragraphs.body.contains("<p>Public preview paragraph two</p>"));
+    assert!(
+        paragraphs
+            .body
+            .contains("<p>Public preview paragraph one</p>")
+    );
+    assert!(
+        paragraphs
+            .body
+            .contains("<p>Public preview paragraph two</p>")
+    );
 
     let typography = run_endpoint!(
         runner,

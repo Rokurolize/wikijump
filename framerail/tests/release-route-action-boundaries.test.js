@@ -62,10 +62,7 @@ test("reserved compatibility routes expose their public fail-closed responses", 
   const image = routes.raty.GET({ params: { asset: "star-on.png" } })
   assert.equal(image.status, 200)
   assert.equal(image.headers.get("content-type"), "image/png")
-  assert.equal(
-    image.headers.get("cache-control"),
-    "public, max-age=31536000, immutable"
-  )
+  assert.equal(image.headers.get("cache-control"), "public, max-age=31536000, immutable")
   assert.ok((await image.arrayBuffer()).byteLength > 8)
 
   const missing = routes.raty.GET({ params: { asset: "not-a-wikidot-asset.png" } })

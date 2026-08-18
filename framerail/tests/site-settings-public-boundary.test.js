@@ -778,7 +778,10 @@ describe("Wikidot site settings public boundaries", () => {
         context: { sessionToken, siteId }
       }
     ])
-    assert.equal(legacyAdminServer.actions.template, canonicalAdminServer.actions.template)
+    assert.equal(
+      legacyAdminServer.actions.template,
+      canonicalAdminServer.actions.template
+    )
   })
 
   it("serves the legacy admin route through the same rendered page and action seam", () => {

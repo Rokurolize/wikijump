@@ -85,13 +85,35 @@ async function git(sourceRoot, ...args) {
 }
 
 export async function promotionSourceIdentity(sourceRoot) {
-  const [status, commit, tree, lock] = await Promise.all([
-    git(sourceRoot, "status", "--porcelain=v1", "--untracked-files=all"),
+  const [status, untracked, commit, tree, lock] = await Promise.all([
+    git(sourceRoot, "status", "--porcelain=v1", "--untracked-files=no"),
+    git(sourceRoot, "ls-files", "--others", "--exclude-standard"),
     git(sourceRoot, "rev-parse", "HEAD^{commit}"),
     git(sourceRoot, "rev-parse", "HEAD^{tree}"),
     fs.readFile(path.join(sourceRoot, "deepwell", "Cargo.lock"), "utf8"),
   ]);
-  if (status !== "") fail("promotion candidate source checkout must be clean");
+  if (status !== "") fail("promotion candidate tracked source must be clean");
+  const buildInputPrefixes = [
+    ".cargo/",
+    "assets/",
+    "deepwell/",
+    "framerail/",
+    "install/local/minio/",
+    "install/local/postgres/",
+    "install/local/valkey/",
+    "install/prod/",
+    "locales/",
+    "wws/",
+  ];
+  const untrackedBuildInputs = untracked
+    .split("\n")
+    .filter(Boolean)
+    .filter((entry) =>
+      entry === "rust-toolchain.toml" || buildInputPrefixes.some((prefix) => entry.startsWith(prefix)),
+    );
+  if (untrackedBuildInputs.length > 0) {
+    fail(`promotion candidate build inputs contain untracked files: ${untrackedBuildInputs.join(", ")}`);
+  }
   if (!GIT_OBJECT.test(commit) || !GIT_OBJECT.test(tree)) fail("promotion candidate Git identity is invalid");
   return Object.freeze({wikijump_commit: commit, wikijump_tree: tree, ftml_sha: ftmlRevision(lock)});
 }
