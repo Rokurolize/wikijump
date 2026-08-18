@@ -53,4 +53,3 @@ test("promotion image plan uses production application images and a candidate-se
   const deepwellDockerfile = await fs.readFile("install/prod/deepwell/Dockerfile", "utf8");
   assert.match(deepwellDockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
 });
-

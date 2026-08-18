@@ -41,4 +41,3 @@ test("candidate Deepwell production image contains the immutable seeder payload"
   const dockerfile = await fs.readFile("install/prod/deepwell/Dockerfile", "utf8");
   assert.match(dockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
 });
-

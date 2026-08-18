@@ -467,4 +467,3 @@ export async function main(argv, {stdout = console.log} = {}) {
 }
 
 await runCliIfMain(import.meta.url, main, {onError: (error) => { console.error(error?.stack ?? String(error)); return 1; }});
-
