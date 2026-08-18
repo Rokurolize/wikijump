@@ -41,6 +41,8 @@ async function finalFrozenFixture(root, identity) {
     tool: path.join(directory, "tool.mjs"),
     denominator: path.join(directory, "denominator.json"),
     images: path.join(directory, "images.json"),
+    standardsReview: path.join(directory, "standards-review.json"),
+    specReview: path.join(directory, "spec-review.json"),
     manifest: path.join(directory, "inputs.json"),
     writers: path.join(directory, "writers.json"),
     receipt: path.join(directory, "receipt.json"),
@@ -50,6 +52,19 @@ async function finalFrozenFixture(root, identity) {
   await fs.writeFile(paths.fixture, "fixture\n");
   await fs.writeFile(paths.tool, "tool\n");
   await fs.writeFile(paths.denominator, "denominator\n");
+  for (const [axis, reviewPath] of [
+    ["standards", paths.standardsReview],
+    ["spec", paths.specReview],
+  ]) {
+    await writeJson(reviewPath, {
+      schema: "wikijump.compatibility_review.v1",
+      axis,
+      status: "pass",
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      findings: [],
+    });
+  }
   await writeJson(paths.images, {
     status: "pass",
     wikijump_sha: identity.candidate.wikijump_commit,
@@ -63,6 +78,10 @@ async function finalFrozenFixture(root, identity) {
     fixtures: [paths.fixture],
     tools: [paths.tool],
     denominator: [paths.denominator],
+    reviews: {
+      standards: paths.standardsReview,
+      spec: paths.specReview,
+    },
     images: paths.images,
   });
   await writeJson(paths.writers, {
@@ -93,6 +112,10 @@ async function finalFrozenFixture(root, identity) {
     fixtures: [await ref(paths.fixture)],
     tools: [await ref(paths.tool)],
     denominator: [await ref(paths.denominator)],
+    reviews: {
+      standards: await ref(paths.standardsReview),
+      spec: await ref(paths.specReview),
+    },
     images: {
       producer: await ref(paths.images),
       identities: { deepwell: image("f") },
