@@ -26,6 +26,18 @@ const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo"
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
 const MANAGE_SITE_GENERAL_MODULE = "managesite/ManageSiteGeneralModule"
+const MANAGE_SITE_EDUCATIONAL_MODULE = "managesite/ManageSiteUpgradeEduModule"
+const EDUCATIONAL_UPGRADE_ACTION = "UpgradesAction"
+const EDUCATIONAL_UPGRADE_EVENT = "upgradeEdu"
+const EDUCATIONAL_UPGRADE_FIELDS = new Set([
+  "moduleName",
+  "action",
+  "event",
+  "organization",
+  "purpose",
+  "wikidot_token7",
+  "callbackIndex"
+])
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
 const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group", "page"])
 const SITE_TOOLS_READ_MODULES = new Map([
@@ -206,6 +218,18 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     body: string
  *     js_include?: string[]
  *   } | null>
+ *   renderManageSiteEducationalModule?: (input: {
+ *     siteId: number
+ *   }) => Promise<{
+ *     status: string
+ *     body: string
+ *     js_include?: string[]
+ *   } | null>
+ *   upgradeEducationalSite?: (input: {
+ *     siteId: number
+ *     organization: string
+ *     purpose: string
+ *   }) => Promise<void>
  *   renderPageReadModule?: (input: ForumModuleRenderInput) => Promise<{
  *     status: string
  *     body: string
@@ -647,6 +671,8 @@ export const handleAjaxModuleConnectorRequest = async (
     renderSiteChangesModule,
     renderMembersList,
     renderManageSiteGeneralModule,
+    renderManageSiteEducationalModule,
+    upgradeEducationalSite,
     renderPageReadModule,
     renderSiteToolsModule,
     createNewPage,
@@ -745,6 +771,77 @@ export const handleAjaxModuleConnectorRequest = async (
         cssInclude: [],
         jsInclude: []
       })
+    }
+  }
+
+  if (moduleName === MANAGE_SITE_EDUCATIONAL_MODULE) {
+    if (fields.size !== 1) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    if (!renderManageSiteEducationalModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    try {
+      const output = await renderManageSiteEducationalModule({ siteId })
+      if (!output) {
+        return jsonResponse({
+          status: "not_ok",
+          body: "",
+          callbackIndex: null,
+          CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+          cssInclude: [],
+          jsInclude: []
+        })
+      }
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: output.js_include ?? []
+      })
+    } catch (error) {
+      console.error("AJAX ManageSite educational rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: []
+      })
+    }
+  }
+
+  if (
+    fields.get("action") === EDUCATIONAL_UPGRADE_ACTION &&
+    fields.get("event") === EDUCATIONAL_UPGRADE_EVENT
+  ) {
+    const organization = fieldValue(fields, "organization")
+    const purpose = fieldValue(fields, "purpose")
+    const validShape =
+      [...fields.keys()].every((field) => EDUCATIONAL_UPGRADE_FIELDS.has(field)) &&
+      fields.get("moduleName") === "Empty" &&
+      organization.trim().length > 0 &&
+      purpose.trim().length > 0
+    if (!validShape || !upgradeEducationalSite) {
+      return jsonResponse({ status: "not_ok" })
+    }
+    try {
+      await upgradeEducationalSite({ siteId, organization, purpose })
+      return jsonResponse({ status: "ok" })
+    } catch (error) {
+      console.error("AJAX educational site upgrade failed", error)
+      return jsonResponse({ status: "not_ok" })
     }
   }
 

@@ -283,6 +283,28 @@ export async function siteAnalyticsUpdate(
   )
 }
 
+export async function siteEducationalUpgrade(
+  siteId: number,
+  expectedSettingsRevision: number,
+  userId: number,
+  userIpAddr: string,
+  organization: string,
+  purpose: string,
+  requestContext: SiteUpdateRequestContext
+): Promise<SiteModel> {
+  return client.request(
+    "site_update",
+    {
+      site: siteId,
+      expected_settings_revision: expectedSettingsRevision,
+      user_id: userId,
+      educational_upgrade: { organization, purpose },
+      ip_address: userIpAddr
+    },
+    requestContext
+  )
+}
+
 export async function siteToolbarsUpdate(
   siteId: number,
   expectedSettingsRevision: number,

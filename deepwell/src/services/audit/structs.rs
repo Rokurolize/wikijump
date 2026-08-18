@@ -1058,6 +1058,8 @@ pub struct SiteFields<'a> {
     pub show_top_toolbar: Maybe<bool>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub show_bottom_toolbar: Maybe<bool>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub educational: Maybe<bool>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]

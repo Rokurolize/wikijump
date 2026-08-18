@@ -1634,6 +1634,7 @@ ORDER BY breadcrumb_chain.depth ASC
             GetAdminViewOutput::SiteFound {
                 categories,
                 page_templates,
+                is_master_admin: site.master_admin_user_id == user_id,
             }
         } else {
             warn!("User doesn't have admin access, returning permission page");

@@ -383,6 +383,99 @@ async fn anonymous_site_create_emits_no_event() {
 }
 
 #[tokio::test]
+async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let master_admin = create_user(&runner, n, "educational-master").await;
+    let ordinary_admin = create_user(&runner, n, "educational-admin").await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(master_admin),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("educational-site-{n}"),
+            "name": format!("Educational site {n}"),
+            "tagline": "",
+            "description": "Educational status fixture",
+            "default_page": null,
+            "layout": "wikidot",
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    grant_site_edit(&runner, created.site_id, master_admin, n).await;
+    grant_site_edit(&runner, created.site_id, ordinary_admin, n + 100_000).await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ordinary_admin),
+        site_id: Some(created.site_id),
+        ..Default::default()
+    });
+    let denied = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": ordinary_admin,
+            "expected_settings_revision": 0,
+            "educational_upgrade": {
+                "organization": "Run Owned University",
+                "purpose": "Research and teaching",
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(master_admin),
+        site_id: Some(created.site_id),
+        ..Default::default()
+    });
+    let upgraded = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": master_admin,
+            "expected_settings_revision": 0,
+            "educational_upgrade": {
+                "organization": "Run Owned University",
+                "purpose": "Research and teaching",
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let public_site = serde_json::to_value(&upgraded).expect("site should serialize");
+    assert_eq!(public_site["educational"], true);
+    assert_eq!(public_site["settings_revision"], 1);
+    assert!(public_site.get("master_admin_user_id").is_none());
+    assert!(public_site.get("educational_organization").is_none());
+    assert!(public_site.get("educational_purpose").is_none());
+
+    let repeated = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": master_admin,
+            "expected_settings_revision": 1,
+            "educational_upgrade": {
+                "organization": "Run Owned University",
+                "purpose": "Research and teaching",
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(repeated, ErrorType::BadRequest);
+}
+
+#[tokio::test]
 async fn site_create_site_user_relation_and_audit_roll_back_together() {
     let runner = TestRunner::setup().await;
     let n = next_n();

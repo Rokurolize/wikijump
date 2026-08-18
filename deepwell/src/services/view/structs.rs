@@ -231,6 +231,7 @@ pub enum GetAdminViewOutput {
     SiteFound {
         categories: Vec<PageCategoryModel>,
         page_templates: Vec<PageTemplateSummary>,
+        is_master_admin: bool,
     },
 
     AdminPermissions {

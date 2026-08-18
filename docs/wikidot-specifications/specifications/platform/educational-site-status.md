@@ -80,6 +80,12 @@ These seams are recommendations. The implementation agent must present and confi
 
 - No feature-specific implementation note beyond the corpus contract.
 
+## Current live observations
+
+- `install/local/wikidot-verification/artifacts/educational-site-status-live-20260818.json` records a read-only Master Administrator observation of the current Site Manager path. The dashboard exposes `sm-edu`, which maps to `managesite/ManageSiteUpgradeEduModule`; the application form is `sm-eduupgrade-form` with `organization` and `purpose` fields.
+- The current browser action serializes that form and submits `UpgradesAction` / `upgradeEdu`, then reloads `sm-welcome` on success. No live educational-status mutation was performed because the grant is persistent and the current evidence did not establish a cleanup-safe revocation path.
+- The current application body repeats the documented private-member, storage, file-size, SSL, revision, free-use, and educational/research-purpose contract. The post-upgrade module body and staff-side monitoring/revocation workflow remain unobserved and must not be invented.
+
 ## Source inventory
 
 - `~/src/Rokurolize/scp-wiki-translation/corpus/www/pages/education/source.wikidot.txt:43` through line 65 (canonical)

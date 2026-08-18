@@ -36,6 +36,7 @@ export interface SiteModel {
   google_analytics_profile: Nullable<string>
   show_top_toolbar: boolean
   show_bottom_toolbar: boolean
+  educational: boolean
 }
 
 // deepwell src/models/page_category.rs

@@ -23,5 +23,6 @@ mod structs;
 
 pub use self::service::SiteService;
 pub use self::structs::{
-    CreateSite, CreateSiteOutput, GetSite, GetSiteOutput, UpdateSite, UpdateSiteBody,
+    CreateSite, CreateSiteOutput, EducationalUpgrade, GetSite, GetSiteOutput, UpdateSite,
+    UpdateSiteBody,
 };

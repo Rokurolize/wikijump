@@ -633,6 +633,19 @@
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]
     },
     {
+      "surface_id": "catalog-feature:educational-site-status",
+      "sources": [
+        { "path": "deepwell/src/services/site/service.rs", "anchor": "only the site's Master Administrator can apply the educational upgrade" },
+        { "path": "framerail/src/lib/server/ajax-module-connector.js", "anchor": "EDUCATIONAL_UPGRADE_ACTION" },
+        { "path": "framerail/src/lib/server/wikidot-manage-site-educational.js", "anchor": "renderWikidotManageSiteEducational" }
+      ],
+      "tests": [
+        { "path": "deepwell/tests/site.rs", "anchor": "educational_upgrade_is_site_scoped_and_master_admin_only" },
+        { "path": "framerail/tests/ajax-module-connector-manage-site-educational.test.js", "anchor": "Educational upgrade action preserves the observed UpgradesAction wire shape" },
+        { "path": "framerail/tests/wikidot-manage-site-educational.test.js", "anchor": "Educational upgrade renders the observed application and benefits" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:forum-signatures",
       "sources": [
         { "path": "deepwell/src/services/user/service.rs", "anchor": "fn validate_forum_signature(" },

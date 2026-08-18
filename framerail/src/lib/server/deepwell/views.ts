@@ -263,6 +263,7 @@ interface AdminViewSiteFound {
   data: {
     categories: PageCategoryModel[]
     page_templates: PageTemplateSummary[]
+    is_master_admin: boolean
   }
 }
 

@@ -10,6 +10,7 @@ import {
 } from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
+import { siteEducationalUpgrade } from "$lib/server/deepwell/admin"
 import { forumPostCreate, wikidotForumModule } from "$lib/server/deepwell/forum"
 import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
 import { adminView, preloadView } from "$lib/server/deepwell/views"
@@ -45,6 +46,7 @@ import {
 } from "$lib/server/load/preload"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { renderWikidotManageSiteGeneral } from "$lib/server/wikidot-manage-site-general.js"
+import { renderWikidotManageSiteEducational } from "$lib/server/wikidot-manage-site-educational.js"
 
 import type { RequestHandler } from "./$types"
 
@@ -300,6 +302,47 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
           "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteGeneralModule.js"
         ]
       }
+    },
+    renderManageSiteEducationalModule: async ({ siteId }: { siteId: number }) => {
+      const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
+      const authorization = await adminView(siteId, locales, sessionToken)
+      if (authorization.type !== "site_found" || !authorization.data.is_master_admin) {
+        return null
+      }
+
+      const preload = await preloadView(siteId, locales, sessionToken)
+      if (preload.site.educational) return null
+      return {
+        status: "ok",
+        body: renderWikidotManageSiteEducational(),
+        js_include: [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteUpgradeEduModule.js"
+        ]
+      }
+    },
+    upgradeEducationalSite: async ({
+      siteId,
+      organization,
+      purpose
+    }: {
+      siteId: number
+      organization: string
+      purpose: string
+    }) => {
+      if (!sessionToken) throw new Error("Educational upgrade requires a session")
+      const session = await authGetSession(sessionToken)
+      if (!session) throw new Error("Educational upgrade requires a valid session")
+      const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
+      const preload = await preloadView(siteId, locales, sessionToken)
+      await siteEducationalUpgrade(
+        siteId,
+        preload.site.settings_revision,
+        session.user_id,
+        getClientAddress(),
+        organization,
+        purpose,
+        { sessionToken, siteId }
+      )
     },
     renderSiteToolsModule: async ({
       siteId,

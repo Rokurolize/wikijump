@@ -227,6 +227,7 @@ impl SiteService {
             layout: Set(layout.map(|l| str!(l.value()))),
             license: Set(license),
             locale: Set(locale.clone()),
+            master_admin_user_id: Set(actor_user_id),
             ..Default::default()
         };
         let site = model.insert(txn).await.or_raise(make_error)?;
@@ -325,6 +326,28 @@ impl SiteService {
                 ),
                 ErrorType::BadRequest,
             ));
+        }
+
+        if let Maybe::Set(upgrade) = &input.educational_upgrade {
+            if site.master_admin_user_id != Some(updating_user_id) {
+                bail!(Error::new(
+                    "only the site's Master Administrator can apply the educational upgrade",
+                    ErrorType::PermissionDenied,
+                ));
+            }
+            if site.educational {
+                bail!(Error::new(
+                    "site already has educational status",
+                    ErrorType::BadRequest,
+                ));
+            }
+            if upgrade.organization.trim().is_empty() || upgrade.purpose.trim().is_empty()
+            {
+                bail!(Error::new(
+                    "educational upgrade requires organization and purpose",
+                    ErrorType::BadRequest,
+                ));
+            }
         }
 
         if let Maybe::Set(analytics) = &input.google_analytics {
@@ -467,6 +490,11 @@ impl SiteService {
                 previous_fields.forum_max_nest_level =
                     Maybe::Set(site.forum_max_nest_level);
                 changed_fields.forum_max_nest_level = Maybe::Set(value);
+            }
+
+            if matches!(&input.educational_upgrade, Maybe::Set(_)) {
+                previous_fields.educational = Maybe::Set(site.educational);
+                changed_fields.educational = Maybe::Set(true);
             }
 
             if let Maybe::Set(layout) = input.layout {
@@ -634,6 +662,12 @@ impl SiteService {
 
         if let Maybe::Set(windows_tile_source) = input.windows_tile_source {
             model.windows_tile_source = Set(windows_tile_source);
+        }
+
+        if let Maybe::Set(upgrade) = input.educational_upgrade {
+            model.educational = Set(true);
+            model.educational_organization = Set(Some(upgrade.organization));
+            model.educational_purpose = Set(Some(upgrade.purpose));
         }
 
         ctx.defer_public_content_cache_invalidate_site(site.site_id)
