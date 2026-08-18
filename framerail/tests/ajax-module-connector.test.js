@@ -1426,6 +1426,83 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
   }
 })
 
+test("anonymous ForumAction savePost hashes the private guest email before Deepwell", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "ForumAction",
+      event: "savePost",
+      moduleName: "Empty",
+      threadId: "18029831",
+      parentId: "",
+      guestName: "Guest Name",
+      guestEmail: "  SUPPORT@GRAVATAR.COM  ",
+      source: "Guest body",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      createForumPost: async (input) => {
+        calls.push(input)
+        return { forum_post_id: 9036580 }
+      }
+    }
+  )
+
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    postId: 9036580
+  })
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      threadId: 18029831,
+      parentPostId: null,
+      title: "",
+      source: "Guest body",
+      guestName: "Guest Name",
+      guestEmailMd5: "367c4ed53ac64deb1b7753b1556236c2"
+    }
+  ])
+  assert.equal(JSON.stringify(calls).includes("SUPPORT@GRAVATAR.COM"), false)
+})
+
+test("ForumAction savePost rejects incomplete or malformed guest identity before Deepwell", async () => {
+  const canonical = {
+    action: "ForumAction",
+    event: "savePost",
+    moduleName: "Empty",
+    threadId: "18029831",
+    parentId: "",
+    guestName: "Guest Name",
+    guestEmail: "support@gravatar.com",
+    source: "Guest body"
+  }
+  const invalid = [
+    { ...canonical, guestName: "" },
+    { ...canonical, guestEmail: "" },
+    { ...canonical, guestEmail: "not-an-email" },
+    { ...canonical, guestEmail: "a@b" },
+    { ...canonical, guestEmail: `${"a".repeat(39)}@example.com` },
+    { ...canonical, threadId: "0" },
+    { ...canonical, parentId: "-1" },
+    { ...canonical, extra: "unsupported" }
+  ]
+
+  let calls = 0
+  for (const form of invalid) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      createForumPost: async () => {
+        calls += 1
+        assert.fail("invalid savePost controls must fail before Deepwell")
+      }
+    })
+    assert.notEqual((await response.json()).status, "ok")
+  }
+  assert.equal(calls, 0)
+})
+
 test("dispatches the observed WikiPageAction deletePage request", async () => {
   const calls = []
   const response = await handleAjaxModuleConnectorRequest(

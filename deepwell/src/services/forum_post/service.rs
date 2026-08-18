@@ -52,6 +52,51 @@ use std::collections::BTreeMap;
 pub struct ForumPostService;
 
 impl ForumPostService {
+    pub async fn set_guest_identity(
+        ctx: &ServiceContext<'_>,
+        forum_post_id: i64,
+        guest_name: String,
+        guest_email_md5: String,
+    ) -> Result<ForumPostModel> {
+        let make_error = || {
+            Error::new(
+                format!("failed to set guest identity for forum post ID {forum_post_id}"),
+                ErrorType::ForumPost,
+            )
+        };
+        let post = Self::get(
+            ctx,
+            GetForumPost {
+                forum_post_id,
+                include_deleted: false,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+        if post.user_id != crate::constants::ANONYMOUS_USER_ID
+            || guest_name.trim().is_empty()
+            || guest_email_md5.len() != 32
+            || !guest_email_md5
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            bail!(Error::new(
+                "invalid anonymous forum guest identity",
+                ErrorType::BadRequest,
+            ));
+        }
+
+        forum_post::ActiveModel {
+            forum_post_id: Set(forum_post_id),
+            guest_name: Set(Some(guest_name)),
+            guest_email_md5: Set(Some(guest_email_md5)),
+            ..Default::default()
+        }
+        .update(ctx.transaction())
+        .await
+        .or_raise(make_error)
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         CreateForumPost {

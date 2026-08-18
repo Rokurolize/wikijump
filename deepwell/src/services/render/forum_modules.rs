@@ -169,6 +169,7 @@ pub(super) struct ForumUserDisplay {
     name: String,
     slug: Option<String>,
     wikidot_profile: bool,
+    guest_gravatar_md5: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -213,6 +214,8 @@ struct ForumStartThreadCandidate {
     wikidot_user_slug: Option<String>,
     local_user_name: Option<String>,
     local_user_slug: Option<String>,
+    guest_name: Option<String>,
+    guest_email_md5: Option<String>,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -234,6 +237,8 @@ struct RecentPostCandidate {
     local_user_name: Option<String>,
     local_user_slug: Option<String>,
     forum_signature: Option<String>,
+    guest_name: Option<String>,
+    guest_email_md5: Option<String>,
 }
 
 #[derive(Debug)]
@@ -371,6 +376,7 @@ pub(super) fn forum_user(
             name,
             slug: wikidot_user_slug,
             wikidot_profile: true,
+            guest_gravatar_md5: None,
         }
     } else if let Some(name) = local_user_name.or_else(|| local_user_slug.clone()) {
         ForumUserDisplay {
@@ -378,6 +384,7 @@ pub(super) fn forum_user(
             name,
             slug: local_user_slug,
             wikidot_profile: false,
+            guest_gravatar_md5: None,
         }
     } else {
         ForumUserDisplay {
@@ -385,7 +392,18 @@ pub(super) fn forum_user(
             name: user_id.to_string(),
             slug: None,
             wikidot_profile: false,
+            guest_gravatar_md5: None,
         }
+    }
+}
+
+pub(super) fn forum_guest_user(name: String, gravatar_md5: String) -> ForumUserDisplay {
+    ForumUserDisplay {
+        user_id: crate::constants::ANONYMOUS_USER_ID,
+        name,
+        slug: None,
+        wikidot_profile: false,
+        guest_gravatar_md5: Some(gravatar_md5),
     }
 }
 
@@ -402,6 +420,16 @@ pub(super) fn render_forum_user_with_scheme(
     resource_scheme: ForumUserResourceScheme,
 ) -> String {
     let name = escape_list_pages_html_text(&user.name);
+    if let Some(gravatar_md5) = &user.guest_gravatar_md5 {
+        let gravatar_md5 = escape_list_pages_html_attr(gravatar_md5);
+        return format!(
+            concat!(
+                r#"<span class="printuser avatarhover"><a href="javascript:;"><img alt="" class="small" "#,
+                r#"src="http://www.gravatar.com/avatar.php?gravatar_id={}&amp;default=http://www.wikidot.com/common--images/avatars/default/a16.png&amp;size=16"/></a>{} (guest)</span>"#,
+            ),
+            gravatar_md5, name,
+        );
+    }
     let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
         return format!(r#"<span class="printuser">{name}</span>"#);
     };
@@ -427,6 +455,9 @@ pub(super) fn render_forum_user_with_scheme(
 
 pub(super) fn render_forum_user_without_avatar(user: &ForumUserDisplay) -> String {
     let name = escape_list_pages_html_text(&user.name);
+    if user.guest_gravatar_md5.is_some() {
+        return format!(r#"<span class="printuser">{name} (guest)</span>"#);
+    }
     let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
         return format!(r#"<span class="printuser">{name}</span>"#);
     };
@@ -489,7 +520,8 @@ pub(super) async fn load_forum_start_activity(
                 "last_post.user_id AS last_user_id, ",
                 "last_post.created_at AS last_created_at, ",
                 "wu.name AS wikidot_user_name, wu.slug AS wikidot_user_slug, ",
-                "local_user.name AS local_user_name, local_user.slug AS local_user_slug ",
+                "local_user.name AS local_user_name, local_user.slug AS local_user_slug, ",
+                "last_post.guest_name, last_post.guest_email_md5 ",
                 "FROM forum_thread t ",
                 "JOIN forum_group g ON g.forum_group_id = t.forum_group_id ",
                 " AND g.site_id = t.site_id AND g.deleted_at IS NULL ",
@@ -500,7 +532,8 @@ pub(super) async fn load_forum_start_activity(
                 "JOIN LATERAL (SELECT COUNT(fp0.forum_post_id) AS post_count ",
                 " FROM forum_post fp0 WHERE fp0.forum_thread_id = t.forum_thread_id ",
                 " AND fp0.site_id = t.site_id AND fp0.deleted_at IS NULL) counts ON TRUE ",
-                "LEFT JOIN LATERAL (SELECT fp1.forum_post_id, fp1.user_id, fp1.created_at ",
+                "LEFT JOIN LATERAL (SELECT fp1.forum_post_id, fp1.user_id, fp1.created_at, ",
+                " fp1.guest_name, fp1.guest_email_md5 ",
                 " FROM forum_post fp1 WHERE fp1.forum_thread_id = t.forum_thread_id ",
                 " AND fp1.site_id = t.site_id AND fp1.deleted_at IS NULL ",
                 " ORDER BY fp1.created_at DESC, fp1.forum_post_id DESC LIMIT 1) last_post ON TRUE ",
@@ -548,13 +581,16 @@ pub(super) async fn load_forum_start_activity(
         category.last_post = Some(ForumLastPost {
             forum_post_id,
             forum_thread_id: candidate.forum_thread_id,
-            user: forum_user(
-                user_id,
-                candidate.wikidot_user_name,
-                candidate.wikidot_user_slug,
-                candidate.local_user_name,
-                candidate.local_user_slug,
-            ),
+            user: match (candidate.guest_name, candidate.guest_email_md5) {
+                (Some(name), Some(md5)) => forum_guest_user(name, md5),
+                _ => forum_user(
+                    user_id,
+                    candidate.wikidot_user_name,
+                    candidate.wikidot_user_slug,
+                    candidate.local_user_name,
+                    candidate.local_user_slug,
+                ),
+            },
             created_at,
         });
     }
@@ -668,7 +704,8 @@ pub(super) async fn load_recent_posts_page(
                 pr.title AS page_title, fp.user_id, fp.created_at, fpr.title, \
                 fpr.compiled_html_hash, wu.name AS wikidot_user_name, \
                 wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, \
-                local_user.slug AS local_user_slug, local_user.forum_signature \
+                local_user.slug AS local_user_slug, local_user.forum_signature, \
+                fp.guest_name, fp.guest_email_md5 \
          FROM forum_post fp \
          JOIN forum_thread t ON t.forum_thread_id = fp.forum_thread_id \
                             AND t.site_id = fp.site_id AND t.deleted_at IS NULL \
@@ -736,13 +773,16 @@ pub(super) async fn load_recent_posts_page(
             thread_title: candidate.thread_title,
             page_slug: candidate.page_slug,
             page_title: candidate.page_title,
-            user: forum_user(
-                candidate.user_id,
-                candidate.wikidot_user_name,
-                candidate.wikidot_user_slug,
-                candidate.local_user_name,
-                candidate.local_user_slug,
-            ),
+            user: match (candidate.guest_name, candidate.guest_email_md5) {
+                (Some(name), Some(md5)) => forum_guest_user(name, md5),
+                _ => forum_user(
+                    candidate.user_id,
+                    candidate.wikidot_user_name,
+                    candidate.wikidot_user_slug,
+                    candidate.local_user_name,
+                    candidate.local_user_slug,
+                ),
+            },
             created_at: candidate.created_at,
             title: candidate.title,
             compiled_html,

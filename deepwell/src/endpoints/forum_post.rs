@@ -19,7 +19,121 @@
  */
 
 use super::prelude::*;
-use crate::services::forum_post::{ForumPostPageSummary, WikidotForumPost};
+use crate::constants::ANONYMOUS_USER_ID;
+use crate::services::forum_post::{
+    CreateForumPost, CreateForumPostOutput, ForumPostPageSummary, ForumPostService,
+    WikidotForumPost,
+};
+use crate::services::forum_thread::{ForumThreadService, GetForumThread};
+use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::types::{Action, Permission, Reference, Resource};
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ForumPostCreateInput {
+    site_id: i64,
+    forum_thread_id: i64,
+    parent_post_id: Option<i64>,
+    title: String,
+    wikitext: String,
+    guest_name: Option<String>,
+    guest_email_md5: Option<String>,
+}
+
+pub async fn forum_post_create(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<CreateForumPostOutput> {
+    let input: ForumPostCreateInput = parse!(params, ForumPost);
+    if ctx
+        .request()
+        .site_id
+        .is_some_and(|request_site_id| request_site_id != input.site_id)
+    {
+        bail!(Error::new(
+            "forum post site does not match request site",
+            ErrorType::BadRequest,
+        ));
+    }
+
+    let thread = ForumThreadService::get(
+        ctx,
+        GetForumThread {
+            forum_thread_id: input.forum_thread_id,
+            include_deleted: false,
+        },
+    )
+    .await?;
+    if thread.site_id != input.site_id {
+        bail!(Error::new(
+            "forum thread does not belong to requested site",
+            ErrorType::BadRequest,
+        ));
+    }
+
+    let request_user_id = ctx.request().user_id;
+    let can_create = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: request_user_id,
+            site_id: input.site_id,
+            page_reference: None,
+        },
+        Permission {
+            resource_type: Resource::ForumCategory,
+            resource_category: Some(Reference::Id(thread.forum_category_id)),
+            action: Action::Create,
+        },
+    )
+    .await?;
+    if !can_create {
+        bail!(Error::new(
+            "user does not have permission to create a forum post",
+            ErrorType::PermissionDenied,
+        ));
+    }
+
+    let guest_identity = if request_user_id.is_none() {
+        match (input.guest_name, input.guest_email_md5) {
+            (Some(name), Some(md5))
+                if !name.trim().is_empty()
+                    && md5.len() == 32
+                    && md5.bytes().all(|byte| {
+                        byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)
+                    }) =>
+            {
+                Some((name, md5))
+            }
+            _ => {
+                bail!(Error::new(
+                    "anonymous forum posts require a valid guest identity",
+                    ErrorType::BadRequest,
+                ));
+            }
+        }
+    } else {
+        None
+    };
+
+    let created = ForumPostService::create(
+        ctx,
+        CreateForumPost {
+            forum_thread_id: input.forum_thread_id,
+            parent_post_id: input.parent_post_id,
+            user_id: request_user_id.unwrap_or(ANONYMOUS_USER_ID),
+            title: input.title,
+            wikitext: input.wikitext,
+            comments: String::new(),
+            from_wikidot: false,
+        },
+    )
+    .await?;
+    if let Some((name, md5)) = guest_identity {
+        ForumPostService::set_guest_identity(ctx, created.forum_post_id, name, md5)
+            .await?;
+    }
+    Ok(created)
+}
 
 pub async fn forum_post_select(
     ctx: &ServiceContext<'_>,

@@ -3632,14 +3632,48 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "gravatar": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/platform/gravatar.md"
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live anonymous forum/sub/ForumNewPostFormModule and ForumAction/savePost guest mutation on sandbox-for-codex",
+        "Framerail public ajax-module-connector.php ForumAction/savePost boundary",
+        "Deepwell public forum_post_create JSON-RPC boundary with ForumCategory/Create permission",
+        "Deepwell public Wikidot forum thread/read-model identity rendering"
       ],
-      "live_oracle_evidence": [],
+      "tests": [
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "anonymous ForumAction savePost hashes the private guest email before Deepwell",
+          "scope": "public AMC validates guest controls, trims the private email, preserves case for MD5, and sends only the derived hash to Deepwell"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector.test.js",
+          "name": "ForumAction savePost rejects incomplete or malformed guest identity before Deepwell",
+          "scope": "public AMC rejects empty and malformed guest identity and invalid forum identifiers before mutation"
+        },
+        {
+          "path": "deepwell/tests/page.rs",
+          "name": "anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar",
+          "scope": "public Deepwell mutation enforces forum permission, stores anonymous guest derived identity, and emits the exact live Gravatar author DOM"
+        }
+      ],
+      "implementation_files": [
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/deepwell/forum.ts",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts",
+        "deepwell/src/endpoints/forum_post.rs",
+        "deepwell/src/services/forum_post/service.rs",
+        "deepwell/src/services/render/forum_modules.rs",
+        "deepwell/src/services/render/forum_read_routes.rs",
+        "deepwell/src/services/render/forum_comments.rs",
+        "deepwell/migrations/20260818020000_forum_post_guest_identity.sql"
+      ],
+      "documentation_evidence": [
+        "specifications/platform/gravatar.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/gravatar-guest-live-20260818.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "hosted-wiki-platform": {

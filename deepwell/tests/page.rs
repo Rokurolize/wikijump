@@ -30336,6 +30336,228 @@ async fn forum_post_reads_require_parent_page_view_permission() {
 }
 
 #[tokio::test]
+async fn anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar()
+ {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Guest Gravatar Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("guest Gravatar group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Guest Gravatar Category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("guest Gravatar category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Guest Gravatar Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("guest Gravatar thread should be created");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let denied = run_endpoint_err!(
+        runner,
+        forum_post_create,
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "denied guest Gravatar body",
+            "guest_name": "Denied Guest",
+            "guest_email_md5": "84991830db6f52c0a36a85d452311203",
+        }),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(anonymous_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::ForumCategory),
+        resource_category_id: Set(Some(category.forum_category_id)),
+        action: Set(Action::Create),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("anonymous forum post permission should be inserted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("forum permission cache should be invalidated");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let created = run_endpoint!(
+        runner,
+        forum_post_create,
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "guest Gravatar body",
+            "guest_name": "Guest Name",
+            "guest_email_md5": "84991830db6f52c0a36a85d452311203",
+        }),
+    );
+
+    let rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(rendered.status, "ok");
+    assert!(
+        rendered
+            .body
+            .contains(&format!(r#"id="fpc-{}""#, created.forum_post_id))
+    );
+    assert!(rendered.body.contains(concat!(
+        r#"<span class="printuser avatarhover"><a href="javascript:;"><img alt="" class="small" "#,
+        r#"src="http://www.gravatar.com/avatar.php?gravatar_id=84991830db6f52c0a36a85d452311203&amp;default=http://www.wikidot.com/common--images/avatars/default/a16.png&amp;size=16"/></a>Guest Name (guest)</span>"#,
+    )));
+
+    let admin_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("admin")),
+    )
+    .await
+    .expect("admin role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(admin_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::ForumCategory),
+        resource_category_id: Set(Some(category.forum_category_id)),
+        action: Set(Action::Create),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("administrator forum post permission should be inserted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("administrator forum permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let authenticated = run_endpoint!(
+        runner,
+        forum_post_create,
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "authenticated body",
+            "guest_name": "Must Be Ignored",
+            "guest_email_md5": "84991830db6f52c0a36a85d452311203",
+        }),
+    );
+    let authenticated_rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    let authenticated_start = authenticated_rendered
+        .body
+        .find(&format!(r#"id="fpc-{}""#, authenticated.forum_post_id))
+        .expect("authenticated forum post should render");
+    let authenticated_tail = &authenticated_rendered.body[authenticated_start..];
+    assert!(authenticated_tail.contains("Administrator"));
+    assert!(!authenticated_tail.contains("Must Be Ignored (guest)"));
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    for input in [
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "missing guest identity",
+        }),
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "malformed guest identity",
+            "guest_name": "Guest Name",
+            "guest_email_md5": "not-a-md5",
+        }),
+    ] {
+        let error = run_endpoint_err!(runner, forum_post_create, input);
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+}
+
+#[tokio::test]
 async fn page_get_files_requires_parent_page_view_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";

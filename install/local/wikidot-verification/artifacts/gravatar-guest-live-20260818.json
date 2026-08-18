@@ -1,0 +1,109 @@
+{
+  "schema": "wikijump.live.gravatar_guest.v1",
+  "observed_at": "2026-08-18",
+  "site": "sandbox-for-codex",
+  "forum_category_id": 8503559,
+  "forum_thread_id": 18029831,
+  "actor": "anonymous-guest",
+  "surface_ids": ["catalog-feature:gravatar"],
+  "mutation_performed": true,
+  "cleanup": {
+    "run_owned_posts_deleted": true,
+    "public_absence_verified_with_cache_buster": true,
+    "forum_permissions_restored": true,
+    "original_category_permissions": null,
+    "original_category_permissions_default": true,
+    "default_forum_permissions": "t:rm;p:rm;e:o;s:"
+  },
+  "guest_form": {
+    "module": "forum/sub/ForumNewPostFormModule",
+    "fields": ["threadId", "parentId", "guestName", "guestEmail", "source"],
+    "save_action": "ForumAction",
+    "save_event": "savePost"
+  },
+  "observations": [
+    {
+      "case_id": "gravatar-guest-lowercase-public-control",
+      "guest_name": "run-owned-gravatar-pos-a",
+      "guest_email": "support@gravatar.com",
+      "result": "created",
+      "gravatar_id": "84991830db6f52c0a36a85d452311203",
+      "email_transform": "trim-only-then-md5",
+      "guest_name_visible": true,
+      "raw_email_visible": false
+    },
+    {
+      "case_id": "gravatar-guest-uppercase-space-control",
+      "guest_name": "run-owned-gravatar-pos-b",
+      "guest_email": "  SUPPORT@GRAVATAR.COM  ",
+      "result": "created",
+      "gravatar_id": "367c4ed53ac64deb1b7753b1556236c2",
+      "email_transform": "trim-only-then-md5-case-preserved",
+      "guest_name_visible": true,
+      "raw_email_visible": false
+    },
+    {
+      "case_id": "gravatar-guest-missing-image-fallback-control",
+      "guest_name": "run-owned-gravatar-neg-a",
+      "guest_email": "wikijump-gravatar-a@example.invalid",
+      "result": "created",
+      "gravatar_id": "e22ec24f61164f2b152705fda5392967",
+      "guest_name_visible": true,
+      "raw_email_visible": false,
+      "fallback_delegated_to_gravatar_default_parameter": true
+    },
+    {
+      "case_id": "gravatar-guest-empty-email",
+      "guest_name": "run-owned-gravatar-neg-b",
+      "guest_email": "",
+      "result": "rejected",
+      "post_created": false
+    },
+    {
+      "case_id": "gravatar-guest-malformed-email",
+      "guest_name": "run-owned-gravatar-malformed",
+      "guest_email": "not-an-email",
+      "result": "rejected",
+      "post_created": false
+    },
+    {
+      "case_id": "gravatar-guest-no-dot-email",
+      "guest_name": "Probe",
+      "guest_email": "a@b",
+      "result": "rejected",
+      "post_created": false
+    },
+    {
+      "case_id": "gravatar-guest-overlong-email",
+      "guest_name": "Guest",
+      "guest_email_length": 51,
+      "result": "rejected",
+      "post_created": false
+    },
+    {
+      "case_id": "gravatar-guest-empty-name",
+      "guest_name": "",
+      "guest_email": "support@gravatar.com",
+      "result": "rejected",
+      "post_created": false
+    },
+    {
+      "case_id": "gravatar-authenticated-guest-fields-ignored",
+      "actor": "authenticated-account",
+      "guest_name": "run-owned-gravatar-author-shape",
+      "guest_email": "support@gravatar.com",
+      "result": "created-as-authenticated-account",
+      "guest_name_visible": false,
+      "gravatar_guest_identity_visible": false,
+      "raw_email_visible": false
+    }
+  ],
+  "public_url_template": "http://www.gravatar.com/avatar.php?gravatar_id={md5}&default=http://www.wikidot.com/common--images/avatars/default/a16.png&size=16",
+  "source_html_template": "<span class=\"printuser avatarhover\"><a href=\"javascript:;\"><img alt=\"\" class=\"small\" src=\"http://www.gravatar.com/avatar.php?gravatar_id={md5}&amp;default=http://www.wikidot.com/common--images/avatars/default/a16.png&amp;size=16\"/></a>{guest_name} (guest)</span>",
+  "privacy": {
+    "private_account_email_used_in_retained_evidence": false,
+    "raw_guest_email_is_rendered": false,
+    "raw_guest_email_is_required_for_persistent_local_state": false,
+    "public_derived_value": "md5-of-trimmed-case-preserved-email"
+  }
+}

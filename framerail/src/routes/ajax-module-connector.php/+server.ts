@@ -10,7 +10,7 @@ import {
 } from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
-import { wikidotForumModule } from "$lib/server/deepwell/forum"
+import { forumPostCreate, wikidotForumModule } from "$lib/server/deepwell/forum"
 import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
 import { adminView, preloadView } from "$lib/server/deepwell/views"
 import { pageFileList } from "$lib/server/deepwell/page-file"
@@ -139,6 +139,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         ...requestContext,
         page: pageId
       }),
+    createForumPost: (input) => forumPostCreate(input, requestContext),
     renderEditMetaModule: async ({
       siteId: requestSiteId,
       pageId

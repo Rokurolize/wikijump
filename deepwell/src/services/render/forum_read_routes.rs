@@ -103,6 +103,8 @@ pub(super) struct ForumThreadPostCandidate {
     pub(super) local_user_name: Option<String>,
     pub(super) local_user_slug: Option<String>,
     pub(super) forum_signature: Option<String>,
+    pub(super) guest_name: Option<String>,
+    pub(super) guest_email_md5: Option<String>,
     pub(super) revision_wikidot_user_name: Option<String>,
     pub(super) revision_wikidot_user_slug: Option<String>,
     pub(super) revision_local_user_name: Option<String>,
@@ -475,6 +477,7 @@ async fn load_forum_thread_posts(
                 "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
                 "wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, ",
                 "local_user.slug AS local_user_slug, local_user.forum_signature, ",
+                "fp.guest_name, fp.guest_email_md5, ",
                 "revision_wu.name AS revision_wikidot_user_name, ",
                 "revision_wu.slug AS revision_wikidot_user_slug, ",
                 "revision_local.name AS revision_local_user_name, ",
@@ -542,13 +545,21 @@ pub(super) async fn hydrate_forum_posts(
         posts.push(ForumThreadPostView {
             forum_post_id: candidate.forum_post_id,
             parent_post_id: candidate.parent_post_id,
-            user: forum_user(
-                candidate.user_id,
-                candidate.wikidot_user_name,
-                candidate.wikidot_user_slug,
-                candidate.local_user_name,
-                candidate.local_user_slug,
-            ),
+            user: match (
+                candidate.guest_name.clone(),
+                candidate.guest_email_md5.clone(),
+            ) {
+                (Some(name), Some(md5)) => {
+                    super::forum_modules::forum_guest_user(name, md5)
+                }
+                _ => forum_user(
+                    candidate.user_id,
+                    candidate.wikidot_user_name,
+                    candidate.wikidot_user_slug,
+                    candidate.local_user_name,
+                    candidate.local_user_slug,
+                ),
+            },
             created_at: candidate.created_at,
             title: candidate.title,
             compiled_html,

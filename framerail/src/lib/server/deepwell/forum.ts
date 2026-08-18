@@ -9,6 +9,39 @@ export interface WikidotForumModuleOutput {
   js_include: string[]
 }
 
+export interface ForumPostCreateInput {
+  siteId: number
+  threadId: number
+  parentPostId: number | null
+  title: string
+  source: string
+  guestName?: string
+  guestEmailMd5?: string
+}
+
+export interface ForumPostCreateOutput {
+  forum_post_id: number
+}
+
+export async function forumPostCreate(
+  input: ForumPostCreateInput,
+  requestContext: RequestContext = {}
+): Promise<ForumPostCreateOutput> {
+  return client.request(
+    "forum_post_create",
+    {
+      site_id: input.siteId,
+      forum_thread_id: input.threadId,
+      parent_post_id: input.parentPostId,
+      title: input.title,
+      wikitext: input.source,
+      guest_name: input.guestName,
+      guest_email_md5: input.guestEmailMd5
+    },
+    requestContext
+  )
+}
+
 export async function wikidotForumModule(
   siteId: number,
   moduleName: string,

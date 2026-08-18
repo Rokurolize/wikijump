@@ -646,6 +646,18 @@
       ]
     },
     {
+      "surface_id": "catalog-feature:gravatar",
+      "sources": [
+        { "path": "framerail/src/lib/server/ajax-module-connector.js", "anchor": "fields.get(\"event\") === FORUM_POST_EVENT" },
+        { "path": "deepwell/src/endpoints/forum_post.rs", "anchor": "pub async fn forum_post_create(" },
+        { "path": "deepwell/src/services/render/forum_modules.rs", "anchor": "pub(super) fn forum_guest_user(" }
+      ],
+      "tests": [
+        { "path": "framerail/tests/ajax-module-connector.test.js", "anchor": "anonymous ForumAction savePost hashes the private guest email before Deepwell" },
+        { "path": "deepwell/tests/page.rs", "anchor": "anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar" }
+      ]
+    },
+    {
       "surface_id": "catalog-feature:forums-overview",
       "sources": [{ "path": "deepwell/src/services/render/forum_read_routes.rs", "anchor": "pub async fn render_wikidot_forum_module(" }],
       "tests": [{ "path": "deepwell/tests/page.rs", "anchor": "forum_start_and_recent_posts_filter_before_counts_order_and_pagination" }]

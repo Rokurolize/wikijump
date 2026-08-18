@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 import { classifyWikidotSiteChangesRequest } from "./wikidot-site-changes.js"
 
 const AJAX_MODULE_CONNECTOR_HEADERS = {
@@ -92,6 +94,20 @@ const DATA_FORM_NEW_PAGE_FIELDS = new Set([
 ])
 const PAGE_DISCUSSION_ACTION = "ForumAction"
 const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
+const FORUM_POST_EVENT = "savePost"
+const FORUM_POST_FIELDS = new Set([
+  "action",
+  "event",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex",
+  "threadId",
+  "parentId",
+  "title",
+  "source",
+  "guestName",
+  "guestEmail"
+])
 const EDIT_META_MODULE = "edit/EditMetaModule"
 const EDIT_META_ACTION = "WikiPageAction"
 const EDIT_META_EVENTS = new Set(["saveMetaTag", "deleteMetaTag"])
@@ -206,6 +222,15 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     siteId: number
  *     pageId: number
  *   }) => Promise<{ thread_id: number; thread_unix_title: string } | null>
+ *   createForumPost?: (input: {
+ *     siteId: number
+ *     threadId: number
+ *     parentPostId: number | null
+ *     title: string
+ *     source: string
+ *     guestName?: string
+ *     guestEmailMd5?: string
+ *   }) => Promise<{ forum_post_id: number }>
  *   renderEditMetaModule?: (input: {
  *     siteId: number
  *     pageId: number
@@ -628,6 +653,7 @@ export const handleAjaxModuleConnectorRequest = async (
     canCreateNewPage = true,
     pageExists,
     createPageDiscussion,
+    createForumPost,
     renderEditMetaModule,
     saveMetaTag,
     deleteMetaTag,
@@ -933,6 +959,62 @@ export const handleAjaxModuleConnectorRequest = async (
         status: "not_ok",
         message: "Unable to create NewPage target"
       })
+    }
+  }
+
+  if (
+    fields.get("action") === PAGE_DISCUSSION_ACTION &&
+    fields.get("event") === FORUM_POST_EVENT
+  ) {
+    const threadIdValue = fieldValue(fields, "threadId")
+    const parentIdValue = fieldValue(fields, "parentId")
+    const guestNamePresent = fields.has("guestName")
+    const guestEmailPresent = fields.has("guestEmail")
+    const guestName = fieldValue(fields, "guestName")
+    const guestEmail = fieldValue(fields, "guestEmail").trim()
+    const parentPostId =
+      parentIdValue === ""
+        ? null
+        : isPositiveSafeDecimal(parentIdValue)
+          ? Number.parseInt(parentIdValue, 10)
+          : undefined
+    const guestIdentityValid =
+      !guestNamePresent && !guestEmailPresent
+        ? true
+        : guestNamePresent &&
+          guestEmailPresent &&
+          guestName.trim().length > 0 &&
+          guestEmail.length <= 50 &&
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(guestEmail)
+    const shapeIsSupported =
+      moduleName === "Empty" &&
+      isPositiveSafeDecimal(threadIdValue) &&
+      parentPostId !== undefined &&
+      fields.has("source") &&
+      [...fields.keys()].every((field) => FORUM_POST_FIELDS.has(field)) &&
+      guestIdentityValid
+    if (!shapeIsSupported || !createForumPost) {
+      return jsonResponse({ status: "not_ok" })
+    }
+
+    try {
+      const created = await createForumPost({
+        siteId,
+        threadId: Number.parseInt(threadIdValue, 10),
+        parentPostId,
+        title: fieldValue(fields, "title"),
+        source: fieldValue(fields, "source"),
+        ...(guestNamePresent
+          ? {
+              guestName,
+              guestEmailMd5: createHash("md5").update(guestEmail).digest("hex")
+            }
+          : {})
+      })
+      return jsonResponse({ status: "ok", postId: created.forum_post_id })
+    } catch (error) {
+      console.error("AJAX forum savePost action failed", error)
+      return jsonResponse({ status: "not_ok" })
     }
   }
 

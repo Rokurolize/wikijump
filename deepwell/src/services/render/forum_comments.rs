@@ -193,6 +193,7 @@ async fn load_comment_nodes(
                     "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
                     "wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, ",
                     "local_user.slug AS local_user_slug, local_user.forum_signature, ",
+                    "fp.guest_name, fp.guest_email_md5, ",
                     "revision_wu.name AS revision_wikidot_user_name, ",
                     "revision_wu.slug AS revision_wikidot_user_slug, ",
                     "revision_local.name AS revision_local_user_name, ",
