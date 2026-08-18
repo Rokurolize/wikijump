@@ -57,12 +57,19 @@ function fixturePrefix(prefix) {
 }
 
 function between(html, start, end) {
-  const opening = `${start}</p>`;
-  const begin = html.indexOf(opening);
+  const begin = html.indexOf(start);
   if (begin < 0) throw new Error(`PageTree output is missing ${start}`);
-  const contentStart = begin + opening.length;
-  const contentEnd = html.indexOf(`<p>${end}`, contentStart);
-  if (contentEnd < 0) throw new Error(`PageTree output is missing ${end}`);
+  let contentStart = begin + start.length;
+  for (const boundary of ["</p>", "<br>\n", "<br>"]) {
+    if (html.startsWith(boundary, contentStart)) {
+      contentStart += boundary.length;
+      break;
+    }
+  }
+  const endStart = html.indexOf(end, contentStart);
+  if (endStart < 0) throw new Error(`PageTree output is missing ${end}`);
+  let contentEnd = endStart;
+  if (html.slice(contentStart, contentEnd).endsWith("<p>")) contentEnd -= 3;
   return html.slice(contentStart, contentEnd);
 }
 

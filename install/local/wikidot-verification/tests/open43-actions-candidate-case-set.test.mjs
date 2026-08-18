@@ -19,9 +19,9 @@ const staleError = () => Object.assign(new Error("stale revision"), {
   rpc: { code: 4000, message_sha256: sha256Text("The request is in some way malformed or incorrect") },
 });
 const body = [
-  '<p><a class="wiki-standalone-button" href="javascript:;">history</a></p>',
-  '<p><a class="wiki-standalone-button" href="javascript:;">view source</a></p>',
-  '<p><a class="wiki-standalone-button" href="javascript:;">Apply tags</a></p>',
+  '<p><a class="wiki-standalone-button" href="javascript:;" onclick="WIKIDOT.page.listeners.historyClick(event)">history</a></p>',
+  '<p><a class="wiki-standalone-button" href="javascript:;" onclick="WIKIDOT.page.listeners.viewSourceClick(event)">view source</a></p>',
+  '<p><a class="wiki-standalone-button" href="javascript:;" onclick="WIKIDOT.page.listeners.updateTagsByButton(event, &#39;-* +candidate&#39;)">Apply tags</a></p>',
 ].join("");
 const actions = [
   { type: "history" },

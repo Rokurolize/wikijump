@@ -68,11 +68,13 @@ impl RenderDependencyClasses {
 const MODULE_QUERY_NAMES: &[&str] = &[
     "listpages",
     "backlinks",
+    "categories",
     "tagcloud",
     "frontspecialmini",
     "sitestagcloud",
     "ratedpages",
     "childpages",
+    "pagetree",
     "nextpage",
     "previouspage",
     "orphanedpages",
@@ -240,6 +242,8 @@ pub(crate) fn wikitext_needs_latest_revision_for_render(wikitext: &str) -> bool 
         || wikitext_has_executable_pages_module(wikitext)
         || wikitext_has_executable_tag_cloud_module(wikitext)
         || wikitext_has_executable_include(wikitext)
+        || classify_render_dependencies(wikitext)
+            .contains(RenderDependencyClass::QueryDependent)
 }
 
 fn supported_pages_by_tag_module_at(source: &str, module_start: usize) -> bool {
@@ -277,7 +281,26 @@ fn safely_parsed_module_name(tail: &str) -> Option<&str> {
 
 #[cfg(test)]
 mod tests {
-    use super::{RenderDependencyClass, classify_render_dependencies};
+    use super::{
+        RenderDependencyClass, classify_render_dependencies,
+        wikitext_needs_latest_revision_for_render,
+    };
+
+    #[test]
+    fn first_revision_rerender_covers_current_page_query_modules() {
+        for source in [
+            "[[module PageTree showRoot=\"true\" depth=\"1\"]]",
+            "[[module PreviousPage]]\n%%linked_title%%\n[[/module]]",
+            "[[module NextPage by=\"title\"]]\n%%linked_title%%\n[[/module]]",
+            "[[module Categories]]",
+            "[[module ChildPages]]",
+        ] {
+            assert!(
+                wikitext_needs_latest_revision_for_render(source),
+                "{source}"
+            );
+        }
+    }
 
     #[test]
     fn render_dependency_plain_source_is_revision_local() {

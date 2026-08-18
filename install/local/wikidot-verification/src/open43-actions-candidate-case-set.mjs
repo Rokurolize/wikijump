@@ -23,6 +23,11 @@ const EXPECTED_TAGS = Object.freeze(["candidate"]);
 const STALE_ERROR_CODE = 4000;
 const STALE_ERROR_MESSAGE_SHA256 = sha256Text("The request is in some way malformed or incorrect");
 const EXPECTED_LABELS = Object.freeze(["history", "view source", "Apply tags"]);
+const EXPECTED_ONCLICK = Object.freeze([
+  'onclick="WIKIDOT.page.listeners.historyClick(event)"',
+  'onclick="WIKIDOT.page.listeners.viewSourceClick(event)"',
+  'onclick="WIKIDOT.page.listeners.updateTagsByButton(event, &#39;-* +candidate&#39;)"',
+]);
 const EXPECTED_OPERATIONS = Object.freeze([
   "site_get",
   "page_get",
@@ -65,7 +70,13 @@ function bodyEvidence(value, name) {
   for (const label of EXPECTED_LABELS) {
     if (!body.includes(`>${label}</a>`)) throw new Error(`${name} omitted the exact ${label} label`);
   }
-  for (const forbidden of ["[[button", "onclick=", "wj-button-", "data-wikijump"]) {
+  if ((body.match(/\sonclick=/gu) ?? []).length !== EXPECTED_ONCLICK.length) {
+    throw new Error(`${name} did not expose exactly the generated Wikidot action handlers`);
+  }
+  for (const handler of EXPECTED_ONCLICK) {
+    if (!body.includes(handler)) throw new Error(`${name} omitted the exact generated Wikidot action handler`);
+  }
+  for (const forbidden of ["[[button", "wj-button-", "data-wikijump", "alert(1)"]) {
     if (body.includes(forbidden)) throw new Error(`${name} exposed forbidden action content ${forbidden}`);
   }
   return {

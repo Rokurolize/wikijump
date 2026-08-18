@@ -451,7 +451,10 @@ export async function startPromotionCandidate({sourceRoot, buildEvidencePath, ca
       deepwell_rpc_url: `http://127.0.0.1:${rpcPort}/jsonrpc`,
       deepwell_rpc_token: token,
       object_store_origin: `http://127.0.0.1:${objectStorePort}`,
-      presigned_origin: `http://127.0.0.1:${objectStorePort}`,
+      // Deepwell signs URLs against its in-network S3 endpoint. Candidate
+      // clients bind that exact authority, then replay only the signed path
+      // through the loopback-published object-store origin above.
+      presigned_origin: "http://files:9000",
       candidate_origin: `https://scp-wiki.wikijump.localhost:${publicPort}`,
     });
     await fs.chmod(privatePath, 0o600);

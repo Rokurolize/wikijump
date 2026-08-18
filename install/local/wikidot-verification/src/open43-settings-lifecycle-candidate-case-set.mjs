@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+
 import {
   OPEN43_SETTINGS_LIFECYCLE_CASE_IDS,
   OPEN43_SETTINGS_LIFECYCLE_CASE_MANIFEST,
@@ -13,6 +15,98 @@ import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 const SITE_SLUG = "scpaiueouiuiuiui";
 const SITE_HOST = `${SITE_SLUG}.wikijump.localhost`;
+const DOCKER = "/usr/bin/docker";
+
+function docker(args) {
+  const result = spawnSync(DOCKER, args, {
+    encoding: "utf8",
+    env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !["DOCKER_CONTEXT", "DOCKER_HOST"].includes(key))),
+  });
+  if (result.error || result.status !== 0) throw new Error("S758 candidate lifecycle Docker operation failed");
+  return result.stdout.trim();
+}
+
+function databaseContainer(project) {
+  const ids = docker([
+    "ps",
+    "--filter", `label=com.docker.compose.project=${project}`,
+    "--filter", "label=com.docker.compose.service=database",
+    "--format", "{{.ID}}",
+  ]).split(/\s+/u).filter(Boolean);
+  if (ids.length !== 1 || !/^[0-9a-f]{12,64}$/u.test(ids[0])) throw new Error("S758 candidate lifecycle database container is not unique");
+  return ids[0];
+}
+
+function restoreAllocator(project, before, siteId, categoryId) {
+  const container = databaseContainer(project);
+  const sql = `UPDATE category SET autonumber_enabled = ${before.enabled ? "TRUE" : "FALSE"}, autonumber_next = ${before.next}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId} AND category_id = ${categoryId};`;
+  const result = docker([
+    "exec", "-e", "PGPASSWORD=wikijump", container,
+    "psql", "-h", "127.0.0.1", "-U", "wikijump", "-d", "wikijump", "-Atc", sql,
+  ]);
+  if (result !== "UPDATE 1") throw new Error("S758 candidate lifecycle allocator restore did not update exactly one category");
+}
+
+class CandidateLifecycleOwner {
+  #candidateIdentity;
+  #session;
+  #before = null;
+
+  constructor({ candidateIdentity, session }) {
+    this.#candidateIdentity = candidateIdentity;
+    this.#session = session;
+  }
+
+  async prepare({ site_id: siteId, category_id: categoryId, category_slug: categorySlug, requested_slugs: requestedSlugs }) {
+    const category = await this.#session.rpc("category_get", { site: siteId, category: categoryId }, { actor: "administrator", siteId });
+    if (category?.category_id !== categoryId || category.slug !== categorySlug || typeof category.autonumber_enabled !== "boolean" || !Number.isSafeInteger(category.autonumber_next) || !Number.isSafeInteger(category.settings_revision)) {
+      throw new Error("S758 candidate lifecycle could not snapshot the category allocator");
+    }
+    this.#before = {
+      enabled: category.autonumber_enabled,
+      next: category.autonumber_next,
+      settings_revision: category.settings_revision,
+    };
+    for (const slug of requestedSlugs) {
+      const page = await this.#session.rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId });
+      if (page !== null) throw new Error("S758 requested candidate namespace is not vacant");
+    }
+  }
+
+  async cleanup({ site_id: siteId, category_id: categoryId, run_owned_page_ids: pageIds }) {
+    if (this.#before === null) throw new Error("S758 candidate lifecycle was not prepared");
+    for (const pageId of [...pageIds].reverse()) {
+      const page = await this.#session.rpc("page_get", { site_id: siteId, page: pageId, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
+      if (page !== null) {
+        await this.#session.rpc("page_delete", {
+          site_id: siteId,
+          page: page.page_id,
+          last_revision_id: page.revision_id,
+          revision_comments: "S758 candidate lifecycle cleanup",
+          user_id: this.#session.privateInputIdentity.administrator_user_id,
+          ip_address: "127.0.0.1",
+        }, { actor: "administrator", siteId, cleanup: true });
+      }
+    }
+    restoreAllocator(this.#candidateIdentity.candidate.compose_project, this.#before, siteId, categoryId);
+    const category = await this.#session.rpc("category_get", { site: siteId, category: categoryId }, { actor: "administrator", siteId, cleanup: true });
+    if (category?.autonumber_enabled !== this.#before.enabled || category.autonumber_next !== this.#before.next || category.settings_revision !== this.#before.settings_revision) {
+      throw new Error("S758 candidate lifecycle allocator restore did not round-trip");
+    }
+    const residual = [];
+    for (const pageId of pageIds) {
+      const page = await this.#session.rpc("page_get", { site_id: siteId, page: pageId, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
+      if (page !== null) residual.push(pageId);
+    }
+    return {
+      public_absence_verified: residual.length === 0,
+      run_owned_state_absent: residual.length === 0,
+      disposable_candidate_discarded: residual.length === 0,
+      run_owned_page_ids: residual,
+      allocator_restored: true,
+    };
+  }
+}
 
 async function defaultBrowserAdapterFactory(options) {
   const { Open43SettingsBrowserAdapter } = await import("./open43-settings-browser-adapter.mjs");
@@ -29,7 +123,7 @@ export { OPEN43_SETTINGS_LIFECYCLE_CASE_IDS, OPEN43_SETTINGS_LIFECYCLE_CASE_MANI
 export function createOpen43SettingsLifecycleCandidateCaseSet({
   sessionFactory = defaultSessionFactory,
   browserAdapterFactory = defaultBrowserAdapterFactory,
-  candidateLifecycleFactory = () => Open43SettingsLifecycleCandidateAdapter.missingLifecycle(),
+  candidateLifecycleFactory = (options) => new CandidateLifecycleOwner(options),
 } = {}) {
   return Object.freeze({
     id: "open43-settings-lifecycle",
@@ -62,7 +156,7 @@ export function createOpen43SettingsLifecycleCandidateCaseSet({
         case_manifest: OPEN43_SETTINGS_LIFECYCLE_CASE_MANIFEST,
         fixture_identity_sha256: sha256Value(fixture),
       });
-      const lifecycle = candidateLifecycleFactory({ candidateIdentity, privateInput, runId, plan });
+      const lifecycle = candidateLifecycleFactory({ candidateIdentity, privateInput, runId, plan, session });
       const browser = await browserAdapterFactory({ browserContexts: candidateBrowserContexts, pageOrigin: session.pageOrigin, storageState: (actor) => session.storageState(actor) });
       const execution = new Open43SettingsLifecycleCandidateAdapter({ session, browser, lifecycle, resources, plan });
       return Object.freeze({

@@ -594,16 +594,18 @@ function verifyCleanup(proof, resources) {
   ) {
     throw new Error("media cleanup left an outstanding pending blob");
   }
-  const routes = Object.values(proof.public_routes ?? {});
+  const routes = Object.entries(proof.public_routes ?? {});
   if (routes.length !== Object.keys(FILE_NAMES).length * 2) {
     throw new Error("media cleanup route denominator is incomplete");
   }
-  for (const route of routes) {
-    if (
-      route?.status !== 404 ||
-      route?.head?.status !== 404 ||
-      route?.head?.body_size !== 0
-    ) {
+  for (const [name, route] of routes) {
+    const original = name.endsWith("_original");
+    const getAbsent = original
+      ? route?.status === 200
+        && route?.content_type === "text/html; charset=utf-8"
+        && route?.body_sha256 === "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab"
+      : route?.status === 404;
+    if (!getAbsent || route?.head?.status !== 404 || route?.head?.body_size !== 0) {
       throw new Error("media cleanup did not prove public file route absence");
     }
   }

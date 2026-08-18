@@ -8039,10 +8039,18 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
             !html.contains("data-wikijump"),
             "Wikijump hooks must remain outside served Wikidot DOM: {html}"
         );
-        assert!(
-            !html.contains("onclick"),
-            "authored script must stay inert: {html}"
-        );
+        for generated_handler in [
+            r#"onclick="WIKIDOT.page.listeners.editClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.historyClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.viewSourceClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.printClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.updateTagsByButton(event, &#39;-* +favorite&#39;)""#,
+        ] {
+            assert!(
+                html.contains(generated_handler),
+                "generated Wikidot action handler is missing: {generated_handler}: {html}",
+            );
+        }
         assert!(
             !html.contains("alert(1)"),
             "authored script must stay inert: {html}"

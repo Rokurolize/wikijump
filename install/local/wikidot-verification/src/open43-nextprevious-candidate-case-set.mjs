@@ -48,10 +48,18 @@ function holderSource(category) {
 function section(html, start, end) {
   const begin = html.indexOf(start);
   if (begin < 0) throw new Error(`NextPreviousPage output is missing ${start}`);
-  const contentStart = html.indexOf("</p>", begin);
-  const finish = html.indexOf(`<p>${end}`, contentStart);
-  if (contentStart < 0 || finish < 0) throw new Error(`NextPreviousPage output is missing ${end}`);
-  return html.slice(contentStart + 4, finish);
+  let contentStart = begin + start.length;
+  for (const boundary of ["</p>", "<br>\n", "<br>"]) {
+    if (html.startsWith(boundary, contentStart)) {
+      contentStart += boundary.length;
+      break;
+    }
+  }
+  const finish = html.indexOf(end, contentStart);
+  if (finish < 0) throw new Error(`NextPreviousPage output is missing ${end}`);
+  let contentEnd = finish;
+  if (html.slice(contentStart, contentEnd).endsWith("<p>")) contentEnd -= 3;
+  return html.slice(contentStart, contentEnd);
 }
 
 function foundHtml(value) {

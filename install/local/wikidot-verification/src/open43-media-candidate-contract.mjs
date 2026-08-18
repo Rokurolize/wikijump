@@ -42,8 +42,11 @@ function sha256(bytes) {
 function missingRoute(value, name) {
   const route = object(value, name);
   const head = object(route.head, `${name}.head`);
-  expect(route.status === 404 && head.status === 404 && head.body_size === 0, `${name} must be absent through GET and HEAD`);
-  return { get_status: 404, head_status: 404 };
+  const wikidotMissingOriginal = route.status === 200
+    && route.content_type === "text/html; charset=utf-8"
+    && route.body_sha256 === "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab";
+  expect((route.status === 404 || wikidotMissingOriginal) && head.status === 404 && head.body_size === 0, `${name} must be absent through GET and HEAD`);
+  return { get_status: route.status, head_status: 404 };
 }
 
 function matchingRow(inventory, fileName, name) {

@@ -87,7 +87,7 @@ function capture(pageUrl, index) {
   return { navigation_status: 200, final_url: pageUrl, first_paint: { document: {}, screenshot: first }, document: {}, settled_viewport_screenshot: settled };
 }
 
-function state(pathname, { editable = false, standalone = editable ? 0 : 1 } = {}) {
+function state(pathname, { editable = false, standalone = 1 } = {}) {
   return { url: `${PAGE_ORIGIN}${pathname}`, path: pathname, edit_route: editable, standalone_edit_count: standalone, editor_count: editable ? 1 : 0, source_disclosure: false, active_element: editable ? "body" : "a" };
 }
 

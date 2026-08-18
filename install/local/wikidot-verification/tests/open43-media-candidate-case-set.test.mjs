@@ -24,6 +24,7 @@ const INITIAL_BYTES = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC",
   "base64",
 );
+const WIKIDOT_MISSING_FILE_HTML = Buffer.from("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n");
 function candidateIdentity() {
   return {
     schema: "wikijump.standing_candidate_parity_identity.v1",
@@ -295,8 +296,13 @@ async function createFakeCandidate({
       decodeURIComponent(match[2]),
     );
     if (file === null) {
-      response.writeHead(404, { "content-type": "text/html" });
-      response.end("missing");
+      if (!resized && request.method === "GET") {
+        response.writeHead(200, { "content-type": "text/html; charset=utf-8", "content-length": String(WIKIDOT_MISSING_FILE_HTML.length) });
+        response.end(WIKIDOT_MISSING_FILE_HTML);
+      } else {
+        response.writeHead(404, { "content-type": "text/html" });
+        response.end(request.method === "HEAD" ? undefined : "missing");
+      }
       return;
     }
     const servedOriginal =
