@@ -14,10 +14,19 @@
 - Real EN/JP Wikidot sites are read-only unless the user explicitly authorizes a run-owned sandbox mutation. Never expose credentials or session cookies.
 - Browser-visible behavior includes intermediate paints and transitions as well as the settled page. A final screenshot or final DOM match does not prove compatibility when users can see stale themes, layout shifts, loading states, or transient controls.
 - Do not hide meaningful differences through broad normalization, CSS masking, source surgery, or validator shortcuts. Record attempted observation routes when live behavior cannot be captured.
-- Faithful Wikidot DOM, CSS cascade, interaction, and legacy quirks take priority over modernization for imported content. Escaping and sanitization boundaries remain intact.
+- Faithful Wikidot DOM, CSS cascade, interaction, legacy quirks, escaping, and sanitization behavior take priority over modernization for imported content. Preserve evidenced Wikidot boundaries rather than silently tightening them.
 - A compatibility rule must implement the behavior a page demonstrates, not recognize the page. Do not decide behavior by comparing against a byte-exact fragment of captured page content, and do not gate on a conjunction that only one captured page satisfies, such as a tail of exactly three lines with nothing following it. Both reproduce a single page and diverge from Wikidot the moment a word or a line moves.
 - Before narrowing a rule to an evidenced shape, observe the boundary live: at least two observations where the behavior holds and two where it stops, varying the part you are about to fix in place. A negative control showing that one changed character no longer matches proves the rule is narrow, not that it is right.
 - When the general rule cannot be established from the evidence available, leave the case actionable and record it as unimplemented. Do not close it with a rule that only the captured page satisfies. A gate driven to zero by page recognition has measured nothing.
+
+## Code Review Rules
+
+- Treat observable Wikidot behavior as the compatibility specification even when that behavior is insecure, unsafe, obsolete, or contrary to modern web best practices. A review objection based only on modern hardening is not a compatibility justification.
+- For security-sensitive behavior, first establish what Wikidot actually does from live evidence or provenance-backed observations. When Wikidot demonstrably permits the behavior, the default compatibility disposition is to reproduce it and document the concern rather than silently harden the implementation.
+- Put discretionary security controls at the surrounding deployment, network, privilege, or isolation boundary when possible instead of changing guest-visible Wikidot semantics. Wikijump is a local/private compatibility runtime, so review compatibility behavior under that deployment model rather than as a public Internet service by default.
+- Accept a deliberate divergence from evidenced Wikidot behavior only when reproducing it would violate an explicit Wikijump deployment boundary or create a materially greater capability than Wikidot itself exposes. Record the evidence, the reason for divergence, and the containment boundary instead of appealing generically to "security" or "best practice".
+- Treat HTTP resources, URL schemes, link attributes such as `noopener`, escaping, sanitization, and similarly security-relevant output as parity questions first: if Wikidot preserves or omits something observably, match that behavior unless the preceding divergence rule applies.
+- Distinguish faithful reproduction of a Wikidot weakness from a vulnerability introduced by Wikijump. New capability or exposure that Wikidot does not exhibit remains an ordinary defect and should be reviewed as such.
 
 ## Architecture
 
