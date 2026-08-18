@@ -210,7 +210,6 @@ export function parseArgs(argv) {
       throw new Error(`${flag} requires a value`);
     }
     args[name] = path.resolve(value);
-    index += 1;
   }
   for (const name of ["source-root", "input-manifest", "source-writers", "output"]) {
     if (!args[name]) throw new Error(`--${name} is required`);

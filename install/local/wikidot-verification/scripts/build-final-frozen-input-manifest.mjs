@@ -37,7 +37,6 @@ export function parseArgs(argv) {
     const resolved = path.resolve(value);
     if (REPEATED.has(name)) args[name].push(resolved);
     else args[name] = resolved;
-    index += 1;
   }
   for (const name of REPEATED) if (args[name].length === 0) throw new Error(`--${name} is required`);
   for (const name of SINGLE) if (!args[name]) throw new Error(`--${name} is required`);

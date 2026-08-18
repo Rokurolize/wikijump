@@ -36,7 +36,6 @@ export function parseArgs(argv) {
     if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
     if (name === "lane") args.lane.push(value);
     else args[name] = path.resolve(value);
-    index += 1;
   }
   for (const name of ["source-root", "output"]) if (!args[name]) throw new Error(`--${name} is required`);
   if (args.lane.length === 0) throw new Error("--lane is required");

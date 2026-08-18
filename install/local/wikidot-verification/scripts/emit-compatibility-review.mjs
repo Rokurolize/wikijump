@@ -38,7 +38,6 @@ export function parseArgs(argv) {
     const value = argv[index + 1];
     if (!value || value.startsWith("--")) throw new Error(`${flag} requires a value`);
     args[name] = name === "source-root" || name === "output" ? path.resolve(value) : value;
-    index += 1;
   }
   for (const name of ["source-root", "axis", "attestation", "output"]) {
     if (!args[name]) throw new Error(`--${name} is required`);

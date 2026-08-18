@@ -4,8 +4,22 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import {buildFinalFrozenReceipt} from "../scripts/emit-final-frozen-receipt.mjs";
+import {
+  buildFinalFrozenReceipt,
+  parseArgs as parseFinalFrozenArgs,
+} from "../scripts/emit-final-frozen-receipt.mjs";
 import {verifyFinalFrozenReceipt} from "../src/final-frozen-receipt-contract.mjs";
+
+test("FINAL_FROZEN CLI consumes every flag-value pair", () => {
+  const args = parseFinalFrozenArgs([
+    "--source-root", "/repo",
+    "--input-manifest", "/evidence/inputs.json",
+    "--source-writers", "/evidence/writers.json",
+    "--output", "/evidence/final-frozen.json",
+  ]);
+  assert.equal(args["source-root"], "/repo");
+  assert.equal(args.output, "/evidence/final-frozen.json");
+});
 
 test("FINAL_FROZEN binds producer identities and stopped source lanes", async (t) => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "final-frozen-root-"));
