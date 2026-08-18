@@ -177,6 +177,35 @@ impl OutdateService {
         Ok(())
     }
 
+    async fn outdate_immediate(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to run immediate outdater on page ID {} (depth {})",
+                    page_id, depth
+                ),
+                ErrorType::PageOutdater,
+            )
+        };
+
+        let Some(page) = PageService::get_direct_optional(ctx, page_id, false)
+            .await
+            .or_raise(make_error)?
+        else {
+            return Ok(());
+        };
+
+        ctx.defer_rerender_page_immediate(
+            PageId::from_page_model(&page),
+            depth.plus_one(),
+        )
+        .or_raise(make_error)
+    }
+
     pub async fn outdate_incoming_links(
         ctx: &ServiceContext<'_>,
         page_id: i64,
@@ -237,7 +266,13 @@ impl OutdateService {
             .map(|connection| connection.from_page_id)
             .filter(|id| *id != page_id)
         {
-            Self::outdate(ctx, id, depth).await.or_raise(make_error)?;
+            if depth == RerenderDepth::default() {
+                Self::outdate_immediate(ctx, id, depth)
+                    .await
+                    .or_raise(make_error)?;
+            } else {
+                Self::outdate(ctx, id, depth).await.or_raise(make_error)?;
+            }
         }
         Ok(())
     }

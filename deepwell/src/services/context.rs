@@ -25,7 +25,7 @@ use crate::models::session::Model as SessionModel;
 use crate::runtime::ServerState;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::job::{Job, JobService};
-use crate::services::page_revision::RerenderType;
+use crate::services::page_revision::{PageRevisionService, RerenderType};
 use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
 use crate::types::{PageId, Permission, Reference, RerenderDepth};
@@ -33,8 +33,8 @@ use exn::ErrorExt;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
-use sea_orm::DatabaseTransaction;
-use std::collections::HashSet;
+use sea_orm::{DatabaseTransaction, TransactionTrait};
+use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::OnceCell;
@@ -156,6 +156,11 @@ pub(crate) enum PostCommitAction {
         site_id: i64,
     },
     RerenderPage {
+        id: PageId,
+        depth: RerenderDepth,
+        r#type: RerenderType,
+    },
+    RerenderPageImmediate {
         id: PageId,
         depth: RerenderDepth,
         r#type: RerenderType,
@@ -321,6 +326,37 @@ impl<'txn> ServiceContext<'txn> {
         self.defer_rerender(id, depth, RerenderType::Full)
     }
 
+    pub(crate) fn defer_rerender_page_immediate(
+        &self,
+        id: PageId,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        let mut actions = self.post_commit_actions.lock().map_err(|_| {
+            Error::new("failed to queue immediate page rerender", ErrorType::Page).raise()
+        })?;
+        if actions.iter().any(|action| {
+            matches!(
+                action,
+                PostCommitAction::RerenderPageImmediate {
+                    id: queued_id,
+                    depth: queued_depth,
+                    r#type: RerenderType::Full,
+                } if queued_id.site_id == id.site_id
+                    && queued_id.category_id == id.category_id
+                    && queued_id.page_id == id.page_id
+                    && *queued_depth == depth
+            )
+        }) {
+            return Ok(());
+        }
+        actions.push(PostCommitAction::RerenderPageImmediate {
+            id,
+            depth,
+            r#type: RerenderType::Full,
+        });
+        Ok(())
+    }
+
     pub(crate) fn defer_rerender_navigation_page(
         &self,
         id: PageId,
@@ -389,7 +425,8 @@ impl<'txn> ServiceContext<'txn> {
         actions: Vec<PostCommitAction>,
     ) -> Result<()> {
         let mut rsmq = Rsmq::clone(&state.rsmq);
-        for action in actions {
+        let mut actions = VecDeque::from(actions);
+        while let Some(action) = actions.pop_front() {
             match action {
                 PostCommitAction::PermissionUser { site_id, user_id } => {
                     PermissionCache::invalidate_user_for_state(state, site_id, user_id)
@@ -408,6 +445,27 @@ impl<'txn> ServiceContext<'txn> {
                         None,
                     )
                     .await?;
+                }
+                PostCommitAction::RerenderPageImmediate { id, depth, r#type } => {
+                    let make_error = || {
+                        Error::new(
+                            format!(
+                                "failed to run immediate rerender for page ID {}",
+                                id.page_id
+                            ),
+                            ErrorType::Page,
+                        )
+                    };
+                    let transaction =
+                        state.database.begin().await.or_raise(make_error)?;
+                    let ctx = ServiceContext::new(state, &transaction);
+                    PageRevisionService::rerender(&ctx, id, depth, r#type)
+                        .await
+                        .or_raise(make_error)?;
+                    let followups =
+                        ctx.drain_post_commit_actions().or_raise(make_error)?;
+                    transaction.commit().await.or_raise(make_error)?;
+                    actions.extend(followups);
                 }
                 PostCommitAction::DeleteTextBlockObjects { filenames } => {
                     for filename in filenames {

@@ -40,7 +40,7 @@ use deepwell::redis::connect_with_namespace;
 use deepwell::services::category::CategoryService;
 use deepwell::services::job::{
     JOB_QUEUE_DELAY, JOB_QUEUE_MAXIMUM_SIZE, JOB_QUEUE_NAME, JOB_QUEUE_PROCESS_TIME, Job,
-    JobService, JobWorker,
+    JobService,
 };
 use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::permission::PermissionService;
@@ -69,7 +69,6 @@ use std::panic::AssertUnwindSafe;
 use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 use time::OffsetDateTime;
-use tokio::time::{sleep, timeout};
 use uuid::Uuid;
 
 use futures::FutureExt;
@@ -1026,7 +1025,7 @@ async fn site_navigation_updates_persist_and_dispatch_after_registered_rpc_commi
 }
 
 #[tokio::test]
-async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
+async fn component_css_save_refreshes_direct_dependent_before_rpc_returns() {
     let redis_url =
         env::var("REDIS_URL").expect("REDIS_URL must be set for integration tests");
     let run_id = Uuid::new_v4().simple().to_string();
@@ -1196,19 +1195,11 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
     .await;
     assert_eq!(
         queued_job_count(&mut rsmq).await,
-        1,
-        "A1061_POST_COMMIT_DISPATCH: commit should queue one logical dependent despite duplicate edges",
+        0,
+        "A1061_POST_COMMIT_DISPATCH: the direct dependent should finish before page_edit returns",
     );
-    JobWorker::spawn_all(&state);
-    timeout(Duration::from_secs(30), async {
-        while queued_job_count(&mut rsmq).await != 0 {
-            sleep(Duration::from_millis(25)).await;
-        }
-    })
-    .await
-    .expect("worker should consume the committed rerender");
 
-    let first_after_consumption = rpc_request(
+    let first_after_save = rpc_request(
         &client,
         address,
         None,
@@ -1223,7 +1214,7 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
         }),
     )
     .await;
-    let styles = first_after_consumption["page"]["data"]["compiled_body_styles"]
+    let styles = first_after_save["page"]["data"]["compiled_body_styles"]
         .as_array()
         .expect("served dependent styles should be an array");
     assert!(
@@ -1232,7 +1223,7 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
                 .as_str()
                 .is_some_and(|style| style.contains("color: blue"))
         }),
-        "the first article_view after worker consumption should contain blue CSS",
+        "the first article_view after component save should contain blue CSS",
     );
     assert!(
         styles.iter().all(|style| {
@@ -1240,7 +1231,7 @@ async fn component_css_save_dispatches_one_post_commit_dependent_rerender() {
                 .as_str()
                 .is_none_or(|style| !style.contains("color: red"))
         }),
-        "the first article_view after worker consumption must not contain red CSS",
+        "the first article_view after component save must not contain red CSS",
     );
 
     handle.stop().expect("public Deepwell server should stop");
