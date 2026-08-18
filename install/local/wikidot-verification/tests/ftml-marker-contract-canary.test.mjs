@@ -32,16 +32,16 @@ const ownershipPinReceiptFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const retainedCanarySummary = {
   path: path.join(
-    "/home/roku/wjlab/evidence/20260818-ftml-1380-marker-cde07d97-final-2",
+    "/home/roku/wjlab/evidence/20260819-ftml-1380-marker-695586a1-final-1",
     "canary-summary.json",
   ),
   sha256:
-    "f0a751d527f69eebad21425f16f940aaa47f93f4b0ffd1501ce8e87f986f5623",
+    "da4dcca666e3fdc2b3e2e5cbdaa68a871fc4b55e0de9b00d1179acf28dcb8e79",
 };
 const committedCanarySummaryPath = path.join(
   repositoryRoot,
   "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary",
-  "canary-summary-cde07d97.json",
+  "canary-summary-695586a1.json",
 );
 
 function parseActiveFtmlDependency(source) {
