@@ -169,7 +169,7 @@ async function git(sourceRoot, args) {
   return stdout.trim();
 }
 
-async function sourceIdentity(sourceRoot) {
+export async function sourceIdentity(sourceRoot) {
   if (await git(sourceRoot, ["status", "--porcelain=v1", "--untracked-files=all"])) {
     throw new Error("source checkout must be clean");
   }
