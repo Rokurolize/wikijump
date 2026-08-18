@@ -742,6 +742,45 @@ describe("Wikidot site settings public boundaries", () => {
     }
   })
 
+  it("page template settings bind the category mutation to the trusted site actor", async () => {
+    const calls = []
+    client.request = async (method, params, context) => {
+      calls.push({ method, params, context })
+      if (method === "session_get") return { user_id: 41 }
+      if (method === "category_update") return { category_id: 23, template_page_id: 91 }
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
+
+    const result = await canonicalAdminServer.actions.template(
+      actionEvent("template", {
+        siteId,
+        categoryId: 23,
+        templatePageId: 91
+      })
+    )
+
+    assert.equal(result.form.valid, true)
+    assert.deepEqual(calls, [
+      {
+        method: "session_get",
+        params: [sessionToken],
+        context: undefined
+      },
+      {
+        method: "category_update",
+        params: {
+          site: siteId,
+          category: 23,
+          user_id: 41,
+          template_page_id: 91,
+          ip_address: "192.0.2.63"
+        },
+        context: { sessionToken, siteId }
+      }
+    ])
+    assert.equal(legacyAdminServer.actions.template, canonicalAdminServer.actions.template)
+  })
+
   it("serves the legacy admin route through the same rendered page and action seam", () => {
     assert.equal(legacyAdminServer.load, canonicalAdminServer.load)
     assert.equal(legacyAdminServer.actions, canonicalAdminServer.actions)

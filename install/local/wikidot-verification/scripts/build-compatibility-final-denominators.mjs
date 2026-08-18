@@ -124,6 +124,36 @@ function ledgerSurfaceMap(ledger) {
   return result;
 }
 
+function semanticTuple(record) {
+  const specification = record.specification_owner ?? `compatibility surface ${record.surface_id}`;
+  const publicReference = Array.isArray(record.public_reference) && record.public_reference.length > 0
+    ? record.public_reference[0]
+    : record.surface_id;
+  const requestKinds = new Set([
+    "framerail_amc_action_shape",
+    "framerail_amc_module_shape",
+    "framerail_route",
+    "framerail_server_action",
+    "missing_page_control",
+    "page_action",
+    "wws_route",
+  ]);
+  const actor = record.kind === "deepwell_jsonrpc_method"
+    ? "trusted Wikijump service caller"
+    : requestKinds.has(record.kind)
+      ? "HTTP client at the declared public boundary"
+      : `actor defined by ${specification}`;
+  const observableInterval = requestKinds.has(record.kind) || record.kind === "deepwell_jsonrpc_method"
+    ? "one public request including its browser-visible response interval"
+    : `observable lifecycle defined by ${specification}`;
+  return {
+    actor,
+    input: `input admitted by ${publicReference}`,
+    observable_interval: observableInterval,
+    result: `Wikidot-compatible observable result required by ${specification}`,
+  };
+}
+
 export function buildCompatibilityFinalDenominators({inventory, inventoryPath, inventoryBytes, ledger}) {
   if (inventory?.schema !== INVENTORY_SCHEMA || inventory.counts?.total !== inventory.surfaces?.length) {
     fail("unsupported or incomplete compatibility inventory");
@@ -169,6 +199,7 @@ export function buildCompatibilityFinalDenominators({inventory, inventoryPath, i
         surface_id: surfaceId,
         source_local_id: record.surface_id,
         kind: record.kind,
+        ...semanticTuple(record),
       };
     })
     .sort((left, right) => codePointCompare(left.surface_id, right.surface_id));

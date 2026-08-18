@@ -278,6 +278,55 @@ test("login shares a session across native Wikijump wiki hosts but not custom do
   }
 })
 
+test("register binds account creation to the request address and redacts submitted passwords", async () => {
+  const calls = []
+  client.request = async (method, params) => {
+    calls.push({ method, params })
+    if (method === "user_create") {
+      return { user_id: 42, name: "registration-fixture", slug: "registration-fixture" }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const password = "registration-password-fixture"
+  const formData = new FormData()
+  formData.set("username", "registration-fixture")
+  formData.set("email", "registration-fixture@example.invalid")
+  formData.set("password", password)
+  formData.set("confirmPassword", password)
+  formData.append("locale", "en")
+
+  const result = await routes.register.actions.default({
+    request: new Request("https://wikijump.test/-/register", {
+      method: "POST",
+      headers: siteHeaders,
+      body: formData
+    }),
+    getClientAddress: () => "192.0.2.42"
+  })
+
+  assert.equal(result.isRegistered, true)
+  assert.equal(result.form.valid, true)
+  assert.equal(result.form.data.password, "")
+  assert.equal(result.form.data.confirmPassword, "")
+  assert.equal(JSON.stringify(result).includes(password), false)
+  assert.deepEqual(calls, [
+    {
+      method: "user_create",
+      params: {
+        user_type: "regular",
+        name: "registration-fixture",
+        email: "registration-fixture@example.invalid",
+        locales: ["en"],
+        password,
+        ip_address: "192.0.2.42",
+        bypass_filter: false,
+        bypass_email_verification: false
+      }
+    }
+  ])
+})
+
 test("legacy user slug route fails closed for imported profiles", async () => {
   client.request = async (method) => {
     if (method === "translate") return {}

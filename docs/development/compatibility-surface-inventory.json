@@ -666,7 +666,12 @@
     {
       "source": "catalog-feature:data-forms-file-field",
       "type": "implemented_by",
-      "target": "wikijump"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "catalog-feature:data-forms-file-field",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "catalog-feature:data-forms-hidden-field",
@@ -696,7 +701,12 @@
     {
       "source": "catalog-feature:data-forms-images",
       "type": "implemented_by",
-      "target": "wikijump"
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "catalog-feature:data-forms-images",
+      "type": "implemented_by",
+      "target": "wikijump.framerail"
     },
     {
       "source": "catalog-feature:data-forms-links",
@@ -3035,6 +3045,11 @@
     },
     {
       "source": "deepwell-jsonrpc:file_rollback",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:forum_post_create",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -10939,8 +10954,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "86565a1eafa1fb0ca510e8218bb9cacf1f17d599",
-      "tree": "a5b950bd33b01c367c87a82ced3024a666193ef2"
+      "commit": "4ef86ea26204371efa49aed26ea4672fa04dd6cc",
+      "tree": "818db122b29f88854c27edfd2804f6e6f46b470c"
     },
     "ftml": {
       "commit": "cde07d97aaa8e706556030d4d1f9be3d441b7285",
@@ -10957,7 +10972,7 @@
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "f59987c694f32f3c1612532fa82c0d0f605ebd07816f302ff07767bd9656dc63"
+        "sha256": "40c7d49a174fa4015816819c56fa0608ab2f6a2260a1d5dfd43fa521ce31986e"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -10993,7 +11008,7 @@
       },
       {
         "path": "deepwell/src/endpoints/forum_post.rs",
-        "sha256": "d188b7a0568c0997a01f71b900409eb7bb1be7fd087af8a186835e9892724f2a"
+        "sha256": "aebdf680005f22ebcd74ac46f5e129495867a3ed23ba6a29d36f25e1cb8f0a0f"
       },
       {
         "path": "deepwell/src/endpoints/health.rs",
@@ -11089,7 +11104,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "ee13131e36ec4125c848e52cae523bb1855362208c87085b11bd7011ba83342d"
+        "sha256": "06efe356db7d888ee63bed05efe25be86b7647d37f420e2d45379211091c85ee"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11097,7 +11112,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "4fbd9023ce31e26a8e24b9a48f5c2e1761618752a8bacfbfa8f9a547d480ea6b"
+        "sha256": "178a2f7efe81e34298e81c78179f61866ba1802a06c9aa23bed64d93b56e5efa"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11105,7 +11120,7 @@
       },
       {
         "path": "docs/development/framerail-route-action-evidence.json",
-        "sha256": "b55456ad096a249c78d20b5c117f7f0ab5c5d87aff0cbe046089e3f1bbf145c4"
+        "sha256": "4ae3ccbaeb7f19466e5c010c99d2eb5af6627023661de7dfd0c5d58f5ec6b814"
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
@@ -11145,7 +11160,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "dda9ab1b2c5816e3d8b25f5378b25b506d42c1af282ea243e2a27d583c53aa74"
+        "sha256": "7680adf12b1a213ecada3fa2242670b100b7dd374e8a1d79ff89cb4092437354"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11157,19 +11172,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "5577c7fa7773d2ddd368c139bc02ba71e7cd3023e03fb0cbbf1e4f5232726742"
+        "sha256": "005ffa41e04c0bbe35ee98dd1292d2b4d03f07aea877dfaef56af14b9464b017"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "7f99d20a92907cd5ab2f320813c67980ee00afa160438a24e338e7bd064ee338"
+        "sha256": "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "5d4fd12297a5e2471190a429c9968893a37e860ad8afd2b5b7dae601e652216d"
+        "sha256": "a78335e4d5edf1220603ba80b8913a28414d146a5e11273a9de564cf36863c36"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "b0edbe17bffe2639c7520f6d6b27f01aa8ddb996d79a0324cf57fcefeb029a97"
+        "sha256": "5284438814c7d7bc833b5fee720b4c1c14ba8ee1560f02662438d163b4481262"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11177,7 +11192,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "74775d7e5ae6145c5c4b6abe4e5ea294ad0cd4af1f9fcc0b216b57b1d28f2f39"
+        "sha256": "b676f2273a48db5c8ab09654d22b558456c3d5cab906cc07c53771c90150ff20"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11269,7 +11284,7 @@
       },
       {
         "path": "framerail/src/routes/[x+2d]/settings/+page.svelte",
-        "sha256": "6b283f71967e8d0b4c53a8b5feea409e967074f0c792906d3c29ac35e6d286ba"
+        "sha256": "a2652943c1a7c873895309cc3fab432477160444c7c35bb6cac5ea2a1745f812"
       },
       {
         "path": "framerail/src/routes/[x+2d]/user/[slug]/+page.server.ts",
@@ -11301,7 +11316,7 @@
       },
       {
         "path": "framerail/src/routes/+error.svelte",
-        "sha256": "f364c6e19d96bbb2def049bfdc1ce8efc1d32c276eee6266e6e31de107bab2d8"
+        "sha256": "401a401669a1e9c049492f05baedb5db978f5b5b0c4d856c7ecf7aeab915b507"
       },
       {
         "path": "framerail/src/routes/+page.server.ts",
@@ -11313,7 +11328,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "b565082547535d9631827aab8efe3887d8b914ed5d1ba57fe330b569cd7ee50a"
+        "sha256": "e55c202d0a64ed33e385edca729f352b7c6239e0ed58d059f7e27e98403d1393"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
@@ -11389,7 +11404,7 @@
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "5d4fd12297a5e2471190a429c9968893a37e860ad8afd2b5b7dae601e652216d"
+        "sha256": "a78335e4d5edf1220603ba80b8913a28414d146a5e11273a9de564cf36863c36"
       },
       {
         "path": "wws/src/route.rs",
@@ -11480,10 +11495,10 @@
     ]
   },
   "counts": {
-    "total": 925,
+    "total": 926,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 163,
+      "deepwell_jsonrpc_method": 164,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 28,
@@ -11508,7 +11523,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/user.rs#user_create_only_verified_email_blocks_conflict",
+          "deepwell/tests/user.rs#user_delete_and_its_audit_event_roll_back_together"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -11517,8 +11535,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/user.rs#pub async fn user_create(",
+          "deepwell/src/endpoints/user.rs#pub async fn user_delete("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -11548,7 +11569,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -11557,8 +11580,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#data-id=\"sm-ads\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12156,7 +12181,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/user.rs#oversized_avatar_rejection_does_not_promote_blob_or_change_target",
+          "framerail/tests/wikidot-user-info-target-route.test.js#UserInfo exposes an avatar only through the existing trusted file seam"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12165,8 +12193,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/user/service.rs#BlobService::finish_avatar_upload(",
+          "framerail/src/lib/server/wikidot-user-info.js#user.avatar_s3_hash !== null && loadAvatar"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12196,7 +12227,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/playwright.browser-support.config.ts#projects: [",
+          "framerail/tests/browser-support.spec.ts#supported browser families share the same core page and authority boundary"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12205,8 +12239,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "framerail/src/hooks.server.ts#export const handle: Handle = async ({ event, resolve }) =>",
+          "framerail/src/routes/[slug]/[...extra]/page.svelte#use:wikidotLegacyActions={legacyActionParameters}"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12282,10 +12319,13 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1508
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_remains_editable_and_renders_form_variables",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_category_data_form_definition_in_template_order"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12294,8 +12334,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#pub fn supports_observed_create_edit(&self) -> bool",
+          "deepwell/src/services/view/service.rs#definition.supports_observed_create_edit()",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#serializeWikidotDataFormSource"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12414,7 +12458,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/caddy/test.rs#fn generate_caddyfiles()"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -12423,8 +12469,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/domain.rs#pub async fn site_custom_domain_create(",
+          "deepwell/src/services/caddy/caddyfile.j2## Custom domains",
+          "deepwell/src/services/domain/service.rs#pub async fn site_from_custom_domain_optional("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12885,20 +12935,36 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1504
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/data_form.rs#file_field_exposes_only_the_observed_editor_boundary",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_file_data_form_create_control_without_write_lifecycle",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#file field exposes only Wikidot's observed hidden upload-state control",
+          "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs#file-field artifact has the exact public evidence identity and no secret material",
+          "install/local/wikidot-verification/tests/data-form-file-field-artifact.test.mjs#retained file-field live artifact boundary"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/data-forms/data-forms-file-field.md"
+          "docs/wikidot-specifications/specifications/data-forms/data-forms-file-field.md",
+          "install/local/wikidot-verification/artifacts/data-form-file-field-live-20260810.json"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/data_form.rs#pub fn supports_observed_editor(&self) -> bool",
+          "deepwell/src/services/view/service.rs",
+          "deepwell/src/services/view/service.rs#definition.supports_observed_editor()",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/lib/wikidot/wikidot-data-form.js#case \"file\":",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"file\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -12914,7 +12980,8 @@
       },
       "specification_owner": "catalog.feature:data-forms-file-field",
       "implementation_owners": [
-        "wikijump"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -13088,20 +13155,34 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1504
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/data_form.rs#file_field_exposes_only_the_observed_editor_boundary",
+          "deepwell/tests/page_template_assignment.rs#page_view_exposes_file_data_form_create_control_without_write_lifecycle",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#file field exposes only Wikidot's observed hidden upload-state control",
+          "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs#media and links artifact has the exact independent feature contract",
+          "install/local/wikidot-verification/tests/data-form-images-links-youtube-artifact.test.mjs#retained images live artifact boundary"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/data-forms/data-forms-images.md"
+          "docs/wikidot-specifications/specifications/data-forms/data-forms-images.md",
+          "install/local/wikidot-verification/artifacts/data-form-images-links-youtube-live-20260810.json"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/data_form.rs#pub fn supports_observed_editor(&self) -> bool",
+          "deepwell/src/services/view/service.rs",
+          "framerail/src/lib/wikidot/wikidot-data-form.js",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"file\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13117,7 +13198,8 @@
       },
       "specification_owner": "catalog.feature:data-forms-images",
       "implementation_owners": [
-        "wikijump"
+        "wikijump.deepwell",
+        "wikijump.framerail"
       ]
     },
     {
@@ -13274,7 +13356,14 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
+          "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
+          "framerail/tests/ajax-module-connector.test.js#pagepath first root child bootstraps the empty _root before creating the child",
+          "framerail/tests/data-form-create-flow.spec.ts#pagepath Create new matches the immediate Wikidot tree mutation and survives form cancel",
+          "framerail/tests/data-form-create-flow.spec.ts#pagepath first root child bootstraps _root and remains selected in the editor",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#pagepath fields preserve raw fullnames while projecting the evidenced selector chain"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13283,8 +13372,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#pub async fn resolve_wikidot_data_form_pagepath_display_values(",
+          "deepwell/src/services/page_revision/service.rs#let pagepath_backlinks = match BlueprintPageService::get_page_template(",
+          "framerail/src/lib/server/ajax-module-connector.js#const DATA_FORM_ACTION = \"DataFormAction\"",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"pagepath\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13314,7 +13408,14 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw",
+          "deepwell/tests/page_template_assignment.rs#pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes",
+          "framerail/tests/ajax-module-connector.test.js#pagepath first root child bootstraps the empty _root before creating the child",
+          "framerail/tests/data-form-create-flow.spec.ts#pagepath Create new matches the immediate Wikidot tree mutation and survives form cancel",
+          "framerail/tests/data-form-create-flow.spec.ts#pagepath first root child bootstraps _root and remains selected in the editor",
+          "framerail/tests/wikidot-data-form-scalar-fields.test.js#pagepath fields preserve raw fullnames while projecting the evidenced selector chain"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13323,8 +13424,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#pub async fn resolve_wikidot_data_form_pagepath_display_values(",
+          "deepwell/src/services/page_revision/service.rs#let pagepath_backlinks = match BlueprintPageService::get_page_template(",
+          "framerail/src/lib/server/ajax-module-connector.js#const DATA_FORM_ACTION = \"DataFormAction\"",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"pagepath\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13772,7 +13878,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page_template_assignment.rs#data_form_youtube_raw_wiki_executes_only_inside_html_block",
+          "framerail/tests/data-form-create-flow.spec.ts#data-form checkbox and wiki controls match live DOM and storage"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -13781,8 +13890,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/data_form.rs#pub fn substitute_wikidot_data_form_layout_variables_with_display(",
+          "deepwell/src/services/render/service.rs#pub(in crate::services::render) fn rewrite_wikidot_html_block_iframe_urls(",
+          "framerail/src/routes/[slug]/[...extra]/DataFormEditor.svelte#field.field_type === \"wiki\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -13812,17 +13925,33 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/site.rs#educational_upgrade_is_site_scoped_and_master_admin_only",
+          "framerail/tests/ajax-module-connector-manage-site-educational.test.js#Educational upgrade action preserves the observed UpgradesAction wire shape",
+          "framerail/tests/wikidot-manage-site-educational.test.js#Educational upgrade renders the observed application and benefits"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/platform/educational-site-status.md"
+          "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/specifications/platform/educational-site-status.md",
+          "install/local/wikidot-verification/artifacts/educational-site-status-live-20260818.json"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/migrations/20260818030000_site_educational_status.sql",
+          "deepwell/src/models/site.rs",
+          "deepwell/src/services/site/service.rs",
+          "deepwell/src/services/site/service.rs#only the site's Master Administrator can apply the educational upgrade",
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/ajax-module-connector.js#EDUCATIONAL_UPGRADE_ACTION",
+          "framerail/src/lib/server/wikidot-manage-site-educational.js",
+          "framerail/src/lib/server/wikidot-manage-site-educational.js#renderWikidotManageSiteEducational",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14073,10 +14202,14 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1506
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination",
+          "deepwell/tests/user.rs#user_mutations_enforce_request_actor_and_staff_only_fields",
+          "framerail/tests/account-route-boundaries.test.js#display settings persist the forum signature through the existing account mutation"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14085,8 +14218,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/forum_modules.rs#pub(super) async fn render_forum_signature_html(",
+          "deepwell/src/services/user/service.rs#fn validate_forum_signature(",
+          "framerail/src/lib/server/load/user-settings.ts#export async function userDisplaySettingsAction("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14201,20 +14338,39 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1507
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar",
+          "framerail/tests/ajax-module-connector.test.js#ForumAction savePost rejects incomplete or malformed guest identity before Deepwell",
+          "framerail/tests/ajax-module-connector.test.js#anonymous ForumAction savePost hashes the private guest email before Deepwell"
+        ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/platform/gravatar.md"
+          "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/specifications/platform/gravatar.md",
+          "install/local/wikidot-verification/artifacts/gravatar-guest-live-20260818.json"
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/migrations/20260818020000_forum_post_guest_identity.sql",
+          "deepwell/src/endpoints/forum_post.rs",
+          "deepwell/src/endpoints/forum_post.rs#pub async fn forum_post_create(",
+          "deepwell/src/services/forum_post/service.rs",
+          "deepwell/src/services/render/forum_comments.rs",
+          "deepwell/src/services/render/forum_modules.rs",
+          "deepwell/src/services/render/forum_modules.rs#pub(super) fn forum_guest_user(",
+          "deepwell/src/services/render/forum_read_routes.rs",
+          "framerail/src/lib/server/ajax-module-connector.js",
+          "framerail/src/lib/server/ajax-module-connector.js#fields.get(\"event\") === FORUM_POST_EVENT",
+          "framerail/src/lib/server/deepwell/forum.ts",
+          "framerail/src/routes/ajax-module-connector.php/+server.ts"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14292,7 +14448,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries",
+          "framerail/tests/wikidot-user-info-account-label-public-boundary.test.js#UserInfo projects imported free accounts and the observed none/high karma labels"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14301,8 +14460,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/user/structs.rs#user_karma: karma",
+          "framerail/src/lib/server/wikidot-user-info.js#const karmaLevel = imported"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -14477,7 +14639,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/caddy/test.rs#fn generate_caddyfiles()",
+          "deepwell/src/services/caddy/test.rs#generated_caddyfile_routes_exact_default_code_path_to_files_domain"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -14486,8 +14651,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/caddy/caddyfile.j2#import reverse_proxy_framerail",
+          "deepwell/src/services/domain/service.rs#pub async fn site_from_custom_domain_optional(",
+          "install/local/docker-compose.yaml#local-minio-data:/data",
+          "install/local/docker-compose.yaml#local-postgres-data:/var/lib/postgresql/data"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -15273,10 +15443,13 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1505
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/render_dependency.rs#hardened_www_system_modules_keep_their_runtime_dependency_classes",
+          "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -15285,8 +15458,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#render_www_special_system_module",
+          "deepwell/src/services/render/url_arguments.rs#wikitext_has_www_special_runtime_module"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -15362,7 +15538,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -15371,8 +15549,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#fn expand_www_currency_convert_system_module("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -15443,10 +15623,12 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1505
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -15455,8 +15637,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#WWW_DELETE_ACCOUNT_INVALID_CODE_HTML",
+          "deepwell/src/services/render/runtime_modules.rs#render_www_special_system_module"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -15984,10 +16169,12 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1389
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -15996,8 +16183,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#render_www_front_special_mini",
+          "deepwell/src/services/render/url_arguments.rs#WWW_SPECIAL_RUNTIME_MODULE_REGEX"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -16027,7 +16217,11 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/render/membership_actions.rs#saved_join_binding_resolves_only_the_exact_registry_entry",
+          "deepwell/tests/role.rs#ordinary_user_joins_only_the_editable_site_then_creates_a_page",
+          "framerail/tests/wikidot-legacy-actions.test.js#Join binds exact renderer DOM out of band and remains busy through reload"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -16036,8 +16230,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/membership/service.rs#pub async fn join(",
+          "deepwell/src/services/render/membership_actions.rs#pub fn from_wikidot_source(source: &str) -> Self"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -16913,10 +17110,12 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1505
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -16925,8 +17124,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#WWW_NEW_SITE_ANONYMOUS_HTML",
+          "deepwell/src/services/render/runtime_modules.rs#WWW_NEW_SITE_AUTHENTICATED_HTML",
+          "deepwell/src/services/render/runtime_modules.rs#render_www_special_system_module"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -17997,10 +18200,12 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1508
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#hardened_www_special_modules_execute_only_on_their_system_pages"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18009,8 +18214,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#WWW_SPECIAL_SYSTEM_MODULE_REGEX",
+          "deepwell/src/services/render/runtime_modules.rs#render_www_sites_tag_cloud"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18353,10 +18561,12 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1509
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18365,8 +18575,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#data-id=\"sm-pingbacks\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18767,7 +18979,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/message.rs#message_draft_lifecycle_sends_and_deletes_drafts",
+          "deepwell/tests/message.rs#message_draft_mutations_do_not_reveal_foreign_drafts"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18776,8 +18991,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/message.rs#pub async fn message_draft_send(",
+          "deepwell/src/services/message/service.rs#pub async fn create_draft(",
+          "deepwell/src/services/message/service.rs#pub async fn send("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18807,7 +19026,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18816,8 +19037,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#data-id=\"sm-access-policy\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18892,7 +19115,12 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#search_and_feed_modules_match_live_preview_and_page_view_boundaries",
+          "deepwell/tests/page.rs#searchall_module_matches_live_form_and_unavailable_route_contract",
+          "framerail/tests/wikidot-chrome.spec.ts#SearchAll module submits the selected live area route",
+          "framerail/tests/wikidot-search.test.js#Wikidot SearchAll preserves its area and path-encodes the submitted query"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18901,8 +19129,13 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/search_feed.rs#fn expand_search_all_modules(",
+          "deepwell/src/services/render/search_feed.rs#pub(super) fn expand_search_feed_modules(",
+          "framerail/src/lib/wikidot/wikidot-search.js#export const wikidotSearchAllPath =",
+          "framerail/src/lib/wikidot/wikidot-search.js#export const wikidotSearchPath ="
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -18986,7 +19219,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/api.rs#registered_rpc_methods_select_transaction_isolation",
+          "deepwell/tests/page.rs#file_rollback_revision_and_audit_roll_back_together"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -18995,8 +19231,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/api.rs#Wrap each call in a transaction",
+          "install/local/docker-compose.yaml#local-minio-data:/data",
+          "install/local/docker-compose.yaml#local-postgres-data:/var/lib/postgresql/data"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19026,7 +19266,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19035,8 +19277,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#data-id=\"sm-backup\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19066,7 +19310,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19075,8 +19321,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/service.rs#render_clone_module",
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#data-id=\"sm-clonesite\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19106,7 +19355,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/src/services/caddy/test.rs#fn generate_caddyfiles()",
+          "deepwell/src/services/caddy/test.rs#generated_caddyfile_routes_exact_default_code_path_to_files_domain"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19115,8 +19367,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/caddy/caddyfile.j2#redir https://{{ domain }}{uri}",
+          "deepwell/src/services/caddy/service.rs#should_use_wildcard: wildcard_cert.is_some() || *local"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19190,7 +19445,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/site.rs#public_site_create_audits_authenticated_actor_and_supplied_ip_once"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19199,8 +19456,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/site.rs#pub async fn site_create(",
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#data-id=\"sm-deletesite\""
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19319,7 +19579,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#file_create_public_endpoint_audits_success_once_and_not_denial"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19328,8 +19590,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/blob/service.rs#if blob_size > config.maximum_blob_size",
+          "deepwell/src/services/file/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19406,7 +19671,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#currencyconvert_executes_only_on_the_www_plans_system_page"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19415,8 +19682,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/runtime_modules.rs#fn expand_www_currency_convert_system_module(",
+          "deepwell/src/services/render/service.rs#pub(super) async fn render_inner("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19446,7 +19716,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19455,8 +19727,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#Pro Plus"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -19531,7 +19805,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19575,7 +19851,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19620,7 +19898,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19709,7 +19989,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19845,7 +20127,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19889,7 +20173,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19933,7 +20219,11 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/media.rs#documented_embedaudio_probe_matches_frozen_live_preview",
+          "deepwell/tests/media.rs#embedvideo_preview_fails_closed_for_unsupported_media",
+          "deepwell/tests/media.rs#embedvideo_preview_resolves_only_allowlisted_typed_media"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -19942,8 +20232,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/compat/wikidot_embed.rs#pub(in crate::services::render) fn protect_wikidot_embed_iframes(",
+          "deepwell/src/services/render/compat/wikidot_embed_video.rs#pub(in crate::services::render) fn resolve_wikidot_embed_video_requirements("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20022,7 +20315,11 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_expression_parser_functions_render_at_the_public_preview_seam",
+          "deepwell/tests/page.rs#page_view_rerenders_stale_persisted_compiled_artifact",
+          "deepwell/tests/page.rs#wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execute_them"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20031,8 +20328,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/Cargo.toml#ftml = { git = \"https://github.com/Rokurolize/ftml\", rev = \"cde07d97aaa8e706556030d4d1f9be3d441b7285\" }",
+          "deepwell/src/services/render/page_preview.rs#WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);",
+          "deepwell/src/services/render/service.rs#pub async fn render("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -20109,7 +20410,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20153,7 +20456,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20197,7 +20502,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20432,7 +20739,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20571,7 +20880,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20666,7 +20977,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20711,7 +21024,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20755,7 +21070,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20848,7 +21165,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20892,7 +21211,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -20983,7 +21304,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21027,7 +21350,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21071,7 +21396,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21160,7 +21487,9 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "wws/src/handler/resized_image.rs#public_router_serves_documented_variants_and_cheap_conditional_head"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21169,8 +21498,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "wws/src/handler/resized_image.rs#pub async fn handle_resized_image(",
+          "wws/src/route.rs#/local--resized-images/{page_slug}/{filename}/{variant}"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -21200,7 +21532,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#component_css_edit_refreshes_only_the_recorded_dependent_page",
+          "deepwell/tests/page.rs#normal_page_create_allocates_category_numbers_without_consuming_conflicts"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21209,8 +21544,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs#pub async fn page_create(",
+          "deepwell/src/services/page/service.rs#pub async fn create("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -21240,7 +21578,11 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/role.rs#grant_and_revoke_role",
+          "deepwell/tests/role.rs#role_assignment_and_membership_require_role_assign",
+          "deepwell/tests/role.rs#role_create_and_list"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21249,8 +21591,11 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/role/service.rs#pub async fn grant_role_to_user(",
+          "deepwell/src/services/role/service.rs#pub async fn revoke_role_from_user("
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -21280,7 +21625,10 @@
           1387
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#page_watchers_returns_active_typed_identities_in_deterministic_order",
+          "framerail/tests/wikidot-page-watch.test.js#renders authenticated sandbox site watch text"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21289,8 +21637,12 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/page.rs#pub async fn page_watchers(",
+          "deepwell/src/services/relation/page_watch.rs#pub async fn get_active_page_watcher_ids(",
+          "framerail/src/lib/wikidot/wikidot-page-watch.js#export const buildWikidotPageWatchLabel"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -21317,10 +21669,12 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1510
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "deepwell/tests/page.rs#authenticated_site_utility_preview_renders_admin_manage_and_petition_read_models"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21329,8 +21683,10 @@
         ]
       },
       "source": {
-        "status": "pending",
-        "references": []
+        "status": "implemented",
+        "references": [
+          "deepwell/src/services/render/site_utility_modules/admin_read_models.rs#Web statistics"
+        ]
       },
       "candidate": {
         "status": "pending",
@@ -21361,7 +21717,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -21944,7 +22302,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22077,7 +22437,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22255,7 +22617,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22478,7 +22842,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22566,7 +22932,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22609,7 +22977,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22742,7 +23112,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22785,7 +23157,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22828,7 +23202,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22871,7 +23247,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -22959,7 +23337,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -23362,7 +23742,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -23509,6 +23891,51 @@
         "status": "implemented",
         "references": [
           "deepwell/src/endpoints/file.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:forum_post_create",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:forum_post_create",
+        "deepwell/src/endpoints/forum_post.rs#forum_post_create"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "deepwell/tests/page.rs#anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/forum_post.rs"
         ]
       },
       "candidate": {
@@ -23990,7 +24417,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -24663,7 +25092,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -25156,7 +25587,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -25199,7 +25632,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -25242,7 +25677,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -25330,7 +25767,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -25373,7 +25812,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -26092,7 +26533,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#page_revision_range_returns_resolved_authors_and_hides_missing_identities"
+          "deepwell/tests/page.rs#page_editing_history_preserves_each_page_change_as_a_recoverable_revision"
         ]
       },
       "evidence": {
@@ -26496,7 +26937,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -26629,7 +27072,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -26852,7 +27297,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -27255,7 +27702,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -28063,7 +28512,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -28106,7 +28557,9 @@
           1368
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -28240,7 +28693,7 @@
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions"
+          "deepwell/tests/page.rs#anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar"
         ]
       },
       "evidence": {
@@ -29289,7 +29742,9 @@
           1374
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js#ListPages ignores callback and token controls regardless of form order"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -29329,7 +29784,9 @@
           1374
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js#ListPages ignores callback and token controls regardless of form order"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -29412,7 +29869,9 @@
           1374
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js#converts Deepwell failures to a stable Wikidot error envelope"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -29452,7 +29911,9 @@
           1374
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js#ListPages ignores callback and token controls regardless of form order"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -30391,7 +30852,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#reserved compatibility routes expose their public fail-closed responses"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -30429,7 +30892,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#reserved compatibility routes expose their public fail-closed responses"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -30548,7 +31013,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#reserved compatibility routes expose their public fail-closed responses"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -31362,7 +31829,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js#page template settings bind the category mutation to the trusted site actor"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -31882,7 +32351,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/site-settings-public-boundary.test.js#page template settings bind the category mutation to the trusted site actor"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32000,7 +32471,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/account-route-boundaries.test.js#login shares a session across native Wikijump wiki hosts but not custom domains"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32078,7 +32551,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/account-route-boundaries.test.js#register binds account creation to the request address and redacts submitted passwords"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32361,7 +32836,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32769,7 +33246,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32890,7 +33369,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32929,7 +33410,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -32968,7 +33451,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -33704,7 +34189,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -34112,7 +34599,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -34233,7 +34722,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -34272,7 +34763,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -34311,7 +34804,9 @@
           1372
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+        ]
       },
       "evidence": {
         "status": "missing",
@@ -35585,7 +36080,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "f364c6e19d96bbb2def049bfdc1ce8efc1d32c276eee6266e6e31de107bab2d8"
+          "sha256": "401a401669a1e9c049492f05baedb5db978f5b5b0c4d856c7ecf7aeab915b507"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -35675,7 +36170,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "f364c6e19d96bbb2def049bfdc1ce8efc1d32c276eee6266e6e31de107bab2d8"
+          "sha256": "401a401669a1e9c049492f05baedb5db978f5b5b0c4d856c7ecf7aeab915b507"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -48035,7 +48530,10 @@
           1039
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-file-client-ip.test.js",
+          "framerail/tests/page-file-list-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48078,7 +48576,10 @@
           1039
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-file-client-ip.test.js",
+          "framerail/tests/page-file-upload-lifecycle.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48121,7 +48622,9 @@
           1039
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-file-client-ip.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48164,7 +48667,9 @@
           1039
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-file-list-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48207,7 +48712,9 @@
           1039
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-file-list-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48387,7 +48894,9 @@
           1373
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/release-route-action-boundaries.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48430,7 +48939,9 @@
           1041
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -48747,7 +49258,10 @@
           1041
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "framerail/tests/ajax-module-connector.test.js",
+          "framerail/tests/page-append-backlinks-public-boundary.test.js"
+        ]
       },
       "evidence": {
         "status": "partial",
@@ -49788,7 +50302,9 @@
           1369
         ],
         "cases": [],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 32-registration WWS denominator with source ownership"
+        ]
       },
       "evidence": {
         "status": "available",

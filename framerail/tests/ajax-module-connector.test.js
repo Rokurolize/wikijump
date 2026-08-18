@@ -157,6 +157,43 @@ test("ListPages keeps the later URL-form value for duplicate scalar fields", asy
   ])
 })
 
+test("ListPages ignores callback and token controls regardless of form order", async () => {
+  const calls = []
+  for (const body of [
+    "callbackIndex=17&wikidot_token7=client-token&name=scp-173&moduleName=list%2FListPagesModule&module_body=%%fullname%%",
+    "module_body=%%fullname%%&moduleName=list%2FListPagesModule&name=scp-173&wikidot_token7=other-token&callbackIndex=91"
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "scp-173" }
+        }
+      }
+    )
+    assert.deepEqual(await response.json(), { status: "ok", body: "scp-173" })
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleBody: "%%fullname%%",
+      parameters: { name: "scp-173" }
+    },
+    {
+      siteId: 6000006,
+      moduleBody: "%%fullname%%",
+      parameters: { name: "scp-173" }
+    }
+  ])
+})
+
 test("ListPages retains fail-closed boundaries for dynamic selectors and invalid UTF-8", async () => {
   const dynamic = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {

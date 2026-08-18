@@ -37,6 +37,22 @@ test("FINAL_FROZEN binds producer identities and stopped source lanes", async (t
     ),
   });
   const imagePath = await write("images.json", JSON.stringify(validImageOutput()));
+  const review = (axis) => ({
+    schema: "wikijump.compatibility_review.v1",
+    axis,
+    status: "pass",
+    wikijump_commit: source.wikijump_commit,
+    wikijump_tree: source.wikijump_tree,
+    findings: [],
+  });
+  const standardsReviewPath = await write(
+    "reviews/standards.json",
+    JSON.stringify(review("standards")),
+  );
+  const specReviewPath = await write(
+    "reviews/spec.json",
+    JSON.stringify(review("spec")),
+  );
   const manifestPath = await write(
     "inputs.json",
     JSON.stringify({
@@ -45,6 +61,7 @@ test("FINAL_FROZEN binds producer identities and stopped source lanes", async (t
       fixtures: [await write("fixture.json", "fixture")],
       tools: [await write("tool.mjs", "tool")],
       denominator: [await write("denominator.json", "denominator")],
+      reviews: {standards: standardsReviewPath, spec: specReviewPath},
       images: imagePath,
     }),
   );
@@ -68,6 +85,7 @@ test("FINAL_FROZEN binds producer identities and stopped source lanes", async (t
 
   const receipt = await build();
   assert.deepEqual(receipt.images.identities, imageIds);
+  assert.deepEqual(Object.keys(receipt.reviews).sort(), ["spec", "standards"]);
   const receiptPath = await write("receipt.json", JSON.stringify(receipt));
   await verifyFinalFrozenReceipt({receiptPath, source});
   for (const key of ["wikijump_commit", "wikijump_tree", "ftml_sha"]) {
@@ -88,6 +106,8 @@ test("FINAL_FROZEN binds producer identities and stopped source lanes", async (t
     receipt.fixtures[0],
     receipt.tools[0],
     receipt.denominator[0],
+    receipt.reviews.standards,
+    receipt.reviews.spec,
     receipt.images.producer,
   ]) {
     const original = await fs.readFile(reference.path);
@@ -98,6 +118,18 @@ test("FINAL_FROZEN binds producer identities and stopped source lanes", async (t
     );
     await fs.writeFile(reference.path, original);
   }
+
+  const badStandards = review("standards");
+  badStandards.findings = [{severity: "error", message: "unresolved"}];
+  await fs.writeFile(standardsReviewPath, JSON.stringify(badStandards));
+  await assert.rejects(build(), /standards review is not a passing zero-finding review/u);
+  await fs.writeFile(standardsReviewPath, JSON.stringify(review("standards")));
+
+  const badSpec = review("spec");
+  badSpec.wikijump_tree = "f".repeat(40);
+  await fs.writeFile(specReviewPath, JSON.stringify(badSpec));
+  await assert.rejects(build(), /spec review source identity is stale/u);
+  await fs.writeFile(specReviewPath, JSON.stringify(review("spec")));
 
   for (const [producerKey, sourceKey] of [
     ["wikijump_sha", "wikijump_commit"],

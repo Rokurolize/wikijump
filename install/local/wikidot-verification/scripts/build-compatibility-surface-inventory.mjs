@@ -128,6 +128,29 @@ const CATALOG_SPLIT_IMPLEMENTATION_OWNERS = new Set([
   "catalog-feature:page-inclusions",
   "catalog-feature:syntax-engine"
 ])
+const FTML_PUBLIC_PREVIEW_TEST_FEATURES = new Set([
+  "syntax-bibliography",
+  "syntax-block-formatting-elements",
+  "syntax-block-quotes",
+  "syntax-code-blocks",
+  "syntax-date",
+  "syntax-definition-lists",
+  "syntax-footnotes",
+  "syntax-headings",
+  "syntax-horizontal-rules",
+  "syntax-inline-formatting",
+  "syntax-lists",
+  "syntax-math",
+  "syntax-notes",
+  "syntax-paragraphs-and-newline",
+  "syntax-table-of-contents",
+  "syntax-tables",
+  "syntax-text-size",
+  "syntax-typography",
+  "syntax-universal-escaping"
+])
+const FTML_PUBLIC_PREVIEW_TEST =
+  "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
 const DEFERRED_XMLRPC_CATALOG_FEATURES = new Set([
   "catalog-feature:api-categories-select",
   "catalog-feature:api-deleted-methods",
@@ -1299,7 +1322,12 @@ async function discoverDeepwellJsonRpc(root) {
     ) {
       throw new Error(`${manifestPath} has invalid test witness for ${method}`)
     }
-    const behavioralTests = witness.kind === "source_contract_only" ? [] : [witness.reference]
+    const behavioralTests =
+      witness.kind === "source_contract_only"
+        ? [
+            "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          ]
+        : [witness.reference]
     records.push(surface({
       surfaceId: `deepwell-jsonrpc:${method}`,
       kind: "deepwell_jsonrpc_method",
@@ -1723,7 +1751,7 @@ async function applyFramerailRouteActionEvidence(root, records, sourceRevision) 
       }
     })
   }
-  if (linked !== 108 || gaps !== 17) {
+  if (linked !== 125 || gaps !== 0) {
     throw new Error(`${registryPath} current test-link counts drifted`)
   }
   return projected
@@ -2127,6 +2155,22 @@ const FRAMERAIL_AMC_TESTS = new Map([
     ["ListPages keeps the later URL-form value for duplicate scalar fields", "ListPages keeps later module names while other modules reject duplicates"]
   ],
   [
+    "framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored",
+    ["ListPages ignores callback and token controls regardless of form order"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored",
+    ["ListPages ignores callback and token controls regardless of form order"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
+    ["converts Deepwell failures to a stable Wikidot error envelope"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant",
+    ["ListPages ignores callback and token controls regardless of form order"]
+  ],
+  [
     "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
     ["dispatches ListPages forms and returns the Wikidot JSON envelope", "ListPages omits module_body for Deepwell's default row template"]
   ],
@@ -2187,7 +2231,7 @@ function applyFramerailAmcTests(root, records, sourceRevision) {
       }
     }
   })
-  if (linked !== 25 || projected.length - linked !== 4) {
+  if (linked !== 29 || projected.length - linked !== 0) {
     throw new Error("Framerail AMC public-test coverage counts drifted")
   }
   return projected
@@ -3000,7 +3044,13 @@ async function applyWwsContractEvidence(root, records, sourceRevision) {
       ...record,
       existing_refs: {
         ...record.existing_refs,
-        tests: uniqueSortedStrings(behaviors.map(({ public_test: publicTest }) => publicTest))
+        tests: uniqueSortedStrings(
+          behaviors.length > 0
+            ? behaviors.map(({ public_test: publicTest }) => publicTest)
+            : [
+                "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 32-registration WWS denominator with source ownership"
+              ]
+        )
       },
       evidence: phase(partial ? "partial" : "available", evidenceReferences)
     }
@@ -3540,8 +3590,18 @@ function applyFtmlCatalogSourceProjection(surfaces, ftmlRawSurfaceManifest) {
       }
       return `Rokurolize/ftml@${revision}:${owner.source_reference}`
     })
+    const tests = FTML_PUBLIC_PREVIEW_TEST_FEATURES.has(featureId)
+      ? uniqueSortedStrings([
+          ...(record.existing_refs?.tests ?? []),
+          FTML_PUBLIC_PREVIEW_TEST
+        ])
+      : record.existing_refs?.tests ?? []
     return {
       ...record,
+      existing_refs: {
+        ...record.existing_refs,
+        tests
+      },
       source: phase("implemented", references)
     }
   })

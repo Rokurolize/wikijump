@@ -12,6 +12,7 @@ import {validateStandingPromotionPrecondition} from "../../../standing/scripts/v
 import {validateStandingRefreshReceipt} from "../../../standing/scripts/verify-standing-refresh.mjs";
 import {sha256Hex} from "../src/canonical-json.mjs";
 import {runCliIfMain} from "../src/cli-entry.mjs";
+import {verifyFinalFrozenReceipt} from "../src/final-frozen-receipt-contract.mjs";
 import {sealJsonNoReplace} from "../src/standing-browser-parity-util.mjs";
 
 const FINAL_ZERO_CLASSES = Object.freeze(compatibilityContract.vocabularies.final_zero_nonzero_classes);
@@ -21,7 +22,6 @@ const CURRENT_DENOMINATOR_SCHEMA = "wikijump.compatibility_final_zero_denominato
 const DEFERRED_DENOMINATOR_SCHEMA = "wikijump.compatibility_deferred_denominator.v1";
 const DEFERRED_LEDGER_SCHEMA = "wikijump.compatibility_deferred_ledger.v1";
 const STANDING_MATRIX_SCHEMA = "wikijump.compatibility_standing_matrix.v2";
-const REVIEW_SCHEMA = "wikijump.compatibility_review.v1";
 const LEDGER_FIELDS = ["schema", "counts", "inputs", "source_manifests", "raw_source_records", "source_local_identities", "surface_assignments", "relationships", "deferred_exclusions", "rows"];
 const LEDGER_COUNT_FIELDS = ["raw_records", "public_inventory_records", "canonical_surfaces", "input_alias_edges", "deduplication_relationships"];
 const LEDGER_INPUT_FIELDS = ["inventory", "wikijump", "ftml"];
@@ -29,10 +29,10 @@ const ROW_FIELDS = ["surface_id", "actor", "input", "observable_interval", "resu
 const MATRIX_FIELDS = ["schema", "status", "run_id", "merge_commit", "merge_tree", "ftml_sha", "ftml_tree", "candidate_commit", "candidate_artifact_key", "promotion_precondition", "standing_refresh", "rows"];
 const MATRIX_ROW_FIELDS = ["surface_id", "source_local_id", "kind", "status", "artifacts"];
 const DENOMINATOR_FIELDS = ["schema", "status", "rows"];
-const DENOMINATOR_ROW_FIELDS = ["surface_id", "source_local_id", "kind"];
+const CURRENT_DENOMINATOR_ROW_FIELDS = ["surface_id", "source_local_id", "kind", "actor", "input", "observable_interval", "result"];
+const DEFERRED_DENOMINATOR_ROW_FIELDS = ["surface_id", "source_local_id", "kind"];
 const DEFERRED_LEDGER_FIELDS = ["schema", "status", "rows"];
 const DEFERRED_LEDGER_ROW_FIELDS = ["surface_id", "source_local_id", "kind", "deferred_owner"];
-const REVIEW_FIELDS = ["schema", "status", "axis", "candidate_commit", "candidate_tree", "findings"];
 const HEX40 = /^[0-9a-f]{40}$/u;
 const HEX64 = /^[0-9a-f]{64}$/u;
 const CANONICAL_SURFACE_ID = /^surface:[0-9]{8}$/u;
@@ -216,15 +216,20 @@ function deferredTripleMap(rows, name) {
 function validateCurrentDenominator(value) {
   exactKeys(value, DENOMINATOR_FIELDS, "current denominator");
   if (value.schema !== CURRENT_DENOMINATOR_SCHEMA || value.status !== "sealed") fail("current denominator is not sealed");
-  const rows = validateIdentityRows(value.rows, DENOMINATOR_ROW_FIELDS, "current denominator");
-  for (const row of value.rows) if (!CANONICAL_SURFACE_ID.test(row.surface_id) || DEFERRED_EXPECTED_BY_ID.has(row.source_local_id) || row.kind === "framerail_xmlrpc_method" || row.kind === "wikidot_py_amc_module_shape") fail("current denominator contains deferred work");
+  const rows = validateIdentityRows(value.rows, CURRENT_DENOMINATOR_ROW_FIELDS, "current denominator");
+  for (const row of value.rows) {
+    if (!CANONICAL_SURFACE_ID.test(row.surface_id) || DEFERRED_EXPECTED_BY_ID.has(row.source_local_id) || row.kind === "framerail_xmlrpc_method" || row.kind === "wikidot_py_amc_module_shape") fail("current denominator contains deferred work");
+    for (const field of ["actor", "input", "observable_interval", "result"]) {
+      requireNonEmptyString(row[field], `current denominator row ${field}`);
+    }
+  }
   return rows;
 }
 
 function validateDeferredDenominator(value) {
   exactKeys(value, DENOMINATOR_FIELDS, "deferred denominator");
   if (value.schema !== DEFERRED_DENOMINATOR_SCHEMA || value.status !== "sealed") fail("deferred denominator is not sealed");
-  const rows = validateIdentityRows(value.rows, DENOMINATOR_ROW_FIELDS, "deferred denominator");
+  const rows = validateIdentityRows(value.rows, DEFERRED_DENOMINATOR_ROW_FIELDS, "deferred denominator");
   if (value.rows.length !== DEFERRED_EXPECTED.length) fail("deferred denominator does not contain exactly 54 rows");
   const actual = deferredTripleMap(value.rows, "deferred denominator");
   const expected = new Map(expectedDeferredRows().map((row) => [identityKey(row), {surface_id: row.surface_id, source_local_id: row.source_local_id, kind: row.kind}]));
@@ -348,35 +353,27 @@ async function verifyMatrixArtifacts(matrix) {
   await Promise.all(matrix.rows.flatMap((row) => row.artifacts.map((artifact, index) => verifyArtifactReference(artifact, `standing matrix row ${row.surface_id} artifact ${index}`))));
 }
 
-function validateReview(value, axis, standingMatrix) {
-  exactKeys(value, REVIEW_FIELDS, `${axis} review`);
-  if (
-    value.schema !== REVIEW_SCHEMA ||
-    value.status !== "pass" ||
-    value.axis !== axis ||
-    value.candidate_commit !== standingMatrix.candidate_commit ||
-    value.candidate_tree !== standingMatrix.merge_tree ||
-    !Array.isArray(value.findings) ||
-    value.findings.length !== 0
-  ) {
-    fail(`${axis} review is not a zero-finding report bound to the exact candidate tree`);
-  }
-  return value;
-}
-
 function reconcileRows(ledger, denominatorRows, matrixRows) {
+  const denominatorIdentities = new Map([...denominatorRows].map(([surfaceId, row]) => [surfaceId, {surface_id: row.surface_id, source_local_id: row.source_local_id, kind: row.kind}]));
   const ledgerRows = new Map(ledger.rows.map((row) => [row.surface_id, {surface_id: row.surface_id, source_local_id: denominatorRows.get(row.surface_id)?.source_local_id, kind: denominatorRows.get(row.surface_id)?.kind}]));
   const matrixIdentities = new Map([...matrixRows].map(([surfaceId, row]) => [surfaceId, {surface_id: row.surface_id, source_local_id: row.source_local_id, kind: row.kind}]));
-  requireExactIdentitySet(denominatorRows, ledgerRows, "ledger and current denominator");
-  requireExactIdentitySet(denominatorRows, matrixIdentities, "standing matrix and current denominator");
+  requireExactIdentitySet(denominatorIdentities, ledgerRows, "ledger and current denominator");
+  requireExactIdentitySet(denominatorIdentities, matrixIdentities, "standing matrix and current denominator");
   const sourceByRaw = new Map(ledger.source_local_identities.map((row) => [row.raw_record_id, row.source_local_id]));
   const assignmentBySurface = new Map(ledger.surface_assignments.map((row) => [row.surface_id, row]));
+  const ledgerBySurface = new Map(ledger.rows.map((row) => [row.surface_id, row]));
   for (const [surfaceId, denominatorRow] of denominatorRows) {
     const assignment = assignmentBySurface.get(surfaceId);
     const sourceLocalId = sourceByRaw.get(assignment?.raw_record_id);
     if (sourceLocalId !== denominatorRow.source_local_id) fail(`current denominator source identity is not bound for ${surfaceId}`);
     const matrixRow = matrixRows.get(surfaceId);
     if (matrixRow.source_local_id !== denominatorRow.source_local_id || matrixRow.kind !== denominatorRow.kind) fail(`standing matrix row identity is not bound for ${surfaceId}`);
+    const ledgerRow = ledgerBySurface.get(surfaceId);
+    for (const field of ["actor", "input", "observable_interval", "result"]) {
+      if (ledgerRow?.[field]?.state !== "known" || ledgerRow[field].value !== denominatorRow[field]) {
+        fail(`compatibility ledger semantic value is missing or drifted for ${surfaceId} ${field}`);
+      }
+    }
   }
 }
 
@@ -430,21 +427,20 @@ async function verifyStandingRefresh(matrix, promotion) {
   return refresh;
 }
 
-function finalZeroCounts(ledger, reviews) {
+function finalZeroCounts(ledger, finalFrozen) {
   const rows = ledger.rows;
   const count = (predicate) => rows.reduce((total, row) => total + (predicate(row) ? 1 : 0), 0);
   const counts = {
     complete_product_rows_open_or_unreconciled: count((row) => row.closure.state !== "closed" || row.issues.state !== "present" || row.blockers.state !== "none"),
     duplicate_or_ambiguous_canonical_identities: 0,
-    missing_independent_standards_or_spec_reviews:
-      reviews.standards.status === "pass" && reviews.spec.status === "pass" ? 0 : rows.length,
+    missing_independent_standards_or_spec_reviews: finalFrozen?.receipt?.reviews ? 0 : rows.length,
     missing_or_failing_candidate_proofs: count((row) => row.candidate.state !== "pass"),
     missing_or_failing_standing_proofs: count((row) => row.standing.state !== "pass"),
     missing_or_stale_source_provenance: count((row) => row.source.state !== "present"),
     missing_public_surfaces: count((row) => typeof row.surface_id !== "string" || row.surface_id === ""),
     unimplemented_source_required_rows: count((row) => row.source.state !== "present"),
     unknown_owners_or_untyped_edges: count((row) => row.owners.state !== "present"),
-    unrepresented_charter_requirements: count((row) => row.issues.state !== "present"),
+    unrepresented_charter_requirements: count((row) => row.issues.state !== "present" || row.tests.state !== "present"),
     unresolved_wikidot_evidence_requirements: count((row) => row.evidence.state !== "present"),
   };
   if (JSON.stringify(Object.keys(counts).sort()) !== JSON.stringify([...FINAL_ZERO_CLASSES].sort())) fail("final-zero count classes do not match the campaign contract");
@@ -452,7 +448,7 @@ function finalZeroCounts(ledger, reviews) {
 }
 
 export function parseArgs(argv) {
-  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "standards-review", "spec-review", "repository", "output"]);
+  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "final-frozen", "repository", "output"]);
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
@@ -467,36 +463,38 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --standards-review FILE --spec-review FILE --repository DIRECTORY --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --final-frozen FILE --repository DIRECTORY --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, standardsReview, specReview, repository}) {
+export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, finalFrozen, repository}) {
   const repositoryPath = await requireRepository(repository);
-  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput, standardsInput, specInput] = await Promise.all([
+  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput] = await Promise.all([
     readJsonInput(ledger, "canonical compatibility ledger"),
     readJsonInput(denominator, "current denominator"),
     readJsonInput(deferredDenominator, "deferred denominator"),
     readJsonInput(deferredLedger, "deferred ledger"),
     readJsonInput(standingMatrix, "standing compatibility matrix"),
-    readJsonInput(standardsReview, "Standards review"),
-    readJsonInput(specReview, "Spec review"),
   ]);
   const ledgerValue = completeLedger(ledgerInput.value);
   const denominatorRows = validateCurrentDenominator(denominatorInput.value);
   validateDeferredDenominator(deferredDenominatorInput.value);
   validateDeferredLedger(deferredLedgerInput.value);
   const matrixRows = validateStandingMatrix(standingInput.value);
-  const reviews = {
-    standards: validateReview(standardsInput.value, "standards", standingInput.value),
-    spec: validateReview(specInput.value, "spec", standingInput.value),
-  };
+  const frozen = await verifyFinalFrozenReceipt({
+    receiptPath: path.resolve(finalFrozen),
+    source: {
+      wikijump_commit: standingInput.value.candidate_commit,
+      wikijump_tree: standingInput.value.merge_tree,
+      ftml_sha: standingInput.value.ftml_sha,
+    },
+  });
   await verifyLedgerArtifacts(ledgerValue);
   await verifyMatrixArtifacts(standingInput.value);
   reconcileRows(ledgerValue, denominatorRows, matrixRows);
   const promotion = await verifyPromotion(standingInput.value, ledgerValue);
   await verifyStandingRefresh(standingInput.value, promotion);
   await verifyRepositoryMerge(repositoryPath, standingInput.value.merge_commit, standingInput.value.merge_tree, standingInput.value.candidate_commit);
-  const counts = finalZeroCounts(ledgerValue, reviews);
+  const counts = finalZeroCounts(ledgerValue, frozen);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
   return {
@@ -511,8 +509,7 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
       deferred_ledger: deferredLedgerInput.reference,
       standing_matrix: standingInput.reference,
       standing_refresh: standingInput.value.standing_refresh,
-      standards_review: standardsInput.reference,
-      spec_review: specInput.reference,
+      final_frozen: {path: frozen.path, sha256: frozen.sha256},
       repository: repositoryPath,
     },
   };
@@ -524,7 +521,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     stdout(usage());
     return 0;
   }
-  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], standardsReview: args["standards-review"], specReview: args["spec-review"], repository: args.repository});
+  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], finalFrozen: args["final-frozen"], repository: args.repository});
   const sealed = await sealJsonNoReplace(args.output, receipt);
   stdout(JSON.stringify({schema: receipt.schema, status: receipt.status, output: sealed.path, sha256: sealed.sha256}));
   return 0;

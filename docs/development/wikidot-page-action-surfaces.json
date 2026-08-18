@@ -66,7 +66,8 @@
     {
       "action_id": "more-options",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "test_references": ["framerail/tests/page-append-backlinks-public-boundary.test.js"]
     },
     {
       "action_id": "edit-sections",
@@ -131,7 +132,11 @@
     {
       "action_id": "view-source",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/page.svelte"],
+      "test_references": [
+        "framerail/tests/page-append-backlinks-public-boundary.test.js",
+        "framerail/tests/ajax-module-connector.test.js"
+      ]
     },
     {
       "action_id": "parent",
@@ -145,7 +150,8 @@
     {
       "action_id": "lock",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/LockPane.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/LockPane.svelte"],
+      "test_references": ["framerail/tests/release-route-action-boundaries.test.js"]
     },
     {
       "action_id": "rename-move",
@@ -168,27 +174,38 @@
     {
       "action_id": "file-history",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileHistoryPanel.svelte"],
+      "test_references": ["framerail/tests/page-file-client-ip.test.js"]
     },
     {
       "action_id": "file-info",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"],
+      "test_references": ["framerail/tests/page-file-list-public-boundary.test.js"]
     },
     {
       "action_id": "file-move",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"],
+      "test_references": ["framerail/tests/page-file-list-public-boundary.test.js"]
     },
     {
       "action_id": "file-edit",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"],
+      "test_references": [
+        "framerail/tests/page-file-client-ip.test.js",
+        "framerail/tests/page-file-upload-lifecycle.test.js"
+      ]
     },
     {
       "action_id": "file-delete",
       "source_status": "implemented",
-      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"]
+      "public_references": ["framerail/src/routes/[slug]/[...extra]/FileList.svelte"],
+      "test_references": [
+        "framerail/tests/page-file-client-ip.test.js",
+        "framerail/tests/page-file-list-public-boundary.test.js"
+      ]
     }
   ],
   "missing_page_controls": [

@@ -1,9 +1,9 @@
 {
   "schema": "wikijump.framerail_route_action_evidence.v1",
-  "source_revision": "c699ac996a76e05a2e321ac24c329e92183b1686",
+  "source_revision": "6fe4cfe1698197f6c266d705bebfb3c8e1f5b014",
   "inventory": {
     "path": "docs/development/compatibility-surface-inventory.json",
-    "sha256": "1a1d637dce107a2755dd7b23858ac7a1377ab2c30b2b92fceb518cdeee3eca04"
+    "sha256": "f5c2b6b936255debf85e43dbb231c70b2ab4cd6a60d88c0aa8d9335d4616f01e"
   },
   "records": [
     {
@@ -176,7 +176,9 @@
     },
     {
       "surface_id": "framerail-route:/.well-known",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::reserved compatibility routes expose their public fail-closed responses"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -186,7 +188,9 @@
     },
     {
       "surface_id": "framerail-route:/{*fallback}",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::reserved compatibility routes expose their public fail-closed responses"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -403,7 +407,9 @@
     },
     {
       "surface_id": "framerail-route:/common--images/jquery-raty/{asset}",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::reserved compatibility routes expose their public fail-closed responses"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -661,7 +667,9 @@
     },
     {
       "surface_id": "framerail-server-action:/_admin?/template",
-      "tests": [],
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::page template settings bind the category mutation to the trusted site actor"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -815,7 +823,9 @@
     },
     {
       "surface_id": "framerail-server-action:/-/admin?/template",
-      "tests": [],
+      "tests": [
+        "framerail/tests/site-settings-public-boundary.test.js::page template settings bind the category mutation to the trusted site actor"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -849,7 +859,9 @@
     },
     {
       "surface_id": "framerail-server-action:/-/login?/default",
-      "tests": [],
+      "tests": [
+        "framerail/tests/account-route-boundaries.test.js::login shares a session across native Wikijump wiki hosts but not custom domains"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -871,7 +883,9 @@
     },
     {
       "surface_id": "framerail-server-action:/-/register?/default",
-      "tests": [],
+      "tests": [
+        "framerail/tests/account-route-boundaries.test.js::register binds account creation to the request address and redacts submitted passwords"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -957,7 +971,9 @@
     },
     {
       "surface_id": "framerail-server-action:/?/editPermission",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1075,7 +1091,9 @@
     },
     {
       "surface_id": "framerail-server-action:/?/layout",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1109,7 +1127,9 @@
     },
     {
       "surface_id": "framerail-server-action:/?/lockCreate",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1119,7 +1139,9 @@
     },
     {
       "surface_id": "framerail-server-action:/?/lockHistory",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1129,7 +1151,9 @@
     },
     {
       "surface_id": "framerail-server-action:/?/lockRemove",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1343,7 +1367,9 @@
     },
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/editPermission",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1461,7 +1487,9 @@
     },
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/layout",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1495,7 +1523,9 @@
     },
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/lockCreate",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1505,7 +1535,9 @@
     },
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/lockHistory",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
@@ -1515,7 +1547,9 @@
     },
     {
       "surface_id": "framerail-server-action:/{slug}/{*extra}?/lockRemove",
-      "tests": [],
+      "tests": [
+        "framerail/tests/release-route-action-boundaries.test.js::previously unattributed public route actions stay wired to their owning handlers"
+      ],
       "tracking": [
         {
           "issue": 1372
