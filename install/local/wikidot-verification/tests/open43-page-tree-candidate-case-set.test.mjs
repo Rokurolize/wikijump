@@ -54,9 +54,9 @@ function fixtureTree(pages, parents) {
     ...(depth > 1 ? anchors(child.name, depth - 1) : []),
   ]);
   return [
-    `<p>PT_SHOW_START</p>\n  \n\n\n\t<ul>\n\t\t<li>\n\t\t\t<a href="/${root.slug}">${root.title}</a>\n\t\t\t  \n\t\t\t\t<ul>`,
-    ...children("root").map((child) => `\n\t\t\t\t\t\t\t<li>\n\t\t\t\t\t<a href="/${child.slug}">${child.title}</a>\n\t\t\t\t\t\t\t</li>`),
-    "\n\t\t\t\t\t</ul>\n\t\t\t</li>\n\t\t</ul>\n  \n<p>PT_SHOW_END</p>",
+    `<p>PT_SHOW_START</p>\n<ul>\n<li>\n<a href="/${root.slug}">${root.title}</a>\n<ul>`,
+    ...children("root").map((child) => `\n<li>\n<a href="/${child.slug}">${child.title}</a>\n</li>`),
+    "\n</ul>\n</li>\n</ul>\n<p>PT_SHOW_END</p>",
     "<p>PT_INLINE_START</p>\nstart-[[module PageTree]]-middle\n<p>PT_INLINE_END</p>",
     `<p>PT_LIFECYCLE_START</p>\n${anchors("root", 2).join("\n")}\n<p>PT_LIFECYCLE_END</p>`,
   ].join("");

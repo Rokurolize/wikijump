@@ -74,7 +74,7 @@ class FakeNextPreviousSession {
     const row = previous === undefined
       ? '<div class="list-pages-box">\n</div>'
       : `<div class="list-pages-box">    <div class="list-pages-item">\n\n\n<h1><span><a href="/${previous.slug}">${previous.title}</a></span></h1>\n<p>by ${this.printuser} <span class="odate time_123 format_%25O">28 Jul 2026 14:34</span></p>\n<p>Previous candidate body.</p>\n</div>\n    </div>`;
-    return `<p>PREVIOUS_START</p>${row}<p>PREVIOUS_END</p><p>INLINE_START</p>\nstart-[[module PreviousPage]]-middle\n<p>INLINE_END</p>`;
+    return `<p>PREVIOUS_START</p>${row}<p>PREVIOUS_END</p><p>INLINE_START<br>\nstart-[[module PreviousPage]]-middle<br>\nINLINE_END</p>`;
   }
 
   async rpc(method, params = {}, options = {}) {

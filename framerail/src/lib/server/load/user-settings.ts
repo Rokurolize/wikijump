@@ -72,6 +72,7 @@ export async function userDisplaySettingsAction({
     if (locales.length === 0) {
       return fail(400, { form, message: "At least one display language is required." })
     }
+    form.data.locales = locales.join(" ")
 
     await userEdit(
       session.user_id,

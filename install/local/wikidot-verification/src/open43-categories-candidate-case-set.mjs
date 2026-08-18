@@ -149,11 +149,16 @@ class Open43CategoriesRun {
       }
       throw error;
     }
-    assertPage(entry, created, `created ${entry.role}`);
-    entry.categoryId ??= created.page_category_id;
-    this.#adopt(entry, created);
+    if (!Number.isSafeInteger(created?.page_id) || !Number.isSafeInteger(created.revision_id) || created.slug !== entry.slug) {
+      throw new Error(`created ${entry.role} did not return the public page_create identity`);
+    }
     const observed = await this.#page(entry);
     assertPage(entry, observed, `read-back ${entry.role}`);
+    if (observed.page_id !== created.page_id || observed.revision_id !== created.revision_id) {
+      throw new Error(`created ${entry.role} did not round-trip the public page_create identity`);
+    }
+    entry.categoryId ??= observed.page_category_id;
+    this.#adopt(entry, observed);
   }
 
   #adopt(entry, page) {

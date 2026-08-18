@@ -458,15 +458,17 @@ export class Open43SettingsBrowserAdapter {
         settleMs: DEFAULT_SETTLE_MS,
         navigate: async ({ page: targetPage, timeoutMs }) => {
           await targetPage.goto(editorUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
-          const responsePromise = targetPage.waitForResponse(
-            (response) => response.request().method() === "POST" && response.url().includes("?/edit"),
-            { timeout: timeoutMs },
-          );
           await targetPage.locator("input[name='title']").fill(title);
           await targetPage.locator("textarea[name='wikitext']").fill(wikitext);
           await targetPage.locator("textarea[name='comments']").fill("Open43 autonumber candidate");
-          await targetPage.getByRole("button", { name: "save", exact: true }).click();
-          actionResponse = await responsePromise;
+          const [response] = await Promise.all([
+            targetPage.waitForResponse(
+              (candidate) => candidate.request().method() === "POST" && candidate.url().includes("?/edit"),
+              { timeout: timeoutMs },
+            ),
+            targetPage.locator("#editor input[type='submit'], #editor button[type='submit']").click(),
+          ]);
+          actionResponse = response;
           await targetPage.waitForURL(expectedUrl, { timeout: timeoutMs });
           return actionResponse;
         },
@@ -474,7 +476,10 @@ export class Open43SettingsBrowserAdapter {
           await this.#browserContexts.setActiveFixture(phase === "settled" ? "S758_CREATE_SETTLED" : "S758_CREATE_INITIAL");
         },
       });
-      if (capture.capture_error || capture.navigation_status !== 200 || capture.final_url !== expectedUrl || actionResponse === null) throw new Error("S758 autonumber create capture failed");
+      if (capture.capture_error || capture.navigation_status !== 200 || capture.final_url !== expectedUrl || actionResponse === null) {
+        const detail = capture.capture_error?.message ?? `status=${capture.navigation_status} final=${capture.final_url} action=${actionResponse === null ? "missing" : "present"}`;
+        throw new Error(`S758 autonumber create capture failed: ${detail}`);
+      }
       const actionBody = await actionResponse.text();
       let actionResult;
       try { actionResult = JSON.parse(actionBody); } catch { throw new Error("S758 autonumber action did not return JSON"); }

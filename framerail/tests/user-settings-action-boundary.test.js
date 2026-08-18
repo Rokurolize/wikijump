@@ -121,6 +121,7 @@ test("user settings bind persistence to the server session actor", async () => {
       })
     )
     assert.equal(saved.form.valid, true)
+    assert.equal(saved.form.data.locales, "ja-JP en-US")
     assert.deepEqual(
       calls.map(({ method }) => method),
       ["session_get", "user_edit"]

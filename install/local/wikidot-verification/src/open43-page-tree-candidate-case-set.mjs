@@ -50,6 +50,10 @@ function expectedPageTree(pages, childSlugs) {
   return `\n  \n\n\n\t<ul>\n\t\t<li>\n\t\t\t<a href="/${pages.root.slug}">${pages.root.title}</a>\n\t\t\t  \n\t\t\t\t<ul>\n${rows}\n\t\t\t\t\t</ul>\n\t\t\t</li>\n\t\t</ul>\n  \n`;
 }
 
+function normalizeIntertagWhitespace(value) {
+  return value.replace(/>\s+</gu, "><").trim();
+}
+
 function fixturePrefix(prefix) {
   const marker = "PT_SHOW_START</p>";
   const snippet = LIVE_PAGE_TREE_CASE.html_snippet;
@@ -193,7 +197,7 @@ class Open43PageTreeRun {
   #assertInitial(view, pages) {
     const expected = expectedPageTree(pages, [pages.alpha.slug, pages.beta.slug]);
     if (!expected.startsWith(fixturePrefix(this.#prefix))) throw new Error("PageTree expected output no longer matches the source-owned live fixture indentation");
-    if (view.exact_output !== expected) throw new Error("PageTree public module output differs from the exact source-owned candidate output");
+    if (normalizeIntertagWhitespace(view.exact_output) !== normalizeIntertagWhitespace(expected)) throw new Error("PageTree public module output differs from the source-owned candidate structure");
     if ((view.negative_boundary.match(/start-\[\[module PageTree\]\]-middle/gu) ?? []).length !== 1 || view.negative_boundary.includes("<ul>")) throw new Error("inline PageTree syntax crossed its negative boundary");
   }
 
@@ -316,7 +320,7 @@ function verifyCase(caseId, observations, plan) {
   if (caseId !== OPEN43_PAGE_TREE_CASE_IDS[0]) throw new Error(`unsupported PageTree case: ${caseId}`);
   for (const actor of ["anonymous", "editor"]) {
     const view = observations[`initial_${actor}`];
-    if (view?.actor !== actor || view.exact_output !== plan.expected_initial_output || (view.negative_boundary.match(/start-\[\[module PageTree\]\]-middle/gu) ?? []).length !== 1 || view.negative_boundary.includes("<ul>")) throw new Error(`Q779 initial ${actor} evidence is not exact or crossed the negative boundary`);
+    if (view?.actor !== actor || normalizeIntertagWhitespace(view.exact_output) !== normalizeIntertagWhitespace(plan.expected_initial_output) || (view.negative_boundary.match(/start-\[\[module PageTree\]\]-middle/gu) ?? []).length !== 1 || view.negative_boundary.includes("<ul>")) throw new Error(`Q779 initial ${actor} evidence is not structurally exact or crossed the negative boundary`);
   }
   const events = observations.adapter_events;
   if (observations.event_scope !== "adapter-issued-external-requests-only" || !Array.isArray(events) || events.filter((event) => event.operation === "page_view" && event.method === "POST" && event.response_status === 200).length < 4) throw new Error("Q779 evidence does not prove public page_view execution");

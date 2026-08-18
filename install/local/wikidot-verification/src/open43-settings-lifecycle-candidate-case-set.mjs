@@ -39,7 +39,7 @@ function databaseContainer(project) {
 
 function restoreAllocator(project, before, siteId, categoryId) {
   const container = databaseContainer(project);
-  const sql = `UPDATE category SET autonumber_enabled = ${before.enabled ? "TRUE" : "FALSE"}, autonumber_next = ${before.next}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId} AND category_id = ${categoryId};`;
+  const sql = `UPDATE page_category SET autonumber_enabled = ${before.enabled ? "TRUE" : "FALSE"}, autonumber_next = ${before.next}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId} AND category_id = ${categoryId};`;
   const result = docker([
     "exec", "-e", "PGPASSWORD=wikijump", container,
     "psql", "-h", "127.0.0.1", "-U", "wikijump", "-d", "wikijump", "-Atc", sql,

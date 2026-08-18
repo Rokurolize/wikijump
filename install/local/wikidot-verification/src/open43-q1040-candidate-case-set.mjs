@@ -101,11 +101,12 @@ class Q1040Run {
       tags: [],
       revision_comments: "Open43 Q1040 candidate fixture",
     });
-    if (!this.#matches(entry, page) || !Number.isSafeInteger(page.revision_id)) throw new Error(`Q1040 ${entry.role} page_create did not return its exact public identity`);
-    if (!this.#matches(entry, await this.#getPage(entry))) throw new Error(`Q1040 ${entry.role} page_get did not confirm its exact public identity`);
-    entry.page_id = page.page_id;
-    entry.revision_id = page.revision_id;
-    this.#pageResources.set(entry.slug, this.#resources.register("page", { page_id: page.page_id, revision_id: page.revision_id, slug: entry.slug }));
+    if (!Number.isSafeInteger(page?.page_id) || !Number.isSafeInteger(page.revision_id) || page.slug !== entry.slug) throw new Error(`Q1040 ${entry.role} page_create did not return its public identity`);
+    const observed = await this.#getPage(entry);
+    if (!this.#matches(entry, observed) || observed.page_id !== page.page_id || observed.revision_id !== page.revision_id) throw new Error(`Q1040 ${entry.role} page_get did not confirm its exact public identity`);
+    entry.page_id = observed.page_id;
+    entry.revision_id = observed.revision_id;
+    this.#pageResources.set(entry.slug, this.#resources.register("page", { page_id: observed.page_id, revision_id: observed.revision_id, slug: entry.slug }));
   }
 
   async #view() {

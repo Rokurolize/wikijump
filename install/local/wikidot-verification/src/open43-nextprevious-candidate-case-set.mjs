@@ -58,7 +58,12 @@ function section(html, start, end) {
   const finish = html.indexOf(end, contentStart);
   if (finish < 0) throw new Error(`NextPreviousPage output is missing ${end}`);
   let contentEnd = finish;
-  if (html.slice(contentStart, contentEnd).endsWith("<p>")) contentEnd -= 3;
+  for (const boundary of ["<p>", "<br>\n", "<br>"]) {
+    if (html.slice(contentStart, contentEnd).endsWith(boundary)) {
+      contentEnd -= boundary.length;
+      break;
+    }
+  }
   return html.slice(contentStart, contentEnd);
 }
 
@@ -217,7 +222,7 @@ class Open43NextPreviousRun {
     const initial = await this.#view();
     const older = this.#page(PAGE_NAMES.older);
     if (initial.selected !== PAGE_NAMES.older || !initial.row?.wrapper || !initial.row.row || !initial.row.title || !initial.row.printuser || !initial.row.date || !initial.row.body || initial.row.compat_markers.length !== 0) throw new Error("public PreviousPage default output did not preserve the exact title/printuser/date/body contract");
-    if (initial.inline !== "\nstart-[[module PreviousPage]]-middle\n" || initial.inline.includes("list-pages-box")) throw new Error("inline PreviousPage crossed its public literal boundary");
+    if (initial.inline.trim() !== "start-[[module PreviousPage]]-middle" || initial.inline.includes("list-pages-box")) throw new Error("inline PreviousPage crossed its public literal boundary");
 
     const currentOlder = await this.#getPage(PAGE_NAMES.older);
     const renamedTitle = `${older.title} renamed`;
@@ -314,7 +319,7 @@ function verifyCase(caseId, observations, plan) {
   if (caseId !== OPEN43_NEXT_PREVIOUS_CASE_IDS[0]) throw new Error(`unsupported NextPreviousPage case: ${caseId}`);
   const initial = observations.initial;
   if (initial.selected !== PAGE_NAMES.older || initial.row?.wrapper !== true || initial.row.row !== true || initial.row.title !== true || initial.row.printuser !== true || typeof initial.row.date !== "string" || initial.row.body !== true || initial.row.compat_markers.length !== 0) throw new Error("Q811 initial public evidence does not prove the default title/printuser/date/body DOM");
-  if (initial.inline !== "\nstart-[[module PreviousPage]]-middle\n") throw new Error("Q811 initial public evidence crossed the inline literal boundary");
+  if (initial.inline.trim() !== "start-[[module PreviousPage]]-middle") throw new Error("Q811 initial public evidence crossed the inline literal boundary");
   if (observations.renamed.selected !== PAGE_NAMES.older || !observations.renamed.previous.includes(plan.renamed_title) || observations.deleted.selected !== null || observations.deleted.previous.includes("list-pages-item") || observations.restored.selected !== PAGE_NAMES.older || !observations.restored.previous.includes(plan.renamed_title)) throw new Error("Q811 mutation evidence does not bind rename/delete/restore to the next public read");
   if (observations.saved_body_sha256.before !== observations.saved_body_sha256.after) throw new Error("Q811 public GET-side rendering changed the saved holder body");
   if (observations.event_scope !== "adapter-issued-external-requests-only" || !Array.isArray(observations.adapter_events) || observations.adapter_events.filter((event) => event.operation === "page_view" && event.method === "POST" && event.response_status === 200).length < 4) throw new Error("Q811 evidence does not prove public page_view execution");
