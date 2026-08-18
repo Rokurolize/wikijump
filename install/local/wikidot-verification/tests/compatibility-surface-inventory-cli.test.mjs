@@ -1057,7 +1057,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
 
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
-  assert.equal(inventory.counts.total, 925)
+  assert.equal(inventory.counts.total, 926)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.counts, {
     lexer_rules: 62,
     parser_functions: 3,
@@ -1205,13 +1205,13 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   const rows = inventory.surfaces.filter((record) => record.kind === "deepwell_jsonrpc_method")
-  assert.equal(rows.length, 163)
+  assert.equal(rows.length, 164)
   assert.equal(rows.every(({ evidence }) => evidence.status === "available"), true)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/deepwell-jsonrpc-contract-manifest.json")
   ), true)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 137)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 26)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 164)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:authorization_token_issue")
       .existing_refs.tests,
@@ -1220,7 +1220,9 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:admin_view")
       .existing_refs.tests,
-    []
+    [
+      "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+    ]
   )
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:category_get")
@@ -1252,8 +1254,8 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
   assert.equal(rows.length, 47)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 44)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "partial").length, 3)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 46)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 1)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 47)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/wws-route-registration-denominator.json")
   ), true)
@@ -1293,8 +1295,8 @@ test("CLI projects current Framerail route-action tests without inventing browse
     kind === "framerail_route" || kind === "framerail_server_action"
   )
   assert.equal(rows.length, 125)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 108)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 17)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 125)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.equal(rows.every(({ evidence }) => evidence.status === "missing"), true)
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "framerail-route:/").existing_refs.tests,
@@ -1303,7 +1305,9 @@ test("CLI projects current Framerail route-action tests without inventing browse
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "framerail-server-action:/?/layout")
       .existing_refs.tests,
-    []
+    [
+      "framerail/tests/release-route-action-boundaries.test.js#previously unattributed public route actions stay wired to their owning handlers"
+    ]
   )
 })
 
@@ -1330,16 +1334,11 @@ test("CLI projects only directly exercised Framerail AMC server tests", async (t
     kind === "framerail_amc_action_shape" || kind === "framerail_amc_module_shape"
   )
   assert.equal(rows.length, 29)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 25)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 29)
   const gaps = rows
     .filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0)
     .map(({ surface_id: surfaceId }) => surfaceId)
-  assert.deepEqual(gaps, [
-    "framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored",
-    "framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored",
-    "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
-    "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant"
-  ])
+  assert.deepEqual(gaps, [])
   assert.deepEqual(
     rows
       .filter(({ evidence }) => evidence.status === "available")
@@ -1538,7 +1537,7 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
     inventory.ftml_raw_surface_manifest.records.map(({ surface_id: surfaceId }) => surfaceId)
   )
   assert.ok([...rawIds].every((surfaceId) => !publicIds.has(surfaceId)))
-  assert.equal(inventory.counts.total, 925)
+  assert.equal(inventory.counts.total, 926)
   assert.equal(
     inventory.relationship_edges.filter(({ type }) => type === "alias").length,
     47
@@ -1598,6 +1597,7 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
     ["catalog-feature:data-forms-dataforms-and-listpages", ["wikijump.deepwell"]],
     ["catalog-feature:data-forms-displaying", ["wikijump.deepwell"]],
     ["catalog-feature:data-forms-field-properties", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-file-field", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-hidden-field", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-hints", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-select-field", ["wikijump.deepwell", "wikijump.framerail"]],
@@ -1610,7 +1610,6 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
     "catalog-feature:data-forms-css-styling",
     "catalog-feature:data-forms-date-field",
     "catalog-feature:data-forms-deleting-form",
-    "catalog-feature:data-forms-file-field",
     "catalog-feature:data-forms-howto",
     "catalog-feature:data-forms-images",
     "catalog-feature:data-forms-links",
