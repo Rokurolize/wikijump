@@ -61,7 +61,7 @@ export function validateMarkerContractFixtures(fixtures) {
 export function usage() {
   return `Usage: run-ftml-marker-contract-canary.mjs --candidate-ftml SHA --output-dir DIR [--baseline-ftml SHA] [--work-root DIR] [--dry-run]
 
-Creates baseline and candidate throwaway worktrees, builds Deepwell under registered leases, starts only disposable non-443 database/cache/files/Deepwell/Framerail services, and compares fixture visible text with the existing V3 Local Lab comparator. It never reads or writes a standing runtime or corpus volume.`;
+Creates baseline and candidate throwaway detached checkouts, builds Deepwell under registered leases, starts only disposable non-443 database/cache/files/Deepwell/Framerail services, and compares fixture visible text with the existing V3 Local Lab comparator. It never reads or writes a standing runtime or corpus volume.`;
 }
 
 function sha(value) {
@@ -631,7 +631,7 @@ export async function main(argv, { stdout = process.stdout } = {}) {
       candidate_ftml: args.candidateFtml,
       error: error?.message ?? String(error),
       resource_disposition:
-        "temporary worktrees, targets, containers, named volumes, and images are deleted by the controller finally block; no standing or corpus resource is a controller input",
+        "temporary detached checkouts, targets, containers, named volumes, and images are deleted by the controller finally block; no standing or corpus resource is a controller input",
     }).catch(() => {});
     throw error;
   }
@@ -680,22 +680,10 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
   let project = null;
   let composePath = null;
   try {
-    run("git", ["worktree", "add", "--detach", baselineWorktree, "HEAD"]);
-    run("git", ["worktree", "add", "--detach", candidateWorktree, "HEAD"]);
-    run("git", [
-      "worktree",
-      "lock",
-      "--reason",
-      `owner=${OWNER}; expiry=${expiresAt}`,
-      baselineWorktree,
-    ]);
-    run("git", [
-      "worktree",
-      "lock",
-      "--reason",
-      `owner=${OWNER}; expiry=${expiresAt}`,
-      candidateWorktree,
-    ]);
+    for (const checkout of [baselineWorktree, candidateWorktree]) {
+      run("git", ["clone", "--shared", "--no-checkout", "--no-tags", REPOSITORY_ROOT, checkout]);
+      run("git", ["-C", checkout, "checkout", "--detach", "HEAD"]);
+    }
     const headFtml = currentFtmlSha(baselineWorktree);
     baselineFtml ??= headFtml;
     layout.baseline_ftml = baselineFtml;
@@ -965,14 +953,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
         ],
         { stdio: "inherit" },
       );
-    for (const worktree of [baselineWorktree, candidateWorktree]) {
-      spawnSync("git", ["worktree", "unlock", worktree], {
-        cwd: REPOSITORY_ROOT,
-      });
-      spawnSync("git", ["worktree", "remove", "--force", worktree], {
-        cwd: REPOSITORY_ROOT,
-      });
-    }
     await fs.rm(runRoot, { recursive: true, force: true });
   }
 }
