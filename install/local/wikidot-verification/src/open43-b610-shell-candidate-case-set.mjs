@@ -12,7 +12,7 @@ import {
   canaryForUrl,
 } from "./standing-browser-canaries.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
-import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { candidateSitePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import {
   readJsonObject,
   sha256File,
@@ -166,17 +166,17 @@ export function createOpen43B610ShellCandidateCaseSet() {
     caseIds: OPEN43_B610_SHELL_CASE_IDS,
     async prepareRun({ candidateIdentity, privateInput, privateInputSha256, candidateBrowserContexts }) {
       if (
-        candidateIdentity.candidate.endpoint.host !== SITE_HOST ||
         candidateIdentity.candidate.endpoint.port === 443 ||
         candidateIdentity.candidate.port_443_published !== false
       ) throw new Error(`B610 shell case requires exact non-standing ${SITE_HOST}`);
+      const pageOrigin = candidateSitePageOrigin(candidateIdentity, SITE_SLUG);
       if (
         privateInput.fixture_id !== FIXTURE_ID ||
         privateInput.site_slug !== SITE_SLUG ||
         privateInput.page_slug !== PAGE_SLUG
       ) throw new Error("B610 private input must select the fixed SCP-9506 fixture");
       const runtimeBindings = requiredRuntimeBindings(privateInput);
-      const pageUrl = new URL(`/${PAGE_SLUG}`, candidatePageOrigin(candidateIdentity)).href;
+      const pageUrl = new URL(`/${PAGE_SLUG}`, pageOrigin).href;
       const canary = canaryForUrl(pageUrl);
       if (canary === null || canary.slug !== PAGE_SLUG) throw new Error("B610 page is not an existing browser canary");
       const fixturePath = path.join(REPOSITORY_ROOT, FIXTURE_PATH);

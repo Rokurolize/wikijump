@@ -130,6 +130,15 @@ export function candidateIdentityForSite(identity, siteSlug) {
   });
 }
 
+function candidateSiteOrigins(port) {
+  return Object.freeze(Object.fromEntries(
+    ["scp-wiki", "scpaiueouiuiuiui"].map((siteSlug) => [siteSlug, Object.freeze({
+      page: `https://${siteSlug}.wikijump.localhost:${port}`,
+      files: `https://${siteSlug}.wjfiles.localhost:${port}`,
+    })]),
+  ));
+}
+
 function healthcheck(test, startPeriod = "10s") {
   return {test, interval: "5s", timeout: "3s", retries: 120, start_period: startPeriod};
 }
@@ -401,6 +410,7 @@ export async function startPromotionCandidate({sourceRoot, buildEvidencePath, ca
           promotion_base_manifest_sha256: files.promotionBaseManifestSha256,
           effective_runtime_services_sha256: effectiveSha256,
         },
+        site_origins: candidateSiteOrigins(publicPort),
         endpoint: {
           scheme: "https",
           host: "scp-wiki.wikijump.localhost",

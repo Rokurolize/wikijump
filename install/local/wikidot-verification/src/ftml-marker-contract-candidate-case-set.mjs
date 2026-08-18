@@ -7,7 +7,7 @@ import {
   validateMarkerContractFixtures,
 } from "../scripts/run-ftml-marker-contract-canary.mjs";
 import { collectCandidateSourceExecutionIdentity } from "./candidate-source-execution-identity.mjs";
-import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { candidateSitePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import {
   aggregateCompareVerdict,
   comparePair,
@@ -120,15 +120,12 @@ export function createFtmlMarkerContractCandidateCaseSet() {
     id: "ftml-marker-contract",
     caseIds: FTML_MARKER_CONTRACT_CASE_IDS,
     async prepareRun({ candidateIdentity, candidateBrowserContexts }) {
-      if (
-        candidateIdentity.candidate.endpoint.host !==
-          "scp-wiki.wikijump.localhost" ||
-        candidateIdentity.candidate.port_443_published !== false
-      ) {
+      if (candidateIdentity.candidate.port_443_published !== false) {
         throw new Error(
           "FTML marker cases require the exact non-standing scp-wiki candidate",
         );
       }
+      const pageOrigin = candidateSitePageOrigin(candidateIdentity, "scp-wiki");
 
       const executionIdentity = await collectCandidateSourceExecutionIdentity(
         candidateIdentity,
@@ -177,7 +174,7 @@ export function createFtmlMarkerContractCandidateCaseSet() {
                 const capture = await candidateBrowserContexts.captureCandidateObservation({
                   context,
                   page,
-                  url: `${candidatePageOrigin(candidateIdentity)}/${fixture.slug}`,
+                  url: `${pageOrigin}/${fixture.slug}`,
                   label: CASE_ID,
                   index,
                   contract: {

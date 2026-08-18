@@ -142,6 +142,41 @@ export function candidatePageOrigin(identity) {
   return `${endpoint.scheme}://${endpoint.host}:${endpoint.port}`;
 }
 
+function candidateSiteOrigins(value, endpoint) {
+  const origins = requirePlainObject(value, "candidate.site_origins");
+  const normalized = {};
+  for (const [siteSlug, raw] of Object.entries(origins)) {
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/u.test(siteSlug)) {
+      throw new Error("candidate.site_origins keys must be valid site slugs");
+    }
+    const row = requirePlainObject(raw, `candidate.site_origins.${siteSlug}`);
+    const page = requireNonEmptyString(row.page, `candidate.site_origins.${siteSlug}.page`);
+    const files = requireNonEmptyString(row.files, `candidate.site_origins.${siteSlug}.files`);
+    const expectedPage = `https://${siteSlug}.wikijump.localhost:${endpoint.port}`;
+    const expectedFiles = `https://${siteSlug}.wjfiles.localhost:${endpoint.port}`;
+    if (page !== expectedPage || files !== expectedFiles) {
+      throw new Error(`candidate.site_origins.${siteSlug} must use the candidate port and exact local hosts`);
+    }
+    normalized[siteSlug] = Object.freeze({page, files});
+  }
+  const endpointSlug = endpoint.host.slice(0, -".wikijump.localhost".length);
+  if (normalized[endpointSlug]?.page !== candidatePageOrigin({candidate: {endpoint}})) {
+    throw new Error("candidate.site_origins must include the selected endpoint site");
+  }
+  return Object.freeze(normalized);
+}
+
+export function candidateSitePageOrigin(identity, siteSlug) {
+  const endpoint = identity?.candidate?.endpoint;
+  if (!endpoint || typeof siteSlug !== "string") throw new Error("candidate site origin requires one sealed endpoint and site slug");
+  const selectedHost = `${siteSlug}.wikijump.localhost`;
+  if (endpoint.host === selectedHost) return candidatePageOrigin(identity);
+  const origin = identity.candidate.site_origins?.[siteSlug]?.page;
+  const expected = `https://${selectedHost}:${endpoint.port}`;
+  if (origin !== expected) throw new Error(`candidate identity does not seal the ${siteSlug} page origin`);
+  return origin;
+}
+
 export function validateCandidateParityIdentity(value) {
   const identity = requirePlainObject(value, "candidate parity identity");
   if (identity.schema !== STANDING_CANDIDATE_PARITY_IDENTITY_SCHEMA) {
@@ -231,6 +266,12 @@ export function validateCandidateParityIdentity(value) {
       seal_sha256: requireRealSha256(evidence.seal_sha256, "evidence.seal_sha256"),
     },
   };
+  if (candidate.site_origins !== undefined) {
+    normalized.candidate.site_origins = candidateSiteOrigins(
+      candidate.site_origins,
+      normalized.candidate.endpoint,
+    );
+  }
   if (normalized.candidate.compose_project === "wikijump-standing") {
     throw new Error("candidate.compose_project must not be wikijump-standing");
   }

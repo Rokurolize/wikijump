@@ -5,7 +5,7 @@ import test from "node:test";
 import {fileURLToPath} from "node:url";
 
 import {candidateCompose, candidateIdentityForSite} from "../scripts/start-promotion-candidate.mjs";
-import {validateCandidateParityIdentity} from "../src/standing-browser-parity-receipt.mjs";
+import {candidateSitePageOrigin, validateCandidateParityIdentity} from "../src/standing-browser-parity-receipt.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -70,6 +70,10 @@ test("one sealed candidate runtime can expose independent site-bound endpoint pr
       source_clean: true,
       images: projectedImages,
       config: {isolated_overlay_sha256: hash("e", "5"), promotion_base_manifest_sha256: hash("f", "6"), effective_runtime_services_sha256: hash("7", "8")},
+      site_origins: {
+        "scp-wiki": {page: "https://scp-wiki.wikijump.localhost:20443", files: "https://scp-wiki.wjfiles.localhost:20443"},
+        scpaiueouiuiuiui: {page: "https://scpaiueouiuiuiui.wikijump.localhost:20443", files: "https://scpaiueouiuiuiui.wjfiles.localhost:20443"},
+      },
       endpoint: {scheme: "https", host: "scp-wiki.wikijump.localhost", port: 20443, resolved_addresses: ["127.0.0.1"], allowed_origin_set: ["https://scp-wiki.wikijump.localhost:20443", "https://scp-wiki.wjfiles.localhost:20443"], local_connect_address: "127.0.0.1"},
     },
     evidence: {status: "sealed", manifest_sha256: hash("8", "9"), seal_sha256: hash("9", "a")},
@@ -82,4 +86,5 @@ test("one sealed candidate runtime can expose independent site-bound endpoint pr
     "https://scpaiueouiuiuiui.wikijump.localhost:20443",
     "https://scpaiueouiuiuiui.wjfiles.localhost:20443",
   ]);
+  assert.equal(candidateSitePageOrigin(editable, "scp-wiki"), "https://scp-wiki.wikijump.localhost:20443");
 });
