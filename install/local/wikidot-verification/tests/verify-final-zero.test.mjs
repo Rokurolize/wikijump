@@ -168,6 +168,15 @@ async function fixtures(t) {
     standing_refresh: standingRefresh,
     rows: [{surface_id: surfaceId, source_local_id: sourceLocalId, kind: "catalog_feature", status: "pass", artifacts: [standingArtifact]}],
   };
+  const standardsReview = {
+    schema: "wikijump.compatibility_review.v1",
+    status: "pass",
+    axis: "standards",
+    candidate_commit: repository.candidateCommit,
+    candidate_tree: wikijumpTree,
+    findings: [],
+  };
+  const specReview = {...standardsReview, axis: "spec"};
   const paths = {
     root,
     ledger: (await writeJson(root, "ledger.json", ledger)).path,
@@ -175,13 +184,15 @@ async function fixtures(t) {
     deferredDenominator: (await writeJson(root, "deferred-denominator.json", deferredDenominator)).path,
     deferredLedger: (await writeJson(root, "deferred-ledger.json", deferredLedger)).path,
     standingMatrix: (await writeJson(root, "standing-matrix.json", matrix)).path,
+    standardsReview: (await writeJson(root, "standards-review.json", standardsReview)).path,
+    specReview: (await writeJson(root, "spec-review.json", specReview)).path,
     repository: repository.path,
   };
   return {paths, ledger, denominator, deferredDenominator, deferredLedger, matrix, repository};
 }
 
 function inputMap(fixture) {
-  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix};
+  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix, standardsReview: fixture.paths.standardsReview, specReview: fixture.paths.specReview};
 }
 
 test("final-zero reconciles the exact denominator, row artifacts, deferred union, and canonical promotion", async (t) => {
@@ -189,9 +200,9 @@ test("final-zero reconciles the exact denominator, row artifacts, deferred union
   const receipt = await verifyFinalZero(inputMap(fixture));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.merge_commit, fixture.repository.mergeCommit);
-  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "ledger", "repository", "standing_matrix", "standing_refresh"]);
+  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "ledger", "repository", "spec_review", "standards_review", "standing_matrix", "standing_refresh"]);
   const output = path.join(fixture.paths.root, "receipt.json");
-  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--repository", fixture.paths.repository, "--output", output];
+  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--standards-review", fixture.paths.standardsReview, "--spec-review", fixture.paths.specReview, "--repository", fixture.paths.repository, "--output", output];
   assert.equal(await main(args, {stdout: () => {}}), 0);
   assert.equal(await main(args, {stdout: () => {}}), 0);
 });
@@ -250,11 +261,21 @@ test("final-zero rejects a wrong merge tree or merge parent", async (t) => {
   const wrongTree = await fixtures(t);
   wrongTree.matrix.merge_tree = "f".repeat(40);
   await writeJson(wrongTree.paths.root, "standing-matrix.json", wrongTree.matrix);
+  for (const name of ["standardsReview", "specReview"]) {
+    const review = JSON.parse(await fs.readFile(wrongTree.paths[name], "utf8"));
+    review.candidate_tree = wrongTree.matrix.merge_tree;
+    await writeJson(wrongTree.paths.root, name === "standardsReview" ? "standards-review.json" : "spec-review.json", review);
+  }
   await assert.rejects(verifyFinalZero(inputMap(wrongTree)), /matrix merge tree does not match/u);
 
   const wrongParent = await fixtures(t);
   wrongParent.matrix.candidate_commit = wrongParent.repository.developCommit;
   await writeJson(wrongParent.paths.root, "standing-matrix.json", wrongParent.matrix);
+  for (const name of ["standardsReview", "specReview"]) {
+    const review = JSON.parse(await fs.readFile(wrongParent.paths[name], "utf8"));
+    review.candidate_commit = wrongParent.matrix.candidate_commit;
+    await writeJson(wrongParent.paths.root, name === "standardsReview" ? "standards-review.json" : "spec-review.json", review);
+  }
   await assert.rejects(verifyFinalZero(inputMap(wrongParent)), /promotion candidate PR head does not match/u);
 });
 
@@ -263,6 +284,20 @@ test("final-zero rejects a standing matrix without its digest-bound standing ref
   delete fixture.matrix.standing_refresh;
   await writeJson(fixture.paths.root, "standing-matrix.json", fixture.matrix);
   await assert.rejects(verifyFinalZero(inputMap(fixture)), /standing matrix has missing or unknown fields/u);
+});
+
+test("final-zero requires distinct zero-finding Standards and Spec reviews for the candidate tree", async (t) => {
+  const fixture = await fixtures(t);
+  const review = JSON.parse(await fs.readFile(fixture.paths.standardsReview, "utf8"));
+  review.findings = [{severity: "error", message: "unresolved"}];
+  await writeJson(fixture.paths.root, "standards-review.json", review);
+  await assert.rejects(verifyFinalZero(inputMap(fixture)), /standards review is not a zero-finding report/u);
+
+  const wrongAxis = await fixtures(t);
+  const spec = JSON.parse(await fs.readFile(wrongAxis.paths.specReview, "utf8"));
+  spec.axis = "standards";
+  await writeJson(wrongAxis.paths.root, "spec-review.json", spec);
+  await assert.rejects(verifyFinalZero(inputMap(wrongAxis)), /spec review is not a zero-finding report/u);
 });
 
 test("final-zero rejects symlinked input and artifact paths", async (t) => {
@@ -281,6 +316,6 @@ test("final-zero rejects symlinked input and artifact paths", async (t) => {
 });
 
 test("final-zero CLI requires every frozen input", () => {
-  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--repository", "/f", "--output", "/g"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", repository: "/f", output: "/g"});
-  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--output", "/g"]), /--repository is required/u);
+  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--standards-review", "/f", "--spec-review", "/g", "--repository", "/h", "--output", "/i"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", "standards-review": "/f", "spec-review": "/g", repository: "/h", output: "/i"});
+  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--standards-review", "/f", "--spec-review", "/g", "--output", "/i"]), /--repository is required/u);
 });

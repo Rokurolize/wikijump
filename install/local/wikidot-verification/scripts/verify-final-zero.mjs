@@ -21,6 +21,7 @@ const CURRENT_DENOMINATOR_SCHEMA = "wikijump.compatibility_final_zero_denominato
 const DEFERRED_DENOMINATOR_SCHEMA = "wikijump.compatibility_deferred_denominator.v1";
 const DEFERRED_LEDGER_SCHEMA = "wikijump.compatibility_deferred_ledger.v1";
 const STANDING_MATRIX_SCHEMA = "wikijump.compatibility_standing_matrix.v2";
+const REVIEW_SCHEMA = "wikijump.compatibility_review.v1";
 const LEDGER_FIELDS = ["schema", "counts", "inputs", "source_manifests", "raw_source_records", "source_local_identities", "surface_assignments", "relationships", "deferred_exclusions", "rows"];
 const LEDGER_COUNT_FIELDS = ["raw_records", "public_inventory_records", "canonical_surfaces", "input_alias_edges", "deduplication_relationships"];
 const LEDGER_INPUT_FIELDS = ["inventory", "wikijump", "ftml"];
@@ -31,6 +32,7 @@ const DENOMINATOR_FIELDS = ["schema", "status", "rows"];
 const DENOMINATOR_ROW_FIELDS = ["surface_id", "source_local_id", "kind"];
 const DEFERRED_LEDGER_FIELDS = ["schema", "status", "rows"];
 const DEFERRED_LEDGER_ROW_FIELDS = ["surface_id", "source_local_id", "kind", "deferred_owner"];
+const REVIEW_FIELDS = ["schema", "status", "axis", "candidate_commit", "candidate_tree", "findings"];
 const HEX40 = /^[0-9a-f]{40}$/u;
 const HEX64 = /^[0-9a-f]{64}$/u;
 const CANONICAL_SURFACE_ID = /^surface:[0-9]{8}$/u;
@@ -346,6 +348,22 @@ async function verifyMatrixArtifacts(matrix) {
   await Promise.all(matrix.rows.flatMap((row) => row.artifacts.map((artifact, index) => verifyArtifactReference(artifact, `standing matrix row ${row.surface_id} artifact ${index}`))));
 }
 
+function validateReview(value, axis, standingMatrix) {
+  exactKeys(value, REVIEW_FIELDS, `${axis} review`);
+  if (
+    value.schema !== REVIEW_SCHEMA ||
+    value.status !== "pass" ||
+    value.axis !== axis ||
+    value.candidate_commit !== standingMatrix.candidate_commit ||
+    value.candidate_tree !== standingMatrix.merge_tree ||
+    !Array.isArray(value.findings) ||
+    value.findings.length !== 0
+  ) {
+    fail(`${axis} review is not a zero-finding report bound to the exact candidate tree`);
+  }
+  return value;
+}
+
 function reconcileRows(ledger, denominatorRows, matrixRows) {
   const ledgerRows = new Map(ledger.rows.map((row) => [row.surface_id, {surface_id: row.surface_id, source_local_id: denominatorRows.get(row.surface_id)?.source_local_id, kind: denominatorRows.get(row.surface_id)?.kind}]));
   const matrixIdentities = new Map([...matrixRows].map(([surfaceId, row]) => [surfaceId, {surface_id: row.surface_id, source_local_id: row.source_local_id, kind: row.kind}]));
@@ -412,13 +430,14 @@ async function verifyStandingRefresh(matrix, promotion) {
   return refresh;
 }
 
-function finalZeroCounts(ledger) {
+function finalZeroCounts(ledger, reviews) {
   const rows = ledger.rows;
   const count = (predicate) => rows.reduce((total, row) => total + (predicate(row) ? 1 : 0), 0);
   const counts = {
     complete_product_rows_open_or_unreconciled: count((row) => row.closure.state !== "closed" || row.issues.state !== "present" || row.blockers.state !== "none"),
     duplicate_or_ambiguous_canonical_identities: 0,
-    missing_independent_standards_or_spec_reviews: count((row) => row.tests.state !== "present"),
+    missing_independent_standards_or_spec_reviews:
+      reviews.standards.status === "pass" && reviews.spec.status === "pass" ? 0 : rows.length,
     missing_or_failing_candidate_proofs: count((row) => row.candidate.state !== "pass"),
     missing_or_failing_standing_proofs: count((row) => row.standing.state !== "pass"),
     missing_or_stale_source_provenance: count((row) => row.source.state !== "present"),
@@ -433,7 +452,7 @@ function finalZeroCounts(ledger) {
 }
 
 export function parseArgs(argv) {
-  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "repository", "output"]);
+  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "standards-review", "spec-review", "repository", "output"]);
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
@@ -448,30 +467,36 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --repository DIRECTORY --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --standards-review FILE --spec-review FILE --repository DIRECTORY --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, repository}) {
+export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, standardsReview, specReview, repository}) {
   const repositoryPath = await requireRepository(repository);
-  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput] = await Promise.all([
+  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput, standardsInput, specInput] = await Promise.all([
     readJsonInput(ledger, "canonical compatibility ledger"),
     readJsonInput(denominator, "current denominator"),
     readJsonInput(deferredDenominator, "deferred denominator"),
     readJsonInput(deferredLedger, "deferred ledger"),
     readJsonInput(standingMatrix, "standing compatibility matrix"),
+    readJsonInput(standardsReview, "Standards review"),
+    readJsonInput(specReview, "Spec review"),
   ]);
   const ledgerValue = completeLedger(ledgerInput.value);
   const denominatorRows = validateCurrentDenominator(denominatorInput.value);
   validateDeferredDenominator(deferredDenominatorInput.value);
   validateDeferredLedger(deferredLedgerInput.value);
   const matrixRows = validateStandingMatrix(standingInput.value);
+  const reviews = {
+    standards: validateReview(standardsInput.value, "standards", standingInput.value),
+    spec: validateReview(specInput.value, "spec", standingInput.value),
+  };
   await verifyLedgerArtifacts(ledgerValue);
   await verifyMatrixArtifacts(standingInput.value);
   reconcileRows(ledgerValue, denominatorRows, matrixRows);
   const promotion = await verifyPromotion(standingInput.value, ledgerValue);
   await verifyStandingRefresh(standingInput.value, promotion);
   await verifyRepositoryMerge(repositoryPath, standingInput.value.merge_commit, standingInput.value.merge_tree, standingInput.value.candidate_commit);
-  const counts = finalZeroCounts(ledgerValue);
+  const counts = finalZeroCounts(ledgerValue, reviews);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
   return {
@@ -486,6 +511,8 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
       deferred_ledger: deferredLedgerInput.reference,
       standing_matrix: standingInput.reference,
       standing_refresh: standingInput.value.standing_refresh,
+      standards_review: standardsInput.reference,
+      spec_review: specInput.reference,
       repository: repositoryPath,
     },
   };
@@ -497,7 +524,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     stdout(usage());
     return 0;
   }
-  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], repository: args.repository});
+  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], standardsReview: args["standards-review"], specReview: args["spec-review"], repository: args.repository});
   const sealed = await sealJsonNoReplace(args.output, receipt);
   stdout(JSON.stringify({schema: receipt.schema, status: receipt.status, output: sealed.path, sha256: sealed.sha256}));
   return 0;
