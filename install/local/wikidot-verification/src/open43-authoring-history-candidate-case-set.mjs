@@ -694,10 +694,17 @@ function verifyCase(caseId, observations) {
   throw new Error(`unsupported Open43 history case: ${caseId}`);
 }
 
+function candidateOwnedBrowserFailure(failure) {
+  if (failure?.kind !== "request_failed") return true;
+  let url;
+  try { url = new URL(failure.url); } catch { return true; }
+  return !["http:", "https:"].includes(url.protocol) || url.hostname.endsWith(".wikijump.localhost");
+}
+
 function verifyCapture(value, expectedUrl, name) {
   const capture = requirePlainObject(value, `${name} capture`);
   if (capture.schema !== STANDING_BROWSER_CAPTURE_SCHEMA || capture.input_url !== expectedUrl || capture.final_url !== expectedUrl || capture.navigation_status !== 200 || Object.hasOwn(capture, "capture_error")) throw new Error(`${name} capture did not bind one successful candidate navigation`);
-  if (!Array.isArray(capture.failures) || capture.failures.length !== 0 || !Array.isArray(capture.request_gate_aborts) || capture.request_gate_aborts.length !== 0) throw new Error(`${name} capture has failed or blocked requests`);
+  if (!Array.isArray(capture.failures) || capture.failures.some(candidateOwnedBrowserFailure) || !Array.isArray(capture.request_gate_aborts) || capture.request_gate_aborts.length !== 0) throw new Error(`${name} capture has failed or blocked candidate requests`);
   if (capture.first_paint?.document?.phase !== "domcontentloaded_immediate_observation" || capture.document?.phase !== "settled") throw new Error(`${name} capture is missing an initial or settled interval`);
   const artifacts = [capture.first_paint?.screenshot, capture.settled_viewport_screenshot, capture.screenshot];
   for (const [index, artifact] of artifacts.entries()) {
