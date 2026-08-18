@@ -219,14 +219,10 @@ class Open43AuthoringRun {
         style: await browserStyle(browserPage),
       };
       // The acceptance interval begins at the normal reload below.  Let the
-      // pre-edit navigation finish its own third-party theme requests first so
-      // their cancellation cannot be misattributed to that reload.
-      await browserPage.waitForLoadState("load", { timeout: 300_000 });
-      await browserPage.waitForFunction(
-        () => document.fonts?.status === "loaded" || document.fonts === undefined,
-        undefined,
-        { timeout: 300_000 },
-      );
+      // pre-edit navigation terminate its own third-party theme requests first
+      // so their cancellation cannot be misattributed to that reload. The DOM
+      // and computed red component style have already been observed above.
+      await browserPage.evaluate(() => window.stop());
 
       const editedComponent = await this.#rpc("page_edit", {
         site_id: this.#siteId,
