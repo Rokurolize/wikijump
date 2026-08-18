@@ -1600,6 +1600,7 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
     ["catalog-feature:data-forms-file-field", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-hidden-field", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-hints", ["wikijump.deepwell", "wikijump.framerail"]],
+    ["catalog-feature:data-forms-images", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-select-field", ["wikijump.deepwell", "wikijump.framerail"]],
     ["catalog-feature:data-forms-selecting-and-sorting", ["wikijump.deepwell"]],
     ["catalog-feature:data-forms-tags", ["wikijump.framerail"]],
@@ -1611,7 +1612,6 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
     "catalog-feature:data-forms-date-field",
     "catalog-feature:data-forms-deleting-form",
     "catalog-feature:data-forms-howto",
-    "catalog-feature:data-forms-images",
     "catalog-feature:data-forms-links",
     "catalog-feature:data-forms-output-style",
     "catalog-feature:data-forms-overview",
@@ -1637,9 +1637,19 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
     await fs.readFile(path.join(repositoryRoot, "scripts/data/wikidot-implementation-ledger.json"), "utf8")
   )
   assert.equal(Object.keys(canonicalLedger.implementation_owner_records).length, 114)
-  assert.ok(Object.values(canonicalLedger.implementation_owner_records).every(({ issue_scope }) =>
-    issue_scope.status === "unresolved" && issue_scope.references.length === 0
-  ))
+  assert.equal(
+    Object.values(canonicalLedger.implementation_owner_records).filter(({ issue_scope }) =>
+      issue_scope.status === "resolved" &&
+      JSON.stringify(issue_scope.references) === JSON.stringify([1504])
+    ).length,
+    2
+  )
+  assert.equal(
+    Object.values(canonicalLedger.implementation_owner_records).filter(({ issue_scope }) =>
+      issue_scope.status === "unresolved" && issue_scope.references.length === 0
+    ).length,
+    112
+  )
 })
 
 test("CLI keeps canonical module owners and fills audited ownerless modules", async (t) => {
