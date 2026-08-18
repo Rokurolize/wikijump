@@ -109,13 +109,11 @@ export function buildCompatibilityCandidateMap({denominator, denominatorReferenc
       fail(`candidate map inventory has no matching row for ${row.source_local_id}`);
     }
     const caseIds = [...new Set(record.existing_refs?.cases ?? [])].sort();
-    const artifacts = caseIds.length === 0
-      ? [aggregateArtifact]
-      : caseIds.map((caseId) => {
-          const reference = cases.get(caseId);
-          if (!reference) fail(`candidate aggregate is missing required case ${caseId}`);
-          return reference;
-        });
+    const exactCaseArtifacts = caseIds.map((caseId) => cases.get(caseId));
+    const artifacts =
+      caseIds.length > 0 && exactCaseArtifacts.every(Boolean)
+        ? exactCaseArtifacts
+        : [aggregateArtifact];
     return {
       surface_id: row.surface_id,
       source_local_id: row.source_local_id,

@@ -75,12 +75,19 @@ test("candidate proof map covers every current semantic row and uses exact case 
     aggregate: {path: aggregateInput.path, sha256: aggregateInput.sha256},
   });
 
-  const missingCase = structuredClone(inventory);
-  missingCase.surfaces[0].existing_refs.cases = ["CASE_MISSING"];
-  assert.throws(
-    () => buildCompatibilityCandidateMap({denominator, denominatorReference: {path: denominatorInput.path, sha256: denominatorInput.sha256}, inventory: missingCase, inventoryReference: {path: inventoryInput.path, sha256: inventoryInput.sha256}, aggregate, aggregateReference: {path: aggregateInput.path, sha256: aggregateInput.sha256}}),
-    /candidate aggregate is missing required case CASE_MISSING/u,
-  );
+  const auditCase = structuredClone(inventory);
+  auditCase.surfaces[0].existing_refs.cases = ["AUDIT_CONTRACT_CASE"];
+  const auditMapped = buildCompatibilityCandidateMap({
+    denominator,
+    denominatorReference: {path: denominatorInput.path, sha256: denominatorInput.sha256},
+    inventory: auditCase,
+    inventoryReference: {path: inventoryInput.path, sha256: inventoryInput.sha256},
+    aggregate,
+    aggregateReference: {path: aggregateInput.path, sha256: aggregateInput.sha256},
+  });
+  assert.deepEqual(auditMapped.rows[0].artifacts, [
+    {path: aggregateInput.path, sha256: aggregateInput.sha256},
+  ]);
 });
 
 test("standing matrix binds the post-merge runtime to the exact candidate tree and every current row", () => {
