@@ -122,6 +122,14 @@ test("final denominator producer independently reconciles the canonical ledger a
   assert.equal(output.currentValue.status, "sealed");
   assert.deepEqual(output.currentValue.rows.map(({source_local_id}) => source_local_id), ["catalog-feature:current"]);
   assert.match(output.currentValue.rows[0].surface_id, /^surface:[0-9]{8}$/u);
+  assert.deepEqual(
+    Object.keys(output.currentValue.rows[0]).sort(),
+    ["actor", "input", "kind", "observable_interval", "result", "source_local_id", "surface_id"].sort(),
+  );
+  for (const field of ["actor", "input", "observable_interval", "result"]) {
+    assert.equal(typeof output.currentValue.rows[0][field], "string", field);
+    assert.notEqual(output.currentValue.rows[0][field], "", field);
+  }
   assert.equal(output.deferredValue.rows.length, 54);
   assert.equal(output.deferredLedgerValue.rows.length, 54);
   assert.deepEqual(

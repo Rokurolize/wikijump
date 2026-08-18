@@ -7,6 +7,7 @@ import path from "node:path";
 import {promisify} from "node:util";
 import test from "node:test";
 
+import {buildFinalFrozenReceipt} from "../scripts/emit-final-frozen-receipt.mjs";
 import {main, parseArgs, verifyFinalZero} from "../scripts/verify-final-zero.mjs";
 
 const execFile = promisify(execFileCallback);
@@ -114,6 +115,45 @@ async function fixtures(t) {
   const candidateArtifact = await writeBytes(root, "candidate-artifact.json", "candidate\n");
   const standingArtifact = await writeBytes(root, "standing-artifact.json", "standing\n");
   const promotionArtifact = await writeJson(root, "promotion-precondition.json", promotion);
+  const review = (axis) => ({schema: "wikijump.compatibility_review.v1", axis, status: "pass", wikijump_commit: repository.candidateCommit, wikijump_tree: wikijumpTree, findings: []});
+  const standardsReview = await writeJson(root, "standards-review.json", review("standards"));
+  const specReview = await writeJson(root, "spec-review.json", review("spec"));
+  const frozenImageProducer = await writeJson(root, "frozen-images.json", {
+    status: "pass",
+    wikijump_sha: repository.candidateCommit,
+    wikijump_tree: wikijumpTree,
+    ftml_sha: ftmlCommit,
+    images: {deepwell: {id: `sha256:${"1".repeat(64)}`}, framerail: {id: `sha256:${"2".repeat(64)}`}, wws: {id: `sha256:${"3".repeat(64)}`}},
+  });
+  await fs.mkdir(path.join(root, "deepwell"), {recursive: true});
+  const frozenLock = await writeBytes(root, "deepwell/Cargo.lock", "lock\n");
+  const frozenVerifier = await writeBytes(root, "frozen-verifier.mjs", "verifier\n");
+  const frozenFixture = await writeBytes(root, "frozen-fixture.json", "fixture\n");
+  const frozenTool = await writeBytes(root, "frozen-tool.mjs", "tool\n");
+  const frozenDenominator = await writeBytes(root, "frozen-denominator.json", "denominator\n");
+  const frozenManifest = await writeJson(root, "frozen-manifest.json", {
+    lockfiles: [frozenLock.path],
+    verifier: [frozenVerifier.path],
+    fixtures: [frozenFixture.path],
+    tools: [frozenTool.path],
+    denominator: [frozenDenominator.path],
+    reviews: {standards: standardsReview.path, spec: specReview.path},
+    images: frozenImageProducer.path,
+  });
+  const frozenWriters = await writeJson(root, "frozen-writers.json", {
+    schema: "wikijump.phase4.source_writer_roster.v1",
+    status: "pass",
+    wikijump_commit: repository.candidateCommit,
+    wikijump_tree: wikijumpTree,
+    lanes: [{name: "campaign", state: "stopped"}],
+  });
+  const frozenReceipt = await buildFinalFrozenReceipt({
+    source: {wikijump_commit: repository.candidateCommit, wikijump_tree: wikijumpTree, ftml_sha: ftmlCommit},
+    inputManifestPath: frozenManifest.path,
+    sourceWritersPath: frozenWriters.path,
+    sourceRoot: root,
+  });
+  const finalFrozen = await writeJson(root, "final-frozen.json", frozenReceipt);
   const activeImages = Object.fromEntries(["deepwell", "framerail", "wws"].map((service, index) => [service, {reference: `sha256:${String(index + 1).repeat(64)}`, id: `sha256:${String(index + 1).repeat(64)}`, repo_digests: [], labels: {}}]));
   const rollbackImages = Object.fromEntries(["deepwell", "framerail", "wws"].map((service, index) => [service, {reference: `sha256:${String(index + 7).repeat(64)}`, id: `sha256:${String(index + 7).repeat(64)}`, repo_digests: [], labels: {}}]));
   const prepared = await writeJson(root, "prepared-receipt.json", {schema_version: 1, kind: "standing-image-preparation", status: "pass", run_id: runId, wikijump_sha: wikijumpCommit, wikijump_tree: wikijumpTree, ftml_sha: ftmlCommit, dependency_lock_sha256: "8".repeat(64), promotion_precondition: promotionArtifact, images: activeImages});
@@ -151,7 +191,17 @@ async function fixtures(t) {
     deferred_exclusions: {count: records.length, by_kind: {catalog_feature: 15, framerail_xmlrpc_method: 17, wikidot_py_amc_module_shape: 22}, by_owner: {"external.wikidot-py": 22, "wikijump.xmlrpc-api": 32}, records},
     rows: [row],
   };
-  const denominator = {schema: "wikijump.compatibility_final_zero_denominator.v1", status: "sealed", rows: [{surface_id: surfaceId, source_local_id: sourceLocalId, kind: "catalog_feature"}]};
+  const semantics = {
+    actor: "public actor defined by the feature contract",
+    input: "public invocation or persisted state for catalog-feature:module-example",
+    observable_interval: "public request and browser-visible lifecycle",
+    result: "Wikidot-compatible observable behavior for catalog-feature:module-example",
+  };
+  row.actor = {state: "known", value: semantics.actor};
+  row.input = {state: "known", value: semantics.input};
+  row.observable_interval = {state: "known", value: semantics.observable_interval};
+  row.result = {state: "known", value: semantics.result};
+  const denominator = {schema: "wikijump.compatibility_final_zero_denominator.v1", status: "sealed", rows: [{surface_id: surfaceId, source_local_id: sourceLocalId, kind: "catalog_feature", ...semantics}]};
   const deferredDenominator = {schema: "wikijump.compatibility_deferred_denominator.v1", status: "sealed", rows: records.map(({source_local_id: sourceLocalId, kind}) => ({surface_id: sourceLocalId, source_local_id: sourceLocalId, kind}))};
   const deferredLedger = {schema: "wikijump.compatibility_deferred_ledger.v1", status: "sealed", rows: records.map(({source_local_id: sourceLocalId, kind, deferred_owner: deferredOwner}) => ({surface_id: sourceLocalId, source_local_id: sourceLocalId, kind, deferred_owner: deferredOwner}))};
   const matrix = {
@@ -175,13 +225,14 @@ async function fixtures(t) {
     deferredDenominator: (await writeJson(root, "deferred-denominator.json", deferredDenominator)).path,
     deferredLedger: (await writeJson(root, "deferred-ledger.json", deferredLedger)).path,
     standingMatrix: (await writeJson(root, "standing-matrix.json", matrix)).path,
+    finalFrozen: finalFrozen.path,
     repository: repository.path,
   };
   return {paths, ledger, denominator, deferredDenominator, deferredLedger, matrix, repository};
 }
 
 function inputMap(fixture) {
-  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix};
+  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix, finalFrozen: fixture.paths.finalFrozen};
 }
 
 test("final-zero reconciles the exact denominator, row artifacts, deferred union, and canonical promotion", async (t) => {
@@ -189,18 +240,45 @@ test("final-zero reconciles the exact denominator, row artifacts, deferred union
   const receipt = await verifyFinalZero(inputMap(fixture));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.merge_commit, fixture.repository.mergeCommit);
-  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "ledger", "repository", "standing_matrix", "standing_refresh"]);
+  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "final_frozen", "ledger", "repository", "standing_matrix", "standing_refresh"]);
   const output = path.join(fixture.paths.root, "receipt.json");
-  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--repository", fixture.paths.repository, "--output", output];
+  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--final-frozen", fixture.paths.finalFrozen, "--repository", fixture.paths.repository, "--output", output];
   assert.equal(await main(args, {stdout: () => {}}), 0);
   assert.equal(await main(args, {stdout: () => {}}), 0);
 });
 
 test("final-zero rejects missing or extra current rows", async (t) => {
   const fixture = await fixtures(t);
-  fixture.denominator.rows.push({surface_id: "surface:00000002", source_local_id: "catalog-feature:extra", kind: "catalog_feature"});
+  fixture.denominator.rows.push({surface_id: "surface:00000002", source_local_id: "catalog-feature:extra", kind: "catalog_feature", actor: "public actor", input: "public input", observable_interval: "public request", result: "public result"});
   await writeJson(fixture.paths.root, "denominator.json", fixture.denominator);
   await assert.rejects(verifyFinalZero(inputMap(fixture)), /missing or extra rows/u);
+});
+
+test("final-zero rejects missing or drifted semantic row values", async (t) => {
+  const missing = await fixtures(t);
+  missing.ledger.rows[0].actor = {state: "missing", reason: "not_recorded"};
+  await writeJson(missing.paths.root, "ledger.json", missing.ledger);
+  await assert.rejects(verifyFinalZero(inputMap(missing)), /semantic value is missing or drifted/u);
+
+  const drifted = await fixtures(t);
+  drifted.ledger.rows[0].result = {state: "known", value: "different result"};
+  await writeJson(drifted.paths.root, "ledger.json", drifted.ledger);
+  await assert.rejects(verifyFinalZero(inputMap(drifted)), /semantic value is missing or drifted/u);
+});
+
+test("final-zero treats public tests and independent reviews as distinct gates", async (t) => {
+  const missingTest = await fixtures(t);
+  missingTest.ledger.rows[0].tests = {state: "missing", reason: "not_written"};
+  await writeJson(missingTest.paths.root, "ledger.json", missingTest.ledger);
+  await assert.rejects(verifyFinalZero(inputMap(missingTest)), /unrepresented_charter_requirements=1/u);
+
+  const staleReview = await fixtures(t);
+  const frozen = JSON.parse(await fs.readFile(staleReview.paths.finalFrozen, "utf8"));
+  const reviewPath = frozen.reviews.standards.path;
+  const reviewValue = JSON.parse(await fs.readFile(reviewPath, "utf8"));
+  reviewValue.findings = [{severity: "error", message: "unresolved"}];
+  await fs.writeFile(reviewPath, `${JSON.stringify(reviewValue)}\n`);
+  await assert.rejects(verifyFinalZero(inputMap(staleReview)), /final frozen standards review is stale|standards review is not a passing zero-finding review/u);
 });
 
 test("final-zero rejects a non-exact deferred wikidot.py/XML-RPC exclusion", async (t) => {
@@ -250,12 +328,12 @@ test("final-zero rejects a wrong merge tree or merge parent", async (t) => {
   const wrongTree = await fixtures(t);
   wrongTree.matrix.merge_tree = "f".repeat(40);
   await writeJson(wrongTree.paths.root, "standing-matrix.json", wrongTree.matrix);
-  await assert.rejects(verifyFinalZero(inputMap(wrongTree)), /matrix merge tree does not match/u);
+  await assert.rejects(verifyFinalZero(inputMap(wrongTree)), /matrix merge tree does not match|final frozen source wikijump_tree does not match/u);
 
   const wrongParent = await fixtures(t);
   wrongParent.matrix.candidate_commit = wrongParent.repository.developCommit;
   await writeJson(wrongParent.paths.root, "standing-matrix.json", wrongParent.matrix);
-  await assert.rejects(verifyFinalZero(inputMap(wrongParent)), /promotion candidate PR head does not match/u);
+  await assert.rejects(verifyFinalZero(inputMap(wrongParent)), /promotion candidate PR head does not match|final frozen source wikijump_commit does not match/u);
 });
 
 test("final-zero rejects a standing matrix without its digest-bound standing refresh receipt", async (t) => {
@@ -281,6 +359,6 @@ test("final-zero rejects symlinked input and artifact paths", async (t) => {
 });
 
 test("final-zero CLI requires every frozen input", () => {
-  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--repository", "/f", "--output", "/g"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", repository: "/f", output: "/g"});
-  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--output", "/g"]), /--repository is required/u);
+  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--repository", "/g", "--output", "/h"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", "final-frozen": "/f", repository: "/g", output: "/h"});
+  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--output", "/h"]), /--repository is required/u);
 });

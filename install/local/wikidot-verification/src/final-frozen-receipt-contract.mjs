@@ -21,6 +21,7 @@ const MANIFEST_KEYS = [
   "fixtures",
   "images",
   "lockfiles",
+  "reviews",
   "tools",
   "verifier",
 ];
@@ -29,6 +30,7 @@ const RECEIPT_KEYS = [
   "fixtures",
   "images",
   "inputs",
+  "reviews",
   "schema",
   "source",
   "source_writers",
@@ -91,6 +93,16 @@ export function validateFinalFrozenInputManifest(value) {
       }
       continue;
     }
+    if (key === "reviews") {
+      const reviews = requirePlainObject(manifest.reviews, "final frozen input manifest reviews");
+      exactKeys(reviews, ["spec", "standards"], "final frozen input manifest reviews");
+      for (const axis of ["standards", "spec"]) {
+        if (typeof reviews[axis] !== "string" || reviews[axis] === "") {
+          throw new Error(`final frozen input manifest ${axis} review must name a file path`);
+        }
+      }
+      continue;
+    }
     if (
       !Array.isArray(manifest[key]) ||
       manifest[key].length === 0 ||
@@ -104,6 +116,38 @@ export function validateFinalFrozenInputManifest(value) {
     }
   }
   return manifest;
+}
+
+export function validateCompatibilityReview(value, axis, source) {
+  const review = requirePlainObject(value, `${axis} review`);
+  exactKeys(
+    review,
+    ["axis", "findings", "schema", "status", "wikijump_commit", "wikijump_tree"],
+    `${axis} review`,
+  );
+  if (
+    review.schema !== "wikijump.compatibility_review.v1" ||
+    review.axis !== axis ||
+    review.status !== "pass" ||
+    !Array.isArray(review.findings) ||
+    review.findings.length !== 0
+  ) {
+    throw new Error(`${axis} review is not a passing zero-finding review`);
+  }
+  if (
+    review.wikijump_commit !== source.wikijump_commit ||
+    review.wikijump_tree !== source.wikijump_tree
+  ) {
+    throw new Error(`${axis} review source identity is stale`);
+  }
+  return Object.freeze({
+    schema: review.schema,
+    axis,
+    status: "pass",
+    wikijump_commit: review.wikijump_commit,
+    wikijump_tree: review.wikijump_tree,
+    findings: Object.freeze([]),
+  });
 }
 
 export function validateImageProducer(value, source) {
@@ -251,6 +295,8 @@ export function validateFinalFrozenReceipt(value, {source = null} = {}) {
   exactKeys(inputs, ["manifest", "source_writers"], "final frozen inputs");
   const images = requirePlainObject(receipt.images, "final frozen images");
   exactKeys(images, ["identities", "producer"], "final frozen images");
+  const reviews = requirePlainObject(receipt.reviews, "final frozen reviews");
+  exactKeys(reviews, ["spec", "standards"], "final frozen reviews");
   if (!Array.isArray(receipt.source_writers) || receipt.source_writers.length) {
     throw new Error("FINAL_FROZEN receipt has active source writers");
   }
@@ -270,6 +316,10 @@ export function validateFinalFrozenReceipt(value, {source = null} = {}) {
     fixtures: references(receipt.fixtures, "final frozen fixtures"),
     tools: references(receipt.tools, "final frozen tools"),
     denominator: references(receipt.denominator, "final frozen denominator"),
+    reviews: Object.freeze({
+      standards: reference(reviews.standards, "final frozen standards review"),
+      spec: reference(reviews.spec, "final frozen spec review"),
+    }),
     images: Object.freeze({
       producer: reference(images.producer, "final frozen images.producer"),
       identities: Object.freeze(
@@ -357,6 +407,18 @@ export async function verifyFinalFrozenReceipt({receiptPath, source}) {
       verifyReference(entry, "final frozen denominator"),
     ),
   ]);
+
+  for (const axis of ["standards", "spec"]) {
+    const reviewFile = await verifyReference(
+      receipt.reviews[axis],
+      `final frozen ${axis} review`,
+    );
+    validateCompatibilityReview(
+      parseJson(reviewFile.bytes, `final frozen ${axis} review`),
+      axis,
+      receipt.source,
+    );
+  }
 
   const imageProducerFile = await verifyReference(
     receipt.images.producer,

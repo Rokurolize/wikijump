@@ -13,6 +13,7 @@ import {
 import {
   validateFinalFrozenInputManifest,
   validateFinalFrozenReceipt,
+  validateCompatibilityReview,
   validateImageProducer,
   validateSourceWriterRoster,
 } from "../src/final-frozen-receipt-contract.mjs";
@@ -82,7 +83,7 @@ export async function buildFinalFrozenReceipt({
     ftml_sha: gitObject(source?.ftml_sha, "source FTML commit"),
     lockfiles: await artifactReferences(manifest.lockfiles, sourceRoot, "lockfiles"),
   };
-  const [writerFile, verifier, fixtures, tools, denominator, imageProducerFile] =
+  const [writerFile, verifier, fixtures, tools, denominator, standardsReviewFile, specReviewFile, imageProducerFile] =
     await Promise.all([
       readStableRegularFile(writersPath, "source writer registry"),
       artifactReferences(manifest.verifier, sourceRoot, "verifier"),
@@ -90,12 +91,30 @@ export async function buildFinalFrozenReceipt({
       artifactReferences(manifest.tools, sourceRoot, "tools"),
       artifactReferences(manifest.denominator, sourceRoot, "denominator"),
       readStableRegularFile(
+        path.resolve(sourceRoot, manifest.reviews.standards),
+        "standards review",
+      ),
+      readStableRegularFile(
+        path.resolve(sourceRoot, manifest.reviews.spec),
+        "spec review",
+      ),
+      readStableRegularFile(
         path.resolve(sourceRoot, manifest.images),
         "image producer output",
       ),
     ]);
   validateSourceWriterRoster(
     parseJson(writerFile.bytes, "source writer registry"),
+    normalizedSource,
+  );
+  validateCompatibilityReview(
+    parseJson(standardsReviewFile.bytes, "standards review"),
+    "standards",
+    normalizedSource,
+  );
+  validateCompatibilityReview(
+    parseJson(specReviewFile.bytes, "spec review"),
+    "spec",
     normalizedSource,
   );
   const identities = validateImageProducer(
@@ -114,6 +133,16 @@ export async function buildFinalFrozenReceipt({
     fixtures,
     tools,
     denominator,
+    reviews: {
+      standards: {
+        path: path.resolve(sourceRoot, manifest.reviews.standards),
+        sha256: standardsReviewFile.sha256,
+      },
+      spec: {
+        path: path.resolve(sourceRoot, manifest.reviews.spec),
+        sha256: specReviewFile.sha256,
+      },
+    },
     images: {
       producer: {
         path: path.resolve(sourceRoot, manifest.images),
