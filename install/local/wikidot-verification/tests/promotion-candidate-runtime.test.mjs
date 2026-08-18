@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
 import fs from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
+import {fileURLToPath} from "node:url";
 
 import {candidateCompose} from "../scripts/start-promotion-candidate.mjs";
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
 const source = {wikijump_commit: "1".repeat(40), wikijump_tree: "2".repeat(40), ftml_sha: "3".repeat(40)};
 const images = Object.fromEntries(["cache", "caddy", "database", "deepwell", "files", "framerail", "wws"].map((role, index) => [role, `sha256:${String(index + 1).repeat(64)}`]));
@@ -38,6 +42,6 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
 });
 
 test("candidate Deepwell production image contains the immutable seeder payload", async () => {
-  const dockerfile = await fs.readFile("install/prod/deepwell/Dockerfile", "utf8");
+  const dockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/Dockerfile"), "utf8");
   assert.match(dockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
 });
