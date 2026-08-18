@@ -3,10 +3,10 @@
   "issue": 1372,
   "repository": "Rokurolize/wikijump",
   "status": "ready_for_capture",
-  "source_revision": "c699ac996a76e05a2e321ac24c329e92183b1686",
+  "source_revision": "6fe4cfe1698197f6c266d705bebfb3c8e1f5b014",
   "evidence_registry": {
     "path": "docs/development/framerail-route-action-evidence.json",
-    "sha256": "497fe825f1efc723744844dcf65acd2a8c6fbc2645900642f6250fa62c1e0176"
+    "sha256": "85ee896ec732b121f11a90d3446c5996465655ef2bb05005b5e786a0a0341353"
   },
   "historical_evidence": {
     "path": "install/local/wikidot-verification/artifacts/page-pane-lazy-browser-20260713.json",
@@ -35,14 +35,23 @@
     "scenarios": {
       "denial": {
         "result_oracle_source": "failure_control_identity",
-        "intervals": ["denial"]
+        "intervals": [
+          "denial"
+        ]
       },
       "failure": {
         "result_oracle_source": "failure_control_identity",
-        "intervals": ["failure"]
+        "intervals": [
+          "failure"
+        ]
       },
       "success": {
-        "intervals": ["selection", "loading", "settled", "success"]
+        "intervals": [
+          "selection",
+          "loading",
+          "settled",
+          "success"
+        ]
       }
     }
   },
@@ -88,107 +97,274 @@
     {
       "id": "control:create",
       "kind": "missing_page",
-      "loading": {"kind": "navigation", "url_suffix": "/edit/true", "status": 200},
-      "trigger_selectors": ["#create-it-now-link a"],
-      "settled_predicate": {"selector": "#editor", "state": "visible"}
+      "loading": {
+        "kind": "navigation",
+        "url_suffix": "/edit/true",
+        "status": 200
+      },
+      "trigger_selectors": [
+        "#create-it-now-link a"
+      ],
+      "settled_predicate": {
+        "selector": "#editor",
+        "state": "visible"
+      }
     },
     {
       "id": "control:restore",
       "kind": "missing_page",
-      "loading": {"kind": "request", "method": "POST", "url_suffix": "?/deletedGet"},
-      "trigger_selectors": ["#restore-button"],
-      "settled_predicate": {"selector": "#page-restore", "state": "visible"}
+      "loading": {
+        "kind": "request",
+        "method": "POST",
+        "url_suffix": "?/deletedGet"
+      },
+      "trigger_selectors": [
+        "#restore-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-restore",
+        "state": "visible"
+      }
     },
     {
       "id": "pane:append",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#edit-append-button"],
-      "settled_predicate": {"selector": "#page-append", "state": "visible"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#edit-append-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-append",
+        "state": "visible"
+      }
     },
     {
       "id": "pane:backlinks",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#backlinks-button"],
-      "settled_predicate": {"selector": "#page-backlinks-list", "state": "visible", "text_not": "Loading…"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "?/backlinks"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#backlinks-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-backlinks-list",
+        "state": "visible",
+        "text_not": "Loading…"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "?/backlinks"
+      }
     },
     {
       "id": "pane:delete",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#delete-button"],
-      "settled_predicate": {"selector": "#page-delete", "state": "visible"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#delete-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-delete",
+        "state": "visible"
+      }
     },
     {
       "id": "pane:edit-meta",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#edit-meta-button"],
-      "settled_predicate": {"selector": "#edit-meta-addbutton", "state": "visible"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "/ajax-module-connector.php", "post_data_contains": "moduleName=edit%2FEditMetaModule"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#edit-meta-button"
+      ],
+      "settled_predicate": {
+        "selector": "#edit-meta-addbutton",
+        "state": "visible"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "/ajax-module-connector.php",
+        "post_data_contains": "moduleName=edit%2FEditMetaModule"
+      }
     },
     {
       "id": "pane:layout",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#layout-button"],
-      "settled_predicate": {"selector": "#page-layout", "state": "visible"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#layout-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-layout",
+        "state": "visible"
+      }
     },
     {
       "id": "pane:lock",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#lock-page-button"],
-      "settled_predicate": {"selector": "#page-lock", "state": "visible"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "?/lockHistory"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#lock-page-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-lock",
+        "state": "visible"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "?/lockHistory"
+      }
     },
     {
       "id": "pane:move",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#rename-move-button"],
-      "settled_predicate": {"selector": "#page-move", "state": "visible"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#rename-move-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-move",
+        "state": "visible"
+      }
     },
     {
       "id": "pane:parent",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#parent-page-button"],
-      "settled_predicate": {"selector": "#page-parent", "state": "visible"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "?/parentGet"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#parent-page-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-parent",
+        "state": "visible"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "?/parentGet"
+      }
     },
     {
       "id": "pane:site-tools",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#site-tools-button"],
-      "settled_predicate": {"selector": "#action-area [role=\"toolbar\"]", "state": "visible", "text_not": "Loading…"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "/ajax-module-connector.php", "post_data_contains": "moduleName=sitetools%2FSiteToolsModule"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#site-tools-button"
+      ],
+      "settled_predicate": {
+        "selector": "#action-area [role=\"toolbar\"]",
+        "state": "visible",
+        "text_not": "Loading…"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "/ajax-module-connector.php",
+        "post_data_contains": "moduleName=sitetools%2FSiteToolsModule"
+      }
     },
     {
       "id": "pane:tags",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#tags-button"],
-      "settled_predicate": {"selector": "#page-tags", "state": "visible"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#tags-button"
+      ],
+      "settled_predicate": {
+        "selector": "#page-tags",
+        "state": "visible"
+      }
     },
     {
       "id": "pane:vote",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#pagerate-button"],
-      "settled_predicate": {"selector": ".page-rate-widget-area", "state": "visible"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "?/score"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#pagerate-button"
+      ],
+      "settled_predicate": {
+        "selector": ".page-rate-widget-area",
+        "state": "visible"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "?/score"
+      }
     },
     {
       "id": "pane:watchers",
       "kind": "saved_page",
-      "loading": {"kind": "dom", "selector": ".pane-loading", "state": "visible"},
-      "trigger_selectors": ["#more-options-button", "#watchers-button"],
-      "settled_predicate": {"selector": ".page-watchers-list", "state": "visible"},
-      "success_event": {"kind": "response", "method": "POST", "url_suffix": "?/watchers"}
+      "loading": {
+        "kind": "dom",
+        "selector": ".pane-loading",
+        "state": "visible"
+      },
+      "trigger_selectors": [
+        "#more-options-button",
+        "#watchers-button"
+      ],
+      "settled_predicate": {
+        "selector": ".page-watchers-list",
+        "state": "visible"
+      },
+      "success_event": {
+        "kind": "response",
+        "method": "POST",
+        "url_suffix": "?/watchers"
+      }
     }
   ],
   "cleanup": {
