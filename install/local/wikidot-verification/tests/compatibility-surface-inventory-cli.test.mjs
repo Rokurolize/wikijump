@@ -1513,7 +1513,7 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
   )
   assert.deepEqual(
     inventory.surfaces.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:page-parent-relations").implementation_owners,
-    ["wikijump"]
+    ["wikijump.deepwell"]
   )
   assert.deepEqual(inventory.relationship_edge_types, [
     "alias",
@@ -1625,11 +1625,18 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
   assert.equal(rows.length, 27)
   assert.deepEqual(rows.map(({ surface_id }) => surface_id), [...expectedBound.keys(), ...expectedAuditedFallback].sort())
   for (const row of rows) {
+    const inferredOwners = [...new Set((row.source?.references ?? []).flatMap((reference) => {
+      if (reference.startsWith("deepwell/")) return ["wikijump.deepwell"]
+      if (reference.startsWith("framerail/")) return ["wikijump.framerail"]
+      if (reference.startsWith("wws/")) return ["wikijump.wws"]
+      return []
+    }))].sort()
     assert.deepEqual(
       row.implementation_owners,
-      expectedBound.get(row.surface_id) ?? ["wikijump"],
+      expectedBound.get(row.surface_id) ?? inferredOwners,
       row.surface_id
     )
+    assert.ok(!row.implementation_owners.includes("wikijump"), row.surface_id)
   }
   assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length > 0).length, 27)
   assert.equal(rows.filter(({ implementation_owners }) => implementation_owners.length === 0).length, 0)
@@ -1678,50 +1685,27 @@ test("CLI keeps canonical module owners and fills audited ownerless modules", as
   const canonicalLedger = JSON.parse(
     await fs.readFile(path.join(repositoryRoot, "scripts/data/wikidot-implementation-ledger.json"), "utf8")
   )
-  const auditedFallback = [
-    "module-admoduleabovecontent",
-    "module-admoduleabovesidebar",
-    "module-admodulebelowcontent",
-    "module-admodulebelowfooter",
-    "module-admodulebelowsidebar",
-    "module-childpages",
-    "module-clone",
-    "module-createaccount",
-    "module-currencyconvert",
-    "module-dashboard",
-    "module-deleteaccount",
-    "module-featuredsite",
-    "module-files",
-    "module-flickrgallery",
-    "module-footerbar",
-    "module-frontspecialmini",
-    "module-join",
-    "module-loginstatus",
-    "module-mailform",
-    "module-membershipapply",
-    "module-navibar",
-    "module-newsite",
-    "module-nextpreviouspage",
-    "module-pageoptionsbottom",
-    "module-sitegrid",
-    "module-sitestagcloud",
-    "module-themepreviewer",
-    "module-watchers"
-  ].map((id) => `catalog-feature:${id}`)
   assert.equal(moduleRows.length, 74)
   assert.deepEqual(
     moduleRows.filter(({ implementation_owners }) =>
       implementation_owners.length === 1 && implementation_owners[0] === "wikijump"
     )
       .map(({ surface_id: surfaceId }) => surfaceId),
-    auditedFallback
+    []
   )
   for (const row of moduleRows) {
     const featureId = row.surface_id.slice("catalog-feature:".length)
     const recordedOwners = canonicalLedger.implementation_owner_records[featureId].owners
       .map(({ owner }) => owner)
-    const expectedOwners = recordedOwners.length > 0 ? recordedOwners : ["wikijump"]
+    const inferredOwners = [...new Set((row.source?.references ?? []).flatMap((reference) => {
+      if (reference.startsWith("deepwell/")) return ["wikijump.deepwell"]
+      if (reference.startsWith("framerail/")) return ["wikijump.framerail"]
+      if (reference.startsWith("wws/")) return ["wikijump.wws"]
+      return []
+    }))].sort()
+    const expectedOwners = recordedOwners.length > 0 ? recordedOwners : inferredOwners
     assert.deepEqual(row.implementation_owners, expectedOwners, row.surface_id)
+    assert.ok(!row.implementation_owners.includes("wikijump"), row.surface_id)
   }
   assert.deepEqual(
     moduleRows.find(({ surface_id: surfaceId }) => surfaceId === "catalog-feature:module-comments").implementation_owners,
