@@ -50,6 +50,7 @@ pub struct CreatePage {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct CreatePageOutput {
+    pub site_id: i64,
     pub page_id: i64,
     pub slug: String,
     pub revision_id: i64,

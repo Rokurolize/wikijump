@@ -318,6 +318,7 @@ WHERE page.site_id = $1
 
         // Build and return
         Ok(CreatePageOutput {
+            site_id,
             page_id,
             slug,
             revision_id,

@@ -1651,7 +1651,6 @@ impl RenderService {
         compat_html: &mut CompatHtmlFragments,
     ) -> String {
         if !settings.enable_page_syntax
-            || viewer_user_id.is_some()
             || !MEMBERSHIPAPPLY_MODULE_REGEX.is_match(&wikitext)
         {
             return wikitext;
@@ -1672,9 +1671,12 @@ impl RenderService {
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
-            output.push_str(
-                &compat_html.push_block_html(MEMBERSHIP_APPLY_ANONYMOUS_HTML.to_owned()),
-            );
+            if viewer_user_id.is_none() {
+                output.push_str(
+                    &compat_html
+                        .push_block_html(MEMBERSHIP_APPLY_ANONYMOUS_HTML.to_owned()),
+                );
+            }
             cursor = matched.end();
         }
         if cursor == 0 {
