@@ -3150,6 +3150,43 @@
           ]
         }
       ]
+    },
+    {
+      "id": "gravatar-guest-identity-20260818",
+      "title": "Anonymous forum guests use a required private email to derive the public Gravatar identity",
+      "feature_ids": [
+        "gravatar"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-18",
+      "analysis": "Run-owned anonymous forum replies on sandbox-for-codex establish the guest Gravatar wire, persistence boundary, and exact author DOM. Anonymous savePost exposes guestName and guestEmail fields. Both are required; an empty guest name, an empty email, a non-email control, an address without a dotted domain, and a 51-character email are rejected without creating a post. The live guestEmail control declares maxlength=50, and a 50-character address reached the normal CAPTCHA boundary. Accepted email input is trimmed at its outer ASCII whitespace while case is preserved before MD5 hashing. The raw email never appears in the public post DOM. The author avatar uses Wikidot's Gravatar proxy URL with the derived MD5 and a Wikidot default-avatar URL, so missing external Gravatar content degrades through that default rather than removing or duplicating the identity block. All run-owned posts were deleted and the temporarily widened forum permission was restored and re-read.",
+      "normative_behavior": [
+        "Anonymous ForumAction savePost requires nonempty guestName and a syntactically email-shaped guestEmail no longer than 50 characters; the captured empty-name, empty-email, malformed-email, no-dot-domain, and 51-character controls create no post.",
+        "Before Gravatar hashing, Wikidot trims outer whitespace from guestEmail but preserves letter case. The MD5 is computed from that trimmed, case-preserved string.",
+        "The raw guest email is private input and is not rendered into the public author DOM. The public derived identity is the MD5 value used in the Gravatar URL.",
+        "The observed avatar URL is http://www.gravatar.com/avatar.php?gravatar_id={md5}&default=http://www.wikidot.com/common--images/avatars/default/a16.png&size=16.",
+        "The observed author DOM is a single printuser avatarhover span containing a javascript: image link, one small Gravatar image with empty alt text, and the escaped guest name followed by ' (guest)'.",
+        "A valid email whose Gravatar image is unavailable still renders the same identity block because the URL delegates fallback to Wikidot's default a16.png image.",
+        "Authenticated ForumAction savePost remains account-authored; guest fields do not replace the authenticated account identity.",
+        "The live probes changed only a run-owned forum permission and run-owned posts. Cleanup deleted every probe post and restored the original inherited category permission."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/gravatar-guest-live-20260818.json",
+          "sha256": "fff9e3134ab96523206b9d15471e9b9b640debc95c0326bfde2a43aa47ffcf01",
+          "case_ids": [
+            "gravatar-guest-lowercase-public-control",
+            "gravatar-guest-uppercase-space-control",
+            "gravatar-guest-missing-image-fallback-control",
+            "gravatar-guest-empty-email",
+            "gravatar-guest-malformed-email",
+            "gravatar-guest-no-dot-email",
+            "gravatar-guest-overlong-email",
+            "gravatar-guest-empty-name",
+            "gravatar-authenticated-guest-fields-ignored"
+          ]
+        }
+      ]
     }
   ]
 }
