@@ -11,8 +11,8 @@
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
       "renderer_modules": 29,
-      "wikidot_fixtures": 130,
-      "total": 399
+      "wikidot_fixtures": 137,
+      "total": 406
     },
     "raw_surface_identities": [
       {
@@ -696,6 +696,10 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/anchor/xss",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/audio/basic",
         "kind": "wikidot_fixture"
       },
@@ -820,6 +824,10 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/div/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/div/wikidot-nested-list-boundary",
         "kind": "wikidot_fixture"
       },
@@ -921,6 +929,14 @@
       },
       {
         "surface_id": "ftml.fixture:test/list/block",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/block-fail",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/list/block-score",
         "kind": "wikidot_fixture"
       },
       {
@@ -1028,6 +1044,10 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/note/wikidot-literal",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/paragraph/basic",
         "kind": "wikidot_fixture"
       },
@@ -1064,11 +1084,19 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/ruby/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/ruby/fail",
         "kind": "wikidot_fixture"
       },
       {
         "surface_id": "ftml.fixture:test/size/basic",
+        "kind": "wikidot_fixture"
+      },
+      {
+        "surface_id": "ftml.fixture:test/span/basic",
         "kind": "wikidot_fixture"
       },
       {
