@@ -39,7 +39,6 @@ import {
   renderWikidotSiteTools,
   renderWikidotWantedPages
 } from "$lib/server/wikidot-site-tools.js"
-import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
 import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
@@ -82,7 +81,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
   const resolveNewPageUserId = () => {
     userIdPromise ??= (async () => {
       const session = sessionToken ? await authGetSession(sessionToken) : undefined
-      return resolvePageMutationUserId(session?.user_id, siteSlug, siteId, siteId)
+      return session?.user_id
     })()
     return userIdPromise
   }
