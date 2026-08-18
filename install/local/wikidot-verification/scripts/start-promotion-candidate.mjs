@@ -109,6 +109,27 @@ function runtimeLabels({project, owner, source, artifactKey, overlaySha256, effe
   };
 }
 
+export function candidateIdentityForSite(identity, siteSlug) {
+  if (typeof siteSlug !== "string" || !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/u.test(siteSlug)) {
+    fail("candidate site projection slug is invalid");
+  }
+  const port = identity.candidate.endpoint.port;
+  return validateCandidateParityIdentity({
+    ...identity,
+    candidate: {
+      ...identity.candidate,
+      endpoint: {
+        ...identity.candidate.endpoint,
+        host: `${siteSlug}.wikijump.localhost`,
+        allowed_origin_set: [
+          `https://${siteSlug}.wikijump.localhost:${port}`,
+          `https://${siteSlug}.wjfiles.localhost:${port}`,
+        ],
+      },
+    },
+  });
+}
+
 function healthcheck(test, startPeriod = "10s") {
   return {test, interval: "5s", timeout: "3s", retries: 120, start_period: startPeriod};
 }
@@ -397,6 +418,10 @@ export async function startPromotionCandidate({sourceRoot, buildEvidencePath, ca
     const identityPath = path.join(candidateRoot, "candidate-identity.json");
     await writeJson(identityPath, identity);
     const identitySha256 = await fileSha256(identityPath);
+    const editableIdentity = candidateIdentityForSite(identity, "scpaiueouiuiuiui");
+    const editableIdentityPath = path.join(candidateRoot, "candidate-identity-editable.json");
+    await writeJson(editableIdentityPath, editableIdentity);
+    const editableIdentitySha256 = await fileSha256(editableIdentityPath);
     await dockerCompose(composePath, project, token, ["up", "--detach", "--no-build"]);
     finalStarted = true;
     await waitForCandidateHealth(project);
@@ -412,6 +437,7 @@ export async function startPromotionCandidate({sourceRoot, buildEvidencePath, ca
     const privatePath = path.join(candidateRoot, "private-runtime.json");
     await writeJson(privatePath, {
       candidate_identity_sha256: identitySha256,
+      editable_candidate_identity_sha256: editableIdentitySha256,
       deepwell_rpc_url: `http://127.0.0.1:${rpcPort}/jsonrpc`,
       deepwell_rpc_token: token,
       object_store_origin: `http://127.0.0.1:${objectStorePort}`,
@@ -419,7 +445,16 @@ export async function startPromotionCandidate({sourceRoot, buildEvidencePath, ca
       candidate_origin: `https://scp-wiki.wikijump.localhost:${publicPort}`,
     });
     await fs.chmod(privatePath, 0o600);
-    return {identityPath, identitySha256, privatePath, observationPath: path.join(candidateRoot, "runtime-observation.json"), stagingHome, project};
+    return {
+      identityPath,
+      identitySha256,
+      editableIdentityPath,
+      editableIdentitySha256,
+      privatePath,
+      observationPath: path.join(candidateRoot, "runtime-observation.json"),
+      stagingHome,
+      project,
+    };
   } catch (error) {
     if (finalStarted || await fs.stat(composePath).then(() => true, () => false)) {
       await dockerCompose(composePath, project, token, ["down", "--volumes", "--remove-orphans"]).catch(() => {});

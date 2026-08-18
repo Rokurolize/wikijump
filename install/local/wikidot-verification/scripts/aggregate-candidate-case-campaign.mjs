@@ -120,7 +120,7 @@ async function verifyCaseSetReceipt({
   receiptPath,
   expected,
   runId,
-  candidateIdentitySha256,
+  candidateIdentitySha256Set,
 }) {
   const input = await readJson(receiptPath, `candidate aggregate ${expected.name}`);
   const receipt = input.value;
@@ -129,10 +129,11 @@ async function verifyCaseSetReceipt({
     receipt.status !== "pass" ||
     receipt.candidate_case_set !== expected.name ||
     receipt.run_id !== runId ||
-    receipt.candidate_identity_sha256 !== candidateIdentitySha256
+    !candidateIdentitySha256Set.has(receipt.candidate_identity_sha256)
   ) {
     fail(`candidate aggregate ${expected.name} is not bound to the campaign identity`);
   }
+  const candidateIdentitySha256 = receipt.candidate_identity_sha256;
   if (
     receipt.denominator?.count !== expected.case_ids.length ||
     !sameStrings(receipt.denominator?.case_ids, expected.case_ids) ||
@@ -180,19 +181,58 @@ async function verifyCaseSetReceipt({
 
 export async function aggregateCandidateCaseCampaign({
   candidateIdentityPath,
+  candidateIdentityPaths = null,
   manifestPath,
   receiptPaths,
   now = new Date(),
 }) {
-  const [identityInput, manifestInput] = await Promise.all([
-    readJson(candidateIdentityPath, "candidate parity identity"),
+  const identityPathList = candidateIdentityPaths ?? [candidateIdentityPath];
+  if (!Array.isArray(identityPathList) || identityPathList.length === 0) {
+    fail("candidate campaign requires at least one candidate identity projection");
+  }
+  const [identityInputs, manifestInput] = await Promise.all([
+    Promise.all(identityPathList.map((identityPath, index) =>
+      readJson(identityPath, `candidate parity identity projection ${index}`))),
     readJson(manifestPath, "candidate case set manifest"),
   ]);
-  const identity = assertCandidateIdentityFresh(
-    validateCandidateParityIdentity(identityInput.value),
-    {now},
-  );
-  const candidateIdentitySha256 = identityInput.reference.sha256;
+  const identities = identityInputs.map(({value}) =>
+    assertCandidateIdentityFresh(validateCandidateParityIdentity(value), {now}));
+  const runtimeIdentity = (identity) => ({
+    artifact_key: identity.artifact_key,
+    build: identity.build,
+    candidate: {
+      owner: identity.candidate.owner,
+      expires_at: identity.candidate.expires_at,
+      compose_project: identity.candidate.compose_project,
+      port_443_published: identity.candidate.port_443_published,
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      ftml_sha: identity.candidate.ftml_sha,
+      profile: identity.candidate.profile,
+      source_clean: identity.candidate.source_clean,
+      images: identity.candidate.images,
+      config: identity.candidate.config,
+      endpoint_transport: {
+        scheme: identity.candidate.endpoint.scheme,
+        port: identity.candidate.endpoint.port,
+        resolved_addresses: identity.candidate.endpoint.resolved_addresses,
+        local_connect_address: identity.candidate.endpoint.local_connect_address,
+      },
+    },
+    evidence: identity.evidence,
+  });
+  const sealedRuntime = sha256Value(runtimeIdentity(identities[0]));
+  for (const identity of identities.slice(1)) {
+    if (sha256Value(runtimeIdentity(identity)) !== sealedRuntime) {
+      fail("candidate campaign identity projections do not bind the same runtime");
+    }
+  }
+  const identity = identities[0];
+  const identityInput = identityInputs[0];
+  const candidateIdentitySha256Set = new Set(identityInputs.map(({reference}) => reference.sha256));
+  if (candidateIdentitySha256Set.size !== identityInputs.length) {
+    fail("candidate campaign has duplicate candidate identity projections");
+  }
   verifyCandidateCaseSetManifest(manifestInput.value);
   const expectedManifest = buildCandidateCaseSetManifest();
   if (JSON.stringify(manifestInput.value) !== JSON.stringify(expectedManifest)) {
@@ -227,7 +267,7 @@ export async function aggregateCandidateCaseCampaign({
         receiptPath: seen.get(row.name),
         expected: row,
         runId,
-        candidateIdentitySha256,
+        candidateIdentitySha256Set,
       }),
     );
   }
@@ -242,6 +282,7 @@ export async function aggregateCandidateCaseCampaign({
     status: "pass",
     run_id: runId,
     candidate_identity: identityInput.reference,
+    candidate_identity_projections: identityInputs.map(({reference}) => reference),
     candidate: {
       artifact_key: identity.artifact_key,
       wikijump_commit: identity.candidate.wikijump_commit,
@@ -257,27 +298,28 @@ export async function aggregateCandidateCaseCampaign({
 }
 
 function parseArgs(argv) {
-  const args = {receipts: []};
+  const args = {candidateIdentities: [], receipts: []};
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--help" || flag === "-h") return {help: true};
     const value = argv[++index];
     if (!value || value.startsWith("--")) fail(`${flag} requires a value`);
-    if (flag === "--candidate-identity") args.candidateIdentity = path.resolve(value);
+    if (flag === "--candidate-identity") args.candidateIdentities.push(path.resolve(value));
     else if (flag === "--manifest") args.manifest = path.resolve(value);
     else if (flag === "--receipt") args.receipts.push(path.resolve(value));
     else if (flag === "--output") args.output = path.resolve(value);
     else fail(`unknown option: ${flag}`);
   }
-  for (const name of ["candidateIdentity", "manifest", "output"]) {
+  for (const name of ["manifest", "output"]) {
     if (!args[name]) fail(`--${name.replace(/[A-Z]/gu, (letter) => `-${letter.toLowerCase()}`)} is required`);
   }
+  if (args.candidateIdentities.length === 0) fail("at least one --candidate-identity is required");
   if (args.receipts.length === 0) fail("at least one --receipt is required");
   return args;
 }
 
 function usage() {
-  return "Usage: aggregate-candidate-case-campaign.mjs --candidate-identity FILE --manifest FILE --receipt FILE [--receipt FILE ...] --output FILE";
+  return "Usage: aggregate-candidate-case-campaign.mjs --candidate-identity FILE [--candidate-identity FILE ...] --manifest FILE --receipt FILE [--receipt FILE ...] --output FILE";
 }
 
 export async function main(argv, {stdout = console.log} = {}) {
@@ -287,7 +329,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     return 0;
   }
   const aggregate = await aggregateCandidateCaseCampaign({
-    candidateIdentityPath: args.candidateIdentity,
+    candidateIdentityPaths: args.candidateIdentities,
     manifestPath: args.manifest,
     receiptPaths: args.receipts,
   });

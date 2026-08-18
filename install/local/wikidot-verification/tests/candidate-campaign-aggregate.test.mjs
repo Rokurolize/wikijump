@@ -148,6 +148,52 @@ test("candidate campaign aggregate exactly covers every execution case set and c
   assert.equal(aggregate.case_sets.every(({cleanup}) => /^[0-9a-f]{64}$/u.test(cleanup.sha256)), true);
 });
 
+test("candidate campaign accepts site-bound identity projections only for one sealed runtime", async (t) => {
+  const fixture = await campaignFixture(t);
+  const primary = JSON.parse(await fs.readFile(fixture.identityPath, "utf8"));
+  const projected = structuredClone(primary);
+  projected.candidate.endpoint.host = "scp-wiki.wikijump.localhost";
+  projected.candidate.endpoint.allowed_origin_set = [
+    "https://scp-wiki.wikijump.localhost:18443",
+    "https://scp-wiki.wjfiles.localhost:18443",
+  ];
+  const projectedPath = path.join(fixture.root, "identity-scp-wiki.json");
+  await writeJson(projectedPath, projected);
+  const projectedSha = await sha256File(projectedPath);
+
+  const receiptPath = fixture.receipts[0];
+  const receipt = JSON.parse(await fs.readFile(receiptPath, "utf8"));
+  receipt.candidate_identity_sha256 = projectedSha;
+  for (const caseRef of receipt.cases) {
+    const caseValue = JSON.parse(await fs.readFile(caseRef.path, "utf8"));
+    caseValue.candidate_identity_sha256 = projectedSha;
+    await writeJson(caseRef.path, caseValue);
+    caseRef.sha256 = await sha256File(caseRef.path);
+  }
+  await writeJson(receiptPath, receipt);
+
+  const aggregate = await aggregateCandidateCaseCampaign({
+    candidateIdentityPaths: [fixture.identityPath, projectedPath],
+    manifestPath: fixture.manifestPath,
+    receiptPaths: fixture.receipts,
+    now: new Date("2026-08-18T00:00:00.000Z"),
+  });
+  assert.equal(aggregate.status, "pass");
+  assert.equal(aggregate.candidate_identity_projections.length, 2);
+
+  projected.artifact_key = hash("f", "0");
+  await writeJson(projectedPath, projected);
+  await assert.rejects(
+    aggregateCandidateCaseCampaign({
+      candidateIdentityPaths: [fixture.identityPath, projectedPath],
+      manifestPath: fixture.manifestPath,
+      receiptPaths: fixture.receipts,
+      now: new Date("2026-08-18T00:00:00.000Z"),
+    }),
+    /do not bind the same runtime/u,
+  );
+});
+
 test("candidate campaign aggregate fails closed on missing, duplicate, or cross-run receipts", async (t) => {
   const fixture = await campaignFixture(t);
   await assert.rejects(

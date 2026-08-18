@@ -4,7 +4,8 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
-import {candidateCompose} from "../scripts/start-promotion-candidate.mjs";
+import {candidateCompose, candidateIdentityForSite} from "../scripts/start-promotion-candidate.mjs";
+import {validateCandidateParityIdentity} from "../src/standing-browser-parity-receipt.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -44,4 +45,41 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
 test("candidate Deepwell production image contains the immutable seeder payload", async () => {
   const dockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/Dockerfile"), "utf8");
   assert.match(dockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
+});
+
+test("one sealed candidate runtime can expose independent site-bound endpoint projections", () => {
+  const hash = (left, right) => `${left}${right}`.repeat(32);
+  const git = (left, right) => `${left}${right}`.repeat(20);
+  const projectedImages = Object.fromEntries(
+    Object.keys(images).map((role, index) => [role, `sha256:${hash(String((index % 8) + 1), String(((index + 3) % 8) + 1))}`]),
+  );
+  const base = validateCandidateParityIdentity({
+    schema: "wikijump.standing_candidate_parity_identity.v1",
+    status: "sealed",
+    artifact_key: hash("a", "1"),
+    build: {seal_sha256: hash("b", "2"), verdict_sha256: hash("c", "3"), final_images_sha256: hash("d", "4")},
+    candidate: {
+      owner: "compatibility-candidate",
+      expires_at: "2099-08-19T00:00:00.000Z",
+      compose_project: "wikijump-candidate-fixture",
+      port_443_published: false,
+      wikijump_commit: git("1", "2"),
+      wikijump_tree: git("2", "3"),
+      ftml_sha: git("3", "4"),
+      profile: "production-build",
+      source_clean: true,
+      images: projectedImages,
+      config: {isolated_overlay_sha256: hash("e", "5"), promotion_base_manifest_sha256: hash("f", "6"), effective_runtime_services_sha256: hash("7", "8")},
+      endpoint: {scheme: "https", host: "scp-wiki.wikijump.localhost", port: 20443, resolved_addresses: ["127.0.0.1"], allowed_origin_set: ["https://scp-wiki.wikijump.localhost:20443", "https://scp-wiki.wjfiles.localhost:20443"], local_connect_address: "127.0.0.1"},
+    },
+    evidence: {status: "sealed", manifest_sha256: hash("8", "9"), seal_sha256: hash("9", "a")},
+  });
+  const editable = candidateIdentityForSite(base, "scpaiueouiuiuiui");
+  assert.equal(editable.artifact_key, base.artifact_key);
+  assert.equal(editable.candidate.config.effective_runtime_services_sha256, base.candidate.config.effective_runtime_services_sha256);
+  assert.equal(editable.candidate.endpoint.host, "scpaiueouiuiuiui.wikijump.localhost");
+  assert.deepEqual(editable.candidate.endpoint.allowed_origin_set, [
+    "https://scpaiueouiuiuiui.wikijump.localhost:20443",
+    "https://scpaiueouiuiuiui.wjfiles.localhost:20443",
+  ]);
 });
