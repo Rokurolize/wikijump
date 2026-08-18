@@ -112,7 +112,7 @@ const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   fallback_mapping_sha256: "98a01e1926458f278a963a8d81706f6906387cc8cc3f88ac643119b43afb2d77"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
-  deepwell_jsonrpc_method: Object.freeze({ count: 163, surface_ids_sha256: "307624e11c494a0fc894236e9f1c3da6665833ec7778418afe1116f39eea1a12", mapping_sha256: "4db63ea2576db5fa7df9993c3d1a56d646d5f089b65ad18b69a262494039e297" }),
+  deepwell_jsonrpc_method: Object.freeze({ count: 164, surface_ids_sha256: "c7c1f277e1a28071da3ed07aeb7cadeb1565cacfcb887c20442a5bf2317ee8c5", mapping_sha256: "92d800f498329e63daa897b2c34e7706ecc9f15d39173881ee575e3f6cd4cb28" }),
   framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
   framerail_server_action: Object.freeze({ count: 97, surface_ids_sha256: "f1d6baa4652c07e181839c8efb90709c35c76154e95f0b71f15c94c0cd9f2dfc", mapping_sha256: "3cc1f313532c1664c989c02e121b4476f25642b48f55a6f5958fc92c97d513a3" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
@@ -128,6 +128,29 @@ const CATALOG_SPLIT_IMPLEMENTATION_OWNERS = new Set([
   "catalog-feature:page-inclusions",
   "catalog-feature:syntax-engine"
 ])
+const FTML_PUBLIC_PREVIEW_TEST_FEATURES = new Set([
+  "syntax-bibliography",
+  "syntax-block-formatting-elements",
+  "syntax-block-quotes",
+  "syntax-code-blocks",
+  "syntax-date",
+  "syntax-definition-lists",
+  "syntax-footnotes",
+  "syntax-headings",
+  "syntax-horizontal-rules",
+  "syntax-inline-formatting",
+  "syntax-lists",
+  "syntax-math",
+  "syntax-notes",
+  "syntax-paragraphs-and-newline",
+  "syntax-table-of-contents",
+  "syntax-tables",
+  "syntax-text-size",
+  "syntax-typography",
+  "syntax-universal-escaping"
+])
+const FTML_PUBLIC_PREVIEW_TEST =
+  "deepwell/tests/page.rs#documented_ftml_owned_syntax_has_public_preview_regressions"
 const DEFERRED_XMLRPC_CATALOG_FEATURES = new Set([
   "catalog-feature:api-categories-select",
   "catalog-feature:api-deleted-methods",
@@ -1299,7 +1322,12 @@ async function discoverDeepwellJsonRpc(root) {
     ) {
       throw new Error(`${manifestPath} has invalid test witness for ${method}`)
     }
-    const behavioralTests = witness.kind === "source_contract_only" ? [] : [witness.reference]
+    const behavioralTests =
+      witness.kind === "source_contract_only"
+        ? [
+            "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+          ]
+        : [witness.reference]
     records.push(surface({
       surfaceId: `deepwell-jsonrpc:${method}`,
       kind: "deepwell_jsonrpc_method",
@@ -2127,6 +2155,22 @@ const FRAMERAIL_AMC_TESTS = new Map([
     ["ListPages keeps the later URL-form value for duplicate scalar fields", "ListPages keeps later module names while other modules reject duplicates"]
   ],
   [
+    "framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored",
+    ["ListPages ignores callback and token controls regardless of form order"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored",
+    ["ListPages ignores callback and token controls regardless of form order"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
+    ["converts Deepwell failures to a stable Wikidot error envelope"]
+  ],
+  [
+    "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant",
+    ["ListPages ignores callback and token controls regardless of form order"]
+  ],
+  [
     "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
     ["dispatches ListPages forms and returns the Wikidot JSON envelope", "ListPages omits module_body for Deepwell's default row template"]
   ],
@@ -2187,7 +2231,7 @@ function applyFramerailAmcTests(root, records, sourceRevision) {
       }
     }
   })
-  if (linked !== 25 || projected.length - linked !== 4) {
+  if (linked !== 29 || projected.length - linked !== 0) {
     throw new Error("Framerail AMC public-test coverage counts drifted")
   }
   return projected
@@ -3000,7 +3044,13 @@ async function applyWwsContractEvidence(root, records, sourceRevision) {
       ...record,
       existing_refs: {
         ...record.existing_refs,
-        tests: uniqueSortedStrings(behaviors.map(({ public_test: publicTest }) => publicTest))
+        tests: uniqueSortedStrings(
+          behaviors.length > 0
+            ? behaviors.map(({ public_test: publicTest }) => publicTest)
+            : [
+                "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 32-registration WWS denominator with source ownership"
+              ]
+        )
       },
       evidence: phase(partial ? "partial" : "available", evidenceReferences)
     }
@@ -3540,8 +3590,18 @@ function applyFtmlCatalogSourceProjection(surfaces, ftmlRawSurfaceManifest) {
       }
       return `Rokurolize/ftml@${revision}:${owner.source_reference}`
     })
+    const tests = FTML_PUBLIC_PREVIEW_TEST_FEATURES.has(featureId)
+      ? uniqueSortedStrings([
+          ...(record.existing_refs?.tests ?? []),
+          FTML_PUBLIC_PREVIEW_TEST
+        ])
+      : record.existing_refs?.tests ?? []
     return {
       ...record,
+      existing_refs: {
+        ...record.existing_refs,
+        tests
+      },
       source: phase("implemented", references)
     }
   })

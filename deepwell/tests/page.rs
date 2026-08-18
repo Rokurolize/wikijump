@@ -199,6 +199,90 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
     assert!(member.membership_actions.is_empty());
 }
 
+#[tokio::test]
+async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let cases = [
+        ("bibliography", "((bibcite alpha))\n[[bibliography]]\n: alpha : Public preview bibliography marker\n[[/bibliography]]", "[[bibliography]]"),
+        ("block-formatting", "[[=]]\nPublic preview centered marker\n[[/=]]", "[[=]]"),
+        ("block-quotes", "> Public preview quote marker", "> Public preview quote marker"),
+        ("code-blocks", "[[code]]\nPublic preview code marker\n[[/code]]", "[[code]]"),
+        ("date", "[[date 1237135440 format=\"%e %b %Y\"]]", "[[date"),
+        ("definition-lists", ": Public preview term : Public preview definition", ": Public preview term :"),
+        ("footnotes", "Public preview footnote marker[[footnote]]Public preview note body[[/footnote]]\n[[footnoteblock]]", "[[footnote]]"),
+        ("headings", "+ Public preview heading marker", "+ Public preview heading marker"),
+        ("horizontal-rules", "Public preview before rule\n----\nPublic preview after rule", "----"),
+        ("inline-formatting", "**Public preview bold marker**", "**Public preview bold marker**"),
+        ("lists", "* Public preview list marker", "* Public preview list marker"),
+        ("math", "[[math]]\nx^2\n[[/math]]", "[[math]]"),
+        ("notes", "[[note]]\nPublic preview note marker\n[[/note]]", "[[note]]"),
+        ("table-of-contents", "[[toc]]\n+ Public preview toc heading", "[[toc]]"),
+        ("tables", "|| Public preview table marker ||", "|| Public preview table marker ||"),
+        ("text-size", "[[size 150%]]Public preview size marker[[/size]]", "[[size 150%]]"),
+    ];
+
+    for (label, wikitext, forbidden_literal) in cases {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site.site_id,
+                "title": format!("Public syntax preview {label}"),
+                "wikitext": wikitext,
+            }),
+        );
+        assert!(
+            !preview.body.contains(forbidden_literal),
+            "{label} should be consumed by the public preview parser: {}",
+            preview.body,
+        );
+    }
+
+    let paragraphs = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview paragraphs",
+            "wikitext": "Public preview paragraph one\n\nPublic preview paragraph two",
+        }),
+    );
+    assert!(paragraphs.body.contains("<p>Public preview paragraph one</p>"));
+    assert!(paragraphs.body.contains("<p>Public preview paragraph two</p>"));
+
+    let typography = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview typography",
+            "wikitext": "Public preview dots... and em -- dash",
+        }),
+    );
+    assert!(!typography.body.contains("dots..."));
+    assert!(!typography.body.contains("em -- dash"));
+
+    let escaping = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview universal escaping",
+            "wikitext": "@<Public preview umlaut: &#252;>@",
+        }),
+    );
+    assert!(escaping.body.contains("Public preview umlaut: ü"));
+    assert!(!escaping.body.contains("@<"));
+}
+
 fn set_mutation_request_context(
     runner: &mut TestRunner,
     user_id: i64,
