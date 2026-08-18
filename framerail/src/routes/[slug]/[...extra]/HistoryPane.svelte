@@ -5,7 +5,7 @@
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
 
   import { Layout } from "$lib/types"
-  import { onDestroy } from "svelte"
+  import { onDestroy, tick } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
 
   import type { PageProps } from "./$types"
@@ -33,6 +33,7 @@
   let toRevisionNumber = $state<Optional<number>>(undefined)
   let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
   let revisionDiffLoading = $state(false)
+  let revisionDiffCompareButton: HTMLButtonElement | undefined
   let revisionDiffRequestId = 0
   let active = true
 
@@ -90,6 +91,7 @@
   async function fetchRevisionDiff() {
     if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
 
+    const restoreCompareFocus = document.activeElement === revisionDiffCompareButton
     const requestedFromRevisionNumber = fromRevisionNumber
     const requestedToRevisionNumber = toRevisionNumber
     const requestId = ++revisionDiffRequestId
@@ -132,6 +134,10 @@
     } finally {
       if (requestId === revisionDiffRequestId) {
         revisionDiffLoading = false
+        if (restoreCompareFocus) {
+          await tick()
+          revisionDiffCompareButton?.focus()
+        }
       }
     }
   }
@@ -485,6 +491,7 @@
       </button>
       <button
         class="action-button clickable"
+        bind:this={revisionDiffCompareButton}
         disabled={revisionDiffLoading}
         onclick={fetchRevisionDiff}
         type="button"
