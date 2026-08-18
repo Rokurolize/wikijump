@@ -150,6 +150,12 @@ function fakeBrowserOwner(colors = [RED, BLUE, BLUE]) {
       events.push("reload");
       return { status: () => 200 };
     },
+    async waitForLoadState() {
+      events.push("load-settled");
+    },
+    async waitForFunction() {
+      events.push("fonts-settled");
+    },
     async evaluate() {
       const color = colors[Math.min(colorIndex, colors.length - 1)];
       colorIndex += 1;
@@ -248,10 +254,12 @@ test("authoring candidate executes the public component CSS slice before passing
     [100],
   );
   assert.ok(session.events.some(({ method }) => method === "article_view"));
-  assert.deepEqual(browser.events.slice(0, 4), [
+  assert.deepEqual(browser.events.slice(0, 6), [
     "fixture:A1061_FIRST_RELOAD_INTERVALS",
     "context",
     "goto",
+    "load-settled",
+    "fonts-settled",
     "reload",
   ]);
   assert.equal(browser.events.filter((event) => event === "reload").length, 1);

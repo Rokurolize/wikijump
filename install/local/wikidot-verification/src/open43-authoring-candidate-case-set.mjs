@@ -218,6 +218,15 @@ class Open43AuthoringRun {
         final_url: browserPage.url(),
         style: await browserStyle(browserPage),
       };
+      // The acceptance interval begins at the normal reload below.  Let the
+      // pre-edit navigation finish its own third-party theme requests first so
+      // their cancellation cannot be misattributed to that reload.
+      await browserPage.waitForLoadState("load", { timeout: 300_000 });
+      await browserPage.waitForFunction(
+        () => document.fonts?.status === "loaded" || document.fonts === undefined,
+        undefined,
+        { timeout: 300_000 },
+      );
 
       const editedComponent = await this.#rpc("page_edit", {
         site_id: this.#siteId,
