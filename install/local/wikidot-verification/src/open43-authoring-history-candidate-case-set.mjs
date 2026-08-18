@@ -252,8 +252,22 @@ function captureStatus(response) {
 
 async function responseObservation(response) {
   const body = await response.text();
+  const httpStatus = captureStatus(response);
+  let status = httpStatus;
+  try {
+    const action = JSON.parse(body);
+    if (
+      ["success", "failure"].includes(action?.type) &&
+      Number.isSafeInteger(action.status)
+    ) {
+      status = action.status;
+    }
+  } catch {
+    // Non-action responses (for example the CSRF boundary) use HTTP status.
+  }
   return {
-    status: captureStatus(response),
+    status,
+    http_status: httpStatus,
     body_size: Buffer.byteLength(body),
     body_sha256: sha256Value(body),
   };
@@ -483,13 +497,14 @@ class Open43AuthoringHistoryRun {
         ? ["fr", "en"]
         : ["ja-JP", "en-US"];
       const submitted = `${desired[0].replaceAll("-", "_")}, ${desired[1]} ${desired[0]}`;
+      await page.fill("#user-display-locales", submitted);
       await addSubmittedUserControl(page);
       const saveResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/display"));
-      await page.fill("#user-display-locales", submitted);
       this.#settingsRestored = false;
       await page.click("#user-settings-form .button-save");
       const saveResponse = await saveResponsePromise;
       const saved = await responseObservation(saveResponse);
+      const saveRequestBody = postBodies.at(-1) ?? "";
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       const afterSaveReload = await settingsState(page);
       const persisted = await this.#user();
@@ -518,8 +533,8 @@ class Open43AuthoringHistoryRun {
         invalid: { response: invalid, reloaded: afterInvalidReload },
         save: {
           submitted,
-          submitted_user_control: /(?:^|&)user=999(?:&|$)/u.test(postBodies.at(-1) ?? ""),
-          request_body_sha256: sha256Value(postBodies.at(-1) ?? ""),
+          submitted_user_control: /(?:^|&)user=999(?:&|$)/u.test(saveRequestBody),
+          request_body_sha256: sha256Value(saveRequestBody),
           expected_locales: desired,
           response: saved,
           persisted_locales: persisted.locales,
@@ -698,7 +713,13 @@ function candidateOwnedBrowserFailure(failure) {
   if (failure?.kind !== "request_failed") return true;
   let url;
   try { url = new URL(failure.url); } catch { return true; }
-  return !["http:", "https:"].includes(url.protocol) || url.hostname.endsWith(".wikijump.localhost");
+  if (!["http:", "https:"].includes(url.protocol)) return true;
+  if (!url.hostname.endsWith(".wikijump.localhost")) return false;
+  return !(
+    failure.error === "net::ERR_ABORTED" &&
+    url.pathname.startsWith("/_app/immutable/") &&
+    ["script", "stylesheet", "font", "image"].includes(failure.resource_type)
+  );
 }
 
 function verifyCapture(value, expectedUrl, name) {
