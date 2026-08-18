@@ -35,8 +35,8 @@
       },
       {
         "path": "deepwell/src/services/context.rs",
-        "git_blob": "632fda21c4c5e1e13f986686712dd16a4bf86271",
-        "sha256": "1a2d83bfb72733b899b07def9aea622fec20dd72db3c8f42fa9421ac1f3505ae"
+        "git_blob": "d80fbfeffb29f1c70711f66a6c136e171d6bf3b7",
+        "sha256": "ae7d370cff27d70a2b98aeee18ae98872cc7af9921bb33c7fe5dc78030bb15ee"
       },
       {
         "path": "deepwell/src/services/text_block/service.rs",
