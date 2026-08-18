@@ -66,7 +66,7 @@ function fakeSession() {
   const html = (actor) => {
     const selected = actor === "anonymous" ? [state.fixture.public_page] : [state.fixture.private_page];
     const score = actor === "anonymous" ? state.vote?.value ?? state.fixture.initial_public_score : state.fixture.private_score;
-    return `<div class="top-rated-pages-box"><div class="top-rated-pages-list">${selected.map((row) => `<div class="list-item"><a href="/${row.slug}">${row.title}</a><span style="color: #777">(Rating: ${row === state.fixture.public_page ? score : state.fixture.private_score})</span></div>`).join("")}</div></div>`;
+    return `<div class="top-rated-pages-box">\n\n<div class="top-rated-pages-list">${selected.map((row) => `<div class="list-item"><a href="/${row.slug}">${row.title}</a>\n<span style="color: #777">(Rating: ${row === state.fixture.public_page ? score : state.fixture.private_score})</span></div>`).join("")}</div></div>`;
   };
   return {
     session: {

@@ -64,10 +64,22 @@ function printuserState() {
 
 function fakeBrowserContexts(state) {
   const events = [];
+  const listeners = new Map();
   const page = {
-    on() {},
-    off() {},
+    on(name, listener) { listeners.set(name, listener); },
+    off(name) { listeners.delete(name); },
     async goto() {
+      const failed = listeners.get("requestfailed");
+      failed?.({
+        url: () => `https://www.wikidot.com/avatar.php?userid=${visible.user_id}&amp;size=small`,
+        method: () => "GET",
+        failure: () => ({ errorText: "csp" }),
+      });
+      failed?.({
+        url: () => `https://www.wikidot.com/userkarma.php?u=${visible.user_id}`,
+        method: () => "GET",
+        failure: () => ({ errorText: "csp" }),
+      });
       return { status: () => 200 };
     },
     async evaluate() {

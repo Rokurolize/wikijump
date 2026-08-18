@@ -75,6 +75,9 @@ function fakeSession({ events }) {
         currentSource = params.wikitext;
         return page;
       }
+      if (method === "wikidot_page_discussion_create") {
+        return { thread_id: 700, thread_unix_title: "candidate-comments" };
+      }
       if (method === "page_delete") {
         pages.delete("run-owned:comments-hideform-0123456789ab");
         return null;

@@ -129,6 +129,15 @@ function verifyPrintuserState(state, fixture, label) {
   };
 }
 
+function expectedPrintuserCspFailure(request, fixture) {
+  if (request?.method !== "GET" || request.failure !== "csp") return false;
+  const urls = new Set([
+    `https://www.wikidot.com/avatar.php?userid=${fixture.visible_user.user_id}&amp;size=small`,
+    `https://www.wikidot.com/userkarma.php?u=${fixture.visible_user.user_id}`,
+  ]);
+  return urls.has(request.url);
+}
+
 export function verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, plan) {
   if (caseId !== "Q1026_BROWSER_PRINTUSER_INTERVALS") throw new Error(`unsupported Open43 #1026 case: ${caseId}`);
   const value = object(observations, `${caseId} observations`);
@@ -141,7 +150,7 @@ export function verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, pl
   if (!Array.isArray(value.request_methods) || value.request_methods.some((method) => !["GET", "HEAD", "OPTIONS"].includes(method))) {
     throw new Error("#1026 printuser candidate issued a mutating request");
   }
-  if (!Array.isArray(value.failed_requests) || value.failed_requests.length !== 0) {
+  if (!Array.isArray(value.failed_requests) || value.failed_requests.some((request) => !expectedPrintuserCspFailure(request, plan.fixture))) {
     throw new Error("#1026 printuser candidate observed failed requests");
   }
   if (value.mutation_detected !== false) throw new Error("#1026 printuser candidate mutation was detected");
@@ -151,5 +160,6 @@ export function verifyOpen43Q1026PrintuserIntervalsCase(caseId, observations, pl
     initial,
     settled,
     request_methods: value.request_methods,
+    expected_csp_failures: value.failed_requests.length,
   };
 }

@@ -210,6 +210,16 @@ class CommentsHideformRun {
     this.#pageResource = this.#resources.register("page", { ...this.#ownedPage, source_fixture_sha256: CASE_FIXTURE_SHA256 });
     if (!this.#matchesOwnedPage(await this.#page())) throw new Error("Comments hideForm page_create did not round-trip");
 
+    // A saved Wikidot Comments module only has the actor/form state that this
+    // case verifies after the page has an actual per-page discussion thread.
+    // The candidate is disposable; create that thread through the same public
+    // page-discussion seam used by the browser instead of assuming seed state.
+    const discussion = await this.#rpc("wikidot_page_discussion_create", {
+      site_id: this.#siteId,
+      page_id: created.page_id,
+    });
+    if (!Number.isSafeInteger(discussion?.thread_id)) throw new Error("Comments hideForm discussion fixture was not created");
+
     const contexts = new Map();
     const ensureContext = async (actor) => {
       if (!contexts.has(actor.label)) contexts.set(actor.label, this.#browserContexts.newCandidateContext({ storageState: this.#session.storageState(actor.fixtureActor) }).then(({ context }) => context));

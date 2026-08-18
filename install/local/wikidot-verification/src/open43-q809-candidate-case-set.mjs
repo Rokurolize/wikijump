@@ -93,14 +93,21 @@ function requirePage(page, expected, name) {
 function requireFoundHtml(result, name) {
   const html = typeof result === "string" ? result : result?.type === "found" && typeof result.data?.compiled_body_html === "string" ? result.data.compiled_body_html : null;
   if (html === null) throw new Error(`${name} page_view did not return a found compiled page`);
-  if (!html.includes('<div class="top-rated-pages-box"><div class="top-rated-pages-list">') || (html.match(/<div class="list-item">/gu) ?? []).length !== 1) throw new Error(`${name} RatedPages output has the wrong public wrapper or row count`);
+  if (!/<div class="top-rated-pages-box">\s*<div class="top-rated-pages-list">/u.test(html) || (html.match(/<div class="list-item">/gu) ?? []).length !== 1) throw new Error(`${name} RatedPages output has the wrong public wrapper or row count`);
   if (html.includes("[[module RatedPages")) throw new Error(`${name} RatedPages source leaked into the rendered page`);
   return html;
 }
 
+function regexLiteral(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+}
+
 function requireRow(html, page, score, visible, name) {
-  const expected = `<a href="/${page.slug}">${page.title}</a><span style="color: #777">(Rating: ${score})</span>`;
-  if (visible ? !html.includes(expected) : html.includes(page.title) || html.includes(`href="/${page.slug}"`)) throw new Error(`${name} RatedPages visibility or score is wrong`);
+  const expected = new RegExp(
+    `<a href="/${regexLiteral(page.slug)}">${regexLiteral(page.title)}</a>\\s*<span style="color: #777">\\(Rating: ${score}\\)</span>`,
+    "u",
+  );
+  if (visible ? !expected.test(html) : html.includes(page.title) || html.includes(`href="/${page.slug}"`)) throw new Error(`${name} RatedPages visibility or score is wrong`);
 }
 
 class Open43Q809Run {

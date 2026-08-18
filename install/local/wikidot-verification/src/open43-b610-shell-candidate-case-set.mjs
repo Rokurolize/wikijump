@@ -97,7 +97,10 @@ function requiredRuntimeBindings(privateInput) {
     throw new Error("B610 private input must contain required runtime bindings");
   }
   const roles = new Set(privateInput.runtime_bindings.map((binding) => binding?.role));
-  for (const role of ["caddy", "framerail", "deepwell", "files"]) {
+  // Framerail is intentionally reachable only behind Caddy in promotion
+  // candidates.  Requiring a direct Framerail host publication makes this
+  // browser-only contract impossible to bind to the production topology.
+  for (const role of ["caddy", "deepwell", "files"]) {
     if (!roles.has(role)) throw new Error(`B610 runtime bindings are missing ${role}`);
   }
   return privateInput.runtime_bindings;
