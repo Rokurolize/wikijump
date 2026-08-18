@@ -1068,8 +1068,8 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
     delayed_forms: 9,
     generated_runtime_kinds: 2,
     renderer_modules: 29,
-    wikidot_fixtures: 130,
-    total: 399
+    wikidot_fixtures: 137,
+    total: 406
   })
   assert.equal(inventory.ftml_raw_surface_manifest.catalog_crosswalk.length, 41)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.source, inventory.provenance.ftml)
