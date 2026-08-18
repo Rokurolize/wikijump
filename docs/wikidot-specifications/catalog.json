@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 78,
+    "observation_count": 80,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -3402,7 +3402,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "educational-site-upgrade-application-20260818"
+      ]
     },
     {
       "id": "expressions",
@@ -3500,7 +3502,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "gravatar-guest-identity-20260818"
+      ]
     },
     {
       "id": "hosted-wiki-platform",

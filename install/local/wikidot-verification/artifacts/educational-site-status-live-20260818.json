@@ -5,7 +5,7 @@
   "surface_ids": ["catalog-feature:educational-site-status"],
   "mutated": false,
   "actor": "master-administrator",
-  "observations": {
+  "captured_contract": {
     "manager_welcome": {
       "module": "managesite/ManageSiteWelcomeModule",
       "site_plan": "Basic Free",

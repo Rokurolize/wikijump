@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
   "updated_at": "2026-08-17",
-  "catalog_sha256": "7f99d20a92907cd5ab2f320813c67980ee00afa160438a24e338e7bd064ee338",
+  "catalog_sha256": "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -3588,14 +3588,45 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "educational-site-status": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/platform/educational-site-status.md"
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Live Master Administrator ManageSiteWelcomeModule educational-upgrade control",
+        "Live managesite/ManageSiteUpgradeEduModule application form",
+        "Framerail public Ajax Module Connector UpgradesAction/upgradeEdu boundary",
+        "Deepwell site-scoped educational status persistence and Master Administrator ownership"
       ],
-      "live_oracle_evidence": [],
+      "tests": [
+        {
+          "path": "deepwell/tests/site.rs",
+          "name": "educational_upgrade_is_site_scoped_and_master_admin_only",
+          "scope": "public Deepwell mutation requires the site Master Administrator, persists educational status atomically, hides private application text, and rejects repeat grants"
+        },
+        {
+          "path": "framerail/tests/ajax-module-connector-manage-site-educational.test.js",
+          "name": "Educational upgrade action preserves the observed UpgradesAction wire shape",
+          "scope": "public AMC preserves the observed application action and rejects incomplete or widened request shapes"
+        },
+        {
+          "path": "framerail/tests/wikidot-manage-site-educational.test.js",
+          "name": "Educational upgrade renders the observed application and benefits",
+          "scope": "public Site Manager read model renders the observed educational application and documented benefit text"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/site/service.rs",
+        "deepwell/src/models/site.rs",
+        "deepwell/migrations/20260818030000_site_educational_status.sql",
+        "framerail/src/lib/server/ajax-module-connector.js",
+        "framerail/src/lib/server/wikidot-manage-site-educational.js",
+        "framerail/src/routes/ajax-module-connector.php/+server.ts"
+      ],
+      "documentation_evidence": [
+        "specifications/platform/educational-site-status.md",
+        "docs/wikidot-specifications/live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/educational-site-status-live-20260818.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "expressions": {

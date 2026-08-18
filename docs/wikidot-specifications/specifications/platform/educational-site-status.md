@@ -68,6 +68,31 @@ Evidence basis:
 
 - Grant/revoke transitions must be atomic across capability checks: a site must not partially enforce free-plan limits while presenting itself as educational. Staff approval timing itself is not synthesized.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Master Administrators receive a free educational-site application through the Site Manager
+
+- Observation ID: `educational-site-upgrade-application-20260818`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-18`
+- Analysis: A read-only Master Administrator observation on sandbox-for-codex establishes the current educational-upgrade entry point and application wire without performing the persistent grant. The Site Manager dashboard exposes the Educational upgrade control as sm-edu, backed by managesite/ManageSiteUpgradeEduModule. The module presents the documented educational/research benefits and an sm-eduupgrade-form with organization and purpose fields. Its browser script serializes that form and submits UpgradesAction / upgradeEdu, then reloads sm-welcome on success. Because the grant is persistent and no cleanup-safe revocation path was established, the live mutation and post-upgrade module body were not inferred.
+
+Normative behavior:
+
+- The current Basic Free Site Manager exposes Educational upgrade to the Master Administrator through sm-edu and managesite/ManageSiteUpgradeEduModule.
+- The observed application requires organization and purpose fields and submits UpgradesAction / upgradeEdu through the Ajax Module Connector.
+- The application advertises unlimited private-site members, 25 GB upload storage, 100 MB files with more storage available on request, SSL, unlimited page revisions, other small improvements, and no charge for educational/research use.
+- The browser success path reloads sm-welcome after the upgrade action completes.
+- The live grant, post-upgrade module body, and staff monitoring/revocation workflow remain unobserved; local behavior must fail closed rather than inventing those presentation or revocation details.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/educational-site-status-live-20260818.json` (SHA-256 `d349454353717e5101430e2a77f28a8754108a076b75045b41ec4756cf812b46`), cases: none
+
+
 
 ## Suggested public TDD seams
 
@@ -79,12 +104,6 @@ These seams are recommendations. The implementation agent must present and confi
 ## Feature-specific implementation notes
 
 - No feature-specific implementation note beyond the corpus contract.
-
-## Current live observations
-
-- `install/local/wikidot-verification/artifacts/educational-site-status-live-20260818.json` records a read-only Master Administrator observation of the current Site Manager path. The dashboard exposes `sm-edu`, which maps to `managesite/ManageSiteUpgradeEduModule`; the application form is `sm-eduupgrade-form` with `organization` and `purpose` fields.
-- The current browser action serializes that form and submits `UpgradesAction` / `upgradeEdu`, then reloads `sm-welcome` on success. No live educational-status mutation was performed because the grant is persistent and the current evidence did not establish a cleanup-safe revocation path.
-- The current application body repeats the documented private-member, storage, file-size, SSL, revision, free-use, and educational/research-purpose contract. The post-upgrade module body and staff-side monitoring/revocation workflow remain unobserved and must not be invented.
 
 ## Source inventory
 
