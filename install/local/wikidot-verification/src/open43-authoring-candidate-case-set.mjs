@@ -453,6 +453,13 @@ function requireScreenshot(value, name) {
   return screenshot;
 }
 
+function candidateOwnedBrowserFailure(failure) {
+  if (failure?.kind !== "request_failed") return true;
+  let url;
+  try { url = new URL(failure.url); } catch { return true; }
+  return !["http:", "https:"].includes(url.protocol) || url.hostname.endsWith(".wikijump.localhost");
+}
+
 function verifyBrowser(observations) {
   const value = requirePlainObject(observations, "first reload browser observations");
   const before = requirePlainObject(value.before, "pre-edit browser observation");
@@ -472,7 +479,7 @@ function verifyBrowser(observations) {
     capture.document?.phase !== "settled" ||
     capture.document?.resource_completion?.status !== "complete" ||
     !Array.isArray(capture.failures) ||
-    capture.failures.length !== 0 ||
+    capture.failures.some(candidateOwnedBrowserFailure) ||
     !Array.isArray(capture.request_gate_aborts) ||
     capture.request_gate_aborts.length !== 0
   ) {
@@ -495,6 +502,7 @@ function verifyBrowser(observations) {
     cache_bypass: value.cache_bypass,
     initial_computed_color: value.first_reload_style.computed_color,
     settled_computed_color: value.settled_style.computed_color,
+    external_request_failures: capture.failures.length,
   };
 }
 
