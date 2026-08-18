@@ -318,9 +318,9 @@ export async function prepareCandidateFiles({sourceRoot, candidateRoot, publicPo
   ]);
   await fs.mkdir(path.dirname(deepwellConfigPath), {recursive: true, mode: 0o700});
   await fs.mkdir(path.dirname(caddyRequestPath), {recursive: true, mode: 0o700});
-  await fs.writeFile(deepwellConfigPath, candidateDeepwellConfig(prodDeepwellConfig, publicPort), {mode: 0o600});
-  await writeJson(caddyRequestPath, candidateCaddyRequest());
-  await fs.writeFile(caddyGeneratorPath, candidateCaddyGenerator(publicPort), {mode: 0o700});
+  await fs.writeFile(deepwellConfigPath, candidateDeepwellConfig(prodDeepwellConfig, publicPort), {mode: 0o644});
+  await writeJson(caddyRequestPath, candidateCaddyRequest(), 0o644);
+  await fs.writeFile(caddyGeneratorPath, candidateCaddyGenerator(publicPort), {mode: 0o755});
   const overlayManifest = {
     schema: "wikijump.compatibility_candidate_overlay.v1",
     source,
