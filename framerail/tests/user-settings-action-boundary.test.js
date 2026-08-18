@@ -132,6 +132,7 @@ test("user settings bind persistence to the server session actor", async () => {
         user: 41,
         ip_address: "192.0.2.63",
         bypass_filter: false,
+        forum_signature: null,
         locales: ["ja-JP", "en-US"]
       },
       context: {
