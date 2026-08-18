@@ -1751,7 +1751,7 @@ async function applyFramerailRouteActionEvidence(root, records, sourceRevision) 
       }
     })
   }
-  if (linked !== 108 || gaps !== 17) {
+  if (linked !== 125 || gaps !== 0) {
     throw new Error(`${registryPath} current test-link counts drifted`)
   }
   return projected
