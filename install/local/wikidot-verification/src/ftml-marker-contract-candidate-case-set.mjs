@@ -90,17 +90,32 @@ function cargoLockSha256(executionIdentity) {
   return lock.sha256;
 }
 
-function observedPage(page) {
-  return page.evaluate(() => {
-    const root = document.querySelector("#page-content");
-    if (!root) return null;
-    return {
-      visible_text: (root.innerText ?? "").replace(/\s+/gu, " ").trim(),
-      marker_count: root.querySelectorAll(
-        "h1,h2,h3,h4,h5,h6,hr,div,span,[style*='text-align']",
-      ).length,
-    };
-  });
+async function observedPage(page) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await page.evaluate(() => {
+        const root = document.querySelector("#page-content");
+        if (!root) return null;
+        return {
+          visible_text: (root.innerText ?? "").replace(/\s+/gu, " ").trim(),
+          marker_count: root.querySelectorAll(
+            "h1,h2,h3,h4,h5,h6,hr,div,span,[style*='text-align']",
+          ).length,
+        };
+      });
+    } catch (error) {
+      if (
+        attempt === 2 ||
+        !/Execution context was destroyed|Cannot find context with specified id/iu.test(
+          error?.message ?? "",
+        )
+      ) {
+        throw error;
+      }
+      await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
+    }
+  }
+  throw new Error("FTML marker browser observation did not reach a stable document");
 }
 
 function verifyCleanup(proof, resources) {
