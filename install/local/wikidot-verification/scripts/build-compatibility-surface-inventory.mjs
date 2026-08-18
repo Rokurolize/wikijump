@@ -100,7 +100,7 @@ const AUDITED_CATALOG_SHA256 = "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad
 const AUDITED_CATALOG_FALLBACK = Object.freeze({
   count: 93,
   surface_ids_sha256: "d1e98c8dcef3d61aa32f48d5bb34e9a143b84abdded2a8d8a623f8f7b63645a4",
-  mapping_sha256: "2bc65f13106d1dd1046e6104530afeb8b2c33db21a142c1de095285dca2f1a3c"
+  mapping_sha256: "e38a15957d6e2a9f6c96b6e8f608a055412d2a6c713f7193b7b4ae11c8a9adc6"
 })
 const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   count: 195,
@@ -122,12 +122,6 @@ const AUDITED_ISSUE_GROUPS = Object.freeze({
   wws_route: Object.freeze({ count: 47, surface_ids_sha256: "ab5f11a51af87a193c5f3b032a3b79c2e0c3ea1f787c35bb8c9d4d1c474569ab", mapping_sha256: "3cbd7115f9f7a4463abca2965c29a44418dd28013df29c5f396c52a562841bfa" }),
   wikidot_py_amc_module_shape: Object.freeze({ count: 22, surface_ids_sha256: "4af71683f0059a07403b6cba86cb1d8961e9b9b4c1b2f3be158b2e7bd2918123", mapping_sha256: "a7cd9e3f642420977c413a97231131d38f56e0374e3440955e081b417e3ac48f" })
 })
-const CATALOG_SPLIT_IMPLEMENTATION_OWNERS = new Set([
-  "catalog-feature:module-countpages",
-  "catalog-feature:module-listpages",
-  "catalog-feature:page-inclusions",
-  "catalog-feature:syntax-engine"
-])
 const FTML_PUBLIC_PREVIEW_TEST_FEATURES = new Set([
   "syntax-bibliography",
   "syntax-block-formatting-elements",
@@ -3488,6 +3482,15 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics, auditedOw
   const crosswalkByFeature = new Map(
     catalogCrosswalk.map((row) => [row.feature_id, row])
   )
+  const implementationOwnersFromSource = (record) => {
+    const owners = new Set()
+    for (const reference of record.source?.references ?? []) {
+      if (reference.startsWith("deepwell/")) owners.add("wikijump.deepwell")
+      else if (reference.startsWith("framerail/")) owners.add("wikijump.framerail")
+      else if (reference.startsWith("wws/")) owners.add("wikijump.wws")
+    }
+    return uniqueSortedStrings([...owners])
+  }
   const normalizedSurfaces = surfaces.map((record) => {
     const {
       public_owner: legacyOwner,
@@ -3508,10 +3511,11 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics, auditedOw
         implementationOwners = uniqueSortedStrings(
           implementationOwnerRecords.map(({ owner }) => owner)
         )
-      } else if (auditedOwnershipActive && CATALOG_SPLIT_IMPLEMENTATION_OWNERS.has(record.surface_id)) {
-        implementationOwners = ["ftml", "wikijump"]
       } else if (auditedOwnershipActive) {
-        implementationOwners = ["wikijump"]
+        implementationOwners = implementationOwnersFromSource(record)
+        if (implementationOwners.length === 0) {
+          throw new Error(`audited catalog feature has no concrete implementation owner: ${record.surface_id}`)
+        }
       } else {
         implementationOwners = []
       }
@@ -3552,7 +3556,11 @@ function normalizeSurfaceOwners(surfaces, catalogCrosswalk, semantics, auditedOw
       auditedLinesSha256(fallbackIds) !== AUDITED_CATALOG_FALLBACK.surface_ids_sha256 ||
       auditedLinesSha256(fallbackMapping) !== AUDITED_CATALOG_FALLBACK.mapping_sha256
     ) {
-      throw new Error("audited catalog implementation ownership drift")
+      throw new Error(
+        `audited catalog implementation ownership drift: count=${fallbackRows.length} ` +
+          `surface_ids_sha256=${auditedLinesSha256(fallbackIds)} ` +
+          `mapping_sha256=${auditedLinesSha256(fallbackMapping)}`
+      )
     }
   }
   return normalizedSurfaces
