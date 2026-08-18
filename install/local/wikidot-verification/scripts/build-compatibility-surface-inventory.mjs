@@ -112,7 +112,7 @@ const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   fallback_mapping_sha256: "98a01e1926458f278a963a8d81706f6906387cc8cc3f88ac643119b43afb2d77"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
-  deepwell_jsonrpc_method: Object.freeze({ count: 163, surface_ids_sha256: "307624e11c494a0fc894236e9f1c3da6665833ec7778418afe1116f39eea1a12", mapping_sha256: "4db63ea2576db5fa7df9993c3d1a56d646d5f089b65ad18b69a262494039e297" }),
+  deepwell_jsonrpc_method: Object.freeze({ count: 164, surface_ids_sha256: "c7c1f277e1a28071da3ed07aeb7cadeb1565cacfcb887c20442a5bf2317ee8c5", mapping_sha256: "92d800f498329e63daa897b2c34e7706ecc9f15d39173881ee575e3f6cd4cb28" }),
   framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
   framerail_server_action: Object.freeze({ count: 97, surface_ids_sha256: "f1d6baa4652c07e181839c8efb90709c35c76154e95f0b71f15c94c0cd9f2dfc", mapping_sha256: "3cc1f313532c1664c989c02e121b4476f25642b48f55a6f5958fc92c97d513a3" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
