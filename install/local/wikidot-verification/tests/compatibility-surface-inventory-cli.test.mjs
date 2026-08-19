@@ -1064,12 +1064,12 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
     canonical_blocks: 63,
     block_aliases: 47,
     typed_modules: 7,
-    ast_variants: 47,
+    ast_variants: 48,
     delayed_forms: 9,
     generated_runtime_kinds: 2,
-    renderer_modules: 29,
-    wikidot_fixtures: 137,
-    total: 406
+    renderer_modules: 30,
+    wikidot_fixtures: 138,
+    total: 409
   })
   assert.equal(inventory.ftml_raw_surface_manifest.catalog_crosswalk.length, 41)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.source, inventory.provenance.ftml)

@@ -7,12 +7,12 @@
       "canonical_blocks": 63,
       "block_aliases": 47,
       "typed_modules": 7,
-      "ast_variants": 47,
+      "ast_variants": 48,
       "delayed_forms": 9,
       "generated_runtime_kinds": 2,
-      "renderer_modules": 29,
-      "wikidot_fixtures": 137,
-      "total": 406
+      "renderer_modules": 30,
+      "wikidot_fixtures": 138,
+      "total": 409
     },
     "raw_surface_identities": [
       {
@@ -165,6 +165,10 @@
       },
       {
         "surface_id": "ftml.ast:Raw",
+        "kind": "ast_variant"
+      },
+      {
+        "surface_id": "ftml.ast:SocialButtons",
         "kind": "ast_variant"
       },
       {
@@ -972,6 +976,10 @@
         "kind": "wikidot_fixture"
       },
       {
+        "surface_id": "ftml.fixture:test/math/inline",
+        "kind": "wikidot_fixture"
+      },
+      {
         "surface_id": "ftml.fixture:test/media/fail",
         "kind": "wikidot_fixture"
       },
@@ -1361,6 +1369,10 @@
       },
       {
         "surface_id": "ftml.renderer:module",
+        "kind": "renderer_module"
+      },
+      {
+        "surface_id": "ftml.renderer:social",
         "kind": "renderer_module"
       },
       {
@@ -2291,13 +2303,16 @@
         "rendered_by": [
           "ftml.renderer:math"
         ],
-        "tested_by": [],
+        "tested_by": [
+          "ftml.fixture:test/math/inline"
+        ],
         "ftml_surfaces": [
           "ftml.ast:EquationReference",
           "ftml.ast:Math",
           "ftml.ast:MathInline",
           "ftml.block:equation-ref",
           "ftml.block:math",
+          "ftml.fixture:test/math/inline",
           "ftml.renderer:math",
           "ftml.tokenizer:left_math",
           "ftml.tokenizer:right_math"
@@ -2353,15 +2368,15 @@
       {
         "feature_id": "syntax-social-bookmarking",
         "parsed_by": [
-          "ftml.ast:Module"
+          "ftml.ast:SocialButtons"
         ],
         "rendered_by": [
-          "ftml.renderer:module"
+          "ftml.renderer:social"
         ],
         "tested_by": [],
         "ftml_surfaces": [
-          "ftml.ast:Module",
-          "ftml.renderer:module"
+          "ftml.ast:SocialButtons",
+          "ftml.renderer:social"
         ],
         "runtime_owner": "wikijump.runtime:syntax-social-bookmarking"
       },
