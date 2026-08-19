@@ -2327,8 +2327,7 @@ mod tests {
 
     #[test]
     fn maximum_year_date_spans_use_an_open_upper_bound() {
-        let timestamp = time::Date::from_calendar_date(9999, time::Month::December, 31)
-            .unwrap()
+        let timestamp = time::Date::MAX
             .with_time(time::Time::from_hms(23, 59, 59).unwrap())
             .assume_utc();
 

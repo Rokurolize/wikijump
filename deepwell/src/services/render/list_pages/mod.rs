@@ -119,6 +119,7 @@ pub(super) use self::presentation::{
     render_list_pages_wikidot_user, substitute_count_pages_variables,
 };
 pub(super) use self::random_cache::seed_random_list_pages_order;
+pub(super) use self::rendering::render_wikidot_social_module;
 pub(super) use self::rendering_support::{
     CountPagesBlockRenderResult, CountPagesExpansionOptions, CountPagesRequiredTagSource,
     CountPagesRequiredTagTotal, ListPagesBlockRenderResult, ListPagesContentCache,

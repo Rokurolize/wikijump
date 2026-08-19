@@ -44,9 +44,6 @@ use super::compat::wikidot_iframe::{
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
-use super::compat::wikidot_social::{
-    expand_wikidot_social_syntax, has_wikidot_social_syntax,
-};
 use super::diagnostics::{
     CorpusRenderDimension, CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace,
     StageGuard,
@@ -1644,24 +1641,6 @@ impl RenderService {
                 &mut wikidot_compat_text,
             );
         }
-        if settings.enable_page_syntax && has_wikidot_social_syntax(&wikitext) {
-            let social_site = match current_site_id {
-                Some(site_id) => Some(
-                    SiteService::get(ctx, Reference::Id(site_id))
-                        .await
-                        .or_raise(make_error)?,
-                ),
-                None => None,
-            };
-            wikitext = expand_wikidot_social_syntax(
-                wikitext,
-                &mut wikidot_compat_html,
-                social_site
-                    .as_ref()
-                    .map_or(page_info.site.as_ref(), |site| site.slug.as_str()),
-                social_site.as_ref().map_or("", |site| site.name.as_str()),
-            );
-        }
         if settings.enable_page_syntax && has_wikidot_iframe_syntax(&wikitext) {
             wikitext = expand_wikidot_iframe_syntax(wikitext, &mut wikidot_compat_html);
         }
@@ -2012,6 +1991,7 @@ impl RenderService {
             viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,
+            lifecycle == RenderLifecycle::PagePreview,
             current_site,
             trace,
             persist_compiled_text,
@@ -2045,6 +2025,7 @@ impl RenderService {
             viewer_user_id,
             None,
             true,
+            true,
             Some(current_site),
             None,
             false,
@@ -2063,6 +2044,7 @@ impl RenderService {
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
         allow_wikidot_styleframe: bool,
+        page_preview: bool,
         current_site: Option<SiteModel>,
         trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
         persist_compiled_text: bool,
@@ -2227,6 +2209,18 @@ impl RenderService {
             if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
                 return Err(Error::new(
                     "failed to resolve typed Wikidot embedvideo requirements",
+                    ErrorType::Render,
+                )
+                .into());
+            }
+            if !Self::resolve_wikidot_social_requirements(
+                &mut html_output,
+                page_info,
+                current_site.as_ref(),
+                page_preview,
+            ) {
+                return Err(Error::new(
+                    "failed to resolve typed Wikidot social requirements",
                     ErrorType::Render,
                 )
                 .into());
@@ -2566,6 +2560,18 @@ impl RenderService {
         if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
             return Err(Error::new(
                 "failed to resolve typed Wikidot embedvideo requirements",
+                ErrorType::Render,
+            )
+            .into());
+        }
+        if !Self::resolve_wikidot_social_requirements(
+            &mut html_output,
+            page_info,
+            current_site.as_ref(),
+            page_preview,
+        ) {
+            return Err(Error::new(
+                "failed to resolve typed Wikidot social requirements",
                 ErrorType::Render,
             )
             .into());

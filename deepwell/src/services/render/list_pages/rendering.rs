@@ -22,9 +22,6 @@ use super::super::AuthorizedPageSelector;
 use super::super::compat::CompatHtmlFragments;
 use super::super::compat::preparation::neutralize_authored_markers;
 use super::super::compat::text_fragments::{CompatTextFragments, escape_html_text};
-use super::super::compat::wikidot_social::{
-    expand_wikidot_social_syntax, has_wikidot_social_syntax,
-};
 use super::super::literal_regions::{
     ListPagesSourceProjection, LiteralRegionIndex, collect_list_pages_css_yield_openers,
 };
@@ -40,7 +37,8 @@ use super::super::service::{
     COUNTPAGES_MODULE_REGEX, CountPagesRequiredTagBatchResult,
     DEFAULT_LISTPAGES_PER_PAGE, IncludeExpansion, IncludeExpansionBudget,
     MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS, RenderService,
-    has_include_opening_candidate, native_numbered_list_content,
+    escape_list_pages_html_attr, has_include_opening_candidate,
+    native_numbered_list_content,
 };
 use super::super::url_arguments::UrlArguments;
 use super::content_sections::wikidot_content_section;
@@ -143,6 +141,7 @@ mod count_block;
 #[path = "rendering/selected_content.rs"]
 mod selected_content;
 
+pub(in crate::services::render) use self::selected_content::render_wikidot_social_module;
 use self::selected_content::{
     SelectedContentIncludeMode, render_list_pages_default_summary_source,
     render_list_pages_selected_content_source, select_list_pages_rows,

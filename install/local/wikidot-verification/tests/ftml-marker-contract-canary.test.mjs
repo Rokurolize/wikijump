@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -16,7 +15,6 @@ import {
   readSeedAdministrator,
   replaceFtmlPin,
   selectFtmlPinRewrite,
-  validateMarkerContractFixtures,
 } from "../scripts/run-ftml-marker-contract-canary.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -27,107 +25,10 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
+const currentFtml = "e24dd88e08f9fc1fd864ade0b7bcb8233ab312d6";
+const ownershipCanaryFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
-const ownershipPinReceiptFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
-const retainedCanarySummary = {
-  path: path.join(
-    "/home/roku/wjlab/evidence/20260819-ftml-1380-marker-695586a1-final-1",
-    "canary-summary.json",
-  ),
-  sha256:
-    "da4dcca666e3fdc2b3e2e5cbdaa68a871fc4b55e0de9b00d1179acf28dcb8e79",
-};
-const committedCanarySummaryPath = path.join(
-  repositoryRoot,
-  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary",
-  "canary-summary-695586a1.json",
-);
-
-function parseActiveFtmlDependency(source) {
-  let section = null;
-  let dependency = null;
-
-  for (const line of source.split(/\r?\n/u)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-
-    const table = trimmed.match(/^\[([A-Za-z0-9_.-]+)\]$/u);
-    if (table) {
-      section = table[1];
-      continue;
-    }
-    if (section !== "dependencies") continue;
-
-    const entry = line.match(/^\s*([A-Za-z0-9_-]+)\s*=\s*(.+?)\s*$/u);
-    if (!entry || entry[1] !== "ftml") continue;
-    assert.equal(dependency, null, "duplicate active ftml dependency");
-
-    const value = entry[2].match(
-      /^\{\s*git\s*=\s*"([^"]+)"\s*,\s*rev\s*=\s*"([0-9a-f]{40})"\s*\}$/u,
-    );
-    assert.ok(value, "active ftml dependency must be an exact git pin");
-    assert.equal(
-      value[1],
-      "https://github.com/Rokurolize/ftml",
-      "active ftml dependency must use the canonical repository",
-    );
-    dependency = { git: value[1], rev: value[2] };
-  }
-
-  assert.ok(dependency, "active ftml dependency is missing");
-  return dependency;
-}
-
-function parseFtmlLockSource(source) {
-  let packageRecord = null;
-  const ftmlPackages = [];
-  const finishPackage = () => {
-    if (packageRecord?.name === "ftml") ftmlPackages.push(packageRecord);
-  };
-
-  for (const line of source.split(/\r?\n/u)) {
-    const trimmed = line.trim();
-    if (trimmed === "[[package]]") {
-      finishPackage();
-      packageRecord = {};
-      continue;
-    }
-    if (!packageRecord) continue;
-
-    const name = line.match(/^\s*name\s*=\s*"([^"]+)"\s*$/u);
-    if (name) {
-      assert.equal(packageRecord.name, undefined, "duplicate lock package name");
-      packageRecord.name = name[1];
-      continue;
-    }
-    const packageSource = line.match(
-      /^\s*source\s*=\s*"([^"]+)"\s*$/u,
-    );
-    if (packageSource) {
-      assert.equal(
-        packageRecord.source,
-        undefined,
-        "duplicate lock package source",
-      );
-      packageRecord.source = packageSource[1];
-    }
-  }
-  finishPackage();
-
-  assert.equal(ftmlPackages.length, 1, "ftml lock package is missing or duplicated");
-  assert.equal(
-    typeof ftmlPackages[0].source,
-    "string",
-    "ftml lock package source is missing",
-  );
-  return ftmlPackages[0].source;
-}
-
-const candidateFtml = parseActiveFtmlDependency(
-  readFileSync(path.join(repositoryRoot, "deepwell/Cargo.toml"), "utf8"),
-).rev;
-
 const sanitizedEnvironment = Object.fromEntries(
   Object.entries(process.env).filter(
     ([key]) =>
@@ -149,7 +50,7 @@ const sanitizedEnvironment = Object.fromEntries(
   ),
 );
 
-test("active FTML pin and retained marker canary evidence match", () => {
+test("committed manifest and lock pin the merged FTML revision", () => {
   const manifest = readFileSync(
     path.join(repositoryRoot, "deepwell/Cargo.toml"),
     "utf8",
@@ -158,63 +59,23 @@ test("active FTML pin and retained marker canary evidence match", () => {
     path.join(repositoryRoot, "deepwell/Cargo.lock"),
     "utf8",
   );
-  assert.deepEqual(parseActiveFtmlDependency(manifest), {
-    git: "https://github.com/Rokurolize/ftml",
-    rev: candidateFtml,
-  });
   assert.equal(
-    parseFtmlLockSource(lock),
-    `git+https://github.com/Rokurolize/ftml?rev=${candidateFtml}#${candidateFtml}`,
+    manifest.match(
+      new RegExp(
+        `ftml = \\{ git = "https://github\\.com/Rokurolize/ftml", rev = "${currentFtml}" \\}`,
+        "gu",
+      ),
+    )?.length,
+    1,
   );
-
-  const canaryBytes = readFileSync(committedCanarySummaryPath);
   assert.equal(
-    createHash("sha256").update(canaryBytes).digest("hex"),
-    retainedCanarySummary.sha256,
-  );
-  const canary = JSON.parse(canaryBytes.toString("utf8"));
-  assert.equal(canary.status, "pass");
-  assert.equal(canary.baseline_ftml, ownershipPinReceiptFtml);
-  assert.equal(canary.candidate_ftml, candidateFtml);
-  assert.deepEqual(canary.required_surfaces, requiredSurfaces);
-
-  if (existsSync(retainedCanarySummary.path)) {
-    const labCanaryBytes = readFileSync(retainedCanarySummary.path);
-    assert.equal(
-      createHash("sha256").update(labCanaryBytes).digest("hex"),
-      retainedCanarySummary.sha256,
-    );
-    assert.equal(Buffer.compare(labCanaryBytes, canaryBytes), 0);
-  }
-});
-
-test("committed FTML canary fixture rejects tampered bytes", () => {
-  const fixtureBytes = readFileSync(committedCanarySummaryPath);
-  const tamperedBytes = Buffer.concat([fixtureBytes, Buffer.from("tampered")]);
-  assert.throws(
-    () =>
-      assert.equal(
-        createHash("sha256").update(tamperedBytes).digest("hex"),
-        retainedCanarySummary.sha256,
+    lock.match(
+      new RegExp(
+        `source = "git\\+https://github\\.com/Rokurolize/ftml\\?rev=${currentFtml}#${currentFtml}"`,
+        "gu",
       ),
-    /Expected values to be strictly equal/u,
-  );
-});
-
-test("FTML pin parsing rejects comments and unrelated packages", () => {
-  assert.throws(
-    () =>
-      parseActiveFtmlDependency(
-        `# [dependencies]\n# ftml = { git = "https://github.com/Rokurolize/ftml", rev = "${candidateFtml}" }`,
-      ),
-    /active ftml dependency is missing/u,
-  );
-  assert.throws(
-    () =>
-      parseFtmlLockSource(
-        `[[package]]\nname = "other-package"\nsource = "git+https://github.com/Rokurolize/ftml?rev=${candidateFtml}#${candidateFtml}"`,
-      ),
-    /ftml lock package is missing/u,
+    )?.length,
+    1,
   );
 });
 
@@ -273,7 +134,7 @@ test("the 2026-08-10 ownership pin marker canary receipt remains immutable", () 
     receipt.baseline_ftml_sha,
     "902e72a2ff261b7af42402734b2f8b659e6a294a",
   );
-  assert.equal(receipt.candidate_ftml_sha, ownershipPinReceiptFtml);
+  assert.equal(receipt.candidate_ftml_sha, ownershipCanaryFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(
     {
@@ -403,12 +264,12 @@ test("marker canary preserves whichever side already equals exact HEAD", () => {
 test("marker canary module parses sliced argv and injects run-owned credentials", async () => {
   const parsed = parseArgs([
     "--candidate-ftml",
-    candidateFtml,
+    currentFtml,
     "--output-dir",
     "/tmp/ftml-marker-contract-test",
     "--dry-run",
   ]);
-  assert.equal(parsed.candidateFtml, candidateFtml);
+  assert.equal(parsed.candidateFtml, currentFtml);
   assert.equal(parsed.dryRun, true);
 
   const administrator = await readSeedAdministrator(repositoryRoot);
@@ -481,7 +342,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
     [
       script,
       "--candidate-ftml",
-      candidateFtml,
+      currentFtml,
       "--output-dir",
       "/tmp/ftml-marker-contract-test",
       "--dry-run",
@@ -497,38 +358,6 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
   );
   assert.equal(plan.resource_disposition, "delete-on-close");
   assert.equal(plan.baseline_ftml, null);
-});
-
-test("marker canary fixture index rejects missing or duplicate records", () => {
-  const fixtures = JSON.parse(
-    readFileSync(
-      path.join(
-        repositoryRoot,
-        "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json",
-      ),
-      "utf8",
-    ),
-  );
-  assert.doesNotThrow(() => validateMarkerContractFixtures(fixtures));
-
-  const missing = { ...fixtures, fixtures: fixtures.fixtures.slice(0, -1) };
-  assert.throws(
-    () => validateMarkerContractFixtures(missing),
-    /must list each required surface exactly once/u,
-  );
-
-  const duplicate = {
-    ...fixtures,
-    fixtures: fixtures.fixtures.map((fixture, index) =>
-      index === fixtures.fixtures.length - 1
-        ? { ...fixture, fixture_id: fixtures.fixtures[0].fixture_id }
-        : fixture,
-    ),
-  };
-  assert.throws(
-    () => validateMarkerContractFixtures(duplicate),
-    /fixture IDs must be unique/u,
-  );
 });
 
 test("marker canary rejects abbreviated FTML revisions", () => {

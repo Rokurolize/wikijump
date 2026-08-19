@@ -13,6 +13,7 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
+use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
 pub(super) fn select_list_pages_rows(
     pages: Vec<FoundPageRow>,
@@ -66,7 +67,7 @@ pub(super) fn select_list_pages_rows(
 
 static LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-            r#"(?is)\[\[module\s+(?P<name>Clone|Backlinks|PreviousPage|NextPage|PetitionAdmin|SiteGrid)\b(?:[^\]"]+|"[^"]*")*\]\]"#,
+            r#"(?is)\[\[module\s+(?P<name>Clone|Backlinks|PreviousPage|NextPage|PetitionAdmin|SiteGrid)\b(?:[^\]"]+|"[^"]*")*\]\]|\[\[social(?P<social_head>\s+[^\]]*)?\]\]"#,
         )
         .expect("ListPages selected-content module expression is valid")
 });
@@ -84,9 +85,209 @@ pub(super) struct RenderedListPagesSource {
     pub(super) expanded_include_count: usize,
 }
 
+#[derive(Clone, Copy)]
+struct WikidotSocialProvider {
+    service: SocialService,
+    title: &'static str,
+    image: &'static str,
+    href: &'static str,
+    onclick: Option<&'static str>,
+}
+
+const WIKIDOT_SOCIAL_PROVIDERS: &[WikidotSocialProvider] = &[
+    WikidotSocialProvider {
+        service: SocialService::BlinkList,
+        title: "BlinkList",
+        image: "blinklist.png",
+        href: "http://www.blinklist.com/index.php?Action=Blink/addblink.php&Description=&Url={url}&Title=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Blogmarks,
+        title: "blogmarks",
+        image: "blogmarks.png",
+        href: "http://blogmarks.net/my/new.php?mini=1&simple=1&url={url}&title=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Delicious,
+        title: "del.icio.us",
+        image: "delicious.png",
+        href: "http://del.icio.us/post?url={url}&title=TITLE",
+        onclick: Some(
+            "window.open('http://del.icio.us/post?v=4&noui&jump=close&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title), 'delicious','toolbar=no,width=700,height=400'); return false;",
+        ),
+    },
+    WikidotSocialProvider {
+        service: SocialService::Digg,
+        title: "digg",
+        image: "digg.png",
+        href: "http://digg.com/submit?phase=2&url={url}&title=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Fark,
+        title: "Fark",
+        image: "fark.png",
+        href: "http://cgi.fark.com/cgi/fark/edit.pl?new_url={url}&new_comment=TITLE&new_comment={site}&linktype=Misc",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::FeedMeLinks,
+        title: "feedmelinks",
+        image: "feedmelinks.png",
+        href: "http://feedmelinks.com/categorize?from=toolbar&op=submit&url={url}&name=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Furl,
+        title: "Furl",
+        image: "furl.png",
+        href: "http://www.furl.net/storeIt.jsp?u={url}&t=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::LinkaGoGo,
+        title: "LinkaGoGo",
+        image: "linkagogo.png",
+        href: "http://www.linkagogo.com/go/AddNoPopup?url={url}&title=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::NewsVine,
+        title: "NewsVine",
+        image: "newsvine.png",
+        href: "http://www.newsvine.com/_tools/seed&save?u={url}&h=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Netvouz,
+        title: "Netvouz",
+        image: "netvouz.png",
+        href: "http://www.netvouz.com/action/submitBookmark?url={url}&title=TITLE&description=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Reddit,
+        title: "Reddit",
+        image: "reddit.png",
+        href: "http://reddit.com/submit?url={url}&title=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::YahooMyWeb,
+        title: "YahooMyWeb",
+        image: "yahoomyweb.png",
+        href: "http://myweb2.search.yahoo.com/myresults/bookmarklet?u={url}&=TITLE",
+        onclick: None,
+    },
+    WikidotSocialProvider {
+        service: SocialService::Facebook,
+        title: "Facebook",
+        image: "facebook.gif",
+        href: "http://www.facebook.com/share.php?u={url}",
+        onclick: Some(
+            "window.open('http://www.facebook.com/sharer.php?u='+encodeURIComponent(location.href)+'&t='+encodeURIComponent(document.title),'sharer','toolbar=0,status=0,width=626,height=436');return false;",
+        ),
+    },
+];
+
+fn wikidot_social_percent_encode(value: &str, spaces_as_plus: bool) -> String {
+    let mut output = String::with_capacity(value.len());
+    for byte in value.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {
+            output.push(char::from(byte));
+        } else if spaces_as_plus && byte == b' ' {
+            output.push('+');
+        } else {
+            use std::fmt::Write as _;
+            write!(&mut output, "%{byte:02X}")
+                .expect("writing percent encoding to String cannot fail");
+        }
+    }
+    output
+}
+
+fn wikidot_social_nonce(source: &str, offset: usize) -> u32 {
+    let hash = source
+        .bytes()
+        .chain(offset.to_le_bytes())
+        .fold(5381_u32, |hash, byte| {
+            hash.wrapping_mul(33).wrapping_add(u32::from(byte))
+        });
+    10_000 + hash % 90_000
+}
+
+pub(in crate::services::render) fn render_wikidot_social_module(
+    social: &SocialButtons,
+    endpoint: &str,
+    site_name: &str,
+    social_id: &str,
+) -> String {
+    let selected: Vec<Option<&WikidotSocialProvider>> = match social.selection() {
+        None => WIKIDOT_SOCIAL_PROVIDERS.iter().map(Some).collect(),
+        Some(selection) => selection
+            .iter()
+            .map(|selection| match selection {
+                SocialSelection::Service(service) => WIKIDOT_SOCIAL_PROVIDERS
+                    .iter()
+                    .find(|provider| provider.service == *service),
+                SocialSelection::Empty => None,
+            })
+            .collect(),
+    };
+    let endpoint = wikidot_social_percent_encode(endpoint, false);
+    let site_name = wikidot_social_percent_encode(site_name, true);
+    let mut output = format!("\n\n<span id=\"{social_id}\">");
+    for provider in selected {
+        let Some(provider) = provider else {
+            output.push_str(
+                "<a href=\"\" style=\"margin: 0 2px\" title=\"\"><img src=\"http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/\" alt=\"\" /></a>",
+            );
+            continue;
+        };
+        let href = provider
+            .href
+            .replace("{url}", &endpoint)
+            .replace("{site}", &site_name);
+        output.push_str("<a href=\"");
+        output.push_str(&escape_list_pages_html_attr(&href));
+        output.push_str("\" style=\"margin: 0 2px\" title=\"");
+        output.push_str(provider.title);
+        output.push('"');
+        if let Some(onclick) = provider.onclick {
+            output.push_str(" onclick=\"");
+            output.push_str(&escape_list_pages_html_attr(onclick));
+            output.push('"');
+        }
+        output.push_str("><img src=\"http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/");
+        output.push_str(provider.image);
+        output.push_str("\" alt=\"");
+        output.push_str(provider.title);
+        output.push_str("\" /></a>");
+    }
+    output.push_str("</span>\n<script type=\"text/javascript\">\n//<![CDATA[\n\n");
+    output.push_str("            var socialspan = $j(\"#");
+    output.push_str(social_id);
+    output.push_str("\")[0];\n");
+    output.push_str(
+        concat!(
+            "            var els = socialspan.getElementsByTagName(\"a\");\n",
+            "            for (var i=0;i<els.length;i++) {\n",
+            "                els[i].href = els[i].href.replace(\"TITLE\", encodeURIComponent(document.title));\n",
+            "            }\n",
+            "//]]>\n",
+            "</script>",
+        ),
+    );
+    output
+}
+
 fn prepare_list_pages_selected_content_runtime(
     wikitext: String,
     fragments: &mut CompatHtmlFragments,
+    site_slug: &str,
+    site_name: &str,
 ) -> String {
     if !LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX.is_match(&wikitext) {
         return wikitext;
@@ -104,7 +305,22 @@ fn prepare_list_pages_selected_content_runtime(
         }
         output.push_str(&wikitext[cursor..matched.start()]);
         let replacement = match captures.name("name").map(|name| name.as_str()) {
-            None => unreachable!("the selected-content regex names every module"),
+            None => {
+                let social = SocialButtons::parse(
+                    captures
+                        .name("social_head")
+                        .map_or("", |head| head.as_str()),
+                );
+                let social_id = format!("social{}", wikidot_social_nonce(&wikitext, matched.start()));
+                let endpoint =
+                    format!("http://{site_slug}.wikidot.com/ajax-module-connector.php");
+                fragments.push_html(render_wikidot_social_module(
+                    &social,
+                    &endpoint,
+                    site_name,
+                    &social_id,
+                ))
+            }
             Some(name) if name.eq_ignore_ascii_case("Clone") => {
                 fragments.push_block_html(
                     r#"<div class="error-block">You should be logged in to clone a site.</div>"#
@@ -282,20 +498,22 @@ pub(super) async fn render_list_pages_selected_content_source(
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
     let mut selected_content_fragments = CompatHtmlFragments::new(wikitext);
-    let mut wikitext = prepare_list_pages_selected_content_runtime(
+    let selected_content_site =
+        if LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX.is_match(wikitext) {
+            Some(SiteService::get(ctx, Reference::Id(current_site_id)).await?)
+        } else {
+            None
+        };
+    let wikitext = prepare_list_pages_selected_content_runtime(
         wikitext.to_owned(),
         &mut selected_content_fragments,
+        selected_content_site
+            .as_ref()
+            .map_or(page_info.site.as_ref(), |site| site.slug.as_str()),
+        selected_content_site
+            .as_ref()
+            .map_or("", |site| site.name.as_str()),
     );
-    if settings.enable_page_syntax && has_wikidot_social_syntax(&wikitext) {
-        let selected_content_site =
-            SiteService::get(ctx, Reference::Id(current_site_id)).await?;
-        wikitext = expand_wikidot_social_syntax(
-            wikitext,
-            &mut selected_content_fragments,
-            &selected_content_site.slug,
-            &selected_content_site.name,
-        );
-    }
     let mut selected_content_text = CompatTextFragments::new(&wikitext);
     let wikitext = match include_mode {
         SelectedContentIncludeMode::Execute => wikitext,

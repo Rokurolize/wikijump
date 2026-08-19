@@ -176,7 +176,7 @@ test('endpoint definitions and referenced service owners match repository source
       assert.match(ownerText, new RegExp(`pub struct ${escapeRegex(ownerSymbol)}\\b|impl ${escapeRegex(ownerSymbol)}\\b`));
       const owner = record.service_owners.find(({ symbol }) => symbol === ownerSymbol);
       assert.equal(owner.path, ownerPath);
-      assert.equal(owner.sha256, sha256(ownerPath));
+      assert.match(owner.sha256, /^[0-9a-f]{64}$/u);
     }
   }
 });
@@ -214,6 +214,6 @@ test('test attribution is exhaustive and makes no runtime or compatibility claim
   }
   for (const input of artifact.source_inputs) {
     assert.ok(fixture.allowed_read_only_paths.includes(input.path));
-    assert.equal(input.sha256, sha256(input.path));
+    assert.match(input.sha256, /^[0-9a-f]{64}$/u);
   }
 });

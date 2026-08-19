@@ -152,18 +152,18 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     // Preserve only these structurally recognized gate tokens through that
     // pass; the ordinary delayed parser-function pass below still decides
     // whether the branch is retained.
-    // Linked parser-function branches must survive FTML's document-level
-    // preprocessing until the delayed ListPages slots have been bound.  The
-    // preprocessing pass otherwise evaluates `[[#if ...]]` against the
-    // unresolved `%%title_linked%%` marker and loses the branch shape that
-    // Wikidot exposes for generated links.
-    let linked_parser_fragments = protect_linked_parser_functions(&mut prepared_body);
+    // Parser-function branches that depend on ListPages variables must survive
+    // FTML's document-level preprocessing until the row variables have been
+    // substituted. Otherwise an unresolved scalar such as `%%size%%`, or a
+    // generated link such as `%%title_linked%%`, can be evaluated too early
+    // and lose the branch shape Wikidot exposes after row substitution.
+    let row_parser_fragments = protect_row_variable_parser_functions(&mut prepared_body);
     let generated_comment_gates =
         protect_generated_parser_function_comment_gates(&mut prepared_body);
     ftml::preprocess_for_layout(&mut prepared_body, ftml::layout::Layout::Wikidot);
     ftml::preproc::typography::substitute_wikidot(&mut prepared_body);
     substitute_literal_advanced_table_opener_typography(&mut prepared_body);
-    if let Some(fragments) = linked_parser_fragments {
+    if let Some(fragments) = row_parser_fragments {
         prepared_body = fragments.restore(&prepared_body);
     }
     if let Some((opening, closing, standalone_closing)) = generated_comment_gates {
@@ -247,8 +247,23 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     }
 }
 
-fn protect_linked_parser_functions(source: &mut String) -> Option<CompatTextFragments> {
-    let ranges = linked_parser_function_ranges(source);
+fn protect_row_variable_parser_functions(
+    source: &mut String,
+) -> Option<CompatTextFragments> {
+    let lowercase = source.to_ascii_lowercase();
+    let mut ranges = Vec::new();
+    let mut cursor = 0;
+    while let Some(relative_start) = lowercase[cursor..].find("[[#") {
+        let start = cursor + relative_start;
+        let Some(relative_end) = lowercase[start + 3..].find("]]") else {
+            break;
+        };
+        let end = start + 3 + relative_end + 2;
+        if source[start..end].contains("%%") {
+            ranges.push(start..end);
+        }
+        cursor = end;
+    }
     if ranges.is_empty() {
         return None;
     }

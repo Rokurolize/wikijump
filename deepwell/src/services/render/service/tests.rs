@@ -236,6 +236,27 @@ fn fallback_test_page_info(
     }
 }
 
+#[test]
+fn scp9506_full_seed_survives_the_ftml_wikidot_pipeline() {
+    let mut source = include_str!("../../../../seeder/scp-9506.ftml").to_owned();
+    assert!(
+        source.contains("San José Public Library"),
+        "the full-page canary must retain the multibyte quoted-line witness"
+    );
+
+    let page_info = fallback_test_page_info("scp-9506", "National Fog Safety Initiative");
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    ftml::preprocess_for_layout(&mut source, settings.layout);
+    let tokens = ftml::tokenize(&source);
+    let (tree, _errors) = ftml::parse(&tokens, &page_info, &settings).into();
+    let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+
+    assert!(
+        rendered.contains("San José Public Library"),
+        "the full page must reach HTML rendering without losing the multibyte canary"
+    );
+}
+
 fn prepare_test_wikidot_conditionals(
     wikitext: &mut String,
     page_info: &ftml::data::PageInfo<'_>,
@@ -11213,7 +11234,7 @@ fn resolves_parser_functions_only_outside_literal_regions() {
             "@@[[#ifexpr 1 | escaped | hidden]]@@\n",
             "[[html]]\n[[#expr 2+2]]\n[[/html]]\n",
             "[!-- 6 --]\n",
-            "<code>[[#expr 4+4]]</code>\n",
+            "<code>8</code>\n",
             "resolved 10",
         )
     );

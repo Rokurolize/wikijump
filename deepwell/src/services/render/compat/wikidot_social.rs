@@ -10,262 +10,182 @@
  * (at your option) any later version.
  */
 
-use super::super::literal_regions::LiteralRegionIndex;
-use super::super::service::escape_list_pages_html_attr;
-use super::CompatHtmlFragments;
-use regex::Regex;
-use std::sync::LazyLock;
+use super::super::list_pages::render_wikidot_social_module;
+use super::super::service::RenderService;
+use crate::models::site::Model as SiteModel;
+use ftml::prelude::PageInfo;
+use ftml::render::html::HtmlOutput;
+use std::collections::HashSet;
 
-static WIKIDOT_SOCIAL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"(?is)\[\[social(?P<head>\s+[^\]]*)?\]\]"#)
-        .expect("Wikidot social expression is valid")
-});
+const WIKIDOT_SOCIAL_MARKER_CLASS: &str = "wj-social";
 
-#[derive(Clone, Copy)]
-struct WikidotSocialProvider {
-    name: &'static str,
-    title: &'static str,
-    image: &'static str,
-    href: &'static str,
-    onclick: Option<&'static str>,
-}
-
-const WIKIDOT_SOCIAL_PROVIDERS: &[WikidotSocialProvider] = &[
-    WikidotSocialProvider {
-        name: "blinklist",
-        title: "BlinkList",
-        image: "blinklist.png",
-        href: "http://www.blinklist.com/index.php?Action=Blink/addblink.php&Description=&Url={url}&Title=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "blogmarks",
-        title: "blogmarks",
-        image: "blogmarks.png",
-        href: "http://blogmarks.net/my/new.php?mini=1&simple=1&url={url}&title=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "del.icio.us",
-        title: "del.icio.us",
-        image: "delicious.png",
-        href: "http://del.icio.us/post?url={url}&title=TITLE",
-        onclick: Some(
-            "window.open('http://del.icio.us/post?v=4&noui&jump=close&url='+encodeURIComponent(location.href)+'&title='+encodeURIComponent(document.title), 'delicious','toolbar=no,width=700,height=400'); return false;",
-        ),
-    },
-    WikidotSocialProvider {
-        name: "digg",
-        title: "digg",
-        image: "digg.png",
-        href: "http://digg.com/submit?phase=2&url={url}&title=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "fark",
-        title: "Fark",
-        image: "fark.png",
-        href: "http://cgi.fark.com/cgi/fark/edit.pl?new_url={url}&new_comment=TITLE&new_comment={site}&linktype=Misc",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "feedmelinks",
-        title: "feedmelinks",
-        image: "feedmelinks.png",
-        href: "http://feedmelinks.com/categorize?from=toolbar&op=submit&url={url}&name=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "furl",
-        title: "Furl",
-        image: "furl.png",
-        href: "http://www.furl.net/storeIt.jsp?u={url}&t=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "linkagogo",
-        title: "LinkaGoGo",
-        image: "linkagogo.png",
-        href: "http://www.linkagogo.com/go/AddNoPopup?url={url}&title=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "newsvine",
-        title: "NewsVine",
-        image: "newsvine.png",
-        href: "http://www.newsvine.com/_tools/seed&save?u={url}&h=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "netvouz",
-        title: "Netvouz",
-        image: "netvouz.png",
-        href: "http://www.netvouz.com/action/submitBookmark?url={url}&title=TITLE&description=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "reddit",
-        title: "Reddit",
-        image: "reddit.png",
-        href: "http://reddit.com/submit?url={url}&title=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "yahoomyweb",
-        title: "YahooMyWeb",
-        image: "yahoomyweb.png",
-        href: "http://myweb2.search.yahoo.com/myresults/bookmarklet?u={url}&=TITLE",
-        onclick: None,
-    },
-    WikidotSocialProvider {
-        name: "facebook",
-        title: "Facebook",
-        image: "facebook.gif",
-        href: "http://www.facebook.com/share.php?u={url}",
-        onclick: Some(
-            "window.open('http://www.facebook.com/sharer.php?u='+encodeURIComponent(location.href)+'&t='+encodeURIComponent(document.title),'sharer','toolbar=0,status=0,width=626,height=436');return false;",
-        ),
-    },
-];
-
-pub(in crate::services::render) fn has_wikidot_social_syntax(wikitext: &str) -> bool {
-    WIKIDOT_SOCIAL_REGEX.is_match(wikitext)
-}
-
-pub(in crate::services::render) fn expand_wikidot_social_syntax(
-    wikitext: String,
-    fragments: &mut CompatHtmlFragments,
-    site_slug: &str,
-    site_name: &str,
-) -> String {
-    if !has_wikidot_social_syntax(&wikitext) {
-        return wikitext;
-    }
-
-    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
-    let mut output = String::with_capacity(wikitext.len());
-    let mut cursor = 0;
-
-    for captures in WIKIDOT_SOCIAL_REGEX.captures_iter(&wikitext) {
-        let matched = captures
-            .get(0)
-            .expect("a social capture always has a complete match");
-        if literal_regions.contains(matched.start()) {
-            continue;
-        }
-
-        let head = captures.name("head").map_or("", |head| head.as_str());
-        let selected = selected_social_providers(head);
-        if !head.trim().is_empty() && selected.is_empty() {
-            continue;
-        }
-
-        output.push_str(&wikitext[cursor..matched.start()]);
-        let rendered = render_wikidot_social_widget(
-            &selected,
-            site_slug,
-            site_name,
-            wikidot_social_nonce(&wikitext, matched.start()),
-        );
-        output.push_str(&fragments.push_html(rendered));
-        cursor = matched.end();
-    }
-
-    if cursor == 0 {
-        return wikitext;
-    }
-    output.push_str(&wikitext[cursor..]);
-    output
-}
-
-fn selected_social_providers(head: &str) -> Vec<&'static WikidotSocialProvider> {
-    let head = head.trim();
-    if head.is_empty() {
-        return WIKIDOT_SOCIAL_PROVIDERS.iter().collect();
-    }
-
-    head.split(',')
-        .map(str::trim)
-        .filter(|name| !name.is_empty())
-        .filter_map(|name| {
-            WIKIDOT_SOCIAL_PROVIDERS
-                .iter()
-                .find(|provider| provider.name.eq_ignore_ascii_case(name))
-        })
-        .collect()
-}
-
-fn wikidot_social_percent_encode(value: &str, spaces_as_plus: bool) -> String {
-    let mut output = String::with_capacity(value.len());
-    for byte in value.bytes() {
-        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {
-            output.push(char::from(byte));
-        } else if spaces_as_plus && byte == b' ' {
-            output.push('+');
+impl RenderService {
+    pub(in crate::services::render) fn resolve_wikidot_social_requirements(
+        html_output: &mut HtmlOutput,
+        page_info: &PageInfo<'_>,
+        current_site: Option<&SiteModel>,
+        page_preview: bool,
+    ) -> bool {
+        let endpoint = if page_preview || page_info.page.is_empty() {
+            format!(
+                "http://{}.wikidot.com/ajax-module-connector.php",
+                page_info.site
+            )
         } else {
-            use std::fmt::Write as _;
-            write!(&mut output, "%{byte:02X}")
-                .expect("writing percent encoding to String cannot fail");
+            let full_slug = Self::page_info_full_slug(page_info);
+            format!("http://{}.wikidot.com/{full_slug}", page_info.site)
+        };
+        let site_name = current_site.map_or("", |site| site.name.as_str());
+        let mut requirement_ids = HashSet::new();
+        let mut social_ids = HashSet::new();
+        let mut replacements = Vec::new();
+
+        for requirement in &html_output.resource_requirements {
+            let Some(requirement) = requirement.social_requirement() else {
+                continue;
+            };
+            let id = requirement.id();
+            if !requirement_ids.insert(id) {
+                return false;
+            }
+            let marker = format!(
+                r#"<span class="{WIKIDOT_SOCIAL_MARKER_CLASS}" id="{id}"></span>"#
+            );
+            if html_output.body.match_indices(&marker).count() != 1 {
+                return false;
+            }
+
+            let social_id = next_social_id(id, &mut social_ids);
+            let replacement = render_wikidot_social_module(
+                requirement.social(),
+                &endpoint,
+                site_name,
+                &social_id,
+            );
+            replacements.push((marker, replacement));
         }
+
+        let mut resolved = html_output.body.clone();
+        for (marker, replacement) in replacements {
+            resolved = resolved.replacen(&marker, &replacement, 1);
+        }
+        if resolved.contains(&format!(r#"class="{WIKIDOT_SOCIAL_MARKER_CLASS}""#)) {
+            return false;
+        }
+        html_output.body = resolved;
+        true
     }
-    output
 }
 
-fn wikidot_social_nonce(source: &str, offset: usize) -> u32 {
-    let hash = source
-        .bytes()
-        .chain(offset.to_le_bytes())
-        .fold(5381_u32, |hash, byte| {
-            hash.wrapping_mul(33).wrapping_add(u32::from(byte))
-        });
-    10_000 + hash % 90_000
+fn next_social_id(requirement_id: &str, used: &mut HashSet<u32>) -> String {
+    let mut hash = requirement_id.bytes().fold(5381_u32, |hash, byte| {
+        hash.wrapping_mul(33).wrapping_add(u32::from(byte))
+    });
+    loop {
+        let nonce = 10_000 + hash % 90_000;
+        if used.insert(nonce) {
+            return format!("social{nonce}");
+        }
+        hash = hash.wrapping_add(1);
+    }
 }
 
-fn render_wikidot_social_widget(
-    selected: &[&WikidotSocialProvider],
-    site_slug: &str,
-    site_name: &str,
-    nonce: u32,
-) -> String {
-    let endpoint = wikidot_social_percent_encode(
-        &format!("http://{site_slug}.wikidot.com/ajax-module-connector.php"),
-        false,
-    );
-    let site_name = wikidot_social_percent_encode(site_name, true);
-    let social_id = format!("social{nonce}");
-    let mut output = format!("\n\n<span id=\"{social_id}\">");
-    for provider in selected {
-        let href = provider
-            .href
-            .replace("{url}", &endpoint)
-            .replace("{site}", &site_name);
-        output.push_str("<a href=\"");
-        output.push_str(&escape_list_pages_html_attr(&href));
-        output.push_str("\" style=\"margin: 0 2px\" title=\"");
-        output.push_str(&escape_list_pages_html_attr(provider.title));
-        output.push('"');
-        if let Some(onclick) = provider.onclick {
-            output.push_str(" onclick=\"");
-            output.push_str(&escape_list_pages_html_attr(onclick));
-            output.push('"');
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::render::{Render, html::HtmlRender};
+    use ftml::settings::{WikitextMode, WikitextSettings};
+    use std::borrow::Cow;
+
+    fn page_info() -> PageInfo<'static> {
+        PageInfo {
+            page: Cow::Borrowed("scp-123"),
+            category: None,
+            site: Cow::Borrowed("scp-wiki"),
+            title: Cow::Borrowed("SCP-123"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
         }
-        output.push_str("><img src=\"http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/");
-        output.push_str(provider.image);
-        output.push_str("\" alt=\"");
-        output.push_str(&escape_list_pages_html_attr(provider.title));
-        output.push_str("\" /></a>");
     }
-    output.push_str("</span>\n<script type=\"text/javascript\">\n//<![CDATA[\n\n");
-    output.push_str("            var socialspan = $j(\"#");
-    output.push_str(&social_id);
-    output.push_str("\")[0];\n");
-    output.push_str(concat!(
-        "            var els = socialspan.getElementsByTagName(\"a\");\n",
-        "            for (var i=0;i<els.length;i++) {\n",
-        "                els[i].href = els[i].href.replace(\"TITLE\", encodeURIComponent(document.title));\n",
-        "            }\n",
-        "//]]>\n",
-        "</script>",
-    ));
-    output
+
+    fn ftml_social_output(source: &str) -> HtmlOutput {
+        let page_info = page_info();
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let tokens = ftml::tokenize(source);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        HtmlRender.render(&tree, &page_info, &settings)
+    }
+
+    #[test]
+    fn generated_social_ids_are_legacy_shaped_and_unique() {
+        let mut used = HashSet::new();
+        let first =
+            next_social_id("wj-social-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", &mut used);
+        let second =
+            next_social_id("wj-social-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", &mut used);
+        assert!(first.starts_with("social"));
+        assert_eq!(first.len(), 11);
+        assert!(first[6..].bytes().all(|byte| byte.is_ascii_digit()));
+        assert_ne!(first, second);
+    }
+
+    #[test]
+    fn typed_social_requirement_renders_live_provider_shape_for_page_preview() {
+        let mut output = ftml_social_output("[[social reddit,FACEBOOK,facebook]]");
+        assert!(output.body.contains("wj-social"));
+        assert!(RenderService::resolve_wikidot_social_requirements(
+            &mut output,
+            &page_info(),
+            None,
+            true,
+        ));
+
+        assert!(!output.body.contains("wj-social"));
+        assert!(output.body.contains("title=\"Reddit\""));
+        assert!(output.body.contains("title=\"Facebook\""));
+        assert!(!output.body.contains("title=\"BlinkList\""));
+        assert!(
+            output.body.contains(
+                "http%3A%2F%2Fscp-wiki.wikidot.com%2Fajax-module-connector.php"
+            )
+        );
+        assert!(output.body.contains("encodeURIComponent(document.title)"));
+    }
+
+    #[test]
+    fn saved_page_social_requirement_uses_the_page_url() {
+        let mut output = ftml_social_output("[[social reddit]]");
+        assert!(RenderService::resolve_wikidot_social_requirements(
+            &mut output,
+            &page_info(),
+            None,
+            false,
+        ));
+        assert!(
+            output
+                .body
+                .contains("http%3A%2F%2Fscp-wiki.wikidot.com%2Fscp-123")
+        );
+        assert!(!output.body.contains("ajax-module-connector.php"));
+    }
+
+    #[test]
+    fn invalid_only_social_selection_renders_an_empty_legacy_span() {
+        let mut output = ftml_social_output("[[social Reddit,FACEBOOK]]");
+        assert!(RenderService::resolve_wikidot_social_requirements(
+            &mut output,
+            &page_info(),
+            None,
+            true,
+        ));
+        assert!(output.body.contains("<span id=\"social"));
+        assert_eq!(output.body.matches("<a href=\"\"").count(), 2);
+        assert_eq!(output.body.matches("title=\"\"").count(), 2);
+        assert!(output.body.contains("getElementsByTagName(\"a\")"));
+    }
 }
