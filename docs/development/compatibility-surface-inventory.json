@@ -11171,8 +11171,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "827ba18a84fe00910778df3bde9c1142ccf9636b",
-      "tree": "66f25793b3b85771f975d7b887272a3f95e794bd"
+      "commit": "6f37cb64a60605df85c99bc5ab810ed085a8feff",
+      "tree": "ed91ecbe0ac551eb075278ace971519231bb9f5e"
     },
     "ftml": {
       "commit": "e24dd88e08f9fc1fd864ade0b7bcb8233ab312d6",
@@ -11341,7 +11341,7 @@
       },
       {
         "path": "docs/development/open43-a-actions-membership-closure-audit.json",
-        "sha256": "60088a25b3ccd35b6c5e5d297b3768aa126db5bc51f754ee87a581e8c37a1060"
+        "sha256": "b0333713dfc58671905f0c73e302dba04dd932a22a6980c18124e204f41f077d"
       },
       {
         "path": "docs/development/open43-a-authoring-closure-audit.json",
@@ -11353,7 +11353,7 @@
       },
       {
         "path": "docs/development/open43-closure-audit-ownership-reconciliation.json",
-        "sha256": "78d419139b833a6cdc6f5198c3429a3710d327b9c9b9a5a2c3d5792b896de37d"
+        "sha256": "623aad26390e7337648a228a7e4aa5094e5b266aa5942a699453af2d87d60c30"
       },
       {
         "path": "docs/development/open43-m-closure-audit.json",
