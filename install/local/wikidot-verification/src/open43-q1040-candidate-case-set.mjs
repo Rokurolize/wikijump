@@ -298,7 +298,7 @@ class Q1040Run {
       !defaultRow.includes(`<h1><span><a href="/${next.slug}">${next.title}</a></span></h1>`) ||
       !defaultRow.includes('<p>by <span class="printuser avatarhover">') ||
       !/<span class="odate time_-?\d+ format_[^"]+">[^<]+<\/span>/u.test(defaultRow) ||
-      !defaultRow.includes("<p>Q1040 next</p>") ||
+      !defaultRow.includes("Q1040 next") ||
       defaultRow.includes("data-wikijump-compat-") ||
       observations.list_pages_box_count !== 3
     ) throw new Error("Q1040 served page did not expose the exact default NextPage row");

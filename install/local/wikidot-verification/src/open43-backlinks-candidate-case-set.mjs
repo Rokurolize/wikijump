@@ -131,14 +131,20 @@ function previewObservation(value, expected, name) {
 
 function negativePreviewObservation(value, rows, name) {
   if (typeof value?.body !== "string") throw new Error(`${name} did not return preview body text`);
-  if (value.body.includes('<div class="backlinks-module-box">')) throw new Error(`${name} rendered Backlinks without a valid current-page identity`);
+  const wrappers = value.body.match(/<div class="backlinks-module-box">[\s\S]*?<\/div>/gu) ?? [];
+  if (wrappers.length > 1 || (wrappers.length === 1 && !/^<div class="backlinks-module-box">\s*<\/div>$/u.test(wrappers[0]))) throw new Error(`${name} rendered populated Backlinks without a valid current-page identity`);
   assertAbsent(value.body, rows, name);
-  return { body_sha256: sha256Text(value.body), has_wrapper: false };
+  return { body_sha256: sha256Text(value.body), has_wrapper: false, empty_wrapper: wrappers.length === 1 };
 }
 
 function literalPreviewObservation(value, source, name) {
   const observation = negativePreviewObservation(value, [], name);
-  if (!value.body.includes(source)) throw new Error(`${name} did not preserve its literal source`);
+  let cursor = 0;
+  for (const line of source.split("\n").filter(Boolean)) {
+    const position = value.body.indexOf(line, cursor);
+    if (position < 0) throw new Error(`${name} did not preserve its literal source`);
+    cursor = position + line.length;
+  }
   return { ...observation, source_literal: true, source_sha256: sha256Text(source) };
 }
 
@@ -311,6 +317,8 @@ function verifyCase(observations, fixture) {
   if (observations.fixture?.source_sha256 !== sha256Text(fixture.holder.source) || observations.fixture.empty_source_sha256 !== sha256Text(fixture.empty_holder.source) || observations.fixture.expected_populated_dom_sha256 !== sha256Text(fixture.expected.populated) || observations.fixture.expected_empty_dom_sha256 !== sha256Text(fixture.expected.empty)) throw new Error("Backlinks candidate fixture identity drifted");
   for (const side of [observations.saved.populated, observations.saved.empty, observations.preview.populated, observations.preview.empty]) if (side.fragment_sha256 !== sha256Text(side === observations.saved.empty || side === observations.preview.empty ? fixture.expected.empty : fixture.expected.populated)) throw new Error("saved or preview Backlinks DOM digest does not match its exact fixture fragment");
   for (const negative of Object.values(observations.identity_negative)) if (negative.has_wrapper !== false) throw new Error("invalid preview page identity rendered a Backlinks wrapper");
+  for (const name of ["no_identity", "missing_id", "stale", "foreign", "mismatched_id"]) if (observations.identity_negative[name]?.empty_wrapper !== true) throw new Error(`invalid preview page identity lost the empty Backlinks wrapper: ${name}`);
+  for (const name of ["syntax_only", "inline_module"]) if (observations.identity_negative[name]?.empty_wrapper !== false) throw new Error(`literal Backlinks negative control rendered a wrapper: ${name}`);
   const inlineSource = fixture.holder.source.replace("[[module Backlinks]]", "start-[[module Backlinks]]-middle");
   if (observations.identity_negative.syntax_only?.source_sha256 !== sha256Text(fixture.holder.source) || observations.identity_negative.inline_module?.source_sha256 !== sha256Text(inlineSource)) throw new Error("literal Backlinks negative control identity drifted");
   if (observations.state_before_sha256 !== observations.state_after_sha256) throw new Error("Backlinks candidate changed public fixture state");

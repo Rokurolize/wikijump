@@ -282,7 +282,7 @@ class Open43Q1035Run {
 
   async #savedView(role, actor) {
     const expected = this.#fixture.pages[role];
-    const page = await this.#rpc("page_get", { site_id: this.#fixture.site_id, page: expected.slug }, actor);
+    const page = await this.#rpc("page_get", { site_id: this.#fixture.site_id, page: expected.slug, details: { wikitext: true, compiled: false } }, actor);
     expect(page?.page_id === expected.page_id && page.revision_id === expected.revision_id && page.slug === expected.slug, `Q1035 ${role} page identity changed`);
     expect(typeof page.wikitext === "string" && sha256Text(page.wikitext) === expected.source_sha256, `Q1035 ${role} source changed`);
     const view = await this.#rpc("page_view", {
