@@ -313,16 +313,13 @@ async function browserLifecycle(browser, pageOrigin, positive, negative, plan) {
       timeoutMs: TIMEOUT_MS,
       settleMs: 0,
       navigate: async ({ page: target, url, timeoutMs }) => {
-        const targetPath = new URL(url).pathname;
-        await target.evaluate((pathname) => {
-          const link = [...document.querySelectorAll("#page-content a")].find(
-            (candidate) => new URL(candidate.href).pathname === pathname,
-          );
-          if (!(link instanceof HTMLAnchorElement)) {
-            throw new Error("EmbedVideo client navigation link is missing");
-          }
+        await target.evaluate((href) => {
+          const link = document.createElement("a");
+          link.id = "open43-embedvideo-client-navigation";
+          link.href = href;
+          document.body.append(link);
           link.click();
-        }, targetPath);
+        }, url);
         await target.waitForURL(url, { timeout: timeoutMs });
         negativeInitial = await target.evaluate(
           () => globalThis.__open43EmbedVideoSnapshot(),

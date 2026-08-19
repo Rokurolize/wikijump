@@ -1,6 +1,6 @@
 const SELECTOR = 'a.wiki-standalone-button[href="javascript:;"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
-const TIMEOUT_MS = 300_000;
+const TIMEOUT_MS = 30_000;
 const CAPTURE_CONTRACT = Object.freeze({
   slug: "issue775-edit",
   theme_family: "candidate",

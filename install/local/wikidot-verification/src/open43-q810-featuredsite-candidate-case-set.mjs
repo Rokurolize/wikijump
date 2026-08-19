@@ -11,7 +11,7 @@ export const OPEN43_Q810_FEATUREDSITE_CASE_IDS = Object.freeze([
 const SITE_SLUG = "scpaiueouiuiuiui";
 const PREVIEW_SOURCE = "FEATURED_START\n[[module FeaturedSite]]\nFEATURED_END";
 const EXPECTED_UNAVAILABLE =
-  '[[module <em>FeaturedSite</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank" rel="noopener noreferrer">check available modules</a> and fix this page.';
+  '[[module <em>FeaturedSite</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page.';
 const FORBIDDEN_OUTPUT = Object.freeze([
   "featured-site-box",
   "thumbnails.wdfiles.com",

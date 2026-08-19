@@ -26,11 +26,11 @@ export const OPEN43_Q1032_EVIDENCE = Object.freeze({
   }),
 });
 
-const USERINFO_NO_TARGET_BODY = "\n\n<div class=\"error-block\">No user specified.</div>";
+const USERINFO_NO_TARGET_BODY = "<div class=\"error-block\">No user specified.</div>";
 const USERINFO_NO_TARGET_SHA256 = createHash("sha256")
   .update(USERINFO_NO_TARGET_BODY)
   .digest("hex");
-const SEARCHUSERS_DISABLED_BODY = "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
+const SEARCHUSERS_DISABLED_BODY = "<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
 const SEARCHUSERS_DISABLED_SHA256 = createHash("sha256")
   .update(SEARCHUSERS_DISABLED_BODY)
   .digest("hex");

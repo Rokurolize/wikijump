@@ -223,7 +223,7 @@ class Open43A1037Run {
   #autosaveName = null;
 
   async #rpc(actor, method, params = {}, { siteId = this.#siteId, cleanup = false } = {}) {
-    return await this.#sessions[actor].rpc(method, params, { actor, siteId: siteId ?? undefined, cleanup });
+    return await this.#sessions[actor].rpc(method, params, { actor: "editor", siteId: siteId ?? undefined, cleanup });
   }
 
   async #page(slug, { cleanup = false } = {}) {

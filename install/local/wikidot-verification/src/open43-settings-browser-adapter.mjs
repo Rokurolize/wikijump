@@ -181,7 +181,7 @@ export class Open43SettingsBrowserAdapter {
     const page = await (await this.#context("administrator")).newPage();
     const consoleErrors = [];
     const analyticsRequests = [];
-    const stylesheetResponses = [];
+    const stylesheetAssetPromises = [];
     let initialNavigationCspHeader = null;
     const onConsole = (message) => {
       if (message.type() === "error") consoleErrors.push(sha256(message.text()));
@@ -191,7 +191,9 @@ export class Open43SettingsBrowserAdapter {
       if (/google-analytics|googletagmanager/u.test(new URL(request.url()).hostname)) analyticsRequests.push(sha256(request.url()));
     };
     const onResponse = (response) => {
-      if (captureStylesheetAssets && response.request().resourceType() === "stylesheet") stylesheetResponses.push(response);
+      if (captureStylesheetAssets && response.request().resourceType() === "stylesheet") {
+        stylesheetAssetPromises.push(response.body().then((body) => ({ url: response.url(), sha256: sha256(body) })));
+      }
     };
     page.on("console", onConsole);
     page.on("pageerror", onPageError);
@@ -289,7 +291,7 @@ export class Open43SettingsBrowserAdapter {
         };
       });
       const stylesheetAssets = captureStylesheetAssets
-        ? [...new Map((await Promise.all(stylesheetResponses.map(async (response) => [response.url(), { url: response.url(), sha256: sha256(await response.body()) }]))).map(([, asset]) => [JSON.stringify(asset), asset])).values()]
+        ? [...new Map((await Promise.all(stylesheetAssetPromises)).map((asset) => [JSON.stringify(asset), asset])).values()]
         : [];
       return {
         capture,

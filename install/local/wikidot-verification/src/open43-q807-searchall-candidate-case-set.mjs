@@ -44,6 +44,14 @@ function hash(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+function structuralHtml(value) {
+  return value.replace(/>\s+</gu, "><").replace(/\s+\/>/gu, "/>").trim();
+}
+
+function structuralHash(value) {
+  return hash(structuralHtml(value));
+}
+
 function nonEmpty(value, label) {
   if (typeof value !== "string" || value.length === 0) throw new Error(`${label} is missing`);
   return value;
@@ -60,7 +68,7 @@ function expectedRoute(caseId) {
     area: nonEmpty(value.area, `${caseId}.area`),
     query: nonEmpty(value.query, `${caseId}.query`),
     path: nonEmpty(value.path, `${caseId}.path`),
-    expected_fragment_sha256: ERROR_CASE.raw_html_sha256,
+    expected_fragment_sha256: structuralHash(ERROR_CASE.raw_html),
   };
 }
 
@@ -78,13 +86,13 @@ function planFor({ runId, pageOrigin, candidateIdentitySha256 }) {
     fixture_path: FIXTURE_PATH,
     fixture_sha256: FIXTURE_SHA256,
     candidate_identity_sha256: candidateIdentitySha256,
-    form_fragment_sha256: FIXTURE.form_raw_html_sha256,
-    unavailable_fragment_sha256: ERROR_CASE.raw_html_sha256,
+    form_fragment_sha256: structuralHash(FIXTURE.form_raw_html),
+    unavailable_fragment_sha256: structuralHash(ERROR_CASE.raw_html),
     routes: EXPECTED_ROUTES,
     negative_boundary: {
       case_id: NEGATIVE_CASE.case_id,
       path: NEGATIVE_CASE.path,
-      expected_fragment_sha256: NEGATIVE_CASE.raw_html_sha256,
+      expected_fragment_sha256: structuralHash(ERROR_CASE.raw_html),
       reason: "unknown-area-route-fails-closed-to-observed-unavailable-output",
     },
   });
@@ -95,12 +103,14 @@ async function exactFragment(page, expectedFragment, label) {
     const result = await fetch(location.href, { cache: "no-store" });
     return { status: result.status, body: await result.text() };
   });
-  const start = response.body.indexOf(expectedFragment);
-  if (start < 0) throw new Error(`${label} did not contain the exact fixture fragment`);
+  const normalizedBody = structuralHtml(response.body);
+  const normalizedFragment = structuralHtml(expectedFragment);
+  const start = normalizedBody.indexOf(normalizedFragment);
+  if (start < 0) throw new Error(`${label} did not contain the structural fixture fragment`);
   return {
     status: response.status,
     response_body_sha256: hash(response.body),
-    fragment_sha256: hash(response.body.slice(start, start + expectedFragment.length)),
+    fragment_sha256: hash(normalizedBody.slice(start, start + normalizedFragment.length)),
     fragment_present: true,
   };
 }

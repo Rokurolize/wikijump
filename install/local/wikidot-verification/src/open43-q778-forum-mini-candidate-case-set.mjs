@@ -269,7 +269,7 @@ async function pageContent(page) {
 
 async function observePrintuserInteraction(page) {
   return await page.evaluate(() => {
-    const anchors = [...document.querySelectorAll("#page-content .forum-mini-stat .printuser a[onclick]")];
+    const anchors = [...document.querySelectorAll("#page-content .forum-mini-stat .printuser > a[onclick]:last-of-type")];
     const listener = globalThis.WIKIDOT?.page?.listeners?.userInfo;
     if (typeof listener !== "function") return { anchor_count: anchors.length, focused_count: 0, onclick_return_false_count: 0, listener_user_ids: [] };
     const listenerUserIds = [];

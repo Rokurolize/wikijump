@@ -9,7 +9,7 @@ import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 
 const hash = (character) => character.repeat(64);
 const git = (character) => character.repeat(40);
-const SEARCHUSERS_DISABLED = "\n\n<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
+const SEARCHUSERS_DISABLED = "<div class=\"error-block\">User search has been (temporarily) disabled. Sorry!</div>";
 const AJAX_BODY = '<div id="ml-test">\n<table>\n<tr><td>member</td></tr>\n</table>\n<div style="text-align: center"><span class="pager-no">page 1 of 1</span></div>\n<script>OZONE.ajax.requestModule("membership/MembersListModule")</script>\n</div>';
 
 function identity() {
@@ -75,7 +75,7 @@ function fakeSession(calls, { badAjax = false } = {}) {
       calls.push({ method, params, options });
       if (method === "wikidot_members_list_module") return { status: "ok", body: '<div><table><tr><td>member</td></tr></table><span class="pager-no">page 1 of 2</span><script>OZONE.ajax.requestModule("membership/MembersListModule")</script></div>' };
       if (params.wikitext === "[[module SearchUsers]]") return { body: SEARCHUSERS_DISABLED };
-      return { body: "\n\n<div class=\"error-block\">No user specified.</div>" };
+      return { body: "<div class=\"error-block\">No user specified.</div>" };
     },
     async ajaxModuleConnector(fields, options) {
       calls.push({ method: "ajax-module-connector", fields, options });
@@ -93,7 +93,7 @@ function fakeSession(calls, { badAjax = false } = {}) {
           http_status: 200,
           content_type: "text/plain; charset=UTF-8",
           response_body_sha256: hash("h"),
-          json: { status: "ok", body: "\n\n<div class=\"error-block\">No user specified.</div>", jsInclude: [], cssInclude: [], callbackIndex: null },
+          json: { status: "ok", body: "<div class=\"error-block\">No user specified.</div>", jsInclude: [], cssInclude: [], callbackIndex: null },
         };
       }
       const markers = page === "1" || page === "0"

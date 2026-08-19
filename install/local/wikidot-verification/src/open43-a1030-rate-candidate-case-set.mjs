@@ -350,7 +350,7 @@ class Open43A1030Run {
       slug: point.created.slug,
       source_sha256: sha256Text(RATE_SOURCE),
     }) });
-    const star = await this.#createRateFixture(this.#starSlug, this.#starCategory, "five_star");
+    const star = await this.#createRateFixture(this.#starSlug, this.#starCategory, "stars");
     this.#starPage = star.created;
     this.#pageResources.push({ slug: star.created.slug, token: this.#resources.register("page", {
       page_id: star.created.page_id,
@@ -432,7 +432,7 @@ class Open43A1030Run {
         if (this.#pointSlug !== null) await this.#deletePage(this.#pointSlug, { cleanup: true });
         if (this.#starSlug !== null) await this.#deletePage(this.#starSlug, { cleanup: true });
         if (this.#pointCategory !== null) await this.#setCategoryRating(this.#pointCategory, "plus_minus", false, { cleanup: true });
-        if (this.#starCategory !== null) await this.#setCategoryRating(this.#starCategory, "five_star", false, { cleanup: true });
+        if (this.#starCategory !== null) await this.#setCategoryRating(this.#starCategory, "stars", false, { cleanup: true });
       }
     } catch (error) {
       failures.push(error);

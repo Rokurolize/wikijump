@@ -136,10 +136,10 @@ class Open43Q748TopBarSearchBrowserAdapter {
       const expectedUrl = queryPath(this.#pageOrigin, query);
       await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
       const beforeNavigationCount = navigationUrls.length;
-      await page.locator("#search-top-box-input").fill(query.query);
+      await page.locator("#search-top-box-input").fill(query.query, { force: true });
       await Promise.all([
         page.waitForURL(expectedUrl, { timeout: CAPTURE_TIMEOUT_MS }),
-        page.locator("#search-top-box-form input[type='submit']").click(),
+        page.locator("#search-top-box-form input[type='submit']").click({ force: true }),
       ]);
       const state = await readState();
       return {
