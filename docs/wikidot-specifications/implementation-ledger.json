@@ -3980,15 +3980,39 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "syntax-social-bookmarking": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/wiki-syntax/syntax-social-bookmarking.md"
+      "status": "in_progress",
+      "confirmed_public_seams": [
+        "Anonymous live Wikidot edit/PagePreviewModule",
+        "Deepwell Wikidot page-preview typed Social resource resolution",
+        "Deepwell saved-page typed Social resource resolution"
       ],
-      "live_oracle_evidence": [],
-      "unresolved_ambiguities_or_blockers": []
+      "tests": [
+        {
+          "path": "deepwell/src/services/render/compat/wikidot_social.rs",
+          "name": "typed_social_requirement_renders_live_provider_shape_for_page_preview",
+          "scope": "typed default/selected/invalid provider slots, page-preview URL context, and legacy share DOM expansion"
+        },
+        {
+          "path": "deepwell/src/services/render/compat/wikidot_social.rs",
+          "name": "saved_page_social_requirement_uses_the_page_url",
+          "scope": "saved-page URL context remains caller-owned and distinct from PagePreview's ajax-module-connector URL"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/render/compat/wikidot_social.rs",
+        "deepwell/src/services/render/list_pages/rendering/selected_content.rs",
+        "deepwell/src/services/render/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/wiki-syntax/syntax-social-bookmarking.md",
+        "docs/ftml-boundary-deviations/wikidot-social-resource-resolution.md"
+      ],
+      "live_oracle_evidence": [
+        "Rokurolize/ftml tests/fixtures/wikidot-parity/references-20260819-01.jsonl"
+      ],
+      "unresolved_ambiguities_or_blockers": [
+        "The current live matrix seals provider selection, unknown-token fallback, duplicate order, wrong-case empty slots, and PagePreview DOM. Custom-domain saved-page URL behavior and browser navigation side effects remain separately reviewable."
+      ]
     },
     "syntax-table-of-contents": {
       "status": "pending",

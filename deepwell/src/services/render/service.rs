@@ -1905,6 +1905,7 @@ impl RenderService {
             viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,
+            lifecycle == RenderLifecycle::PagePreview,
             current_site,
             trace,
             persist_compiled_text,
@@ -1938,6 +1939,7 @@ impl RenderService {
             viewer_user_id,
             None,
             true,
+            true,
             Some(current_site),
             None,
             false,
@@ -1956,6 +1958,7 @@ impl RenderService {
         viewer_user_id: Option<i64>,
         text_block_page_id: Option<i64>,
         allow_wikidot_styleframe: bool,
+        page_preview: bool,
         current_site: Option<SiteModel>,
         trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
         persist_compiled_text: bool,
@@ -2120,6 +2123,18 @@ impl RenderService {
             if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
                 return Err(Error::new(
                     "failed to resolve typed Wikidot embedvideo requirements",
+                    ErrorType::Render,
+                )
+                .into());
+            }
+            if !Self::resolve_wikidot_social_requirements(
+                &mut html_output,
+                page_info,
+                current_site.as_ref(),
+                page_preview,
+            ) {
+                return Err(Error::new(
+                    "failed to resolve typed Wikidot social requirements",
                     ErrorType::Render,
                 )
                 .into());
@@ -2459,6 +2474,18 @@ impl RenderService {
         if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
             return Err(Error::new(
                 "failed to resolve typed Wikidot embedvideo requirements",
+                ErrorType::Render,
+            )
+            .into());
+        }
+        if !Self::resolve_wikidot_social_requirements(
+            &mut html_output,
+            page_info,
+            current_site.as_ref(),
+            page_preview,
+        ) {
+            return Err(Error::new(
+                "failed to resolve typed Wikidot social requirements",
                 ErrorType::Render,
             )
             .into());
