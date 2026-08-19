@@ -13,7 +13,7 @@ async function widgetState(page, { widget, point = false, star = false }) {
   return await page.evaluate(({ widget: widgetSelector, point, star }) => {
     const widgetElement = document.querySelector(widgetSelector);
     if (widgetElement === null) return { present: false };
-    const busy = widgetElement.getAttribute("aria-busy") === "true";
+    const busy = widgetElement.getAttribute("aria-busy") === "true" || widgetElement.querySelector('[aria-busy="true"]') !== null;
     const errorPopup = document.querySelectorAll("#odialog-container").length > 0;
     const result = {
       present: true,
@@ -36,6 +36,9 @@ async function widgetState(page, { widget, point = false, star = false }) {
       result.data_rating = stars?.getAttribute("data-rating") ?? null;
       result.star_image_count = stars?.querySelectorAll("img").length ?? 0;
       result.hidden_score = hidden?.value ?? null;
+      const images = [...(stars?.querySelectorAll("img") ?? [])];
+      result.focusable_image_count = images.filter((image) => image.tabIndex >= 0).length;
+      result.tabindex_attribute_count = images.filter((image) => image.hasAttribute("tabindex")).length;
       const textRating = widgetElement
         .closest(".page-rate-widget")
         ?.querySelector(".page-rate-widget-start-text-rating");
@@ -52,9 +55,10 @@ async function forgedRateRequest(page, body) {
       credentials: "same-origin",
       body: JSON.stringify(requestBody),
     });
+    const rawBody = await response.text();
     let payload = null;
     try {
-      payload = JSON.parse(await response.text());
+      payload = JSON.parse(rawBody);
     } catch {
       payload = { unparsed: true };
     }
@@ -62,8 +66,49 @@ async function forgedRateRequest(page, body) {
       http_status: response.status,
       payload_type: payload?.type ?? null,
       message: payload?.data?.message ?? null,
+      raw_body: rawBody,
     };
   }, body);
+}
+
+function captureProof(capture) {
+  return {
+    navigation_status: capture.navigation_status,
+    first_paint: capture.first_paint?.screenshot != null,
+    settled: capture.screenshot != null,
+    failure_count: Array.isArray(capture.failures) ? capture.failures.length : -1,
+  };
+}
+
+function publicFailure(value) {
+  return {
+    http_status: value.http_status,
+    payload_type: value.payload_type,
+    message: value.message,
+  };
+}
+
+function requestBody(registry, actionIndex = 0, actionFingerprint = registry.actions[actionIndex].fingerprint) {
+  return {
+    pageId: registry.page_id,
+    lastRevisionId: registry.revision_id,
+    actionIndex: registry.actions[actionIndex].index,
+    actionFingerprint,
+  };
+}
+
+async function withTimeout(promise, message) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), TIMEOUT_MS);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export class Open43A1030RateBrowserAdapter {
@@ -110,6 +155,119 @@ export class Open43A1030RateBrowserAdapter {
     return { capture, state };
   }
 
+  async #heldActivation(page, control, activate, stateOptions) {
+    const matcher = (candidateUrl) => candidateUrl.href.includes("?/legacyRate");
+    let release;
+    let observed;
+    const hold = new Promise((resolve) => { release = resolve; });
+    const intercepted = new Promise((resolve) => { observed = resolve; });
+    const handler = async (route) => {
+      observed();
+      await hold;
+      await route.continue();
+    };
+    let localRequestCount = 0;
+    const onRequest = (request) => {
+      if (request.method() === "POST" && request.url().includes("?/legacyRate")) localRequestCount += 1;
+    };
+    page.on("request", onRequest);
+    await page.route(matcher, handler, { times: 1 });
+    try {
+      await activate();
+      await withTimeout(intercepted, "A1030 held Rate request was not observed");
+      const busy = await widgetState(page, stateOptions);
+      const beforeRepeatedActivation = localRequestCount;
+      await control.click();
+      await page.waitForTimeout(100);
+      const doubleSuppressed = localRequestCount === beforeRepeatedActivation;
+      release();
+      return { busy, double_suppressed: doubleSuppressed };
+    } finally {
+      release?.();
+      page.off("request", onRequest);
+      await page.unroute(matcher, handler).catch(() => undefined);
+    }
+  }
+
+  async #errorSurface(page, control, forged, stateOptions) {
+    const matcher = (candidateUrl) => candidateUrl.href.includes("?/legacyRate");
+    const handler = async (route) => {
+      await route.fulfill({
+        status: forged.http_status,
+        contentType: "application/json",
+        body: forged.raw_body,
+      });
+    };
+    await page.route(matcher, handler, { times: 1 });
+    try {
+      await control.click();
+      await page.locator("#odialog-container").waitFor({ state: "visible", timeout: TIMEOUT_MS });
+      return await widgetState(page, stateOptions);
+    } finally {
+      await page.unroute(matcher, handler).catch(() => undefined);
+    }
+  }
+
+  async #reloadUntil(page, url, stateOptions, field, expected) {
+    const started = Date.now();
+    const deadline = started + TIMEOUT_MS;
+    let attempts = 0;
+    let state = null;
+    while (Date.now() < deadline) {
+      attempts += 1;
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      state = await widgetState(page, stateOptions);
+      if (state?.[field] === expected) {
+        return {
+          state,
+          cache: { reload_attempts: attempts, elapsed_ms: Date.now() - started, score: expected },
+        };
+      }
+      await page.waitForTimeout(1_000);
+    }
+    throw new Error(`A1030 ${field} did not become ${expected} after bounded reload polling`);
+  }
+
+  async #navigation(context, url, stateOptions, field) {
+    const page = await context.newPage();
+    let replayRequestCount = 0;
+    const onRequest = (request) => {
+      if (request.method() === "POST" && request.url().includes("?/legacyRate")) replayRequestCount += 1;
+    };
+    page.on("request", onRequest);
+    try {
+      await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      const backPath = new URL(page.url()).pathname;
+      await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      const forward = await widgetState(page, stateOptions);
+      return { back_path: backPath, forward_score: forward?.[field] ?? null, replay_request_count: replayRequestCount };
+    } finally {
+      page.off("request", onRequest);
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+
+  async #csrf(context, url, body, stateOptions, field) {
+    const response = await context.request.post(new URL("?/legacyRate", url).href, {
+      headers: {
+        origin: "https://csrf.invalid",
+        "content-type": "text/plain;charset=UTF-8",
+      },
+      data: JSON.stringify(body),
+      timeout: TIMEOUT_MS,
+    });
+    const page = await context.newPage();
+    try {
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      const state = await widgetState(page, stateOptions);
+      return { http_status: response.status(), score_after: state?.[field] ?? null };
+    } finally {
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+
   async #pointMode({ page, pagePath, registry }) {
     const context = page.context();
     const url = this.#url(pagePath);
@@ -137,19 +295,32 @@ export class Open43A1030RateBrowserAdapter {
     let changed = null;
     let canceled = null;
     let forged = null;
+    let error = null;
+    let keyboardFocus = false;
+    let busy = null;
+    let doubleSuppressed = false;
     try {
       await mutationPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await mutationPage.locator(RATE_UP).waitFor({ state: "visible", timeout: TIMEOUT_MS });
+      const rateUp = mutationPage.locator(RATE_UP);
+      await rateUp.waitFor({ state: "visible", timeout: TIMEOUT_MS });
 
-      await mutationPage.locator(RATE_UP).focus();
-      await mutationPage.keyboard.press("Space");
+      await rateUp.focus();
+      keyboardFocus = await mutationPage.evaluate((selector) => document.activeElement === document.querySelector(selector), RATE_UP);
+      const held = await this.#heldActivation(
+        mutationPage,
+        rateUp,
+        () => mutationPage.keyboard.press("Space"),
+        { widget: POINT_WIDGET, point: true },
+      );
+      busy = held.busy;
+      doubleSuppressed = held.double_suppressed;
       await mutationPage.waitForFunction((selector) => {
         const number = document.querySelector(selector);
         return number !== null && number.textContent.trim() === "+1";
       }, RATE_NUMBER, { timeout: TIMEOUT_MS });
       keyboard = await widgetState(mutationPage, { widget: POINT_WIDGET, point: true });
 
-      await mutationPage.locator(RATE_UP).click();
+      await rateUp.click();
       await mutationPage.waitForFunction((selector) => {
         const number = document.querySelector(selector);
         return number !== null && number.textContent.trim() === "+1";
@@ -170,38 +341,39 @@ export class Open43A1030RateBrowserAdapter {
       }, RATE_NUMBER, { timeout: TIMEOUT_MS });
       canceled = await widgetState(mutationPage, { widget: POINT_WIDGET, point: true });
 
-      forged = await forgedRateRequest(mutationPage, {
-        pageId: registry.page_id,
-        lastRevisionId: registry.revision_id,
-        actionIndex: registry.actions[0].index,
-        actionFingerprint: "0".repeat(32),
-      });
+      forged = await forgedRateRequest(mutationPage, requestBody(registry, 0, "0".repeat(32)));
+      error = await this.#errorSurface(mutationPage, rateUp, forged, { widget: POINT_WIDGET, point: true });
     } finally {
       mutationPage.off("request", onRequest);
       await mutationPage.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
 
     const reloadPage = await context.newPage();
-    let reloaded;
+    let reload;
     try {
-      await reloadPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await reloadPage.waitForFunction((selector) => {
-        const number = document.querySelector(selector);
-        return number !== null && number.textContent.trim() === "0";
-      }, RATE_NUMBER, { timeout: TIMEOUT_MS });
-      reloaded = await widgetState(reloadPage, { widget: POINT_WIDGET, point: true });
+      reload = await this.#reloadUntil(reloadPage, url, { widget: POINT_WIDGET, point: true }, "score", "0");
     } finally {
       await reloadPage.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
+    const navigation = await this.#navigation(context, url, { widget: POINT_WIDGET, point: true }, "score", "0");
+    const csrf = await this.#csrf(context, url, requestBody(registry), { widget: POINT_WIDGET, point: true }, "score");
 
     return {
+      initial_capture: captureProof(initial.capture),
       initial: initial.state,
+      keyboard_focus: keyboardFocus,
+      busy,
+      double_suppressed: doubleSuppressed,
       keyboard,
       repeated,
       changed,
       canceled,
-      reloaded,
-      forged,
+      reloaded: reload.state,
+      navigation,
+      csrf,
+      error,
+      cache: reload.cache,
+      forged: publicFailure(forged),
       mutation_request_count: mutationRequestCount,
     };
   }
@@ -231,18 +403,29 @@ export class Open43A1030RateBrowserAdapter {
     let repeated = null;
     let changed = null;
     let forged = null;
+    let error = null;
+    let busy = null;
+    let doubleSuppressed = false;
     try {
       await mutationPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await mutationPage.locator(STAR_IMAGE).first().waitFor({ state: "visible", timeout: TIMEOUT_MS });
+      const fourthStar = mutationPage.locator(STAR_IMAGE).nth(3);
+      await fourthStar.waitFor({ state: "visible", timeout: TIMEOUT_MS });
 
-      await mutationPage.locator(STAR_IMAGE).nth(3).click();
+      const held = await this.#heldActivation(
+        mutationPage,
+        fourthStar,
+        () => fourthStar.click(),
+        { widget: STAR_WIDGET, star: true },
+      );
+      busy = held.busy;
+      doubleSuppressed = held.double_suppressed;
       await mutationPage.waitForFunction((selector) => {
         const hidden = document.querySelector(selector);
         return hidden !== null && hidden.value === "4";
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
       clicked = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
-      await mutationPage.locator(STAR_IMAGE).nth(3).click();
+      await fourthStar.click();
       await mutationPage.waitForFunction((selector) => {
         const hidden = document.querySelector(selector);
         return hidden !== null && hidden.value === "4";
@@ -259,42 +442,39 @@ export class Open43A1030RateBrowserAdapter {
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
       changed = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
-      forged = await forgedRateRequest(mutationPage, {
-        pageId: registry.page_id,
-        lastRevisionId: registry.revision_id,
-        actionIndex: registry.actions[0].index,
-        actionFingerprint: "0".repeat(32),
-      });
+      forged = await forgedRateRequest(mutationPage, requestBody(registry, 0, "0".repeat(32)));
+      error = await this.#errorSurface(mutationPage, mutationPage.locator(STAR_IMAGE).nth(2), forged, { widget: STAR_WIDGET, star: true });
     } finally {
       mutationPage.off("request", onRequest);
       await mutationPage.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
 
     const reloadPage = await context.newPage();
-    let reloaded;
+    let reload;
     try {
-      const deadline = Date.now() + TIMEOUT_MS;
-      while (Date.now() < deadline) {
-        await reloadPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-        await reloadPage.locator(STAR_SCORE_INPUT).waitFor({ state: "attached", timeout: TIMEOUT_MS });
-        reloaded = await widgetState(reloadPage, { widget: STAR_WIDGET, star: true });
-        if (reloaded.hidden_score === "3") break;
-        await reloadPage.waitForTimeout(1_000);
-      }
-      if (reloaded?.hidden_score !== "3") {
-        throw new Error("A1030 star rerender did not become visible after bounded reload polling");
-      }
+      reload = await this.#reloadUntil(reloadPage, url, { widget: STAR_WIDGET, star: true }, "hidden_score", "3");
     } finally {
       await reloadPage.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
+    const navigation = await this.#navigation(context, url, { widget: STAR_WIDGET, star: true }, "hidden_score", "3");
+    const csrf = await this.#csrf(context, url, requestBody(registry, 2), { widget: STAR_WIDGET, star: true }, "hidden_score");
 
     return {
+      initial_capture: captureProof(initial.capture),
       initial: initial.state,
+      focusable_image_count: initial.state.focusable_image_count,
+      tabindex_attribute_count: initial.state.tabindex_attribute_count,
+      busy,
+      double_suppressed: doubleSuppressed,
       clicked,
       repeated,
       changed,
-      reloaded,
-      forged,
+      reloaded: reload.state,
+      navigation,
+      csrf,
+      error,
+      cache: reload.cache,
+      forged: publicFailure(forged),
       mutation_request_count: mutationRequestCount,
     };
   }

@@ -67,6 +67,10 @@ function pointState(score) {
   };
 }
 
+function pointBusyState(score) {
+  return { ...pointState(score), busy: true };
+}
+
 function starState(score) {
   return {
     present: true,
@@ -80,26 +84,47 @@ function starState(score) {
   };
 }
 
+function starBusyState(score) {
+  return { ...starState(score), busy: true };
+}
+
 function browserObservations({ forgedFailure = true } = {}) {
   return {
     point: {
+      initial_capture: { navigation_status: 200, first_paint: true, settled: true, failure_count: 0 },
       initial: pointState("0"),
+      keyboard_focus: true,
+      busy: pointBusyState("0"),
+      double_suppressed: true,
       keyboard: pointState("+1"),
       repeated: pointState("+1"),
       changed: pointState("-1"),
       canceled: pointState("0"),
       reloaded: pointState("0"),
+      navigation: { back_path: "/", forward_score: "0", replay_request_count: 0 },
+      csrf: { http_status: 403, score_after: "0" },
+      error: { ...pointState("0"), error_popup_visible: true },
+      cache: { reload_attempts: 1, elapsed_ms: 1, score: "0" },
       forged: forgedFailure ? { http_status: 400, payload_type: "failure", message: "Rate action does not match the current page revision" } : { http_status: 200, payload_type: "success", message: null },
-      mutation_request_count: 5,
+      mutation_request_count: 6,
     },
     star: {
+      initial_capture: { navigation_status: 200, first_paint: true, settled: true, failure_count: 0 },
       initial: starState("0"),
+      focusable_image_count: 0,
+      tabindex_attribute_count: 0,
+      busy: starBusyState("0"),
+      double_suppressed: true,
       clicked: starState("4"),
       repeated: starState("4"),
       changed: starState("3"),
       reloaded: starState("3"),
+      navigation: { back_path: "/", forward_score: "3", replay_request_count: 0 },
+      csrf: { http_status: 403, score_after: "3" },
+      error: { ...starState("3"), error_popup_visible: true },
+      cache: { reload_attempts: 1, elapsed_ms: 1, score: "3" },
       forged: forgedFailure ? { http_status: 400, payload_type: "failure", message: "Rate action does not match the current page revision" } : { http_status: 200, payload_type: "success", message: null },
-      mutation_request_count: 4,
+      mutation_request_count: 5,
     },
   };
 }
@@ -245,5 +270,24 @@ test("A1030 candidate verification fails closed when a forged Rate request is ac
   await assert.rejects(
     runFixture(t, state, { forgedFailure: false }),
     /forged rate request was not rejected/u,
+  );
+});
+
+test("A1030 candidate verification fails closed when the browser lifecycle proof is incomplete", async (t) => {
+  const state = runtime();
+  const originalAdapter = state.browserAdapter;
+  state.browserAdapter = (options) => {
+    const adapter = originalAdapter(options);
+    return {
+      async run(input) {
+        const observations = await adapter.run(input);
+        observations.point.double_suppressed = false;
+        return observations;
+      },
+    };
+  };
+  await assert.rejects(
+    runFixture(t, state, {}),
+    /repeated activation was not suppressed/u,
   );
 });

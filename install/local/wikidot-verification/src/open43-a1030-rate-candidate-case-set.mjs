@@ -152,12 +152,65 @@ function requireStarState(value, label, score) {
   return { score: value.hidden_score, raty_verified: true };
 }
 
+function requireInitialCapture(value, label) {
+  const capture = requirePlainObject(value, `${label} initial capture`);
+  if (
+    capture.navigation_status !== 200 ||
+    capture.first_paint !== true ||
+    capture.settled !== true ||
+    capture.failure_count !== 0
+  ) {
+    throw new Error(`${label} initial browser capture did not prove both browser phases cleanly`);
+  }
+  return capture;
+}
+
+function requireNavigation(value, label, score) {
+  const navigation = requirePlainObject(value, `${label} navigation`);
+  if (
+    navigation.back_path !== "/" ||
+    navigation.forward_score !== score ||
+    navigation.replay_request_count !== 0
+  ) {
+    throw new Error(`${label} back-forward navigation replayed or lost Rate state`);
+  }
+  return navigation;
+}
+
+function requireCsrf(value, label, score) {
+  const csrf = requirePlainObject(value, `${label} CSRF observation`);
+  if (csrf.http_status !== 403 || csrf.score_after !== score) {
+    throw new Error(`${label} wrong-origin request was not rejected without mutation`);
+  }
+  return csrf;
+}
+
+function requireCache(value, label, score) {
+  const cache = requirePlainObject(value, `${label} cache observation`);
+  if (
+    !Number.isSafeInteger(cache.reload_attempts) ||
+    cache.reload_attempts < 1 ||
+    !Number.isSafeInteger(cache.elapsed_ms) ||
+    cache.elapsed_ms < 0 ||
+    cache.score !== score
+  ) {
+    throw new Error(`${label} bounded cache visibility proof drifted`);
+  }
+  return cache;
+}
+
 function verifyBrowserCase(caseId, observations, plan) {
   const value = requirePlainObject(observations, `${caseId} observations`);
   const point = requirePlainObject(value.point, `${caseId} point mode`);
   const star = requirePlainObject(value.star, `${caseId} star mode`);
 
+  requireInitialCapture(point.initial_capture, "A1030 point");
   requirePointState(point.initial, "initial", "0");
+  requirePointState(point.busy, "busy", "0");
+  if (point.busy.busy !== true || point.keyboard_focus !== true) {
+    throw new Error(`A1030 point keyboard activation did not preserve focus and expose a busy interval`);
+  }
+  if (point.double_suppressed !== true) throw new Error(`A1030 point repeated activation was not suppressed`);
   requirePointState(point.keyboard, "keyboard", "+1");
   requirePointState(point.repeated, "repeated", "+1");
   requirePointState(point.changed, "changed", "-1");
@@ -166,12 +219,24 @@ function verifyBrowserCase(caseId, observations, plan) {
   for (const state of [point.keyboard, point.repeated, point.changed, point.canceled, point.reloaded]) {
     if (state.busy === true || state.error_popup_visible === true) throw new Error(`A1030 point interval left a busy or error state`);
   }
+  requireNavigation(point.navigation, "A1030 point", "0");
+  requireCsrf(point.csrf, "A1030 point", "0");
+  requirePointState(point.error, "error", "0");
+  if (point.error.busy === true || point.error.error_popup_visible !== true) throw new Error(`A1030 point failure did not settle into the public error surface`);
+  requireCache(point.cache, "A1030 point", "0");
   if (point.forged?.payload_type !== "failure") throw new Error(`A1030 point forged rate request was not rejected`);
-  if (!Number.isSafeInteger(point.mutation_request_count) || point.mutation_request_count < 5) {
+  if (!Number.isSafeInteger(point.mutation_request_count) || point.mutation_request_count < 6) {
     throw new Error(`A1030 point mutation request count drifted`);
   }
 
+  requireInitialCapture(star.initial_capture, "A1030 star");
   requireStarState(star.initial, "initial", "0");
+  requireStarState(star.busy, "busy", "0");
+  if (star.busy.busy !== true) throw new Error(`A1030 star click did not expose a busy interval`);
+  if (star.focusable_image_count !== 0 || star.tabindex_attribute_count !== 0) {
+    throw new Error(`A1030 star DOM invented a keyboard-focus affordance absent from the Wikidot oracle`);
+  }
+  if (star.double_suppressed !== true) throw new Error(`A1030 star repeated activation was not suppressed`);
   requireStarState(star.clicked, "clicked", "4");
   requireStarState(star.repeated, "repeated", "4");
   requireStarState(star.changed, "changed", "3");
@@ -179,8 +244,13 @@ function verifyBrowserCase(caseId, observations, plan) {
   for (const state of [star.clicked, star.repeated, star.changed, star.reloaded]) {
     if (state.busy === true || state.error_popup_visible === true) throw new Error(`A1030 star interval left a busy or error state`);
   }
+  requireNavigation(star.navigation, "A1030 star", "3");
+  requireCsrf(star.csrf, "A1030 star", "3");
+  requireStarState(star.error, "error", "3");
+  if (star.error.busy === true || star.error.error_popup_visible !== true) throw new Error(`A1030 star failure did not settle into the public error surface`);
+  requireCache(star.cache, "A1030 star", "3");
   if (star.forged?.payload_type !== "failure") throw new Error(`A1030 star forged rate request was not rejected`);
-  if (!Number.isSafeInteger(star.mutation_request_count) || star.mutation_request_count < 4) {
+  if (!Number.isSafeInteger(star.mutation_request_count) || star.mutation_request_count < 5) {
     throw new Error(`A1030 star mutation request count drifted`);
   }
 
@@ -188,15 +258,26 @@ function verifyBrowserCase(caseId, observations, plan) {
     verified: true,
     point_mode: {
       keyboard_activation: true,
+      busy_interval: true,
+      repeated_activation_suppressed: true,
       repeated_click_idempotent: true,
       change_and_cancel_committed: true,
+      navigation_restored: true,
+      csrf_rejected: true,
+      error_surface: true,
       reload_cache_consistent: true,
       forged_rejected: true,
     },
     star_mode: {
       raty_click_committed: true,
+      observed_non_focusable_images: true,
+      busy_interval: true,
+      repeated_activation_suppressed: true,
       repeated_click_idempotent: true,
       change_committed: true,
+      navigation_restored: true,
+      csrf_rejected: true,
+      error_surface: true,
       reload_cache_consistent: true,
       forged_rejected: true,
     },

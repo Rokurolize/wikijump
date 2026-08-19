@@ -436,7 +436,7 @@
         },
         {
           "case_id": "A1030_EXACT_CANDIDATE_BROWSER",
-          "acceptance": "Verify loading, success, error, focus, keyboard, repeated click, navigation, CSRF rejection, and cache timing for point and star modes.",
+          "acceptance": "Verify initial/loading, success, error, point focus and Space activation, the observed non-focusable star-image interaction, repeated-activation suppression, navigation/back-forward, CSRF rejection, and bounded cache visibility for both rating modes.",
           "owner": "central-production-browser",
           "result": "Node proves the typed dispatch but not served browser intervals."
         }
