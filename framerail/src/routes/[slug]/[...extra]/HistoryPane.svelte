@@ -33,7 +33,7 @@
   let toRevisionNumber = $state<Optional<number>>(undefined)
   let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
   let revisionDiffLoading = $state(false)
-  let revisionDiffCompareButton: HTMLButtonElement | undefined
+  let revisionDiffCompareButton = $state<HTMLButtonElement | undefined>(undefined)
   let revisionDiffRequestId = 0
   let active = true
 
