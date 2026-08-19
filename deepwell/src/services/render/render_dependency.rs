@@ -124,6 +124,15 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
     if wikitext_has_executable_members_module(source) {
         classes.insert(RenderDependencyClass::QueryDependent);
     }
+    if wikitext_has_executable_list_pages_module(source)
+        || wikitext_has_executable_tag_cloud_module(source)
+    {
+        classes.insert(RenderDependencyClass::QueryDependent);
+    }
+    if wikitext_has_executable_pages_module(source) {
+        classes.insert(RenderDependencyClass::QueryDependent);
+        classes.insert(RenderDependencyClass::RequestDependent);
+    }
     let count_pages_literal_regions = source
         .to_ascii_lowercase()
         .contains("countpages")
@@ -132,6 +141,9 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         .as_ref()
         .map(|_| recognize_count_pages_modules(source));
     let pages_by_tag_literal_regions = PAGES_BY_TAG_MODULE_REGEX
+        .is_match(source)
+        .then(|| LiteralRegionIndex::new_wikidot_module_recognition(source));
+    let module_literal_regions = MODULE_MARKER_REGEX
         .is_match(source)
         .then(|| LiteralRegionIndex::new_wikidot_module_recognition(source));
 
@@ -168,6 +180,13 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
         };
 
         let name = name.to_ascii_lowercase();
+        if name != "countpages"
+            && module_literal_regions
+                .as_ref()
+                .is_some_and(|literal_regions| literal_regions.contains(module_start))
+        {
+            continue;
+        }
         if name == "countpages" {
             if count_pages_literal_regions
                 .as_ref()
@@ -203,9 +222,7 @@ pub fn classify_render_dependencies(source: &str) -> RenderDependencyClasses {
             }
             continue;
         }
-        if name == "pages" {
-            classes.insert(RenderDependencyClass::QueryDependent);
-            classes.insert(RenderDependencyClass::RequestDependent);
+        if matches!(name.as_str(), "listpages" | "pages" | "tagcloud") {
             continue;
         }
         if name == "members" {
@@ -565,6 +582,33 @@ mod tests {
         assert!(!classes.contains(RenderDependencyClass::QueryDependent));
         assert!(!classes.contains(RenderDependencyClass::RequestDependent));
         assert!(!classes.contains(RenderDependencyClass::UnsupportedUnverified));
+    }
+
+    #[test]
+    fn literal_generic_module_text_is_revision_local() {
+        for source in [
+            "[[code]]\n[[module ListPages tags=\"+fresh\"]]%%fullname%%[[/module]]\n[[/code]]",
+            "[[code]]\n[[module Pages]]\n[[/code]]",
+            "<pre>[[module TagCloud]]</pre>",
+        ] {
+            let classes = classify_render_dependencies(source);
+            assert!(
+                classes.contains(RenderDependencyClass::RevisionLocal),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::QueryDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::RequestDependent),
+                "{source}",
+            );
+            assert!(
+                !classes.contains(RenderDependencyClass::UnsupportedUnverified),
+                "{source}",
+            );
+        }
     }
 
     #[test]

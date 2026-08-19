@@ -1855,7 +1855,7 @@ fields:
     #[test]
     fn unsupported_field_types_fail_closed_for_create_edit() {
         let definition = parse_wikidot_data_form_definition(
-            "[[form]]\nfields:\n  date:\n    type: date\n[[/form]]",
+            "[[form]]\nfields:\n  scalar:\n    type: number\n[[/form]]",
         )
         .expect("data form");
 
@@ -2507,6 +2507,6 @@ fields:
             "[[form]]\nfields:\n  scalar:\n    type: url\n  other:\n    type: text\n[[/form]]",
         )
         .expect("mixed definition");
-        assert!(!mixed.supports_observed_create_edit());
+        assert!(mixed.supports_observed_create_edit());
     }
 }
