@@ -9,7 +9,7 @@ const STAR_SCORE_INPUT = `${STAR_WIDGET} input[name="score"]`;
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const TIMEOUT_MS = 300_000;
 
-async function widgetState(page, widget) {
+async function widgetState(page, { widget, point = false, star = false }) {
   return await page.evaluate(({ widget: widgetSelector, point, star }) => {
     const widgetElement = document.querySelector(widgetSelector);
     if (widgetElement === null) return { present: false };
@@ -29,16 +29,20 @@ async function widgetState(page, widget) {
       result.cancel_count = widgetElement.querySelectorAll(".cancel > a").length;
     }
     if (star) {
-      const stars = widgetElement.querySelector(".page-rate-widget-start");
+      const stars = widgetElement.matches(".page-rate-widget-start")
+        ? widgetElement
+        : widgetElement.querySelector(".page-rate-widget-start");
       const hidden = stars?.querySelector('input[name="score"]');
       result.data_rating = stars?.getAttribute("data-rating") ?? null;
       result.star_image_count = stars?.querySelectorAll("img").length ?? 0;
       result.hidden_score = hidden?.value ?? null;
-      const textRating = widgetElement.querySelector(".page-rate-widget-start-text-rating");
+      const textRating = widgetElement
+        .closest(".page-rate-widget")
+        ?.querySelector(".page-rate-widget-start-text-rating");
       result.text_rating = textRating?.textContent?.trim() ?? null;
     }
     return result;
-  }, { widget: widgetSelector, point, star });
+  }, { widget, point, star });
 }
 
 async function forgedRateRequest(page, body) {
@@ -71,8 +75,8 @@ export class Open43A1030RateBrowserAdapter {
     this.#pageOrigin = pageOrigin;
   }
 
-  async #context() {
-    return (await this.#browserContexts.newCandidateContext({ viewport: VIEWPORT })).context;
+  async #context(storageState) {
+    return (await this.#browserContexts.newCandidateContext({ storageState, viewport: VIEWPORT })).context;
   }
 
   #url(pathname) {
@@ -106,7 +110,7 @@ export class Open43A1030RateBrowserAdapter {
     return { capture, state };
   }
 
-  async #pointMode({ page, pagePath, registry, session }) {
+  async #pointMode({ page, pagePath, registry }) {
     const context = page.context();
     const url = this.#url(pagePath);
     await this.#browserContexts.setActiveFixture("A1030_EXACT_CANDIDATE_BROWSER_POINT");
@@ -202,7 +206,7 @@ export class Open43A1030RateBrowserAdapter {
     };
   }
 
-  async #starMode({ page, pagePath, registry, session }) {
+  async #starMode({ page, pagePath, registry }) {
     const context = page.context();
     const url = this.#url(pagePath);
     await this.#browserContexts.setActiveFixture("A1030_EXACT_CANDIDATE_BROWSER_STAR");
@@ -225,7 +229,7 @@ export class Open43A1030RateBrowserAdapter {
     mutationPage.on("request", onRequest);
     let clicked = null;
     let repeated = null;
-    let keyboard = null;
+    let changed = null;
     let forged = null;
     try {
       await mutationPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
@@ -245,13 +249,15 @@ export class Open43A1030RateBrowserAdapter {
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
       repeated = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
-      await mutationPage.locator(STAR_IMAGE).nth(2).focus();
-      await mutationPage.keyboard.press("Space");
+      // The retained Wikidot star DOM exposes images without a keyboard-focus
+      // affordance. Exercise a second concrete star value by click instead of
+      // inventing tabindex/keyboard behavior that the oracle does not expose.
+      await mutationPage.locator(STAR_IMAGE).nth(2).click();
       await mutationPage.waitForFunction((selector) => {
         const hidden = document.querySelector(selector);
         return hidden !== null && hidden.value === "3";
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
-      keyboard = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
+      changed = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
       forged = await forgedRateRequest(mutationPage, {
         pageId: registry.page_id,
@@ -267,12 +273,17 @@ export class Open43A1030RateBrowserAdapter {
     const reloadPage = await context.newPage();
     let reloaded;
     try {
-      await reloadPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await reloadPage.waitForFunction((selector) => {
-        const hidden = document.querySelector(selector);
-        return hidden !== null && hidden.value === "3";
-      }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
-      reloaded = await widgetState(reloadPage, { widget: STAR_WIDGET, star: true });
+      const deadline = Date.now() + TIMEOUT_MS;
+      while (Date.now() < deadline) {
+        await reloadPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+        await reloadPage.locator(STAR_SCORE_INPUT).waitFor({ state: "attached", timeout: TIMEOUT_MS });
+        reloaded = await widgetState(reloadPage, { widget: STAR_WIDGET, star: true });
+        if (reloaded.hidden_score === "3") break;
+        await reloadPage.waitForTimeout(1_000);
+      }
+      if (reloaded?.hidden_score !== "3") {
+        throw new Error("A1030 star rerender did not become visible after bounded reload polling");
+      }
     } finally {
       await reloadPage.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
@@ -281,7 +292,7 @@ export class Open43A1030RateBrowserAdapter {
       initial: initial.state,
       clicked,
       repeated,
-      keyboard,
+      changed,
       reloaded,
       forged,
       mutation_request_count: mutationRequestCount,
@@ -289,7 +300,17 @@ export class Open43A1030RateBrowserAdapter {
   }
 
   async run({ pointPath, starPath, pointRegistry, starRegistry, session }) {
-    const context = await this.#context();
+    const context = await this.#context({
+      cookies: [{
+        name: "wikijump_token",
+        value: session.editorSessionToken,
+        url: this.#pageOrigin,
+        httpOnly: true,
+        secure: true,
+        sameSite: "Lax",
+      }],
+      origins: [],
+    });
     const capturePage = await context.newPage();
     try {
       return {

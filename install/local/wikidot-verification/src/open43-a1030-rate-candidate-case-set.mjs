@@ -174,9 +174,9 @@ function verifyBrowserCase(caseId, observations, plan) {
   requireStarState(star.initial, "initial", "0");
   requireStarState(star.clicked, "clicked", "4");
   requireStarState(star.repeated, "repeated", "4");
-  requireStarState(star.keyboard, "keyboard", "3");
+  requireStarState(star.changed, "changed", "3");
   requireStarState(star.reloaded, "reloaded", "3");
-  for (const state of [star.clicked, star.repeated, star.keyboard, star.reloaded]) {
+  for (const state of [star.clicked, star.repeated, star.changed, star.reloaded]) {
     if (state.busy === true || state.error_popup_visible === true) throw new Error(`A1030 star interval left a busy or error state`);
   }
   if (star.forged?.payload_type !== "failure") throw new Error(`A1030 star forged rate request was not rejected`);
@@ -196,7 +196,7 @@ function verifyBrowserCase(caseId, observations, plan) {
     star_mode: {
       raty_click_committed: true,
       repeated_click_idempotent: true,
-      keyboard_activation: true,
+      change_committed: true,
       reload_cache_consistent: true,
       forged_rejected: true,
     },

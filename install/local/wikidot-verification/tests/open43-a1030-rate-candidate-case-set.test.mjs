@@ -96,7 +96,7 @@ function browserObservations({ forgedFailure = true } = {}) {
       initial: starState("0"),
       clicked: starState("4"),
       repeated: starState("4"),
-      keyboard: starState("3"),
+      changed: starState("3"),
       reloaded: starState("3"),
       forged: forgedFailure ? { http_status: 400, payload_type: "failure", message: "Rate action does not match the current page revision" } : { http_status: 200, payload_type: "success", message: null },
       mutation_request_count: 4,
