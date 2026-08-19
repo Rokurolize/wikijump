@@ -268,7 +268,7 @@ pub(in crate::services::render) fn render_wikidot_social_module(
     }
     output.push_str("</span>\n<script type=\"text/javascript\">\n//<![CDATA[\n\n");
     output.push_str("            var socialspan = $j(\"#");
-    output.push_str(&social_id);
+    output.push_str(social_id);
     output.push_str("\")[0];\n");
     output.push_str(
         concat!(
