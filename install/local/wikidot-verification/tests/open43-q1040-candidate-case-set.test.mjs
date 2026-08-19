@@ -141,6 +141,7 @@ function fakeBrowserContexts(state) {
           return {
             links: pages.filter((candidate) => candidate.slug.endsWith("-next") || candidate.slug.endsWith("-previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title })),
             default_row: `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by <span class="printuser avatarhover">editor</span> <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`,
+            list_pages_box_count: 3,
           };
         },
         async close() {},

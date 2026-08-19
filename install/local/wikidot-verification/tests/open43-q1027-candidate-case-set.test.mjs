@@ -142,6 +142,7 @@ function fakeBrowserContexts(state) {
             page_arg_box: box,
             default_box_count: 1,
             page_arg_box_count: 1,
+            total_box_count: 2,
             compat_markers: [],
           };
         },

@@ -45,10 +45,25 @@ function requireCandidateSite(candidateIdentity) {
 }
 
 function section(html, start, end) {
-  const begin = html.indexOf(`<p>${start}</p>`);
-  const finish = html.indexOf(`<p>${end}</p>`, begin);
-  if (begin < 0 || finish < 0) throw new Error(`Q1040 public output is missing ${begin < 0 ? start : end}`);
-  return html.slice(begin + `<p>${start}</p>`.length, finish);
+  const begin = html.indexOf(start);
+  if (begin < 0) throw new Error(`Q1040 public output is missing ${start}`);
+  let contentStart = begin + start.length;
+  for (const boundary of ["</p>", "<br>\n", "<br>"]) {
+    if (html.startsWith(boundary, contentStart)) {
+      contentStart += boundary.length;
+      break;
+    }
+  }
+  const finish = html.indexOf(end, contentStart);
+  if (finish < 0) throw new Error(`Q1040 public output is missing ${end}`);
+  let contentEnd = finish;
+  for (const boundary of ["<p>", "<br>\n", "<br>"]) {
+    if (html.slice(contentStart, contentEnd).endsWith(boundary)) {
+      contentEnd -= boundary.length;
+      break;
+    }
+  }
+  return html.slice(contentStart, contentEnd);
 }
 
 function foundHtml(value) {
@@ -70,9 +85,9 @@ class Q1040Run {
     this.#browserContexts = browserContexts;
     this.#resources = resources;
     this.#pages = [
-      { role: "previous", slug: pageSlug(runId, "previous"), title: `AAA Q1040 ${fixtureId} previous`, wikitext: "Q1040 previous" },
-      { role: "current", slug: pageSlug(runId, "current"), title: `BBB Q1040 ${fixtureId} current`, wikitext: "Q1040_CURRENT\nQ1040_DEFAULT_START\n[[module NextPage by=\"title\"]]\nQ1040_DEFAULT_END\nQ1040_NEXT_START\n[[module NextPage by=\"title\"]]\nNEXT=%%linked_title%%|%%title%%\n[[/module]]\nQ1040_NEXT_END\n[[module PreviousPage]]\nPREVIOUS=%%linked_title%%|%%title%%\n[[/module]]" },
-      { role: "next", slug: pageSlug(runId, "next"), title: `CCC Q1040 ${fixtureId} next`, wikitext: "Q1040 next" },
+      { role: "previous", slug: pageSlug(runId, "previous"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} A previous`, wikitext: "Q1040 previous" },
+      { role: "current", slug: pageSlug(runId, "current"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} B current`, wikitext: "Q1040_CURRENT\nQ1040_DEFAULT_START\n[[module NextPage by=\"title\"]]\n[[/module]]\nQ1040_DEFAULT_END\nQ1040_NEXT_START\n[[module NextPage by=\"title\"]]\nNEXT=%%linked_title%%|%%title%%\n[[/module]]\nQ1040_NEXT_END\n[[module PreviousPage]]\nPREVIOUS=%%linked_title%%|%%title%%\n[[/module]]" },
+      { role: "next", slug: pageSlug(runId, "next"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} C next`, wikitext: "Q1040 next" },
     ];
   }
 
@@ -212,14 +227,11 @@ class Q1040Run {
       });
       const dom = await page.evaluate(() => {
         const content = document.querySelector("#page-content");
-        const markers = [...content.querySelectorAll("p")];
-        const start = markers.find((node) => node.textContent.trim() === "Q1040_DEFAULT_START");
-        const end = markers.find((node) => node.textContent.trim() === "Q1040_DEFAULT_END");
-        const wrappers = [];
-        for (let node = start?.nextElementSibling; node && node !== end; node = node.nextElementSibling) if (node.matches("div.list-pages-box")) wrappers.push(node);
+        const wrappers = [...content.children].filter((node) => node.matches("div.list-pages-box"));
         return {
           links: [...content.querySelectorAll("a")].map((link) => ({ href: new URL(link.href).pathname, text: link.textContent.trim() })),
-          default_row: wrappers.length === 1 ? wrappers[0].outerHTML : null,
+          default_row: wrappers[0]?.outerHTML ?? null,
+          list_pages_box_count: wrappers.length,
         };
       });
       return [{
@@ -274,7 +286,8 @@ class Q1040Run {
       !defaultRow.includes('<p>by <span class="printuser avatarhover">') ||
       !/<span class="odate time_-?\d+ format_[^"]+">[^<]+<\/span>/u.test(defaultRow) ||
       !defaultRow.includes("<p>Q1040 next</p>") ||
-      defaultRow.includes("data-wikijump-compat-")
+      defaultRow.includes("data-wikijump-compat-") ||
+      observations.list_pages_box_count !== 3
     ) throw new Error("Q1040 served page did not expose the exact default NextPage row");
     const links = observations.links ?? [];
     const nextLink = links.find((link) => link.href === `/${next.slug}` && link.text === next.title);

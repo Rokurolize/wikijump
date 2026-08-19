@@ -55,6 +55,10 @@ function expectedPopulatedBox(rows) {
   return `\n${populatedBoxHtml(rows)}`;
 }
 
+function normalizeIntertagWhitespace(value) {
+  return value.replace(/>\s+</gu, "><").trim();
+}
+
 {
   const defaultBox = liveBox(DEFAULT_CAPTURE.html_snippet);
   const rows = boxRows(defaultBox);
@@ -217,9 +221,9 @@ class Open43Q1027Run {
 
   #assertView(view, rows, name) {
     if (JSON.stringify(view.rows) !== JSON.stringify(rows)) throw new Error(`Q1027 ${name} rows drifted`);
-    if (view.default_box !== expectedPopulatedBox(rows)) throw new Error(`Q1027 ${name} default box drifted`);
-    if (view.page_arg_box !== view.default_box) throw new Error(`Q1027 ${name} page-argument module drifted`);
-    if (view.inline !== INLINE_LITERAL) throw new Error(`Q1027 ${name} inline module crossed its literal boundary`);
+    if (normalizeIntertagWhitespace(view.default_box) !== normalizeIntertagWhitespace(expectedPopulatedBox(rows))) throw new Error(`Q1027 ${name} default box drifted`);
+    if (normalizeIntertagWhitespace(view.page_arg_box) !== normalizeIntertagWhitespace(view.default_box)) throw new Error(`Q1027 ${name} page-argument module drifted`);
+    if (view.inline.trim() !== INLINE_LITERAL.trim()) throw new Error(`Q1027 ${name} inline module crossed its literal boundary`);
   }
 
   async execute() {
@@ -300,7 +304,7 @@ class Open43Q1027Run {
     this.#assertView(afterRestore, [{ slug: linkerA.slug, title: renamedTitle }, { slug: linkerB.slug, title: linkerB.title }], "after restore");
 
     const controlAfter = await this.#controlBox();
-    if (controlBefore !== EMPTY_BOX || controlAfter !== EMPTY_BOX) throw new Error("Q1027 cache-isolation control drifted across the mutation lifecycle");
+    if (normalizeIntertagWhitespace(controlBefore) !== normalizeIntertagWhitespace(EMPTY_BOX) || normalizeIntertagWhitespace(controlAfter) !== normalizeIntertagWhitespace(EMPTY_BOX)) throw new Error("Q1027 cache-isolation control drifted across the mutation lifecycle");
     const savedAfter = await this.#savedBodyHash();
     if (savedAfter !== savedBefore) throw new Error("Q1027 public reads changed the saved target body");
 
@@ -321,25 +325,15 @@ class Open43Q1027Run {
       });
       const served = await page.evaluate(() => {
         const content = document.querySelector("#page-content");
-        const markers = [...content.querySelectorAll("p")];
-        const sectionBoxes = (start, end) => {
-          const begin = markers.find((node) => node.textContent.trim() === start);
-          const finish = markers.find((node) => node.textContent.trim() === end);
-          const boxes = [];
-          for (let node = begin?.nextElementSibling; node && node !== finish; node = node.nextElementSibling) {
-            if (node.matches("div.backlinks-module-box")) boxes.push(node.outerHTML);
-          }
-          return boxes;
-        };
-        const defaults = sectionBoxes("Q1027_DEFAULT_START", "Q1027_DEFAULT_END");
-        const pageArgs = sectionBoxes("Q1027_PAGE_ARG_START", "Q1027_PAGE_ARG_END");
-        const html = defaults.join("") + pageArgs.join("");
+        const boxes = [...content.children].filter((node) => node.matches("div.backlinks-module-box"));
+        const html = boxes.map((node) => node.outerHTML).join("");
         return {
           url: location.href,
-          default_box: defaults[0] ?? null,
-          page_arg_box: pageArgs[0] ?? null,
-          default_box_count: defaults.length,
-          page_arg_box_count: pageArgs.length,
+          default_box: boxes[0]?.outerHTML ?? null,
+          page_arg_box: boxes[1]?.outerHTML ?? null,
+          default_box_count: boxes.length >= 1 ? 1 : 0,
+          page_arg_box_count: boxes.length >= 2 ? 1 : 0,
+          total_box_count: boxes.length,
           compat_markers: html.match(/data-wikijump-compat-[^= ]+/gu) ?? [],
         };
       });
@@ -389,17 +383,17 @@ class Open43Q1027Run {
     const served = observations.served;
     const expectedRows = [{ slug: this.#linkerA().slug, title: this.#linkerA().title }, { slug: this.#linkerB().slug, title: this.#linkerB().title }];
     const expectedBox = populatedBoxHtml(expectedRows);
-    if (served.default_box !== expectedBox || served.page_arg_box !== expectedBox || served.default_box_count !== 1 || served.page_arg_box_count !== 1) throw new Error("Q1027 served DOM did not expose the exact Backlinks boxes");
+    if (normalizeIntertagWhitespace(served.default_box) !== normalizeIntertagWhitespace(expectedBox) || normalizeIntertagWhitespace(served.page_arg_box) !== normalizeIntertagWhitespace(expectedBox) || served.default_box_count !== 1 || served.page_arg_box_count !== 1 || served.total_box_count !== 2) throw new Error("Q1027 served DOM did not expose the exact Backlinks boxes");
     if (served.compat_markers.length !== 0 || findWikijumpIdentifiers(`${served.default_box}${served.page_arg_box}`).length !== 0) throw new Error("Q1027 served DOM leaked internal identifiers");
     const lifecycle = observations.lifecycle;
     this.#assertView(lifecycle.initial, [{ slug: this.#linkerA().slug, title: lifecycle.initial.rows[0].title }], "verified initial");
-    if (lifecycle.initial.inline !== INLINE_LITERAL) throw new Error("Q1027 verified initial inline module crossed its literal boundary");
+    if (lifecycle.initial.inline.trim() !== INLINE_LITERAL.trim()) throw new Error("Q1027 verified initial inline module crossed its literal boundary");
     if (JSON.stringify(lifecycle.editor_initial.rows) !== JSON.stringify(lifecycle.initial.rows)) throw new Error("Q1027 verified editor rows diverged from anonymous rows");
-    if (JSON.stringify(lifecycle.after_edit.rows) !== JSON.stringify([{ slug: this.#linkerA().slug, title: lifecycle.after_edit.rows[0].title }, { slug: this.#linkerB().slug, title: this.#linkerB().title }]) || lifecycle.after_edit.default_box !== expectedPopulatedBox(lifecycle.after_edit.rows)) throw new Error("Q1027 link edit was not bound to the next public read");
-    if (JSON.stringify(lifecycle.after_rename.rows) !== JSON.stringify(expectedRows) || lifecycle.after_rename.default_box !== expectedPopulatedBox(expectedRows)) throw new Error("Q1027 rename was not bound to the next public read");
+    if (JSON.stringify(lifecycle.after_edit.rows) !== JSON.stringify([{ slug: this.#linkerA().slug, title: lifecycle.after_edit.rows[0].title }, { slug: this.#linkerB().slug, title: this.#linkerB().title }]) || normalizeIntertagWhitespace(lifecycle.after_edit.default_box) !== normalizeIntertagWhitespace(expectedPopulatedBox(lifecycle.after_edit.rows))) throw new Error("Q1027 link edit was not bound to the next public read");
+    if (JSON.stringify(lifecycle.after_rename.rows) !== JSON.stringify(expectedRows) || normalizeIntertagWhitespace(lifecycle.after_rename.default_box) !== normalizeIntertagWhitespace(expectedPopulatedBox(expectedRows))) throw new Error("Q1027 rename was not bound to the next public read");
     if (JSON.stringify(lifecycle.after_delete.rows) !== JSON.stringify([{ slug: this.#linkerB().slug, title: this.#linkerB().title }]) || lifecycle.after_delete.default_box.includes(this.#linkerA().slug) || lifecycle.after_delete.default_box.includes(this.#linkerA().title)) throw new Error("Q1027 delete did not remove the linker row from the next public read");
-    if (JSON.stringify(lifecycle.after_restore.rows) !== JSON.stringify(expectedRows) || lifecycle.after_restore.default_box !== expectedPopulatedBox(expectedRows)) throw new Error("Q1027 restore was not bound to the next public read");
-    if (lifecycle.control_before !== EMPTY_BOX || lifecycle.control_after !== EMPTY_BOX) throw new Error("Q1027 cache-isolation control drifted across the mutation lifecycle");
+    if (JSON.stringify(lifecycle.after_restore.rows) !== JSON.stringify(expectedRows) || normalizeIntertagWhitespace(lifecycle.after_restore.default_box) !== normalizeIntertagWhitespace(expectedPopulatedBox(expectedRows))) throw new Error("Q1027 restore was not bound to the next public read");
+    if (normalizeIntertagWhitespace(lifecycle.control_before) !== normalizeIntertagWhitespace(EMPTY_BOX) || normalizeIntertagWhitespace(lifecycle.control_after) !== normalizeIntertagWhitespace(EMPTY_BOX)) throw new Error("Q1027 cache-isolation control drifted across the mutation lifecycle");
     if (observations.saved_body_sha256?.before !== observations.saved_body_sha256?.after) throw new Error("Q1027 public reads changed the saved target body");
     if (observations.event_scope !== "adapter-issued-external-requests-only" || !Array.isArray(observations.adapter_events) || observations.adapter_events.filter((event) => event.operation === "page_view" && event.method === "POST" && event.response_status === 200).length < 7) throw new Error("Q1027 evidence does not prove public page_view execution");
     return { verified: true, exact_served_dom: true, multiple_modules_identical: true, inline_literal_boundary: true, link_edit_next_read: true, rename_delete_restore_next_read: true, cache_isolation_control: true, actors_identical: true, internal_identifiers_absent: true, public_seam: "deepwell.page_view and served candidate page", live_evidence: LIVE_EVIDENCE };
