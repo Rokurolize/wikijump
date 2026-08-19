@@ -11,6 +11,10 @@ import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const CASE_ID = "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE";
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
+const PRINTUSER_CSP_FAILURES = Object.freeze([
+  { kind: "request_failed", url: "https://www.wikidot.com/avatar.php?userid=10", resource_type: "image", error: "csp" },
+  { kind: "request_failed", url: "https://www.wikidot.com/userkarma.php?u=10", resource_type: "image", error: "csp" },
+]);
 const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
 const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
 
@@ -149,7 +153,7 @@ function fakeBrowserContexts(state) {
       return { context: { async newPage() { return page; } }, environment: { fixture: "q1040" } };
     },
     async captureCandidateObservation({ url }) {
-      return { navigation_status: 200, input_url: url, final_url: url, failures: [], document: { dom_signature: "q1040" } };
+      return { navigation_status: 200, input_url: url, final_url: url, failures: structuredClone(PRINTUSER_CSP_FAILURES), document: { dom_signature: "q1040" } };
     },
     async close() { return { browser_context_count: 1 }; },
   };
@@ -200,7 +204,7 @@ test("Q1040 rejects directional links without the default NextPage row", () => {
     candidateBrowserContexts: {},
   });
   assert.throws(() => run.verifyCase(CASE_ID, {
-    capture: { navigation_status: 200, failures: [] },
+    capture: { navigation_status: 200, failures: structuredClone(PRINTUSER_CSP_FAILURES) },
     links: [
       { href: "/open43-q1040-0123456789ab-next", text: "CCC Q1040 0123456789ab next" },
       { href: "/open43-q1040-0123456789ab-previous", text: "AAA Q1040 0123456789ab previous" },

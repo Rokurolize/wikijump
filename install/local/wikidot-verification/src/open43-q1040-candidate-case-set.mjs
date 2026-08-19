@@ -276,7 +276,20 @@ class Q1040Run {
   verifyCase(_caseId, observations) {
     const next = this.#pages[2];
     const previous = this.#pages[0];
-    if (observations.capture?.navigation_status !== 200 || observations.capture?.failures?.length !== 0 || observations.capture?.capture_error) throw new Error("Q1040 served capture was not a clean HTTP 200");
+    const capture = observations.capture;
+    if (capture?.navigation_status !== 200 || capture?.capture_error || !Array.isArray(capture?.failures)) throw new Error("Q1040 served capture was not a clean HTTP 200");
+    const blockedPrintuserImages = capture.failures.map((failure) => {
+      let url;
+      try { url = new URL(failure.url); } catch { return null; }
+      return failure.kind === "request_failed"
+        && failure.resource_type === "image"
+        && failure.error === "csp"
+        && url.hostname === "www.wikidot.com"
+        && ["/avatar.php", "/userkarma.php"].includes(url.pathname)
+        ? url.pathname
+        : null;
+    });
+    if (capture.failures.length !== 2 || JSON.stringify(blockedPrintuserImages.sort()) !== JSON.stringify(["/avatar.php", "/userkarma.php"])) throw new Error("Q1040 served capture did not retain the exact CSP-blocked Wikidot printuser image boundary");
     const defaultRow = observations.default_row;
     if (
       typeof defaultRow !== "string" ||
