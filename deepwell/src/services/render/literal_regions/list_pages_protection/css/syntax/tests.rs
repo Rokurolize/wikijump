@@ -24,10 +24,12 @@ fn pinned_css_closer_scanner_matches_the_bounded_ftml_oracle() {
     let valid = [
         "[[/module]]",
         "[[/ module]]",
-        "[[/module ]]",
-        "[[/module654]]",
         "[[/[[module]]",
         "[[/ [[ module]]",
+    ];
+    let invalid = [
+        "[[/module ]]",
+        "[[/module654]]",
         "[[/module\n]]",
         "[[/module\r]]",
         "[[/module\r\n]]",
@@ -37,8 +39,6 @@ fn pinned_css_closer_scanner_matches_the_bounded_ftml_oracle() {
         "[[/module\u{000b}\n]]",
         "[[/module\u{000c}\n]]",
         "[[/[[module\r\n\t ]]",
-    ];
-    let invalid = [
         "[[/module]]]",
         "[[/module]]]]",
         "[[/module \n]]",
