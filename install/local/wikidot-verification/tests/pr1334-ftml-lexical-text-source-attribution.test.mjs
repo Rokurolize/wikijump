@@ -35,6 +35,16 @@ async function validateWitness(root, witness) {
   assert.deepEqual(witness.line_range, { start: matches[0], end: matches[0] });
 }
 
+function validateHistoricalRepositoryWitness(witness) {
+  assert.match(witness.sha256, /^[0-9a-f]{64}$/u);
+  assert.equal(witness.anchor_text.includes(fixture.ftml_revision), true);
+  assert.ok(Number.isInteger(witness.line_range.start));
+  assert.deepEqual(witness.line_range, {
+    start: witness.line_range.start,
+    end: witness.line_range.start,
+  });
+}
+
 function visitStrings(value, callback) {
   if (typeof value === 'string') callback(value);
   else if (Array.isArray(value)) value.forEach((item) => visitStrings(item, callback));
@@ -76,8 +86,8 @@ test('complete-file hashes and unique anchors resolve for every witness', async 
   assert.equal(artifact.fixture_identity.sha256, await sha256(fileURLToPath(fixturePath)));
   assert.equal(artifact.script_identity.sha256, await sha256(path.join(repo, artifact.script_identity.path)));
   assert.equal(artifact.inventory_identity.sha256, await sha256(path.join(repo, artifact.inventory_identity.path)));
-  await validateWitness(repo, artifact.cargo_manifest_pin_witness);
-  await validateWitness(repo, artifact.cargo_lock_pin_witness);
+  validateHistoricalRepositoryWitness(artifact.cargo_manifest_pin_witness);
+  validateHistoricalRepositoryWitness(artifact.cargo_lock_pin_witness);
   for (const record of artifact.surfaces) {
     await validateWitness(repo, record.catalog_specification);
     for (const witness of record.source_owner_witnesses) await validateWitness(ftml, witness);

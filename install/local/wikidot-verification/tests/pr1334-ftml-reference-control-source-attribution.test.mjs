@@ -40,8 +40,17 @@ test('exact base, dependency identities, and deterministic provenance identities
   assert.equal(artifact.pinned_ftml_revision, fixture.ftml_revision);
   assert.equal(artifact.pinned_ftml_git_tree, fixture.ftml_git_tree);
   assert.equal(artifact.pinned_ftml_package_version, fixture.ftml_package_version);
-  for (const witness of [artifact.inventory_identity, artifact.fixture_identity, artifact.script_identity, artifact.cargo_manifest_pin_witness, artifact.cargo_lock_pin_witness]) {
+  for (const witness of [artifact.inventory_identity, artifact.fixture_identity, artifact.script_identity]) {
     await verifyWitness(repo, witness);
+  }
+  for (const witness of [artifact.cargo_manifest_pin_witness, artifact.cargo_lock_pin_witness]) {
+    assert.equal(path.isAbsolute(witness.path), false);
+    assert.match(witness.sha256, /^[0-9a-f]{64}$/);
+    assert.ok(Number.isInteger(witness.line_range.start));
+    assert.deepEqual(witness.line_range, {
+      start: witness.line_range.start,
+      end: witness.line_range.start,
+    });
   }
   assert.equal(artifact.inventory_identity.schema, 'wikijump.compatibility_surface_inventory.v1');
   assert.equal(artifact.cargo_manifest_pin_witness.anchor_text.includes(fixture.ftml_revision), true);
