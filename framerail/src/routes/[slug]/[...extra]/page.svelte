@@ -24,6 +24,7 @@
     requestLegacySetTags
   } from "$lib/wikidot/wikidot-legacy-action-request"
   import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
+  import { wikidotGalleryLightbox } from "$lib/wikidot/wikidot-gallery-lightbox"
   import { requestMembershipJoin } from "$lib/wikidot/wikidot-membership-action-request"
   import { toggleWikidotEditSections } from "$lib/wikidot/wikidot-edit-sections"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
@@ -394,6 +395,7 @@
       class:hidden={dataFormEditing}
       use:wikidotLegacyActions={legacyActionParameters}
       use:wikidotMembershipActions={membershipActionParameters}
+      use:wikidotGalleryLightbox={showRevision ? revision?.wikitext : data.wikitext}
       use:wikidotTabviews
     >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}

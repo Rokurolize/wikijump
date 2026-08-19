@@ -462,6 +462,24 @@ x^2 + y^2 = z^2
     compiled_body_html:
       '<div id="default-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Default create" style="margin: 1px;"/></form></div><div id="autosave-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Autosave" style="margin: 1px;"/><input type="hidden" name="mode" value="save-and-go"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div><div id="template-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Template" style="margin: 1px;"/><input type="hidden" name="template" value="1469068384"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div>'
   },
+  "gallery-lightbox": {
+    page_id: 3000415,
+    revision_id: 9000415,
+    page_created_at: "2026-08-19T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-19T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Gallery Lightbox",
+    slug: "gallery-lightbox",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      '[[gallery]]\n: first.png\n: second.png\n[[/gallery]]\n\n[[gallery viewer="false"]]\n: disabled.png\n[[/gallery]]\n\n[[gallery]]\n: broken.png\n[[/gallery]]',
+    compiled_body_html:
+      '<div class="gallery-box" id="gallery-box-1"><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-one" href="/gallery-image-one.webp" class="with-lb" title="First image"><img src="/gallery-thumb-one.webp" alt="first" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-two" href="/gallery-image-two.webp" class="with-lb" title="Second image"><img src="/gallery-thumb-two.webp" alt="second" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-custom-link" href="/main"><img src="/gallery-thumb-custom.webp" alt="custom" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div></div><div class="gallery-box" id="gallery-box-2"><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-disabled" href="/gallery-image-disabled.webp" class="with-lb"><img src="/gallery-thumb-disabled.webp" alt="disabled" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div></div><div class="gallery-box" id="gallery-box-3"><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-failure" href="/gallery-image-broken.webp" class="with-lb"><img src="/gallery-thumb-broken.webp" alt="broken" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div></div>'
+  },
   "data-form-edit-flow:example": {
     page_id: 3000420,
     revision_id: 9000420,

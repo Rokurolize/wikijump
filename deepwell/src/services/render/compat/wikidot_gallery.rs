@@ -566,11 +566,13 @@ fn render_gallery_dom(
         output.push_str("\n<div class=\"gallery-item ");
         output.push_str(size);
         output.push_str("\">\n<table>\n<tr>\n<td>");
-        if options.viewer {
-            output.push_str("<a href=\"");
-            output.push_str(&original_url);
-            output.push_str("\" class=\"with-lb\">");
-        }
+        // Wikidot keeps the static `with-lb` anchor even when `viewer="no"`
+        // or `viewer="false"`; only the client-side LightBox initializer is
+        // omitted. Framerail therefore decides whether to activate the
+        // interaction from the page source while this DOM stays exact.
+        output.push_str("<a href=\"");
+        output.push_str(&original_url);
+        output.push_str("\" class=\"with-lb\">");
         output.push_str("<img src=\"");
         output.push_str(&image_url);
         output.push_str("\" alt=\"");
@@ -578,9 +580,7 @@ fn render_gallery_dom(
         output.push_str("\" class=\"gallery-image-size-");
         output.push_str(size);
         output.push_str("\" />");
-        if options.viewer {
-            output.push_str("</a>");
-        }
+        output.push_str("</a>");
         output.push_str("</td>\n</tr>\n</table>\n</div>");
     }
     output.push_str("\n</div>");
@@ -623,6 +623,28 @@ mod tests {
         );
         assert!(!html.contains("<script"));
         assert!(!html.contains("data-wikijump"));
+
+        let viewer_disabled = render_gallery_dom(
+            &[ResolvedGalleryImage {
+                alt: String::new(),
+                original_url: "https://site.wjfiles.test/local--files/page/image.png"
+                    .to_owned(),
+                image_url:
+                    "https://site.wjfiles.test/local--resized-images/page/image.png/thumbnail.jpg"
+                        .to_owned(),
+            }],
+            GalleryOptions {
+                size: GallerySize::Thumbnail,
+                order: GalleryOrder::NameAsc,
+                viewer: false,
+            },
+            2,
+        );
+        assert!(viewer_disabled.contains(
+            r#"<a href="https://site.wjfiles.test/local--files/page/image.png" class="with-lb">"#
+        ));
+        assert!(!viewer_disabled.contains("<script"));
+        assert!(!viewer_disabled.contains("data-wikijump"));
     }
 
     #[test]
