@@ -838,6 +838,14 @@ fn advance_open_html_element_stack(
             return false;
         }
         if closing {
+            if name == "p" && stack.last().is_some_and(|open| open != "p") {
+                // HTML tree building implicitly closes a paragraph before a
+                // block <div>; the corresponding authored </p> is then stray.
+                // Keep the structural stack aligned with browser recovery so
+                // a later trusted ListPages row boundary can close the div.
+                *cursor = end;
+                continue;
+            }
             if stack.last().is_none_or(|open| open != &name) {
                 return false;
             }
@@ -854,6 +862,9 @@ fn advance_open_html_element_stack(
         } else if !is_void_html_element(&name) {
             if tag.trim_end().ends_with('/') {
                 return false;
+            }
+            if name == "div" && stack.last().is_some_and(|open| open == "p") {
+                stack.pop();
             }
             stack.push(name);
         }
@@ -1177,6 +1188,31 @@ mod tests {
                 "</div>",
             ),
         );
+    }
+
+    #[test]
+    fn adjacent_list_pages_row_boundaries_restore_after_unmatched_summary_html() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let wrapper_open =
+            fragments.push_block_html(r#"<div class="list-pages-box">"#.to_owned());
+        let first_open = fragments
+            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
+        let first_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let second_open = fragments
+            .push_list_pages_row_open(r#"<div class="list-pages-item">"#.to_owned());
+        let second_close = fragments.push_list_pages_row_close("</div>".to_owned());
+        let wrapper_close = fragments.push_block_html("</div>".to_owned());
+        let parsed = format!(
+            "<p>{wrapper_open}</p><p>{first_open}</p><h1>FIRST</h1><p><div style=\"text-align: right;\"></p><p>{first_close}<br>\n{second_open}</p><h1>SECOND</h1><p>{second_close}</p><p>{wrapper_close}</p>",
+        );
+
+        let restored = fragments.restore(&parsed);
+        assert!(!restored.contains(COMPAT_HTML_MARKER_PREFIX), "{restored}");
+        assert_eq!(
+            restored.matches(r#"<div class="list-pages-item">"#).count(),
+            2
+        );
+        assert!(restored.ends_with("</div></div>"), "{restored}");
     }
 
     #[test]
