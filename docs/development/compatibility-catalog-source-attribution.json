@@ -599,8 +599,8 @@
     {
       "surface_id": "catalog-feature:syntax-social-bookmarking",
       "sources": [
-        { "path": "deepwell/src/services/render/compat/wikidot_social.rs", "anchor": "pub(in crate::services::render) fn expand_wikidot_social_syntax(" },
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "has_wikidot_social_syntax(&wikitext)" }
+        { "path": "deepwell/src/services/render/compat/wikidot_social.rs", "anchor": "pub(in crate::services::render) fn resolve_wikidot_social_requirements(" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "Self::resolve_wikidot_social_requirements(" }
       ],
       "tests": [
         { "path": "deepwell/tests/page.rs", "anchor": "social_syntax_matches_frozen_live_service_selection_and_widget_identity" },
