@@ -11135,8 +11135,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "b18eda102a3d89f9a446a8f8af3f5b7f608515ab",
-      "tree": "677e93cc984ffe72a376a9ea349d464ea8f5728a"
+      "commit": "dd055948ce5ba833a42607ec341cf04aba9fad30",
+      "tree": "3afb534271e0cb0934eaf19d6720e954a08787ca"
     },
     "ftml": {
       "commit": "695586a1369289c62f1a4a1d3c0ff156d7aaa3eb",
@@ -11353,7 +11353,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "67846ad893fbfb6a8bc195ba303e2cfd4bd8669fff85e61e5a50db703a8ed7c4"
+        "sha256": "cc7f90e071c9c73e819e3823b6b63e6fd31f750ee45493cc32413c9ebbaee092"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
