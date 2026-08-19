@@ -22,7 +22,7 @@ function ownedPageId(capture, label) {
 }
 
 function urlFor(origin, slug) {
-  return new URL(`/${encodeURIComponent(slug)}`, origin).href;
+  return new URL(`/${slug}`, origin).href;
 }
 
 class MissingCandidateLifecycle {
@@ -82,9 +82,14 @@ export class Open43SettingsLifecycleCandidateAdapter {
   }
 
   async #cacheIdentity(slug) {
-    const metadata = await this.#rpc("article_view_cache_metadata", { site_id: this.#siteId, locales: [this.#locale], session_token: null, route: { slug, extra: null } }, { actor: "anonymous" });
-    if (typeof metadata?.article_page_cache_key !== "string" || metadata.article_page_cache_key.length === 0) throw new Error("S758 page cache identity is missing");
-    return sha256Value(metadata.article_page_cache_key);
+    const metadata = await this.#rpc("article_view_cache_metadata", { site_id: this.#siteId, locales: [this.#locale], session_token: null, route: { slug, extra: "" } }, { actor: "anonymous" });
+    const observed = {
+      article_page_cache_key: metadata?.article_page_cache_key ?? null,
+      public_content_cache_fence: metadata?.public_content_cache_fence ?? null,
+      anonymous_permission_cache_fence: metadata?.anonymous_permission_cache_fence ?? null,
+    };
+    if (Object.values(observed).some((value) => value !== null)) throw new Error("S758 locally authored page unexpectedly entered the anonymous article cache");
+    return observed;
   }
 
   async #action(fields, options = {}) {

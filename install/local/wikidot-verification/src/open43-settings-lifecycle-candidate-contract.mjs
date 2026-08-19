@@ -52,7 +52,7 @@ function pageSlug(category, next) {
 }
 
 function pageUrl(origin, slug) {
-  return new URL(`/${encodeURIComponent(slug)}`, origin).href;
+  return new URL(`/${slug}`, origin).href;
 }
 
 function allocator(value, label) {
@@ -77,6 +77,7 @@ function capture(value, label, expectedUrl, expectedTitle, expectedBody) {
   const result = object(value, label);
   if (
     result.navigation_status !== 200 ||
+    result.editor_navigation_status !== 404 ||
     result.input_url !== expectedUrl ||
     result.final_url !== expectedUrl ||
     !Array.isArray(result.failures) ||
@@ -86,8 +87,7 @@ function capture(value, label, expectedUrl, expectedTitle, expectedBody) {
   ) throw new Error(`${label} did not bind one successful navigation`);
   const firstPaint = object(result.first_paint, `${label}.first_paint`);
   if (firstPaint.phase !== "domcontentloaded_immediate_observation") throw new Error(`${label}.first_paint has the wrong phase`);
-  if (firstPaint.title !== undefined && firstPaint.title !== expectedTitle) throw new Error(`${label}.first_paint title is wrong`);
-  if (firstPaint.content !== expectedBody) throw new Error(`${label}.first_paint content is wrong`);
+  if (firstPaint.title !== "" || firstPaint.content !== "") throw new Error(`${label}.first_paint must retain the empty immediate post-create state`);
   const screenshot = object(firstPaint.screenshot, `${label}.first_paint.screenshot`);
   nonEmpty(screenshot.path, `${label}.first_paint.screenshot.path`);
   sha(screenshot.sha256, `${label}.first_paint.screenshot.sha256`);
@@ -157,10 +157,13 @@ export function verifyOpen43SettingsLifecycleCase(caseId, rawObservations, plan)
   pageIdentity(disabledCreate.page, `${caseId}.disable.create.page`);
   if (disabledCreate.page.slug !== disable.requested_slug || disabledCreate.page.title !== fixedPlan.disabled_title || afterDisabled.enabled !== false || afterDisabled.next !== afterSecond.next) throw new Error(`${caseId} disabled create changed the allocator`);
   const cache = object(observations.cache_identity, `${caseId}.cache_identity`);
-  sha(cache.first, `${caseId}.cache_identity.first`);
-  sha(cache.reload, `${caseId}.cache_identity.reload`);
-  sha(cache.second, `${caseId}.cache_identity.second`);
-  if (cache.first !== cache.reload || cache.first === cache.second) throw new Error(`${caseId} cache identity is not bound to page state`);
+  for (const [name, value] of Object.entries(cache)) {
+    const metadata = object(value, `${caseId}.cache_identity.${name}`);
+    if (metadata.article_page_cache_key !== null || metadata.public_content_cache_fence !== null || metadata.anonymous_permission_cache_fence !== null) {
+      throw new Error(`${caseId} locally authored ${name} page unexpectedly entered the anonymous article cache`);
+    }
+  }
+  if (JSON.stringify(Object.keys(cache).sort()) !== JSON.stringify(["first", "reload", "second"])) throw new Error(`${caseId} cache identity denominator is incomplete`);
   return { verified: true, case_id: caseId, first_assigned_slug: first.assigned_slug, second_assigned_slug: next.assigned_slug };
 }
 

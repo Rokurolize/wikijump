@@ -32100,6 +32100,20 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         .expect("Seeded site not found");
     let site_id = site.site.site_id;
 
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("restore permission fixture actor should be a site member");
+
     make_page_mutation_test_category_for_user(
         &runner,
         site_id,

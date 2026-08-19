@@ -31,7 +31,7 @@ use crate::services::audit::{AuditEvent, AuditService};
 use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::relation::{GetPageAttributions, GetSiteBan, GetSiteMember};
 use crate::services::role::SystemRole;
-use crate::services::{RelationService, ServiceContext};
+use crate::services::{PageService, RelationService, ServiceContext};
 use crate::types::Maybe;
 use crate::types::Reference;
 use crate::utils::now;
@@ -818,18 +818,30 @@ impl RoleService {
             false
         };
         let is_page_author = if is_member && let Some(page_ref) = &input.page_reference {
-            let attributions = RelationService::get_page_attributions(
-                ctx,
-                GetPageAttributions {
-                    site_id: input.site_id,
-                    page: page_ref.clone(),
-                },
-            )
-            .await
-            .or_raise(make_error)?;
-            attributions
-                .iter()
-                .any(|attr| attr.user_id == input.user_id.unwrap())
+            // PageAuthor is a live-page virtual role. Restore authorization also
+            // checks a deleted page by ID; do not turn that expected missing-live
+            // identity into a PageAttributionRelation error. Category/member
+            // permissions still decide whether the deleted page may be restored.
+            if PageService::get_optional(ctx, input.site_id, page_ref.clone())
+                .await
+                .or_raise(make_error)?
+                .is_some()
+            {
+                let attributions = RelationService::get_page_attributions(
+                    ctx,
+                    GetPageAttributions {
+                        site_id: input.site_id,
+                        page: page_ref.clone(),
+                    },
+                )
+                .await
+                .or_raise(make_error)?;
+                attributions
+                    .iter()
+                    .any(|attr| attr.user_id == input.user_id.unwrap())
+            } else {
+                false
+            }
         } else {
             false
         };

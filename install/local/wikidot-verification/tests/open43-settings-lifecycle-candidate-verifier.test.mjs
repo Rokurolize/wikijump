@@ -12,6 +12,7 @@ const hash = (character) => character.repeat(64);
 function capture(url, suffix, title, content) {
   return {
     navigation_status: 200,
+    editor_navigation_status: 404,
     input_url: url,
     final_url: url,
     failures: [],
@@ -19,8 +20,8 @@ function capture(url, suffix, title, content) {
     first_paint: {
       phase: "domcontentloaded_immediate_observation",
       screenshot: { path: `/evidence/${suffix}-initial.png`, sha256: hash("a") },
-      title,
-      content,
+      title: "",
+      content: "",
     },
     settled: { phase: "settled", resource_completion: "complete", content },
   };
@@ -37,8 +38,8 @@ function allocator(enabled, next, character) {
 test("S758 verifier binds sequential creates, disable behavior, temporal evidence, and cleanup", () => {
   assert.equal(Object.isFrozen(OPEN43_SETTINGS_LIFECYCLE_CASE_MANIFEST), true);
   const origin = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
-  const firstUrl = `${origin}/issue%3A1`;
-  const secondUrl = `${origin}/issue%3A2`;
+  const firstUrl = `${origin}/issue:1`;
+  const secondUrl = `${origin}/issue:2`;
   const plan = {
     category_id: 73,
     category_slug: "issue",
@@ -71,11 +72,11 @@ test("S758 verifier binds sequential creates, disable behavior, temporal evidenc
   };
   const disabled = {
     assigned_slug: plan.disabled_requested_slug,
-    redirect_url: `${origin}/issue%3Adisabled`,
+    redirect_url: `${origin}/issue:disabled`,
     title: plan.disabled_title,
     category_slug: "issue",
     action: action("d"),
-    capture: capture(`${origin}/issue%3Adisabled`, "disabled", plan.disabled_title, plan.disabled_body),
+    capture: capture(`${origin}/issue:disabled`, "disabled", plan.disabled_title, plan.disabled_body),
     page: { page_id: 103, revision_id: 203, slug: plan.disabled_requested_slug, title: plan.disabled_title },
   };
   const observations = {
@@ -89,7 +90,7 @@ test("S758 verifier binds sequential creates, disable behavior, temporal evidenc
     reload: { url: firstUrl, status: 200 },
     next_create: second,
     disable: { action: action("f"), enabled: false, requested_slug: plan.disabled_requested_slug, create: disabled },
-    cache_identity: { first: hash("1"), reload: hash("1"), second: hash("2") },
+    cache_identity: Object.fromEntries(["first", "reload", "second"].map((name) => [name, { article_page_cache_key: null, public_content_cache_fence: null, anonymous_permission_cache_fence: null }])),
   };
 
   assert.equal(verifyOpen43SettingsLifecycleCase("S758_CREATE_INITIAL", observations, plan).verified, true);

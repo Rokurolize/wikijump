@@ -447,6 +447,7 @@ export class Open43SettingsBrowserAdapter {
     try {
       await page.addInitScript({ content: CREATE_PROBE });
       let actionResponse = null;
+      let editorNavigationStatus = null;
       const capture = await this.#browserContexts.captureCandidateObservation({
         context: await this.#context("administrator"),
         page,
@@ -457,7 +458,9 @@ export class Open43SettingsBrowserAdapter {
         timeoutMs: CAPTURE_TIMEOUT_MS,
         settleMs: DEFAULT_SETTLE_MS,
         navigate: async ({ page: targetPage, timeoutMs }) => {
-          await targetPage.goto(editorUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+          const editorResponse = await targetPage.goto(editorUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+          editorNavigationStatus = editorResponse?.status() ?? null;
+          if (editorNavigationStatus !== 404) throw new Error(`S758 missing-page editor returned ${editorNavigationStatus}`);
           await targetPage.locator("input[name='title']").fill(title);
           await targetPage.locator("textarea[name='wikitext']").fill(wikitext);
           await targetPage.locator("textarea[name='comments']").fill("Open43 autonumber candidate");
@@ -480,6 +483,9 @@ export class Open43SettingsBrowserAdapter {
         const detail = capture.capture_error?.message ?? `status=${capture.navigation_status} final=${capture.final_url} action=${actionResponse === null ? "missing" : "present"}`;
         throw new Error(`S758 autonumber create capture failed: ${detail}`);
       }
+      const expectedEditorFailures = capture.failures.filter((failure) => failure.kind === "http_error" && failure.status === 404 && failure.resource_type === "document" && failure.url === editorUrl);
+      const unexpectedFailures = capture.failures.filter((failure) => !expectedEditorFailures.includes(failure));
+      if (editorNavigationStatus !== 404 || expectedEditorFailures.length !== 1) throw new Error("S758 create did not retain the expected missing-page editor boundary");
       const actionBody = await actionResponse.text();
       let actionResult;
       try { actionResult = JSON.parse(actionBody); } catch { throw new Error("S758 autonumber action did not return JSON"); }
@@ -511,7 +517,8 @@ export class Open43SettingsBrowserAdapter {
           navigation_status: capture.navigation_status,
           input_url: expectedUrl,
           final_url: capture.final_url,
-          failures: capture.failures,
+          editor_navigation_status: editorNavigationStatus,
+          failures: unexpectedFailures,
           request_gate_aborts: capture.request_gate_aborts,
           first_paint: {
             phase: capture.first_paint.document.phase,

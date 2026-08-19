@@ -37,24 +37,38 @@ function databaseContainer(project) {
   return ids[0];
 }
 
-function restoreAllocator(project, before, siteId, categoryId) {
+function databaseQuery(project, sql) {
   const container = databaseContainer(project);
-  const sql = `UPDATE page_category SET autonumber_enabled = ${before.enabled ? "TRUE" : "FALSE"}, autonumber_next = ${before.next}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId} AND category_id = ${categoryId};`;
-  const result = docker([
+  return docker([
     "exec", "-e", "PGPASSWORD=wikijump", container,
     "psql", "-h", "127.0.0.1", "-U", "wikijump", "-d", "wikijump", "-Atc", sql,
   ]);
+}
+
+function sqlString(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+function assignedSlug(categorySlug, next) {
+  return categorySlug === "_default" ? String(next) : `${categorySlug}:${next}`;
+}
+
+function restoreAllocator(project, before, siteId, categoryId) {
+  const sql = `UPDATE page_category SET autonumber_enabled = ${before.enabled ? "TRUE" : "FALSE"}, autonumber_next = ${before.next}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId} AND category_id = ${categoryId};`;
+  const result = databaseQuery(project, sql);
   if (result !== "UPDATE 1") throw new Error("S758 candidate lifecycle allocator restore did not update exactly one category");
 }
 
 class CandidateLifecycleOwner {
   #candidateIdentity;
   #session;
+  #plan;
   #before = null;
 
-  constructor({ candidateIdentity, session }) {
+  constructor({ candidateIdentity, session, plan }) {
     this.#candidateIdentity = candidateIdentity;
     this.#session = session;
+    this.#plan = plan;
   }
 
   async prepare({ site_id: siteId, category_id: categoryId, category_slug: categorySlug, requested_slugs: requestedSlugs }) {
@@ -67,7 +81,11 @@ class CandidateLifecycleOwner {
       next: category.autonumber_next,
       settings_revision: category.settings_revision,
     };
-    for (const slug of requestedSlugs) {
+    const assignedSlugs = [
+      assignedSlug(categorySlug, category.autonumber_next),
+      assignedSlug(categorySlug, category.autonumber_next + 1),
+    ];
+    for (const slug of [...new Set([...requestedSlugs, ...assignedSlugs])]) {
       const page = await this.#session.rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId });
       if (page !== null) throw new Error("S758 requested candidate namespace is not vacant");
     }
@@ -75,7 +93,14 @@ class CandidateLifecycleOwner {
 
   async cleanup({ site_id: siteId, category_id: categoryId, run_owned_page_ids: pageIds }) {
     if (this.#before === null) throw new Error("S758 candidate lifecycle was not prepared");
-    for (const pageId of [...pageIds].reverse()) {
+    const titles = [this.#plan.first_title, this.#plan.second_title, this.#plan.disabled_title];
+    const discovered = databaseQuery(
+      this.#candidateIdentity.candidate.compose_project,
+      `SELECT page.page_id FROM page JOIN page_revision ON page_revision.revision_id = page.latest_revision_id WHERE page.site_id = ${siteId} AND page.deleted_at IS NULL AND page_revision.title IN (${titles.map(sqlString).join(", ")}) ORDER BY page.page_id`,
+    ).split(/\s+/u).filter(Boolean).map((value) => Number.parseInt(value, 10));
+    if (discovered.some((pageId) => !Number.isSafeInteger(pageId) || pageId <= 0)) throw new Error("S758 candidate lifecycle discovered an invalid run-owned page ID");
+    const ownedPageIds = [...new Set([...pageIds, ...discovered])];
+    for (const pageId of [...ownedPageIds].reverse()) {
       const page = await this.#session.rpc("page_get", { site_id: siteId, page: pageId, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
       if (page !== null) {
         await this.#session.rpc("page_delete", {
@@ -94,7 +119,7 @@ class CandidateLifecycleOwner {
       throw new Error("S758 candidate lifecycle allocator restore did not round-trip");
     }
     const residual = [];
-    for (const pageId of pageIds) {
+    for (const pageId of ownedPageIds) {
       const page = await this.#session.rpc("page_get", { site_id: siteId, page: pageId, details: { wikitext: false, compiled: false } }, { actor: "administrator", siteId, cleanup: true });
       if (page !== null) residual.push(pageId);
     }

@@ -91,12 +91,25 @@ function requireCandidateSite(candidateIdentity) {
 }
 
 function section(html, start, end) {
-  const begin = html.indexOf(`<p>${start}</p>`);
+  const begin = html.indexOf(start);
   if (begin < 0) throw new Error(`Q1027 output is missing ${start}`);
-  const contentStart = html.indexOf("</p>", begin) + 4;
-  const finish = html.indexOf(`<p>${end}`, contentStart);
+  let contentStart = begin + start.length;
+  for (const boundary of ["</p>", "<br>\n", "<br>"]) {
+    if (html.startsWith(boundary, contentStart)) {
+      contentStart += boundary.length;
+      break;
+    }
+  }
+  const finish = html.indexOf(end, contentStart);
   if (finish < 0) throw new Error(`Q1027 output is missing ${end}`);
-  return html.slice(contentStart, finish);
+  let contentEnd = finish;
+  for (const boundary of ["<p>", "<br>\n", "<br>"]) {
+    if (html.slice(contentStart, contentEnd).endsWith(boundary)) {
+      contentEnd -= boundary.length;
+      break;
+    }
+  }
+  return html.slice(contentStart, contentEnd);
 }
 
 function foundHtml(value) {

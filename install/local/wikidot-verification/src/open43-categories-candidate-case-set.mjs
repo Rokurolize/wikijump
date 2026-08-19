@@ -117,7 +117,7 @@ class Open43CategoriesRun {
   }
 
   async #page(entry, { cleanup = false } = {}) {
-    return await this.#rpc("page_get", { site_id: this.#siteId, page: entry.slug }, { cleanup });
+    return await this.#rpc("page_get", { site_id: this.#siteId, page: entry.slug, details: { wikitext: true, compiled: false } }, { cleanup });
   }
 
   #entry(role, slug, title, wikitext, categoryId) {

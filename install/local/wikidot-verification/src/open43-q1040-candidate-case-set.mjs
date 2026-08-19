@@ -81,7 +81,7 @@ class Q1040Run {
   }
 
   async #getPage(entry, { cleanup = false } = {}) {
-    return await this.#rpc("page_get", { site_id: this.#siteId, page: entry.slug }, { cleanup });
+    return await this.#rpc("page_get", { site_id: this.#siteId, page: entry.slug, details: { wikitext: true, compiled: false } }, { cleanup });
   }
 
   #matches(entry, page) {
