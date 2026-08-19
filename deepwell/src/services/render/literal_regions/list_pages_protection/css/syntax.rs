@@ -153,17 +153,11 @@ pub(super) fn pinned_module_close_end(bytes: &[u8], start: usize) -> Option<usiz
     }
     let (name, name_end) = wikidot_trimmed_name(bytes, cursor);
     let name = name?;
-    if !name.eq_ignore_ascii_case(b"module") && !name.eq_ignore_ascii_case(b"module654") {
+    if !name.eq_ignore_ascii_case(b"module") {
         return None;
     }
 
     cursor = name_end;
-    if matches!(bytes.get(cursor), Some(b' ' | b'\t')) {
-        skip_horizontal_whitespace(bytes, &mut cursor);
-    } else if matches!(bytes.get(cursor), Some(b'\n' | b'\r')) {
-        skip_physical_line_endings(bytes, &mut cursor);
-        skip_horizontal_whitespace(bytes, &mut cursor);
-    }
     if bytes.get(cursor) != Some(&b']')
         || !right_bracket_token(bytes, cursor, bytes.len()).0
     {

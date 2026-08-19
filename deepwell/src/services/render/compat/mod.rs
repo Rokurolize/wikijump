@@ -13,6 +13,7 @@ pub(super) mod wikidot_gallery;
 pub(super) mod wikidot_inline_markers;
 pub(super) mod wikidot_link_protection;
 pub(super) mod wikidot_residual_markers;
+pub(super) mod wikidot_social;
 
 pub(super) use self::color_and_inline_protection::sanitize_wikidot_compat_inline_tag;
 pub(super) use self::fallback_code::{

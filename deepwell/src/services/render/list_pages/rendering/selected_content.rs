@@ -13,6 +13,7 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::*;
+use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
 pub(super) fn select_list_pages_rows(
     pages: Vec<FoundPageRow>,
@@ -86,7 +87,7 @@ pub(super) struct RenderedListPagesSource {
 
 #[derive(Clone, Copy)]
 struct WikidotSocialProvider {
-    name: &'static str,
+    service: SocialService,
     title: &'static str,
     image: &'static str,
     href: &'static str,
@@ -95,21 +96,21 @@ struct WikidotSocialProvider {
 
 const WIKIDOT_SOCIAL_PROVIDERS: &[WikidotSocialProvider] = &[
     WikidotSocialProvider {
-        name: "blinklist",
+        service: SocialService::BlinkList,
         title: "BlinkList",
         image: "blinklist.png",
         href: "http://www.blinklist.com/index.php?Action=Blink/addblink.php&Description=&Url={url}&Title=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "blogmarks",
+        service: SocialService::Blogmarks,
         title: "blogmarks",
         image: "blogmarks.png",
         href: "http://blogmarks.net/my/new.php?mini=1&simple=1&url={url}&title=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "delicious",
+        service: SocialService::Delicious,
         title: "del.icio.us",
         image: "delicious.png",
         href: "http://del.icio.us/post?url={url}&title=TITLE",
@@ -118,70 +119,70 @@ const WIKIDOT_SOCIAL_PROVIDERS: &[WikidotSocialProvider] = &[
         ),
     },
     WikidotSocialProvider {
-        name: "digg",
+        service: SocialService::Digg,
         title: "digg",
         image: "digg.png",
         href: "http://digg.com/submit?phase=2&url={url}&title=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "fark",
+        service: SocialService::Fark,
         title: "Fark",
         image: "fark.png",
         href: "http://cgi.fark.com/cgi/fark/edit.pl?new_url={url}&new_comment=TITLE&new_comment={site}&linktype=Misc",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "feedmelinks",
+        service: SocialService::FeedMeLinks,
         title: "feedmelinks",
         image: "feedmelinks.png",
         href: "http://feedmelinks.com/categorize?from=toolbar&op=submit&url={url}&name=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "furl",
+        service: SocialService::Furl,
         title: "Furl",
         image: "furl.png",
         href: "http://www.furl.net/storeIt.jsp?u={url}&t=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "linkagogo",
+        service: SocialService::LinkaGoGo,
         title: "LinkaGoGo",
         image: "linkagogo.png",
         href: "http://www.linkagogo.com/go/AddNoPopup?url={url}&title=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "newsvine",
+        service: SocialService::NewsVine,
         title: "NewsVine",
         image: "newsvine.png",
         href: "http://www.newsvine.com/_tools/seed&save?u={url}&h=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "netvouz",
+        service: SocialService::Netvouz,
         title: "Netvouz",
         image: "netvouz.png",
         href: "http://www.netvouz.com/action/submitBookmark?url={url}&title=TITLE&description=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "reddit",
+        service: SocialService::Reddit,
         title: "Reddit",
         image: "reddit.png",
         href: "http://reddit.com/submit?url={url}&title=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "yahoomyweb",
+        service: SocialService::YahooMyWeb,
         title: "YahooMyWeb",
         image: "yahoomyweb.png",
         href: "http://myweb2.search.yahoo.com/myresults/bookmarklet?u={url}&=TITLE",
         onclick: None,
     },
     WikidotSocialProvider {
-        name: "facebook",
+        service: SocialService::Facebook,
         title: "Facebook",
         image: "facebook.gif",
         href: "http://www.facebook.com/share.php?u={url}",
@@ -217,32 +218,34 @@ fn wikidot_social_nonce(source: &str, offset: usize) -> u32 {
     10_000 + hash % 90_000
 }
 
-fn render_wikidot_social_module(
-    head: &str,
-    site_slug: &str,
+pub(in crate::services::render) fn render_wikidot_social_module(
+    social: &SocialButtons,
+    endpoint: &str,
     site_name: &str,
-    nonce: u32,
-) -> Option<String> {
-    let selected: Vec<_> = match head.trim() {
-        "" => WIKIDOT_SOCIAL_PROVIDERS.iter().collect(),
-        "reddit,facebook" => ["reddit", "facebook"]
-            .into_iter()
-            .filter_map(|name| {
-                WIKIDOT_SOCIAL_PROVIDERS
+    social_id: &str,
+) -> String {
+    let selected: Vec<Option<&WikidotSocialProvider>> = match social.selection() {
+        None => WIKIDOT_SOCIAL_PROVIDERS.iter().map(Some).collect(),
+        Some(selection) => selection
+            .iter()
+            .map(|selection| match selection {
+                SocialSelection::Service(service) => WIKIDOT_SOCIAL_PROVIDERS
                     .iter()
-                    .find(|provider| provider.name == name)
+                    .find(|provider| provider.service == *service),
+                SocialSelection::Empty => None,
             })
             .collect(),
-        _ => return None,
     };
-    let endpoint = wikidot_social_percent_encode(
-        &format!("http://{site_slug}.wikidot.com/ajax-module-connector.php"),
-        false,
-    );
+    let endpoint = wikidot_social_percent_encode(endpoint, false);
     let site_name = wikidot_social_percent_encode(site_name, true);
-    let social_id = format!("social{nonce}");
     let mut output = format!("\n\n<span id=\"{social_id}\">");
     for provider in selected {
+        let Some(provider) = provider else {
+            output.push_str(
+                "<a href=\"\" style=\"margin: 0 2px\" title=\"\"><img src=\"http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/\" alt=\"\" /></a>",
+            );
+            continue;
+        };
         let href = provider
             .href
             .replace("{url}", &endpoint)
@@ -265,7 +268,7 @@ fn render_wikidot_social_module(
     }
     output.push_str("</span>\n<script type=\"text/javascript\">\n//<![CDATA[\n\n");
     output.push_str("            var socialspan = $j(\"#");
-    output.push_str(&social_id);
+    output.push_str(social_id);
     output.push_str("\")[0];\n");
     output.push_str(
         concat!(
@@ -277,7 +280,7 @@ fn render_wikidot_social_module(
             "</script>",
         ),
     );
-    Some(output)
+    output
 }
 
 fn prepare_list_pages_selected_content_runtime(
@@ -302,17 +305,22 @@ fn prepare_list_pages_selected_content_runtime(
         }
         output.push_str(&wikitext[cursor..matched.start()]);
         let replacement = match captures.name("name").map(|name| name.as_str()) {
-            None => match render_wikidot_social_module(
-                captures
-                    .name("social_head")
-                    .map_or("", |head| head.as_str()),
-                site_slug,
-                site_name,
-                wikidot_social_nonce(&wikitext, matched.start()),
-            ) {
-                Some(rendered) => fragments.push_html(rendered),
-                None => fragments.push_plain(matched.as_str()),
-            },
+            None => {
+                let social = SocialButtons::parse(
+                    captures
+                        .name("social_head")
+                        .map_or("", |head| head.as_str()),
+                );
+                let social_id = format!("social{}", wikidot_social_nonce(&wikitext, matched.start()));
+                let endpoint =
+                    format!("http://{site_slug}.wikidot.com/ajax-module-connector.php");
+                fragments.push_html(render_wikidot_social_module(
+                    &social,
+                    &endpoint,
+                    site_name,
+                    &social_id,
+                ))
+            }
             Some(name) if name.eq_ignore_ascii_case("Clone") => {
                 fragments.push_block_html(
                     r#"<div class="error-block">You should be logged in to clone a site.</div>"#

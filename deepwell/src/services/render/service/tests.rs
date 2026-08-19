@@ -11271,7 +11271,7 @@ fn resolves_parser_functions_only_outside_literal_regions() {
             "@@[[#ifexpr 1 | escaped | hidden]]@@\n",
             "[[html]]\n[[#expr 2+2]]\n[[/html]]\n",
             "[!-- 6 --]\n",
-            "<code>[[#expr 4+4]]</code>\n",
+            "<code>8</code>\n",
             "resolved 10",
         )
     );

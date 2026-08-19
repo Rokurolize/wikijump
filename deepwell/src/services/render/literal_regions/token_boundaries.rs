@@ -274,17 +274,22 @@ fn scan_url(bytes: &[u8], start: usize) -> Option<usize> {
     } else {
         return None;
     };
+    let source = std::str::from_utf8(bytes).ok()?;
     let mut end = body_start;
-    while end < bytes.len()
-        && !is_discarded_control(bytes[end])
-        && !matches!(
-            bytes[end],
-            b'\n' | b'\r' | b' ' | b'\t' | b'"' | b'\'' | b'|' | b'[' | b']'
-        )
-        && !bytes[end..].starts_with(b">@")
-        && !bytes[end..].starts_with(b"@@")
-    {
-        end += 1;
+    while end < bytes.len() {
+        let character = source[end..].chars().next()?;
+        if is_discarded_control(bytes[end])
+            || matches!(
+                bytes[end],
+                b'\n' | b'\r' | b' ' | b'\t' | b'"' | b'\'' | b'|' | b'[' | b']'
+            )
+            || character.is_whitespace()
+            || bytes[end..].starts_with(b">@")
+            || bytes[end..].starts_with(b"@@")
+        {
+            break;
+        }
+        end += character.len_utf8();
     }
     (end > body_start).then_some(end)
 }

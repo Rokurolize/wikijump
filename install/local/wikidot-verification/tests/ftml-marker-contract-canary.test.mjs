@@ -25,7 +25,8 @@ const script = path.join(
   "scripts",
   "run-ftml-marker-contract-canary.mjs",
 );
-const candidateFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
+const currentFtml = "3f57eb59a172a76d4d26f9467bb0eed8c77b0aaf";
+const ownershipCanaryFtml = "62ebba4efda1f10e82363c23c925061fbe939e49";
 const previousCanaryFtml = "3f02c5af6ec7c69599b881a8fc7ece8ea05a0115";
 const requiredSurfaces = ["heading", "separator", "div", "span", "alignment"];
 const sanitizedEnvironment = Object.fromEntries(
@@ -61,7 +62,7 @@ test("committed manifest and lock pin the merged FTML revision", () => {
   assert.equal(
     manifest.match(
       new RegExp(
-        `ftml = \\{ git = "https://github\\.com/Rokurolize/ftml", rev = "${candidateFtml}" \\}`,
+        `ftml = \\{ git = "https://github\\.com/Rokurolize/ftml", rev = "${currentFtml}" \\}`,
         "gu",
       ),
     )?.length,
@@ -70,7 +71,7 @@ test("committed manifest and lock pin the merged FTML revision", () => {
   assert.equal(
     lock.match(
       new RegExp(
-        `source = "git\\+https://github\\.com/Rokurolize/ftml\\?rev=${candidateFtml}#${candidateFtml}"`,
+        `source = "git\\+https://github\\.com/Rokurolize/ftml\\?rev=${currentFtml}#${currentFtml}"`,
         "gu",
       ),
     )?.length,
@@ -133,7 +134,7 @@ test("the 2026-08-10 ownership pin marker canary receipt remains immutable", () 
     receipt.baseline_ftml_sha,
     "902e72a2ff261b7af42402734b2f8b659e6a294a",
   );
-  assert.equal(receipt.candidate_ftml_sha, candidateFtml);
+  assert.equal(receipt.candidate_ftml_sha, ownershipCanaryFtml);
   assert.deepEqual(receipt.required_surfaces, requiredSurfaces);
   assert.deepEqual(
     {
@@ -263,12 +264,12 @@ test("marker canary preserves whichever side already equals exact HEAD", () => {
 test("marker canary module parses sliced argv and injects run-owned credentials", async () => {
   const parsed = parseArgs([
     "--candidate-ftml",
-    candidateFtml,
+    currentFtml,
     "--output-dir",
     "/tmp/ftml-marker-contract-test",
     "--dry-run",
   ]);
-  assert.equal(parsed.candidateFtml, candidateFtml);
+  assert.equal(parsed.candidateFtml, currentFtml);
   assert.equal(parsed.dryRun, true);
 
   const administrator = await readSeedAdministrator(repositoryRoot);
@@ -341,7 +342,7 @@ test("marker canary dry run requires the exact five marker surfaces", () => {
     [
       script,
       "--candidate-ftml",
-      candidateFtml,
+      currentFtml,
       "--output-dir",
       "/tmp/ftml-marker-contract-test",
       "--dry-run",

@@ -281,13 +281,7 @@ fn pinned_css_heads_with_quoted_brackets_and_spacing_own_runtime_modules() {
 
 #[test]
 fn pinned_css_closer_variants_own_runtime_modules() {
-    for closer in [
-        "[[/ module]]",
-        "[[/module ]]",
-        "[[/module654]]",
-        "[[/[[module]]",
-        "[[/ [[ module]]",
-    ] {
+    for closer in ["[[/ module]]", "[[/[[module]]", "[[/ [[ module]]"] {
         let source = format!(
             "[[module CSS]]\n\
              [[module ListPages name=\"hidden-list\"]]X\n\
@@ -296,6 +290,17 @@ fn pinned_css_closer_variants_own_runtime_modules() {
              [[module ListPages name=\"live\"]]C",
         );
         assert_runtime_modules_are_owned_until_live(&source);
+    }
+
+    for closer in ["[[/module ]]", "[[/module654]]"] {
+        let source = format!(
+            "[[module CSS]]\n\
+             [[module ListPages name=\"hidden-list\"]]X\n\
+             [[module CountPages category=\"hidden-count\"]]\n\
+             {closer}\n\
+             [[module ListPages name=\"live\"]]C",
+        );
+        assert_runtime_modules_remain_live(&source);
     }
 }
 
@@ -325,7 +330,7 @@ fn pinned_css_closers_reject_right_link_false_closers() {
         "[[module ListPages name=\"live\"]]C",
     );
 
-    assert_runtime_modules_are_owned_until_live(source);
+    assert_runtime_modules_remain_live(source);
 }
 
 #[test]
@@ -420,7 +425,9 @@ fn pinned_css_closer_line_break_matrix_matches_block_name_consumption() {
              {closer}\n\
              [[module ListPages name=\"live\"]]Y",
         );
-        assert_css_range_owns_named_module_only(&source, "owned", "live");
+        let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+        assert!(!index.contains(source.find("owned").unwrap()), "{source:?}");
+        assert!(!index.contains(source.find("live").unwrap()), "{source:?}");
     }
 
     for false_closer in ["[[/module \n]]", "[[/module\t\r\n]]"] {
@@ -431,7 +438,9 @@ fn pinned_css_closer_line_break_matrix_matches_block_name_consumption() {
              [[/module]]\n\
              [[module ListPages name=\"live\"]]Y[[/module]]",
         );
-        assert_css_range_owns_named_module_only(&source, "owned", "live");
+        let index = LiteralRegionIndex::new_list_pages_syntax(&source);
+        assert!(index.contains(source.find("owned").unwrap()), "{source:?}");
+        assert!(!index.contains(source.find("live").unwrap()), "{source:?}");
     }
 }
 
@@ -580,6 +589,23 @@ fn assert_runtime_modules_are_owned_until_live(source: &str) {
     );
     assert!(
         index.contains(source.find("hidden-count").unwrap()),
+        "{source:?}"
+    );
+    assert!(
+        !index.contains(source.find("name=\"live\"").unwrap()),
+        "{source:?}"
+    );
+}
+
+fn assert_runtime_modules_remain_live(source: &str) {
+    let index = LiteralRegionIndex::new_list_pages_syntax(source);
+
+    assert!(
+        !index.contains(source.find("hidden-list").unwrap()),
+        "{source:?}"
+    );
+    assert!(
+        !index.contains(source.find("hidden-count").unwrap()),
         "{source:?}"
     );
     assert!(
