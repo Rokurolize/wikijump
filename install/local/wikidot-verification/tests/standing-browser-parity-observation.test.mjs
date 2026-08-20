@@ -3,13 +3,14 @@ import test from "node:test";
 
 import {
   captureDocumentObservation,
-  isExpectedExternalStylesheetFailure,
+  isExpectedExternalAssetFailure,
   observationArtifactName,
 } from "../src/standing-browser-parity-observation.mjs";
 
 test("external wdfiles stylesheet ORB failures remain separately attributable", () => {
-  assert.equal(isExpectedExternalStylesheetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" }), true);
-  assert.equal(isExpectedExternalStylesheetFailure({ url: "https://example.test/app.js", resource_type: "script", error: "net::ERR_FAILED" }), false);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" }), true);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif", resource_type: "other", error: "net::ERR_BLOCKED_BY_ORB" }), true);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://example.test/app.js", resource_type: "script", error: "net::ERR_FAILED" }), false);
 });
 
 test("immediate and settled browser artifacts have deterministic, distinct safe names", () => {

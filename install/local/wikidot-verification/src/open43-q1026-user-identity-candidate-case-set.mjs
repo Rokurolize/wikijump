@@ -9,6 +9,7 @@ import {
   verifyOpen43Q1026UserIdentityCleanup,
 } from "./open43-q1026-user-identity-candidate-contract.mjs";
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { isExpectedExternalAssetFailure } from "./standing-browser-parity-observation.mjs";
 import {
   requireNonEmptyString,
   requirePlainObject,
@@ -217,8 +218,12 @@ class Open43Q1026PrintuserBrowserAdapter {
     const page = await owned.context.newPage();
     const requestMethods = [];
     const failedRequests = [];
+    const expectedExternalFailures = [];
     const onRequest = (request) => requestMethods.push(request.method());
-    const onFailed = (request) => failedRequests.push({ url: request.url(), method: request.method(), failure: request.failure()?.errorText ?? null });
+    const onFailed = (request) => {
+      const event = { url: request.url(), method: request.method(), resource_type: request.resourceType?.() ?? "other", failure: request.failure()?.errorText ?? null };
+      (isExpectedExternalAssetFailure({ ...event, error: event.failure }) ? expectedExternalFailures : failedRequests).push(event);
+    };
     page.on("request", onRequest);
     page.on("requestfailed", onFailed);
     const url = new URL(`/${this.#slug}`, this.#pageOrigin).href;
@@ -246,6 +251,7 @@ class Open43Q1026PrintuserBrowserAdapter {
         settled,
         request_methods: requestMethods,
         failed_requests: failedRequests,
+        expected_external_failures: expectedExternalFailures,
         mutation_detected: requestMethods.some((method) => !["GET", "HEAD", "OPTIONS"].includes(method)),
       };
     } finally {

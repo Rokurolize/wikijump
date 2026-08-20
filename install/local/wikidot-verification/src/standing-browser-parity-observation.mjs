@@ -521,9 +521,13 @@ export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   }, remaining("font and image completion"));
 }
 
-export function isExpectedExternalStylesheetFailure(event) {
-  if (event?.resource_type !== "stylesheet" || event?.error !== "net::ERR_BLOCKED_BY_ORB") return false;
-  try { return new URL(event.url).hostname.endsWith(".wdfiles.com"); } catch { return false; }
+export function isExpectedExternalAssetFailure(event) {
+  if (event?.error !== "net::ERR_BLOCKED_BY_ORB") return false;
+  try {
+    const url = new URL(event.url);
+    return (event.resource_type === "stylesheet" && url.hostname.endsWith(".wdfiles.com")) ||
+      (event.resource_type === "other" && url.hostname.endsWith(".wikidot.com") && url.pathname.startsWith("/local--favicon/"));
+  } catch { return false; }
 }
 
 export async function captureBrowserParityObservation({
@@ -568,7 +572,7 @@ export async function captureBrowserParityObservation({
       error: request.failure()?.errorText ?? "request failed",
       ...(attribution ?? {}),
     };
-    if (attribution === null && isExpectedExternalStylesheetFailure(event)) expectedFailures.push(event);
+    if (attribution === null && isExpectedExternalAssetFailure(event)) expectedFailures.push(event);
     else (attribution === null ? failures : requestGateAborts).push(event);
   };
   const onResponse = (response) => {

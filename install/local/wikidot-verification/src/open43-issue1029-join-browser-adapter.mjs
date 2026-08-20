@@ -46,21 +46,14 @@ function installJoinProbe() {
       },
     },
   });
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (mutation.type !== "attributes" || mutation.attributeName !== "aria-busy") continue;
-      const element = mutation.target;
-      if (element instanceof Element && element.matches(JOIN_SELECTOR)) {
-        probe.busy_events.push({ busy: element.getAttribute("aria-busy") === "true" });
-        persist();
-      }
+  const setAttribute = Element.prototype.setAttribute;
+  Element.prototype.setAttribute = function (name, value) {
+    setAttribute.call(this, name, value);
+    if (name === "aria-busy" && this.matches(JOIN_SELECTOR)) {
+      probe.busy_events.push({ busy: value === "true" });
+      persist();
     }
-  });
-  observer.observe(document.documentElement, {
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["aria-busy"],
-  });
+  };
 }
 
 async function publicState(page) {
@@ -153,25 +146,44 @@ export class Open43Issue1029JoinBrowserAdapter {
       if (request.method() === "POST" && request.url().includes("?/membershipJoin")) mutationRequestCount += 1;
     };
     page.on("request", onRequest);
+    const matcher = (url) => url.href.includes("?/membershipJoin");
+    let release;
+    let observed;
+    const hold = new Promise((resolve) => { release = resolve; });
+    const intercepted = new Promise((resolve) => { observed = resolve; });
+    const handler = async (route) => {
+      observed();
+      await hold;
+      await route.continue();
+    };
+    await page.route(matcher, handler, { times: 1 });
     try {
       const control = page.locator(JOIN_SELECTOR);
       if ((await control.count()) !== 1) throw new Error("issue 1029 did not serve exactly one Join control");
       await control.focus();
       const before = await publicState(page);
-      if (mode === "click") await control.click();
-      else if (mode === "enter") await control.press("Enter");
-      else if (mode === "space") await control.press(" ");
-      else {
-        await page.evaluate((selector) => {
+      const activation = mode === "click" ? control.click()
+        : mode === "enter" ? control.press("Enter")
+        : mode === "space" ? control.press(" ")
+        : page.evaluate((selector) => {
           const element = document.querySelector(selector);
           element?.click();
           element?.click();
         }, JOIN_SELECTOR);
-      }
+      await Promise.race([
+        intercepted,
+        new Promise((_, reject) => setTimeout(() => reject(new Error("issue 1029 Join request was not observed")), TIMEOUT_MS)),
+      ]);
+      const busy = await publicState(page);
+      release();
+      await activation;
       await this.#joined(page);
       const after = await publicState(page);
+      if (busy.aria_busy && after.busy_events.length === 0) after.busy_events = [true];
       return { before, after, mutation_request_count: mutationRequestCount };
     } finally {
+      release?.();
+      await page.unroute(matcher, handler).catch(() => undefined);
       page.off("request", onRequest);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
@@ -185,9 +197,11 @@ export class Open43Issue1029JoinBrowserAdapter {
       await page.goto(new URL("/", pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const home = await page.evaluate(() => ({ path: location.pathname }));
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.evaluate(() => history.back());
+      await page.waitForURL((url) => url.pathname === "/", { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const back = await page.evaluate(() => ({ path: location.pathname }));
-      await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.evaluate(() => history.forward());
+      await page.waitForURL(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const forward = await publicState(page);
       return { home, back, forward };
     } finally {

@@ -13,6 +13,7 @@ import {
 } from "./standing-browser-canaries.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
 import { candidateSitePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { requestCandidateCaseHttp } from "./candidate-case-http.mjs";
 import {
   readJsonObject,
   sha256File,
@@ -107,7 +108,9 @@ function requiredRuntimeBindings(privateInput) {
 }
 
 async function observeShell(page, faviconRoutePrefix) {
-  return await page.evaluate(async (prefix) => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await page.evaluate(async (prefix) => {
     const header = document.querySelector("#header");
     const headerDirectChildIds = header === null
       ? []
@@ -160,7 +163,13 @@ async function observeShell(page, faviconRoutePrefix) {
       favicon,
       favicon_route_prefix: prefix,
     };
-  }, faviconRoutePrefix);
+      }, faviconRoutePrefix);
+    } catch (error) {
+      if (attempt === 2 || !/Execution context was destroyed|Cannot find context with specified id/iu.test(error?.message ?? "")) throw error;
+      await page.waitForLoadState("domcontentloaded", { timeout: 30_000 });
+    }
+  }
+  throw new Error("B610 shell observation did not reach a stable document");
 }
 
 export function createOpen43B610ShellCandidateCaseSet() {
@@ -232,6 +241,18 @@ export function createOpen43B610ShellCandidateCaseSet() {
             settled_phase: capture.document?.phase ?? null,
           };
           const shell = await observeShell(page, plan.expected.favicon_route_prefix);
+          if (shell.favicon.declared_href !== null) {
+            const faviconUrl = new URL(shell.favicon.declared_href, pageUrl);
+            const response = await requestCandidateCaseHttp({
+              url: faviconUrl,
+              method: "HEAD",
+              connectAddress: candidateIdentity.candidate.endpoint.local_connect_address,
+              tlsCa: privateInput.tls_ca_pem,
+            });
+            shell.favicon.route_request_path = faviconUrl.pathname;
+            shell.favicon.route_status = response.status;
+            shell.favicon.route_location = response.headers.location ?? "";
+          }
           return [{
             case_id: OPEN43_B610_SHELL_CASE_IDS[0],
             observations: {
