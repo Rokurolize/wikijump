@@ -48,6 +48,14 @@ async function widgetState(page, { widget, point = false, star = false }) {
   }, { widget, point, star });
 }
 
+async function settledWidgetState(page, options) {
+  await page.waitForFunction((selector) => {
+    const widget = document.querySelector(selector);
+    return widget !== null && widget.getAttribute("aria-busy") !== "true" && widget.querySelector('[aria-busy="true"]') === null;
+  }, options.widget, { timeout: TIMEOUT_MS });
+  return await widgetState(page, options);
+}
+
 async function forgedRateRequest(page, body) {
   return await page.evaluate(async (requestBody) => {
     const response = await fetch("?/legacyRate", {
@@ -71,12 +79,24 @@ async function forgedRateRequest(page, body) {
   }, body);
 }
 
-function captureProof(capture) {
+export function captureProof(capture) {
+  const failures = Array.isArray(capture.failures) ? capture.failures : [];
+  const unexpectedFailures = failures.filter((failure) => {
+    let hostname = null;
+    try { hostname = new URL(failure?.url).hostname; } catch {}
+    return !(
+      failure?.kind === "request_failed" &&
+      failure?.resource_type === "stylesheet" &&
+      failure?.error === "net::ERR_BLOCKED_BY_ORB" &&
+      hostname?.endsWith(".wdfiles.com")
+    );
+  });
   return {
     navigation_status: capture.navigation_status,
     first_paint: capture.first_paint?.screenshot != null,
     settled: capture.screenshot != null,
-    failure_count: Array.isArray(capture.failures) ? capture.failures.length : -1,
+    failure_count: unexpectedFailures.length,
+    expected_external_stylesheet_failure_count: failures.length - unexpectedFailures.length,
   };
 }
 
@@ -252,9 +272,11 @@ export class Open43A1030RateBrowserAdapter {
     try {
       await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.evaluate(() => history.back());
+      await page.waitForURL((current) => current.pathname === "/", { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const backPath = new URL(page.url()).pathname;
-      await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.evaluate(() => history.forward());
+      await page.waitForURL(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const forward = await widgetState(page, stateOptions);
       return { back_path: backPath, forward_score: forward?.[field] ?? null, replay_request_count: replayRequestCount };
     } finally {
@@ -332,28 +354,28 @@ export class Open43A1030RateBrowserAdapter {
         const number = document.querySelector(selector);
         return number !== null && number.textContent.trim() === "+1";
       }, RATE_NUMBER, { timeout: TIMEOUT_MS });
-      keyboard = await widgetState(mutationPage, { widget: POINT_WIDGET, point: true });
+      keyboard = await settledWidgetState(mutationPage, { widget: POINT_WIDGET, point: true });
 
       await rateUp.click();
       await mutationPage.waitForFunction((selector) => {
         const number = document.querySelector(selector);
         return number !== null && number.textContent.trim() === "+1";
       }, RATE_NUMBER, { timeout: TIMEOUT_MS });
-      repeated = await widgetState(mutationPage, { widget: POINT_WIDGET, point: true });
+      repeated = await settledWidgetState(mutationPage, { widget: POINT_WIDGET, point: true });
 
       await mutationPage.locator(RATE_DOWN).click();
       await mutationPage.waitForFunction((selector) => {
         const number = document.querySelector(selector);
         return number !== null && number.textContent.trim() === "-1";
       }, RATE_NUMBER, { timeout: TIMEOUT_MS });
-      changed = await widgetState(mutationPage, { widget: POINT_WIDGET, point: true });
+      changed = await settledWidgetState(mutationPage, { widget: POINT_WIDGET, point: true });
 
       await mutationPage.locator(RATE_CANCEL).click();
       await mutationPage.waitForFunction((selector) => {
         const number = document.querySelector(selector);
         return number !== null && number.textContent.trim() === "0";
       }, RATE_NUMBER, { timeout: TIMEOUT_MS });
-      canceled = await widgetState(mutationPage, { widget: POINT_WIDGET, point: true });
+      canceled = await settledWidgetState(mutationPage, { widget: POINT_WIDGET, point: true });
 
       forged = await forgedRateRequest(mutationPage, requestBody(registry, 0, "0".repeat(32)));
       error = await this.#errorSurface(mutationPage, rateUp, forged, { widget: POINT_WIDGET, point: true });
@@ -437,14 +459,14 @@ export class Open43A1030RateBrowserAdapter {
         const hidden = document.querySelector(selector);
         return hidden !== null && hidden.value === "4";
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
-      clicked = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
+      clicked = await settledWidgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
       await fourthStar.click();
       await mutationPage.waitForFunction((selector) => {
         const hidden = document.querySelector(selector);
         return hidden !== null && hidden.value === "4";
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
-      repeated = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
+      repeated = await settledWidgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
       // The retained Wikidot star DOM exposes images without a keyboard-focus
       // affordance. Exercise a second concrete star value by click instead of
@@ -454,7 +476,7 @@ export class Open43A1030RateBrowserAdapter {
         const hidden = document.querySelector(selector);
         return hidden !== null && hidden.value === "3";
       }, STAR_SCORE_INPUT, { timeout: TIMEOUT_MS });
-      changed = await widgetState(mutationPage, { widget: STAR_WIDGET, star: true });
+      changed = await settledWidgetState(mutationPage, { widget: STAR_WIDGET, star: true });
 
       forged = await forgedRateRequest(mutationPage, requestBody(registry, 0, "0".repeat(32)));
       error = await this.#errorSurface(mutationPage, mutationPage.locator(STAR_IMAGE).nth(2), forged, { widget: STAR_WIDGET, star: true });

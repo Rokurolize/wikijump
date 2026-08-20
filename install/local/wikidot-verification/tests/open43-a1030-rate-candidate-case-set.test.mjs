@@ -11,6 +11,7 @@ import {
   createOpen43A1030RateCandidateCaseSet,
 } from "../src/open43-a1030-rate-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
+import { captureProof } from "../src/open43-a1030-rate-browser-adapter.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const SITE_ID = 6000003;
@@ -251,6 +252,20 @@ test("A1030 is an executable candidate case set", async () => {
   assert.equal(selected.id, "open43-a1030-rate");
   assert.deepEqual(selected.caseIds, [...OPEN43_A1030_CASE_IDS]);
   assert.equal(typeof selected.prepareRun, "function");
+});
+
+test("A1030 records expected external stylesheet ORB failures without hiding other failures", () => {
+  const proof = captureProof({
+    navigation_status: 200,
+    first_paint: { screenshot: {} },
+    screenshot: {},
+    failures: [
+      { kind: "request_failed", url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" },
+      { kind: "request_failed", url: "https://example.test/app.js", resource_type: "script", error: "net::ERR_FAILED" },
+    ],
+  });
+  assert.equal(proof.expected_external_stylesheet_failure_count, 1);
+  assert.equal(proof.failure_count, 1);
 });
 
 test("A1030 executes through the shared runner and cleans its run-owned pages", async (t) => {
