@@ -188,7 +188,7 @@ export class Open43A1030RateBrowserAdapter {
       await withTimeout(intercepted, "A1030 held Rate request was not observed");
       const busy = await widgetState(page, stateOptions);
       const beforeRepeatedActivation = localRequestCount;
-      await control.click();
+      await control.evaluate((element) => element.click());
       await page.waitForTimeout(100);
       const doubleSuppressed = localRequestCount === beforeRepeatedActivation;
       release();
