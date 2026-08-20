@@ -521,6 +521,11 @@ export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   }, remaining("font and image completion"));
 }
 
+export function isExpectedExternalStylesheetFailure(event) {
+  if (event?.resource_type !== "stylesheet" || event?.error !== "net::ERR_BLOCKED_BY_ORB") return false;
+  try { return new URL(event.url).hostname.endsWith(".wdfiles.com"); } catch { return false; }
+}
+
 export async function captureBrowserParityObservation({
   context,
   page: suppliedPage = null,
@@ -551,6 +556,7 @@ export async function captureBrowserParityObservation({
   const page = suppliedPage ?? (await context.newPage());
   const ownsPage = suppliedPage === null;
   const failures = [];
+  const expectedFailures = [];
   const requestGateAborts = [];
   const onRequestFailed = (request) => {
     const attribution =
@@ -562,7 +568,8 @@ export async function captureBrowserParityObservation({
       error: request.failure()?.errorText ?? "request failed",
       ...(attribution ?? {}),
     };
-    (attribution === null ? failures : requestGateAborts).push(event);
+    if (attribution === null && isExpectedExternalStylesheetFailure(event)) expectedFailures.push(event);
+    else (attribution === null ? failures : requestGateAborts).push(event);
   };
   const onResponse = (response) => {
     if (response.status() >= 400) {
@@ -639,6 +646,7 @@ export async function captureBrowserParityObservation({
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
       failures,
+      expected_failures: expectedFailures,
       request_gate_aborts: requestGateAborts,
       first_paint: {
         document: firstDocument,
@@ -686,6 +694,7 @@ export async function captureBrowserParityObservation({
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
       failures,
+      expected_failures: expectedFailures,
       request_gate_aborts: requestGateAborts,
       first_paint:
         firstDocument || (await capturedScreenshot(firstPath, false))
