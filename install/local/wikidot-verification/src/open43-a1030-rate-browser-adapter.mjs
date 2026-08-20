@@ -159,12 +159,23 @@ export class Open43A1030RateBrowserAdapter {
     const matcher = (candidateUrl) => candidateUrl.href.includes("?/legacyRate");
     let release;
     let observed;
+    let handlerStarted = false;
+    let handlerError = null;
+    let finishHandler;
     const hold = new Promise((resolve) => { release = resolve; });
     const intercepted = new Promise((resolve) => { observed = resolve; });
+    const handlerFinished = new Promise((resolve) => { finishHandler = resolve; });
     const handler = async (route) => {
-      observed();
-      await hold;
-      await route.continue();
+      handlerStarted = true;
+      try {
+        observed();
+        await hold;
+        await route.continue();
+      } catch (error) {
+        handlerError = error;
+      } finally {
+        finishHandler();
+      }
     };
     let localRequestCount = 0;
     const onRequest = (request) => {
@@ -184,8 +195,10 @@ export class Open43A1030RateBrowserAdapter {
       return { busy, double_suppressed: doubleSuppressed };
     } finally {
       release?.();
+      if (handlerStarted) await handlerFinished;
       page.off("request", onRequest);
       await page.unroute(matcher, handler).catch(() => undefined);
+      if (handlerError !== null) throw handlerError;
     }
   }
 
