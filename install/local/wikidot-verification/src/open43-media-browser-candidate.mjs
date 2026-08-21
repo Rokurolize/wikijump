@@ -198,6 +198,21 @@ function iconSnapshot() {
   };
 }
 
+async function browserIconFetch(context, pageOrigin) {
+  const probe = await context.newPage();
+  try {
+    const response = await probe.goto(new URL("/local--favicon/favicon.gif", pageOrigin).href, {
+      waitUntil: "commit",
+      timeout: 300_000,
+    });
+    if (!response) throw new Error("favicon browser navigation returned no response");
+    const bytes = await response.body();
+    return { status: response.status(), final_url: response.url(), body_sha256: sha256(bytes) };
+  } finally {
+    await probe.close().catch(() => undefined);
+  }
+}
+
 class Open43MediaBrowserRun {
   #session;
   #browser;
@@ -311,33 +326,18 @@ class Open43MediaBrowserRun {
       if ((await page.goto(firstUrl, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M756 initial navigation failed");
       await page.evaluate(() => { globalThis.__open43MediaDocumentToken = crypto.randomUUID(); });
       const first = await page.evaluate(iconSnapshot);
-      const firstFetch = await page.evaluate(async () => {
-        const response = await fetch("/local--favicon/favicon.gif");
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        const digest = await crypto.subtle.digest("SHA-256", bytes);
-        return { status: response.status, final_url: response.url, body_sha256: [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("") };
-      });
+      const firstFetch = await browserIconFetch(owned.context, this.#session.pageOrigin);
 
       await this.#setFaviconSource(secondSource);
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       const reload = await page.evaluate(iconSnapshot);
-      const reloadFetch = await page.evaluate(async () => {
-        const response = await fetch("/local--favicon/favicon.gif");
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        const digest = await crypto.subtle.digest("SHA-256", bytes);
-        return { status: response.status, final_url: response.url, body_sha256: [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("") };
-      });
+      const reloadFetch = await browserIconFetch(owned.context, this.#session.pageOrigin);
       await page.evaluate(() => { globalThis.__open43MediaDocumentToken = crypto.randomUUID(); });
       const token = (await page.evaluate(iconSnapshot)).document_token;
       await page.locator(`#page-content a[href$="/${next.slug}"]`).click({ timeout: 300_000 });
       await page.waitForURL(candidateUrl(this.#session.pageOrigin, next.slug), { timeout: 300_000 });
       const client = await page.evaluate(iconSnapshot);
-      const clientFetch = await page.evaluate(async () => {
-        const response = await fetch("/local--favicon/favicon.gif");
-        const bytes = new Uint8Array(await response.arrayBuffer());
-        const digest = await crypto.subtle.digest("SHA-256", bytes);
-        return { status: response.status, final_url: response.url, body_sha256: [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("") };
-      });
+      const clientFetch = await browserIconFetch(owned.context, this.#session.pageOrigin);
       return {
         first_source: firstSource,
         second_source: secondSource,
@@ -634,7 +634,7 @@ export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (opt
         sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js", "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"])]),
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: { ...session.privateInputIdentity, media_browser_evidence_sha256: sha256Value(casePlans) },
-        browserCredentialPolicy: { mode: "private-editor-storage-state", storage_state_count: 1, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
+        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
         plan: { schema: "wikijump.open43_media_browser_candidate_plan.v3", site_slug: SITE_SLUG, case_ids: OPEN43_MEDIA_BROWSER_CASE_IDS, evidence: casePlans },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),

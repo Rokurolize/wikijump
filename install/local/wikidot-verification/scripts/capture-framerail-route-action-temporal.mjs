@@ -535,6 +535,7 @@ async function inputIdentities(args, contract, urls, contractIdentity, outputDir
   const script = await fileIdentity(SCRIPT_PATH, "capture_script");
   if (contract.capture.script_sha256 !== script.sha256) throw new Error("capture script SHA-256 does not match the run contract");
   const registryPath = path.resolve(REPO_ROOT, contract.evidence_registry.path);
+  const retainedRegistryFile = await readFileIdentity(registryPath, "retained_evidence_registry");
   const registryBytes = execFileSync(
     "/usr/bin/git",
     ["--no-replace-objects", "cat-file", "blob", `${contract.source_revision}:${contract.evidence_registry.path}`],
@@ -551,9 +552,9 @@ async function inputIdentities(args, contract, urls, contractIdentity, outputDir
   }
   let registry;
   try {
-    registry = JSON.parse(registryBytes.toString("utf8"));
+    registry = JSON.parse(retainedRegistryFile.bytes.toString("utf8"));
   } catch (error) {
-    throw new Error(`evidence registry is not valid JSON: ${errorMessage(error)}`);
+    throw new Error(`retained evidence registry is not valid JSON: ${errorMessage(error)}`);
   }
   if (registry?.schema !== "wikijump.framerail_route_action_evidence.v1" || registry.source_revision !== contract.source_revision) {
     throw new Error("evidence registry is not bound to the run contract source revision");

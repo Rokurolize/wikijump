@@ -173,6 +173,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     general.actors.expired = { user_id: ACTOR_IDS.editor, session_token: expiredToken };
     const propagateActors = async () => {
       for (const name of privateFiles) {
+        if (name === "media-files.json") continue;
         const target = path.join(args["output-private-dir"], name);
         const value = JSON.parse(await fs.readFile(target, "utf8"));
         if (!value.actors) continue;
