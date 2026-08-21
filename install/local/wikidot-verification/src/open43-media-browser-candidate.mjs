@@ -409,10 +409,18 @@ class Open43MediaBrowserRun {
       await browserPage.locator("#lightbox-image").waitFor({ state: "visible", timeout: 300_000 });
       const first = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("ArrowRight");
-      await browserPage.locator("#lightbox-image-details-currentNumber").filter({ hasText: "image 2 of 2" }).waitFor({ state: "visible", timeout: 300_000 });
+      await browserPage.waitForFunction(
+        (expected) => document.querySelector("#lightbox-image-details-currentNumber")?.textContent?.trim() === expected,
+        "image 2 of 2",
+        { timeout: 300_000 },
+      );
       const next = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("p");
-      await browserPage.locator("#lightbox-image-details-currentNumber").filter({ hasText: "image 1 of 2" }).waitFor({ state: "visible", timeout: 300_000 });
+      await browserPage.waitForFunction(
+        (expected) => document.querySelector("#lightbox-image-details-currentNumber")?.textContent?.trim() === expected,
+        "image 1 of 2",
+        { timeout: 300_000 },
+      );
       const previous = await browserPage.evaluate(lightboxSnapshot);
       await browserPage.keyboard.press("Escape");
       const closed = await browserPage.evaluate(lightboxSnapshot);
