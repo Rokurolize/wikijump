@@ -202,9 +202,10 @@ class Open43MediaRun {
     const favicon = await this.#session.pageRouteRequest("/local--favicon/favicon.gif", { method: "GET", actor: "anonymous", operation: "favicon-route-get" });
     const sourceOnPageHost = await this.#session.pageRouteRequest(source, { method: "GET", actor: "anonymous", operation: "favicon-source-page-host-get" });
     const legacyOnFilesHost = await this.#session.filesRequest(source, { method: "GET", actor: "anonymous", operation: "favicon-source-files-host-get" });
+    const legacyOnFilesHostHead = await this.#session.filesRequest(source, { method: "HEAD", actor: "anonymous", operation: "favicon-source-files-host-head" });
     const original = await this.#session.filesRequest(originalPath(this.#pageSlug, fileName), { method: "GET", actor: "anonymous", operation: "favicon-original-get" });
     const originalHead = await this.#session.filesRequest(originalPath(this.#pageSlug, fileName), { method: "HEAD", actor: "anonymous", operation: "favicon-original-head" });
-    return { source, favicon, source_on_page_host: sourceOnPageHost, legacy_on_files_host: legacyOnFilesHost, original: { ...original, head: originalHead } };
+    return { source, favicon, source_on_page_host: sourceOnPageHost, legacy_on_files_host: { ...legacyOnFilesHost, head: legacyOnFilesHostHead }, original: { ...original, head: originalHead } };
   }
 
   async #setFaviconSource(source) {

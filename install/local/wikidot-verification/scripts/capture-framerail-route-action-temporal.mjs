@@ -535,14 +535,23 @@ async function inputIdentities(args, contract, urls, contractIdentity, outputDir
   const script = await fileIdentity(SCRIPT_PATH, "capture_script");
   if (contract.capture.script_sha256 !== script.sha256) throw new Error("capture script SHA-256 does not match the run contract");
   const registryPath = path.resolve(REPO_ROOT, contract.evidence_registry.path);
-  const evidenceRegistryFile = await readFileIdentity(registryPath, "evidence_registry");
-  const evidenceRegistry = evidenceRegistryFile.identity;
-  if (evidenceRegistry.path !== registryPath || evidenceRegistry.sha256 !== contract.evidence_registry.sha256) {
+  const registryBytes = execFileSync(
+    "/usr/bin/git",
+    ["--no-replace-objects", "cat-file", "blob", `${contract.source_revision}:${contract.evidence_registry.path}`],
+    {cwd: REPO_ROOT, maxBuffer: 16 * 1024 * 1024},
+  );
+  const evidenceRegistry = {
+    label: "evidence_registry",
+    path: registryPath,
+    sha256: crypto.createHash("sha256").update(registryBytes).digest("hex"),
+    size: registryBytes.byteLength,
+  };
+  if (evidenceRegistry.sha256 !== contract.evidence_registry.sha256) {
     throw new Error("evidence registry SHA-256 does not match the run contract");
   }
   let registry;
   try {
-    registry = JSON.parse(evidenceRegistryFile.bytes.toString("utf8"));
+    registry = JSON.parse(registryBytes.toString("utf8"));
   } catch (error) {
     throw new Error(`evidence registry is not valid JSON: ${errorMessage(error)}`);
   }

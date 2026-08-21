@@ -322,6 +322,15 @@ export async function prepareCompatibilityCandidateInputs(args) {
     await fs.writeFile(mediaPath, `${JSON.stringify(mediaInput, null, 2)}\n`, { mode: 0o600, flag: "wx" });
     privateFiles.push("media-browser.json");
 
+    // The runtime media denominator fixes its mutation actor to the platform
+    // bootstrap administrator (-1). Keep that exact actor in a dedicated input
+    // instead of widening the generic editor identity used by other cases.
+    const mediaFilesInput = structuredClone(general);
+    mediaFilesInput.actors.editor = structuredClone(general.actors.administrator);
+    const mediaFilesPath = path.join(args["output-private-dir"], "media-files.json");
+    await fs.writeFile(mediaFilesPath, `${JSON.stringify(mediaFilesInput, null, 2)}\n`, { mode: 0o600, flag: "wx" });
+    privateFiles.push("media-files.json");
+
     const temporalContractPath = new URL("../fixtures/framerail-route-action-browser/run-contract.json", import.meta.url);
     const temporalContract = JSON.parse(await fs.readFile(temporalContractPath, "utf8"));
     if (temporalContract?.issue !== 1372 || !Array.isArray(temporalContract.subjects) || temporalContract.subjects.length !== 14) throw new Error("route-action temporal run contract denominator drifted");

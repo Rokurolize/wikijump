@@ -99,9 +99,10 @@ function localIconCase(observations, plan) {
   expect(route.source === expectedSource, "M756 local icon source path drifted");
   expect(route.favicon?.status === 302 && new URL(route.favicon.location, "https://candidate.invalid").pathname === expectedSource, "M756 favicon route did not redirect to the configured local file");
   expect(route.source_on_page_host?.status === 302 && new URL(route.source_on_page_host.location).hostname.endsWith(".wjfiles.localhost"), "M756 local-file page-host route did not cross to the candidate files origin");
-  expect([301, 302, 307, 308].includes(route.legacy_on_files_host?.status) && new URL(route.legacy_on_files_host.location, "https://candidate.invalid").pathname === `/-/file/${encodeURIComponent(plan.page_slug)}/${encodeURIComponent(plan.file_names.action_upload)}`, "M756 legacy file route did not redirect to the canonical file route");
+  const legacy = download(route.legacy_on_files_host, plan.inputs.initial, file, "M756 anonymous legacy local-file bytes");
   const original = download(route.original, plan.inputs.initial, file, "M756 anonymous local icon bytes");
-  return { source: expectedSource, body_sha256: original.body_sha256, anonymous_visibility_verified: true, redirect_chain_verified: true };
+  expect(legacy.body_sha256 === original.body_sha256 && legacy.etag === original.etag, "M756 legacy and canonical file routes do not bind the same public blob");
+  return { source: expectedSource, body_sha256: original.body_sha256, anonymous_visibility_verified: true, route_identity_verified: true };
 }
 
 function resized(value, row, plan, name) {

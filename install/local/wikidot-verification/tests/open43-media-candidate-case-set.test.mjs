@@ -392,9 +392,7 @@ async function createFakeCandidate({
             location: `https://scpaiueouiuiuiui.wjfiles.localhost:18443${request.url}`,
           }).end();
         } else {
-          response.writeHead(302, {
-            location: `/-/file/${legacy[1]}/${legacy[2]}`,
-          }).end();
+          serveFile(request, response, legacy, false);
         }
         return;
       }
