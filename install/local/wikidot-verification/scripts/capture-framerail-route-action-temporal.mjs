@@ -694,6 +694,21 @@ function armResultOracle(page, oracle, timeoutMs, label) {
   throw new Error(`${label} has unsupported result oracle`);
 }
 
+async function clickVisibleTrigger(page, selector, timeoutMs) {
+  const locator = page.locator(selector);
+  await locator.waitFor({state: "visible", timeout: timeoutMs});
+  const box = await locator.boundingBox();
+  if (!box || box.width <= 0 || box.height <= 0) throw new Error(`${selector} has no visible click target`);
+  const viewport = page.viewportSize();
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  if (viewport && x >= 0 && y >= 0 && x < viewport.width && y < viewport.height) {
+    await page.mouse.click(x, y);
+    return;
+  }
+  await locator.click({timeout: timeoutMs, noWaitAfter: true});
+}
+
 function requestMatches(request, event) {
   if (event.method && request.method() !== event.method) return false;
   if (!request.url().endsWith(event.url_suffix)) return false;
@@ -792,7 +807,7 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
     navigationStatus = response?.status() ?? null;
     const triggers = subject.trigger_selectors;
     for (const selector of triggers.slice(0, -1)) {
-      await page.locator(selector).click({timeout: args.timeoutMs, noWaitAfter: true});
+      await clickVisibleTrigger(page, selector, args.timeoutMs);
     }
     const records = [];
     if (scenario.id === "success") {
@@ -806,7 +821,7 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
         ? armBrowserEvent(page, subject.success_event, args.timeoutMs, `${subject.id} success`)
         : null;
       records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
-      await page.locator(triggers.at(-1)).click({timeout: args.timeoutMs, noWaitAfter: true});
+      await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;
       if (subject.loading.kind === "dom") {
@@ -825,10 +840,12 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
       const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
+      void resultSignal.catch(() => undefined);
       const failureControl = await armFailureControl(page, resultOracle.failure_control, args.timeoutMs, `${scenario.id} ${subject.id}`);
+      void failureControl.signal.catch(() => undefined);
       try {
         if ((resultOracle.activation ?? "click") === "click") {
-          await page.locator(triggers.at(-1)).click({timeout: args.timeoutMs, noWaitAfter: true});
+          await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
         }
         await Promise.all([resultSignal, failureControl.signal]);
       } finally {
