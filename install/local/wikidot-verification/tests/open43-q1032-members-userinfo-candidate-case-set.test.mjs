@@ -84,8 +84,8 @@ function fakeSession(calls, { badAjax = false } = {}) {
         return {
           http_status: 200,
           content_type: "text/plain; charset=UTF-8",
-          response_body_sha256: hash("g"),
-          json: { status: "not_ok", jsInclude: [], cssInclude: [], callbackIndex: null },
+          response_body_sha256: hash("7"),
+          json: { status: "ok", body: '<div id="ml-test">No users.<div style="text-align: center"></div></div>', jsInclude: [], cssInclude: [], callbackIndex: null },
         };
       }
       if (fields.moduleName === "profile/UserInfoModule") {

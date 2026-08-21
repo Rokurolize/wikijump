@@ -10,19 +10,27 @@ const CAPTURE_CONTRACT = Object.freeze({
   ]),
 });
 
-function publicState(page) {
-  return page.evaluate((selector) => {
-    const active = document.activeElement;
-    return {
-      url: location.href,
-      path: location.pathname,
-      edit_route: location.pathname.endsWith("/edit"),
-      standalone_edit_count: document.querySelectorAll(selector).length,
-      editor_count: document.querySelectorAll("#editor").length,
-      source_disclosure: location.pathname.endsWith("/source") || document.body?.innerText.includes("[[button edit") === true,
-      active_element: active?.id || active?.getAttribute("class") || active?.localName || "",
-    };
-  }, SELECTOR);
+async function publicState(page) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await page.evaluate((selector) => {
+        const active = document.activeElement;
+        return {
+          url: location.href,
+          path: location.pathname,
+          edit_route: location.pathname.endsWith("/edit"),
+          standalone_edit_count: document.querySelectorAll(selector).length,
+          editor_count: document.querySelectorAll("#editor").length,
+          source_disclosure: location.pathname.endsWith("/source") || document.body?.innerText.includes("[[button edit") === true,
+          active_element: active?.id || active?.getAttribute("class") || active?.localName || "",
+        };
+      }, SELECTOR);
+    } catch (error) {
+      if (attempt === 2 || !/Execution context was destroyed|Cannot find context with specified id/iu.test(error?.message ?? "")) throw error;
+      await page.waitForLoadState("domcontentloaded", { timeout: TIMEOUT_MS });
+    }
+  }
+  throw new Error("issue 775 browser observation did not reach a stable document");
 }
 
 export class Open43Issue775EditBrowserAdapter {
@@ -111,9 +119,11 @@ export class Open43Issue775EditBrowserAdapter {
       await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await this.#activate(page, pagePath, "click", editable);
-      await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.evaluate(() => history.back());
+      await page.waitForURL(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const back = await publicState(page);
-      await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.evaluate(() => history.forward());
+      await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       if (editable) await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const forward = await publicState(page);
       return { back, forward };

@@ -125,6 +125,7 @@ function fakeBrowserOwner() {
     },
     locator() {
       return {
+        async focus() {},
         async fill(value) {
           filledQuery = value;
         },

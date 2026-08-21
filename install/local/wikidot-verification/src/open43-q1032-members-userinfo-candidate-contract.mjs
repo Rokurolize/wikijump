@@ -164,17 +164,6 @@ function verifyAjaxEnvelopeShape(value, label) {
   };
 }
 
-function verifyBoundaryEnvelope(value, label) {
-  const ajax = object(value, `${label} Ajax observation`);
-  expect(ajax.http_status === 200, `${label} Ajax connector did not return HTTP 200`);
-  expect(ajax.content_type === "text/plain; charset=UTF-8", `${label} Ajax connector content type differs from the live envelope`);
-  const json = object(ajax.json, `${label} Ajax response envelope`);
-  expect(Array.isArray(json.jsInclude) && json.jsInclude.length === 0, `${label} Ajax envelope changed jsInclude`);
-  expect(Array.isArray(json.cssInclude) && json.cssInclude.length === 0, `${label} Ajax envelope changed cssInclude`);
-  expect(json.callbackIndex === null, `${label} Ajax envelope changed callbackIndex`);
-  return { status: json.status, envelope_shape_verified: true };
-}
-
 export function verifyOpen43Q1032AjaxCase(caseId, observations) {
   expect(caseId === OPEN43_Q1032_CASE_IDS[1], `unsupported Q1032 case: ${caseId}`);
   const value = object(observations, `${caseId} observations`);
@@ -196,7 +185,9 @@ export function verifyOpen43Q1032AjaxCase(caseId, observations) {
 
   const outOfRange = object(value.out_of_range, "Members Ajax out-of-range boundary");
   expect(outOfRange.page === 1468, "Members Ajax out-of-range page drifted");
-  expect(verifyBoundaryEnvelope(outOfRange.response, "out-of-range").status === "not_ok", "Members Ajax out-of-range boundary did not return the live not_ok envelope");
+  const outOfRangeVerified = verifyAjaxEnvelopeShape(outOfRange.response, "out-of-range");
+  expect(outOfRangeVerified.status === "ok", "Members Ajax out-of-range boundary did not return the live ok envelope");
+  expect(outOfRangeVerified.body_has_table === false && outOfRangeVerified.body_has_pager === false && outOfRangeVerified.body_has_module_script === false, "Members Ajax out-of-range boundary did not return the live empty No users body");
 
   const matrix = value.actor_matrix;
   expect(Array.isArray(matrix) && matrix.length === 3, "Members Ajax actor matrix drifted");

@@ -36,6 +36,13 @@ function installLifecycleProbe() {
     value: {
       get busy_events() { return probe.busy_events; },
       get print_pending() { return probe.print_pending; },
+      interceptPrint() {
+        return new Promise((resolve) => {
+          probe.print_pending += 1;
+          probe.print_resolvers.push(resolve);
+          persist();
+        });
+      },
       releasePrint() {
         while (probe.print_resolvers.length > 0) {
           probe.print_resolvers.shift()?.();
@@ -47,12 +54,7 @@ function installLifecycleProbe() {
   });
   Object.defineProperty(window, "print", {
     configurable: true,
-    value: () =>
-      new Promise((resolve) => {
-        probe.print_pending += 1;
-        probe.print_resolvers.push(resolve);
-        persist();
-      }),
+    value: () => window[PROBE_KEY].interceptPrint(),
   });
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
@@ -241,6 +243,9 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     page.on("request", onRequest);
     try {
       const before = await publicState(page);
+      await page.evaluate((key) => {
+        Object.defineProperty(window, "print", { configurable: true, value: () => window[key].interceptPrint() });
+      }, PROBE_KEY);
       await this.#activate(page, "Print this page", "click");
       await page.waitForFunction(
         (key) => window[key]?.print_pending === 1,

@@ -50,6 +50,7 @@ function fakeSession({ events }) {
   const pages = new Map();
   let nextPageId = 900;
   let currentSource = "[[module Comments]]";
+  let category = { category_id: 100_000_023, slug: "run-owned", per_page_discussion: null, settings_revision: 0 };
   return {
     candidateIdentity: identity,
     pageOrigin: "https://scpaiueouiuiuiui.wikijump.localhost:18443",
@@ -75,7 +76,14 @@ function fakeSession({ events }) {
         currentSource = params.wikitext;
         return page;
       }
+      if (method === "category_get") return { ...category };
+      if (method === "category_update") {
+        assert.equal(params.expected_settings_revision, category.settings_revision);
+        category = { ...category, per_page_discussion: params.per_page_discussion, settings_revision: category.settings_revision + 1 };
+        return { ...category };
+      }
       if (method === "wikidot_page_discussion_create") {
+        assert.equal(category.per_page_discussion, true);
         return { thread_id: 700, thread_unix_title: "candidate-comments" };
       }
       if (method === "page_delete") {
@@ -131,6 +139,8 @@ test("Comments hideForm is registered as one executable candidate case with both
   const finalCleanupPageGet = events.lastIndexOf("cleanup-page_get:administrator");
   const cleanupPageDelete = events.lastIndexOf("cleanup-page_delete:administrator");
   assert.ok(browserClose >= 0 && cleanupPageGet > browserClose && cleanupPageDelete > cleanupPageGet && finalCleanupPageGet > cleanupPageDelete, events.join(","));
+  assert.ok(events.includes("category_update:administrator"));
+  assert.ok(events.includes("cleanup-category_update:administrator"));
 });
 
 test("candidate case registry keeps the no-replace runner entry explicit", async () => {

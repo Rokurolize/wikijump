@@ -323,8 +323,8 @@ class Open43A1037Run {
       await page.locator('input.text[name="pageName"]').waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const browserName = `browser-${suffix}`;
       await page.locator('input.text[name="pageName"]').fill(browserName);
-      await page.locator('input[type="submit"], button').first().click();
-      const expectedRoute = `/${encodeURIComponent(`${this.#category}:${browserName}`)}/edit/true`;
+      await page.locator('form:has(input.text[name="pageName"]) input[type="submit"]').click();
+      const expectedRoute = `/${this.#category}:${browserName}/edit/true/title/${browserName}`;
       await page.waitForURL((candidateUrl) => candidateUrl.pathname === expectedRoute, { timeout: TIMEOUT_MS });
       browser = {
         edit_route: `${this.#category}:${browserName}`,

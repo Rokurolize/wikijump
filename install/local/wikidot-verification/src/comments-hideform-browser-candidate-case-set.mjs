@@ -106,6 +106,8 @@ class CommentsHideformRun {
   #pageTitle;
   #ownedPage = null;
   #pageResource = null;
+  #categorySetting = null;
+  #categoryResource = null;
   #actorIdentities = null;
   #observations = [];
 
@@ -210,6 +212,24 @@ class CommentsHideformRun {
     this.#pageResource = this.#resources.register("page", { ...this.#ownedPage, source_fixture_sha256: CASE_FIXTURE_SHA256 });
     if (!this.#matchesOwnedPage(await this.#page())) throw new Error("Comments hideForm page_create did not round-trip");
 
+    const category = await this.#rpc("category_get", { site: this.#siteId, category: "run-owned" });
+    if (!Number.isSafeInteger(category?.category_id) || !Number.isSafeInteger(category.settings_revision)) throw new Error("Comments hideForm run-owned category fixture is missing");
+    this.#categorySetting = { category_id: category.category_id, per_page_discussion: category.per_page_discussion };
+    const updatedCategory = await this.#rpc("category_update", {
+      site: this.#siteId,
+      category: "run-owned",
+      user_id: this.#actorIdentities.permitted.user_id,
+      expected_settings_revision: category.settings_revision,
+      per_page_discussion: true,
+      ip_address: "127.0.0.1",
+    });
+    if (updatedCategory?.category_id !== category.category_id || updatedCategory.per_page_discussion !== true) throw new Error("Comments hideForm discussion category fixture was not enabled");
+    this.#categoryResource = this.#resources.register("category-setting", {
+      category_id: category.category_id,
+      slug: "run-owned",
+      per_page_discussion_before: category.per_page_discussion,
+    });
+
     // A saved Wikidot Comments module only has the actor/form state that this
     // case verifies after the page has an actual per-page discussion thread.
     // The candidate is disposable; create that thread through the same public
@@ -240,7 +260,23 @@ class CommentsHideformRun {
     const after = await this.#page({ cleanup: true });
     if (after !== null) throw new Error("Comments hideForm run-owned page remains after cleanup");
     if (this.#pageResource !== null) this.#resources.release(this.#pageResource, { page_get: null, page_id: this.#ownedPage.page_id, public_absence_verified: true });
-    return { page_get: after, page_id: this.#ownedPage?.page_id ?? null, public_absence_verified: after === null };
+    let categoryRestored = this.#categorySetting === null;
+    if (this.#categorySetting !== null) {
+      const category = await this.#rpc("category_get", { site: this.#siteId, category: "run-owned" }, { cleanup: true });
+      if (category?.category_id !== this.#categorySetting.category_id || !Number.isSafeInteger(category.settings_revision)) throw new Error("Comments hideForm cleanup could not reload run-owned category");
+      const restored = await this.#rpc("category_update", {
+        site: this.#siteId,
+        category: "run-owned",
+        user_id: this.#actorIdentities.permitted.user_id,
+        expected_settings_revision: category.settings_revision,
+        per_page_discussion: this.#categorySetting.per_page_discussion,
+        ip_address: "127.0.0.1",
+      }, { cleanup: true });
+      categoryRestored = restored?.category_id === this.#categorySetting.category_id && restored.per_page_discussion === this.#categorySetting.per_page_discussion;
+      if (!categoryRestored) throw new Error("Comments hideForm cleanup did not restore discussion category setting");
+      if (this.#categoryResource !== null) this.#resources.release(this.#categoryResource, { per_page_discussion: restored.per_page_discussion, restored: true });
+    }
+    return { page_get: after, page_id: this.#ownedPage?.page_id ?? null, category_restored: categoryRestored, public_absence_verified: after === null && categoryRestored };
   }
 
   verifyCase(caseId, observations) {
@@ -260,8 +296,8 @@ class CommentsHideformRun {
 }
 
 function verifyCleanup(proof, resources) {
-  if (proof?.page_get !== null || proof?.public_absence_verified !== true || !Array.isArray(resources) || resources.length !== 1 || resources[0].kind !== "page" || resources[0].released !== true) throw new Error("Comments hideForm cleanup did not prove run-owned page absence");
-  return { public_absence_verified: true, page_absent: true, page_id: proof.page_id, resource_count: resources.length };
+  if (proof?.page_get !== null || proof?.category_restored !== true || proof?.public_absence_verified !== true || !Array.isArray(resources) || resources.length !== 2 || resources.some((resource) => resource.released !== true) || !resources.some((resource) => resource.kind === "page") || !resources.some((resource) => resource.kind === "category-setting")) throw new Error("Comments hideForm cleanup did not prove run-owned page absence and category restoration");
+  return { public_absence_verified: true, page_absent: true, category_restored: true, page_id: proof.page_id, resource_count: resources.length };
 }
 
 export function createCommentsHideformBrowserCandidateCaseSet({ sessionFactory = (options) => new Open43SettingsCandidateSession(options) } = {}) {
