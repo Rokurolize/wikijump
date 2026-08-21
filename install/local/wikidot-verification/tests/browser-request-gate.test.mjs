@@ -463,14 +463,17 @@ test("persistence failure latches the gate closed before a restart can be admitt
   assert.equal(gate.snapshot().enforcement_failed, true);
 });
 
-test("only canonical standing Wikijump origins can become local exemptions", () => {
+test("only canonical Wikijump local origins can become local exemptions", () => {
   assert.deepEqual(localBrowserCaptureOrigins("https://scp-wiki.wikijump.localhost/scp-173?x=1"), [
     "https://scp-wiki.wikijump.localhost",
     "https://scp-wiki.wjfiles.localhost",
   ]);
+  assert.deepEqual(localBrowserCaptureOrigins("https://scp-wiki.wikijump.localhost:18443/scp-173"), [
+    "https://scp-wiki.wikijump.localhost:18443",
+    "https://scp-wiki.wjfiles.localhost:18443",
+  ]);
   assert.throws(() => localBrowserCaptureOrigins("https://public.example/scp-173"), /\.wikijump\.localhost/);
   assert.throws(() => localBrowserCaptureOrigins("https://user@scp-wiki.wikijump.localhost/scp-173"), /without credentials/);
-  assert.throws(() => localBrowserCaptureOrigins("https://scp-wiki.wikijump.localhost:18443/scp-173"), /non-default port/);
 });
 
 test("capture lock refuses a live owner regardless of state confirmation", async () => {

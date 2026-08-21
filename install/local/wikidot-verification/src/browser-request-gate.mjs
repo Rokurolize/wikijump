@@ -148,11 +148,12 @@ export function localBrowserCaptureOrigins(value) {
   } catch {
     throw new Error(`local capture URL is not a URL: ${value}`);
   }
-  if (url.protocol !== "https:" || url.username || url.password || url.port || !LOCAL_WIKIJUMP_HOST_RE.test(url.hostname)) {
-    throw new Error(`local capture URL must be an HTTPS *.wikijump.localhost origin without credentials or a non-default port: ${value}`);
+  if (url.protocol !== "https:" || url.username || url.password || !LOCAL_WIKIJUMP_HOST_RE.test(url.hostname)) {
+    throw new Error(`local capture URL must be an HTTPS *.wikijump.localhost origin without credentials: ${value}`);
   }
   const site = url.hostname.slice(0, -".wikijump.localhost".length);
-  return [url.origin, `https://${site}.wjfiles.localhost`];
+  const port = url.port === "" ? "" : `:${url.port}`;
+  return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
 export function isWikidotCapturePublicOrigin(value, resourceType, method) {
