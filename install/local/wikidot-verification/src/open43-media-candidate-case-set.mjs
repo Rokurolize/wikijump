@@ -5,6 +5,7 @@ import { verifyOpen43MediaCase } from "./open43-media-candidate-contract.mjs";
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 export const OPEN43_MEDIA_CASE_IDS = Object.freeze([
+  "M756_LOCAL_ROUTE_BYTES",
   "M1039_MUTATION_TO_NEXT_READ",
   "M1043_RESIZED_BLOB_IDENTITY",
   "M1062_SERIALIZABLE_ACTION_RESPONSE",
@@ -101,6 +102,7 @@ class Open43MediaRun {
   #ownedPage = null;
   #pageResource = null;
   #pending = new Map();
+  #siteIconsBefore = null;
 
   constructor({ session, resources, pageSlug }) {
     this.#session = session;
@@ -193,6 +195,31 @@ class Open43MediaRun {
       original: await this.#observeOriginal(fileName, `${operation}-original`, options),
       resized: await this.#observeResized(fileName, `${operation}-resized`, options),
     };
+  }
+
+  async #observeLocalFavicon(fileName) {
+    const source = `/local--files/${encodePath(this.#pageSlug, fileName)}`;
+    const favicon = await this.#session.pageRouteRequest("/local--favicon/favicon.gif", { method: "GET", actor: "anonymous", operation: "favicon-route-get" });
+    const sourceOnPageHost = await this.#session.pageRouteRequest(source, { method: "GET", actor: "anonymous", operation: "favicon-source-page-host-get" });
+    const legacyOnFilesHost = await this.#session.filesRequest(source, { method: "GET", actor: "anonymous", operation: "favicon-source-files-host-get" });
+    const original = await this.#session.filesRequest(originalPath(this.#pageSlug, fileName), { method: "GET", actor: "anonymous", operation: "favicon-original-get" });
+    const originalHead = await this.#session.filesRequest(originalPath(this.#pageSlug, fileName), { method: "HEAD", actor: "anonymous", operation: "favicon-original-head" });
+    return { source, favicon, source_on_page_host: sourceOnPageHost, legacy_on_files_host: legacyOnFilesHost, original: { ...original, head: originalHead } };
+  }
+
+  async #setFaviconSource(source) {
+    const before = await this.#session.rpc("site_get", { site: SITE_SLUG });
+    if (!Number.isSafeInteger(before?.settings_revision)) throw new Error("media candidate site settings revision is missing");
+    if (this.#siteIconsBefore === null) this.#siteIconsBefore = { favicon_source: before.favicon_source ?? null, ios_icon_source: before.ios_icon_source ?? null, windows_tile_source: before.windows_tile_source ?? null };
+    return await this.#session.rpc("site_update", {
+      site: this.#siteId,
+      expected_settings_revision: before.settings_revision,
+      user_id: this.#session.editorUserId,
+      favicon_source: source,
+      ios_icon_source: before.ios_icon_source ?? null,
+      windows_tile_source: before.windows_tile_source ?? null,
+      ip_address: "127.0.0.1",
+    }, { siteId: this.#siteId });
   }
 
   async #deleteFile(pageId, row, { cleanup = false } = {}) {
@@ -348,6 +375,10 @@ class Open43MediaRun {
     if (initialRows.length !== 1) {
       throw new Error("multipart action did not create exactly one public file row");
     }
+    const faviconSource = `/local--files/${encodePath(this.#pageSlug, FILE_NAMES.action_upload)}`;
+    const siteAfterFavicon = await this.#setFaviconSource(faviconSource);
+    if (siteAfterFavicon?.favicon_source !== faviconSource) throw new Error("candidate favicon source was not committed");
+    const localFavicon = await this.#observeLocalFavicon(FILE_NAMES.action_upload);
 
     const inventoryBeforeFailedAction = await this.#getInventory(page.page_id);
     const failedAction = await this.#session.multipartFileAction(
@@ -429,6 +460,15 @@ class Open43MediaRun {
     const deletedRoutes = await this.#observeFile(FILE_NAMES.renamed, "deleted");
 
     return [
+      {
+        case_id: "M756_LOCAL_ROUTE_BYTES",
+        observations: {
+          configured_source: faviconSource,
+          site: { site_id: this.#siteId, favicon_source: siteAfterFavicon.favicon_source },
+          route: localFavicon,
+          file: first,
+        },
+      },
       {
         case_id: "M1039_MUTATION_TO_NEXT_READ",
         observations: {
@@ -530,6 +570,18 @@ class Open43MediaRun {
 
     let page = null;
     try {
+      if (this.#siteId !== null && this.#siteIconsBefore !== null) {
+        const currentSite = await this.#session.rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
+        await this.#session.rpc("site_update", {
+          site: this.#siteId,
+          expected_settings_revision: currentSite.settings_revision,
+          user_id: this.#session.editorUserId,
+          ...this.#siteIconsBefore,
+          ip_address: "127.0.0.1",
+        }, { siteId: this.#siteId, cleanup: true });
+        const restored = await this.#session.rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
+        if (restored.favicon_source !== this.#siteIconsBefore.favicon_source || restored.ios_icon_source !== this.#siteIconsBefore.ios_icon_source || restored.windows_tile_source !== this.#siteIconsBefore.windows_tile_source) throw new Error("media cleanup did not restore site icon settings");
+      }
       if (this.#siteId !== null) page = await this.#getPage({ cleanup: true, wikitext: true });
       if (this.#matchesOwnedPage(page)) {
         const inventory = await this.#getInventory(page.page_id, { cleanup: true });
@@ -628,6 +680,7 @@ export function createOpen43MediaCandidateCaseSet({
 } = {}) {
   const plan = Object.freeze({
     site_slug: SITE_SLUG,
+    page_slug: null,
     file_names: FILE_NAMES,
     inputs: INPUTS,
     resized_variant: RESIZED_VARIANT,
@@ -661,7 +714,9 @@ export function createOpen43MediaCandidateCaseSet({
       requireCandidateSite(candidateIdentity);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       if (session?.editorUserId !== plan.editor_user_id) throw new Error("candidate session does not bind the fixed media editor");
-      const execution = new Open43MediaRun({ session, resources, pageSlug: runPageSlug(runId) });
+      const pageSlug = runPageSlug(runId);
+      const runPlan = Object.freeze({ ...plan, page_slug: pageSlug });
+      const execution = new Open43MediaRun({ session, resources, pageSlug });
       return Object.freeze({
         sourceFiles,
         runtimeBindings: session.requiredServiceBindings,
@@ -669,7 +724,7 @@ export function createOpen43MediaCandidateCaseSet({
         plan: {
           schema: "wikijump.open43_media_candidate_plan.v1",
           site_slug: SITE_SLUG,
-          page_slug: runPageSlug(runId),
+          page_slug: pageSlug,
           file_names: FILE_NAMES,
           fixed_inputs: { initial: publicInput(INPUTS.initial), revision: publicInput(INPUTS.revision) },
           resized_variant: RESIZED_VARIANT,
@@ -680,7 +735,7 @@ export function createOpen43MediaCandidateCaseSet({
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase: (caseId, observations) => verifyOpen43MediaCase(caseId, observations, plan),
+        verifyCase: (caseId, observations) => verifyOpen43MediaCase(caseId, observations, runPlan),
         verifyCleanup,
       });
     },

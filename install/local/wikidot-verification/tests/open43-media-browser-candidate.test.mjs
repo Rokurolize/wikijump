@@ -109,82 +109,55 @@ test("the Playwright file is collection-only and the case set owns candidate rec
   assert.match(spec, /candidate-case-command/u);
   assert.match(spec, /test\.skip/u);
   assert.doesNotMatch(spec, /writeFile|captureCandidateObservation|status:\s*["']pass["']|verdict\s*:/u);
-  for (const text of ["domcontentloaded_immediate_observation", "settled", "csp_violations", "required_request_url_sha256", "forbidden_request_url_sha256", "negative_boundary_verified"]) assert.match(adapter, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
-  assert.match(adapter, /runCandidateCaseSet|candidate-case-runner/u);
+  for (const text of ["securitypolicyviolation", "local--favicon", "gallery-box", "#file-upload", "negative_boundary_verified"]) assert.match(adapter, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+  assert.match(adapter, /CandidateHttpSession/u);
   assert.match(adapter, /verified: true/u);
   assert.match(runner, /sealJsonNoReplace/u);
 });
 
-test("M806 enforces centered width and whitespace ownership at both viewports", () => {
-  const sourceUrlSha256 = sha256("https://files.example/centered.png");
-  const positiveInitial = documentObservation("domcontentloaded_immediate_observation");
-  const positiveSettled = documentObservation("settled");
-  const negativeInitial = documentObservation("domcontentloaded_immediate_observation");
-  const negativeSettled = documentObservation("settled");
-  const badSnapshot = centeredImageSnapshot(12, sourceUrlSha256);
-  const negativeSnapshot = (viewport) => ({ viewport, images: [], events: [] });
-  const responsiveViewport = { width: 479, height: 900 };
-  const observations = {
-    positive: intervalObservation("https://candidate.example/positive", positiveInitial, positiveSettled, sourceUrlSha256, {
-      initial: badSnapshot,
-      settled: badSnapshot,
-      responsive: centeredImageSnapshot(12, sourceUrlSha256, responsiveViewport),
-    }),
-    negative: intervalObservation("https://candidate.example/negative", negativeInitial, negativeSettled, sha256("https://candidate.example/negative"), {
-      initial: negativeSnapshot({ width: 1280, height: 900 }),
-      settled: negativeSnapshot({ width: 1280, height: 900 }),
-      responsive: negativeSnapshot(responsiveViewport),
-    }),
-  };
-  const expected = {
-    positive: intervalExpectation(positiveInitial, positiveSettled, sourceUrlSha256),
-    negative: intervalExpectation(negativeInitial, negativeSettled, sha256("https://candidate.example/negative"), [sourceUrlSha256]),
-  };
-  const centeredImage = {
-    responsive_viewport: responsiveViewport,
+test("M806 enforces centered width, exact local routes, and whitespace ownership at both viewports", () => {
+  const slug = "m806-positive";
+  const filename = "center.png";
+  const image = (delta = 0) => ({
+    container_class: "image-container aligncenter",
+    complete: true,
+    natural_width: 4,
+    natural_height: 2,
     width_attribute: "100px",
     computed_width: "100px",
     rendered_width: 100,
-    natural_width: 4,
-    natural_height: 2,
-    source_url_sha256: sourceUrlSha256,
-    click_target_url_sha256: null,
-    expected_snapshot_sha256: {
-      positive: Object.fromEntries(Object.entries(observations.positive.centered_images).map(([phase, value]) => [phase, sha256Value(value)])),
-      negative: Object.fromEntries(Object.entries(observations.negative.centered_images).map(([phase, value]) => [phase, sha256Value(value)])),
+    rendered_height: 50,
+    center_delta: delta,
+    source_url: `https://candidate.wjfiles.localhost/local--resized-images/${slug}/${filename}/medium.jpg`,
+    click_target_url: `https://candidate.wjfiles.localhost/local--files/${slug}/${filename}`,
+  });
+  const clean = { candidate_requests: [{ pathname: `/local--resized-images/${slug}/${filename}/medium.jpg` }], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };
+  const observations = {
+    positive: {
+      url: `https://candidate.wikijump.localhost/${slug}`,
+      settled: { viewport: { width: 1280, height: 900 }, images: [image(), image()] },
+      responsive: { viewport: { width: 479, height: 900 }, images: [image(), image()] },
+      diagnostics: clean,
     },
+    negative: {
+      url: "https://candidate.wikijump.localhost/m806-negative",
+      settled: { viewport: { width: 1280, height: 900 }, images: [] },
+      responsive: { viewport: { width: 479, height: 900 }, images: [] },
+      diagnostics: { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] },
+    },
+    expected_file: { filename, width: 4, height: 2, byte_sha256: sha256("fixed") },
   };
+  assert.equal(verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", observations).verified, true);
 
-  const passingObservations = structuredClone(observations);
-  passingObservations.positive.centered_images = {
-    initial: centeredImageSnapshot(0, sourceUrlSha256),
-    settled: centeredImageSnapshot(0, sourceUrlSha256),
-    responsive: centeredImageSnapshot(0, sourceUrlSha256, responsiveViewport),
-  };
-  const passingContract = structuredClone(centeredImage);
-  passingContract.expected_snapshot_sha256.positive = Object.fromEntries(Object.entries(passingObservations.positive.centered_images).map(([phase, value]) => [phase, sha256Value(value)]));
-  assert.equal(verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", passingObservations, { expected, centered_image: passingContract }).verified, true);
+  const offCenter = structuredClone(observations);
+  offCenter.positive.settled.images[0].center_delta = 12;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", offCenter), /not centered/u);
 
-  assert.throws(
-    () => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", observations, { expected, centered_image: centeredImage }),
-    /centered image is not centered/u,
-  );
+  const wrongWidth = structuredClone(observations);
+  wrongWidth.positive.responsive.images[0].rendered_width = 99;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", wrongWidth), /image width is wrong/u);
 
-  const wrongWidth = structuredClone(passingObservations);
-  for (const snapshot of Object.values(wrongWidth.positive.centered_images)) for (const image of snapshot.images) image.rendered_width = 99;
-  const wrongWidthContract = structuredClone(passingContract);
-  wrongWidthContract.expected_snapshot_sha256.positive = Object.fromEntries(Object.entries(wrongWidth.positive.centered_images).map(([phase, value]) => [phase, sha256Value(value)]));
-  assert.throws(
-    () => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", wrongWidth, { expected, centered_image: wrongWidthContract }),
-    /centered image width is wrong/u,
-  );
-
-  const stolenNegative = structuredClone(passingObservations);
-  for (const [phase, snapshot] of Object.entries(stolenNegative.negative.centered_images)) snapshot.images = centeredImageSnapshot(0, sourceUrlSha256, phase === "responsive" ? responsiveViewport : undefined).images;
-  const stolenNegativeContract = structuredClone(passingContract);
-  stolenNegativeContract.expected_snapshot_sha256.negative = Object.fromEntries(Object.entries(stolenNegative.negative.centered_images).map(([phase, value]) => [phase, sha256Value(value)]));
-  assert.throws(
-    () => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", stolenNegative, { expected, centered_image: stolenNegativeContract }),
-    /negative whitespace control acquired image ownership/u,
-  );
+  const stolenNegative = structuredClone(observations);
+  stolenNegative.negative.settled.images = [image()];
+  assert.throws(() => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", stolenNegative), /negative whitespace control acquired image ownership/u);
 });

@@ -98,6 +98,7 @@ function publicResponse(response) {
   return {
     status: response.status,
     content_type: response.headers["content-type"] ?? null,
+    location: response.headers.location ?? null,
     etag: response.headers.etag ?? null,
     content_length: response.headers["content-length"] ?? null,
     body_size: response.body.length,

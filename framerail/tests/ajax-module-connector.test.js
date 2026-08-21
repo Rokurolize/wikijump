@@ -296,6 +296,40 @@ test("dispatches only the observed MembersListModule read shape", async () => {
   assert.deepEqual(failedBody.jsInclude, [])
 })
 
+test("returns the frozen UserInfo no-target error for the observed empty identity shape", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "profile/UserInfoModule",
+      user_id: "",
+      callbackIndex: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages")
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, '<div class="error-block">No user specified.</div>')
+  assert.equal(body.callbackIndex, null)
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(body.cssInclude, [])
+  assert.deepEqual(body.jsInclude, [])
+
+  for (const form of [
+    { moduleName: "profile/UserInfoModule", user_id: "1", callbackIndex: "1" },
+    { moduleName: "profile/UserInfoModule", user_id: "", callbackIndex: "1", extra: "1" }
+  ]) {
+    const unsupported = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages")
+    })
+    assert.equal((await unsupported.json()).status, "not_ok")
+  }
+})
+
 test("accepts the wikidot.py MembersList default and applies Wikidot joined order", async () => {
   let received
   const response = await handleAjaxModuleConnectorRequest(

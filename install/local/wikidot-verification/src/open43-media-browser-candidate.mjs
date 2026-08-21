@@ -6,8 +6,6 @@ import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution
 import { requireNonEmptyString, requirePlainObject, requireSha256, sha256Value } from "./standing-browser-parity-util.mjs";
 
 const AUDIT = JSON.parse(fs.readFileSync(new URL("../../../../docs/development/open43-m-closure-audit.json", import.meta.url), "utf8"));
-// Issue 1042 has a dedicated provider case set (open43-embedvideo-browser),
-// so M1042_BROWSER_LIFECYCLE is excluded here to keep one owner per case ID.
 const MEDIA_ISSUES = new Set([756, 776, 806, 1039, 1043, 1062]);
 const AUDIT_ROWS = AUDIT.issues
   .filter(({ issue }) => MEDIA_ISSUES.has(issue))
@@ -15,375 +13,612 @@ const AUDIT_ROWS = AUDIT.issues
   .filter(({ classification, next_command_ids }) => classification === "candidate_required" && next_command_ids.includes("C_MEDIA_BROWSER_CANDIDATE"));
 
 export const OPEN43_MEDIA_BROWSER_CASE_IDS = Object.freeze(AUDIT_ROWS.map(({ case_id }) => case_id));
-if (new Set(OPEN43_MEDIA_BROWSER_CASE_IDS).size !== OPEN43_MEDIA_BROWSER_CASE_IDS.length || OPEN43_MEDIA_BROWSER_CASE_IDS.length === 0) throw new Error("Open43 media browser audit denominator is not unique and non-empty");
+if (JSON.stringify(OPEN43_MEDIA_BROWSER_CASE_IDS) !== JSON.stringify([
+  "M756_BROWSER_CACHE_TRANSITIONS",
+  "M776_BROWSER_GEOMETRY_AND_NETWORK",
+  "M806_BROWSER_GEOMETRY_AND_NETWORK",
+  "M1043_BROWSER_RENDER_AND_VIEWER",
+  "M1062_BROWSER_UPLOAD_FLOW",
+])) throw new Error("Open43 media browser audit denominator drifted");
 
 const SITE_SLUG = "scpaiueouiuiuiui";
-const SHA256 = /^[0-9a-f]{64}$/u;
-const ISSUE_806_CASE_ID = "M806_BROWSER_GEOMETRY_AND_NETWORK";
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
+const RESPONSIVE_VIEWPORT = Object.freeze({ width: 479, height: 900 });
 const MAX_CENTER_DELTA = 0.5;
+const INITIAL_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
+const SECOND_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
+const EVIDENCE_BY_CASE = Object.freeze({
+  M756_BROWSER_CACHE_TRANSITIONS: "E_ICON_OBSERVATIONS",
+  M776_BROWSER_GEOMETRY_AND_NETWORK: "E_G06",
+  M806_BROWSER_GEOMETRY_AND_NETWORK: "E_G61",
+  M1043_BROWSER_RENDER_AND_VIEWER: "E_FOCUSED_CORPUS",
+  M1062_BROWSER_UPLOAD_FLOW: "E_UPLOAD_HISTORICAL_FAILURE",
+});
 
-function object(value, name) { return requirePlainObject(value, name); }
-function sha256(value) { return createHash("sha256").update(value).digest("hex"); }
+const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const object = (value, name) => requirePlainObject(value, name);
 
-function fixtureId(value, name) {
-  const id = requireNonEmptyString(value, name);
-  if (!/^[A-Z][A-Z0-9_]+$/u.test(id)) throw new Error(`${name} is invalid`);
-  return id;
-}
-
-function hashes(value, name, { required = true } = {}) {
-  if (!Array.isArray(value) || (required && value.length === 0) || value.some((item) => !SHA256.test(item))) throw new Error(`${name} must contain SHA-256 values`);
-  return Object.freeze([...value]);
-}
-
-function intervalExpectation(value, name) {
-  const expected = object(value, name);
-  const phase = (phaseName) => {
-    const phaseValue = object(expected[phaseName], `${name}.${phaseName}`);
-    for (const field of ["iframe_count", "focusable_iframe_count"]) if (!Number.isSafeInteger(phaseValue[field]) || phaseValue[field] < 0) throw new Error(`${name}.${phaseName}.${field} is invalid`);
-    if (typeof phaseValue.active_element !== "string") throw new Error(`${name}.${phaseName}.active_element is invalid`);
-    requireSha256(phaseValue.dom_signature_sha256, `${name}.${phaseName}.dom_signature_sha256`);
-    return Object.freeze({ iframe_count: phaseValue.iframe_count, focusable_iframe_count: phaseValue.focusable_iframe_count, active_element: phaseValue.active_element, dom_signature_sha256: phaseValue.dom_signature_sha256 });
-  };
+function evidenceRegistryEntry(evidenceId) {
+  const entry = object(AUDIT.evidence_registry?.[evidenceId], `${evidenceId} audit evidence`);
   return Object.freeze({
-    initial: phase("initial"),
-    settled: phase("settled"),
-    csp_header_sha256: requireSha256(expected.csp_header_sha256, `${name}.csp_header_sha256`),
-    required_request_url_sha256: hashes(expected.required_request_url_sha256, `${name}.required_request_url_sha256`),
-    forbidden_request_url_sha256: hashes(expected.forbidden_request_url_sha256, `${name}.forbidden_request_url_sha256`, { required: false }),
-  });
-}
-
-function viewport(value, name) {
-  const result = object(value, name);
-  if (!Number.isSafeInteger(result.width) || result.width <= 0 || !Number.isSafeInteger(result.height) || result.height <= 0) throw new Error(`${name} is invalid`);
-  return Object.freeze({ width: result.width, height: result.height });
-}
-
-function phaseHashes(value, name) {
-  const hashes = object(value, name);
-  return Object.freeze(Object.fromEntries(["initial", "settled", "responsive"].map((phase) => [phase, requireSha256(hashes[phase], `${name}.${phase}`)])));
-}
-
-function centeredImageContract(value, name) {
-  const contract = object(value, name);
-  const responsiveViewport = viewport(contract.responsive_viewport, `${name}.responsive_viewport`);
-  if (responsiveViewport.width > 767) throw new Error(`${name}.responsive_viewport must exercise the narrow layout`);
-  for (const field of ["rendered_width", "natural_width", "natural_height"]) if (!Number.isFinite(contract[field]) || contract[field] <= 0) throw new Error(`${name}.${field} is invalid`);
-  const clickTarget = contract.click_target_url_sha256;
-  if (clickTarget !== null) requireSha256(clickTarget, `${name}.click_target_url_sha256`);
-  const expected = object(contract.expected_snapshot_sha256, `${name}.expected_snapshot_sha256`);
-  return Object.freeze({
-    responsive_viewport: responsiveViewport,
-    width_attribute: requireNonEmptyString(contract.width_attribute, `${name}.width_attribute`),
-    computed_width: requireNonEmptyString(contract.computed_width, `${name}.computed_width`),
-    rendered_width: contract.rendered_width,
-    natural_width: contract.natural_width,
-    natural_height: contract.natural_height,
-    source_url_sha256: requireSha256(contract.source_url_sha256, `${name}.source_url_sha256`),
-    click_target_url_sha256: clickTarget,
-    expected_snapshot_sha256: Object.freeze({
-      positive: phaseHashes(expected.positive, `${name}.expected_snapshot_sha256.positive`),
-      negative: phaseHashes(expected.negative, `${name}.expected_snapshot_sha256.negative`),
-    }),
+    evidence_id: evidenceId,
+    path: requireNonEmptyString(entry.path, `${evidenceId}.path`),
+    sha256: requireSha256(entry.sha256, `${evidenceId}.sha256`),
   });
 }
 
 function mediaBrowserInput(rawInput) {
-  const browser = object(object(rawInput, "private candidate case input").media_browser, "private input media_browser");
+  const input = object(rawInput, "private candidate case input");
+  const browser = object(input.media_browser, "private input media_browser");
   if (!Array.isArray(browser.cases) || browser.cases.length !== OPEN43_MEDIA_BROWSER_CASE_IDS.length) throw new Error("private input media_browser.cases does not match the audit denominator");
-  const byId = new Map(browser.cases.map((value) => [value?.case_id, value]));
-  if (JSON.stringify([...byId.keys()]) !== JSON.stringify(OPEN43_MEDIA_BROWSER_CASE_IDS)) throw new Error("private input media_browser.cases must follow the audit denominator exactly");
-  return Object.freeze(OPEN43_MEDIA_BROWSER_CASE_IDS.map((caseId) => {
-    const value = object(byId.get(caseId), `${caseId} private fixture`);
-    return Object.freeze({
-      case_id: caseId,
-      positive_source: requireNonEmptyString(value.positive_source, `${caseId}.positive_source`),
-      negative_source: requireNonEmptyString(value.negative_source, `${caseId}.negative_source`),
-      capture_contract: object(value.capture_contract, `${caseId}.capture_contract`),
-      expected: Object.freeze({ positive: intervalExpectation(value.expected?.positive, `${caseId}.expected.positive`), negative: intervalExpectation(value.expected?.negative, `${caseId}.expected.negative`) }),
-      centered_image: caseId === ISSUE_806_CASE_ID ? centeredImageContract(value.centered_image, `${caseId}.centered_image`) : null,
-    });
+  const actualIds = browser.cases.map(({ case_id }) => case_id);
+  if (JSON.stringify(actualIds) !== JSON.stringify(OPEN43_MEDIA_BROWSER_CASE_IDS)) throw new Error("private input media_browser.cases must follow the audit denominator exactly");
+  return Object.freeze(browser.cases.map((row) => {
+    const expectedEvidence = evidenceRegistryEntry(EVIDENCE_BY_CASE[row.case_id]);
+    const evidence = object(row.evidence, `${row.case_id}.evidence`);
+    if (evidence.evidence_id !== expectedEvidence.evidence_id || evidence.path !== expectedEvidence.path || evidence.sha256 !== expectedEvidence.sha256) throw new Error(`${row.case_id} private evidence identity does not match the audit registry`);
+    const bytes = fs.readFileSync(expectedEvidence.path);
+    if (sha256(bytes) !== expectedEvidence.sha256) throw new Error(`${row.case_id} frozen evidence SHA-256 does not match`);
+    return Object.freeze({ case_id: row.case_id, evidence: expectedEvidence });
   }));
 }
 
-function focusSnapshot() {
-  const frames = [...document.querySelectorAll("iframe")];
+function editorStorageState(session) {
   return {
-    active_element: document.activeElement?.id ? `#${document.activeElement.id}` : document.activeElement?.localName ?? "",
-    iframe_count: frames.length,
-    focusable_iframe_count: frames.filter((frame) => frame.tabIndex >= 0).length,
+    cookies: [{
+      name: "wikijump_token",
+      value: session.editorSessionToken,
+      url: session.pageOrigin,
+      httpOnly: true,
+      secure: true,
+      sameSite: "Lax",
+    }],
+    origins: [],
   };
 }
 
-function cspViolationProbe() {
-  const target = globalThis;
-  target.__open43CspViolations = [];
-  addEventListener("securitypolicyviolation", (event) => {
-    target.__open43CspViolations.push({ blockedURI: event.blockedURI, effectiveDirective: event.effectiveDirective, violatedDirective: event.violatedDirective, disposition: event.disposition });
+function candidateUrl(origin, slug) {
+  return new URL(`/${encodeURIComponent(slug)}`, origin).href;
+}
+
+function candidateOwnedUrl(value) {
+  const url = new URL(value);
+  return url.hostname.endsWith(".wikijump.localhost") || url.hostname.endsWith(".wjfiles.localhost");
+}
+
+function attachDiagnostics(page) {
+  const state = { requests: [], failures: [], console_errors: [], page_errors: [], csp_violations: [] };
+  page.on("request", (request) => state.requests.push({ method: request.method(), resource_type: request.resourceType(), url: request.url() }));
+  page.on("requestfailed", (request) => state.failures.push({ url: request.url(), error: request.failure()?.errorText ?? null }));
+  page.on("console", (message) => { if (message.type() === "error") state.console_errors.push(sha256(message.text())); });
+  page.on("pageerror", (error) => state.page_errors.push(sha256(error.message)));
+  return state;
+}
+
+async function installCspProbe(page) {
+  await page.addInitScript(() => {
+    globalThis.__open43MediaCspViolations = [];
+    addEventListener("securitypolicyviolation", (event) => globalThis.__open43MediaCspViolations.push({
+      blocked_uri: event.blockedURI,
+      directive: event.effectiveDirective,
+      disposition: event.disposition,
+    }));
   });
 }
 
-function imageLifecycleProbe() {
-  globalThis.__open43ImageEvents = [];
-  for (const type of ["load", "error"]) addEventListener(type, (event) => {
-    const image = event.target;
-    if (image instanceof HTMLImageElement && image.closest("#page-content")) globalThis.__open43ImageEvents.push({ type, source_url: image.currentSrc || image.src });
-  }, true);
+async function finishDiagnostics(page, diagnostics) {
+  diagnostics.csp_violations = await page.evaluate(() => globalThis.__open43MediaCspViolations ?? []).catch(() => []);
+  return {
+    candidate_requests: diagnostics.requests.filter(({ url }) => candidateOwnedUrl(url)).map(({ method, resource_type, url }) => ({ method, resource_type, pathname: new URL(url).pathname, url_sha256: sha256(url) })),
+    candidate_failures: diagnostics.failures.filter(({ url }) => candidateOwnedUrl(url)).map(({ url, error }) => ({ pathname: new URL(url).pathname, error })),
+    console_errors: [...diagnostics.console_errors],
+    page_errors: [...diagnostics.page_errors],
+    csp_violations: diagnostics.csp_violations,
+  };
 }
 
-function centeredImageSnapshot() {
-  const images = [...document.querySelectorAll("#page-content .image-container.aligncenter > img.image")];
+function mediaImageSnapshot() {
+  const images = [...document.querySelectorAll("#page-content img.image")];
   return {
     viewport: { width: innerWidth, height: innerHeight },
     images: images.map((image) => {
-      const imageRect = image.getBoundingClientRect();
-      const containerRect = image.parentElement.getBoundingClientRect();
-      const clickTarget = image.closest("a");
+      const rect = image.getBoundingClientRect();
+      const container = image.closest(".image-container");
+      const containerRect = container?.getBoundingClientRect();
+      const link = image.closest("a");
       return {
+        container_class: container?.className ?? null,
         complete: image.complete,
         natural_width: image.naturalWidth,
         natural_height: image.naturalHeight,
         width_attribute: image.getAttribute("width"),
         computed_width: getComputedStyle(image).width,
-        rendered_width: imageRect.width,
-        rendered_height: imageRect.height,
-        center_delta: Math.abs((imageRect.left + imageRect.width / 2) - (containerRect.left + containerRect.width / 2)),
+        rendered_width: Math.round(rect.width * 100) / 100,
+        rendered_height: Math.round(rect.height * 100) / 100,
+        center_delta: containerRect ? Math.round(Math.abs((rect.left + rect.width / 2) - (containerRect.left + containerRect.width / 2)) * 100) / 100 : null,
         source_url: image.currentSrc || image.src,
-        click_target: clickTarget?.localName ?? null,
-        click_target_url: clickTarget?.href ?? null,
-        click_target_target: clickTarget?.target ?? null,
+        click_target_url: link?.href ?? null,
       };
     }),
-    events: globalThis.__open43ImageEvents ?? [],
   };
 }
 
-function publicCenteredImageSnapshot(value) {
-  const snapshot = object(value, "centered image browser snapshot");
-  return {
-    viewport: snapshot.viewport,
-    images: snapshot.images.map(({ source_url, click_target_url, ...image }) => ({
-      ...image,
-      source_url_sha256: sha256(source_url),
-      click_target_url_sha256: click_target_url === null ? null : sha256(click_target_url),
-    })),
-    events: snapshot.events.map(({ type, source_url }) => ({ type, source_url_sha256: sha256(source_url) })),
-  };
-}
-
-function observedUrl(value) {
-  const url = new URL(value);
-  return { origin: url.origin, pathname: url.pathname, url_sha256: sha256(url.href) };
-}
-
-function domSignatureHash(documentObservation) {
-  return sha256Value({ dom_signatures: documentObservation.dom_signatures, attribute_signatures: documentObservation.attribute_signatures });
-}
-
-async function captureInterval({ browser, pageOrigin, fixture, page, label, index, contract, centeredImage }) {
-  const network = [];
-  const consoleMessages = [];
-  const pageErrors = [];
-  let cspHeader = null;
-  let resolveDOMContentLoaded;
-  let rejectDOMContentLoaded;
-  const domContentLoaded = new Promise((resolve, reject) => {
-    resolveDOMContentLoaded = resolve;
-    rejectDOMContentLoaded = reject;
-  });
-  page.on("request", (request) => network.push({ event: "request", method: request.method(), resource_type: request.resourceType(), url: observedUrl(request.url()) }));
-  page.on("response", (response) => network.push({ event: "response", status: response.status(), resource_type: response.request().resourceType(), url: observedUrl(response.url()) }));
-  page.on("requestfailed", (request) => network.push({ event: "requestfailed", failure: request.failure()?.errorText ?? null, resource_type: request.resourceType(), url: observedUrl(request.url()) }));
-  page.on("console", (message) => consoleMessages.push({ type: message.type(), text_sha256: sha256(message.text()) }));
-  page.on("pageerror", (error) => pageErrors.push(sha256(error.message)));
-  page.once("domcontentloaded", () => Promise.all([
-    page.evaluate(focusSnapshot),
-    centeredImage === null ? null : page.evaluate(centeredImageSnapshot),
-  ]).then(resolveDOMContentLoaded, rejectDOMContentLoaded));
+async function observeImagePage(browser, session, slug, expectedImageCount) {
+  const owned = await browser.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
+  const page = await owned.context.newPage();
+  const diagnostics = attachDiagnostics(page);
+  await installCspProbe(page);
+  const url = candidateUrl(session.pageOrigin, slug);
   try {
-    await page.addInitScript(cspViolationProbe);
-    if (centeredImage !== null) await page.addInitScript(imageLifecycleProbe);
-    const url = new URL(`/${encodeURIComponent(fixture.slug)}`, pageOrigin).href;
-    const capture = await browser.captureCandidateObservation({
-      context: page.context(), page, url, label, index, contract, viewport: DEFAULT_VIEWPORT, timeoutMs: 300_000, settleMs: 0,
-      navigate: async ({ page: targetPage, url: targetUrl, timeoutMs }) => {
-        const response = await targetPage.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
-        cspHeader = response?.headers()["content-security-policy"] ?? null;
-        return response;
-      },
-      onPhase: (phase) => browser.setActiveFixture(fixtureId(`${label.toUpperCase().replaceAll("-", "_")}_${phase === "settled" ? "SETTLED" : "INITIAL"}`, "fixture")),
-    });
-    if (capture.capture_error) throw new Error(`${label} did not reach a DOMContentLoaded capture`);
-    const [immediateFocus, initialCenteredImages] = await domContentLoaded;
-    const settledFocus = await page.evaluate(focusSnapshot);
-    const cspViolations = await page.evaluate(() => globalThis.__open43CspViolations ?? []);
-    let centeredImages = null;
-    if (centeredImage !== null) {
-      const settled = await page.evaluate(centeredImageSnapshot);
-      await page.setViewportSize(centeredImage.responsive_viewport);
-      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      centeredImages = {
-        initial: publicCenteredImageSnapshot(initialCenteredImages),
-        settled: publicCenteredImageSnapshot(settled),
-        responsive: publicCenteredImageSnapshot(await page.evaluate(centeredImageSnapshot)),
-      };
-    }
-    const observation = { url, capture, immediate_focus: immediateFocus, settled_focus: settledFocus, network, console: consoleMessages, page_errors: pageErrors, csp_header: cspHeader, csp_violations: cspViolations, ...(centeredImages === null ? {} : { centered_images: centeredImages }), cleanup: { page_closed: false } };
-    await page.close();
-    observation.cleanup.page_closed = true;
-    return observation;
+    const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
+    if (response?.status() !== 200 || page.url() !== url) throw new Error(`${slug} browser navigation failed`);
+    const initial = await page.evaluate(mediaImageSnapshot);
+    if (expectedImageCount > 0) await page.waitForFunction((count) => {
+      const images = [...document.querySelectorAll("#page-content img.image")];
+      return images.length === count && images.every((image) => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0);
+    }, expectedImageCount, { timeout: 300_000 });
+    const settled = await page.evaluate(mediaImageSnapshot);
+    await page.setViewportSize(RESPONSIVE_VIEWPORT);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const responsive = await page.evaluate(mediaImageSnapshot);
+    return { url, initial, settled, responsive, diagnostics: await finishDiagnostics(page, diagnostics) };
   } finally {
     await page.close().catch(() => undefined);
   }
 }
 
-function verifyInterval(value, expected, name) {
-  const observation = object(value, name);
-  const capture = object(observation.capture, `${name}.capture`);
-  if (capture.navigation_status !== 200 || capture.final_url !== observation.url) throw new Error(`${name} navigation was not a successful exact candidate navigation`);
-  const initial = object(capture.first_paint?.document, `${name}.capture.first_paint.document`);
-  const settled = object(capture.document, `${name}.capture.document`);
-  if (initial.phase !== "domcontentloaded_immediate_observation" || settled.phase !== "settled" || settled.resource_completion?.status !== "complete") throw new Error(`${name} did not record the required initial and settled intervals`);
-  for (const [actual, plan, phase] of [[initial, expected.initial, "initial"], [settled, expected.settled, "settled"]]) {
-    const focus = object(phase === "initial" ? observation.immediate_focus : observation.settled_focus, `${name}.${phase}_focus`);
-    if (focus.iframe_count !== plan.iframe_count || focus.focusable_iframe_count !== plan.focusable_iframe_count || focus.active_element !== plan.active_element || domSignatureHash(actual) !== plan.dom_signature_sha256) throw new Error(`${name} ${phase} DOM or focus contract did not match the sealed expectation`);
-  }
-  if (sha256(String(observation.csp_header ?? "")) !== expected.csp_header_sha256 || !Array.isArray(observation.csp_violations) || observation.csp_violations.length !== 0) throw new Error(`${name} CSP header or violation contract did not match`);
-  if (!Array.isArray(observation.console) || observation.console.length !== 0 || !Array.isArray(observation.page_errors) || observation.page_errors.length !== 0) throw new Error(`${name} emitted console or page errors`);
-  if (!Array.isArray(capture.failures) || capture.failures.length !== 0 || !Array.isArray(capture.request_gate_aborts) || capture.request_gate_aborts.length !== 0) throw new Error(`${name} recorded failed or gate-aborted network requests`);
-  const requestHashes = new Set(observation.network.map((event) => event?.url?.url_sha256).filter((value) => typeof value === "string"));
-  for (const required of expected.required_request_url_sha256) if (!requestHashes.has(required)) throw new Error(`${name} omitted a required network request`);
-  for (const forbidden of expected.forbidden_request_url_sha256) if (requestHashes.has(forbidden)) throw new Error(`${name} made a forbidden boundary request`);
-  if (observation.cleanup?.page_closed !== true) throw new Error(`${name} cleanup did not close the page`);
-  return { navigation_status: capture.navigation_status, initial_dom_signature_sha256: domSignatureHash(initial), settled_dom_signature_sha256: domSignatureHash(settled), csp_header_sha256: expected.csp_header_sha256, required_request_url_sha256: expected.required_request_url_sha256, forbidden_request_url_sha256: expected.forbidden_request_url_sha256 };
-}
-
-function verifyIssue806CenteredImages(observations, contract, positive, negative) {
-  const expected = centeredImageContract(contract, `${ISSUE_806_CASE_ID}.centered_image`);
-  const phases = ["initial", "settled", "responsive"];
-  const snapshots = Object.fromEntries(["positive", "negative"].map((side) => {
-    const centered = object(object(observations[side], `${ISSUE_806_CASE_ID}.${side}`).centered_images, `${ISSUE_806_CASE_ID}.${side}.centered_images`);
-    return [side, Object.fromEntries(phases.map((phase) => {
-      const snapshot = object(centered[phase], `${ISSUE_806_CASE_ID}.${side}.${phase}`);
-      if (sha256Value(snapshot) !== expected.expected_snapshot_sha256[side][phase]) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} centered-image snapshot differs from its sealed expectation`);
-      return [phase, snapshot];
-    }))];
-  }));
-
-  for (const side of ["positive", "negative"]) for (const phase of phases) {
-    const snapshot = snapshots[side][phase];
-    const plannedViewport = phase === "responsive" ? expected.responsive_viewport : DEFAULT_VIEWPORT;
-    if (snapshot.viewport?.width !== plannedViewport.width || snapshot.viewport?.height !== plannedViewport.height || !Array.isArray(snapshot.images) || !Array.isArray(snapshot.events)) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} viewport or image observation is invalid`);
-    if (snapshot.events.some(({ type, source_url_sha256 }) => !["load", "error"].includes(type) || !SHA256.test(source_url_sha256))) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} image lifecycle observation is invalid`);
-    if (snapshot.events.some(({ type }) => type === "error")) throw new Error(`${ISSUE_806_CASE_ID} ${side} ${phase} observed an image load error`);
-  }
-
-  for (const phase of phases) {
-    const snapshot = snapshots.positive[phase];
-    if (snapshot.images.length !== 2) throw new Error(`${ISSUE_806_CASE_ID} ${phase} did not render both centered whitespace variants`);
-    for (const image of snapshot.images) {
-      if (typeof image.complete !== "boolean" || !Number.isSafeInteger(image.natural_width) || image.natural_width < 0 || !Number.isSafeInteger(image.natural_height) || image.natural_height < 0) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image load state is invalid`);
-      if (image.width_attribute !== expected.width_attribute || image.computed_width !== expected.computed_width || image.rendered_width !== expected.rendered_width) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image width is wrong`);
-      if (!Number.isFinite(image.center_delta) || image.center_delta > MAX_CENTER_DELTA) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image is not centered`);
-      if (image.source_url_sha256 !== expected.source_url_sha256) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image source identity is wrong`);
-      if (image.click_target_url_sha256 !== expected.click_target_url_sha256 || (expected.click_target_url_sha256 === null ? image.click_target !== null : image.click_target !== "a")) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image click target is wrong`);
-      if (phase !== "initial" && (image.complete !== true || image.natural_width !== expected.natural_width || image.natural_height !== expected.natural_height)) throw new Error(`${ISSUE_806_CASE_ID} ${phase} centered image load state or natural dimensions are wrong`);
-    }
-  }
-  for (const phase of phases) if (snapshots.negative[phase].images.length !== 0) throw new Error(`${ISSUE_806_CASE_ID} ${phase} negative whitespace control acquired image ownership`);
-
-  const requested = observations.positive.network.some(({ event, resource_type, url }) => event === "request" && resource_type === "image" && url?.url_sha256 === expected.source_url_sha256);
-  const forbidden = observations.negative.network.some(({ event, url }) => event === "request" && url?.url_sha256 === expected.source_url_sha256);
-  if (!requested || forbidden || !positive.required_request_url_sha256.includes(expected.source_url_sha256) || !negative.forbidden_request_url_sha256.includes(expected.source_url_sha256)) throw new Error(`${ISSUE_806_CASE_ID} exact image request boundary is wrong`);
-
+function lightboxSnapshot() {
+  const visible = (selector) => {
+    const element = document.querySelector(selector);
+    if (!(element instanceof HTMLElement)) return false;
+    const style = getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+  };
+  const image = document.querySelector("#lightbox-image");
   return {
-    responsive_viewport: expected.responsive_viewport,
-    positive_snapshot_sha256: Object.fromEntries(phases.map((phase) => [phase, sha256Value(snapshots.positive[phase])])),
-    negative_snapshot_sha256: Object.fromEntries(phases.map((phase) => [phase, sha256Value(snapshots.negative[phase])])),
+    overlay_count: document.querySelectorAll("#jquery-overlay").length,
+    lightbox_count: document.querySelectorAll("#jquery-lightbox").length,
+    loading_visible: visible("#lightbox-loading"),
+    image_visible: visible("#lightbox-image"),
+    previous_visible: visible("#lightbox-nav-btnPrev"),
+    next_visible: visible("#lightbox-nav-btnNext"),
+    current_number: document.querySelector("#lightbox-image-details-currentNumber")?.textContent?.trim() ?? "",
+    image_url: image instanceof HTMLImageElement ? image.currentSrc || image.src : null,
+    active_element: document.activeElement instanceof HTMLElement ? (document.activeElement.id || document.activeElement.localName) : "",
   };
 }
 
-export function verifyOpen43MediaBrowserCase(caseId, observations, plan) {
-  const value = object(observations, `${caseId} observations`);
-  const expected = object(plan.expected, `${caseId} plan.expected`);
-  const positive = verifyInterval(value.positive, expected.positive, `${caseId}.positive`);
-  const negative = verifyInterval(value.negative, expected.negative, `${caseId}.negative`);
-  if (negative.forbidden_request_url_sha256.length === 0) throw new Error(`${caseId} has no negative boundary request set`);
-  const centeredImage = caseId === ISSUE_806_CASE_ID ? verifyIssue806CenteredImages(value, plan.centered_image, positive, negative) : null;
-  return { verified: true, positive, negative, ...(centeredImage === null ? {} : { centered_image: centeredImage }), negative_boundary_verified: true };
+function iconSnapshot() {
+  const favicon = document.querySelector('link[rel="shortcut icon"], link[rel="icon"]');
+  return {
+    href: favicon instanceof HTMLLinkElement ? favicon.href : null,
+    pathname: favicon instanceof HTMLLinkElement ? new URL(favicon.href).pathname : null,
+    document_token: globalThis.__open43MediaDocumentToken ?? null,
+  };
 }
 
 class Open43MediaBrowserRun {
   #session;
   #browser;
   #resources;
-  #casePlans;
   #runId;
+  #casePlans;
   #siteId = null;
   #pages = [];
+  #siteIconsBefore = null;
 
-  constructor({ session, browser, resources, casePlans, runId }) {
+  constructor({ session, browser, resources, runId, casePlans }) {
     this.#session = session;
     this.#browser = browser;
     this.#resources = resources;
-    this.#casePlans = casePlans;
     this.#runId = runId;
+    this.#casePlans = casePlans;
   }
 
-  async #pageCreate(casePlan, side, index) {
-    const suffix = this.#runId.slice("candidate-run-".length);
-    const slug = `open43-media-browser-${suffix}-${index}-${side}`;
-    const marker = `candidate-case-owner:${slug}`;
-    const page = await this.#session.rpc("page_create", { site_id: this.#siteId, slug, title: marker, alt_title: null, wikitext: side === "positive" ? casePlan.positive_source : casePlan.negative_source, layout: "wikidot", user_id: this.#session.editorUserId, ip_address: "127.0.0.1", tags: [], revision_comments: "Open43 media browser candidate fixture" });
-    if (!Number.isSafeInteger(page?.page_id) || page.slug !== slug) throw new Error(`${casePlan.case_id} ${side} fixture page identity is missing`);
-    const publicPage = await this.#session.rpc("page_get", { site_id: this.#siteId, page: slug, details: { wikitext: true, compiled: false } });
-    if (publicPage?.page_id !== page.page_id || publicPage.slug !== slug || publicPage.title !== marker) throw new Error(`${casePlan.case_id} ${side} fixture page is not publicly readable`);
+  async #rpc(method, params = {}, { cleanup = false } = {}) {
+    return await this.#session.rpc(method, params, { siteId: this.#siteId ?? undefined, cleanup });
+  }
+
+  async #createPage(suffix, source, { title = null } = {}) {
+    const runSuffix = this.#runId.slice("candidate-run-".length);
+    const slug = `open43-media-browser-${runSuffix}-${suffix}`;
+    const marker = title ?? `candidate-case-owner:${slug}`;
+    if (await this.#rpc("page_get", { site_id: this.#siteId, page: slug, details: { wikitext: false, compiled: false } })) throw new Error(`${slug} namespace already exists`);
+    const page = await this.#rpc("page_create", {
+      site_id: this.#siteId,
+      slug,
+      title: marker,
+      alt_title: null,
+      wikitext: source,
+      layout: "wikidot",
+      user_id: this.#session.editorUserId,
+      ip_address: "127.0.0.1",
+      tags: [],
+      revision_comments: "Open43 media browser candidate fixture",
+    });
+    if (!Number.isSafeInteger(page?.page_id) || !Number.isSafeInteger(page?.revision_id) || page.slug !== slug) throw new Error(`${slug} page identity is missing`);
     const resource = this.#resources.register("page", { page_id: page.page_id, slug, marker });
-    const fixture = { page_id: page.page_id, revision_id: page.revision_id, slug, marker, resource };
-    this.#pages.push(fixture);
-    return fixture;
+    const owned = { page_id: page.page_id, revision_id: page.revision_id, slug, marker, resource };
+    this.#pages.push(owned);
+    return owned;
+  }
+
+  async #editPage(page, source) {
+    const current = await this.#rpc("page_get", { site_id: this.#siteId, page: page.slug, details: { wikitext: true, compiled: false } });
+    const edited = await this.#rpc("page_edit", {
+      site_id: this.#siteId,
+      page: page.page_id,
+      last_revision_id: current.revision_id,
+      revision_comments: "Open43 media browser source fixture",
+      user_id: this.#session.editorUserId,
+      wikitext: source,
+      ip_address: "127.0.0.1",
+    });
+    page.revision_id = edited.revision_id;
+    return edited;
+  }
+
+  async #upload(page, name, bytes) {
+    const current = await this.#rpc("page_get", { site_id: this.#siteId, page: page.slug, details: { wikitext: false, compiled: false } });
+    const action = await this.#session.multipartFileAction(page.slug, {
+      siteId: this.#siteId,
+      pageId: page.page_id,
+      lastRevisionId: current.revision_id,
+      name,
+      comments: "Open43 media browser fixture upload",
+    }, { name, mime: "image/png", bytes });
+    let result;
+    try { result = JSON.parse(action.response_body); } catch { throw new Error(`${name} upload returned non-JSON`); }
+    if (action.http_status !== 200 || result?.type !== "success") throw new Error(`${name} candidate upload failed`);
+    const inventory = await this.#rpc("page_get_files", { site_id: this.#siteId, page_id: page.page_id, deleted: false });
+    const row = inventory.find((candidate) => candidate.name === name);
+    if (!Number.isSafeInteger(row?.file_id) || !Number.isSafeInteger(row?.revision_id) || row.size !== bytes.length) throw new Error(`${name} public file identity is missing`);
+    return row;
+  }
+
+  async #setFaviconSource(source) {
+    const site = await this.#rpc("site_get", { site: SITE_SLUG });
+    if (!Number.isSafeInteger(site?.settings_revision)) throw new Error("media browser site settings revision is missing");
+    this.#siteIconsBefore ??= { favicon_source: site.favicon_source ?? null, ios_icon_source: site.ios_icon_source ?? null, windows_tile_source: site.windows_tile_source ?? null };
+    return await this.#rpc("site_update", {
+      site: this.#siteId,
+      expected_settings_revision: site.settings_revision,
+      user_id: this.#session.editorUserId,
+      favicon_source: source,
+      ios_icon_source: site.ios_icon_source ?? null,
+      windows_tile_source: site.windows_tile_source ?? null,
+      ip_address: "127.0.0.1",
+    });
+  }
+
+  async #faviconCase() {
+    const main = await this.#createPage("favicon-main", "FAVICON_BROWSER_MAIN");
+    const next = await this.#createPage("favicon-next", "FAVICON_BROWSER_NEXT");
+    await this.#editPage(main, `FAVICON_BROWSER_MAIN\n[[[${next.slug}|next]]]`);
+    await this.#upload(main, "icon-a.png", INITIAL_BYTES);
+    await this.#upload(main, "icon-b.png", SECOND_BYTES);
+    const firstSource = `/local--files/${main.slug}/icon-a.png`;
+    const secondSource = `/local--files/${main.slug}/icon-b.png`;
+    await this.#setFaviconSource(firstSource);
+
+    const owned = await this.#browser.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
+    const page = await owned.context.newPage();
+    const diagnostics = attachDiagnostics(page);
+    await installCspProbe(page);
+    try {
+      const firstUrl = candidateUrl(this.#session.pageOrigin, main.slug);
+      if ((await page.goto(firstUrl, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M756 initial navigation failed");
+      await page.evaluate(() => { globalThis.__open43MediaDocumentToken = crypto.randomUUID(); });
+      const first = await page.evaluate(iconSnapshot);
+      const firstFetch = await page.evaluate(async () => {
+        const response = await fetch("/local--favicon/favicon.gif");
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        const digest = await crypto.subtle.digest("SHA-256", bytes);
+        return { status: response.status, final_url: response.url, body_sha256: [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("") };
+      });
+
+      await this.#setFaviconSource(secondSource);
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      const reload = await page.evaluate(iconSnapshot);
+      const reloadFetch = await page.evaluate(async () => {
+        const response = await fetch("/local--favicon/favicon.gif");
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        const digest = await crypto.subtle.digest("SHA-256", bytes);
+        return { status: response.status, final_url: response.url, body_sha256: [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("") };
+      });
+      await page.evaluate(() => { globalThis.__open43MediaDocumentToken = crypto.randomUUID(); });
+      const token = (await page.evaluate(iconSnapshot)).document_token;
+      await page.locator(`#page-content a[href$="/${next.slug}"]`).click({ timeout: 300_000 });
+      await page.waitForURL(candidateUrl(this.#session.pageOrigin, next.slug), { timeout: 300_000 });
+      const client = await page.evaluate(iconSnapshot);
+      const clientFetch = await page.evaluate(async () => {
+        const response = await fetch("/local--favicon/favicon.gif");
+        const bytes = new Uint8Array(await response.arrayBuffer());
+        const digest = await crypto.subtle.digest("SHA-256", bytes);
+        return { status: response.status, final_url: response.url, body_sha256: [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("") };
+      });
+      return {
+        first_source: firstSource,
+        second_source: secondSource,
+        first,
+        first_fetch: firstFetch,
+        reload,
+        reload_fetch: reloadFetch,
+        client: { ...client, document_preserved: client.document_token === token },
+        client_fetch: clientFetch,
+        diagnostics: await finishDiagnostics(page, diagnostics),
+      };
+    } finally {
+      await page.close().catch(() => undefined);
+    }
+  }
+
+  async #imageCase(centered) {
+    const caseLabel = centered ? "m806" : "m776";
+    const filename = centered ? "center.png" : "float.png";
+    const positive = await this.#createPage(`${caseLabel}-positive`, "IMAGE_FIXTURE_PENDING");
+    const negative = await this.#createPage(`${caseLabel}-negative`, "IMAGE_FIXTURE_PENDING");
+    await this.#upload(positive, filename, INITIAL_BYTES);
+    await this.#upload(negative, filename, INITIAL_BYTES);
+    const positiveSource = centered
+      ? `[[=image ${filename} width="100px"]]\n[[=image  ${filename}  width="100px"]]`
+      : `[[f<image ${filename} width="100px" alt="G06_IMAGE_ALT"]]`;
+    const negativeSource = centered
+      ? `[[=image\u00a0${filename} width="100px"]]`
+      : `[[f=image\u00a0${filename} width="100px" alt="G06_IMAGE_ALT"]]`;
+    await this.#editPage(positive, positiveSource);
+    await this.#editPage(negative, negativeSource);
+    const positivePage = await this.#rpc("page_get", { site_id: this.#siteId, page: positive.slug, details: { wikitext: true, compiled: true } });
+    if (positivePage?.wikitext !== positiveSource || typeof positivePage.compiled_body_html !== "string") throw new Error(`${caseLabel} public compiled fixture is missing`);
+    const positiveObservation = await observeImagePage(this.#browser, this.#session, positive.slug, centered ? 2 : 1);
+    const negativeObservation = await observeImagePage(this.#browser, this.#session, negative.slug, 0);
+    return {
+      source: { positive_sha256: sha256(positiveSource), negative_sha256: sha256(negativeSource), compiled_sha256: sha256(positivePage.compiled_body_html) },
+      positive: positiveObservation,
+      negative: negativeObservation,
+      expected_file: { filename, width: 4, height: 2, byte_sha256: sha256(INITIAL_BYTES) },
+    };
+  }
+
+  async #galleryCase() {
+    const pageFixture = await this.#createPage("gallery", "GALLERY_FIXTURE_PENDING");
+    await this.#upload(pageFixture, "gallery-one.png", INITIAL_BYTES);
+    await this.#upload(pageFixture, "gallery-two.png", SECOND_BYTES);
+    const source = "[[gallery]]\n: gallery-one.png\n: gallery-two.png\n[[/gallery]]";
+    await this.#editPage(pageFixture, source);
+    const publicPage = await this.#rpc("page_get", { site_id: this.#siteId, page: pageFixture.slug, details: { wikitext: true, compiled: true } });
+    if (publicPage?.wikitext !== source || !publicPage.compiled_body_html?.includes("gallery-box")) throw new Error("M1043 public Gallery fixture is missing");
+
+    const owned = await this.#browser.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
+    const browserPage = await owned.context.newPage();
+    const diagnostics = attachDiagnostics(browserPage);
+    await installCspProbe(browserPage);
+    await browserPage.route("**/-/file/**", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      await route.continue();
+    });
+    try {
+      const url = candidateUrl(this.#session.pageOrigin, pageFixture.slug);
+      if ((await browserPage.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M1043 browser navigation failed");
+      const anchors = browserPage.locator("#page-content .gallery-box a.with-lb");
+      if (await anchors.count() !== 2) throw new Error("M1043 Gallery did not render two viewer anchors");
+      const staticState = await anchors.evaluateAll((nodes) => nodes.map((node) => ({ href: node.href, image_src: node.querySelector("img")?.src ?? null })));
+      await anchors.first().click({ timeout: 300_000 });
+      const loading = await browserPage.evaluate(lightboxSnapshot);
+      await browserPage.locator("#lightbox-image").waitFor({ state: "visible", timeout: 300_000 });
+      const first = await browserPage.evaluate(lightboxSnapshot);
+      await browserPage.keyboard.press("ArrowRight");
+      await browserPage.locator("#lightbox-image-details-currentNumber").filter({ hasText: "image 2 of 2" }).waitFor({ state: "visible", timeout: 300_000 });
+      const next = await browserPage.evaluate(lightboxSnapshot);
+      await browserPage.keyboard.press("p");
+      await browserPage.locator("#lightbox-image-details-currentNumber").filter({ hasText: "image 1 of 2" }).waitFor({ state: "visible", timeout: 300_000 });
+      const previous = await browserPage.evaluate(lightboxSnapshot);
+      await browserPage.keyboard.press("Escape");
+      const closed = await browserPage.evaluate(lightboxSnapshot);
+      return { url, source_sha256: sha256(source), static: staticState, loading, first, next, previous, closed, diagnostics: await finishDiagnostics(browserPage, diagnostics) };
+    } finally {
+      await browserPage.close().catch(() => undefined);
+    }
+  }
+
+  async #uploadBrowserCase() {
+    const pageFixture = await this.#createPage("upload", "M1062_BROWSER_UPLOAD_FLOW");
+    const owned = await this.#browser.newCandidateContext({ storageState: editorStorageState(this.#session), viewport: DEFAULT_VIEWPORT });
+    const page = await owned.context.newPage();
+    const diagnostics = attachDiagnostics(page);
+    await installCspProbe(page);
+    const actionRequests = [];
+    page.on("request", (request) => { if (request.method() === "POST" && request.url().includes("?/fileUpload")) actionRequests.push(request.url()); });
+    try {
+      const url = candidateUrl(this.#session.pageOrigin, pageFixture.slug);
+      if ((await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 }))?.status() !== 200) throw new Error("M1062 browser navigation failed");
+      await page.locator("#files-button").click({ timeout: 300_000 });
+      await page.locator("#action-area .buttons input.btn-primary[type=button]").waitFor({ state: "visible", timeout: 300_000 });
+      await page.locator("#action-area .buttons input.btn-primary[type=button]").click();
+      const form = page.locator("#file-upload");
+      await form.waitFor({ state: "visible", timeout: 300_000 });
+      const emptyBefore = { form_visible: await form.isVisible(), file_rows: await page.locator("#action-area .file-row").count() };
+      await form.locator('input[type="submit"]').click();
+      await page.waitForTimeout(50);
+      const emptyAfter = { form_visible: await form.isVisible(), file_rows: await page.locator("#action-area .file-row").count(), action_request_count: actionRequests.length };
+
+      await form.locator('input[type="file"]').setInputFiles({ name: "browser-upload.png", mimeType: "image/png", buffer: INITIAL_BYTES });
+      const pending = { request_seen: false, form_visible: false };
+      const responsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      await form.locator('input[type="submit"]').click();
+      await page.waitForFunction(() => document.querySelector("#file-upload") !== null, null, { timeout: 300_000 }).catch(() => undefined);
+      pending.request_seen = actionRequests.length >= 1;
+      pending.form_visible = await form.isVisible().catch(() => false);
+      const actionResponse = await responsePromise;
+      if (actionResponse.status() !== 200) throw new Error("M1062 upload action returned non-200");
+      await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
+      const success = { form_visible: await form.isVisible().catch(() => false), row_count: await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).count(), action_request_count: actionRequests.length };
+
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
+      await page.locator("#files-button").click({ timeout: 300_000 });
+      await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
+      const downloadHref = await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).locator(".file-name a").getAttribute("href");
+      if (typeof downloadHref !== "string") throw new Error("M1062 browser upload row has no download link");
+      const inventory = await this.#rpc("page_get_files", { site_id: this.#siteId, page_id: pageFixture.page_id, deleted: false });
+      const row = inventory.find((file) => file.name === "browser-upload.png");
+      if (!row) throw new Error("M1062 browser upload is absent from public inventory");
+      const download = await this.#session.filesRequest(`/-/file/${pageFixture.slug}/browser-upload.png`, { actor: "editor", operation: "browser-upload-download" });
+
+      await page.locator("#action-area .buttons input.btn-primary[type=button]").click();
+      const secondForm = page.locator("#file-upload");
+      await secondForm.locator('input[type="file"]').setInputFiles({ name: "browser-double.png", mimeType: "image/png", buffer: SECOND_BYTES });
+      const beforeDouble = actionRequests.length;
+      const doubleResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      await Promise.all([
+        secondForm.locator('input[type="submit"]').click(),
+        secondForm.locator('input[type="submit"]').click().catch(() => undefined),
+      ]);
+      await doubleResponse;
+      await page.locator("#action-area .file-row").filter({ hasText: "browser-double.png" }).waitFor({ state: "visible", timeout: 300_000 });
+      const doubleInventory = await this.#rpc("page_get_files", { site_id: this.#siteId, page_id: pageFixture.page_id, deleted: false });
+      return {
+        url,
+        empty_submission: { before: emptyBefore, after: emptyAfter },
+        pending,
+        success,
+        reload: { row_count: await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).count(), download_href: downloadHref },
+        download: { status: download.status, content_type: download.content_type, body_sha256: download.body_sha256, body_size: download.body_size },
+        double_submit: { action_request_count: actionRequests.length - beforeDouble, row_count: doubleInventory.filter((file) => file.name === "browser-double.png").length },
+        diagnostics: await finishDiagnostics(page, diagnostics),
+      };
+    } finally {
+      await page.close().catch(() => undefined);
+    }
   }
 
   async execute() {
     const site = await this.#session.rpc("site_get", { site: SITE_SLUG });
     if (!Number.isSafeInteger(site?.site_id)) throw new Error(`editable candidate site ${SITE_SLUG} is missing`);
     this.#siteId = site.site_id;
-    const fixtures = await Promise.all(this.#casePlans.map(async (casePlan, index) => ({ casePlan, positive: await this.#pageCreate(casePlan, "positive", index), negative: await this.#pageCreate(casePlan, "negative", index) })));
-    const results = [];
-    for (const { casePlan, positive, negative } of fixtures) {
-      const positiveContext = await this.#browser.newCandidateContext();
-      const negativeContext = await this.#browser.newCandidateContext();
-      const positiveObservation = await captureInterval({ browser: this.#browser, pageOrigin: this.#session.pageOrigin, fixture: positive, page: await positiveContext.context.newPage(), label: `${casePlan.case_id.toLowerCase()}-positive`, index: results.length * 2, contract: casePlan.capture_contract, centeredImage: casePlan.centered_image });
-      const negativeObservation = await captureInterval({ browser: this.#browser, pageOrigin: this.#session.pageOrigin, fixture: negative, page: await negativeContext.context.newPage(), label: `${casePlan.case_id.toLowerCase()}-negative`, index: results.length * 2 + 1, contract: casePlan.capture_contract, centeredImage: casePlan.centered_image });
-      results.push({ case_id: casePlan.case_id, observations: { positive: positiveObservation, negative: negativeObservation } });
-    }
-    return results;
+    return [
+      { case_id: "M756_BROWSER_CACHE_TRANSITIONS", observations: await this.#faviconCase() },
+      { case_id: "M776_BROWSER_GEOMETRY_AND_NETWORK", observations: await this.#imageCase(false) },
+      { case_id: "M806_BROWSER_GEOMETRY_AND_NETWORK", observations: await this.#imageCase(true) },
+      { case_id: "M1043_BROWSER_RENDER_AND_VIEWER", observations: await this.#galleryCase() },
+      { case_id: "M1062_BROWSER_UPLOAD_FLOW", observations: await this.#uploadBrowserCase() },
+    ];
   }
 
   async cleanup() {
     const failures = [];
-    const pages = [];
-    for (const fixture of [...this.#pages].reverse()) {
+    if (this.#siteId !== null && this.#siteIconsBefore !== null) {
       try {
-        const current = await this.#session.rpc("page_get", { site_id: this.#siteId, page: fixture.slug, details: { wikitext: true, compiled: false } }, { cleanup: true });
-        if (current !== null && current?.page_id === fixture.page_id && current.title === fixture.marker) await this.#session.rpc("page_delete", { site_id: this.#siteId, page: fixture.page_id, last_revision_id: current.revision_id, revision_comments: "Open43 media browser candidate cleanup", user_id: this.#session.editorUserId, ip_address: "127.0.0.1" }, { cleanup: true });
-        else if (current !== null) throw new Error(`${fixture.slug} cleanup identity changed`);
-        const after = await this.#session.rpc("page_get", { site_id: this.#siteId, page: fixture.slug, details: { wikitext: false, compiled: false } }, { cleanup: true });
-        if (after !== null) throw new Error(`${fixture.slug} remained publicly visible after cleanup`);
-        this.#resources.release(fixture.resource, { page_get: null, page_slug: fixture.slug });
-        pages.push({ slug: fixture.slug, page_get: null });
+        const site = await this.#rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
+        await this.#rpc("site_update", {
+          site: this.#siteId,
+          expected_settings_revision: site.settings_revision,
+          user_id: this.#session.editorUserId,
+          ...this.#siteIconsBefore,
+          ip_address: "127.0.0.1",
+        }, { cleanup: true });
       } catch (error) { failures.push(error); }
     }
-    if (failures.length > 0) throw new AggregateError(failures, "media browser public cleanup failed");
-    return { pages, public_absence_verified: true };
+    const absent = [];
+    for (const page of [...this.#pages].reverse()) {
+      try {
+        const current = await this.#rpc("page_get", { site_id: this.#siteId, page: page.slug, details: { wikitext: false, compiled: false } }, { cleanup: true });
+        if (current?.page_id !== page.page_id) {
+          if (current !== null) throw new Error(`${page.slug} cleanup identity changed`);
+        } else {
+          const files = await this.#rpc("page_get_files", { site_id: this.#siteId, page_id: page.page_id, deleted: false }, { cleanup: true });
+          for (const file of files) await this.#rpc("file_delete", { site_id: this.#siteId, page_id: page.page_id, file: file.file_id, user_id: this.#session.editorUserId, last_revision_id: file.revision_id, revision_comments: "Open43 media browser cleanup" }, { cleanup: true });
+          const latest = await this.#rpc("page_get", { site_id: this.#siteId, page: page.slug, details: { wikitext: false, compiled: false } }, { cleanup: true });
+          await this.#rpc("page_delete", { site_id: this.#siteId, page: page.page_id, last_revision_id: latest.revision_id, revision_comments: "Open43 media browser cleanup", user_id: this.#session.editorUserId, ip_address: "127.0.0.1" }, { cleanup: true });
+        }
+        const after = await this.#rpc("page_get", { site_id: this.#siteId, page: page.slug, details: { wikitext: false, compiled: false } }, { cleanup: true });
+        if (after !== null) throw new Error(`${page.slug} remained after cleanup`);
+        this.#resources.release(page.resource, { page_get: null, slug: page.slug });
+        absent.push(page.slug);
+      } catch (error) { failures.push(error); }
+    }
+    if (failures.length > 0) throw new AggregateError(failures, "media browser cleanup failed");
+    return { public_absence_verified: true, page_count: absent.length, pages: absent };
   }
 }
 
+function cleanDiagnostics(value, name) {
+  const source = object(value, name);
+  const diagnostics = object(source.diagnostics ?? source, `${name}.diagnostics`);
+  if (!Array.isArray(diagnostics.candidate_failures) || diagnostics.candidate_failures.length !== 0) throw new Error(`${name} recorded a candidate-owned request failure`);
+  if (!Array.isArray(diagnostics.page_errors) || diagnostics.page_errors.length !== 0) throw new Error(`${name} emitted page errors`);
+  if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors`);
+  if (!Array.isArray(diagnostics.csp_violations) || diagnostics.csp_violations.some(({ blocked_uri }) => typeof blocked_uri === "string" && candidateOwnedUrl(blocked_uri))) throw new Error(`${name} violated CSP at a candidate-owned boundary`);
+  return diagnostics;
+}
+
+function imagePath(caseId, value, centered) {
+  const observation = object(value, `${caseId} observations`);
+  cleanDiagnostics(observation.positive, `${caseId}.positive`);
+  cleanDiagnostics(observation.negative, `${caseId}.negative`);
+  const positive = object(observation.positive.settled, `${caseId}.positive.settled`);
+  const responsive = object(observation.positive.responsive, `${caseId}.positive.responsive`);
+  const negative = object(observation.negative.settled, `${caseId}.negative.settled`);
+  const expectedCount = centered ? 2 : 1;
+  if (!Array.isArray(positive.images) || positive.images.length !== expectedCount || !Array.isArray(responsive.images) || responsive.images.length !== expectedCount) throw new Error(`${caseId} positive image denominator is wrong`);
+  if (!Array.isArray(negative.images) || negative.images.length !== 0) throw new Error(`${caseId} negative whitespace control acquired image ownership`);
+  const expectedFile = object(observation.expected_file, `${caseId}.expected_file`);
+  for (const [phase, snapshot] of [["settled", positive], ["responsive", responsive]]) for (const image of snapshot.images) {
+    if (image.complete !== true || image.natural_width !== expectedFile.width || image.natural_height !== expectedFile.height) throw new Error(`${caseId} ${phase} image load state or natural geometry is wrong`);
+    if (image.width_attribute !== "100px" || image.computed_width !== "100px" || Math.abs(image.rendered_width - 100) > 0.5) throw new Error(`${caseId} ${phase} image width is wrong`);
+    if (centered ? !String(image.container_class).split(/\s+/u).includes("aligncenter") : !String(image.container_class).split(/\s+/u).includes("floatleft")) throw new Error(`${caseId} ${phase} image alignment class is wrong`);
+    if (centered && (!Number.isFinite(image.center_delta) || image.center_delta > MAX_CENTER_DELTA)) throw new Error(`${caseId} ${phase} image is not centered`);
+    const source = new URL(image.source_url);
+    const target = new URL(image.click_target_url);
+    if (!source.hostname.endsWith(".wjfiles.localhost") || source.pathname !== `/local--resized-images/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}/medium.jpg`) throw new Error(`${caseId} image source route is wrong`);
+    if (!target.hostname.endsWith(".wjfiles.localhost") || target.pathname !== `/local--files/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}`) throw new Error(`${caseId} click target route is wrong`);
+  }
+  const requiredPath = `/local--resized-images/${new URL(observation.positive.url).pathname.slice(1)}/${expectedFile.filename}/medium.jpg`;
+  if (!observation.positive.diagnostics.candidate_requests.some(({ pathname }) => pathname === requiredPath)) throw new Error(`${caseId} omitted the exact image request`);
+  if (observation.negative.diagnostics.candidate_requests.some(({ pathname }) => pathname.endsWith(`/${expectedFile.filename}/medium.jpg`))) throw new Error(`${caseId} negative control requested the image`);
+  return { verified: true, natural_width: expectedFile.width, natural_height: expectedFile.height, responsive_viewport: responsive.viewport, image_request_path: requiredPath, negative_boundary_verified: true };
+}
+
+export function verifyOpen43MediaBrowserCase(caseId, observations) {
+  const value = object(observations, `${caseId} observations`);
+  if (caseId === "M756_BROWSER_CACHE_TRANSITIONS") {
+    cleanDiagnostics(value, caseId);
+    for (const field of ["first", "reload", "client"]) if (object(value[field], `${caseId}.${field}`).pathname !== "/local--favicon/favicon.gif") throw new Error(`${caseId} favicon declaration route drifted`);
+    if (value.first_fetch?.status !== 200 || value.reload_fetch?.status !== 200 || value.client_fetch?.status !== 200) throw new Error(`${caseId} favicon browser fetch failed`);
+    if (value.first_fetch.body_sha256 !== sha256(INITIAL_BYTES) || value.reload_fetch.body_sha256 !== sha256(SECOND_BYTES) || value.client_fetch.body_sha256 !== sha256(SECOND_BYTES)) throw new Error(`${caseId} stale favicon bytes survived the setting transition`);
+    if (new URL(value.first_fetch.final_url).pathname !== value.first_source || new URL(value.reload_fetch.final_url).pathname !== value.second_source || new URL(value.client_fetch.final_url).pathname !== value.second_source) throw new Error(`${caseId} favicon redirect did not follow the active setting`);
+    if (value.client.document_preserved !== true) throw new Error(`${caseId} client navigation replaced the document`);
+    return { verified: true, initial_icon_sha256: value.first_fetch.body_sha256, transitioned_icon_sha256: value.reload_fetch.body_sha256, client_navigation_preserved_document: true };
+  }
+  if (caseId === "M776_BROWSER_GEOMETRY_AND_NETWORK") return imagePath(caseId, value, false);
+  if (caseId === "M806_BROWSER_GEOMETRY_AND_NETWORK") return imagePath(caseId, value, true);
+  if (caseId === "M1043_BROWSER_RENDER_AND_VIEWER") {
+    cleanDiagnostics(value, caseId);
+    if (!Array.isArray(value.static) || value.static.length !== 2 || value.static.some(({ href, image_src }) => !new URL(href).hostname.endsWith(".wjfiles.localhost") || !new URL(image_src).hostname.endsWith(".wjfiles.localhost"))) throw new Error(`${caseId} static Gallery file identity is wrong`);
+    if (value.loading?.overlay_count !== 1 || value.loading.lightbox_count !== 1 || value.loading.loading_visible !== true || value.loading.image_visible !== false) throw new Error(`${caseId} loading interval is wrong`);
+    if (value.first?.image_visible !== true || value.first.loading_visible !== false || value.first.current_number !== "image 1 of 2" || value.first.previous_visible !== false || value.first.next_visible !== true) throw new Error(`${caseId} first viewer state is wrong`);
+    if (value.next?.current_number !== "image 2 of 2" || value.next.previous_visible !== true || value.next.next_visible !== false || value.next.image_url === value.first.image_url) throw new Error(`${caseId} next navigation state is wrong`);
+    if (value.previous?.current_number !== "image 1 of 2" || value.previous.image_url !== value.first.image_url) throw new Error(`${caseId} previous keyboard state is wrong`);
+    if (value.closed?.overlay_count !== 0 || value.closed.lightbox_count !== 0) throw new Error(`${caseId} viewer did not close`);
+    return { verified: true, viewer_loading_verified: true, navigation_verified: true, keyboard_verified: true, close_verified: true, static_anchor_count: 2 };
+  }
+  if (caseId === "M1062_BROWSER_UPLOAD_FLOW") {
+    cleanDiagnostics(value, caseId);
+    if (value.empty_submission?.before?.form_visible !== true || value.empty_submission.after?.form_visible !== true || value.empty_submission.after?.file_rows !== value.empty_submission.before.file_rows || value.empty_submission.after?.action_request_count !== 0) throw new Error(`${caseId} empty upload did not fail closed in the form`);
+    if (value.pending?.request_seen !== true || value.pending.form_visible !== true) throw new Error(`${caseId} did not expose the in-flight upload interval`);
+    if (value.success?.form_visible !== false || value.success.row_count !== 1 || value.success.action_request_count !== 1) throw new Error(`${caseId} successful upload did not refresh the file list exactly once`);
+    if (value.reload?.row_count !== 1 || typeof value.reload.download_href !== "string" || !value.reload.download_href.includes("/-/file/")) throw new Error(`${caseId} upload did not survive reload with a download route`);
+    if (value.download?.status !== 200 || value.download.body_size !== INITIAL_BYTES.length || value.download.body_sha256 !== sha256(INITIAL_BYTES)) throw new Error(`${caseId} download bytes are wrong`);
+    if (value.double_submit?.action_request_count !== 1 || value.double_submit.row_count !== 1) throw new Error(`${caseId} double submit committed or dispatched more than once`);
+    return { verified: true, empty_failure_verified: true, loading_verified: true, success_refresh_verified: true, reload_verified: true, exact_download_verified: true, double_submit_verified: true };
+  }
+  throw new Error(`unsupported Open43 media browser case: ${caseId}`);
+}
+
 function verifyCleanup(proof, resources) {
-  if (!object(proof, "media browser cleanup proof").public_absence_verified || !Array.isArray(proof.pages) || proof.pages.length !== OPEN43_MEDIA_BROWSER_CASE_IDS.length * 2 || proof.pages.some(({ page_get }) => page_get !== null) || resources.some((resource) => resource.released !== true)) throw new Error("media browser cleanup did not prove every fixture page absent");
-  return { public_absence_verified: true, page_count: proof.pages.length, resource_count: resources.length };
+  const value = object(proof, "media browser cleanup proof");
+  if (value.public_absence_verified !== true || !Number.isSafeInteger(value.page_count) || value.page_count < 1 || resources.some((resource) => resource.released !== true)) throw new Error("media browser cleanup did not prove run-owned public absence");
+  return { verified: true, public_absence_verified: true, page_count: value.page_count };
 }
 
 export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options) } = {}) {
@@ -394,17 +629,16 @@ export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (opt
       if (candidateIdentity.candidate.endpoint.host !== `${SITE_SLUG}.wikijump.localhost` || candidateIdentity.candidate.endpoint.port === 443) throw new Error(`Open43 media browser cases require the exact non-standing ${SITE_SLUG} candidate`);
       const casePlans = mediaBrowserInput(privateInput);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
-      const publicPlan = casePlans.map(({ case_id, positive_source, negative_source, capture_contract, expected, centered_image }) => ({ case_id, positive_source_sha256: sha256(positive_source), negative_source_sha256: sha256(negative_source), capture_contract, expected, ...(centered_image === null ? {} : { centered_image }) }));
-      const execution = new Open43MediaBrowserRun({ session, browser: candidateBrowserContexts, resources, casePlans, runId });
+      const execution = new Open43MediaBrowserRun({ session, browser: candidateBrowserContexts, resources, runId, casePlans });
       return Object.freeze({
-        sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "install/local/wikidot-verification/scripts/run-candidate-cases.mjs", "install/local/wikidot-verification/src/candidate-case-command.mjs", "install/local/wikidot-verification/src/candidate-case-http.mjs", "install/local/wikidot-verification/src/candidate-case-runner.mjs", "install/local/wikidot-verification/src/candidate-browser-contexts.mjs", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs", "install/local/wikidot-verification/package.json", "install/local/wikidot-verification/pnpm-lock.yaml"])]),
+        sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js", "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"])]),
         runtimeBindings: session.requiredServiceBindings,
-        privateInputIdentity: { ...session.privateInputIdentity, media_browser_cases_sha256: sha256Value(publicPlan) },
-        browserCredentialPolicy: "none",
-        plan: { schema: "wikijump.open43_media_browser_candidate_plan.v2", site_slug: SITE_SLUG, case_ids: OPEN43_MEDIA_BROWSER_CASE_IDS, case_plans: publicPlan },
+        privateInputIdentity: { ...session.privateInputIdentity, media_browser_evidence_sha256: sha256Value(casePlans) },
+        browserCredentialPolicy: "private-editor-storage-state",
+        plan: { schema: "wikijump.open43_media_browser_candidate_plan.v3", site_slug: SITE_SLUG, case_ids: OPEN43_MEDIA_BROWSER_CASE_IDS, evidence: casePlans },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase: (caseId, observations) => verifyOpen43MediaBrowserCase(caseId, observations, casePlans.find(({ case_id: candidateCaseId }) => candidateCaseId === caseId)),
+        verifyCase: (caseId, observations) => verifyOpen43MediaBrowserCase(caseId, observations),
         verifyCleanup,
       });
     },

@@ -191,7 +191,7 @@ function browserSurface(capture, firstHtml, settledHtml, requests) {
     failures: capture.failures,
     request_gate_aborts: capture.request_gate_aborts,
     requests,
-    forbidden_requests: requests.filter(forbiddenRequest),
+    forbidden_requests: requests.filter(({ url }) => forbiddenRequest(url)),
   };
 }
 

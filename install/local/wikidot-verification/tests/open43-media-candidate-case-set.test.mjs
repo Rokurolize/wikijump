@@ -102,6 +102,13 @@ async function createFakeCandidate({
 } = {}) {
   const state = {
     page: null,
+    site: {
+      site_id: 7,
+      settings_revision: 1,
+      favicon_source: null,
+      ios_icon_source: null,
+      windows_tile_source: null,
+    },
     pending: new Map(),
     files: new Map(),
     nextFileId: 40,
@@ -158,7 +165,16 @@ async function createFakeCandidate({
     for await (const chunk of request) chunks.push(chunk);
     const payload = JSON.parse(Buffer.concat(chunks));
     const { id, method, params = {} } = payload;
-    if (method === "site_get") return jsonRpc(response, id, { site_id: 7 });
+    if (method === "site_get") return jsonRpc(response, id, { ...state.site });
+    if (method === "site_update") {
+      if (!isEditor(request)) return rpcError(response, id, "denied");
+      if (params.expected_settings_revision !== state.site.settings_revision) return rpcError(response, id, "stale site settings revision");
+      for (const field of ["favicon_source", "ios_icon_source", "windows_tile_source"]) {
+        if (Object.hasOwn(params, field)) state.site[field] = params[field];
+      }
+      state.site.settings_revision += 1;
+      return jsonRpc(response, id, { ...state.site });
+    }
     if (method === "page_get") {
       return jsonRpc(
         response,
@@ -360,6 +376,28 @@ async function createFakeCandidate({
         await handleAction(request, response);
         return;
       }
+      if (request.url === "/local--favicon/favicon.gif") {
+        if (state.site.favicon_source === null) {
+          response.writeHead(404).end();
+        } else {
+          response.writeHead(302, { location: state.site.favicon_source }).end();
+        }
+        return;
+      }
+      const legacy = request.url?.match(/^\/local--files\/([^/]+)\/([^/?]+)$/u);
+      if (legacy) {
+        const originalHost = String(request.headers["x-fixture-original-host"] ?? "");
+        if (originalHost.endsWith(".wikijump.localhost")) {
+          response.writeHead(302, {
+            location: `https://scpaiueouiuiuiui.wjfiles.localhost:18443${request.url}`,
+          }).end();
+        } else {
+          response.writeHead(302, {
+            location: `/-/file/${legacy[1]}/${legacy[2]}`,
+          }).end();
+        }
+        return;
+      }
       const original = request.url?.match(/^\/-\/file\/([^/]+)\/([^/?]+)$/u);
       if (original) {
         serveFile(request, response, original, false);
@@ -431,6 +469,10 @@ function caseSetFor(candidate, sessionOptions = {}) {
     return await requestCandidateCaseHttp({
       ...options,
       url,
+      headers: {
+        ...(options.headers ?? {}),
+        "x-fixture-original-host": original.hostname,
+      },
       connectAddress: null,
       tlsCa: null,
     });
@@ -481,10 +523,11 @@ async function runFixture(
   });
 }
 
-test("the source-owned media CandidateCaseSet fixes the final four-case denominator", () => {
+test("the source-owned media CandidateCaseSet fixes the runtime media denominator", () => {
   const caseSet = createOpen43MediaCandidateCaseSet();
   assert.deepEqual(caseSet.caseIds, OPEN43_MEDIA_CASE_IDS);
   assert.deepEqual(OPEN43_MEDIA_CASE_IDS, [
+    "M756_LOCAL_ROUTE_BYTES",
     "M1039_MUTATION_TO_NEXT_READ",
     "M1043_RESIZED_BLOB_IDENTITY",
     "M1062_SERIALIZABLE_ACTION_RESPONSE",
@@ -492,7 +535,7 @@ test("the source-owned media CandidateCaseSet fixes the final four-case denomina
   ]);
 });
 
-test("shared runner proves all four media cases through public HTTP and cleans the namespace", async (t) => {
+test("shared runner proves all runtime media cases through public HTTP and cleans the namespace", async (t) => {
   const candidate = await createFakeCandidate();
   t.after(() => candidate.close());
   const receipt = await runFixture(t, candidate);

@@ -433,8 +433,24 @@ export async function validateOutputPreflight(outputDir, paths) {
 }
 
 function validateResultOracle(oracle, label) {
-  if (!oracle || oracle.type !== "event") {
+  if (!oracle || !["event", "dom"].includes(oracle.type)) {
     throw new Error(`${label} has no exact observable result oracle`);
+  }
+  if (oracle.type === "dom") {
+    const predicate = oracle.predicate;
+    if (
+      !predicate ||
+      typeof predicate.selector !== "string" ||
+      predicate.selector === "" ||
+      !["visible", "absent"].includes(predicate.state)
+    ) {
+      throw new Error(`${label} has an invalid DOM result predicate`);
+    }
+    if (oracle.activation !== undefined && !["click", "none"].includes(oracle.activation)) {
+      throw new Error(`${label} has an invalid DOM result activation`);
+    }
+    if (oracle.failure_control !== undefined) validateFailureControl(oracle.failure_control, label);
+    return;
   }
   const event = oracle.event;
   if (!event || !["navigation", "request", "response"].includes(event.kind) || typeof event.url_suffix !== "string" || event.url_suffix === "") {
@@ -452,6 +468,17 @@ function validateResultOracle(oracle, label) {
   if (event.post_data_contains !== undefined && typeof event.post_data_contains !== "string") {
     throw new Error(`${label} has an invalid result event control`);
   }
+  if (oracle.failure_control !== undefined) validateFailureControl(oracle.failure_control, label);
+}
+
+function validateFailureControl(control, label) {
+  if (!control || control.kind !== "abort_request") throw new Error(`${label} has an invalid failure control`);
+  const request = control.request;
+  if (!request || typeof request !== "object") throw new Error(`${label} failure control has no exact request matcher`);
+  if (request.resource_type !== undefined && typeof request.resource_type !== "string") throw new Error(`${label} failure control has an invalid resource type`);
+  if (request.method !== undefined && (typeof request.method !== "string" || !/^[A-Z]+$/u.test(request.method))) throw new Error(`${label} failure control has an invalid method`);
+  if (request.url_suffix !== undefined && (typeof request.url_suffix !== "string" || request.url_suffix === "")) throw new Error(`${label} failure control has an invalid URL suffix`);
+  if (request.resource_type === undefined && request.method === undefined && request.url_suffix === undefined) throw new Error(`${label} failure control matcher is empty`);
 }
 
 export function validateCaptureInputBindings(contract, urls, identities) {
@@ -600,6 +627,7 @@ function assertDiagnosticsBounded(diagnostics) {
 
 function matchesDomPredicate(value) {
     const element = document.querySelector(value.selector);
+    if (value.state === "absent") return element === null;
     if (!element) return false;
     if (value.state === "visible") {
       const style = getComputedStyle(element);
@@ -615,9 +643,45 @@ async function predicateMatches(page, predicate) {
 
 function armDomPredicate(page, predicate, timeoutMs, label) {
   return (async () => {
-    if (await predicateMatches(page, predicate)) throw new Error(`${label} predicate preexisted before activation`);
+    if (predicate.state !== "absent" && await predicateMatches(page, predicate)) throw new Error(`${label} predicate preexisted before activation`);
     await page.waitForFunction(matchesDomPredicate, predicate, {timeout: timeoutMs});
   })();
+}
+
+function failureRequestMatches(request, matcher) {
+  if (matcher.resource_type !== undefined && request.resourceType() !== matcher.resource_type) return false;
+  if (matcher.method !== undefined && request.method() !== matcher.method) return false;
+  if (matcher.url_suffix !== undefined && !request.url().endsWith(matcher.url_suffix)) return false;
+  return true;
+}
+
+async function armFailureControl(page, control, timeoutMs, label) {
+  if (control === undefined) return {signal: Promise.resolve(null), cleanup: async () => {}};
+  validateFailureControl(control, label);
+  let resolved = false;
+  let resolveSignal;
+  const signal = withTimeout(
+    () => new Promise((resolve) => { resolveSignal = resolve; }),
+    timeoutMs,
+    `${label} failure-control request`,
+  );
+  const handler = async (route, request) => {
+    if (!resolved && failureRequestMatches(request, control.request)) {
+      resolved = true;
+      resolveSignal({url: request.url(), method: request.method(), resource_type: request.resourceType()});
+      await route.abort("failed");
+      return;
+    }
+    await route.continue();
+  };
+  await page.route("**/*", handler);
+  return {signal, cleanup: async () => page.unroute("**/*", handler)};
+}
+
+function armResultOracle(page, oracle, timeoutMs, label) {
+  if (oracle.type === "event") return armBrowserEvent(page, oracle.event, timeoutMs, label);
+  if (oracle.type === "dom") return armDomPredicate(page, oracle.predicate, timeoutMs, label);
+  throw new Error(`${label} has unsupported result oracle`);
 }
 
 function requestMatches(request, event) {
@@ -750,9 +814,16 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
     } else {
       const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
-      const resultSignal = armBrowserEvent(page, resultOracle.event, args.timeoutMs, `${scenario.id} ${subject.id} result`);
-      await page.locator(triggers.at(-1)).click({timeout: args.timeoutMs, noWaitAfter: true});
-      await resultSignal;
+      const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
+      const failureControl = await armFailureControl(page, resultOracle.failure_control, args.timeoutMs, `${scenario.id} ${subject.id}`);
+      try {
+        if ((resultOracle.activation ?? "click") === "click") {
+          await page.locator(triggers.at(-1)).click({timeout: args.timeoutMs, noWaitAfter: true});
+        }
+        await Promise.all([resultSignal, failureControl.signal]);
+      } finally {
+        await failureControl.cleanup();
+      }
       records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, scenario.id, navigationStatus, outputDir));
     }
     return records;

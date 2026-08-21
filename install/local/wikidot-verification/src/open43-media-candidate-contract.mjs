@@ -90,6 +90,20 @@ function download(value, input, row, name) {
   return { body_sha256: bodySha256, etag };
 }
 
+function localIconCase(observations, plan) {
+  const value = object(observations, "M756 local icon observation");
+  const file = fileRow(value.file, plan.file_names.action_upload, plan.inputs.initial, plan, "M756 local icon file");
+  const expectedSource = `/local--files/${encodeURIComponent(plan.page_slug)}/${encodeURIComponent(plan.file_names.action_upload)}`;
+  expect(value.configured_source === expectedSource && value.site?.favicon_source === expectedSource, "M756 configured favicon source is not the run-owned local file");
+  const route = object(value.route, "M756 local icon route");
+  expect(route.source === expectedSource, "M756 local icon source path drifted");
+  expect(route.favicon?.status === 302 && new URL(route.favicon.location, "https://candidate.invalid").pathname === expectedSource, "M756 favicon route did not redirect to the configured local file");
+  expect(route.source_on_page_host?.status === 302 && new URL(route.source_on_page_host.location).hostname.endsWith(".wjfiles.localhost"), "M756 local-file page-host route did not cross to the candidate files origin");
+  expect([301, 302, 307, 308].includes(route.legacy_on_files_host?.status) && new URL(route.legacy_on_files_host.location, "https://candidate.invalid").pathname === `/-/file/${encodeURIComponent(plan.page_slug)}/${encodeURIComponent(plan.file_names.action_upload)}`, "M756 legacy file route did not redirect to the canonical file route");
+  const original = download(route.original, plan.inputs.initial, file, "M756 anonymous local icon bytes");
+  return { source: expectedSource, body_sha256: original.body_sha256, anonymous_visibility_verified: true, redirect_chain_verified: true };
+}
+
 function resized(value, row, plan, name) {
   const route = object(value, name);
   expect(route.status === 200 && String(route.content_type).startsWith("image/jpeg"), `${name} did not return JPEG`);
@@ -219,7 +233,8 @@ function uploadOrderCase(observations, plan) {
 export function verifyOpen43MediaCase(caseId, observations, plan) {
   object(observations, `${caseId} observations`);
   let verification;
-  if (caseId === "M1039_MUTATION_TO_NEXT_READ") verification = mutationCase(observations, plan);
+  if (caseId === "M756_LOCAL_ROUTE_BYTES") verification = localIconCase(observations, plan);
+  else if (caseId === "M1039_MUTATION_TO_NEXT_READ") verification = mutationCase(observations, plan);
   else if (caseId === "M1043_RESIZED_BLOB_IDENTITY") verification = resizedCase(observations, plan);
   else if (caseId === "M1062_SERIALIZABLE_ACTION_RESPONSE") verification = serializableActionCase(observations, plan);
   else if (caseId === "M1062_UPLOAD_TRANSACTION_ORDER") verification = uploadOrderCase(observations, plan);

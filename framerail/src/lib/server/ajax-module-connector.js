@@ -25,6 +25,8 @@ const FORUM_READ_MODULE_PARAMETERS = new Map([
 const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
+const USERINFO_MODULE = "profile/UserInfoModule"
+const USERINFO_NO_USER_BODY = '<div class="error-block">No user specified.</div>'
 const MANAGE_SITE_GENERAL_MODULE = "managesite/ManageSiteGeneralModule"
 const MANAGE_SITE_EDUCATIONAL_MODULE = "managesite/ManageSiteUpgradeEduModule"
 const EDUCATIONAL_UPGRADE_ACTION = "UpgradesAction"
@@ -1286,6 +1288,32 @@ export const handleAjaxModuleConnectorRequest = async (
         ...responseMetadata()
       })
     }
+  }
+
+  if (moduleName === USERINFO_MODULE) {
+    const supportedFields = new Set([
+      "moduleName",
+      "user_id",
+      "wikidot_token7",
+      "callbackIndex"
+    ])
+    if (
+      [...fields.keys()].some((field) => !supportedFields.has(field)) ||
+      fieldValue(fields, "user_id") !== ""
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+    return jsonResponse({
+      status: "ok",
+      body: USERINFO_NO_USER_BODY,
+      callbackIndex: null,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
   }
 
   const siteToolsShape = moduleName ? SITE_TOOLS_READ_MODULES.get(moduleName) : undefined
