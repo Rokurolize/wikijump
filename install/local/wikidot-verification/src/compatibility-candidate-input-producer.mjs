@@ -29,6 +29,17 @@ const MEDIA_BROWSER_EVIDENCE = Object.freeze({
   M1043_BROWSER_RENDER_AND_VIEWER: "E_FOCUSED_CORPUS",
   M1062_BROWSER_UPLOAD_FLOW: "E_UPLOAD_HISTORICAL_FAILURE",
 });
+const GENERATED_PRIVATE_INPUTS = new Set([
+  "framerail-route-action-browser.json",
+  "framerail-route-action-denial-storage.json",
+  "framerail-route-action-failure-control.json",
+  "framerail-route-action-failure-storage.json",
+  "framerail-route-action-fixture.json",
+  "framerail-route-action-runtime.json",
+  "framerail-route-action-success-storage.json",
+  "media-browser.json",
+  "media-files.json",
+]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 
 function usage() {
@@ -71,7 +82,9 @@ function sql(container, statement, { capture = true } = {}) {
 
 async function copyPrivateTemplates(templateRoot, outputRoot, bindings) {
   await fs.mkdir(outputRoot, { recursive: false, mode: 0o700 });
-  const files = (await fs.readdir(templateRoot)).filter((name) => name.endsWith(".json")).sort();
+  const files = (await fs.readdir(templateRoot))
+    .filter((name) => name.endsWith(".json") && !GENERATED_PRIVATE_INPUTS.has(name))
+    .sort();
   if (files.length === 0) throw new Error("template private directory contains no JSON inputs");
   for (const name of files) {
     const input = JSON.parse(await fs.readFile(path.join(templateRoot, name), "utf8"));
