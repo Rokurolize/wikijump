@@ -99,6 +99,26 @@ function redirectErrorBlock(target) {
   return REDIRECT_ERROR_BLOCK.replaceAll("A1037_REDIRECT_TARGET", target);
 }
 
+function redirectFixture(value) {
+  const fixture = requirePlainObject(value?.a1037_redirect_fixture, "A1037 imported redirect fixture");
+  const sourcePage = requirePlainObject(fixture.source_page, "A1037 imported redirect source page");
+  const targetPage = requirePlainObject(fixture.target_page, "A1037 imported redirect target page");
+  for (const [name, page] of [["source", sourcePage], ["target", targetPage]]) {
+    if (!Number.isSafeInteger(page.page_id) || page.page_id <= 0 || !Number.isSafeInteger(page.revision_id) || page.revision_id <= 0) {
+      throw new Error(`A1037 imported redirect ${name} page identity is invalid`);
+    }
+    requireNonEmptyString(page.slug, `A1037 imported redirect ${name} slug`);
+  }
+  const source = redirectSource(targetPage.slug);
+  const sourceSha256 = sha256Text(source);
+  if (sourcePage.source_sha256 !== sourceSha256) throw new Error("A1037 imported redirect source hash is not the fixed fixture");
+  return Object.freeze({
+    sourcePage: Object.freeze({ page_id: sourcePage.page_id, revision_id: sourcePage.revision_id, slug: sourcePage.slug, source_sha256: sourceSha256 }),
+    targetPage: Object.freeze({ page_id: targetPage.page_id, revision_id: targetPage.revision_id, slug: targetPage.slug }),
+    source,
+  });
+}
+
 function pageSlug(runId, kind) {
   return `${kind}-a1037-${runId.slice("candidate-run-".length)}`;
 }
@@ -182,7 +202,7 @@ function verifyCleanup(proof, resources) {
     value.public_absence_verified !== true ||
     value.pages_absent !== true ||
     !Array.isArray(resources) ||
-    resources.length !== 5 ||
+    resources.length !== 3 ||
     resources.some((resource) => resource.released !== true)
   ) {
     throw new Error("A1037 cleanup did not prove public absence and resource release");
@@ -204,7 +224,7 @@ class Open43A1037Run {
   #pageResources = [];
   #plans = new Map();
 
-  constructor({ sessions, browserContexts, resources, runId, pageOrigin }) {
+  constructor({ sessions, browserContexts, resources, runId, pageOrigin, importedRedirectFixture }) {
     this.#sessions = sessions;
     this.#browserContexts = browserContexts;
     this.#resources = resources;
@@ -212,15 +232,17 @@ class Open43A1037Run {
     this.#pageOrigin = pageOrigin;
     const suffix = runId.slice("candidate-run-".length);
     this.#newpageSlug = pageSlug(runId, "newpage");
-    this.#redirectSlug = pageSlug(runId, "redirect");
-    this.#redirectTargetSlug = pageSlug(runId, "redirect-target");
+    this.#redirectSlug = importedRedirectFixture.sourcePage.slug;
+    this.#redirectTargetSlug = importedRedirectFixture.targetPage.slug;
     this.#redirectMissingSlug = pageSlug(runId, "redirect-missing");
     this.#category = `a1037-newpage-${suffix}`;
+    this.#importedRedirectFixture = importedRedirectFixture;
   }
 
   #category;
   #newpageEditName = null;
   #autosaveName = null;
+  #importedRedirectFixture;
 
   async #rpc(actor, method, params = {}, { siteId = this.#siteId, cleanup = false } = {}) {
     return await this.#sessions[actor].rpc(method, params, { actor: "editor", siteId: siteId ?? undefined, cleanup });
@@ -369,6 +391,24 @@ class Open43A1037Run {
 
   async #executeRedirectCase() {
     const target = this.#redirectTargetSlug;
+    const fixture = this.#importedRedirectFixture;
+    const sourcePage = await this.#page(this.#redirectSlug);
+    const targetPage = await this.#page(target);
+    if (
+      sourcePage?.page_id !== fixture.sourcePage.page_id ||
+      sourcePage.revision_id !== fixture.sourcePage.revision_id ||
+      sourcePage.slug !== fixture.sourcePage.slug ||
+      sourcePage.wikitext !== fixture.source
+    ) {
+      throw new Error("A1037 imported Redirect source fixture identity drifted");
+    }
+    if (
+      targetPage?.page_id !== fixture.targetPage.page_id ||
+      targetPage.revision_id !== fixture.targetPage.revision_id ||
+      targetPage.slug !== fixture.targetPage.slug
+    ) {
+      throw new Error("A1037 imported Redirect target fixture identity drifted");
+    }
     const bare = await this.#sessions.anonymous.redirectProbe(`/${encodeURIComponent(this.#redirectSlug)}`);
     const noredirect = await this.#sessions.anonymous.pageRouteRequest(`/${encodeURIComponent(this.#redirectSlug)}/noredirect/true`, { actor: "anonymous" });
     const missing = await this.#sessions.anonymous.pageRouteRequest(`/${encodeURIComponent(this.#redirectMissingSlug)}`, { actor: "anonymous" });
@@ -396,8 +436,6 @@ class Open43A1037Run {
     if (!Number.isSafeInteger(site?.site_id) || site.slug !== SITE_SLUG) throw new Error("A1037 editable candidate site is missing");
     this.#siteId = site.site_id;
     await this.#createPage(this.#newpageSlug, newpageSource(this.#category));
-    await this.#createPage(this.#redirectSlug, redirectSource(this.#redirectTargetSlug));
-    await this.#createPage(this.#redirectTargetSlug, "Redirect destination page");
     await this.#createPage(this.#redirectMissingSlug, REDIRECT_MISSING_SOURCE);
     const rows = [
       ...(await this.#executeNewPageCase()),
@@ -411,7 +449,7 @@ class Open43A1037Run {
     let pagesAfter = true;
     try {
       if (this.#siteId !== null) {
-        const slugs = [this.#newpageSlug, this.#redirectSlug, this.#redirectTargetSlug, this.#redirectMissingSlug];
+        const slugs = [this.#newpageSlug, this.#redirectMissingSlug];
         if (this.#autosaveName !== null) slugs.push(`${this.#category}:${this.#autosaveName}`);
         for (const slug of slugs) await this.#deletePage(slug, { cleanup: true });
       }    } catch (error) {
@@ -473,6 +511,7 @@ export function createOpen43A1037FormsCandidateCaseSet({
         throw new Error(`A1037 requires an exact non-standing ${SITE_HOST} candidate`);
       }
       const baseInput = requirePlainObject(privateInput, "private A1037 candidate input");
+      const importedRedirectFixture = redirectFixture(baseInput);
       const administrator = sessionFactory({ candidateIdentity, privateInput: { ...baseInput, actors: { editor: requirePlainObject(baseInput.actors?.administrator, "A1037 administrator actor") } }, signal });
       const editor = sessionFactory({ candidateIdentity, privateInput: { ...baseInput, actors: { editor: requirePlainObject(baseInput.actors?.editor, "A1037 editor actor") } }, signal });
       const anonymous = sessionFactory({ candidateIdentity, privateInput: baseInput, signal });
@@ -488,11 +527,13 @@ export function createOpen43A1037FormsCandidateCaseSet({
         resources,
         runId,
         pageOrigin,
+        importedRedirectFixture,
       });
       const privateInputIdentity = {
         editor_user_id: editor.editorUserId,
         administrator_user_id: administrator.editorUserId,
         editor_session_sha256: sha256Value(editor.privateInputIdentity),
+        imported_redirect_fixture_sha256: sha256Value(importedRedirectFixture),
       };
       return Object.freeze({
         sourceFiles: SOURCE_FILES,
@@ -504,6 +545,10 @@ export function createOpen43A1037FormsCandidateCaseSet({
           site_slug: SITE_SLUG,
           page_origin: pageOrigin,
           actor_user_ids: { editor: editor.editorUserId, administrator: administrator.editorUserId },
+          imported_redirect_fixture: {
+            source_page: importedRedirectFixture.sourcePage,
+            target_page: importedRedirectFixture.targetPage,
+          },
           case_ids: OPEN43_A1037_CASE_IDS,
         },
         execute: () => execution.execute(),

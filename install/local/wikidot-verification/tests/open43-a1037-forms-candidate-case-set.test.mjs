@@ -21,9 +21,10 @@ const RUN_ID = "candidate-run-0123456789ab";
 const SUFFIX = RUN_ID.slice("candidate-run-".length);
 const CATEGORY = `a1037-newpage-${SUFFIX}`;
 const NEWPAGE_SLUG = `newpage-a1037-${SUFFIX}`;
-const REDIRECT_SLUG = `redirect-a1037-${SUFFIX}`;
-const REDIRECT_TARGET = `redirect-target-a1037-${SUFFIX}`;
+const REDIRECT_SLUG = "imported-a1037-redirect";
+const REDIRECT_TARGET = "imported-a1037-target";
 const REDIRECT_MISSING_SLUG = `redirect-missing-a1037-${SUFFIX}`;
+const REDIRECT_SOURCE = `[[module Redirect destination="${REDIRECT_TARGET}"]]`;
 const RENDER_BODY = `<div class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Create page" style="margin: 1px;"/><input type="hidden" name="categoryName" value="${CATEGORY}"/></form></div>`;
 const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
 const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
@@ -80,7 +81,10 @@ function publicResponse(body) {
 }
 
 function runtime() {
-  const pages = new Map();
+  const pages = new Map([
+    [REDIRECT_SLUG, { site_id: SITE_ID, page_id: 700, revision_id: 701, slug: REDIRECT_SLUG, wikitext: REDIRECT_SOURCE }],
+    [REDIRECT_TARGET, { site_id: SITE_ID, page_id: 702, revision_id: 703, slug: REDIRECT_TARGET, wikitext: "Redirect destination page" }],
+  ]);
   let autosaveCalls = 0;
   const rpc = async (method, params, { actor = "editor" } = {}) => {
     if (method === "session_get") {
@@ -209,6 +213,10 @@ function privateInput() {
       administrator: { user_id: ADMIN_ID, session_token: "administrator-session-token" },
       editor: { user_id: EDITOR_ID, session_token: "editor-session-token" },
     },
+    a1037_redirect_fixture: {
+      source_page: { page_id: 700, revision_id: 701, slug: REDIRECT_SLUG, source_sha256: sha256(REDIRECT_SOURCE) },
+      target_page: { page_id: 702, revision_id: 703, slug: REDIRECT_TARGET },
+    },
     tls_ca_pem: "fixture-ca",
   };
 }
@@ -251,9 +259,11 @@ test("A1037 executes through the shared runner and cleans its run-owned pages", 
   assert.deepEqual(result.denominator.case_ids, OPEN43_A1037_CASE_IDS);
   assert.equal(result.status, "pass");
   assert.equal(result.cleanup.public_absence_verified, true);
-  assert.equal(result.resources.length, 5);
+  assert.equal(result.resources.length, 3);
   assert.equal(result.resources.every((resource) => resource.released), true);
-  for (const slug of [NEWPAGE_SLUG, REDIRECT_SLUG, REDIRECT_TARGET, REDIRECT_MISSING_SLUG, `${CATEGORY}:autosaved-${SUFFIX}`]) {
+  for (const slug of [NEWPAGE_SLUG, REDIRECT_MISSING_SLUG, `${CATEGORY}:autosaved-${SUFFIX}`]) {
     assert.equal(state.pages.has(slug), false, slug);
   }
+  assert.equal(state.pages.has(REDIRECT_SLUG), true);
+  assert.equal(state.pages.has(REDIRECT_TARGET), true);
 });
