@@ -974,13 +974,13 @@ export async function runTemporalCapture(args) {
         browserExecutable: identities.browserExecutable.path,
         ignoreHttpsErrors: args.ignoreHttpsErrors,
         storageState: scenario.storage_state.path,
-        createInitialContexts: false,
         sourceProxyServer: sourceEgressProxy.url,
         localProxyServer: localEgressProxy.url,
         requestGate,
         localOrigins,
       });
       try {
+        if (!browserSession.localContext) throw new Error("browser local context was not initialized");
         const browserIdentity = {
           engine: "chromium",
           executable: identities.browserExecutable,
@@ -997,26 +997,10 @@ export async function runTemporalCapture(args) {
           storageState: scenario.storage_state,
         };
         for (const subject of contract.subjects) {
-          let subjectContexts = null;
           try {
-            // Each temporal subject must begin with an empty browser HTTP/module
-            // cache. Several pane components may be emitted into the same Vite
-            // chunk; reusing one context would let an earlier subject satisfy a
-            // later dynamic import from cache and make the script-abort failure
-            // control unobservable. Keep the browser process/identity stable,
-            // but isolate credentials and cache per subject.
-            subjectContexts = await browserSession.newContextPair();
-            if (!subjectContexts.localContext) throw new Error("browser local context was not initialized");
-            records.push(...await captureSubjectScenario(subjectContexts.localContext, args, execution, subject, scenario, urls[scenario.id][subject.kind], args.outputDir));
+            records.push(...await captureSubjectScenario(browserSession.localContext, args, execution, subject, scenario, urls[scenario.id][subject.kind], args.outputDir));
           } catch (error) {
             failures.push({subject_id: subject.id, scenario: scenario.id, message: errorMessage(error)});
-          } finally {
-            if (subjectContexts) {
-              const closeFailures = [];
-              if (subjectContexts.localContext) await subjectContexts.localContext.close().catch((error) => closeFailures.push(error));
-              if (subjectContexts.sourceContext && subjectContexts.sourceContext !== subjectContexts.localContext) await subjectContexts.sourceContext.close().catch((error) => closeFailures.push(error));
-              if (closeFailures.length > 0) cleanupError ??= new AggregateError(closeFailures, `${subject.id} browser contexts failed to close`);
-            }
           }
         }
       } finally {
