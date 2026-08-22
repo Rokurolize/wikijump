@@ -60,10 +60,9 @@ export function faviconDeclaration(
   const extension = extensionOf(source)
   if (!extension) return null
 
-  const type = FAVICON_MIME_TYPES[extension]
-  if (!type) return null
+  if (!FAVICON_MIME_TYPES[extension]) return null
 
-  return { href: `${FAVICON_ROUTE_PREFIX}favicon.${extension}`, type }
+  return { href: `${FAVICON_ROUTE_PREFIX}favicon.gif`, type: "image/gif" }
 }
 
 /** Whether a site declares Wikidot's iOS touch icons. */
