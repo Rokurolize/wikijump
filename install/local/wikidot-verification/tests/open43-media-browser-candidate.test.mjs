@@ -164,6 +164,32 @@ test("M806 enforces centered width, exact local routes, and whitespace ownership
   assert.throws(() => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", stolenNegative), /negative whitespace control acquired image ownership/u);
 });
 
+test("M756 accepts Wikidot-style document navigation while rejecting stale icon state", () => {
+  const first = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
+  const second = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
+  const clean = { candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };
+  const observations = {
+    first_source: "/local--files/fixture/icon-a.png",
+    second_source: "/local--files/fixture/icon-b.png",
+    first: { pathname: "/local--favicon/favicon.gif" },
+    reload: { pathname: "/local--favicon/favicon.gif" },
+    client: { pathname: "/local--favicon/favicon.gif", document_preserved: false },
+    first_fetch: { status: 200, final_url: "https://fixture.wjfiles.localhost/local--files/fixture/icon-a.png", body_sha256: sha256(first) },
+    reload_fetch: { status: 200, final_url: "https://fixture.wjfiles.localhost/local--files/fixture/icon-b.png", body_sha256: sha256(second) },
+    client_fetch: { status: 200, final_url: "https://fixture.wjfiles.localhost/local--files/fixture/icon-b.png", body_sha256: sha256(second) },
+    diagnostics: clean,
+  };
+
+  const result = verifyOpen43MediaBrowserCase("M756_BROWSER_CACHE_TRANSITIONS", observations);
+  assert.equal(result.verified, true);
+  assert.equal(result.client_navigation_observed, true);
+  assert.equal(result.client_navigation_preserved_document, false);
+
+  const stale = structuredClone(observations);
+  stale.client_fetch.body_sha256 = sha256(first);
+  assert.throws(() => verifyOpen43MediaBrowserCase("M756_BROWSER_CACHE_TRANSITIONS", stale), /stale favicon bytes/u);
+});
+
 test("M1062 requires the failed empty action interval before the successful upload", () => {
   const uploadBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
   const clean = { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };

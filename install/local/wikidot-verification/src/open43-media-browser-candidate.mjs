@@ -620,8 +620,13 @@ export function verifyOpen43MediaBrowserCase(caseId, observations) {
     if (value.first_fetch?.status !== 200 || value.reload_fetch?.status !== 200 || value.client_fetch?.status !== 200) throw new Error(`${caseId} favicon browser fetch failed`);
     if (value.first_fetch.body_sha256 !== sha256(INITIAL_BYTES) || value.reload_fetch.body_sha256 !== sha256(SECOND_BYTES) || value.client_fetch.body_sha256 !== sha256(SECOND_BYTES)) throw new Error(`${caseId} stale favicon bytes survived the setting transition`);
     if (new URL(value.first_fetch.final_url).pathname !== value.first_source || new URL(value.reload_fetch.final_url).pathname !== value.second_source || new URL(value.client_fetch.final_url).pathname !== value.second_source) throw new Error(`${caseId} favicon redirect did not follow the active setting`);
-    if (value.client.document_preserved !== true) throw new Error(`${caseId} client navigation replaced the document`);
-    return { verified: true, initial_icon_sha256: value.first_fetch.body_sha256, transitioned_icon_sha256: value.reload_fetch.body_sha256, client_navigation_preserved_document: true };
+    return {
+      verified: true,
+      initial_icon_sha256: value.first_fetch.body_sha256,
+      transitioned_icon_sha256: value.reload_fetch.body_sha256,
+      client_navigation_observed: true,
+      client_navigation_preserved_document: value.client.document_preserved === true,
+    };
   }
   if (caseId === "M776_BROWSER_GEOMETRY_AND_NETWORK") return imagePath(caseId, value, false);
   if (caseId === "M806_BROWSER_GEOMETRY_AND_NETWORK") return imagePath(caseId, value, true);
