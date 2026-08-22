@@ -90,7 +90,7 @@ function candidateOwnedUrl(value) {
 function attachDiagnostics(page) {
   const state = { requests: [], failures: [], console_errors: [], page_errors: [], csp_violations: [] };
   page.on("request", (request) => state.requests.push({ method: request.method(), resource_type: request.resourceType(), url: request.url() }));
-  page.on("requestfailed", (request) => state.failures.push({ url: request.url(), error: request.failure()?.errorText ?? null }));
+  page.on("requestfailed", (request) => state.failures.push({ url: request.url(), resource_type: request.resourceType(), error: request.failure()?.errorText ?? null }));
   page.on("console", (message) => { if (message.type() === "error") state.console_errors.push(sha256(message.text())); });
   page.on("pageerror", (error) => state.page_errors.push(sha256(error.message)));
   return state;
@@ -146,7 +146,7 @@ async function finishDiagnostics(page, diagnostics) {
   diagnostics.csp_violations = await page.evaluate(() => globalThis.__open43MediaCspViolations ?? []).catch(() => []);
   return {
     candidate_requests: diagnostics.requests.filter(({ url }) => candidateOwnedUrl(url)).map(({ method, resource_type, url }) => ({ method, resource_type, pathname: new URL(url).pathname, url_sha256: sha256(url) })),
-    candidate_failures: diagnostics.failures.filter(({ url }) => candidateOwnedUrl(url)).map(({ url, error }) => ({ pathname: new URL(url).pathname, error })),
+    candidate_failures: diagnostics.failures.filter(({ url }) => candidateOwnedUrl(url)).map(({ url, error, resource_type }) => ({ pathname: new URL(url).pathname, resource_type: resource_type ?? null, error })),
     console_errors: [...diagnostics.console_errors],
     page_errors: [...diagnostics.page_errors],
     csp_violations: diagnostics.csp_violations,
@@ -626,7 +626,11 @@ class Open43MediaBrowserRun {
 function cleanDiagnostics(value, name) {
   const source = object(value, name);
   const diagnostics = object(source.diagnostics ?? source, `${name}.diagnostics`);
-  if (!Array.isArray(diagnostics.candidate_failures) || diagnostics.candidate_failures.length !== 0) throw new Error(`${name} recorded a candidate-owned request failure`);
+  if (!Array.isArray(diagnostics.candidate_failures)) throw new Error(`${name} candidate-owned request failures are missing`);
+  if (diagnostics.candidate_failures.length !== 0) {
+    const failure = object(diagnostics.candidate_failures[0], `${name}.diagnostics.candidate_failures[0]`);
+    throw new Error(`${name} recorded a candidate-owned request failure: ${String(failure.resource_type ?? "unknown")} ${String(failure.pathname ?? "unknown")} ${String(failure.error ?? "unknown")}`);
+  }
   if (!Array.isArray(diagnostics.page_errors) || diagnostics.page_errors.length !== 0) throw new Error(`${name} emitted page errors`);
   if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors`);
   if (!Array.isArray(diagnostics.csp_violations) || diagnostics.csp_violations.some(({ blocked_uri }) => typeof blocked_uri === "string" && candidateOwnedUrl(blocked_uri))) throw new Error(`${name} violated CSP at a candidate-owned boundary`);

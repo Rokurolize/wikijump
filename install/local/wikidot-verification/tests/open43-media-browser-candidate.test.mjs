@@ -223,4 +223,8 @@ test("M1062 requires the failed empty action interval before the successful uplo
   const unsettledRefresh = structuredClone(observations);
   unsettledRefresh.success.file_list_quiescent = false;
   assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", unsettledRefresh), /settled file-list refresh/u);
+
+  const failedRequest = structuredClone(observations);
+  failedRequest.diagnostics.candidate_failures = [{ pathname: "/probe", resource_type: "fetch", error: "net::ERR_ABORTED" }];
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", failedRequest), /fetch \/probe net::ERR_ABORTED/u);
 });
