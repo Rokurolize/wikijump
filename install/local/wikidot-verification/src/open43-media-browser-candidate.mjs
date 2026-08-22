@@ -206,8 +206,18 @@ async function browserIconFetch(context, pageOrigin) {
       timeout: 300_000,
     });
     if (!response) throw new Error("favicon browser navigation returned no response");
-    const bytes = await response.body();
-    return { status: response.status(), final_url: response.url(), body_sha256: sha256(bytes) };
+    const body = await probe.evaluate(async () => {
+      const current = await fetch(location.href, { cache: "default" });
+      const bytes = new Uint8Array(await current.arrayBuffer());
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+      return {
+        status: current.status,
+        final_url: current.url,
+        body_sha256: [...digest].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
+      };
+    });
+    if (body.status !== response.status() || body.final_url !== response.url()) throw new Error("favicon browser body fetch changed the committed resource identity");
+    return body;
   } finally {
     await probe.close().catch(() => undefined);
   }

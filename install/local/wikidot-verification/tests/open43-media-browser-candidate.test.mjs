@@ -110,6 +110,8 @@ test("the Playwright file is collection-only and the case set owns candidate rec
   assert.match(spec, /test\.skip/u);
   assert.doesNotMatch(spec, /writeFile|captureCandidateObservation|status:\s*["']pass["']|verdict\s*:/u);
   for (const text of ["securitypolicyviolation", "local--favicon", "gallery-box", "#file-upload", "negative_boundary_verified"]) assert.match(adapter, new RegExp(text.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&"), "u"));
+  assert.match(adapter, /fetch\(location\.href, \{ cache: "default" \}\)/u);
+  assert.doesNotMatch(adapter, /response\.body\(\)/u);
   assert.match(adapter, /CandidateHttpSession/u);
   assert.match(adapter, /verified: true/u);
   assert.match(runner, /sealJsonNoReplace/u);
