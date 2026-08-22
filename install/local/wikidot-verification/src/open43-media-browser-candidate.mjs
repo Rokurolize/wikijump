@@ -25,6 +25,7 @@ const SITE_SLUG = "scpaiueouiuiuiui";
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const RESPONSIVE_VIEWPORT = Object.freeze({ width: 479, height: 900 });
 const MAX_CENTER_DELTA = 0.5;
+const MEDIUM_RESIZE_LONGEST_SIDE = 500;
 const INITIAL_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
 const SECOND_BYTES = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAIAAAAEAQMAAACeIXx6AAAAA1BMVEUAAP+KeNJXAAAAC0lEQVQI12NggAAAAAgAAS8g3TEAAAAASUVORK5CYII=", "base64");
 const EVIDENCE_BY_CASE = Object.freeze({
@@ -387,7 +388,7 @@ class Open43MediaBrowserRun {
       source: { positive_sha256: sha256(positiveSource), negative_sha256: sha256(negativeSource), compiled_sha256: sha256(positivePage.compiled_body_html) },
       positive: positiveObservation,
       negative: negativeObservation,
-      expected_file: { filename, width: 4, height: 2, byte_sha256: sha256(INITIAL_BYTES) },
+      expected_file: { filename, width: MEDIUM_RESIZE_LONGEST_SIDE, height: MEDIUM_RESIZE_LONGEST_SIDE / 2, source_width: 4, source_height: 2, byte_sha256: sha256(INITIAL_BYTES) },
     };
   }
 
@@ -669,7 +670,7 @@ export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (opt
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       const execution = new Open43MediaBrowserRun({ session, browser: candidateBrowserContexts, resources, runId, casePlans });
       return Object.freeze({
-        sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js", "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"])]),
+        sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js", "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte", "wws/src/handler/resized_image.rs", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"])]),
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: { ...session.privateInputIdentity, media_browser_evidence_sha256: sha256Value(casePlans) },
         browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },

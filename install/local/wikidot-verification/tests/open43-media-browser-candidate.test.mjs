@@ -39,8 +39,8 @@ function intervalExpectation(initial, settled, requestHash, forbidden = []) {
 function centeredImageSnapshot(centerDelta, sourceUrlSha256, viewport = { width: 1280, height: 900 }) {
   const image = {
     complete: true,
-    natural_width: 4,
-    natural_height: 2,
+    natural_width: 500,
+    natural_height: 250,
     width_attribute: "100px",
     computed_width: "100px",
     rendered_width: 100,
@@ -117,14 +117,19 @@ test("the Playwright file is collection-only and the case set owns candidate rec
   assert.match(runner, /sealJsonNoReplace/u);
 });
 
+test("media browser natural geometry is pinned to the WWS medium resize contract", () => {
+  const wws = read("wws/src/handler/resized_image.rs");
+  assert.match(wws, /Self::Medium => 500/u);
+});
+
 test("M806 enforces centered width, exact local routes, and whitespace ownership at both viewports", () => {
   const slug = "m806-positive";
   const filename = "center.png";
   const image = (delta = 0) => ({
     container_class: "image-container aligncenter",
     complete: true,
-    natural_width: 4,
-    natural_height: 2,
+    natural_width: 500,
+    natural_height: 250,
     width_attribute: "100px",
     computed_width: "100px",
     rendered_width: 100,
@@ -147,7 +152,7 @@ test("M806 enforces centered width, exact local routes, and whitespace ownership
       responsive: { viewport: { width: 479, height: 900 }, images: [] },
       diagnostics: { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] },
     },
-    expected_file: { filename, width: 4, height: 2, byte_sha256: sha256("fixed") },
+    expected_file: { filename, width: 500, height: 250, source_width: 4, source_height: 2, byte_sha256: sha256("fixed") },
   };
   assert.equal(verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", observations).verified, true);
 
