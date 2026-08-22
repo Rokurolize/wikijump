@@ -509,7 +509,10 @@
           id="files-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => activatePagePane(PagePane.File)}
+          onclick={(event) => {
+            event.preventDefault()
+            activatePagePane(PagePane.File)
+          }}
           type="button"
         >
           {wikidotPageActions?.files ?? data.internationalization?.files}
