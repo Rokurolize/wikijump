@@ -724,10 +724,17 @@ export function requireNavigationResponse(response, event, label) {
 
 function armBrowserEvent(page, event, timeoutMs, label) {
   if (event.kind === "navigation") {
-    return page.waitForNavigation({
-      timeout: timeoutMs,
-      waitUntil: "domcontentloaded",
-    }).then((response) => requireNavigationResponse(response, event, label));
+    const dataPath = `${event.url_suffix}/__data.json`;
+    return Promise.all([
+      page.waitForURL((url) => url.pathname.endsWith(event.url_suffix), {timeout: timeoutMs}),
+      page.waitForResponse((response) => {
+        const url = new URL(response.url());
+        return response.status() === event.status && response.request().method() === "GET" && url.pathname.endsWith(dataPath);
+      }, {timeout: timeoutMs}),
+    ]).then(([, response]) => requireNavigationResponse({
+      url: () => page.url(),
+      status: () => response.status(),
+    }, event, label));
   }
   if (event.kind === "request") {
     return page.waitForRequest((request) => requestMatches(request, event), {timeout: timeoutMs});
@@ -820,6 +827,9 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       const successSignal = subject.success_event
         ? armBrowserEvent(page, subject.success_event, args.timeoutMs, `${subject.id} success`)
         : null;
+      for (const signal of [loadingSignal, settledSignal, successSignal]) {
+        if (signal) void signal.catch(() => undefined);
+      }
       records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;

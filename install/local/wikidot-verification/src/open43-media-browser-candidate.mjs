@@ -447,21 +447,35 @@ class Open43MediaBrowserRun {
       const form = page.locator("#file-upload");
       await form.waitFor({ state: "visible", timeout: 300_000 });
       const emptyBefore = { form_visible: await form.isVisible(), file_rows: await page.locator("#action-area .file-row").count() };
+      const emptyResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      void emptyResponsePromise.catch(() => undefined);
       await form.locator('input[type="submit"]').click();
-      await page.waitForTimeout(50);
-      const emptyAfter = { form_visible: await form.isVisible(), file_rows: await page.locator("#action-area .file-row").count(), action_request_count: actionRequests.length };
+      const emptyResponse = await emptyResponsePromise;
+      const errorDialog = page.locator("#odialog-container .owindow.error");
+      await errorDialog.waitFor({ state: "visible", timeout: 300_000 });
+      const emptyAfter = {
+        form_visible: await form.isVisible(),
+        file_rows: await page.locator("#action-area .file-row").count(),
+        action_request_count: actionRequests.length,
+        action_status: emptyResponse.status(),
+        error_dialog_visible: await errorDialog.isVisible(),
+      };
+      await errorDialog.locator(".button-close-message").click({ timeout: 300_000 });
+      await errorDialog.waitFor({ state: "hidden", timeout: 300_000 });
 
       await form.locator('input[type="file"]').setInputFiles({ name: "browser-upload.png", mimeType: "image/png", buffer: INITIAL_BYTES });
+      const beforeSuccess = actionRequests.length;
       const pending = { request_seen: false, form_visible: false };
       const responsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      void responsePromise.catch(() => undefined);
       await form.locator('input[type="submit"]').click();
       await page.waitForFunction(() => document.querySelector("#file-upload") !== null, null, { timeout: 300_000 }).catch(() => undefined);
-      pending.request_seen = actionRequests.length >= 1;
+      pending.request_seen = actionRequests.length > beforeSuccess;
       pending.form_visible = await form.isVisible().catch(() => false);
       const actionResponse = await responsePromise;
       if (actionResponse.status() !== 200) throw new Error("M1062 upload action returned non-200");
       await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
-      const success = { form_visible: await form.isVisible().catch(() => false), row_count: await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).count(), action_request_count: actionRequests.length };
+      const success = { form_visible: await form.isVisible().catch(() => false), row_count: await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).count(), action_request_count: actionRequests.length - beforeSuccess };
 
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       await page.locator("#files-button").click({ timeout: 300_000 });
@@ -478,6 +492,7 @@ class Open43MediaBrowserRun {
       await secondForm.locator('input[type="file"]').setInputFiles({ name: "browser-double.png", mimeType: "image/png", buffer: SECOND_BYTES });
       const beforeDouble = actionRequests.length;
       const doubleResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
+      void doubleResponse.catch(() => undefined);
       await Promise.all([
         secondForm.locator('input[type="submit"]').click(),
         secondForm.locator('input[type="submit"]').click().catch(() => undefined),
@@ -612,7 +627,7 @@ export function verifyOpen43MediaBrowserCase(caseId, observations) {
   }
   if (caseId === "M1062_BROWSER_UPLOAD_FLOW") {
     cleanDiagnostics(value, caseId);
-    if (value.empty_submission?.before?.form_visible !== true || value.empty_submission.after?.form_visible !== true || value.empty_submission.after?.file_rows !== value.empty_submission.before.file_rows || value.empty_submission.after?.action_request_count !== 0) throw new Error(`${caseId} empty upload did not fail closed in the form`);
+    if (value.empty_submission?.before?.form_visible !== true || value.empty_submission.after?.form_visible !== true || value.empty_submission.after?.file_rows !== value.empty_submission.before.file_rows || value.empty_submission.after?.action_request_count !== 1 || value.empty_submission.after?.action_status !== 200 || value.empty_submission.after?.error_dialog_visible !== true) throw new Error(`${caseId} empty upload did not expose the exact failed action interval`);
     if (value.pending?.request_seen !== true || value.pending.form_visible !== true) throw new Error(`${caseId} did not expose the in-flight upload interval`);
     if (value.success?.form_visible !== false || value.success.row_count !== 1 || value.success.action_request_count !== 1) throw new Error(`${caseId} successful upload did not refresh the file list exactly once`);
     if (value.reload?.row_count !== 1 || typeof value.reload.download_href !== "string" || !value.reload.download_href.includes("/-/file/")) throw new Error(`${caseId} upload did not survive reload with a download route`);

@@ -161,3 +161,29 @@ test("M806 enforces centered width, exact local routes, and whitespace ownership
   stolenNegative.negative.settled.images = [image()];
   assert.throws(() => verifyOpen43MediaBrowserCase("M806_BROWSER_GEOMETRY_AND_NETWORK", stolenNegative), /negative whitespace control acquired image ownership/u);
 });
+
+test("M1062 requires the failed empty action interval before the successful upload", () => {
+  const uploadBytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC", "base64");
+  const clean = { candidate_requests: [], candidate_failures: [], console_errors: [], page_errors: [], csp_violations: [] };
+  const observations = {
+    empty_submission: {
+      before: { form_visible: true, file_rows: 0 },
+      after: { form_visible: true, file_rows: 0, action_request_count: 1, action_status: 200, error_dialog_visible: true },
+    },
+    pending: { request_seen: true, form_visible: true },
+    success: { form_visible: false, row_count: 1, action_request_count: 1 },
+    reload: { row_count: 1, download_href: "/-/file/upload/browser-upload.png" },
+    download: { status: 200, body_size: uploadBytes.length, body_sha256: sha256(uploadBytes) },
+    double_submit: { action_request_count: 1, row_count: 1 },
+    diagnostics: clean,
+  };
+  assert.equal(verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", observations).verified, true);
+
+  const noFailedRequest = structuredClone(observations);
+  noFailedRequest.empty_submission.after.action_request_count = 0;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", noFailedRequest), /exact failed action interval/u);
+
+  const missingDialog = structuredClone(observations);
+  missingDialog.empty_submission.after.error_dialog_visible = false;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", missingDialog), /exact failed action interval/u);
+});
