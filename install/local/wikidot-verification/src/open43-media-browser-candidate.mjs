@@ -96,6 +96,41 @@ function attachDiagnostics(page) {
   return state;
 }
 
+function trackRequestQuiescence(page, predicate) {
+  const active = new Set();
+  let lastActivity = Date.now();
+  const onRequest = (request) => {
+    if (!predicate(request)) return;
+    active.add(request);
+    lastActivity = Date.now();
+  };
+  const onSettled = (request) => {
+    if (!active.delete(request)) return;
+    lastActivity = Date.now();
+  };
+  page.on("request", onRequest);
+  page.on("requestfinished", onSettled);
+  page.on("requestfailed", onSettled);
+  return Object.freeze({
+    async waitForQuiet({ quietMs = 500, timeoutMs = 10_000 } = {}) {
+      const deadline = Date.now() + timeoutMs;
+      while (true) {
+        const now = Date.now();
+        if (active.size === 0 && now - lastActivity >= quietMs) {
+          return Object.freeze({ active_count: 0, quiet_ms: now - lastActivity });
+        }
+        if (now >= deadline) throw new Error("candidate request quiescence timed out");
+        await new Promise((resolve) => setTimeout(resolve, Math.min(50, deadline - now)));
+      }
+    },
+    close() {
+      page.off("request", onRequest);
+      page.off("requestfinished", onSettled);
+      page.off("requestfailed", onSettled);
+    },
+  });
+}
+
 async function installCspProbe(page) {
   await page.addInitScript(() => {
     globalThis.__open43MediaCspViolations = [];
@@ -446,6 +481,10 @@ class Open43MediaBrowserRun {
     const owned = await this.#browser.newCandidateContext({ storageState: editorStorageState(this.#session), viewport: DEFAULT_VIEWPORT });
     const page = await owned.context.newPage();
     const diagnostics = attachDiagnostics(page);
+    const fileListRequests = trackRequestQuiescence(
+      page,
+      (request) => request.method() === "POST" && request.url().includes("?/fileList"),
+    );
     await installCspProbe(page);
     const actionRequests = [];
     page.on("request", (request) => { if (request.method() === "POST" && request.url().includes("?/fileUpload")) actionRequests.push(request.url()); });
@@ -486,7 +525,14 @@ class Open43MediaBrowserRun {
       const actionResponse = await responsePromise;
       if (actionResponse.status() !== 200) throw new Error("M1062 upload action returned non-200");
       await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
-      const success = { form_visible: await form.isVisible().catch(() => false), row_count: await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).count(), action_request_count: actionRequests.length - beforeSuccess };
+      const fileListQuiescence = await fileListRequests.waitForQuiet();
+      const success = {
+        form_visible: await form.isVisible().catch(() => false),
+        row_count: await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).count(),
+        action_request_count: actionRequests.length - beforeSuccess,
+        file_list_quiescent: fileListQuiescence.active_count === 0,
+        file_list_quiet_ms: fileListQuiescence.quiet_ms,
+      };
 
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       await page.locator("#files-button").click({ timeout: 300_000 });
@@ -522,6 +568,7 @@ class Open43MediaBrowserRun {
         diagnostics: await finishDiagnostics(page, diagnostics),
       };
     } finally {
+      fileListRequests.close();
       await page.close().catch(() => undefined);
     }
   }
@@ -645,7 +692,7 @@ export function verifyOpen43MediaBrowserCase(caseId, observations) {
     cleanDiagnostics(value, caseId);
     if (value.empty_submission?.before?.form_visible !== true || value.empty_submission.after?.form_visible !== true || value.empty_submission.after?.file_rows !== value.empty_submission.before.file_rows || value.empty_submission.after?.action_request_count !== 1 || value.empty_submission.after?.action_status !== 200 || value.empty_submission.after?.error_dialog_visible !== true) throw new Error(`${caseId} empty upload did not expose the exact failed action interval`);
     if (value.pending?.request_seen !== true || value.pending.form_visible !== true) throw new Error(`${caseId} did not expose the in-flight upload interval`);
-    if (value.success?.form_visible !== false || value.success.row_count !== 1 || value.success.action_request_count !== 1) throw new Error(`${caseId} successful upload did not refresh the file list exactly once`);
+    if (value.success?.form_visible !== false || value.success.row_count !== 1 || value.success.action_request_count !== 1 || value.success.file_list_quiescent !== true || !Number.isFinite(value.success.file_list_quiet_ms) || value.success.file_list_quiet_ms < 500) throw new Error(`${caseId} successful upload did not reach a settled file-list refresh`);
     if (value.reload?.row_count !== 1 || typeof value.reload.download_href !== "string" || !value.reload.download_href.includes("/-/file/")) throw new Error(`${caseId} upload did not survive reload with a download route`);
     if (value.download?.status !== 200 || value.download.body_size !== INITIAL_BYTES.length || value.download.body_sha256 !== sha256(INITIAL_BYTES)) throw new Error(`${caseId} download bytes are wrong`);
     if (value.double_submit?.action_request_count !== 1 || value.double_submit.row_count !== 1) throw new Error(`${caseId} double submit committed or dispatched more than once`);

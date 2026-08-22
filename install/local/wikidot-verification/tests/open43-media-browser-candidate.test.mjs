@@ -204,7 +204,7 @@ test("M1062 requires the failed empty action interval before the successful uplo
       after: { form_visible: true, file_rows: 0, action_request_count: 1, action_status: 200, error_dialog_visible: true },
     },
     pending: { request_seen: true, form_visible: true },
-    success: { form_visible: false, row_count: 1, action_request_count: 1 },
+    success: { form_visible: false, row_count: 1, action_request_count: 1, file_list_quiescent: true, file_list_quiet_ms: 500 },
     reload: { row_count: 1, download_href: "/-/file/upload/browser-upload.png" },
     download: { status: 200, body_size: uploadBytes.length, body_sha256: sha256(uploadBytes) },
     double_submit: { action_request_count: 1, row_count: 1 },
@@ -219,4 +219,8 @@ test("M1062 requires the failed empty action interval before the successful uplo
   const missingDialog = structuredClone(observations);
   missingDialog.empty_submission.after.error_dialog_visible = false;
   assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", missingDialog), /exact failed action interval/u);
+
+  const unsettledRefresh = structuredClone(observations);
+  unsettledRefresh.success.file_list_quiescent = false;
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", unsettledRefresh), /settled file-list refresh/u);
 });
