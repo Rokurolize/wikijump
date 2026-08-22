@@ -148,7 +148,9 @@ function runtime() {
     members,
     pages,
     sessionFactory() {
-      return ({ privateInput }) => {
+      return ({ candidateIdentity: identity, privateInput }) => {
+        assert.equal(identity?.candidate?.endpoint?.host, "scpaiueouiuiuiui.wikijump.localhost");
+        assert.equal(privateInput?.cargo_env?.DATABASE_URL, "postgres://fixture");
         const editor = privateInput?.actors?.editor;
         const selected = privateInput?.actors?.administrator ?? editor;
         const userId = selected?.user_id ?? editor?.user_id;

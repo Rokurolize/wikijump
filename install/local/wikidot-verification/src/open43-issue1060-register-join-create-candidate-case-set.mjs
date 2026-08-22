@@ -589,6 +589,8 @@ export function createOpen43Issue1060RegisterJoinCreateCandidateCaseSet({
         cargoRunner,
         resources,
         runId,
+        candidateIdentity,
+        baseInput,
       });
       const privateInputIdentity = {
         eligible_user_id: eligibleId,

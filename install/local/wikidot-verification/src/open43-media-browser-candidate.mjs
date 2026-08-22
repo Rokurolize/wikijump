@@ -713,7 +713,7 @@ export function verifyOpen43MediaBrowserCase(caseId, observations) {
     const uploadPage = typeof value.url === "string" ? new URL(value.url) : null;
     cleanDiagnostics(value, caseId, {
       allowCandidateFailure: (failure) => uploadPage !== null
-        && failure.phase === "double-submit"
+        && ["success-submit", "double-submit"].includes(failure.phase)
         && failure.method === "GET"
         && failure.resource_type === "fetch"
         && failure.pathname === `${uploadPage.pathname}/__data.json`

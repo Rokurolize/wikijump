@@ -30,7 +30,16 @@ function verifyCapture(capture, plan) {
     value.navigation_status !== 200 ||
     Object.hasOwn(value, "capture_error")
   ) {
-    throw new Error("B610 browser capture did not bind one successful navigation");
+    throw new Error(
+      `B610 browser capture did not bind one successful navigation:` +
+        ` status=${JSON.stringify(value.navigation_status ?? null)}` +
+        ` input=${JSON.stringify(value.input_url ?? null)}` +
+        ` final=${JSON.stringify(value.final_url ?? null)}` +
+        ` expected=${JSON.stringify(plan.page_url)}` +
+        ` capture_error=${JSON.stringify(value.capture_error ?? null)}` +
+        ` failures=${Array.isArray(value.failures) ? value.failures.length : null}` +
+        ` gate_aborts=${Array.isArray(value.request_gate_aborts) ? value.request_gate_aborts.length : null}`,
+    );
   }
   if (!Array.isArray(value.failures) || value.failures.length !== 0) {
     throw new Error("B610 browser capture has public failures");

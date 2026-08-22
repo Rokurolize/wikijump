@@ -370,5 +370,11 @@ mod tests {
 
         assert_eq!(join.title, "Join this site");
         assert_eq!(join.wikitext.trim(), "[[module Join]]");
+
+        let draft = pages
+            .iter()
+            .find(|page| page.slug == "corpus:scp-9506-draft")
+            .expect("editable local site should expose the corpus draft fixture");
+        assert_eq!(draft.tags, ["draft"]);
     }
 }

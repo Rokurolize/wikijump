@@ -272,13 +272,14 @@ class Open43CategoriesRun {
     const categories = observations.fixture?.categories;
     if (observations.event_scope !== "candidate-rpc-and-runner-owned-browser-only" || !categories || !observations.views) throw new Error("Q1028 candidate evidence is incomplete");
     const expectedAll = categories.all;
-    const expectedVisible = expectedAll.filter(({ slug }) => slug === "_default" || !slug.startsWith("_"));
+    const restricted = new Set(this.#session.fixtureIdentity.view_restricted_categories);
     const expectedIds = new Map(expectedAll.map(({ slug, id }) => [slug, id]));
     for (const [actor, view] of Object.entries(observations.views)) {
       if (view.capture?.navigation_status !== 200 || view.capture?.failures?.length !== 0 || view.capture?.capture_error) throw new Error(`Q1028 ${actor} capture was not a clean HTTP 200`);
+      const expectedActorAll = actor === "administrator" ? expectedAll : expectedAll.filter(({ slug }) => !restricted.has(slug));
       for (const [name, section] of Object.entries(view.sections)) {
         const includeHidden = ["true_quoted", "false_quoted"].includes(name);
-        const expected = includeHidden ? expectedAll : expectedVisible;
+        const expected = includeHidden ? expectedActorAll : expectedActorAll.filter(({ slug }) => slug === "_default" || !slug.startsWith("_"));
         if (JSON.stringify(section.headings) !== JSON.stringify(expected.map(({ slug }) => slug))) throw new Error(`Q1028 ${actor} ${name} category order or visibility is wrong`);
         if (section.blocks.length !== expected.length || section.blocks.some((children) => JSON.stringify(children) !== JSON.stringify(["H3", "A", "DIV", "DIV"]))) throw new Error(`Q1028 ${actor} ${name} wrapper shape is wrong`);
         if (section.controls.length !== expected.length || section.pages.length !== expected.length || section.options.length !== expected.length) throw new Error(`Q1028 ${actor} ${name} category controls are incomplete`);

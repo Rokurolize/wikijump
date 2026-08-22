@@ -154,7 +154,8 @@
         {
             "slug": "corpus:scp-9506-draft",
             "title": "National Fog Safety Initiative draft import fixture",
-            "wikitext": "issue56-scp9506-local-corpus-draft"
+            "wikitext": "issue56-scp9506-local-corpus-draft",
+            "tags": ["draft"]
         }
     ],
     "scp-jp": [

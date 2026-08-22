@@ -84,7 +84,19 @@ function capture(value, label, expectedUrl, expectedTitle, expectedBody) {
     result.failures.length !== 0 ||
     !Array.isArray(result.request_gate_aborts) ||
     result.request_gate_aborts.length !== 0
-  ) throw new Error(`${label} did not bind one successful navigation`);
+  ) {
+    throw new Error(
+      `${label} did not bind one successful navigation:` +
+        ` status=${JSON.stringify(result.navigation_status ?? null)}` +
+        ` editor_status=${JSON.stringify(result.editor_navigation_status ?? null)}` +
+        ` input=${JSON.stringify(result.input_url ?? null)}` +
+        ` final=${JSON.stringify(result.final_url ?? null)}` +
+        ` expected=${JSON.stringify(expectedUrl)}` +
+        ` capture_error=${JSON.stringify(result.capture_error ?? null)}` +
+        ` failures=${Array.isArray(result.failures) ? result.failures.length : null}` +
+        ` gate_aborts=${Array.isArray(result.request_gate_aborts) ? result.request_gate_aborts.length : null}`,
+    );
+  }
   const firstPaint = object(result.first_paint, `${label}.first_paint`);
   if (firstPaint.phase !== "domcontentloaded_immediate_observation") throw new Error(`${label}.first_paint has the wrong phase`);
   if (firstPaint.title !== "" || firstPaint.content !== "") throw new Error(`${label}.first_paint must retain the empty immediate post-create state`);

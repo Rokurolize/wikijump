@@ -57,6 +57,8 @@ test("issue 1042 plan owns both allowed providers and one unsafe boundary", () =
   assert.equal(run.plan.fixture_provenance.evidence.E_FOCUSED_CORPUS.sha256.length, 64);
   assert.equal(run.plan.required_request_url_sha256.length, 2);
   assert.equal(run.plan.forbidden_request_url_sha256.length, 1);
+  assert.equal(run.plan.capture_contract.slug, "m1042-embedvideo");
+  assert.equal(run.plan.capture_contract.theme_family, "candidate");
   assert.equal(Object.hasOwn(run.plan, "expected"), false);
 });
 

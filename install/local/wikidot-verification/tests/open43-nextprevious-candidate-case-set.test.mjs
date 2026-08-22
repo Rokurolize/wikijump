@@ -80,6 +80,7 @@ class FakeNextPreviousSession {
   async rpc(method, params = {}, options = {}) {
     this.events.push({ service: "deepwell", operation: method, method: "POST", response_status: 200, actor: options.actor ?? "editor" });
     if (method === "site_get") return { site_id: 7 };
+    if (method === "user_get") return { user_id: this.editorUserId, name: "scpaiueouiuiuiui" };
     if (method === "page_get") {
       const page = this.#page(params.page);
       if (!page || page.deleted) return null;

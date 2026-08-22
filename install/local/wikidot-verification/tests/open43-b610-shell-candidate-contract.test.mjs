@@ -113,3 +113,32 @@ test("B610 rejects failed resources and HTTP responses", () => {
     assert.throws(() => verify(failed), /browser capture has public failures/);
   }
 });
+
+test("B610 successful-navigation failure names the exact capture fields", () => {
+  const drifted = observations();
+  drifted.capture.navigation_status = 503;
+  drifted.capture.final_url = `${PAGE_URL}/`;
+  assert.throws(
+    () => verify(drifted),
+    (error) => {
+      assert.match(error.message, /did not bind one successful navigation/u);
+      assert.match(error.message, /status=503/u);
+      assert.ok(error.message.includes(`final=${JSON.stringify(`${PAGE_URL}/`)}`));
+      assert.ok(error.message.includes(`expected=${JSON.stringify(PAGE_URL)}`));
+      assert.match(error.message, /capture_error=null/u);
+      assert.match(error.message, /failures=0 gate_aborts=0/u);
+      return true;
+    },
+  );
+
+  const errored = observations();
+  errored.capture.capture_error = { name: "TimeoutError", message: "settled wait exceeded" };
+  assert.throws(
+    () => verify(errored),
+    (error) => {
+      assert.match(error.message, /did not bind one successful navigation/u);
+      assert.match(error.message, /capture_error=\{"name":"TimeoutError","message":"settled wait exceeded"\}/u);
+      return true;
+    },
+  );
+});

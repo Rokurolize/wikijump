@@ -180,6 +180,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const expiredToken = `wj:${randomBytes(48).toString("base64url")}`;
     const sessionRows = Object.values(tokens).map(({ userId, token }) => `($x$${token}$x$,${userId},now(),now()+interval '24 hours','127.0.0.1','compatibility input producer',false,0)`).join(",");
     sql(database, `insert into session(session_token,user_id,created_at,expires_at,ip_address,user_agent,restricted,mfa_failed_attempts) values ${sessionRows}; insert into session(session_token,user_id,created_at,expires_at,ip_address,user_agent,restricted,mfa_failed_attempts) values ($x$${expiredToken}$x$,${ACTOR_IDS.editor},now()-interval '2 hours',now()-interval '1 hour','127.0.0.1','compatibility expired actor',false,0); insert into user_role(user_id,role_id,site_id,assigned_at,assigned_by) select ${ACTOR_IDS.editor},role_id,site_id,now(),-1 from user_role where user_id=-1 and site_id=${SITE_ID} on conflict do nothing; update site set locale='en' where site_id=${SITE_ID};`);
+    sql(database, `insert into relation(relation_type,dest_type,dest_id,from_type,from_id,metadata,created_by) values ('application','site',${SITE_ID},'user',${ACTOR_IDS.pending},'{}'::jsonb,${ACTOR_IDS.pending}),('ban','site',${SITE_ID},'user',${ACTOR_IDS.banned},'{"banned_until":null,"reason":"compatibility candidate actor matrix"}'::jsonb,-1) on conflict do nothing;`);
     general.actors.administrator = { user_id: -1, session_token: staffToken };
     for (const name of Object.keys(ACTOR_IDS)) general.actors[name].session_token = tokens[name].token;
     general.actors.non_admin = { user_id: ACTOR_IDS.other, session_token: tokens.other.token };
@@ -261,6 +262,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const privateCategory = q809Private.page_category_id;
     const publicCategory = q809Public.page_category_id;
     sql(database, `insert into role_permission(role_id,site_id,resource_type,resource_category_id,action) select role_id,${SITE_ID},'page',${privateCategory},'view' from role where site_id=${SITE_ID} and name in ('root','admin') on conflict do nothing; update page_category set rating_enabled=true,rating_permission='registered',rating_visibility='visible',rating_type='plus_minus' where category_id in (${privateCategory},${publicCategory}); insert into page_vote(page_id,user_id,value,rating_system) values (${q809Public.page_id},${ACTOR_IDS.eligible},1,'points'),(${q809Private.page_id},${ACTOR_IDS.eligible},1,'points'),(${q809Private.page_id},${ACTOR_IDS.registered},1,'points'),(${q809Private.page_id},${ACTOR_IDS.pending},1,'points') on conflict do nothing;`);
+    general.fixture.view_restricted_categories = ["privateq809"];
 
     const backHolder = await page("qbacklinks-holder", "Q Backlinks Holder", "BACKLINKS_HOLDER\n[[module Backlinks]]");
     const backEmpty = await page("qbacklinks-empty", "Q Backlinks Empty", "BACKLINKS_EMPTY\n[[module Backlinks]]");

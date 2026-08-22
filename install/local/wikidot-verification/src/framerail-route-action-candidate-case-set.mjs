@@ -140,8 +140,8 @@ export async function createFramerailRouteActionCandidateCaseSet({temporalRunner
             ignoreHttpsErrors: input.capture.ignore_https_errors === true,
           };
           const code = await temporalRunner(args);
-          if (code !== 0) throw new Error(`temporal capture exited with status ${code}`);
           result = JSON.parse((await fs.readFile(path.join(temporalOutputDir, "records.json"))).toString("utf8"));
+          if (code !== 0) throw new Error(`temporal capture exited with status ${code}`);
           assertTemporalIdentity(result, contract, contractSha256, candidateIdentity, input, temporalOutputDir);
           if (!Array.isArray(result.evidence)) throw new Error("temporal result evidence must be an array");
           const rowKey = ({scenario, subject_id, interval}) => `${scenario}\u0000${subject_id}\u0000${interval}`;

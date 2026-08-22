@@ -120,10 +120,16 @@ export class Open43Issue775EditBrowserAdapter {
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await this.#activate(page, pagePath, "click", editable);
       await page.evaluate(() => history.back());
-      await page.waitForURL(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.waitForURL(
+        editable ? pageUrl : new URL("/", this.#pageOrigin).href,
+        { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS },
+      );
       const back = await publicState(page);
       await page.evaluate(() => history.forward());
-      await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.waitForURL(
+        editable ? new URL(`${pagePath}/edit`, this.#pageOrigin).href : pageUrl,
+        { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS },
+      );
       if (editable) await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const forward = await publicState(page);
       return { back, forward };

@@ -232,14 +232,19 @@ test("M1062 requires the failed empty action interval before the successful uplo
 
   const toleratedCancellation = structuredClone(observations);
   toleratedCancellation.url = "https://candidate.wikijump.localhost/open43-media-browser-run-upload";
-  toleratedCancellation.diagnostics.candidate_failures = [{
+  const lifecycleCancellation = {
     pathname: "/open43-media-browser-run-upload/__data.json",
     method: "GET",
     resource_type: "fetch",
     error: "net::ERR_ABORTED",
     phase: "double-submit",
-  }];
-  assert.equal(verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", toleratedCancellation).verified, true);
+  };
+  for (const phase of ["success-submit", "double-submit"]) {
+    const phaseCancellation = structuredClone(toleratedCancellation);
+    phaseCancellation.diagnostics.candidate_failures = [{ ...lifecycleCancellation, phase }];
+    assert.equal(verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", phaseCancellation).verified, true);
+  }
+  toleratedCancellation.diagnostics.candidate_failures = [lifecycleCancellation];
 
   for (const [field, value] of [
     ["phase", "reload"],
@@ -254,6 +259,6 @@ test("M1062 requires the failed empty action interval before the successful uplo
   }
 
   const duplicateCancellation = structuredClone(toleratedCancellation);
-  duplicateCancellation.diagnostics.candidate_failures.push(structuredClone(duplicateCancellation.diagnostics.candidate_failures[0]));
+  duplicateCancellation.diagnostics.candidate_failures.push({ ...lifecycleCancellation, phase: "success-submit" });
   assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", duplicateCancellation), /too many tolerated candidate-owned lifecycle cancellations/u);
 });

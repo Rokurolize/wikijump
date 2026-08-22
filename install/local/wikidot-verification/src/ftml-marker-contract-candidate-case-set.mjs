@@ -24,12 +24,12 @@ const REPOSITORY_ROOT = path.resolve(
 const FIXTURE_INDEX =
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json";
 const RETAINED_CANARY =
-  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-e24dd88e.json";
+  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-818098e0.json";
 const CASE_ID = "F1380_FTML_MARKER_CONTRACT";
 const SOURCE_FILES = Object.freeze([
   "deepwell/Cargo.lock",
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json",
-  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-e24dd88e.json",
+  "install/local/wikidot-verification/fixtures/ftml-marker-contract-canary/canary-summary-818098e0.json",
   "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
   "install/local/wikidot-verification/scripts/run-ftml-marker-contract-canary.mjs",
   "install/local/wikidot-verification/src/atomic-no-replace.mjs",

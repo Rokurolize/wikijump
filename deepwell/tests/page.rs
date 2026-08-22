@@ -4281,6 +4281,29 @@ async fn article_view_cache_respects_anonymous_permission_revocation() {
         first_cache_key, second_cache_key,
         "permission revocation must move anonymous article cache reads to a new key"
     );
+
+    let missing = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "article-cache-permission-revocation:missing",
+                "extra": "",
+            },
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Permissions { banned: false, .. },
+        ..
+    } = missing
+    else {
+        panic!(
+            "a missing page in a category without page:view permission must not expose the missing-page action surface"
+        );
+    };
 }
 
 #[tokio::test]

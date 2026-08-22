@@ -52,7 +52,7 @@ const NEGATIVE_SOURCE = [
   `<iframe src="${UNSAFE_URL}" width="560" height="315"></iframe>`,
   "[[/embedvideo]]",
 ].join("\n");
-const CAPTURE_CONTRACT = Object.freeze({});
+const CAPTURE_CONTRACT = Object.freeze({ slug: "m1042-embedvideo", theme_family: "candidate" });
 const EXPECTED_FRAMES = Object.freeze([
   Object.freeze({
     src: YOUTUBE_URL,

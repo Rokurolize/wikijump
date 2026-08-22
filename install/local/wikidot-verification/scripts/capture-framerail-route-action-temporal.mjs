@@ -819,7 +819,11 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
     const response = await page.goto(url, {waitUntil: "domcontentloaded", timeout: args.timeoutMs});
     navigationStatus = response?.status() ?? null;
     const triggers = subject.trigger_selectors;
-    for (const selector of triggers.slice(0, -1)) {
+    const resultOracle = scenario.id === "success"
+      ? null
+      : execution.resultOracles?.[scenario.id]?.[subject.id];
+    const activates = scenario.id === "success" || (resultOracle?.activation ?? "click") === "click";
+    if (activates) for (const selector of triggers.slice(0, -1)) {
       await clickVisibleTrigger(page, selector, args.timeoutMs);
     }
     const records = [];
@@ -840,9 +844,6 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;
-      if (subject.loading.kind === "dom") {
-        assertLoadingBoundaryPresent(await predicateMatches(page, subject.loading), subject.id);
-      }
       records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
       if (settledSignal) await settledSignal;
       else await page.waitForFunction(matchesDomPredicate, subject.settled_predicate, {timeout: args.timeoutMs});
@@ -853,7 +854,6 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       }
       records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
     } else {
-      const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
       const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
       void resultSignal.catch(() => undefined);

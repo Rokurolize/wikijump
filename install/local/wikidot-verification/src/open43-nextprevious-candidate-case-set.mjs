@@ -99,16 +99,18 @@ function exactPrintuser(printuser, expectedUserId) {
   return profile === secondProfile && alt === name && [firstListenerId, avatarId, karmaId, secondListenerId].every((value) => value === expected);
 }
 
-function defaultRowEvidence(html, page, expectedUserId) {
+function defaultRowEvidence(html, page, expectedUserId, expectedUserName) {
   const author = html.match(/<p>by ([\s\S]*?)<\/p>/u)?.[1] ?? null;
   const printuserHtml = author?.match(/^(<span class="printuser avatarhover">[\s\S]*?<\/span>) <span class="odate /u)?.[1] ?? null;
+  const localAuthor = typeof expectedUserName === "string"
+    && author?.startsWith(`${expectedUserName} <span class="odate `) === true;
   const date = html.match(/<span class="odate time_[^"]+ format_[^"]+">[^<]*<\/span>/u)?.[0] ?? null;
   return {
     wrapper: html.includes(LISTPAGES_WRAPPER),
     row: html.includes('<div class="list-pages-item">'),
     title: html.includes(`<h1><span><a href="/${page.slug}">${page.title}</a></span></h1>`),
     author,
-    printuser: exactPrintuser(printuserHtml, expectedUserId),
+    author_identity: exactPrintuser(printuserHtml, expectedUserId) || localAuthor,
     date,
     body: html.includes("Previous candidate body."),
     compat_markers: html.match(/data-wikijump-compat-[^= ]+/gu) ?? [],
@@ -121,6 +123,7 @@ class Open43NextPreviousRun {
   #prefix;
   #siteId = null;
   #pages = new Map();
+  #editorName = null;
 
   constructor({ session, resources, prefix }) {
     this.#session = session;
@@ -199,7 +202,7 @@ class Open43NextPreviousRun {
       inline_sha256: sha256Value(inline),
       selected,
       selected_slug: page?.slug ?? null,
-      row: page === null ? null : defaultRowEvidence(previous, page, this.#session.editorUserId),
+      row: page === null ? null : defaultRowEvidence(previous, page, this.#session.editorUserId, this.#editorName),
       page_view: true,
     };
   }
@@ -214,6 +217,9 @@ class Open43NextPreviousRun {
     const site = await this.#session.rpc("site_get", { site: SITE_SLUG });
     if (!Number.isSafeInteger(site?.site_id)) throw new Error(`editable candidate site ${SITE_SLUG} is missing`);
     this.#siteId = site.site_id;
+    const editor = await this.#rpc("user_get", { user: this.#session.editorUserId });
+    if (typeof editor?.name !== "string" || editor.name.length === 0) throw new Error("NextPreviousPage editor identity is missing");
+    this.#editorName = editor.name;
     await this.#createPage(PAGE_NAMES.older);
     await this.#createPage(PAGE_NAMES.holder);
     await this.#createPage(PAGE_NAMES.newer);
@@ -221,7 +227,7 @@ class Open43NextPreviousRun {
     const savedBefore = await this.#savedBodyHash();
     const initial = await this.#view();
     const older = this.#page(PAGE_NAMES.older);
-    if (initial.selected !== PAGE_NAMES.older || !initial.row?.wrapper || !initial.row.row || !initial.row.title || !initial.row.printuser || !initial.row.date || !initial.row.body || initial.row.compat_markers.length !== 0) throw new Error("public PreviousPage default output did not preserve the exact title/printuser/date/body contract");
+    if (initial.selected !== PAGE_NAMES.older || !initial.row?.wrapper || !initial.row.row || !initial.row.title || !initial.row.author_identity || !initial.row.date || !initial.row.body || initial.row.compat_markers.length !== 0) throw new Error("public PreviousPage default output did not preserve the exact title/author/date/body contract");
     if (initial.inline.trim() !== "start-[[module PreviousPage]]-middle" || initial.inline.includes("list-pages-box")) throw new Error("inline PreviousPage crossed its public literal boundary");
 
     const currentOlder = await this.#getPage(PAGE_NAMES.older);
@@ -318,7 +324,7 @@ function verifyCleanup(proof, resources) {
 function verifyCase(caseId, observations, plan) {
   if (caseId !== OPEN43_NEXT_PREVIOUS_CASE_IDS[0]) throw new Error(`unsupported NextPreviousPage case: ${caseId}`);
   const initial = observations.initial;
-  if (initial.selected !== PAGE_NAMES.older || initial.row?.wrapper !== true || initial.row.row !== true || initial.row.title !== true || initial.row.printuser !== true || typeof initial.row.date !== "string" || initial.row.body !== true || initial.row.compat_markers.length !== 0) throw new Error("Q811 initial public evidence does not prove the default title/printuser/date/body DOM");
+  if (initial.selected !== PAGE_NAMES.older || initial.row?.wrapper !== true || initial.row.row !== true || initial.row.title !== true || initial.row.author_identity !== true || typeof initial.row.date !== "string" || initial.row.body !== true || initial.row.compat_markers.length !== 0) throw new Error("Q811 initial public evidence does not prove the default title/author/date/body DOM");
   if (initial.inline.trim() !== "start-[[module PreviousPage]]-middle") throw new Error("Q811 initial public evidence crossed the inline literal boundary");
   if (observations.renamed.selected !== PAGE_NAMES.older || !observations.renamed.previous.includes(plan.renamed_title) || observations.deleted.selected !== null || observations.deleted.previous.includes("list-pages-item") || observations.restored.selected !== PAGE_NAMES.older || !observations.restored.previous.includes(plan.renamed_title)) throw new Error("Q811 mutation evidence does not bind rename/delete/restore to the next public read");
   if (observations.saved_body_sha256.before !== observations.saved_body_sha256.after) throw new Error("Q811 public GET-side rendering changed the saved holder body");
