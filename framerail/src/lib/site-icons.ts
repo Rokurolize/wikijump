@@ -4,6 +4,9 @@ import { siteIconRedirectLocation } from "./site-icon-source.ts"
 /** Wikidot serves a site's configured favicon from this fixed route. */
 export const FAVICON_ROUTE_PREFIX = "/local--favicon/"
 
+/** Fixed icon routes must be revalidated after site settings change. */
+export const SITE_ICON_CACHE_CONTROL = "no-store"
+
 /** Wikidot serves a site's configured iOS icons from this fixed route. */
 export const IOS_ICON_ROUTE_PREFIX = "/local--iosicon/"
 
