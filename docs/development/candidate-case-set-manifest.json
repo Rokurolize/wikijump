@@ -251,6 +251,7 @@
     {
       "name": "open43-media-files",
       "case_ids": [
+        "M756_LOCAL_ROUTE_BYTES",
         "M1039_MUTATION_TO_NEXT_READ",
         "M1043_RESIZED_BLOB_IDENTITY",
         "M1062_SERIALIZABLE_ACTION_RESPONSE",
