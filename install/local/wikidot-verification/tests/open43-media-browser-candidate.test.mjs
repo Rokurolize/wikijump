@@ -227,4 +227,31 @@ test("M1062 requires the failed empty action interval before the successful uplo
   const failedRequest = structuredClone(observations);
   failedRequest.diagnostics.candidate_failures = [{ pathname: "/probe", resource_type: "fetch", error: "net::ERR_ABORTED" }];
   assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", failedRequest), /fetch \/probe net::ERR_ABORTED/u);
+
+  const toleratedCancellation = structuredClone(observations);
+  toleratedCancellation.url = "https://candidate.wikijump.localhost/open43-media-browser-run-upload";
+  toleratedCancellation.diagnostics.candidate_failures = [{
+    pathname: "/open43-media-browser-run-upload/__data.json",
+    method: "GET",
+    resource_type: "fetch",
+    error: "net::ERR_ABORTED",
+    phase: "double-submit",
+  }];
+  assert.equal(verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", toleratedCancellation).verified, true);
+
+  for (const [field, value] of [
+    ["phase", "reload"],
+    ["method", "POST"],
+    ["resource_type", "document"],
+    ["pathname", "/other/__data.json"],
+    ["error", "net::ERR_FAILED"],
+  ]) {
+    const wrongCancellation = structuredClone(toleratedCancellation);
+    wrongCancellation.diagnostics.candidate_failures[0][field] = value;
+    assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", wrongCancellation), /recorded a candidate-owned request failure/u);
+  }
+
+  const duplicateCancellation = structuredClone(toleratedCancellation);
+  duplicateCancellation.diagnostics.candidate_failures.push(structuredClone(duplicateCancellation.diagnostics.candidate_failures[0]));
+  assert.throws(() => verifyOpen43MediaBrowserCase("M1062_BROWSER_UPLOAD_FLOW", duplicateCancellation), /too many tolerated candidate-owned lifecycle cancellations/u);
 });

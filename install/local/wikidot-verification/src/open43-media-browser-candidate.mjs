@@ -87,10 +87,16 @@ function candidateOwnedUrl(value) {
   return url.hostname.endsWith(".wikijump.localhost") || url.hostname.endsWith(".wjfiles.localhost");
 }
 
-function attachDiagnostics(page) {
+function attachDiagnostics(page, phase = null) {
   const state = { requests: [], failures: [], console_errors: [], page_errors: [], csp_violations: [] };
   page.on("request", (request) => state.requests.push({ method: request.method(), resource_type: request.resourceType(), url: request.url() }));
-  page.on("requestfailed", (request) => state.failures.push({ url: request.url(), resource_type: request.resourceType(), error: request.failure()?.errorText ?? null }));
+  page.on("requestfailed", (request) => state.failures.push({
+    url: request.url(),
+    method: request.method(),
+    resource_type: request.resourceType(),
+    error: request.failure()?.errorText ?? null,
+    phase: typeof phase === "function" ? phase() : null,
+  }));
   page.on("console", (message) => { if (message.type() === "error") state.console_errors.push(sha256(message.text())); });
   page.on("pageerror", (error) => state.page_errors.push(sha256(error.message)));
   return state;
@@ -146,7 +152,7 @@ async function finishDiagnostics(page, diagnostics) {
   diagnostics.csp_violations = await page.evaluate(() => globalThis.__open43MediaCspViolations ?? []).catch(() => []);
   return {
     candidate_requests: diagnostics.requests.filter(({ url }) => candidateOwnedUrl(url)).map(({ method, resource_type, url }) => ({ method, resource_type, pathname: new URL(url).pathname, url_sha256: sha256(url) })),
-    candidate_failures: diagnostics.failures.filter(({ url }) => candidateOwnedUrl(url)).map(({ url, error, resource_type }) => ({ pathname: new URL(url).pathname, resource_type: resource_type ?? null, error })),
+    candidate_failures: diagnostics.failures.filter(({ url }) => candidateOwnedUrl(url)).map(({ url, method, error, resource_type, phase }) => ({ pathname: new URL(url).pathname, method: method ?? null, resource_type: resource_type ?? null, error, phase: phase ?? null })),
     console_errors: [...diagnostics.console_errors],
     page_errors: [...diagnostics.page_errors],
     csp_violations: diagnostics.csp_violations,
@@ -480,7 +486,8 @@ class Open43MediaBrowserRun {
     const pageFixture = await this.#createPage("upload", "M1062_BROWSER_UPLOAD_FLOW");
     const owned = await this.#browser.newCandidateContext({ storageState: editorStorageState(this.#session), viewport: DEFAULT_VIEWPORT });
     const page = await owned.context.newPage();
-    const diagnostics = attachDiagnostics(page);
+    let diagnosticPhase = "navigation";
+    const diagnostics = attachDiagnostics(page, () => diagnosticPhase);
     const fileListRequests = trackRequestQuiescence(
       page,
       (request) => request.method() === "POST" && request.url().includes("?/fileList"),
@@ -497,6 +504,7 @@ class Open43MediaBrowserRun {
       const form = page.locator("#file-upload");
       await form.waitFor({ state: "visible", timeout: 300_000 });
       const emptyBefore = { form_visible: await form.isVisible(), file_rows: await page.locator("#action-area .file-row").count() };
+      diagnosticPhase = "empty-submit";
       const emptyResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
       void emptyResponsePromise.catch(() => undefined);
       await form.locator('input[type="submit"]').click();
@@ -516,6 +524,7 @@ class Open43MediaBrowserRun {
       await form.locator('input[type="file"]').setInputFiles({ name: "browser-upload.png", mimeType: "image/png", buffer: INITIAL_BYTES });
       const beforeSuccess = actionRequests.length;
       const pending = { request_seen: false, form_visible: false };
+      diagnosticPhase = "success-submit";
       const responsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
       void responsePromise.catch(() => undefined);
       await form.locator('input[type="submit"]').click();
@@ -534,6 +543,7 @@ class Open43MediaBrowserRun {
         file_list_quiet_ms: fileListQuiescence.quiet_ms,
       };
 
+      diagnosticPhase = "reload";
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       await page.locator("#files-button").click({ timeout: 300_000 });
       await page.locator("#action-area .file-row").filter({ hasText: "browser-upload.png" }).waitFor({ state: "visible", timeout: 300_000 });
@@ -548,6 +558,7 @@ class Open43MediaBrowserRun {
       const secondForm = page.locator("#file-upload");
       await secondForm.locator('input[type="file"]').setInputFiles({ name: "browser-double.png", mimeType: "image/png", buffer: SECOND_BYTES });
       const beforeDouble = actionRequests.length;
+      diagnosticPhase = "double-submit";
       const doubleResponse = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/fileUpload"), { timeout: 300_000 });
       void doubleResponse.catch(() => undefined);
       await Promise.all([
@@ -623,14 +634,20 @@ class Open43MediaBrowserRun {
   }
 }
 
-function cleanDiagnostics(value, name) {
+function cleanDiagnostics(value, name, { allowCandidateFailure = null, maxAllowedCandidateFailures = 0 } = {}) {
   const source = object(value, name);
   const diagnostics = object(source.diagnostics ?? source, `${name}.diagnostics`);
   if (!Array.isArray(diagnostics.candidate_failures)) throw new Error(`${name} candidate-owned request failures are missing`);
-  if (diagnostics.candidate_failures.length !== 0) {
-    const failure = object(diagnostics.candidate_failures[0], `${name}.diagnostics.candidate_failures[0]`);
-    throw new Error(`${name} recorded a candidate-owned request failure: ${String(failure.resource_type ?? "unknown")} ${String(failure.pathname ?? "unknown")} ${String(failure.error ?? "unknown")}`);
+  let allowedFailureCount = 0;
+  for (const [index, rawFailure] of diagnostics.candidate_failures.entries()) {
+    const failure = object(rawFailure, `${name}.diagnostics.candidate_failures[${index}]`);
+    if (typeof allowCandidateFailure === "function" && allowCandidateFailure(failure) === true) {
+      allowedFailureCount += 1;
+      continue;
+    }
+    throw new Error(`${name} recorded a candidate-owned request failure: ${String(failure.resource_type ?? "unknown")} ${String(failure.pathname ?? "unknown")} ${String(failure.error ?? "unknown")} (method ${String(failure.method ?? "unknown")}, phase ${String(failure.phase ?? "unknown")})`);
   }
+  if (allowedFailureCount > maxAllowedCandidateFailures) throw new Error(`${name} recorded too many tolerated candidate-owned lifecycle cancellations`);
   if (!Array.isArray(diagnostics.page_errors) || diagnostics.page_errors.length !== 0) throw new Error(`${name} emitted page errors`);
   if (!Array.isArray(diagnostics.console_errors) || diagnostics.console_errors.length !== 0) throw new Error(`${name} emitted console errors`);
   if (!Array.isArray(diagnostics.csp_violations) || diagnostics.csp_violations.some(({ blocked_uri }) => typeof blocked_uri === "string" && candidateOwnedUrl(blocked_uri))) throw new Error(`${name} violated CSP at a candidate-owned boundary`);
@@ -693,7 +710,16 @@ export function verifyOpen43MediaBrowserCase(caseId, observations) {
     return { verified: true, viewer_loading_verified: true, navigation_verified: true, keyboard_verified: true, close_verified: true, static_anchor_count: 2 };
   }
   if (caseId === "M1062_BROWSER_UPLOAD_FLOW") {
-    cleanDiagnostics(value, caseId);
+    const uploadPage = typeof value.url === "string" ? new URL(value.url) : null;
+    cleanDiagnostics(value, caseId, {
+      allowCandidateFailure: (failure) => uploadPage !== null
+        && failure.phase === "double-submit"
+        && failure.method === "GET"
+        && failure.resource_type === "fetch"
+        && failure.pathname === `${uploadPage.pathname}/__data.json`
+        && failure.error === "net::ERR_ABORTED",
+      maxAllowedCandidateFailures: 1,
+    });
     if (value.empty_submission?.before?.form_visible !== true || value.empty_submission.after?.form_visible !== true || value.empty_submission.after?.file_rows !== value.empty_submission.before.file_rows || value.empty_submission.after?.action_request_count !== 1 || value.empty_submission.after?.action_status !== 200 || value.empty_submission.after?.error_dialog_visible !== true) throw new Error(`${caseId} empty upload did not expose the exact failed action interval`);
     if (value.pending?.request_seen !== true || value.pending.form_visible !== true) throw new Error(`${caseId} did not expose the in-flight upload interval`);
     if (value.success?.form_visible !== false || value.success.row_count !== 1 || value.success.action_request_count !== 1 || value.success.file_list_quiescent !== true || !Number.isFinite(value.success.file_list_quiet_ms) || value.success.file_list_quiet_ms < 500) throw new Error(`${caseId} successful upload did not reach a settled file-list refresh`);
