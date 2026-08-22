@@ -828,6 +828,7 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
     }
     const records = [];
     if (scenario.id === "success") {
+      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       const loadingSignal = subject.loading.kind === "dom"
         ? armDomPredicate(page, subject.loading, args.timeoutMs, `${subject.id} loading`)
         : armBrowserEvent(page, subject.loading, args.timeoutMs, `${subject.id} loading`);
@@ -840,7 +841,6 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       for (const signal of [loadingSignal, settledSignal, successSignal]) {
         if (signal) void signal.catch(() => undefined);
       }
-      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;

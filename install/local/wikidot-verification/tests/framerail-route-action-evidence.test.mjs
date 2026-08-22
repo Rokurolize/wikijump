@@ -289,8 +289,13 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   assert.equal(contract.authority, undefined)
   assert.equal(contract.capture.script, "install/local/wikidot-verification/scripts/capture-framerail-route-action-temporal.mjs")
   assert.match(contract.capture.script_sha256, /^[0-9a-f]{64}$/u)
+  const captureScript = await readFile(new URL("../../scripts/capture-framerail-route-action-temporal.mjs", browserContractPath), "utf8")
+  assert.ok(
+    captureScript.indexOf('scenario, "selection", navigationStatus, outputDir') < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
+    "selection evidence must be sealed before activation wait timeouts are armed"
+  )
   assert.equal(
-    createHash("sha256").update(await readFile(new URL("../../scripts/capture-framerail-route-action-temporal.mjs", browserContractPath))).digest("hex"),
+    createHash("sha256").update(captureScript).digest("hex"),
     contract.capture.script_sha256
   )
   assert.deepEqual(contract.capture.scenarios, {
