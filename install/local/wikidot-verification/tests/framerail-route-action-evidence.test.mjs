@@ -26,6 +26,7 @@ import {
   validateOutputPreflight,
   verifyHistoricalEvidence,
   requireNavigationResponse,
+  urlSuffixMatches,
 } from "../scripts/capture-framerail-route-action-temporal.mjs"
 
 const root = new URL("../../../../", import.meta.url)
@@ -485,6 +486,13 @@ test("issue #1372 rejects wrong navigation destination or status", () => {
   const event = {url_suffix: "/edit/true", status: 200}
   assert.throws(() => requireNavigationResponse({url: () => "https://candidate.invalid/wrong", status: () => 200}, event, "create"), /exact destination and status/u)
   assert.throws(() => requireNavigationResponse({url: () => "https://candidate.invalid/edit/true", status: () => 302}, event, "create"), /exact destination and status/u)
+})
+
+test("issue #1372 request url suffix matching ignores only a trailing query", () => {
+  assert.equal(urlSuffixMatches("https://candidate.invalid/route-action-missing/edit/true/__data.json?x-sveltekit-invalidated=01", "/edit/true/__data.json"), true)
+  assert.equal(urlSuffixMatches("https://candidate.invalid/page?/deletedGet", "?/deletedGet"), true)
+  assert.equal(urlSuffixMatches("https://candidate.invalid/edit/true/__data.json?x-sveltekit-invalidated=01", "/edit/true"), false)
+  assert.equal(urlSuffixMatches("https://candidate.invalid/edit/true/__data.json?other=1", "/edit/true/__data.json#frag"), false)
 })
 
 test("issue #1372 rejects a leftover run-owned storage state", async (t) => {

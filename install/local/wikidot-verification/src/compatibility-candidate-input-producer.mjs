@@ -376,8 +376,8 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const failureOracles = Object.fromEntries(temporalContract.subjects.map((subject) => {
       if (subject.id === "control:create") return [subject.id, {
         type: "event",
-        event: { kind: "request", method: "GET", url_suffix: "/edit/true" },
-        failure_control: { kind: "abort_request", request: { resource_type: "document", method: "GET", url_suffix: "/edit/true" } },
+        event: { kind: "request", method: "GET", url_suffix: "/edit/true/__data.json" },
+        failure_control: { kind: "abort_request", request: { resource_type: "fetch", method: "GET", url_suffix: "/edit/true/__data.json" } },
       }];
       if (subject.id === "control:restore") return [subject.id, {
         type: "event",

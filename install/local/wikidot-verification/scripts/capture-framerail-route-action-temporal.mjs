@@ -658,10 +658,16 @@ function armDomPredicate(page, predicate, timeoutMs, label) {
   })();
 }
 
+export function urlSuffixMatches(rawUrl, suffix) {
+  if (rawUrl.endsWith(suffix)) return true;
+  if (!suffix.startsWith("/") || suffix.includes("?") || suffix.includes("#")) return false;
+  return new URL(rawUrl).pathname.endsWith(suffix);
+}
+
 function failureRequestMatches(request, matcher) {
   if (matcher.resource_type !== undefined && request.resourceType() !== matcher.resource_type) return false;
   if (matcher.method !== undefined && request.method() !== matcher.method) return false;
-  if (matcher.url_suffix !== undefined && !request.url().endsWith(matcher.url_suffix)) return false;
+  if (matcher.url_suffix !== undefined && !urlSuffixMatches(request.url(), matcher.url_suffix)) return false;
   return true;
 }
 
@@ -711,7 +717,7 @@ async function clickVisibleTrigger(page, selector, timeoutMs) {
 
 function requestMatches(request, event) {
   if (event.method && request.method() !== event.method) return false;
-  if (!request.url().endsWith(event.url_suffix)) return false;
+  if (!urlSuffixMatches(request.url(), event.url_suffix)) return false;
   return !event.post_data_contains || (request.postData() ?? "").includes(event.post_data_contains);
 }
 
