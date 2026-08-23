@@ -768,7 +768,7 @@ async function writeAndVerifyArtifact(filePath, data, label) {
   return identity;
 }
 
-async function captureObservation(page, diagnostics, args, execution, subject, scenario, interval, navigationStatus, outputDir) {
+async function captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, interval, navigationStatus, outputDir) {
   assertDiagnosticsBounded(diagnostics);
   const subjectDir = path.join(outputDir, safePathSegment(subject.id));
   await fs.mkdir(subjectDir, {recursive: true, mode: 0o700});
@@ -785,18 +785,13 @@ async function captureObservation(page, diagnostics, args, execution, subject, s
   const domBytes = assertByteLimit(Buffer.from(html, "utf8"), DOM_MAX_BYTES, "DOM artifact");
   const domIdentity = await writeAndVerifyArtifact(domPath, domBytes, "DOM artifact");
   const screenshot = assertByteLimit(await withTimeout(async () => {
-    const session = await page.context().newCDPSession(page);
-    try {
-      const {data} = await session.send("Page.captureScreenshot", {
-        format: "jpeg",
-        quality: 45,
-        fromSurface: true,
-        captureBeyondViewport: false,
-      });
-      return Buffer.from(data, "base64");
-    } finally {
-      await session.detach().catch(() => {});
-    }
+    const {data} = await cdpSession.send("Page.captureScreenshot", {
+      format: "jpeg",
+      quality: 45,
+      fromSurface: true,
+      captureBeyondViewport: false,
+    });
+    return Buffer.from(data, "base64");
   }, args.timeoutMs, "screenshot capture"), SCREENSHOT_MAX_BYTES, "screenshot artifact");
   const screenshotIdentity = await writeAndVerifyArtifact(screenshotPath, screenshot, "screenshot artifact");
   const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
@@ -826,6 +821,7 @@ async function captureObservation(page, diagnostics, args, execution, subject, s
 
 async function captureSubjectScenario(context, args, execution, subject, scenario, url, outputDir) {
   const page = await context.newPage();
+  const cdpSession = await page.context().newCDPSession(page);
   const diagnostics = attachDiagnostics(page);
   let navigationStatus = null;
   try {
@@ -841,7 +837,7 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
     }
     const records = [];
     if (scenario.id === "success") {
-      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
+      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       const loadingSignal = subject.loading.kind === "dom"
         ? armDomPredicate(page, subject.loading, args.timeoutMs, `${subject.id} loading`)
         : armBrowserEvent(page, subject.loading, args.timeoutMs, `${subject.id} loading`);
@@ -857,15 +853,15 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;
-      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
+      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
       if (settledSignal) await settledSignal;
       else await page.waitForFunction(matchesDomPredicate, subject.settled_predicate, {timeout: args.timeoutMs});
-      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "settled", navigationStatus, outputDir));
+      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "settled", navigationStatus, outputDir));
       if (successSignal) await successSignal;
       if (!(await predicateMatches(page, subject.settled_predicate))) {
         throw new Error(`${subject.id} settled predicate was not true at success`);
       }
-      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
+      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
     } else {
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
       const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
@@ -880,10 +876,11 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       } finally {
         await failureControl.cleanup();
       }
-      records.push(await captureObservation(page, diagnostics, args, execution, subject, scenario, scenario.id, navigationStatus, outputDir));
+      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, scenario.id, navigationStatus, outputDir));
     }
     return records;
   } finally {
+    await cdpSession.detach().catch(() => {});
     await withTimeout(() => page.close(), SHUTDOWN_TIMEOUT_MS, `${subject.id} page shutdown`);
   }
 }

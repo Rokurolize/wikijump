@@ -296,8 +296,13 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   )
   assert.match(
     captureScript,
-    /session\.send\("Page\.captureScreenshot", \{[\s\S]*format: "jpeg",[\s\S]*quality: 45,[\s\S]*captureBeyondViewport: false/u,
+    /cdpSession\.send\("Page\.captureScreenshot", \{[\s\S]*format: "jpeg",[\s\S]*quality: 45,[\s\S]*captureBeyondViewport: false/u,
     "temporal screenshots must use the bounded Chromium viewport evidence path"
+  )
+  assert.equal(
+    captureScript.match(/newCDPSession\(page\)/gu)?.length,
+    1,
+    "each subject page must reuse one CDP session for all interval screenshots"
   )
   assert.match(
     captureScript,

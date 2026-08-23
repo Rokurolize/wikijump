@@ -31,7 +31,7 @@
   ],
   "capture": {
     "script": "install/local/wikidot-verification/scripts/capture-framerail-route-action-temporal.mjs",
-    "script_sha256": "18fe2144b21aa58f3163f500cd64e6a62353322b1987a757049bd4ea7056daf8",
+    "script_sha256": "1e82cd0fde56bbbda7681a1c4dd57ba85624f6a583c4ad404bb430457afcc44a",
     "scenarios": {
       "denial": {
         "result_oracle_source": "failure_control_identity",
