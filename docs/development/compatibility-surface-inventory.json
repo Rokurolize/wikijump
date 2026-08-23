@@ -11171,8 +11171,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "7416816054121dbe098439dc8f9612d1af27f567",
-      "tree": "e7ec73b38a5f33667d45210af8763c4a39dd1f85"
+      "commit": "f493b379dd3799fbe833ef306df2e4b0fd52d36c",
+      "tree": "2d45fbba974dbee06fc9d7434a85b1775a8dd453"
     },
     "ftml": {
       "commit": "818098e02cb321b7fe1ea3206a2ce9b4700658bc",
@@ -11377,7 +11377,7 @@
       },
       {
         "path": "docs/development/wikidot-page-action-surfaces.json",
-        "sha256": "7680adf12b1a213ecada3fa2242670b100b7dd374e8a1d79ff89cb4092437354"
+        "sha256": "6d711246684a0868d7e3b15907ef46c8dec0318e71272aaec49f1e4ee543f95a"
       },
       {
         "path": "docs/development/wikidot-py-amc-client-parity.json",
@@ -11533,7 +11533,7 @@
       },
       {
         "path": "framerail/src/routes/+error.svelte",
-        "sha256": "401a401669a1e9c049492f05baedb5db978f5b5b0c4d856c7ecf7aeab915b507"
+        "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f"
       },
       {
         "path": "framerail/src/routes/+page.server.ts",
@@ -36325,7 +36325,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "401a401669a1e9c049492f05baedb5db978f5b5b0c4d856c7ecf7aeab915b507"
+          "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -36415,7 +36415,7 @@
       "source_identities": [
         {
           "path": "framerail/src/routes/+error.svelte",
-          "sha256": "401a401669a1e9c049492f05baedb5db978f5b5b0c4d856c7ecf7aeab915b507"
+          "sha256": "17cf841cb923a59de2d4fe5a75be25a19f07ae3a82ceed9864db5a20b64f1a2f"
         },
         {
           "path": "framerail/src/lib/server/load/page/page-actions.ts",
