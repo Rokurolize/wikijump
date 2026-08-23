@@ -283,6 +283,23 @@ test("legacy printuser onclick is rebound without evaluating authored script", (
   }
 })
 
+test("legacy printuser binding installs the missing Wikidot userInfo runtime", () => {
+  const prior = globalThis.WIKIDOT
+  globalThis.WIKIDOT = { modules: {} }
+  const root = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelectorAll: () => []
+  }
+  try {
+    wikidotLegacyActions(root, { actions: [], runtime: {} })
+    assert.equal(typeof globalThis.WIKIDOT.page.listeners.userInfo, "function")
+    assert.equal(globalThis.WIKIDOT.page.listeners.userInfo(20000013), false)
+  } finally {
+    globalThis.WIKIDOT = prior
+  }
+})
+
 test("a Rate action updates the live hidden star score after the server response", () => {
   const score = { value: "0" }
   const stars = {

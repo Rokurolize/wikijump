@@ -56,6 +56,25 @@ const busyActions = new WeakSet()
 const originalUserInfoHandlers = new WeakMap()
 
 const USER_INFO_ONCLICK = /^WIKIDOT\.page\.listeners\.userInfo\((-?[0-9]+)\); return false;$/u
+const WIKIDOT_USER_INFO_HREF = /^http:\/\/www\.wikidot\.com\/user:info\/([a-z0-9-]+)$/u
+
+const installDefaultWikidotUserInfoListener = () => {
+  const wikidot = globalThis.WIKIDOT ?? (globalThis.WIKIDOT = {})
+  const page = wikidot.page ?? (wikidot.page = {})
+  const listeners = page.listeners ?? (page.listeners = {})
+  if (typeof listeners.userInfo === "function") return
+  listeners.userInfo = (userId) => {
+    if (!Number.isSafeInteger(userId)) return false
+    const documentObject = globalThis.document
+    if (!documentObject?.querySelectorAll) return false
+    const expected = `WIKIDOT.page.listeners.userInfo(${userId}); return false;`
+    const anchor = [...documentObject.querySelectorAll('.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]')]
+      .find((element) => element.getAttribute("onclick") === expected)
+    const match = WIKIDOT_USER_INFO_HREF.exec(anchor?.getAttribute("href") ?? "")
+    if (match) globalThis.location?.assign?.(`/user:info/${match[1]}`)
+    return false
+  }
+}
 
 /**
  * Rebind only the exact renderer-owned Wikidot printuser handler shape.
@@ -65,6 +84,7 @@ const USER_INFO_ONCLICK = /^WIKIDOT\.page\.listeners\.userInfo\((-?[0-9]+)\); re
  * @param {HTMLElement} root
  */
 const bindWikidotUserInfoHandlers = (root) => {
+  installDefaultWikidotUserInfoListener()
   /** @type {HTMLElement[]} */
   const elements = []
   for (const element of /** @type {NodeListOf<HTMLElement>} */ (
