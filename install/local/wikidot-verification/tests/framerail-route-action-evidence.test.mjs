@@ -304,11 +304,7 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     1,
     "each subject page must reuse one CDP session for all interval screenshots"
   )
-  assert.match(
-    captureScript,
-    /cdpSession\.send\("Page\.stopLoading"\)/u,
-    "temporal screenshots must stop residual gated resource loading after the DOM boundary is fixed"
-  )
+  assert.doesNotMatch(captureScript, /Page\.stopLoading/u)
   assert.match(
     captureScript,
     /page\.goto\(url, \{waitUntil: "commit", timeout: args\.timeoutMs\}\)/u,
