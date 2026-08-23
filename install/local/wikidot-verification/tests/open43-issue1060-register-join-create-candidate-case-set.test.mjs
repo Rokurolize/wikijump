@@ -80,7 +80,7 @@ function browserLifecycle() {
       state: { join_control_count: 1, source_disclosure: false },
     },
     register: { login_form_visible: true, register_form_visible: false },
-    logout: { logout_button_visible: false, session_cookie_after: true },
+    logout: { state: { logout_button_visible: false }, session_cookie_after: true },
     login_again: { state: { login_form_visible: false } },
     session_token: "registered-session-token",
     join: {
