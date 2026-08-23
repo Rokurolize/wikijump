@@ -304,6 +304,11 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     /process\.env\.PW_TEST_SCREENSHOT_NO_FONTS_READY = "1"/u,
     "temporal capture must not wait on externally gated webfonts before screenshots"
   )
+  assert.match(
+    captureScript,
+    /page\.goto\(url, \{waitUntil: "commit", timeout: args\.timeoutMs\}\)/u,
+    "temporal navigation must hand readiness to the exact trigger and predicate waits"
+  )
   assert.equal(
     createHash("sha256").update(captureScript).digest("hex"),
     contract.capture.script_sha256

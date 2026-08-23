@@ -821,7 +821,7 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
   const diagnostics = attachDiagnostics(page);
   let navigationStatus = null;
   try {
-    const response = await page.goto(url, {waitUntil: "domcontentloaded", timeout: args.timeoutMs});
+    const response = await page.goto(url, {waitUntil: "commit", timeout: args.timeoutMs});
     navigationStatus = response?.status() ?? null;
     const triggers = subject.trigger_selectors;
     const resultOracle = scenario.id === "success"
