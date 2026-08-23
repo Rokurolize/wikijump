@@ -19,11 +19,6 @@ import {
 import {defaultBrowserRoot, loadPlaywright, openBrowser} from "../src/browser-session.mjs";
 import {safePathSegment} from "../src/browser-render-evidence.mjs";
 
-// Temporal evidence captures the current viewport state. Waiting for externally
-// hosted webfonts before every screenshot adds no contract value and can stall
-// behind the capture request gate for many seconds per interval.
-process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = "1";
-
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SCRIPT_RELATIVE_PATH = "install/local/wikidot-verification/scripts/capture-framerail-route-action-temporal.mjs";
 const REPO_ROOT = path.resolve(path.dirname(SCRIPT_PATH), "../../../..");
@@ -789,7 +784,20 @@ async function captureObservation(page, diagnostics, args, execution, subject, s
   }
   const domBytes = assertByteLimit(Buffer.from(html, "utf8"), DOM_MAX_BYTES, "DOM artifact");
   const domIdentity = await writeAndVerifyArtifact(domPath, domBytes, "DOM artifact");
-  const screenshot = assertByteLimit(await withTimeout(() => page.screenshot({type: "jpeg", quality: 45, fullPage: false}), args.timeoutMs, "screenshot capture"), SCREENSHOT_MAX_BYTES, "screenshot artifact");
+  const screenshot = assertByteLimit(await withTimeout(async () => {
+    const session = await page.context().newCDPSession(page);
+    try {
+      const {data} = await session.send("Page.captureScreenshot", {
+        format: "jpeg",
+        quality: 45,
+        fromSurface: true,
+        captureBeyondViewport: false,
+      });
+      return Buffer.from(data, "base64");
+    } finally {
+      await session.detach().catch(() => {});
+    }
+  }, args.timeoutMs, "screenshot capture"), SCREENSHOT_MAX_BYTES, "screenshot artifact");
   const screenshotIdentity = await writeAndVerifyArtifact(screenshotPath, screenshot, "screenshot artifact");
   const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
   return {

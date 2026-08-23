@@ -296,13 +296,8 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   )
   assert.match(
     captureScript,
-    /page\.screenshot\(\{type: "jpeg", quality: 45, fullPage: false\}\)/u,
-    "temporal screenshots must use the bounded viewport JPEG evidence path"
-  )
-  assert.match(
-    captureScript,
-    /process\.env\.PW_TEST_SCREENSHOT_NO_FONTS_READY = "1"/u,
-    "temporal capture must not wait on externally gated webfonts before screenshots"
+    /session\.send\("Page\.captureScreenshot", \{[\s\S]*format: "jpeg",[\s\S]*quality: 45,[\s\S]*captureBeyondViewport: false/u,
+    "temporal screenshots must use the bounded Chromium viewport evidence path"
   )
   assert.match(
     captureScript,
