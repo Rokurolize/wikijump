@@ -329,6 +329,8 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   )
   assert.match(captureScript, /headless: false/u)
   assert.match(captureScript, /DISPLAY: captureDisplay\.display/u)
+  assert.match(captureScript, /contract: contractIdentity,/u)
+  assert.doesNotMatch(captureScript, /contract: contractIdentity\.identity/u)
   assert.doesNotMatch(captureScript, /requestAnimationFrame/u)
   assert.match(captureScript, /"-nolisten",\s*"tcp",\s*"-pn"/u)
   assert.match(captureScript, /await captureDisplay\.close\(\)/u)

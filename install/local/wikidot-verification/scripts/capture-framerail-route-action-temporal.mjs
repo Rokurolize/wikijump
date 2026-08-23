@@ -722,7 +722,7 @@ async function inputIdentities(args, contract, urls, contractIdentity, outputDir
   return {
     source,
     historicalEvidence,
-    contract: contractIdentity.identity,
+    contract: contractIdentity,
     repository: {name: contract.repository, root: REPO_ROOT},
     script,
     evidenceRegistry,
