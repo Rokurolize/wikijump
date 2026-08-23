@@ -348,7 +348,7 @@ class Open43Issue1060Run {
     this.#plans.set(OPEN43_ISSUE1060_CASE_IDS[0], {
       join_path: JOIN_PATH,
       username: this.#username,
-      component_path: `/${encodeURIComponent(this.#componentSlug)}`,
+      component_path: `/${this.#componentSlug}`,
       component_slug: this.#componentSlug,
       registered_user_id: session.user_id,
       site_id: this.#siteId,

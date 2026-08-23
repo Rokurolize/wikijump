@@ -89,8 +89,8 @@ function browserLifecycle() {
       mutation_request_count: 1,
       navigation_count: 1,
     },
-    create: { path: `/${encodeURIComponent(COMPONENT_SLUG)}`, body_contains_source: true, error_popup_visible: false },
-    read_back: { path: `/${encodeURIComponent(COMPONENT_SLUG)}`, body_contains_source: true, error_popup_visible: false },
+    create: { path: `/${COMPONENT_SLUG}`, body_contains_source: true, error_popup_visible: false },
+    read_back: { path: `/${COMPONENT_SLUG}`, body_contains_source: true, error_popup_visible: false },
   };
 }
 

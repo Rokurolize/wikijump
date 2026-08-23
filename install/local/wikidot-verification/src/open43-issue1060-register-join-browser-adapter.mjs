@@ -158,7 +158,7 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
       await page.locator('input[name="title"]').fill(`candidate-case-owner:${componentSlug}`);
       await page.locator('textarea[name="wikitext"]').fill(source);
       await page.locator('#editor input[type="submit"], #editor button[type="submit"]').click();
-      await page.waitForURL(this.#url(`/${encodeURIComponent(componentSlug)}`), { timeout: TIMEOUT_MS });
+      await page.waitForURL(this.#url(`/${componentSlug}`), { timeout: TIMEOUT_MS });
       return await page.evaluate((expected) => ({
         path: location.pathname,
         body_contains_source: document.querySelector(".page-content")?.innerText.includes(expected) === true,
