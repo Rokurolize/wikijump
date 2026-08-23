@@ -4,7 +4,7 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
-import {candidateCompose, candidateIdentityForSite} from "../scripts/start-promotion-candidate.mjs";
+import {candidateCompose, candidateDeepwellConfig, candidateIdentityForSite} from "../scripts/start-promotion-candidate.mjs";
 import {candidateSitePageOrigin, validateCandidateParityIdentity} from "../src/standing-browser-parity-receipt.mjs";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -45,6 +45,13 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
 test("candidate Deepwell production image contains the immutable seeder payload", async () => {
   const dockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/Dockerfile"), "utf8");
   assert.match(dockerfile, /COPY \.\/deepwell\/seeder \/opt\/deepwell\/seeder/u);
+});
+
+test("promotion candidate makes public registration deterministic", async () => {
+  const sourceConfig = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/config.toml"), "utf8");
+  const candidateConfig = candidateDeepwellConfig(sourceConfig, 20443);
+  assert.match(candidateConfig, /mock-mailcheck = true/u);
+  assert.doesNotMatch(candidateConfig, /mock-mailcheck = false/u);
 });
 
 test("one sealed candidate runtime can expose independent site-bound endpoint projections", () => {

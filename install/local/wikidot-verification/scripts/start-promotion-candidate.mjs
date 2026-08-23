@@ -49,13 +49,14 @@ async function readJson(filePath) {
   return JSON.parse(await fs.readFile(filePath, "utf8"));
 }
 
-function candidateDeepwellConfig(source, port) {
+export function candidateDeepwellConfig(source, port) {
   let config = source;
   for (const [before, after] of [
     ["run-seeder = false", "run-seeder = true"],
     ['seeder-path = "seeder"', 'seeder-path = "/opt/deepwell/seeder"'],
     ['main = "wikijump.com"', `main = "wikijump.localhost:${port}"`],
     ['files = "wjfiles.com"', `files = "wjfiles.localhost:${port}"`],
+    ["mock-mailcheck = false", "mock-mailcheck = true"],
   ]) {
     if (!config.includes(before)) fail(`candidate Deepwell config source does not contain ${before}`);
     config = config.replace(before, after);
