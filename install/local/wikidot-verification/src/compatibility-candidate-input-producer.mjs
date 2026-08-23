@@ -266,17 +266,20 @@ export async function prepareCompatibilityCandidateInputs(args) {
       markerPages.push(await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID }));
     }
 
-    // B689/B690 observe the real SCP-8980 tabview and geometry contract. The maintained fresh
-    // candidate seed does not contain that page, so install the exact source-owned seeder copy
-    // (which is byte-identical to the frozen imported-source authority) plus its two ListPages
-    // child fragments. Re-render after parenting so parent="." resolves against the final graph.
+    // B689/B690 observe the real SCP-8980 tabview and geometry contract through
+    // candidatePageOrigin(), i.e. the selected endpoint site (SITE_ID), not the
+    // additional scp-wiki site origin. The maintained fresh candidate seed does
+    // not contain that page, so install the exact source-owned seeder copy
+    // (which is byte-identical to the frozen imported-source authority) plus its
+    // two ListPages child fragments. Re-render after parenting so parent="."
+    // resolves against the final graph.
     const b689Fixtures = await b689Scp8980CandidateFixtures();
-    const b689Root = await page(b689Fixtures.source.slug, b689Fixtures.source.title, b689Fixtures.source.wikitext, { siteId: FOREIGN_SITE_ID, imported: true });
+    const b689Root = await page(b689Fixtures.source.slug, b689Fixtures.source.title, b689Fixtures.source.wikitext, { imported: true });
     for (const fixture of b689Fixtures.fragments) {
-      const fragment = await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID, imported: true });
-      await rpc("parent_set", { site_id: FOREIGN_SITE_ID, parent: b689Root.slug, child: fragment.slug }, { siteId: FOREIGN_SITE_ID });
+      const fragment = await page(fixture.slug, fixture.title, fixture.wikitext, { imported: true });
+      await rpc("parent_set", { site_id: SITE_ID, parent: b689Root.slug, child: fragment.slug }, { siteId: SITE_ID });
     }
-    await rpc("page_rerender", { site_id: FOREIGN_SITE_ID, category_id: b689Root.page_category_id, page_id: b689Root.page_id }, { siteId: FOREIGN_SITE_ID });
+    await rpc("page_rerender", { site_id: SITE_ID, category_id: b689Root.page_category_id, page_id: b689Root.page_id }, { siteId: SITE_ID });
 
     for (const name of privateFiles) {
       const target = path.join(args["output-private-dir"], name);
