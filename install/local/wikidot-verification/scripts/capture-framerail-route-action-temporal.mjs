@@ -315,85 +315,65 @@ export function viewportCropGeometry(
 async function startCaptureDisplay() {
   await fs.access(XVFB_EXECUTABLE, fsConstants.X_OK);
   await fs.access(X11_IMPORT_EXECUTABLE, fsConstants.X_OK);
-  const child = spawn(
-    XVFB_EXECUTABLE,
-    [
-      "-displayfd",
-      "3",
-      "-screen",
-      "0",
-      `${CAPTURE_DISPLAY_WIDTH}x${CAPTURE_DISPLAY_HEIGHT}x${CAPTURE_DISPLAY_DEPTH}`,
-      "-nolisten",
-      "tcp",
-    ],
-    {stdio: ["ignore", "ignore", "ignore", "pipe"]},
-  );
-  let exited = false;
-  child.once("exit", () => {
-    exited = true;
-  });
-  const number = await withTimeout(
-    () => new Promise((resolve, reject) => {
-      let output = "";
-      const stream = child.stdio[3];
-      const onData = (chunk) => {
-        output += chunk.toString("utf8");
-        const match = /^(\d+)\n/u.exec(output);
-        if (!match) return;
-        cleanup();
-        resolve(Number.parseInt(match[1], 10));
-      };
-      const onError = (error) => {
-        cleanup();
-        reject(error);
-      };
-      const onExit = (code, signal) => {
-        cleanup();
-        reject(new Error(`capture display exited before allocation: ${code ?? signal}`));
-      };
-      const cleanup = () => {
-        stream.off("data", onData);
-        child.off("error", onError);
-        child.off("exit", onExit);
-      };
-      stream.on("data", onData);
-      child.once("error", onError);
-      child.once("exit", onExit);
-    }),
-    SHUTDOWN_TIMEOUT_MS,
-    "capture display allocation",
-  ).catch((error) => {
-    child.kill("SIGKILL");
-    throw error;
-  });
-  if (!Number.isSafeInteger(number) || number < 0) {
-    child.kill("SIGKILL");
-    throw new Error("capture display returned an invalid display number");
-  }
-  return {
-    display: `:${number}`,
-    width: CAPTURE_DISPLAY_WIDTH,
-    height: CAPTURE_DISPLAY_HEIGHT,
-    depth: CAPTURE_DISPLAY_DEPTH,
-    async close() {
-      if (exited || child.exitCode !== null || child.signalCode !== null) return;
-      child.kill("SIGTERM");
-      try {
-        await withTimeout(
-          () => new Promise((resolve) => child.once("exit", resolve)),
-          SHUTDOWN_TIMEOUT_MS,
-          "capture display shutdown",
-        );
-      } catch {
-        child.kill("SIGKILL");
-        await withTimeout(
-          () => new Promise((resolve) => child.once("exit", resolve)),
-          SHUTDOWN_TIMEOUT_MS,
-          "capture display forced shutdown",
-        );
+  const firstDisplay = 77 + (process.pid % 32);
+  for (let offset = 0; offset < 32; offset += 1) {
+    const number = 77 + ((firstDisplay - 77 + offset) % 32);
+    const lockPath = `/tmp/.X${number}-lock`;
+    if (await fs.access(lockPath).then(() => true, () => false)) continue;
+    const child = spawn(
+      XVFB_EXECUTABLE,
+      [
+        `:${number}`,
+        "-screen",
+        "0",
+        `${CAPTURE_DISPLAY_WIDTH}x${CAPTURE_DISPLAY_HEIGHT}x${CAPTURE_DISPLAY_DEPTH}`,
+        "-nolisten",
+        "tcp",
+        "-pn",
+      ],
+      {stdio: "ignore"},
+    );
+    let exited = false;
+    child.once("exit", () => {
+      exited = true;
+    });
+    child.once("error", () => {
+      exited = true;
+    });
+    for (let attempt = 0; attempt < 50; attempt += 1) {
+      const ready = await fs.access(lockPath).then(() => true, () => false);
+      if (ready && !exited) {
+        return {
+          display: `:${number}`,
+          width: CAPTURE_DISPLAY_WIDTH,
+          height: CAPTURE_DISPLAY_HEIGHT,
+          depth: CAPTURE_DISPLAY_DEPTH,
+          async close() {
+            if (exited || child.exitCode !== null || child.signalCode !== null) return;
+            child.kill("SIGTERM");
+            try {
+              await withTimeout(
+                () => new Promise((resolve) => child.once("exit", resolve)),
+                SHUTDOWN_TIMEOUT_MS,
+                "capture display shutdown",
+              );
+            } catch {
+              child.kill("SIGKILL");
+              await withTimeout(
+                () => new Promise((resolve) => child.once("exit", resolve)),
+                SHUTDOWN_TIMEOUT_MS,
+                "capture display forced shutdown",
+              );
+            }
+          },
+        };
       }
-    },
-  };
+      if (exited) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    if (!exited) child.kill("SIGKILL");
+  }
+  throw new Error("could not allocate an owned Xvfb capture display");
 }
 
 async function captureViewportScreenshot(page, captureDisplay, timeoutMs) {
