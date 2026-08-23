@@ -399,8 +399,6 @@ async function captureViewportScreenshot(page, captureDisplay, timeoutMs) {
     X11_IMPORT_EXECUTABLE,
     [
       "-silent",
-      "-display",
-      captureDisplay.display,
       "-window",
       "root",
       "-crop",
@@ -409,7 +407,11 @@ async function captureViewportScreenshot(page, captureDisplay, timeoutMs) {
       "45",
       "jpeg:-",
     ],
-    {maxBuffer: SCREENSHOT_MAX_BYTES, timeout: timeoutMs},
+    {
+      env: {...process.env, DISPLAY: captureDisplay.display},
+      maxBuffer: SCREENSHOT_MAX_BYTES,
+      timeout: timeoutMs,
+    },
   );
 }
 

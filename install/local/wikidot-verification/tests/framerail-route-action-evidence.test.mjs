@@ -324,7 +324,7 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   )
   assert.match(
     captureScript,
-    /X11_IMPORT_EXECUTABLE[\s\S]*"-window",[\s\S]*"root",[\s\S]*"-crop",[\s\S]*geometry\.crop[\s\S]*"jpeg:-"/u,
+    /X11_IMPORT_EXECUTABLE[\s\S]*"-window",[\s\S]*"root",[\s\S]*"-crop",[\s\S]*geometry\.crop[\s\S]*"jpeg:-"[\s\S]*DISPLAY: captureDisplay\.display/u,
     "temporal screenshots must use the bounded run-owned X11 viewport evidence path"
   )
   assert.match(captureScript, /headless: false/u)
