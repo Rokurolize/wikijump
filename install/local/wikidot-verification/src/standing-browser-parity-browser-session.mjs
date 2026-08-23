@@ -152,6 +152,21 @@ export async function installCandidateFilePortRoute(context, localOrigins) {
   return true;
 }
 
+export function candidateLocalOriginSets(candidate) {
+  const endpointOrigins = candidate?.candidate?.endpoint?.allowed_origin_set ?? [];
+  const siteOrigins = candidate?.candidate?.site_origins;
+  const fileRouteOriginSets = siteOrigins && Object.keys(siteOrigins).length > 0
+    ? Object.values(siteOrigins).map(({ page, files }) => [page, files])
+    : endpointOrigins.length > 0
+      ? [endpointOrigins]
+      : [];
+  const localOrigins = [...new Set([
+    ...endpointOrigins,
+    ...fileRouteOriginSets.flat(),
+  ])].sort();
+  return { localOrigins, fileRouteOriginSets };
+}
+
 export function parityBrowserThrottleConfig({
   args,
   runId,
@@ -259,7 +274,7 @@ export async function createParityBrowserControls({
       statePath: lock.statePath,
       intervalMs: DEFAULT_REQUEST_INTERVAL_MS,
     });
-    const localOrigins = candidate?.candidate.endpoint.allowed_origin_set ?? [];
+    const { localOrigins, fileRouteOriginSets } = candidateLocalOriginSets(candidate);
     const caseSetPublicOrigins = requireExactHttpsOrigins(
       publicOrigins,
       "browser public origins",
@@ -298,6 +313,7 @@ export async function createParityBrowserControls({
       configPath,
       configSha256: configSeal.sha256,
       localOrigins,
+      fileRouteOriginSets,
       publicOrigins: caseSetPublicOrigins,
       async close() {
         let failure = null;
@@ -381,7 +397,9 @@ export async function launchParityBrowser({
         ),
     });
     if (local) {
-      await installCandidateFilePortRoute(context, controls.localOrigins);
+      for (const originSet of controls.fileRouteOriginSets) {
+        await installCandidateFilePortRoute(context, originSet);
+      }
     }
     return {
       browser,

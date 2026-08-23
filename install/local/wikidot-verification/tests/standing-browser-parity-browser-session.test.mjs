@@ -2,12 +2,53 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  candidateLocalOriginSets,
   isParityBrowserPublicOrigin,
   installCandidateFilePortRoute,
   parityBrowserThrottleConfig,
 } from "../src/standing-browser-parity-browser-session.mjs";
 
 const hash = (character) => character.repeat(64);
+
+test("candidate browser local origins include every sealed site on an editable candidate", () => {
+  const sets = candidateLocalOriginSets({
+    candidate: {
+      endpoint: {
+        allowed_origin_set: [
+          "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+          "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+        ],
+      },
+      site_origins: {
+        "scp-wiki": {
+          page: "https://scp-wiki.wikijump.localhost:18449",
+          files: "https://scp-wiki.wjfiles.localhost:18449",
+        },
+        scpaiueouiuiuiui: {
+          page: "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+          files: "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(sets.localOrigins, [
+    "https://scp-wiki.wikijump.localhost:18449",
+    "https://scp-wiki.wjfiles.localhost:18449",
+    "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+    "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+  ].sort());
+  assert.deepEqual(sets.fileRouteOriginSets, [
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    [
+      "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+      "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+    ],
+  ]);
+});
 
 test("browser throttle receipt binds exact case-set public origins", () => {
   const base = {
