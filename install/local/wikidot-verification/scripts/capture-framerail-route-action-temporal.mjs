@@ -377,12 +377,7 @@ async function startCaptureDisplay() {
 }
 
 async function captureViewportScreenshot(page, captureDisplay, timeoutMs) {
-  await page.bringToFront();
-  await withTimeout(
-    () => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve()))),
-    timeoutMs,
-    "viewport paint",
-  );
+  await new Promise((resolve) => setTimeout(resolve, 25));
   const geometry = viewportCropGeometry(
     await page.evaluate(() => ({
       innerWidth,
