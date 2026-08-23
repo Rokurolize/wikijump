@@ -1040,6 +1040,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
   const diagnostics = attachDiagnostics(page);
   let navigationStatus = options.navigationStatus ?? null;
   const clickTrigger = options.attachedTriggers ? clickAttachedTrigger : clickVisibleTrigger;
+  const triggerTimeoutMs = options.triggerTimeoutMs ?? args.timeoutMs;
   try {
     if (options.navigate !== false) {
       const response = await page.goto(url, {waitUntil: "commit", timeout: args.timeoutMs});
@@ -1051,7 +1052,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       : execution.resultOracles?.[scenario.id]?.[subject.id];
     const activates = scenario.id === "success" || (resultOracle?.activation ?? "click") === "click";
     if (activates) for (const selector of triggers.slice(0, -1)) {
-      await clickTrigger(page, selector, args.timeoutMs);
+      await clickTrigger(page, selector, triggerTimeoutMs);
     }
     const records = [];
     if (scenario.id === "success") {
@@ -1068,7 +1069,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       for (const signal of [loadingSignal, settledSignal, successSignal]) {
         if (signal) void signal.catch(() => undefined);
       }
-      await clickTrigger(page, triggers.at(-1), args.timeoutMs);
+      await clickTrigger(page, triggers.at(-1), triggerTimeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
@@ -1088,7 +1089,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       void failureControl.signal.catch(() => undefined);
       try {
         if ((resultOracle.activation ?? "click") === "click") {
-          await clickTrigger(page, triggers.at(-1), args.timeoutMs);
+          await clickTrigger(page, triggers.at(-1), triggerTimeoutMs);
         }
         await Promise.all([resultSignal, failureControl.signal]);
       } finally {
@@ -1299,7 +1300,10 @@ export async function runTemporalCapture(args) {
               scenario,
               urls[scenario.id][subject.kind],
               args.outputDir,
-              {attachedTriggers: scenario.id === "success"},
+              {
+                attachedTriggers: scenario.id === "success",
+                triggerTimeoutMs: scenario.id === "success" ? Math.max(args.timeoutMs, 90_000) : args.timeoutMs,
+              },
             ));
           } catch (error) {
             failures.push({subject_id: subject.id, scenario: scenario.id, message: errorMessage(error)});
