@@ -369,11 +369,37 @@ class Open43Issue1060Run {
     if ((await this.#memberGet(this.#eligibleId)) !== null) throw new Error("issue 1060 contention actor is already a member");
     if ((await this.#page(this.#contentionSlug)) !== null) throw new Error("issue 1060 contention page namespace already exists");
     const eligibleSession = this.#sessions.eligible;
-    const joinParams = { site_id: this.#siteId, user_id: this.#eligibleId };
+    const joinPage = await this.#page("system:join");
+    if (joinPage?.wikitext?.trim() !== JOIN_SOURCE) throw new Error("issue 1060 contention Join route is missing");
+    const joinView = await this.#rpc("eligible", "page_view", {
+      site_id: this.#siteId,
+      session_token: eligibleSession.editorSessionToken,
+      route: { slug: "system:join", extra: "" },
+      locales: ["en-US", "en"],
+    }, { page: "system:join" });
+    const joinViewData = requirePlainObject(joinView?.data, "issue 1060 contention Join view data");
+    const actions = joinView?.type === "found" ? joinViewData.membership_actions : null;
+    if (!Array.isArray(actions) || actions.length !== 1) throw new Error("issue 1060 contention Join action denominator drifted");
+    const action = requirePlainObject(actions[0], "issue 1060 contention Join action");
+    if (
+      action.type !== "join"
+      || action.page_id !== joinPage.page_id
+      || action.revision_id !== joinPage.revision_id
+      || action.index !== 0
+      || !/^[0-9a-f]{32}$/u.test(action.fingerprint ?? "")
+    ) {
+      throw new Error("issue 1060 contention Join action identity drifted");
+    }
+    const joinParams = {
+      page_id: action.page_id,
+      last_revision_id: action.revision_id,
+      action_index: action.index,
+      action_fingerprint: action.fingerprint,
+    };
     const joinAttempts = await Promise.allSettled([0, 1].map(() => eligibleSession.rpc(
       "membership_join",
       joinParams,
-      { actor: "editor", siteId: this.#siteId, page: this.#contentionSlug },
+      { actor: "editor", siteId: this.#siteId, page: "system:join" },
     )));
     const joinEvidence = joinAttempts.map((attempt) => attempt.status === "fulfilled"
       ? { status: attempt.status, outcome: attempt.value }

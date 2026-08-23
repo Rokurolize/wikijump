@@ -101,7 +101,7 @@ function runtime() {
   let joinCalls = 0;
   let createCalls = 0;
   let userDeleted = false;
-  const rpc = async (method, params, { actor = "editor" } = {}) => {
+  const rpc = async (method, params, { actor = "editor", sessionUserId = ADMIN_ID } = {}) => {
     if (method === "session_get") {
       const token = params[0];
       if (token === "administrator-session-token") return { user_id: ADMIN_ID };
@@ -114,6 +114,15 @@ function runtime() {
       return { site_id: SITE_ID, slug: "scpaiueouiuiuiui" };
     }
     if (method === "page_get") return pages.get(params.page) ?? null;
+    if (method === "page_view") {
+      if (params.route?.slug !== "system:join" || sessionUserId !== ELIGIBLE_ID) throw new Error("wrong Join view actor or route");
+      return {
+        type: "found",
+        data: {
+          membership_actions: [{ type: "join", page_id: 1, revision_id: 2, index: 0, fingerprint: "a".repeat(32) }],
+        },
+      };
+    }
     if (method === "user_get") {
       return params.user === REGISTERED_ID && !userDeleted ? { user_type: "regular", name: USERNAME } : null;
     }
@@ -128,7 +137,8 @@ function runtime() {
     }
     if (method === "membership_join") {
       const outcome = joinCalls++ === 0 ? "joined" : "already_member";
-      members.set(params.user_id, membership(params.user_id));
+      assert.deepEqual(params, { page_id: 1, last_revision_id: 2, action_index: 0, action_fingerprint: "a".repeat(32) });
+      members.set(sessionUserId, membership(sessionUserId));
       return outcome;
     }
     if (method === "page_create") {
@@ -154,9 +164,10 @@ function runtime() {
         const editor = privateInput?.actors?.editor;
         const selected = privateInput?.actors?.administrator ?? editor;
         const userId = selected?.user_id ?? editor?.user_id;
-        if (userId === ELIGIBLE_ID) return { editorUserId: ELIGIBLE_ID, editorSessionToken: "eligible-session-token", pageOrigin: PAGE_ORIGIN, privateInputIdentity: { fixture_identity_sha256: hash("e") }, requiredServiceBindings: [], rpc };
-        if (userId === REGISTERED_ID) return { editorUserId: REGISTERED_ID, editorSessionToken: "registered-session-token", pageOrigin: PAGE_ORIGIN, privateInputIdentity: { fixture_identity_sha256: hash("e") }, requiredServiceBindings: [], rpc };
-        return { editorUserId: ADMIN_ID, editorSessionToken: "administrator-session-token", pageOrigin: PAGE_ORIGIN, privateInputIdentity: { fixture_identity_sha256: hash("e") }, requiredServiceBindings: [], rpc };
+        const boundRpc = (method, params, options = {}) => rpc(method, params, { ...options, sessionUserId: userId });
+        if (userId === ELIGIBLE_ID) return { editorUserId: ELIGIBLE_ID, editorSessionToken: "eligible-session-token", pageOrigin: PAGE_ORIGIN, privateInputIdentity: { fixture_identity_sha256: hash("e") }, requiredServiceBindings: [], rpc: boundRpc };
+        if (userId === REGISTERED_ID) return { editorUserId: REGISTERED_ID, editorSessionToken: "registered-session-token", pageOrigin: PAGE_ORIGIN, privateInputIdentity: { fixture_identity_sha256: hash("e") }, requiredServiceBindings: [], rpc: boundRpc };
+        return { editorUserId: ADMIN_ID, editorSessionToken: "administrator-session-token", pageOrigin: PAGE_ORIGIN, privateInputIdentity: { fixture_identity_sha256: hash("e") }, requiredServiceBindings: [], rpc: boundRpc };
       };
     },
     browserAdapter() {
