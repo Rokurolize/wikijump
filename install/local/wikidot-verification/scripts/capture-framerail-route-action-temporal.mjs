@@ -806,7 +806,33 @@ async function predicateMatches(page, predicate) {
 function armDomPredicate(page, predicate, timeoutMs, label) {
   return (async () => {
     if (predicate.state !== "absent" && await predicateMatches(page, predicate)) throw new Error(`${label} predicate preexisted before activation`);
-    await page.waitForFunction(matchesDomPredicate, predicate, {timeout: timeoutMs});
+    await withTimeout(
+      () => page.evaluate((value) => new Promise((resolve) => {
+        const matches = () => {
+          const element = document.querySelector(value.selector);
+          if (value.state === "absent") return element === null;
+          if (!element) return false;
+          if (value.state === "visible") {
+            const style = getComputedStyle(element);
+            if (style.display === "none" || style.visibility === "hidden" || element.getClientRects().length === 0) return false;
+          }
+          if (value.text_not && element.textContent?.includes(value.text_not)) return false;
+          return true;
+        };
+        if (matches()) {
+          resolve(true);
+          return;
+        }
+        const observer = new MutationObserver(() => {
+          if (!matches()) return;
+          observer.disconnect();
+          resolve(true);
+        });
+        observer.observe(document.documentElement, {subtree: true, childList: true, attributes: true, characterData: true});
+      }), predicate),
+      timeoutMs,
+      `${label} predicate observation`,
+    );
   })();
 }
 
@@ -1264,7 +1290,17 @@ export async function runTemporalCapture(args) {
         const savedSubjects = contract.subjects.filter((subject) => subject.kind === "saved_page");
         for (const subject of missingSubjects) {
           try {
-            records.push(...await captureSubjectScenario(browserSession.localContext, captureDisplay, args, execution, subject, scenario, urls[scenario.id][subject.kind], args.outputDir));
+            records.push(...await captureSubjectScenario(
+              browserSession.localContext,
+              captureDisplay,
+              args,
+              execution,
+              subject,
+              scenario,
+              urls[scenario.id][subject.kind],
+              args.outputDir,
+              {attachedTriggers: scenario.id === "success"},
+            ));
           } catch (error) {
             failures.push({subject_id: subject.id, scenario: scenario.id, message: errorMessage(error)});
           }
