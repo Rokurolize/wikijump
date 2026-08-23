@@ -1301,7 +1301,7 @@ export async function runTemporalCapture(args) {
               urls[scenario.id][subject.kind],
               args.outputDir,
               {
-                attachedTriggers: scenario.id === "success",
+                attachedTriggers: scenario.id === "success" && subject.id !== "control:restore",
                 triggerTimeoutMs: scenario.id === "success" ? Math.max(args.timeoutMs, 90_000) : args.timeoutMs,
               },
             ));
