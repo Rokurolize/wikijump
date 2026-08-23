@@ -233,6 +233,32 @@ function verifyDirectoryState(state, label) {
   };
 }
 
+function isExpectedDirectoryCspImageFailure(value) {
+  if (
+    value?.failure !== "csp" ||
+    value?.method !== "GET" ||
+    value?.resource_type !== "image" ||
+    typeof value?.url !== "string"
+  ) return false;
+  let url;
+  try {
+    url = new URL(value.url);
+  } catch {
+    return false;
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.hostname !== "www.wikidot.com" ||
+    url.port !== "" ||
+    url.username !== "" ||
+    url.password !== "" ||
+    url.hash !== ""
+  ) return false;
+  if (url.pathname === "/avatar.php") return url.search.startsWith("?userid=");
+  if (url.pathname === "/userkarma.php") return url.search.startsWith("?u=");
+  return false;
+}
+
 export function verifyOpen43Q1032BrowserDirectoryCase(caseId, observations, plan) {
   expect(caseId === OPEN43_Q1032_CASE_IDS[2], `unsupported Q1032 case: ${caseId}`);
   const value = object(observations, `${caseId} observations`);
@@ -243,9 +269,10 @@ export function verifyOpen43Q1032BrowserDirectoryCase(caseId, observations, plan
   const initial = verifyDirectoryState(value.initial, "initial directory state");
   const settled = verifyDirectoryState(value.settled, "settled directory state");
   expect(Array.isArray(value.request_methods) && value.request_methods.every((method) => ["GET", "HEAD", "OPTIONS"].includes(method)), "Q1032 browser issued a mutating request");
-  expect(Array.isArray(value.failed_requests) && value.failed_requests.length === 0, "Q1032 browser observed failed requests");
+  expect(Array.isArray(value.failed_requests), "Q1032 browser failed-request observation is malformed");
+  expect(value.failed_requests.every(isExpectedDirectoryCspImageFailure), "Q1032 browser observed an unexpected failed request");
   expect(value.mutation_detected === false, "Q1032 browser mutation was detected");
-  return { verified: true, saved_page_slug: saved.slug, initial, settled };
+  return { verified: true, saved_page_slug: saved.slug, initial, settled, expected_csp_image_failures: value.failed_requests.length };
 }
 
 export { MEMBERS_AJAX_FORM, MEMBERS_PARAMETERS, SEARCHUSERS_DISABLED_SHA256, USERINFO_NO_TARGET_BODY, USERINFO_NO_TARGET_SHA256 };

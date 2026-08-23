@@ -207,7 +207,12 @@ class Open43Q1032Run {
     const failedRequests = [];
     const mutations = [];
     const onRequest = (request) => requestMethods.add(request.method());
-    const onRequestFailed = (request) => failedRequests.push({ url: request.url(), failure: request.failure()?.errorText ?? null });
+    const onRequestFailed = (request) => failedRequests.push({
+      url: request.url(),
+      method: request.method(),
+      resource_type: request.resourceType(),
+      failure: request.failure()?.errorText ?? null,
+    });
     const onResponse = (response) => {
       if (["POST", "PUT", "DELETE", "PATCH"].includes(response.request().method())) {
         mutations.push({ url: response.url(), method: response.request().method(), status: response.status() });

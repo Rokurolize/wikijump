@@ -5,6 +5,7 @@ import {
   OPEN43_Q1032_CASE_IDS,
   createOpen43Q1032CandidateCaseSet,
 } from "../src/open43-q1032-members-userinfo-candidate-case-set.mjs";
+import { verifyOpen43Q1032BrowserDirectoryCase } from "../src/open43-q1032-members-userinfo-candidate-contract.mjs";
 import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 
 const hash = (character) => character.repeat(64);
@@ -199,6 +200,43 @@ test("Q1032 AJAX case fails closed when the envelope diverges from the live cont
   const rows = await prepared.execute();
   const ajaxRow = rows.find(({ case_id }) => case_id === OPEN43_Q1032_CASE_IDS[1]);
   assert.throws(() => prepared.verifyCase(ajaxRow.case_id, ajaxRow.observations), /Members Ajax body has no table/u);
+});
+
+test("Q1032 browser contract admits only CSP-blocked Wikidot avatar and karma images", () => {
+  const plan = {
+    page_origin: "https://scpaiueouiuiuiui.wikijump.localhost:18443",
+    saved_page: { slug: "members-directory" },
+  };
+  const base = {
+    saved_page: {
+      slug: "members-directory",
+      status: 200,
+      url: "https://scpaiueouiuiuiui.wikijump.localhost:18443/members-directory",
+    },
+    initial: { ...DIRECTORY_STATE },
+    settled: { ...DIRECTORY_STATE },
+    request_methods: ["GET"],
+    failed_requests: [
+      { url: "https://www.wikidot.com/avatar.php?userid=20000100&amp;size=small", method: "GET", resource_type: "image", failure: "csp" },
+      { url: "https://www.wikidot.com/userkarma.php?u=20000100", method: "GET", resource_type: "image", failure: "csp" },
+    ],
+    mutation_detected: false,
+  };
+  const verified = verifyOpen43Q1032BrowserDirectoryCase(OPEN43_Q1032_CASE_IDS[2], base, plan);
+  assert.equal(verified.verified, true);
+  assert.equal(verified.expected_csp_image_failures, 2);
+
+  for (const failedRequest of [
+    { url: "https://www.wikidot.com/avatar.php?userid=1", method: "GET", resource_type: "image", failure: "net::ERR_FAILED" },
+    { url: "https://example.com/avatar.php?userid=1", method: "GET", resource_type: "image", failure: "csp" },
+    { url: "https://www.wikidot.com/avatar.php?userid=1", method: "GET", resource_type: "script", failure: "csp" },
+    { url: "https://www.wikidot.com/other.png", method: "GET", resource_type: "image", failure: "csp" },
+  ]) {
+    assert.throws(
+      () => verifyOpen43Q1032BrowserDirectoryCase(OPEN43_Q1032_CASE_IDS[2], { ...base, failed_requests: [failedRequest] }, plan),
+      /unexpected failed request/u,
+    );
+  }
 });
 
 test("Q1032 case is registered as an executable canonical case set", async () => {
