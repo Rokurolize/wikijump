@@ -31,6 +31,16 @@ const MEDIA_BROWSER_EVIDENCE = Object.freeze({
   M1062_BROWSER_UPLOAD_FLOW: "E_UPLOAD_HISTORICAL_FAILURE",
 });
 const FTML_MARKER_FIXTURE_INDEX = new URL("../fixtures/ftml-marker-contract/fixtures.json", import.meta.url);
+const B689_SCP8980_SOURCE = Object.freeze({
+  slug: "scp-8980",
+  title: "SCP-8980",
+  path: new URL("../../../../deepwell/seeder/scp-8980.ftml", import.meta.url),
+  sha256: "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710",
+});
+const B689_SCP8980_FRAGMENTS = Object.freeze([
+  Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
+  Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
+]);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
   "framerail-route-action-denial-storage.json",
@@ -57,6 +67,23 @@ export function compatibilityMarkerFixtures(value) {
     slugs.add(fixture.slug);
   }
   return value.fixtures;
+}
+
+export async function b689Scp8980CandidateFixtures() {
+  const source = await fs.readFile(B689_SCP8980_SOURCE.path, "utf8");
+  if (sha256(source) !== B689_SCP8980_SOURCE.sha256) {
+    throw new Error("B689 SCP-8980 source drifted from the frozen imported-source authority");
+  }
+  const fragments = [];
+  for (const fixture of B689_SCP8980_FRAGMENTS) {
+    const wikitext = await fs.readFile(fixture.path, "utf8");
+    if (wikitext === "") throw new Error(`B689 SCP-8980 fragment is empty: ${fixture.slug}`);
+    fragments.push({ slug: fixture.slug, title: fixture.title, wikitext });
+  }
+  return {
+    source: { slug: B689_SCP8980_SOURCE.slug, title: B689_SCP8980_SOURCE.title, wikitext: source, sha256: B689_SCP8980_SOURCE.sha256 },
+    fragments,
+  };
 }
 
 function usage() {
@@ -238,6 +265,19 @@ export async function prepareCompatibilityCandidateInputs(args) {
     for (const fixture of markerFixtures) {
       markerPages.push(await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID }));
     }
+
+    // B689/B690 observe the real SCP-8980 tabview and geometry contract. The maintained fresh
+    // candidate seed does not contain that page, so install the exact source-owned seeder copy
+    // (which is byte-identical to the frozen imported-source authority) plus its two ListPages
+    // child fragments. Re-render after parenting so parent="." resolves against the final graph.
+    const b689Fixtures = await b689Scp8980CandidateFixtures();
+    const b689Root = await page(b689Fixtures.source.slug, b689Fixtures.source.title, b689Fixtures.source.wikitext, { siteId: FOREIGN_SITE_ID, imported: true });
+    for (const fixture of b689Fixtures.fragments) {
+      const fragment = await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID, imported: true });
+      await rpc("parent_set", { site_id: FOREIGN_SITE_ID, parent: b689Root.slug, child: fragment.slug }, { siteId: FOREIGN_SITE_ID });
+    }
+    await rpc("page_rerender", { site_id: FOREIGN_SITE_ID, category_id: b689Root.page_category_id, page_id: b689Root.page_id }, { siteId: FOREIGN_SITE_ID });
+
     for (const name of privateFiles) {
       const target = path.join(args["output-private-dir"], name);
       const value = JSON.parse(await fs.readFile(target, "utf8"));

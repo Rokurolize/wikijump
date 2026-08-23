@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689Scp8980CandidateFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -32,6 +32,15 @@ test("compatibility candidate input producer binds the exact five FTML marker fi
     "marker-canary-alignment",
   ]);
   assert.throws(() => compatibilityMarkerFixtures({ schema: "wikijump.ftml_marker_contract_fixtures.v1", site_slug: "scp-wiki", layout: "wikidot", fixtures: [] }), /denominator drifted/u);
+});
+
+test("compatibility candidate input producer owns the exact B689 SCP-8980 source graph", async () => {
+  const fixtures = await b689Scp8980CandidateFixtures();
+  assert.equal(fixtures.source.slug, "scp-8980");
+  assert.equal(fixtures.source.sha256, "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710");
+  assert.deepEqual(fixtures.fragments.map(({ slug }) => slug), ["fragment:scp-8980-1", "fragment:scp-8980-2"]);
+  assert.match(fixtures.source.wikitext, /ListPages parent="\." category="fragment"/u);
+  assert.ok(fixtures.fragments.every(({ wikitext }) => wikitext.includes("[[include :scp-wiki:theme:basalt")));
 });
 
 test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {
