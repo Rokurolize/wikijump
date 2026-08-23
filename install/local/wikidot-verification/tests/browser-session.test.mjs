@@ -107,6 +107,36 @@ test("openBrowser can isolate source and local storage states", async () => {
   assert.equal(closedBrowser, true);
 });
 
+test("openBrowser can launch a headed capture browser on an owned display", async () => {
+  const browser = {
+    async newContext() {
+      return {async close() {}};
+    },
+    async close() {},
+  };
+  const chromium = {
+    async launch(options) {
+      assert.deepEqual(options, {
+        executablePath: "/usr/bin/google-chrome",
+        headless: false,
+        env: {DISPLAY: ":123"},
+        args: ["--window-position=0,0"],
+      });
+      return browser;
+    },
+  };
+
+  const session = await openBrowser({
+    chromium,
+    browserExecutable: "/usr/bin/google-chrome",
+    headless: false,
+    browserEnvironment: {DISPLAY: ":123"},
+    browserArgs: ["--window-position=0,0"],
+    ignoreHttpsErrors: true,
+  });
+  await session.close();
+});
+
 test("browser session close reports context and browser shutdown failures", async () => {
   let closeAttempts = 0;
   const browser = {

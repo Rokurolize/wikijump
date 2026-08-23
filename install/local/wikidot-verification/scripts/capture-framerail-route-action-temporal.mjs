@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from "node:crypto";
-import {execFileSync} from "node:child_process";
+import {execFileSync, spawn} from "node:child_process";
 import {constants as fsConstants} from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -27,6 +27,11 @@ const REQUIRED_INTERVALS = ["denial", "failure", "loading", "selection", "settle
 const SCENARIO_ORDER = ["denial", "failure", "success"];
 const SUBJECT_KINDS = ["missing_page", "saved_page"];
 const DEFAULT_TIMEOUT_MS = 30_000;
+const XVFB_EXECUTABLE = "/usr/bin/Xvfb";
+const X11_IMPORT_EXECUTABLE = "/usr/bin/import";
+const CAPTURE_DISPLAY_WIDTH = 1400;
+const CAPTURE_DISPLAY_HEIGHT = 900;
+const CAPTURE_DISPLAY_DEPTH = 24;
 export const DOM_MAX_BYTES = 4 * 1024 * 1024;
 export const SCREENSHOT_MAX_BYTES = 16 * 1024 * 1024;
 export const DIAGNOSTIC_MAX_BYTES = 1024 * 1024;
@@ -266,6 +271,149 @@ export async function withTimeout(operation, timeoutMs, label) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+export function viewportCropGeometry(
+  geometry,
+  {screenWidth = CAPTURE_DISPLAY_WIDTH, screenHeight = CAPTURE_DISPLAY_HEIGHT} = {},
+) {
+  const values = [
+    "innerWidth",
+    "innerHeight",
+    "outerWidth",
+    "outerHeight",
+    "screenX",
+    "screenY",
+  ];
+  for (const name of values) {
+    if (!Number.isSafeInteger(geometry?.[name])) throw new Error(`viewport ${name} is not an integer`);
+  }
+  if (geometry.devicePixelRatio !== 1) throw new Error("capture display requires devicePixelRatio 1");
+  if (geometry.innerWidth <= 0 || geometry.innerHeight <= 0) throw new Error("viewport dimensions must be positive");
+  if (geometry.outerWidth < geometry.innerWidth || geometry.outerHeight < geometry.innerHeight) {
+    throw new Error("browser outer geometry cannot be smaller than the viewport");
+  }
+  const x = Math.round(geometry.screenX + (geometry.outerWidth - geometry.innerWidth) / 2);
+  const y = Math.round(geometry.screenY + geometry.outerHeight - geometry.innerHeight);
+  if (
+    x < 0 ||
+    y < 0 ||
+    x + geometry.innerWidth > screenWidth ||
+    y + geometry.innerHeight > screenHeight
+  ) {
+    throw new Error("browser viewport is outside the owned capture display");
+  }
+  return {
+    x,
+    y,
+    width: geometry.innerWidth,
+    height: geometry.innerHeight,
+    crop: `${geometry.innerWidth}x${geometry.innerHeight}+${x}+${y}`,
+  };
+}
+
+async function pathExists(filePath) {
+  try {
+    await fs.access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function startCaptureDisplay() {
+  await fs.access(XVFB_EXECUTABLE, fsConstants.X_OK);
+  await fs.access(X11_IMPORT_EXECUTABLE, fsConstants.X_OK);
+  const initialDisplay = 100 + (process.pid % 20_000);
+  for (let offset = 0; offset < 32; offset += 1) {
+    const number = initialDisplay + offset;
+    const socketPath = `/tmp/.X11-unix/X${number}`;
+    if (await pathExists(socketPath)) continue;
+    const child = spawn(
+      XVFB_EXECUTABLE,
+      [
+        `:${number}`,
+        "-screen",
+        "0",
+        `${CAPTURE_DISPLAY_WIDTH}x${CAPTURE_DISPLAY_HEIGHT}x${CAPTURE_DISPLAY_DEPTH}`,
+        "-nolisten",
+        "tcp",
+      ],
+      {stdio: "ignore"},
+    );
+    let stopped = false;
+    child.once("exit", () => {
+      stopped = true;
+    });
+    child.once("error", () => {
+      stopped = true;
+    });
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (await pathExists(socketPath)) {
+        return {
+          display: `:${number}`,
+          width: CAPTURE_DISPLAY_WIDTH,
+          height: CAPTURE_DISPLAY_HEIGHT,
+          depth: CAPTURE_DISPLAY_DEPTH,
+          async close() {
+            if (child.exitCode !== null || child.signalCode !== null) return;
+            child.kill("SIGTERM");
+            try {
+              await withTimeout(
+                () => new Promise((resolve) => child.once("exit", resolve)),
+                SHUTDOWN_TIMEOUT_MS,
+                "capture display shutdown",
+              );
+            } catch (error) {
+              child.kill("SIGKILL");
+              throw error;
+            }
+          },
+        };
+      }
+      if (stopped) break;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    }
+    child.kill("SIGKILL");
+  }
+  throw new Error("could not allocate an owned Xvfb capture display");
+}
+
+async function captureViewportScreenshot(page, captureDisplay, timeoutMs) {
+  await page.bringToFront();
+  await withTimeout(
+    () => page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve()))),
+    timeoutMs,
+    "viewport paint",
+  );
+  const geometry = viewportCropGeometry(
+    await page.evaluate(() => ({
+      innerWidth,
+      innerHeight,
+      outerWidth,
+      outerHeight,
+      screenX,
+      screenY,
+      devicePixelRatio,
+    })),
+    {screenWidth: captureDisplay.width, screenHeight: captureDisplay.height},
+  );
+  return execFileSync(
+    X11_IMPORT_EXECUTABLE,
+    [
+      "-silent",
+      "-display",
+      captureDisplay.display,
+      "-window",
+      "root",
+      "-crop",
+      geometry.crop,
+      "-quality",
+      "45",
+      "jpeg:-",
+    ],
+    {maxBuffer: SCREENSHOT_MAX_BYTES, timeout: timeoutMs},
+  );
 }
 
 async function readFileIdentity(filePath, label) {
@@ -768,7 +916,7 @@ async function writeAndVerifyArtifact(filePath, data, label) {
   return identity;
 }
 
-async function captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, interval, navigationStatus, outputDir) {
+async function captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, interval, navigationStatus, outputDir) {
   assertDiagnosticsBounded(diagnostics);
   const subjectDir = path.join(outputDir, safePathSegment(subject.id));
   await fs.mkdir(subjectDir, {recursive: true, mode: 0o700});
@@ -784,15 +932,15 @@ async function captureObservation(page, cdpSession, diagnostics, args, execution
   }
   const domBytes = assertByteLimit(Buffer.from(html, "utf8"), DOM_MAX_BYTES, "DOM artifact");
   const domIdentity = await writeAndVerifyArtifact(domPath, domBytes, "DOM artifact");
-  const screenshot = assertByteLimit(await withTimeout(async () => {
-    const {data} = await cdpSession.send("Page.captureScreenshot", {
-      format: "jpeg",
-      quality: 45,
-      fromSurface: true,
-      captureBeyondViewport: false,
-    });
-    return Buffer.from(data, "base64");
-  }, args.timeoutMs, "screenshot capture"), SCREENSHOT_MAX_BYTES, "screenshot artifact");
+  const screenshot = assertByteLimit(
+    await withTimeout(
+      () => captureViewportScreenshot(page, captureDisplay, args.timeoutMs),
+      args.timeoutMs,
+      "screenshot capture",
+    ),
+    SCREENSHOT_MAX_BYTES,
+    "screenshot artifact",
+  );
   const screenshotIdentity = await writeAndVerifyArtifact(screenshotPath, screenshot, "screenshot artifact");
   const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
   return {
@@ -819,9 +967,8 @@ async function captureObservation(page, cdpSession, diagnostics, args, execution
   };
 }
 
-async function captureSubjectScenario(context, args, execution, subject, scenario, url, outputDir) {
+async function captureSubjectScenario(context, captureDisplay, args, execution, subject, scenario, url, outputDir) {
   const page = await context.newPage();
-  const cdpSession = await page.context().newCDPSession(page);
   const diagnostics = attachDiagnostics(page);
   let navigationStatus = null;
   try {
@@ -837,7 +984,7 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
     }
     const records = [];
     if (scenario.id === "success") {
-      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
+      records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       const loadingSignal = subject.loading.kind === "dom"
         ? armDomPredicate(page, subject.loading, args.timeoutMs, `${subject.id} loading`)
         : armBrowserEvent(page, subject.loading, args.timeoutMs, `${subject.id} loading`);
@@ -853,15 +1000,15 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;
-      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
+      records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
       if (settledSignal) await settledSignal;
       else await page.waitForFunction(matchesDomPredicate, subject.settled_predicate, {timeout: args.timeoutMs});
-      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "settled", navigationStatus, outputDir));
+      records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "settled", navigationStatus, outputDir));
       if (successSignal) await successSignal;
       if (!(await predicateMatches(page, subject.settled_predicate))) {
         throw new Error(`${subject.id} settled predicate was not true at success`);
       }
-      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
+      records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
     } else {
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
       const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
@@ -876,11 +1023,10 @@ async function captureSubjectScenario(context, args, execution, subject, scenari
       } finally {
         await failureControl.cleanup();
       }
-      records.push(await captureObservation(page, cdpSession, diagnostics, args, execution, subject, scenario, scenario.id, navigationStatus, outputDir));
+      records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, scenario.id, navigationStatus, outputDir));
     }
     return records;
   } finally {
-    await cdpSession.detach().catch(() => {});
     await withTimeout(() => page.close(), SHUTDOWN_TIMEOUT_MS, `${subject.id} page shutdown`);
   }
 }
@@ -957,10 +1103,12 @@ export async function runTemporalCapture(args) {
   let gateStateConfirmed = false;
   let sourceEgressProxy = null;
   let localEgressProxy = null;
+  let captureDisplay = null;
   let browserSession = null;
   let observedBrowserIdentity = null;
   let browserSessionsClosed = 0;
   let egressProxiesClosed = false;
+  let captureDisplayClosed = false;
   let requestGateFlushed = false;
   let captureLockReleased = false;
   let captureError = null;
@@ -990,6 +1138,7 @@ export async function runTemporalCapture(args) {
       service_workers: "block",
       web_sockets: "blocked_without_network_connection",
     });
+    captureDisplay = await startCaptureDisplay();
     sourceEgressProxy = await startCaptureEgressProxy();
     localEgressProxy = await startCaptureEgressProxy({allowedLocalOrigins: localOrigins});
     const records = [];
@@ -998,6 +1147,9 @@ export async function runTemporalCapture(args) {
       browserSession = await openBrowser({
         chromium,
         browserExecutable: identities.browserExecutable.path,
+        headless: false,
+        browserEnvironment: {...process.env, DISPLAY: captureDisplay.display},
+        browserArgs: ["--window-position=0,0", "--window-size=1280,720"],
         ignoreHttpsErrors: args.ignoreHttpsErrors,
         storageState: scenario.storage_state.path,
         sourceProxyServer: sourceEgressProxy.url,
@@ -1024,7 +1176,7 @@ export async function runTemporalCapture(args) {
         };
         for (const subject of contract.subjects) {
           try {
-            records.push(...await captureSubjectScenario(browserSession.localContext, args, execution, subject, scenario, urls[scenario.id][subject.kind], args.outputDir));
+            records.push(...await captureSubjectScenario(browserSession.localContext, captureDisplay, args, execution, subject, scenario, urls[scenario.id][subject.kind], args.outputDir));
           } catch (error) {
             failures.push({subject_id: subject.id, scenario: scenario.id, message: errorMessage(error)});
           }
@@ -1070,7 +1222,13 @@ export async function runTemporalCapture(args) {
         runtime_identity: identities.runtime,
         runtime_source_identity: identities.runtimeSource,
         timeout_ms: args.timeoutMs,
-        screenshot: true,
+      screenshot: true,
+        screenshot_capture: {
+          method: "run_owned_xvfb_viewport",
+          display_width: captureDisplay.width,
+          display_height: captureDisplay.height,
+          display_depth: captureDisplay.depth,
+        },
         request_gate_config: requestGateConfigPath,
         request_gate: requestGate.snapshot(),
       },
@@ -1082,6 +1240,14 @@ export async function runTemporalCapture(args) {
       if (browserSession) {
         await closeBrowserSession(browserSession);
         browserSessionsClosed += 1;
+      }
+    } catch (error) {
+      cleanupError ??= error;
+    }
+    try {
+      if (captureDisplay) {
+        await captureDisplay.close();
+        captureDisplayClosed = true;
       }
     } catch (error) {
       cleanupError ??= error;
@@ -1128,6 +1294,7 @@ export async function runTemporalCapture(args) {
     result.cleanup_observed = {
       browser_sessions_closed: browserSessionsClosed,
       egress_proxies_closed: egressProxiesClosed,
+      capture_display_closed: captureDisplayClosed,
       request_gate_flushed: requestGateFlushed,
       capture_lock_released: captureLockReleased,
       storage_states_removed: storageStatesRemoved,

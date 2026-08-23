@@ -24,6 +24,7 @@ import {
   validateSourceIdentity,
   validateTemporalRunContract,
   validateOutputPreflight,
+  viewportCropGeometry,
   verifyHistoricalEvidence,
   requireNavigationResponse,
   urlSuffixMatches,
@@ -62,6 +63,33 @@ const temporalIds = [
   "pane:vote",
   "pane:watchers"
 ]
+
+test("issue #1372 X11 viewport crop excludes headed browser chrome", () => {
+  assert.deepEqual(
+    viewportCropGeometry({
+      innerWidth: 1280,
+      innerHeight: 720,
+      outerWidth: 1288,
+      outerHeight: 805,
+      screenX: 0,
+      screenY: 0,
+      devicePixelRatio: 1,
+    }),
+    {x: 4, y: 85, width: 1280, height: 720, crop: "1280x720+4+85"},
+  )
+  assert.throws(
+    () => viewportCropGeometry({
+      innerWidth: 1280,
+      innerHeight: 720,
+      outerWidth: 1288,
+      outerHeight: 805,
+      screenX: 200,
+      screenY: 200,
+      devicePixelRatio: 1,
+    }),
+    /outside the owned capture display/u,
+  )
+})
 const missingIntervals = ["denial", "failure", "loading", "selection", "settled", "success"]
 
 function validCaptureInputs(contract, urls) {
@@ -296,14 +324,13 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   )
   assert.match(
     captureScript,
-    /cdpSession\.send\("Page\.captureScreenshot", \{[\s\S]*format: "jpeg",[\s\S]*quality: 45,[\s\S]*captureBeyondViewport: false/u,
-    "temporal screenshots must use the bounded Chromium viewport evidence path"
+    /X11_IMPORT_EXECUTABLE[\s\S]*"-window",[\s\S]*"root",[\s\S]*"-crop",[\s\S]*geometry\.crop[\s\S]*"jpeg:-"/u,
+    "temporal screenshots must use the bounded run-owned X11 viewport evidence path"
   )
-  assert.equal(
-    captureScript.match(/newCDPSession\(page\)/gu)?.length,
-    1,
-    "each subject page must reuse one CDP session for all interval screenshots"
-  )
+  assert.match(captureScript, /headless: false/u)
+  assert.match(captureScript, /DISPLAY: captureDisplay\.display/u)
+  assert.match(captureScript, /await captureDisplay\.close\(\)/u)
+  assert.doesNotMatch(captureScript, /Page\.captureScreenshot/u)
   assert.doesNotMatch(captureScript, /Page\.stopLoading/u)
   assert.match(
     captureScript,
