@@ -270,6 +270,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     Object.assign(general, { saved_page_id: q1036.page_id, saved_revision_id: q1036.revision_id, saved_page_slug: q1036.slug });
 
     sql(database, `insert into known_user(user_id) values (${Q1026_USERS.visible_user.user_id}),(${Q1026_USERS.deleted_user.user_id}) on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values (${Q1026_USERS.visible_user.user_id},now()-interval '1 second',now(),false,'${Q1026_USERS.visible_user.name}','${Q1026_USERS.visible_user.slug}',0,false),(${Q1026_USERS.deleted_user.user_id},now()-interval '1 second',now(),true,'${Q1026_USERS.deleted_user.name}','${Q1026_USERS.deleted_user.slug}',0,false) on conflict (user_id) do update set is_deleted=excluded.is_deleted,name=excluded.name,slug=excluded.slug,fetched_at=excluded.fetched_at;`);
+    sql(database, `select setval('known_user_user_id_seq',(select max(user_id) from known_user),true);`);
     const q1026Source = buildQ1026UserIdentitySource(Q1026_USERS.visible_user, Q1026_USERS.deleted_user);
     const q1026Page = await page("fixture-wikidot-user-identity-matrix", "Q1026 identity matrix", q1026Source);
     const q1026Path = path.join(args["output-private-dir"], "q1026-r11.json");
