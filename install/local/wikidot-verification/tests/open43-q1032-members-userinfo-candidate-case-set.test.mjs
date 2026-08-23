@@ -128,6 +128,11 @@ function fakeBrowserContexts() {
     async evaluate() {
       return { ...DIRECTORY_STATE };
     },
+    async goto(url, options) {
+      assert.equal(url, "https://scpaiueouiuiuiui.wikijump.localhost:18443/members-directory");
+      assert.deepEqual(options, { waitUntil: "domcontentloaded", timeout: 300_000 });
+      return { status: () => 200 };
+    },
     on() {},
     off() {},
     async close() {},
@@ -139,11 +144,11 @@ function fakeBrowserContexts() {
     async newCandidateContext() {
       return { context: { newPage: async () => page }, environment: {} };
     },
-    async captureCandidateObservation({ page: capturePage, url, onPhase }) {
+    async captureCandidateObservation({ page: capturePage, url, navigate }) {
       assert.equal(capturePage, page);
       assert.equal(url, "https://scpaiueouiuiuiui.wikijump.localhost:18443/members-directory");
-      await onPhase("domcontentloaded_immediate_observation");
-      await onPhase("settled");
+      const navigation = await navigate({ page, url, timeoutMs: 300_000 });
+      assert.equal(navigation.status(), 200);
       return { navigation_status: 200, final_url: url, capture_error: undefined };
     },
   };

@@ -217,7 +217,6 @@ class Open43Q1032Run {
     page.on("requestfailed", onRequestFailed);
     page.on("response", onResponse);
     let initial = null;
-    let settled = null;
     try {
       const url = `${this.#pageOrigin}/${encodeURIComponent(this.#input.saved_page.slug)}`;
       const capture = await this.#browserContexts.captureCandidateObservation({
@@ -230,15 +229,19 @@ class Open43Q1032Run {
         viewport: VIEWPORT,
         timeoutMs: TIMEOUT_MS,
         settleMs: 0,
-        onPhase: async (phase) => {
-          if (phase === "domcontentloaded_immediate_observation") initial = await directoryState(page);
-          if (phase === "settled") settled = await directoryState(page);
+        navigate: async ({ page: navigationPage, url: navigationUrl, timeoutMs }) => {
+          const navigation = await navigationPage.goto(navigationUrl, {
+            waitUntil: "domcontentloaded",
+            timeout: timeoutMs,
+          });
+          initial = await directoryState(navigationPage);
+          return navigation;
         },
       });
       if (capture?.capture_error !== undefined || capture?.navigation_status !== 200) {
         throw new Error(`Q1032 browser directory capture failed: ${capture?.capture_error?.message ?? `status ${capture?.navigation_status}`}`);
       }
-      if (initial === null || settled === null) throw new Error("Q1032 browser directory phases were not both observed");
+      if (initial === null) throw new Error("Q1032 browser directory immediate state was not observed");
       const state = await directoryState(page);
       return [{
         case_id: OPEN43_Q1032_CASE_IDS[2],
