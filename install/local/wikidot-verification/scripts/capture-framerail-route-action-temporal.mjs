@@ -1041,6 +1041,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
   let navigationStatus = options.navigationStatus ?? null;
   const clickTrigger = options.attachedTriggers ? clickAttachedTrigger : clickVisibleTrigger;
   const triggerTimeoutMs = options.triggerTimeoutMs ?? args.timeoutMs;
+  const signalTimeoutMs = options.signalTimeoutMs ?? args.timeoutMs;
   try {
     if (options.navigate !== false) {
       const response = await page.goto(url, {waitUntil: "commit", timeout: args.timeoutMs});
@@ -1058,13 +1059,13 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
     if (scenario.id === "success") {
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       const loadingSignal = subject.loading.kind === "dom"
-        ? armDomPredicate(page, subject.loading, args.timeoutMs, `${subject.id} loading`)
-        : armBrowserEvent(page, subject.loading, args.timeoutMs, `${subject.id} loading`);
+        ? armDomPredicate(page, subject.loading, signalTimeoutMs, `${subject.id} loading`)
+        : armBrowserEvent(page, subject.loading, signalTimeoutMs, `${subject.id} loading`);
       const settledSignal = subject.loading.kind === "navigation"
         ? null
-        : armDomPredicate(page, subject.settled_predicate, args.timeoutMs, `${subject.id} settled`);
+        : armDomPredicate(page, subject.settled_predicate, signalTimeoutMs, `${subject.id} settled`);
       const successSignal = subject.success_event
-        ? armBrowserEvent(page, subject.success_event, args.timeoutMs, `${subject.id} success`)
+        ? armBrowserEvent(page, subject.success_event, signalTimeoutMs, `${subject.id} success`)
         : null;
       for (const signal of [loadingSignal, settledSignal, successSignal]) {
         if (signal) void signal.catch(() => undefined);
@@ -1303,6 +1304,7 @@ export async function runTemporalCapture(args) {
               {
                 attachedTriggers: scenario.id === "success" && subject.id !== "control:restore",
                 triggerTimeoutMs: scenario.id === "success" ? Math.max(args.timeoutMs, 90_000) : args.timeoutMs,
+                signalTimeoutMs: scenario.id === "success" ? Math.max(args.timeoutMs, 90_000) : args.timeoutMs,
               },
             ));
           } catch (error) {
