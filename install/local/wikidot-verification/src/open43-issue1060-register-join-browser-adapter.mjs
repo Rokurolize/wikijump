@@ -1,6 +1,7 @@
 const JOIN_SELECTOR = 'div > a[href="javascript:;"][onclick="WIKIDOT.page.listeners.join(event, \'unified\')"]';
 const VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const TIMEOUT_MS = 300_000;
+const COOKIE_SETTLE_TIMEOUT_MS = 10_000;
 const REGISTER_PATH = "/-/register";
 const LOGIN_PATH = "/-/login";
 const LOGOUT_PATH = "/-/logout";
@@ -85,9 +86,15 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
         null,
         { timeout: TIMEOUT_MS },
       );
-      const cookies = await context.cookies();
-      const sessionCookie = cookies.find(({ name }) => name === "wikijump_token");
-      if (!sessionCookie?.value) throw new Error("issue 1060 login did not create a session cookie");
+      const deadline = Date.now() + COOKIE_SETTLE_TIMEOUT_MS;
+      let sessionCookies = [];
+      do {
+        sessionCookies = (await context.cookies(this.#pageOrigin)).filter(({ name }) => name === "wikijump_token");
+        if (sessionCookies.length === 1 && sessionCookies[0].value) break;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      } while (Date.now() < deadline);
+      if (sessionCookies.length !== 1 || !sessionCookies[0].value) throw new Error("issue 1060 login did not settle at one candidate-origin session cookie");
+      const sessionCookie = sessionCookies[0];
       return { state: await publicState(page), session_token: sessionCookie.value };
     } finally {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
@@ -105,10 +112,16 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
         null,
         { timeout: TIMEOUT_MS },
       );
-      const cookies = await context.cookies();
+      const deadline = Date.now() + COOKIE_SETTLE_TIMEOUT_MS;
+      let sessionCookies = [];
+      do {
+        sessionCookies = (await context.cookies(this.#pageOrigin)).filter(({ name }) => name === "wikijump_token");
+        if (sessionCookies.length === 0) break;
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      } while (Date.now() < deadline);
       return {
         state: await publicState(page),
-        session_cookie_after: cookies.some(({ name }) => name === "wikijump_token"),
+        session_cookie_after: sessionCookies.length !== 0,
       };
     } finally {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
