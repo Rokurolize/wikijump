@@ -294,6 +294,11 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     captureScript.indexOf('scenario, "selection", navigationStatus, outputDir') < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
     "selection evidence must be sealed before activation wait timeouts are armed"
   )
+  assert.match(
+    captureScript,
+    /page\.screenshot\(\{fullPage: false\}\)/u,
+    "temporal screenshots must capture the fixed viewport instead of repeatedly rasterizing the full document"
+  )
   assert.equal(
     createHash("sha256").update(captureScript).digest("hex"),
     contract.capture.script_sha256
