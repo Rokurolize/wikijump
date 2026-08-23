@@ -55,6 +55,17 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
     return new URL(pathname, this.#pageOrigin).href;
   }
 
+  async #sessionToken(context) {
+    const deadline = Date.now() + COOKIE_SETTLE_TIMEOUT_MS;
+    let sessionCookies = [];
+    do {
+      sessionCookies = (await context.cookies(this.#pageOrigin)).filter(({ name }) => name === "wikijump_token");
+      if (sessionCookies.length === 1 && sessionCookies[0].value) return decodeURIComponent(sessionCookies[0].value);
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    } while (Date.now() < deadline);
+    throw new Error("issue 1060 browser did not settle at one candidate-origin session cookie");
+  }
+
   async #register(context, credentials) {
     const page = await context.newPage();
     try {
@@ -86,16 +97,7 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
         null,
         { timeout: TIMEOUT_MS },
       );
-      const deadline = Date.now() + COOKIE_SETTLE_TIMEOUT_MS;
-      let sessionCookies = [];
-      do {
-        sessionCookies = (await context.cookies(this.#pageOrigin)).filter(({ name }) => name === "wikijump_token");
-        if (sessionCookies.length === 1 && sessionCookies[0].value) break;
-        await new Promise((resolve) => setTimeout(resolve, 25));
-      } while (Date.now() < deadline);
-      if (sessionCookies.length !== 1 || !sessionCookies[0].value) throw new Error("issue 1060 login did not settle at one candidate-origin session cookie");
-      const sessionCookie = sessionCookies[0];
-      return { state: await publicState(page), session_token: sessionCookie.value };
+      return { state: await publicState(page), session_token: await this.#sessionToken(context) };
     } finally {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
@@ -174,7 +176,7 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
       await page.waitForURL(this.#url(`/${componentSlug}`), { timeout: TIMEOUT_MS });
       return await page.evaluate((expected) => ({
         path: location.pathname,
-        body_contains_source: document.querySelector(".page-content")?.innerText.includes(expected) === true,
+        body_contains_source: document.querySelector("#page-content")?.innerText.includes(expected) === true,
         error_popup_visible: document.querySelectorAll("#odialog-container").length > 0,
       }), source);
     } finally {
@@ -188,7 +190,7 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
       await page.goto(this.#url(`/${componentSlug}`), { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       return await page.evaluate((expected) => ({
         path: location.pathname,
-        body_contains_source: document.querySelector(".page-content")?.innerText.includes(expected) === true,
+        body_contains_source: document.querySelector("#page-content")?.innerText.includes(expected) === true,
         error_popup_visible: document.querySelectorAll("#odialog-container").length > 0,
       }), source);
     } finally {
@@ -225,13 +227,14 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
     const join = await this.#join(context);
     const create = await this.#create(context, componentSlug, source);
     const readBack = await this.#readBack(context, componentSlug, source);
+    const sessionToken = await this.#sessionToken(context);
     return {
       username: credentials.username,
       initial,
       register,
       logout,
       login_again: { state: loginAgain.state },
-      session_token: loginAgain.session_token,
+      session_token: sessionToken,
       join,
       create,
       read_back: readBack,
