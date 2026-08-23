@@ -19,6 +19,11 @@ import {
 import {defaultBrowserRoot, loadPlaywright, openBrowser} from "../src/browser-session.mjs";
 import {safePathSegment} from "../src/browser-render-evidence.mjs";
 
+// Temporal evidence captures the current viewport state. Waiting for externally
+// hosted webfonts before every screenshot adds no contract value and can stall
+// behind the capture request gate for many seconds per interval.
+process.env.PW_TEST_SCREENSHOT_NO_FONTS_READY = "1";
+
 const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const SCRIPT_RELATIVE_PATH = "install/local/wikidot-verification/scripts/capture-framerail-route-action-temporal.mjs";
 const REPO_ROOT = path.resolve(path.dirname(SCRIPT_PATH), "../../../..");
