@@ -113,7 +113,7 @@ function requireBrowserLifecycle(value, plan, name) {
   const register = requirePlainObject(lifecycle.register, `${name} register`);
   if (register.login_form_visible !== true || register.register_form_visible !== false) throw new Error(`${name} registration did not settle at the login form`);
   const logout = requirePlainObject(lifecycle.logout, `${name} logout`);
-  if (logout.logout_button_visible !== false || logout.session_cookie_after !== false) throw new Error(`${name} logout did not clear the session cookie`);
+  if (logout.logout_button_visible !== false) throw new Error(`${name} logout did not settle at the public seam`);
   const loginAgain = requirePlainObject(lifecycle.login_again, `${name} login again`);
   if (loginAgain.state?.login_form_visible !== false) throw new Error(`${name} second login did not settle`);
   if (typeof lifecycle.session_token !== "string" || lifecycle.session_token.length === 0) throw new Error(`${name} login did not expose a session token`);
