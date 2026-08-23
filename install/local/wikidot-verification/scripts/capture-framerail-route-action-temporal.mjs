@@ -774,7 +774,7 @@ async function captureObservation(page, diagnostics, args, execution, subject, s
   await fs.mkdir(subjectDir, {recursive: true, mode: 0o700});
   const stem = `${safePathSegment(scenario.id)}-${safePathSegment(interval)}`;
   const domPath = path.join(subjectDir, `${stem}.html`);
-  const screenshotPath = path.join(subjectDir, `${stem}.png`);
+  const screenshotPath = path.join(subjectDir, `${stem}.jpg`);
   let html = "";
   const captureErrors = [];
   try {
@@ -784,7 +784,7 @@ async function captureObservation(page, diagnostics, args, execution, subject, s
   }
   const domBytes = assertByteLimit(Buffer.from(html, "utf8"), DOM_MAX_BYTES, "DOM artifact");
   const domIdentity = await writeAndVerifyArtifact(domPath, domBytes, "DOM artifact");
-  const screenshot = assertByteLimit(await withTimeout(() => page.screenshot({fullPage: false}), args.timeoutMs, "screenshot capture"), SCREENSHOT_MAX_BYTES, "screenshot artifact");
+  const screenshot = assertByteLimit(await withTimeout(() => page.screenshot({type: "jpeg", quality: 45, fullPage: false}), args.timeoutMs, "screenshot capture"), SCREENSHOT_MAX_BYTES, "screenshot artifact");
   const screenshotIdentity = await writeAndVerifyArtifact(screenshotPath, screenshot, "screenshot artifact");
   const resultOracle = execution.resultOracles?.[scenario.id]?.[subject.id];
   return {

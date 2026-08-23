@@ -296,8 +296,8 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
   )
   assert.match(
     captureScript,
-    /page\.screenshot\(\{fullPage: false\}\)/u,
-    "temporal screenshots must capture the fixed viewport instead of repeatedly rasterizing the full document"
+    /page\.screenshot\(\{type: "jpeg", quality: 45, fullPage: false\}\)/u,
+    "temporal screenshots must use the bounded viewport JPEG evidence path"
   )
   assert.equal(
     createHash("sha256").update(captureScript).digest("hex"),
