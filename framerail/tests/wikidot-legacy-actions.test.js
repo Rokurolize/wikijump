@@ -262,7 +262,9 @@ test("legacy printuser onclick is rebound without evaluating authored script", (
     addEventListener: () => {},
     removeEventListener: () => {},
     querySelectorAll: (selector) => {
-      if (selector === '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]') {
+      if (
+        selector === '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]'
+      ) {
         return [printuser]
       }
       return []
@@ -270,7 +272,9 @@ test("legacy printuser onclick is rebound without evaluating authored script", (
   }
   const calls = []
   const prior = globalThis.WIKIDOT
-  globalThis.WIKIDOT = { page: { listeners: { userInfo: (userId) => calls.push(userId) } } }
+  globalThis.WIKIDOT = {
+    page: { listeners: { userInfo: (userId) => calls.push(userId) } }
+  }
   try {
     const action = wikidotLegacyActions(root, { actions: [], runtime: {} })
     assert.equal(typeof printuser.onclick, "function")

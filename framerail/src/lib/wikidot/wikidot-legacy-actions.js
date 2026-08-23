@@ -55,7 +55,8 @@ const busyActions = new WeakSet()
 /** @type {WeakMap<HTMLElement, ((event: MouseEvent) => false) | null>} */
 const originalUserInfoHandlers = new WeakMap()
 
-const USER_INFO_ONCLICK = /^WIKIDOT\.page\.listeners\.userInfo\((-?[0-9]+)\); return false;$/u
+const USER_INFO_ONCLICK =
+  /^WIKIDOT\.page\.listeners\.userInfo\((-?[0-9]+)\); return false;$/u
 const WIKIDOT_USER_INFO_HREF = /^http:\/\/www\.wikidot\.com\/user:info\/([a-z0-9-]+)$/u
 
 const installDefaultWikidotUserInfoListener = () => {
@@ -68,8 +69,11 @@ const installDefaultWikidotUserInfoListener = () => {
     const documentObject = globalThis.document
     if (!documentObject?.querySelectorAll) return false
     const expected = `WIKIDOT.page.listeners.userInfo(${userId}); return false;`
-    const anchor = [...documentObject.querySelectorAll('.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]')]
-      .find((element) => element.getAttribute("onclick") === expected)
+    const anchor = [
+      ...documentObject.querySelectorAll(
+        '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]'
+      )
+    ].find((element) => element.getAttribute("onclick") === expected)
     const match = WIKIDOT_USER_INFO_HREF.exec(anchor?.getAttribute("href") ?? "")
     if (match) globalThis.location?.assign?.(`/user:info/${match[1]}`)
     return false
@@ -78,8 +82,9 @@ const installDefaultWikidotUserInfoListener = () => {
 
 /**
  * Rebind only the exact renderer-owned Wikidot printuser handler shape.
- * The legacy onclick attribute stays in served DOM for parity, while CSP-safe
- * trusted client code supplies the executable property without eval.
+ * The legacy onclick attribute stays in served DOM for parity, while
+ * CSP-safe trusted client code supplies the executable property without
+ * eval.
  *
  * @param {HTMLElement} root
  */
@@ -96,7 +101,10 @@ const bindWikidotUserInfoHandlers = (root) => {
     if (!match) continue
     const userId = Number(match[1])
     if (!Number.isSafeInteger(userId)) continue
-    originalUserInfoHandlers.set(element, /** @type {((event: MouseEvent) => false) | null} */ (element.onclick))
+    originalUserInfoHandlers.set(
+      element,
+      /** @type {((event: MouseEvent) => false) | null} */ (element.onclick)
+    )
     element.onclick = () => {
       const listener = globalThis.WIKIDOT?.page?.listeners?.userInfo
       if (typeof listener === "function") listener(userId)
