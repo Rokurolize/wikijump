@@ -505,8 +505,9 @@ class Open43Issue1060Run {
             user: this.#registeredUserId,
             ip_address: "::1",
           }, { cleanup: true });
-          if ((await this.#rpc("registered", "user_get", { user: this.#registeredUserId }, { cleanup: true })) !== null) {
-            throw new Error("issue 1060 registered user remained after cleanup");
+          const deleted = await this.#rpc("administrator", "user_get", { user: this.#registeredUserId }, { cleanup: true });
+          if (deleted?.user_id !== this.#registeredUserId || typeof deleted.deleted_at !== "string" || deleted.deleted_at.length === 0) {
+            throw new Error("issue 1060 registered user did not reach its deleted tombstone during cleanup");
           }
         }
       }
@@ -524,9 +525,9 @@ class Open43Issue1060Run {
         else this.#resources.release(resource.token, { page_get: null });
       }
       if (this.#registeredUserId !== null && this.#registeredSession !== null) {
-        const user = await this.#rpc("registered", "user_get", { user: this.#registeredUserId }, { cleanup: true });
-        if (user !== null) userAfter = false;
-        else if (this.#userResource !== null) this.#resources.release(this.#userResource, { user_get: null });
+        const user = await this.#rpc("administrator", "user_get", { user: this.#registeredUserId }, { cleanup: true });
+        if (user?.user_id !== this.#registeredUserId || typeof user.deleted_at !== "string" || user.deleted_at.length === 0) userAfter = false;
+        else if (this.#userResource !== null) this.#resources.release(this.#userResource, { user_get: { user_id: user.user_id, deleted_at: user.deleted_at } });
       }
     }
     return {

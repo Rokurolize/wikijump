@@ -124,7 +124,10 @@ function runtime() {
       };
     }
     if (method === "user_get") {
-      return params.user === REGISTERED_ID && !userDeleted ? { user_type: "regular", name: USERNAME } : null;
+      if (params.user !== REGISTERED_ID) return null;
+      return userDeleted
+        ? { user_id: REGISTERED_ID, user_type: "regular", name: USERNAME, deleted_at: "2026-08-16T00:00:00Z" }
+        : { user_id: REGISTERED_ID, user_type: "regular", name: USERNAME, deleted_at: null };
     }
     if (method === "user_delete") {
       userDeleted = true;
