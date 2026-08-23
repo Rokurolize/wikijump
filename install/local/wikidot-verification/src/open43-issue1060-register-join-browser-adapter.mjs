@@ -172,7 +172,7 @@ export class Open43Issue1060RegisterJoinCreateBrowserAdapter {
   async #readBack(context, componentSlug, source) {
     const page = await context.newPage();
     try {
-      await page.goto(this.#url(`/${encodeURIComponent(componentSlug)}`), { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.goto(this.#url(`/${componentSlug}`), { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       return await page.evaluate((expected) => ({
         path: location.pathname,
         body_contains_source: document.querySelector(".page-content")?.innerText.includes(expected) === true,
