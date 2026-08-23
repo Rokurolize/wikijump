@@ -94,6 +94,7 @@ const SOURCE_FILES = Object.freeze([...new Set([
   "install/local/wikidot-verification/src/candidate-case-command.mjs",
   "install/local/wikidot-verification/src/candidate-case-http.mjs",
   "install/local/wikidot-verification/src/candidate-case-runner.mjs",
+  "install/local/wikidot-verification/src/compatibility-candidate-input-producer.mjs",
   "install/local/wikidot-verification/src/deepwell-rpc-auth.mjs",
   "install/local/wikidot-verification/src/open43-q778-forum-mini-candidate-case-set.mjs",
   "install/local/wikidot-verification/src/standing-browser-parity-receipt.mjs",

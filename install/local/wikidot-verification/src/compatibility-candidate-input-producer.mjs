@@ -18,6 +18,7 @@ const SITE_ID = 6_000_003;
 const SITE_SLUG = "scpaiueouiuiuiui";
 const FOREIGN_SITE_ID = 6_000_006;
 const ACTOR_IDS = Object.freeze({ editor: 20_000_007, eligible: 20_000_008, registered: 20_000_009, pending: 20_000_010, banned: 20_000_011, other: 20_000_012 });
+export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 20_000_013, name: "Q778 Wikidot Author", slug: "q778-wikidot-author" });
 const Q1026_USERS = Object.freeze({
   visible_user: Object.freeze({ user_id: 19_102_600, name: "Extant User", slug: "extant-user", is_deleted: false }),
   deleted_user: Object.freeze({ user_id: 19_102_601, name: "Deleted User", slug: "deleted-user", is_deleted: true }),
@@ -263,6 +264,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
 
     const forumMini = await page("q778-forum-mini", "Q778 Forum Mini", FORUM_MINI_SAVED_SOURCE);
     general.forum_mini_fixture = { site: { site_id: SITE_ID, slug: SITE_SLUG }, saved_page: { page_id: forumMini.page_id, revision_id: forumMini.revision_id, slug: forumMini.slug, source_sha256: sha256(FORUM_MINI_SAVED_SOURCE) }, forbidden_markers: ["Q778_HIDDEN_MARKER", "Q778_PRIVATE_MARKER"] };
+    sql(database, `insert into known_user(user_id) values (${Q778_WIKIDOT_AUTHOR.user_id}) on conflict do nothing; insert into wikidot_user(user_id,created_at,fetched_at,is_deleted,name,slug,karma,is_pro) values (${Q778_WIKIDOT_AUTHOR.user_id},now()-interval '1 second',now(),false,'${Q778_WIKIDOT_AUTHOR.name}','${Q778_WIKIDOT_AUTHOR.slug}',0,false) on conflict (user_id) do update set is_deleted=false,name=excluded.name,slug=excluded.slug,fetched_at=excluded.fetched_at;`);
 
     const q1036 = await page("q1036-saved-boundary", "Q1036 saved boundary", Q1036_SAVED_SOURCE);
     Object.assign(general, { saved_page_id: q1036.page_id, saved_revision_id: q1036.revision_id, saved_page_slug: q1036.slug });
@@ -305,6 +307,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     for (let i = 0; i < 20; i++) await post(9100101, `Q1034 visible ${i}`, `Q1034_VISIBLE_${i}`);
     for (const thread of [9100122, 9100123]) for (let i = 0; i < 12; i++) await post(thread, `Q1034 comments ${i}`, `[[div class="q1034-fwd-${String(i).padStart(2, "0")}"]]F${i}[[/div]]\n[[div class="q1034-rev-${String(i).padStart(2, "0")}"]]R${i}[[/div]]`);
     for (let i = 0; i < 5; i++) await post(9100124, `Q778 mini post ${i}`, `Q778 recent post excerpt ${i}`);
+    sql(database, `update forum_post set user_id=${Q778_WIKIDOT_AUTHOR.user_id} where site_id=${SITE_ID} and forum_thread_id=9100124; update forum_post_revision fpr set user_id=${Q778_WIKIDOT_AUTHOR.user_id} from forum_post fp where fpr.forum_post_id=fp.forum_post_id and fp.site_id=${SITE_ID} and fp.forum_thread_id=9100124;`);
 
     const q1035Site = await page("q1035-sitechanges-holder", "Q1035 Public Activity", Q1035_SAVED_SOURCES.sitechanges_holder);
     const q1035Draft = await page("q1035-listdrafts-holder", "Q1035 ListDrafts Holder", Q1035_SAVED_SOURCES.listdrafts_holder);

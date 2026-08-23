@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -32,4 +32,12 @@ test("compatibility candidate input producer binds the exact five FTML marker fi
     "marker-canary-alignment",
   ]);
   assert.throws(() => compatibilityMarkerFixtures({ schema: "wikijump.ftml_marker_contract_fixtures.v1", site_slug: "scp-wiki", layout: "wikidot", fixtures: [] }), /denominator drifted/u);
+});
+
+test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {
+  assert.deepEqual(Q778_WIKIDOT_AUTHOR, {
+    user_id: 20_000_013,
+    name: "Q778 Wikidot Author",
+    slug: "q778-wikidot-author",
+  });
 });
