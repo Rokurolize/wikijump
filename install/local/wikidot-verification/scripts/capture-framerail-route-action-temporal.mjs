@@ -875,8 +875,9 @@ async function clickAttachedTrigger(page, selector, timeoutMs) {
 
 async function waitForSavedPageHydration(page, timeoutMs) {
   const trigger = page.locator("#more-options-button");
-  await trigger.waitFor({state: "attached", timeout: timeoutMs});
-  const deadline = Date.now() + Math.max(timeoutMs, 90_000);
+  const readinessTimeoutMs = Math.max(timeoutMs, 90_000);
+  await trigger.waitFor({state: "attached", timeout: readinessTimeoutMs});
+  const deadline = Date.now() + readinessTimeoutMs;
   while (Date.now() < deadline) {
     await trigger.evaluate((element) => element.click());
     const opened = await page.locator("#page-options-bottom-2").waitFor({state: "attached", timeout: 250}).then(() => true).catch(() => false);
