@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -9,4 +9,27 @@ test("compatibility candidate input producer requires distinct identity-bound pa
   assert.match(parsed["candidate-identity"], /candidate\.json$/u);
   assert.notEqual(parsed["template-private-dir"], parsed["output-private-dir"]);
   assert.throws(() => parseCompatibilityCandidateInputArgs(["--candidate-identity", "candidate.json"]), /Usage/u);
+});
+
+test("compatibility candidate input producer binds the exact five FTML marker fixtures", () => {
+  const fixtures = compatibilityMarkerFixtures({
+    schema: "wikijump.ftml_marker_contract_fixtures.v1",
+    site_slug: "scp-wiki",
+    layout: "wikidot",
+    fixtures: ["heading", "separator", "div", "span", "alignment"].map((name) => ({
+      fixture_id: `marker-${name}`,
+      slug: `marker-canary-${name}`,
+      title: `Marker ${name}`,
+      wikitext: `MARKER_${name.toUpperCase()}\n`,
+    })),
+  });
+  assert.equal(fixtures.length, 5);
+  assert.deepEqual(fixtures.map(({ slug }) => slug), [
+    "marker-canary-heading",
+    "marker-canary-separator",
+    "marker-canary-div",
+    "marker-canary-span",
+    "marker-canary-alignment",
+  ]);
+  assert.throws(() => compatibilityMarkerFixtures({ schema: "wikijump.ftml_marker_contract_fixtures.v1", site_slug: "scp-wiki", layout: "wikidot", fixtures: [] }), /denominator drifted/u);
 });

@@ -29,6 +29,7 @@ const MEDIA_BROWSER_EVIDENCE = Object.freeze({
   M1043_BROWSER_RENDER_AND_VIEWER: "E_FOCUSED_CORPUS",
   M1062_BROWSER_UPLOAD_FLOW: "E_UPLOAD_HISTORICAL_FAILURE",
 });
+const FTML_MARKER_FIXTURE_INDEX = new URL("../fixtures/ftml-marker-contract/fixtures.json", import.meta.url);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
   "framerail-route-action-denial-storage.json",
@@ -41,6 +42,21 @@ const GENERATED_PRIVATE_INPUTS = new Set([
   "media-files.json",
 ]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+
+export function compatibilityMarkerFixtures(value) {
+  if (value?.schema !== "wikijump.ftml_marker_contract_fixtures.v1" || value.site_slug !== "scp-wiki" || value.layout !== "wikidot") {
+    throw new Error("FTML marker candidate fixture index is invalid");
+  }
+  if (!Array.isArray(value.fixtures) || value.fixtures.length !== 5) throw new Error("FTML marker candidate fixture denominator drifted");
+  const slugs = new Set();
+  for (const fixture of value.fixtures) {
+    if (typeof fixture?.fixture_id !== "string" || typeof fixture.slug !== "string" || typeof fixture.title !== "string" || typeof fixture.wikitext !== "string" || fixture.wikitext === "" || slugs.has(fixture.slug)) {
+      throw new Error("FTML marker candidate fixture is incomplete or duplicated");
+    }
+    slugs.add(fixture.slug);
+  }
+  return value.fixtures;
+}
 
 function usage() {
   return "Usage: prepare-compatibility-candidate-inputs.mjs --candidate-identity FILE --private-runtime FILE --template-private-dir DIR --output-private-dir DIR --receipt FILE";
@@ -214,6 +230,13 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const defaultPage = await rpc("page_get", { site_id: SITE_ID, page: "boundary-check", details: { wikitext: false, compiled: false } }, { siteId: SITE_ID });
     const transitionPage = await rpc("page_get", { site_id: SITE_ID, page: "corpus:scp-9506-draft", details: { wikitext: false, compiled: false } }, { siteId: SITE_ID });
     if (!defaultPage || !transitionPage) throw new Error("fresh candidate is missing the maintained base page fixtures");
+
+    const markerFixtureIndex = JSON.parse(await fs.readFile(FTML_MARKER_FIXTURE_INDEX, "utf8"));
+    const markerFixtures = compatibilityMarkerFixtures(markerFixtureIndex);
+    const markerPages = [];
+    for (const fixture of markerFixtures) {
+      markerPages.push(await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID }));
+    }
     for (const name of privateFiles) {
       const target = path.join(args["output-private-dir"], name);
       const value = JSON.parse(await fs.readFile(target, "utf8"));
@@ -465,7 +488,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     await fs.writeFile(generalPath, `${JSON.stringify(general, null, 2)}\n`, { mode: 0o600 });
     await propagateActors();
     execFileSync("docker", ["exec", cache, "redis-cli", "FLUSHALL"], { stdio: "ignore" });
-    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105 }, fixtures: { a1037_redirect_source: redirectSource.page_id, q1032_members: members.page_id, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
+    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105 }, fixtures: { a1037_redirect_source: redirectSource.page_id, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
     const publication = await sealJsonNoReplace(args.receipt, receipt);
     if (publication.publication !== "created") throw new Error(`candidate input receipt already exists: ${args.receipt}`);
     return { receipt: { path: args.receipt, sha256: publication.sha256 }, private_dir: args["output-private-dir"] };

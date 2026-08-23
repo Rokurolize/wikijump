@@ -38,6 +38,7 @@ const SOURCE_FILES = Object.freeze([
   "install/local/wikidot-verification/src/candidate-case-command.mjs",
   "install/local/wikidot-verification/src/candidate-case-runner.mjs",
   "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
+  "install/local/wikidot-verification/src/compatibility-candidate-input-producer.mjs",
   "install/local/wikidot-verification/src/capture-egress-proxy.mjs",
   "install/local/wikidot-verification/src/cli-entry.mjs",
   "install/local/wikidot-verification/src/corpus-file-reader.mjs",
