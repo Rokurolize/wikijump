@@ -762,14 +762,24 @@ function attachDiagnostics(page) {
     diagnostics[field].push(value);
     diagnostics.bytes += bytes;
   };
-  page.on("console", (message) => {
+  const onConsole = (message) => {
     if (message.type() === "error") record("consoleErrors", message.text());
-  });
-  page.on("pageerror", (error) => record("pageErrors", errorMessage(error)));
-  page.on("requestfailed", (request) => record("failedRequests", {url: request.url(), error: request.failure()?.errorText ?? null}));
-  page.on("response", (response) => {
+  };
+  const onPageError = (error) => record("pageErrors", errorMessage(error));
+  const onRequestFailed = (request) => record("failedRequests", {url: request.url(), error: request.failure()?.errorText ?? null});
+  const onResponse = (response) => {
     if (response.status() >= 400) record("httpErrors", {url: response.url(), status: response.status()});
-  });
+  };
+  page.on("console", onConsole);
+  page.on("pageerror", onPageError);
+  page.on("requestfailed", onRequestFailed);
+  page.on("response", onResponse);
+  diagnostics.cleanup = () => {
+    page.off("console", onConsole);
+    page.off("pageerror", onPageError);
+    page.off("requestfailed", onRequestFailed);
+    page.off("response", onResponse);
+  };
   return diagnostics;
 }
 
@@ -857,6 +867,42 @@ async function clickVisibleTrigger(page, selector, timeoutMs) {
   await locator.click({timeout: timeoutMs, noWaitAfter: true});
 }
 
+async function clickAttachedTrigger(page, selector, timeoutMs) {
+  const locator = page.locator(selector);
+  await locator.waitFor({state: "attached", timeout: timeoutMs});
+  await locator.evaluate((element) => element.click());
+}
+
+async function waitForSavedPageHydration(page, timeoutMs) {
+  const trigger = page.locator("#more-options-button");
+  await trigger.waitFor({state: "attached", timeout: timeoutMs});
+  const deadline = Date.now() + Math.max(timeoutMs, 90_000);
+  while (Date.now() < deadline) {
+    await trigger.evaluate((element) => element.click());
+    const opened = await page.locator("#page-options-bottom-2").waitFor({state: "attached", timeout: 250}).then(() => true).catch(() => false);
+    if (opened) {
+      await trigger.evaluate((element) => element.click());
+      await page.locator("#page-options-bottom-2").waitFor({state: "detached", timeout: timeoutMs});
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error("saved page did not hydrate before the bounded readiness deadline");
+}
+
+async function resetSavedPageState(page, timeoutMs) {
+  const close = page.locator(".action-area-close");
+  if (await close.count() > 0) {
+    await clickAttachedTrigger(page, ".action-area-close", timeoutMs);
+    await close.waitFor({state: "detached", timeout: timeoutMs});
+  }
+  const options = page.locator("#page-options-bottom-2");
+  if (await options.count() > 0) {
+    await clickAttachedTrigger(page, "#more-options-button", timeoutMs);
+    await options.waitFor({state: "detached", timeout: timeoutMs});
+  }
+}
+
 function requestMatches(request, event) {
   if (event.method && request.method() !== event.method) return false;
   if (!urlSuffixMatches(request.url(), event.url_suffix)) return false;
@@ -874,7 +920,7 @@ function armBrowserEvent(page, event, timeoutMs, label) {
   if (event.kind === "navigation") {
     const dataPath = `${event.url_suffix}/__data.json`;
     return Promise.all([
-      page.waitForURL((url) => url.pathname.endsWith(event.url_suffix), {timeout: timeoutMs}),
+      page.waitForURL((url) => url.pathname.endsWith(event.url_suffix), {waitUntil: "commit", timeout: timeoutMs}),
       page.waitForResponse((response) => {
         const url = new URL(response.url());
         return response.status() === event.status && response.request().method() === "GET" && url.pathname.endsWith(dataPath);
@@ -961,20 +1007,24 @@ async function captureObservation(page, captureDisplay, diagnostics, args, execu
   };
 }
 
-async function captureSubjectScenario(context, captureDisplay, args, execution, subject, scenario, url, outputDir) {
-  const page = await context.newPage();
+async function captureSubjectScenario(context, captureDisplay, args, execution, subject, scenario, url, outputDir, options = {}) {
+  const page = options.page ?? await context.newPage();
+  const ownsPage = options.page === undefined;
   const diagnostics = attachDiagnostics(page);
-  let navigationStatus = null;
+  let navigationStatus = options.navigationStatus ?? null;
+  const clickTrigger = options.attachedTriggers ? clickAttachedTrigger : clickVisibleTrigger;
   try {
-    const response = await page.goto(url, {waitUntil: "commit", timeout: args.timeoutMs});
-    navigationStatus = response?.status() ?? null;
+    if (options.navigate !== false) {
+      const response = await page.goto(url, {waitUntil: "commit", timeout: args.timeoutMs});
+      navigationStatus = response?.status() ?? null;
+    }
     const triggers = subject.trigger_selectors;
     const resultOracle = scenario.id === "success"
       ? null
       : execution.resultOracles?.[scenario.id]?.[subject.id];
     const activates = scenario.id === "success" || (resultOracle?.activation ?? "click") === "click";
     if (activates) for (const selector of triggers.slice(0, -1)) {
-      await clickVisibleTrigger(page, selector, args.timeoutMs);
+      await clickTrigger(page, selector, args.timeoutMs);
     }
     const records = [];
     if (scenario.id === "success") {
@@ -991,7 +1041,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       for (const signal of [loadingSignal, settledSignal, successSignal]) {
         if (signal) void signal.catch(() => undefined);
       }
-      await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
+      await clickTrigger(page, triggers.at(-1), args.timeoutMs);
       const loadingResult = await loadingSignal;
       if (subject.loading.kind === "navigation") navigationStatus = loadingResult?.status() ?? null;
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "loading", navigationStatus, outputDir));
@@ -1011,7 +1061,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       void failureControl.signal.catch(() => undefined);
       try {
         if ((resultOracle.activation ?? "click") === "click") {
-          await clickVisibleTrigger(page, triggers.at(-1), args.timeoutMs);
+          await clickTrigger(page, triggers.at(-1), args.timeoutMs);
         }
         await Promise.all([resultSignal, failureControl.signal]);
       } finally {
@@ -1021,8 +1071,49 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
     }
     return records;
   } finally {
-    await withTimeout(() => page.close(), SHUTDOWN_TIMEOUT_MS, `${subject.id} page shutdown`);
+    diagnostics.cleanup();
+    if (ownsPage) await withTimeout(() => page.close(), SHUTDOWN_TIMEOUT_MS, `${subject.id} page shutdown`);
   }
+}
+
+async function captureSavedPageSubjects(context, captureDisplay, args, execution, subjects, scenario, url, outputDir) {
+  const page = await context.newPage();
+  const records = [];
+  const failures = [];
+  try {
+    const response = await page.goto(url, {waitUntil: "commit", timeout: args.timeoutMs});
+    const navigationStatus = response?.status() ?? null;
+    if (scenario.id !== "denial") await waitForSavedPageHydration(page, args.timeoutMs);
+    for (const subject of subjects) {
+      try {
+        records.push(...await captureSubjectScenario(
+          context,
+          captureDisplay,
+          args,
+          execution,
+          subject,
+          scenario,
+          url,
+          outputDir,
+          {page, navigate: false, navigationStatus, attachedTriggers: scenario.id !== "denial"},
+        ));
+      } catch (error) {
+        failures.push({subject_id: subject.id, scenario: scenario.id, message: errorMessage(error)});
+      } finally {
+        if (scenario.id !== "denial") {
+          try {
+            await resetSavedPageState(page, args.timeoutMs);
+          } catch (error) {
+            failures.push({subject_id: subject.id, scenario: scenario.id, message: `saved-page reset failed: ${errorMessage(error)}`});
+            break;
+          }
+        }
+      }
+    }
+  } finally {
+    await withTimeout(() => page.close(), SHUTDOWN_TIMEOUT_MS, `${scenario.id} saved-page shutdown`);
+  }
+  return {records, failures};
 }
 
 export async function closeCaptureEgressProxies(sourceProxy, localProxy, timeoutMs = SHUTDOWN_TIMEOUT_MS) {
@@ -1168,13 +1259,27 @@ export async function runTemporalCapture(args) {
           runtimeIdentity: identities.runtime,
           storageState: scenario.storage_state,
         };
-        for (const subject of contract.subjects) {
+        const missingSubjects = contract.subjects.filter((subject) => subject.kind === "missing_page");
+        const savedSubjects = contract.subjects.filter((subject) => subject.kind === "saved_page");
+        for (const subject of missingSubjects) {
           try {
             records.push(...await captureSubjectScenario(browserSession.localContext, captureDisplay, args, execution, subject, scenario, urls[scenario.id][subject.kind], args.outputDir));
           } catch (error) {
             failures.push({subject_id: subject.id, scenario: scenario.id, message: errorMessage(error)});
           }
         }
+        const savedPageResult = await captureSavedPageSubjects(
+          browserSession.localContext,
+          captureDisplay,
+          args,
+          execution,
+          savedSubjects,
+          scenario,
+          urls[scenario.id].saved_page,
+          args.outputDir,
+        );
+        records.push(...savedPageResult.records);
+        failures.push(...savedPageResult.failures);
       } finally {
         const session = browserSession;
         browserSession = null;
