@@ -52,6 +52,45 @@
 const boundActions = new WeakMap()
 /** @type {WeakSet<object>} */
 const busyActions = new WeakSet()
+/** @type {WeakMap<HTMLElement, ((event: MouseEvent) => false) | null>} */
+const originalUserInfoHandlers = new WeakMap()
+
+const USER_INFO_ONCLICK = /^WIKIDOT\.page\.listeners\.userInfo\((-?[0-9]+)\); return false;$/u
+
+/**
+ * Rebind only the exact renderer-owned Wikidot printuser handler shape.
+ * The legacy onclick attribute stays in served DOM for parity, while CSP-safe
+ * trusted client code supplies the executable property without eval.
+ *
+ * @param {HTMLElement} root
+ */
+const bindWikidotUserInfoHandlers = (root) => {
+  /** @type {HTMLElement[]} */
+  const elements = []
+  for (const element of /** @type {NodeListOf<HTMLElement>} */ (
+    root.querySelectorAll(
+      '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]'
+    )
+  )) {
+    const match = USER_INFO_ONCLICK.exec(element.getAttribute("onclick") ?? "")
+    if (!match) continue
+    const userId = Number(match[1])
+    if (!Number.isSafeInteger(userId)) continue
+    originalUserInfoHandlers.set(element, /** @type {((event: MouseEvent) => false) | null} */ (element.onclick))
+    element.onclick = () => {
+      const listener = globalThis.WIKIDOT?.page?.listeners?.userInfo
+      if (typeof listener === "function") listener(userId)
+      return false
+    }
+    elements.push(element)
+  }
+  return () => {
+    for (const element of elements) {
+      element.onclick = originalUserInfoHandlers.get(element) ?? null
+      originalUserInfoHandlers.delete(element)
+    }
+  }
+}
 
 /**
  * @param {ActionControl} element
@@ -352,9 +391,11 @@ export const wikidotLegacyActions = (root, parameters) => {
   /** @type {Set<ActionControl>} */
   const elements = new Set()
   let runtime = parameters.runtime
+  let releaseUserInfoHandlers = () => {}
 
   /** @param {LegacyBrowserAction[]} actions */
   const refresh = (actions) => {
+    releaseUserInfoHandlers()
     for (const element of elements) boundActions.delete(element)
     elements.clear()
     bindStandaloneActions(root, actions, elements)
@@ -370,6 +411,7 @@ export const wikidotLegacyActions = (root, parameters) => {
     )) {
       bind(elements, element, action)
     }
+    releaseUserInfoHandlers = bindWikidotUserInfoHandlers(root)
   }
   refresh(parameters.actions)
 
@@ -402,6 +444,7 @@ export const wikidotLegacyActions = (root, parameters) => {
   root.addEventListener("keydown", keydown, true)
   return {
     destroy() {
+      releaseUserInfoHandlers()
       for (const element of elements) boundActions.delete(element)
       root.removeEventListener("click", activate, true)
       root.removeEventListener("keydown", keydown, true)

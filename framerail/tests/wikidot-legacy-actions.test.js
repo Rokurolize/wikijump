@@ -249,6 +249,40 @@ test("initialized Rate stars preserve the live hidden score value", () => {
   assert.equal(created.at(-1).value, "4")
 })
 
+test("legacy printuser onclick is rebound without evaluating authored script", () => {
+  const attributes = new Map([
+    ["href", "http://www.wikidot.com/user:info/r11-editor"],
+    ["onclick", "WIKIDOT.page.listeners.userInfo(20000007); return false;"]
+  ])
+  const printuser = {
+    onclick: null,
+    getAttribute: (name) => attributes.get(name) ?? null
+  }
+  const root = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelectorAll: (selector) => {
+      if (selector === '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]') {
+        return [printuser]
+      }
+      return []
+    }
+  }
+  const calls = []
+  const prior = globalThis.WIKIDOT
+  globalThis.WIKIDOT = { page: { listeners: { userInfo: (userId) => calls.push(userId) } } }
+  try {
+    const action = wikidotLegacyActions(root, { actions: [], runtime: {} })
+    assert.equal(typeof printuser.onclick, "function")
+    assert.equal(printuser.onclick({}), false)
+    assert.deepEqual(calls, [20000007])
+    action.destroy()
+    assert.equal(printuser.onclick, null)
+  } finally {
+    globalThis.WIKIDOT = prior
+  }
+})
+
 test("a Rate action updates the live hidden star score after the server response", () => {
   const score = { value: "0" }
   const stars = {
