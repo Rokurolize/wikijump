@@ -784,6 +784,10 @@ async function captureObservation(page, cdpSession, diagnostics, args, execution
   }
   const domBytes = assertByteLimit(Buffer.from(html, "utf8"), DOM_MAX_BYTES, "DOM artifact");
   const domIdentity = await writeAndVerifyArtifact(domPath, domBytes, "DOM artifact");
+  // The request gate intentionally leaves blocked external resources unresolved.
+  // The temporal DOM/oracle boundary is already fixed above, so stop only the
+  // residual document loading before taking the auxiliary visual evidence.
+  await cdpSession.send("Page.stopLoading").catch(() => {});
   const screenshot = assertByteLimit(await withTimeout(async () => {
     const {data} = await cdpSession.send("Page.captureScreenshot", {
       format: "jpeg",
