@@ -130,14 +130,16 @@ test("source and local contexts share the gate while only the exact local origin
   await installBrowserRequestGate(localContext, {gate, exemptOrigins: ["https://scp-wiki.wikijump.localhost"]});
 
   const localExact = createRoute("https://scp-wiki.wikijump.localhost/scp-173");
-  await localContext.routes[0].handler(localExact);
+  assert.equal(localContext.routes[0].pattern(new URL(localExact.request().url())), false);
+  localContext.events.get("request")(localExact.request());
   const source = createRoute("https://scp-wiki.wikidot.com/scp-173");
   const wrongPort = createRoute("https://scp-wiki.wikijump.localhost:18443/scp-173");
+  assert.equal(localContext.routes[0].pattern(new URL(wrongPort.request().url())), true);
   await Promise.all([sourceContext.routes[0].handler(source), localContext.routes[0].handler(wrongPort)]);
   let connected = false;
   await sourceContext.webSocketRoutes[0].handler({connectToServer() { connected = true; }});
 
-  assert.deepEqual(localExact.actions, [{type: "continue"}]);
+  assert.deepEqual(localExact.actions, []);
   assert.deepEqual(source.actions, [{type: "continue"}]);
   assert.deepEqual(wrongPort.actions, [{type: "continue"}]);
   assert.equal(connected, false);
