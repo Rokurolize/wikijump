@@ -203,6 +203,14 @@ test("Backlinks SSR exposes a lazy read pane without page identifiers", () => {
   assert.doesNotMatch(body, /page[_-]id/u)
 })
 
+test("Backlinks lazy read submits a form-compatible empty POST body", async () => {
+  const source = await readFile(
+    new URL("../src/routes/[slug]/[...extra]/BacklinksPane.svelte", import.meta.url),
+    "utf8"
+  )
+  assert.match(source, /fetch\("\?\/backlinks", \{ method: "POST", body: "" \}\)/u)
+})
+
 test("Backlinks handler delegates the current route to the typed public Deepwell view", async () => {
   const calls = []
   client.request = async (method, params, context) => {

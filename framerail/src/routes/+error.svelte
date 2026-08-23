@@ -127,7 +127,8 @@
 
   async function getDeleted() {
     const res = await fetch(`?/deletedGet`, {
-      method: "POST"
+      method: "POST",
+      body: ""
     }).then((res) => res.text())
     const result = deserialize<
       { res: PageDeletedGet[] },

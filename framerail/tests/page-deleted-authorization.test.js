@@ -7,6 +7,7 @@ const pageActionsSourceUrl = new URL(
   "../src/lib/server/load/page/page-revision-actions.ts",
   import.meta.url
 )
+const errorRouteSourceUrl = new URL("../src/routes/+error.svelte", import.meta.url)
 
 const exportedFunction = (source, name, nextName) => {
   const start = source.indexOf(`export async function ${name}(`)
@@ -26,6 +27,11 @@ test("deleted-page actions use the authenticated route context", async () => {
   )
   assert.match(action, /pageDeletedGet\(context\.requestContext\)/u)
   assert.doesNotMatch(action, /requestData|submittedSiteId|siteId|slug/u)
+})
+
+test("deleted-page restore loader submits a form-compatible empty POST body", async () => {
+  const source = await readFile(errorRouteSourceUrl, "utf8")
+  assert.match(source, /fetch\(`\?\/deletedGet`, \{\s*method: "POST",\s*body: ""\s*\}\)/u)
 })
 
 test("deleted-page RPC derives both selectors from trusted request context", async () => {

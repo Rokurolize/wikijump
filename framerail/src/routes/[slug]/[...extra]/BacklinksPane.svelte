@@ -11,8 +11,8 @@
   let backlinks = $state<PageBacklinkView[]>()
 
   async function fetchBacklinks() {
-    const response = await fetch("?/backlinks", { method: "POST" }).then((result) =>
-      result.text()
+    const response = await fetch("?/backlinks", { method: "POST", body: "" }).then(
+      (result) => result.text()
     )
     const result = deserialize<
       { res: PageBacklinkView[] },
