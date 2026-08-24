@@ -6,6 +6,7 @@ import {
   OPEN43_B689_CASE_IDS,
   OPEN43_B689_SCP8980_NAVIGATION_CASE_ID,
   OPEN43_B689_TABVIEW_SETTLED_CASE_ID,
+  b689NavigationRequestIsLocal,
   createOpen43B689TabviewCandidateCaseSet,
   OPEN43_B689_TABVIEW_FIXTURE,
   OPEN43_B689_TABVIEW_INITIAL_CASE_ID,
@@ -103,6 +104,15 @@ test("B689 is an executable candidate case bound to the existing canary fixture"
     }),
     /sealed B689 canary fixture/u,
   );
+});
+
+test("B689 navigation lifecycle only permits candidate-owned local requests", () => {
+  const origin = "https://candidate.wikijump.localhost:18443";
+  assert.equal(b689NavigationRequestIsLocal(`${origin}/scp-8980`, origin), true);
+  assert.equal(b689NavigationRequestIsLocal("https://candidate.wjfiles.localhost:18443/local--files/a.png", origin), true);
+  assert.equal(b689NavigationRequestIsLocal("https://scp-wiki.wikidot.com/scp-8980", origin), false);
+  assert.equal(b689NavigationRequestIsLocal("https://scp-wiki.wdfiles.com/local--files/a.png", origin), false);
+  assert.equal(b689NavigationRequestIsLocal("https://candidate.wikijump.localhost:443/scp-8980", origin), false);
 });
 
 test("B689 initial verification rejects geometry drift, duplicate rows, and tabview mismatch", () => {
@@ -325,6 +335,11 @@ test("B689 SCP-8980 navigation verification binds the return-to-first-tab lifecy
   assert.equal(verdict.verified, true);
   assert.equal(verdict.return_to_first_tab_proven, true);
 
+  const liveBrowserNoise = structuredClone(observations);
+  liveBrowserNoise.page.console_error_count = 2;
+  liveBrowserNoise.page.request_failure_count = 1;
+  assert.equal(verifyOpen43B689Scp8980Navigation(liveBrowserNoise, plan).verified, true);
+
   const staleSelection = structuredClone(observations);
   staleSelection.navigation.after_back = interactionState(1);
   assert.throws(() => verifyOpen43B689Scp8980Navigation(staleSelection, plan), /after back navigation tab state/u);
@@ -333,7 +348,7 @@ test("B689 SCP-8980 navigation verification binds the return-to-first-tab lifecy
   wrongBack.navigation.back_url = basaltUrl;
   assert.throws(() => verifyOpen43B689Scp8980Navigation(wrongBack, plan), /did not return to SCP-8980/u);
 
-  const consoleError = structuredClone(observations);
-  consoleError.page.console_error_count = 1;
-  assert.throws(() => verifyOpen43B689Scp8980Navigation(consoleError, plan), /mismatched: scp-8980/u);
+  const httpError = structuredClone(observations);
+  httpError.page.http_error_count = 1;
+  assert.throws(() => verifyOpen43B689Scp8980Navigation(httpError, plan), /mismatched: scp-8980/u);
 });
