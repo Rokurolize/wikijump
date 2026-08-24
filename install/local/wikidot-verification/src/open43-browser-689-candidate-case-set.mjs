@@ -335,11 +335,22 @@ async function readSelectionState(page) {
   });
 }
 
+async function activateTabForInteraction(page, index) {
+  await page.evaluate(({ selector, targetIndex }) => {
+    const anchor = document.querySelectorAll(selector)[targetIndex];
+    if (!(anchor instanceof HTMLAnchorElement)) {
+      throw new Error("B689 interaction target anchor is missing");
+    }
+    anchor.focus();
+    anchor.click();
+  }, { selector: TAB_ANCHOR_SELECTOR, targetIndex: index });
+}
+
 async function runInteractionSequence(page) {
   const anchors = await page.$$(TAB_ANCHOR_SELECTOR);
   if (anchors.length < 2) throw new Error("B689 interaction fixture needs at least two tabs");
   const initial = await readSelectionState(page);
-  await anchors[1].click();
+  await activateTabForInteraction(page, 1);
   const focusedClickedAnchor = await page.evaluate((selector) => {
     const anchor = document.querySelectorAll(selector)[1];
     return anchor !== undefined && document.activeElement === anchor;
@@ -358,7 +369,7 @@ async function runInteractionSequence(page) {
 async function runNavigationLifecycle(page, awayUrl) {
   const anchors = await page.$$(TAB_ANCHOR_SELECTOR);
   if (anchors.length < 2) throw new Error("B689 navigation fixture needs at least two tabs");
-  await anchors[1].click();
+  await activateTabForInteraction(page, 1);
   const selectedAfterClick = await readSelectionState(page);
   const away = await page.goto(awayUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
   const awayStatus = away?.status() ?? 0;

@@ -37,6 +37,13 @@ const B689_SCP8980_SOURCE = Object.freeze({
   path: new URL("../../../../deepwell/seeder/scp-8980.ftml", import.meta.url),
   sha256: "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710",
 });
+const B689_THEME_BASALT_SOURCE = Object.freeze({
+  slug: "theme:basalt",
+  title: "Basalt Theme",
+  tags: Object.freeze(["theme"]),
+  path: new URL("../../../../deepwell/seeder/theme-basalt.ftml", import.meta.url),
+  sha256: "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+});
 const B689_SCP8980_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
   Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
@@ -74,6 +81,10 @@ export async function b689Scp8980CandidateFixtures() {
   if (sha256(source) !== B689_SCP8980_SOURCE.sha256) {
     throw new Error("B689 SCP-8980 source drifted from the frozen imported-source authority");
   }
+  const themeWikitext = await fs.readFile(B689_THEME_BASALT_SOURCE.path, "utf8");
+  if (sha256(themeWikitext) !== B689_THEME_BASALT_SOURCE.sha256) {
+    throw new Error("B689 theme:basalt source drifted from the source-owned seeder authority");
+  }
   const fragments = [];
   for (const fixture of B689_SCP8980_FRAGMENTS) {
     const wikitext = await fs.readFile(fixture.path, "utf8");
@@ -81,6 +92,7 @@ export async function b689Scp8980CandidateFixtures() {
     fragments.push({ slug: fixture.slug, title: fixture.title, wikitext });
   }
   return {
+    theme: { slug: B689_THEME_BASALT_SOURCE.slug, title: B689_THEME_BASALT_SOURCE.title, tags: [...B689_THEME_BASALT_SOURCE.tags], wikitext: themeWikitext, sha256: B689_THEME_BASALT_SOURCE.sha256 },
     source: { slug: B689_SCP8980_SOURCE.slug, title: B689_SCP8980_SOURCE.title, wikitext: source, sha256: B689_SCP8980_SOURCE.sha256 },
     fragments,
   };
@@ -244,10 +256,10 @@ export async function prepareCompatibilityCandidateInputs(args) {
     };
     await propagateActors();
 
-    const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false } = {}) => {
+    const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false, tags = [] } = {}) => {
       const prior = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (prior !== null) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
-      await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags: [], revision_comments: "compatibility candidate fixture" }, { siteId });
+      await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags, revision_comments: "compatibility candidate fixture" }, { siteId });
       const created = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (!created || created.wikitext !== wikitext) throw new Error(`candidate fixture readback failed: ${slug}`);
       if (imported) sql(database, `update page set from_wikidot=true where page_id=${created.page_id}; update page_revision set from_wikidot=true where revision_id=${created.revision_id};`);
@@ -266,14 +278,15 @@ export async function prepareCompatibilityCandidateInputs(args) {
       markerPages.push(await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID }));
     }
 
-    // B689/B690 observe the real SCP-8980 tabview and geometry contract through
+    // B689/B690 observe theme:basalt plus the real SCP-8980 tabview and geometry contract through
     // candidatePageOrigin(), i.e. the selected endpoint site (SITE_ID), not the
     // additional scp-wiki site origin. The maintained fresh candidate seed does
-    // not contain that page, so install the exact source-owned seeder copy
+    // not contain those pages, so install the exact source-owned seeder copies
     // (which is byte-identical to the frozen imported-source authority) plus its
     // two ListPages child fragments. Re-render after parenting so parent="."
     // resolves against the final graph.
     const b689Fixtures = await b689Scp8980CandidateFixtures();
+    await page(b689Fixtures.theme.slug, b689Fixtures.theme.title, b689Fixtures.theme.wikitext, { imported: true, tags: b689Fixtures.theme.tags });
     const b689Root = await page(b689Fixtures.source.slug, b689Fixtures.source.title, b689Fixtures.source.wikitext, { imported: true });
     for (const fixture of b689Fixtures.fragments) {
       const fragment = await page(fixture.slug, fixture.title, fixture.wikitext, { imported: true });
