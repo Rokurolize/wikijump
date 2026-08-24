@@ -30,6 +30,7 @@ const candidateIdentity = {
 
 function page(slug, plan) {
   const oracle = OPEN43_B689_TABVIEW_LIVE_ORACLE.pages[slug];
+  const styles = oracle.tabview.styles ?? { visibility: "visible" };
   return {
     slug,
     input_url: new URL(`/${encodeURI(slug)}`, plan.page_origin).href,
@@ -42,16 +43,16 @@ function page(slug, plan) {
       tabview_count: 1,
       tabviews: [{
         ...oracle.tabview,
-        styles: oracle.tabview.styles,
+        styles,
         rectangle: oracle.tabview.rectangle,
         tab_count: 2,
         selected_count: 1,
         visible_panel_count: 1,
         panel_count: 2,
-        nav_styles: oracle.nav_styles,
-        content_styles: oracle.content_styles,
-        first_panel_styles: oracle.panel_styles,
-        first_panel_rectangle: oracle.tabview.first_panel_rectangle,
+        nav_styles: oracle.nav_styles ?? styles,
+        content_styles: oracle.content_styles ?? styles,
+        first_panel_styles: oracle.panel_styles ?? styles,
+        first_panel_rectangle: oracle.tabview.first_panel_rectangle ?? oracle.tabview.rectangle,
       }],
       resource_state: {
         document_ready_state: "interactive",
@@ -96,6 +97,9 @@ test("B689 is an executable candidate case bound to the existing canary fixture"
   assert.equal(prepared.plan.viewport.height, OPEN43_B689_TABVIEW_LIVE_ORACLE.viewport.height);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.position, 8);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.size, 12);
+  assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].tabview.styles, undefined);
+  assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].tabview.first_panel_rectangle, undefined);
+  assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].tabview.styles.display, "grid");
   assert.throws(
     () => caseSet.prepareRun({
       candidateIdentity,
@@ -177,9 +181,10 @@ function interactionState(selectedIndex) {
 
 function settledTabview(slug) {
   const oracle = OPEN43_B689_TABVIEW_LIVE_ORACLE.pages[slug];
+  const styles = oracle.tabview.styles ?? { visibility: "visible" };
   return {
     ...oracle.tabview,
-    styles: oracle.tabview.styles,
+    styles,
     rectangle: slug === "theme:basalt"
       ? oracle.settled.tabview_rectangle
       : { x: 203, y: oracle.settled.tabview_y, width: 960, height: oracle.settled.tabview_height },
@@ -187,11 +192,11 @@ function settledTabview(slug) {
     selected_count: 1,
     visible_panel_count: 1,
     panel_count: 2,
-    nav_styles: oracle.nav_styles,
-    content_styles: oracle.content_styles,
-    first_panel_styles: oracle.panel_styles,
+    nav_styles: oracle.nav_styles ?? styles,
+    content_styles: oracle.content_styles ?? styles,
+    first_panel_styles: oracle.panel_styles ?? styles,
     first_panel_id: slug === "scp-8980" ? oracle.settled.first_panel_id : "wiki-tab-0-0",
-    first_panel_rectangle: oracle.tabview.first_panel_rectangle,
+    first_panel_rectangle: oracle.tabview.first_panel_rectangle ?? oracle.settled.tabview_rectangle,
   };
 }
 

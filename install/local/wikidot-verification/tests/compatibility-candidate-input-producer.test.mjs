@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689Scp8980CandidateFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -44,6 +44,29 @@ test("compatibility candidate input producer owns the exact B689 SCP-8980 source
   assert.deepEqual(fixtures.fragments.map(({ slug }) => slug), ["fragment:scp-8980-1", "fragment:scp-8980-2"]);
   assert.match(fixtures.source.wikitext, /ListPages parent="\." category="fragment"/u);
   assert.ok(fixtures.fragments.every(({ wikitext }) => wikitext.includes("[[include :scp-wiki:theme:basalt")));
+});
+
+test("compatibility candidate input producer owns the retained B689 Basalt users", async () => {
+  assert.deepEqual(await b689BasaltUserFixtures(), [
+    {
+      user_id: 3_781_861,
+      name: "EstrellaYoshte",
+      slug: "estrellayoshte",
+      captured_at: "2026-08-11T23:48:23.973Z",
+    },
+    {
+      user_id: 6_254_643,
+      name: "Liryn",
+      slug: "liryn",
+      captured_at: "2026-08-11T23:48:23.973Z",
+    },
+    {
+      user_id: 6_536_693,
+      name: "Placeholder McD",
+      slug: "placeholder-mcd",
+      captured_at: "2026-08-11T23:48:23.973Z",
+    },
+  ]);
 });
 
 test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {

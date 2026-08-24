@@ -26,7 +26,7 @@ export const OPEN43_B689_TABVIEW_FIXTURE = Object.freeze({
   canary_slugs: Object.freeze(["theme:basalt", "scp-8980"]),
 });
 
-const LIVE_TABVIEW_STYLES = Object.freeze({ display: "grid", position: "relative", visibility: "visible", font_family: "InterVariable, blinkmacsystemfont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif", font_size: "15.2705px" });
+const SCP8980_LIVE_TABVIEW_STYLES = Object.freeze({ display: "grid", position: "relative", visibility: "visible", font_family: "InterVariable, blinkmacsystemfont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif", font_size: "15.2705px" });
 const LIVE_NAV_STYLES = Object.freeze({ display: "flex", position: "static", visibility: "visible", font_family: "\"JetBrains Mono\", menlo, consolas, monaco, \"liberation mono\", \"lucida console\", monospace", font_size: "14.507px" });
 const LIVE_CONTENT_STYLES = Object.freeze({ display: "block", position: "static", visibility: "visible", font_family: "InterVariable, blinkmacsystemfont, \"Segoe UI\", Roboto, Oxygen, Ubuntu, Cantarell, \"Fira Sans\", \"Droid Sans\", \"Helvetica Neue\", sans-serif", font_size: "15.2705px" });
 
@@ -59,16 +59,14 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
         id_present: true,
         class_name: "yui-navset yui-navset-top",
         rectangle: Object.freeze({ x: 123, y: 3817.69, width: 1120, height: 137.44 }),
-        first_panel_rectangle: Object.freeze({ x: 123, y: 3928.830625, width: 1120, height: 75.515625 }),
-        styles: LIVE_TABVIEW_STYLES,
         selected_title: "active",
         label_wrapper: "em",
         panel_ids_present: true,
       }),
-      nav_styles: LIVE_NAV_STYLES,
-      content_styles: LIVE_CONTENT_STYLES,
-      panel_styles: LIVE_CONTENT_STYLES,
-      resource_state: Object.freeze({ document_ready_state: "interactive", rendered_image_count: 7, broken_image_count: 2 }),
+      // The retained first-paint reference seals root geometry and DOM only.
+      // Do not import SCP-8980 computed styles or the later 2026-08-09 settled
+      // panel dimensions into the theme:basalt initial phase.
+      resource_state: Object.freeze({ document_ready_state: "interactive" }),
       settled: Object.freeze({
         tabview_rectangle: Object.freeze({ x: 123, y: 4001.97, width: 1120, height: 188.69 }),
       }),
@@ -81,7 +79,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
         class_name: "yui-navset yui-navset-top",
         rectangle: Object.freeze({ x: 203, y: 193.94, width: 960, height: 58505.09 }),
         first_panel_rectangle: Object.freeze({ x: 203, y: 193.94, width: 960, height: 58468.13 }),
-        styles: LIVE_TABVIEW_STYLES,
+        styles: SCP8980_LIVE_TABVIEW_STYLES,
         selected_title: "active",
         label_wrapper: "em",
         panel_ids_present: true,
@@ -261,11 +259,13 @@ function verifyPage(page, expectedUrl) {
       throw new Error(`B689 tabview structure mismatched: ${page.slug} #${index}`);
     }
     compareRectangle(tabview.rectangle, oracle.tabview.rectangle, `${page.slug} tabview #${index}`);
-    compareRectangle(tabview.first_panel_rectangle, oracle.tabview.first_panel_rectangle, `${page.slug} first panel #${index}`);
-    compareStyles(tabview.styles, oracle.tabview.styles, `${page.slug} tabview #${index}`);
-    compareStyles(tabview.nav_styles, oracle.nav_styles, `${page.slug} nav`);
-    compareStyles(tabview.content_styles, oracle.content_styles, `${page.slug} content`);
-    compareStyles(tabview.first_panel_styles, oracle.panel_styles, `${page.slug} first panel`);
+    if (oracle.tabview.first_panel_rectangle !== undefined) {
+      compareRectangle(tabview.first_panel_rectangle, oracle.tabview.first_panel_rectangle, `${page.slug} first panel #${index}`);
+    }
+    if (oracle.tabview.styles !== undefined) compareStyles(tabview.styles, oracle.tabview.styles, `${page.slug} tabview #${index}`);
+    if (oracle.nav_styles !== undefined) compareStyles(tabview.nav_styles, oracle.nav_styles, `${page.slug} nav`);
+    if (oracle.content_styles !== undefined) compareStyles(tabview.content_styles, oracle.content_styles, `${page.slug} content`);
+    if (oracle.panel_styles !== undefined) compareStyles(tabview.first_panel_styles, oracle.panel_styles, `${page.slug} first panel`);
   }
   const resourceState = requirePlainObject(observation.resource_state, `${page.slug} resource state`);
   if (
@@ -275,8 +275,8 @@ function verifyPage(page, expectedUrl) {
     typeof resourceState.incomplete_image_count !== "number" ||
     typeof resourceState.resource_entry_count !== "number" ||
     resourceState.document_ready_state !== oracle.resource_state.document_ready_state ||
-    resourceState.rendered_image_count !== oracle.resource_state.rendered_image_count ||
-    resourceState.broken_image_count !== oracle.resource_state.broken_image_count
+    (oracle.resource_state.rendered_image_count !== undefined && resourceState.rendered_image_count !== oracle.resource_state.rendered_image_count) ||
+    (oracle.resource_state.broken_image_count !== undefined && resourceState.broken_image_count !== oracle.resource_state.broken_image_count)
   ) {
     throw new Error(`B689 resource state is incomplete: ${page.slug}`);
   }
@@ -501,10 +501,13 @@ function verifySettledPage(page, plan) {
         throw new Error(`${page.slug} settled first panel id mismatched`);
       }
     }
-    compareStyles(tabview.styles, oracle.tabview.styles, `${page.slug} settled tabview #${index}`);
-    compareStyles(tabview.nav_styles, oracle.nav_styles, `${page.slug} settled nav`);
-    compareStyles(tabview.content_styles, oracle.content_styles, `${page.slug} settled content`);
-    compareStyles(tabview.first_panel_styles, oracle.panel_styles, `${page.slug} settled first panel`);
+    // The theme:basalt retained settled evidence seals geometry/DOM, while the
+    // SCP-8980 evidence additionally seals computed styles. Keep those evidence
+    // scopes separate instead of projecting SCP-8980 styles onto both pages.
+    if (oracle.tabview.styles !== undefined) compareStyles(tabview.styles, oracle.tabview.styles, `${page.slug} settled tabview #${index}`);
+    if (oracle.nav_styles !== undefined) compareStyles(tabview.nav_styles, oracle.nav_styles, `${page.slug} settled nav`);
+    if (oracle.content_styles !== undefined) compareStyles(tabview.content_styles, oracle.content_styles, `${page.slug} settled content`);
+    if (oracle.panel_styles !== undefined) compareStyles(tabview.first_panel_styles, oracle.panel_styles, `${page.slug} settled first panel`);
   }
   if (page.slug === "scp-8980") {
     const interactions = requirePlainObject(page.interactions, "scp-8980 interaction observation");

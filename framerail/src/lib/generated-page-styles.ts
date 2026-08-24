@@ -1,4 +1,5 @@
 const escapeStyleRawText = (css: string) => css.replaceAll("<", "\\3C ")
+const cssImport = /@import\s+(?:url\s*\(|["'])/iu
 
 const cjkUnifiedIdeograph =
   /[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\u{20000}-\u{3134f}\u{2f800}-\u{2fa1f}]/u
@@ -41,10 +42,12 @@ const cjkFontFileForLocale = (locale: string): string => {
 
 export function buildGeneratedPageStylesHead(styles: readonly string[]): string {
   return styles
-    .map(
-      (css, index) =>
-        `<style type="text/css" data-wikidot-generated-css="${index}">${escapeStyleRawText(css)}</style>`
-    )
+    .map((css, index) => {
+      const deferred = cssImport.test(css)
+        ? ' data-wikidot-style-deferred media="not all"'
+        : ""
+      return `<style type="text/css" data-wikidot-generated-css="${index}"${deferred}>${escapeStyleRawText(css)}</style>`
+    })
     .join("")
 }
 

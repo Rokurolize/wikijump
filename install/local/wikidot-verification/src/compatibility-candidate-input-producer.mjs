@@ -16,6 +16,7 @@ import { readJsonObject, sealJsonNoReplace, sha256File } from "./standing-browse
 export const COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA = "wikijump.compatibility_candidate_input_receipt.v1";
 const SITE_ID = 6_000_003;
 const SITE_SLUG = "scpaiueouiuiuiui";
+const STANDARD_SITE_SLUG = "scp-wiki";
 const FOREIGN_SITE_ID = 6_000_006;
 const ACTOR_IDS = Object.freeze({ editor: 20_000_007, eligible: 20_000_008, registered: 20_000_009, pending: 20_000_010, banned: 20_000_011, other: 20_000_012 });
 export const Q778_WIKIDOT_AUTHOR = Object.freeze({ user_id: 20_000_013, name: "Q778 Wikidot Author", slug: "q778-wikidot-author" });
@@ -44,6 +45,10 @@ const B689_THEME_BASALT_SOURCE = Object.freeze({
   path: new URL("../../../../deepwell/seeder/theme-basalt.ftml", import.meta.url),
   sha256: "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
 });
+const B689_THEME_BASALT_USERS = new URL(
+  "../fixtures/open87-basalt-users/runtime-state.json",
+  import.meta.url,
+);
 const B689_SCP8980_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
   Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
@@ -96,6 +101,40 @@ export async function b689Scp8980CandidateFixtures() {
     source: { slug: B689_SCP8980_SOURCE.slug, title: B689_SCP8980_SOURCE.title, wikitext: source, sha256: B689_SCP8980_SOURCE.sha256 },
     fragments,
   };
+}
+
+export async function b689BasaltUserFixtures() {
+  const fixture = JSON.parse(await fs.readFile(B689_THEME_BASALT_USERS, "utf8"));
+  if (
+    fixture?.schema !== "wikijump_syntax_differential.runtime_state_fixture.v1" ||
+    !Array.isArray(fixture.wikidot_users) ||
+    fixture.wikidot_users.length !== 3
+  ) {
+    throw new Error("B689 Basalt user runtime-state fixture is invalid");
+  }
+  const users = fixture.wikidot_users.map((user) => ({
+    user_id: user.user_id,
+    name: user.name,
+    slug: user.slug,
+    captured_at: user.provenance?.captured_at,
+  }));
+  const expected = [
+    { user_id: 3_781_861, name: "EstrellaYoshte", slug: "estrellayoshte" },
+    { user_id: 6_254_643, name: "Liryn", slug: "liryn" },
+    { user_id: 6_536_693, name: "Placeholder McD", slug: "placeholder-mcd" },
+  ];
+  if (
+    users.some(
+      (user, index) =>
+        user.user_id !== expected[index].user_id ||
+        user.name !== expected[index].name ||
+        user.slug !== expected[index].slug ||
+        !Number.isFinite(Date.parse(user.captured_at)),
+    )
+  ) {
+    throw new Error("B689 Basalt user runtime-state fixture drifted from retained live evidence");
+  }
+  return users;
 }
 
 function usage() {
@@ -225,6 +264,39 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (!response.ok || payload.error) throw new Error(`${method}: ${payload.error?.message ?? response.status}`);
       return payload.result ?? null;
     };
+
+    // B689 renders the exact imported theme:basalt source, whose live DOM contains
+    // three retained Wikidot identities. Seed those already-sealed Open87 identities
+    // before creating the page so FTML resolves [[*user ...]] exactly as Wikidot did.
+    for (const user of await b689BasaltUserFixtures()) {
+      const existing = await rpc("user_get", { user: user.user_id });
+      if (existing === null) {
+        const imported = await rpc("import_wikidot_user", {
+          user_id: user.user_id,
+          created_at: new Date(Date.parse(user.captured_at) - 1).toISOString(),
+          fetched_at: user.captured_at,
+          user_type: "extant",
+          name: user.name,
+          slug: user.slug,
+          avatar_uploaded_blob_id: null,
+          real_name: null,
+          gender: null,
+          birthday: null,
+          location: null,
+          biography: null,
+          website: null,
+          karma: 0,
+          is_pro: false,
+          importing_user_id: -1,
+          ip_address: "127.0.0.1",
+        });
+        if (imported?.user_id !== user.user_id) {
+          throw new Error(`B689 Basalt Wikidot user import failed: ${user.user_id}`);
+        }
+      } else if (existing.name !== user.name || existing.slug !== user.slug) {
+        throw new Error(`B689 Basalt Wikidot user identity collision: ${user.user_id}`);
+      }
+    }
     for (const name of Object.keys(ACTOR_IDS)) {
       const actor = actorDefinition(general, name);
       const existing = await rpc("user_get", { user: actor.user_id });
@@ -278,21 +350,56 @@ export async function prepareCompatibilityCandidateInputs(args) {
       markerPages.push(await page(fixture.slug, fixture.title, fixture.wikitext, { siteId: FOREIGN_SITE_ID }));
     }
 
-    // B689/B690 observe theme:basalt plus the real SCP-8980 tabview and geometry contract through
-    // candidatePageOrigin(), i.e. the selected endpoint site (SITE_ID), not the
-    // additional scp-wiki site origin. The maintained fresh candidate seed does
-    // not contain those pages, so install the exact source-owned seeder copies
-    // (which is byte-identical to the frozen imported-source authority) plus its
-    // two ListPages child fragments. Re-render after parenting so parent="."
-    // resolves against the final graph.
+    // B689/B690 are retained live-mirror canaries for scp-wiki. The promotion
+    // candidate deliberately seals both the canonical scp-wiki projection and a
+    // separate editable compatibility projection; do not copy the live canaries
+    // into the editable site merely because most mutation cases run there.
+    // theme:basalt is part of the maintained scp-wiki seed already. Verify that
+    // exact source, then install only the missing SCP-8980 graph on that site and
+    // re-render after parenting so parent="." resolves against the final graph.
     const b689Fixtures = await b689Scp8980CandidateFixtures();
-    await page(b689Fixtures.theme.slug, b689Fixtures.theme.title, b689Fixtures.theme.wikitext, { imported: true, tags: b689Fixtures.theme.tags });
-    const b689Root = await page(b689Fixtures.source.slug, b689Fixtures.source.title, b689Fixtures.source.wikitext, { imported: true });
-    for (const fixture of b689Fixtures.fragments) {
-      const fragment = await page(fixture.slug, fixture.title, fixture.wikitext, { imported: true });
-      await rpc("parent_set", { site_id: SITE_ID, parent: b689Root.slug, child: fragment.slug }, { siteId: SITE_ID });
+    const standardSite = await rpc("site_get", { site: STANDARD_SITE_SLUG });
+    if (!Number.isSafeInteger(standardSite?.site_id)) {
+      throw new Error("fresh candidate is missing the maintained scp-wiki site");
     }
-    await rpc("page_rerender", { site_id: SITE_ID, category_id: b689Root.page_category_id, page_id: b689Root.page_id }, { siteId: SITE_ID });
+    const standardSiteId = standardSite.site_id;
+    const basalt = await rpc("page_get", {
+      site_id: standardSiteId,
+      page: b689Fixtures.theme.slug,
+      details: { wikitext: true, compiled: false },
+    }, { siteId: standardSiteId });
+    if (!basalt || basalt.wikitext !== b689Fixtures.theme.wikitext) {
+      throw new Error("maintained scp-wiki theme:basalt seed drifted from B689 authority");
+    }
+    const b689Root = await page(
+      b689Fixtures.source.slug,
+      b689Fixtures.source.title,
+      b689Fixtures.source.wikitext,
+      { siteId: standardSiteId, imported: true },
+    );
+    for (const fixture of b689Fixtures.fragments) {
+      const fragment = await page(
+        fixture.slug,
+        fixture.title,
+        fixture.wikitext,
+        { siteId: standardSiteId, imported: true },
+      );
+      await rpc(
+        "parent_set",
+        { site_id: standardSiteId, parent: b689Root.slug, child: fragment.slug },
+        { siteId: standardSiteId },
+      );
+    }
+    await rpc(
+      "page_rerender",
+      { site_id: standardSiteId, category_id: basalt.page_category_id, page_id: basalt.page_id },
+      { siteId: standardSiteId },
+    );
+    await rpc(
+      "page_rerender",
+      { site_id: standardSiteId, category_id: b689Root.page_category_id, page_id: b689Root.page_id },
+      { siteId: standardSiteId },
+    );
 
     for (const name of privateFiles) {
       const target = path.join(args["output-private-dir"], name);
