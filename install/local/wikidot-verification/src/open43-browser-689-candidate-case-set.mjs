@@ -335,6 +335,20 @@ async function readSelectionState(page) {
   });
 }
 
+async function readSelectionStateAfterNavigation(page, expectedUrl) {
+  await page.waitForURL(expectedUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    try {
+      await page.waitForLoadState("domcontentloaded", { timeout: 300_000 });
+      return await readSelectionState(page);
+    } catch (error) {
+      if (!/Execution context was destroyed|most likely because of a navigation/u.test(String(error?.message ?? error))) throw error;
+      await page.waitForTimeout(50);
+    }
+  }
+  throw new Error(`B689 navigation did not stabilize at ${expectedUrl}`);
+}
+
 async function activateTabForInteraction(page, index) {
   await page.evaluate(({ selector, targetIndex }) => {
     const anchor = document.querySelectorAll(selector)[targetIndex];
@@ -371,16 +385,18 @@ async function runNavigationLifecycle(page, awayUrl) {
   if (anchors.length < 2) throw new Error("B689 navigation fixture needs at least two tabs");
   await activateTabForInteraction(page, 1);
   const selectedAfterClick = await readSelectionState(page);
+  const originalUrl = page.url();
   const away = await page.goto(awayUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
   const awayStatus = away?.status() ?? 0;
   const awayUrlAfter = page.url();
   await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
-  const afterBack = await readSelectionState(page);
+  const afterBack = await readSelectionStateAfterNavigation(page, originalUrl);
   const backUrl = page.url();
   await page.goForward({ waitUntil: "domcontentloaded", timeout: 300_000 });
+  await page.waitForURL(awayUrl, { waitUntil: "domcontentloaded", timeout: 300_000 });
   const forwardUrl = page.url();
   await page.goBack({ waitUntil: "domcontentloaded", timeout: 300_000 });
-  const afterSecondBack = await readSelectionState(page);
+  const afterSecondBack = await readSelectionStateAfterNavigation(page, originalUrl);
   return Object.freeze({
     selected_after_click: selectedAfterClick,
     away_navigation_status: awayStatus,
@@ -613,15 +629,6 @@ export function createOpen43B689TabviewCandidateCaseSet() {
             const page = await browser.context.newPage();
             const errors = attachErrors(page);
             try {
-              const response = await page.goto(url, { waitUntil: "domcontentloaded", timeout: 300_000 });
-              initialPages.push({
-                slug,
-                input_url: url,
-                final_url: page.url(),
-                navigation_status: response?.status() ?? 0,
-                ...errors.counts(),
-                observation: await observeTabviews(page),
-              });
               await candidateBrowserContexts.setActiveFixture(OPEN43_B689_TABVIEW_SETTLED_CASE_ID);
               const capture = await candidateBrowserContexts.captureCandidateObservation({
                 context: browser.context,
@@ -633,6 +640,18 @@ export function createOpen43B689TabviewCandidateCaseSet() {
                 viewport: VIEWPORT,
                 timeoutMs: 300_000,
                 settleMs: DEFAULT_SETTLE_MS,
+                navigate: async ({ page: capturePage, url: captureUrl, timeoutMs }) => {
+                  const response = await capturePage.goto(captureUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+                  initialPages.push({
+                    slug,
+                    input_url: captureUrl,
+                    final_url: capturePage.url(),
+                    navigation_status: response?.status() ?? 0,
+                    ...errors.counts(),
+                    observation: await observeTabviews(capturePage),
+                  });
+                  return response;
+                },
               });
               const settledRow = {
                 slug,
