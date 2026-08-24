@@ -79,6 +79,13 @@
     for (const element of document.head.querySelectorAll<HTMLElement>(
       "[data-wikidot-style-deferred]"
     )) {
+      if (element instanceof HTMLLinkElement) {
+        const href = element.dataset.wikidotStyleHref
+        if (href) {
+          element.href = href
+          delete element.dataset.wikidotStyleHref
+        }
+      }
       element.removeAttribute("media")
       element.removeAttribute("data-wikidot-style-deferred")
     }
@@ -231,9 +238,9 @@
       {#if declaration.kind === "theme"}
         <link
           data-wikidot-style-deferred
+          data-wikidot-style-href={declaration.href}
           data-wikidot-style-preloaded
           data-wikidot-style-priority={declaration.priority}
-          href={declaration.href}
           media="not all"
           rel="stylesheet"
         />
