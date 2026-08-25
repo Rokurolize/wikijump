@@ -327,7 +327,7 @@
         {
             "slug": "nav:side",
             "title": "Sidebar",
-            "wikitext": "sidebar"
+            "wikitext": "scp-sidebar"
         },
         {
             "slug": "nav:top",
