@@ -109,11 +109,11 @@ test("browser throttle receipt binds exact case-set public origins", () => {
 });
 
 test("candidate file routing maps only the exact canonical file authority to its sealed port", async () => {
-  let pattern;
+  const patterns = [];
   let handler;
   const context = {
     async route(value, callback) {
-      pattern = value;
+      patterns.push(value);
       handler = callback;
     },
   };
@@ -123,7 +123,10 @@ test("candidate file routing maps only the exact canonical file authority to its
   ];
 
   assert.equal(await installCandidateFilePortRoute(context, origins), true);
-  assert.equal(pattern, "https://scp-wiki.wjfiles.localhost/**");
+  assert.deepEqual(patterns, [
+    "https://scp-wiki.wjfiles.localhost/**",
+    "https://scp-wiki.wjfiles.localhost:18449/**",
+  ]);
 
   const response = { status: 200 };
   let fetchOptions;
@@ -149,6 +152,55 @@ test("candidate file routing maps only the exact canonical file authority to its
     maxRedirects: 0,
   });
   assert.deepEqual(fulfillment, { response });
+});
+
+test("candidate file routing also gates an already-localized sealed-port file request", async () => {
+  const handlers = new Map();
+  const context = {
+    async route(value, callback) {
+      handlers.set(value, callback);
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+  const handler = handlers.get("https://scp-wiki.wjfiles.localhost:18449/**");
+  assert.equal(typeof handler, "function");
+  const response = { status: () => 200, headers: () => ({}) };
+  let fetchOptions;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost:18449/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+      };
+    },
+    async fetch(options) {
+      fetchOptions = options;
+      return response;
+    },
+    async fulfill() {},
+  });
+
+  assert.deepEqual(fetchOptions, {
+    url: "https://scp-wiki.wjfiles.localhost:18449/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+    maxRedirects: 0,
+  });
+  assert.equal(admissions, 2);
 });
 
 test("candidate file routing follows only same-authority redirects on the sealed port", async () => {

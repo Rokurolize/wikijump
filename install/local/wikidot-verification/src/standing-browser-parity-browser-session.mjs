@@ -116,13 +116,16 @@ export async function installCandidateFilePortRoute(
     );
   }
   const canonicalFilesOrigin = `https://${files.hostname}`;
-  await context.route(`${canonicalFilesOrigin}/**`, async (route) => {
+  const fileRouteHandler = async (route) => {
     const requestUrl = new URL(route.request().url());
-    if (requestUrl.origin !== canonicalFilesOrigin) {
+    if (
+      requestUrl.origin !== canonicalFilesOrigin &&
+      requestUrl.origin !== files.origin
+    ) {
       await route.continue();
       return;
     }
-    requestUrl.port = files.port;
+    if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
     let response;
     for (let redirects = 0; ; redirects += 1) {
       response = await route.fetch({
@@ -189,7 +192,14 @@ export async function installCandidateFilePortRoute(
       }
     }
     await route.fulfill({ response });
-  });
+  };
+  // Framerail can emit either Wikidot's canonical no-port file authority or
+  // the candidate's already-localized sealed-port authority. Both represent
+  // the same source-owned file request and must pass through the timing shim;
+  // otherwise already-localized assets bypass the source request gate and can
+  // complete before Wikidot's DOMContentLoaded-immediate observation.
+  await context.route(`${canonicalFilesOrigin}/**`, fileRouteHandler);
+  await context.route(`${files.origin}/**`, fileRouteHandler);
   return true;
 }
 
