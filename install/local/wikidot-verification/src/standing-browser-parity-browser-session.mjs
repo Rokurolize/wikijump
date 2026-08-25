@@ -75,7 +75,11 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
   };
 }
 
-export async function installCandidateFilePortRoute(context, localOrigins) {
+export async function installCandidateFilePortRoute(
+  context,
+  localOrigins,
+  { sourceRequestGate = null } = {},
+) {
   if (!Array.isArray(localOrigins) || localOrigins.length !== 2) {
     throw new Error(
       "candidate local origins must contain exactly page and file origins",
@@ -147,23 +151,52 @@ export async function installCandidateFilePortRoute(context, localOrigins) {
       redirectUrl.port = files.port;
       requestUrl.href = redirectUrl.href;
     }
+    if (
+      sourceRequestGate !== null &&
+      REDIRECT_STATUSES.has(response.status()) &&
+      route.request().method?.() === "GET"
+    ) {
+      const location = response.headers().location;
+      if (location) {
+        const redirectUrl = new URL(location, requestUrl);
+        if (
+          !new Set([canonicalFilesOrigin, files.origin]).has(
+            redirectUrl.origin,
+          ) &&
+          isWikidotCapturePublicOrigin(
+            redirectUrl,
+            route.request().resourceType?.() ?? "other",
+            "GET",
+          )
+        ) {
+          // A localized /local--files request is exempt from the public gate,
+          // but a missing mirror can redirect back to the exact Wikidot source.
+          // The live request being mirrored consumed one public admission before
+          // that redirect, so consume the corresponding slot here before exposing
+          // the redirect to Chromium. The redirected public request itself is then
+          // admitted normally by installBrowserRequestGate.
+          await sourceRequestGate.acquire();
+        }
+      }
+    }
     await route.fulfill({ response });
   });
   return true;
 }
 
 export function candidateLocalOriginSets(candidate) {
-  const endpointOrigins = candidate?.candidate?.endpoint?.allowed_origin_set ?? [];
+  const endpointOrigins =
+    candidate?.candidate?.endpoint?.allowed_origin_set ?? [];
   const siteOrigins = candidate?.candidate?.site_origins;
-  const fileRouteOriginSets = siteOrigins && Object.keys(siteOrigins).length > 0
-    ? Object.values(siteOrigins).map(({ page, files }) => [page, files])
-    : endpointOrigins.length > 0
-      ? [endpointOrigins]
-      : [];
-  const localOrigins = [...new Set([
-    ...endpointOrigins,
-    ...fileRouteOriginSets.flat(),
-  ])].sort();
+  const fileRouteOriginSets =
+    siteOrigins && Object.keys(siteOrigins).length > 0
+      ? Object.values(siteOrigins).map(({ page, files }) => [page, files])
+      : endpointOrigins.length > 0
+        ? [endpointOrigins]
+        : [];
+  const localOrigins = [
+    ...new Set([...endpointOrigins, ...fileRouteOriginSets.flat()]),
+  ].sort();
   return { localOrigins, fileRouteOriginSets };
 }
 
@@ -251,8 +284,10 @@ export function isParityBrowserPublicOrigin(
   publicOrigins = [],
 ) {
   const url = value instanceof URL ? value : new URL(value);
-  return isWikidotCapturePublicOrigin(url, resourceType, method) ||
-    (method === "GET" && publicOrigins.includes(url.origin));
+  return (
+    isWikidotCapturePublicOrigin(url, resourceType, method) ||
+    (method === "GET" && publicOrigins.includes(url.origin))
+  );
 }
 
 export async function createParityBrowserControls({
@@ -274,7 +309,8 @@ export async function createParityBrowserControls({
       statePath: lock.statePath,
       intervalMs: DEFAULT_REQUEST_INTERVAL_MS,
     });
-    const { localOrigins, fileRouteOriginSets } = candidateLocalOriginSets(candidate);
+    const { localOrigins, fileRouteOriginSets } =
+      candidateLocalOriginSets(candidate);
     const caseSetPublicOrigins = requireExactHttpsOrigins(
       publicOrigins,
       "browser public origins",
@@ -398,7 +434,9 @@ export async function launchParityBrowser({
     });
     if (local) {
       for (const originSet of controls.fileRouteOriginSets) {
-        await installCandidateFilePortRoute(context, originSet);
+        await installCandidateFilePortRoute(context, originSet, {
+          sourceRequestGate: controls.gate,
+        });
       }
     }
     return {
