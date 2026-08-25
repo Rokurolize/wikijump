@@ -127,4 +127,4 @@ export const extractWikidotStyleFrameStylesheets = (renderedHtml, origin) =>
 
 /** @param {{ css: string; priority: string }} declaration */
 export const buildWikidotInlineStyleFrameHead = ({ css, priority }) =>
-  `<style data-wikidot-style-deferred data-wikidot-style-preloaded data-wikidot-style-priority="${escapeStyleFrameHtml(priority)}" media="not all" type="text/css">${css}</style>`
+  `<style data-wikidot-style-preloaded data-wikidot-style-priority="${escapeStyleFrameHtml(priority)}" type="text/css">${css}</style>`
