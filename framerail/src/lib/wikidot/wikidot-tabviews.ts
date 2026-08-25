@@ -46,18 +46,15 @@ function activateTab(link: HTMLAnchorElement): boolean {
 
 export function wikidotTabviews(node: HTMLElement) {
   const controller = new AbortController()
-  let lifecycleTimer: ReturnType<typeof setTimeout> | undefined
 
   const activateWikidotTabviewLifecycle = () => {
-    lifecycleTimer = setTimeout(() => {
-      for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
-        tabView.classList.add("yui-navset-top")
-        const selected = tabView.querySelector<HTMLElement>(
-          ":scope > .yui-nav > li.selected"
-        )
-        selected?.setAttribute("title", "active")
-      }
-    }, 0)
+    for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
+      tabView.classList.add("yui-navset-top")
+      const selected = tabView.querySelector<HTMLElement>(
+        ":scope > .yui-nav > li.selected"
+      )
+      selected?.setAttribute("title", "active")
+    }
   }
 
   if (document.readyState === "loading") {
@@ -86,7 +83,6 @@ export function wikidotTabviews(node: HTMLElement) {
 
   return {
     destroy() {
-      if (lifecycleTimer !== undefined) clearTimeout(lifecycleTimer)
       controller.abort()
     }
   }

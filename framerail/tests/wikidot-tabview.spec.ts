@@ -46,7 +46,19 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
     if (message.type() === "error") consoleErrors.push(message.text())
   })
 
-  await page.goto("/wikidot-tabview")
+  await page.goto("/wikidot-tabview", { waitUntil: "domcontentloaded" })
+
+  expect(
+    await page.locator("#page-content > .yui-navset").evaluate((tabview) => ({
+      className: tabview.className,
+      selectedTitle: tabview
+        .querySelector(":scope > .yui-nav > li.selected")
+        ?.getAttribute("title")
+    }))
+  ).toEqual({
+    className: "yui-navset yui-navset-top",
+    selectedTitle: "active"
+  })
 
   await expect
     .poll(() =>
