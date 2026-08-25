@@ -29,7 +29,7 @@ use crate::state::ServerState;
 use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::header::{self, HeaderMap};
-use axum::http::{Method, StatusCode};
+use axum::http::{Method, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 use rand::distr::{Alphanumeric, SampleString};
 use std::fmt::Write;
@@ -55,6 +55,44 @@ fn wikidot_missing_file_response() -> Response {
             .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
             .header(header::CONTENT_LENGTH, WIKIDOT_MISSING_FILE_HTML.len())
             .body(Body::from(WIKIDOT_MISSING_FILE_HTML)),
+    )
+}
+
+fn local_lab_wikidot_file_fallback(headers: &HeaderMap, uri: &Uri) -> Option<String> {
+    let site_slug = headers
+        .get(super::HEADER_SITE_SLUG)?
+        .to_str()
+        .ok()?
+        .to_ascii_lowercase();
+    if !matches!(site_slug.as_str(), "scp-wiki" | "scp-jp") {
+        return None;
+    }
+
+    let request_host = headers
+        .get(header::HOST)?
+        .to_str()
+        .ok()?
+        .split(':')
+        .next()?
+        .trim_end_matches('.')
+        .to_ascii_lowercase();
+    if request_host != format!("{site_slug}.wjfiles.localhost") {
+        return None;
+    }
+
+    if !uri.path().starts_with("/local--files/") {
+        return None;
+    }
+    let path_and_query = uri.path_and_query()?.as_str();
+    Some(format!("https://{site_slug}.wdfiles.com{path_and_query}"))
+}
+
+fn wikidot_source_file_redirect(location: &str) -> Response {
+    build_or_500(
+        Response::builder()
+            .status(StatusCode::FOUND)
+            .header(header::LOCATION, location)
+            .body(Body::empty()),
     )
 }
 
@@ -294,13 +332,55 @@ pub async fn handle_local_file(
     state: State<ServerState>,
     method: Method,
     path: Path<(String, String)>,
+    original_uri: Uri,
     headers: HeaderMap,
 ) -> Response {
     if method == Method::GET || method == Method::HEAD {
-        handle_file_fetch(state, method, path, headers).await
+        let fallback = local_lab_wikidot_file_fallback(&headers, &original_uri);
+        handle_local_file_fetch(state, method, path, headers, fallback.as_deref()).await
     } else {
         super::handle_file_redirect(path).await.into_response()
     }
+}
+
+async fn handle_local_file_fetch(
+    State(state): State<ServerState>,
+    method: Method,
+    Path((mut page_slug, filename)): Path<(String, String)>,
+    headers: HeaderMap,
+    source_fallback: Option<&str>,
+) -> Response {
+    info!(
+        page_slug = page_slug,
+        filename = filename,
+        "Returning local file data",
+    );
+
+    let site_id = get_site_id(&headers);
+    let file_info =
+        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
+        {
+            Ok(info) => info,
+            Err(response)
+                if (method == Method::GET || method == Method::HEAD)
+                    && response.status() == StatusCode::NOT_FOUND
+                    && source_fallback.is_some() =>
+            {
+                return wikidot_source_file_redirect(source_fallback.unwrap());
+            }
+            Err(response)
+                if method == Method::GET
+                    && response.status() == StatusCode::NOT_FOUND =>
+            {
+                return wikidot_missing_file_response();
+            }
+            Err(response) => return response,
+        };
+
+    serve_file(
+        &state, &method, &headers, &file_info, false, &page_slug, &filename,
+    )
+    .await
 }
 
 pub async fn handle_file_fetch(
@@ -1088,6 +1168,61 @@ mod tests {
             assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
         }
 
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_lab_scp_mirror_redirects_missing_files_to_wdfiles() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/local--files/theme%3Abasalt/missing.txt",
+            &[
+                (crate::handler::HEADER_SITE_SLUG, "scp-wiki"),
+                (header::HOST, "scp-wiki.wjfiles.localhost:18443"),
+            ],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response.headers().get(LOCATION).unwrap(),
+            "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/missing.txt",
+        );
+        assert!(response.bytes().await.unwrap().is_empty());
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn production_scp_file_host_keeps_local_missing_file_response() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/local--files/theme%3Abasalt/missing.txt",
+            &[
+                (crate::handler::HEADER_SITE_SLUG, "scp-wiki"),
+                (header::HOST, "scp-wiki.wjfiles.com"),
+            ],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(!response.headers().contains_key(LOCATION));
+        assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
         assert!(s3_server.requests().is_empty());
         s3_server.join();
         deepwell_server.abort();
