@@ -431,6 +431,8 @@ pub(in crate::services::render) struct ListPagesRenderedBlock {
     pub(in crate::services::render) expansion: IncludeExpansion,
     pub(in crate::services::render) pending_delayed:
         Option<super::PendingDelayedListPagesOutput>,
+    pub(in crate::services::render) runtime_css_insertions:
+        Vec<super::super::compat::preparation::RuntimeCssInsertion>,
 }
 
 pub(in crate::services::render) fn list_pages_feed_only_render_result(
@@ -449,6 +451,7 @@ pub(in crate::services::render) fn list_pages_feed_only_render_result(
             expanded_include_count: 0,
         },
         pending_delayed: None,
+        runtime_css_insertions: Vec::new(),
     })
 }
 
@@ -459,6 +462,9 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
     pending_delayed_outputs: &mut Vec<PendingDelayedListPagesOutput>,
+    runtime_css_insertions: &mut Vec<
+        super::super::compat::preparation::RuntimeCssInsertion,
+    >,
 ) -> Option<IncludeExpansion> {
     let ListPagesRenderedBlock {
         expansion:
@@ -468,6 +474,7 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
                 expanded_include_count,
             },
         pending_delayed,
+        runtime_css_insertions: rendered_runtime_css_insertions,
     } = rendered;
     let generated_bytes_before_boundary_repair = wikitext.len();
     repair_list_pages_block_boundaries(&mut wikitext, boundaries);
@@ -487,6 +494,7 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
     } else {
         wikitext = register_generated_list_pages_html(wikitext, compat_html);
     }
+    runtime_css_insertions.extend(rendered_runtime_css_insertions);
     Some(IncludeExpansion {
         wikitext,
         included_pages,
@@ -500,6 +508,8 @@ pub(in crate::services::render) struct ListPagesExpansion {
     pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
     pub(in crate::services::render) expanded_include_count: usize,
     pub(in crate::services::render) url_offset_content_bytes: usize,
+    pub(in crate::services::render) runtime_css_insertions:
+        Vec<super::super::compat::preparation::RuntimeCssInsertion>,
 }
 
 #[allow(clippy::too_many_arguments)]

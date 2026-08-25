@@ -81,6 +81,7 @@ pub(super) enum SelectedContentIncludeMode {
 #[derive(Debug)]
 pub(super) struct RenderedListPagesSource {
     pub(super) body: String,
+    pub(super) styles: Vec<String>,
     pub(super) included_pages: Vec<PageRef>,
     pub(super) expanded_include_count: usize,
 }
@@ -473,6 +474,7 @@ pub(super) async fn render_list_pages_default_summary_source(
     let mut html_output = rendered.html_output;
     Ok(RenderedListPagesSource {
         body: html_output.body,
+        styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
     })
@@ -546,6 +548,7 @@ pub(super) async fn render_list_pages_selected_content_source(
     let rendered_body = selected_content_text.restore(&html_output.body);
     Ok(RenderedListPagesSource {
         body: selected_content_fragments.restore(&rendered_body),
+        styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
     })

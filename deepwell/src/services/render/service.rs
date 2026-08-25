@@ -34,7 +34,8 @@ use super::compat::color_and_inline_protection::{
     wikidot_compat_html_marker,
 };
 use super::compat::preparation::{
-    extract_css_modules, neutralize_authored_markers,
+    RuntimeCssInsertion, extract_css_modules,
+    extract_css_modules_with_runtime_insertions, neutralize_authored_markers,
     protect_css_modules_before_first_list_pages,
 };
 use super::compat::text_fragments::CompatTextFragments;
@@ -265,6 +266,7 @@ struct ExpandedRenderWikitext {
     url_offset_list_pages_content_bytes: usize,
     wikidot_compat_html: CompatHtmlFragments,
     wikidot_compat_text: CompatTextFragments,
+    runtime_css_insertions: Vec<RuntimeCssInsertion>,
 }
 
 /// Owns the protection registries created during render preparation.
@@ -1277,6 +1279,7 @@ impl RenderService {
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html,
             wikidot_compat_text,
+            runtime_css_insertions: Vec::new(),
         };
         let outer = Self::prepare_outer_render_wikitext_observed(
             expanded,
@@ -1452,6 +1455,7 @@ impl RenderService {
             included_pages: list_pages_included_pages,
             expanded_include_count: list_pages_expanded_include_count,
             url_offset_content_bytes,
+            runtime_css_insertions,
         } = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ListPages);
             let protected_css =
@@ -1667,6 +1671,7 @@ impl RenderService {
             url_offset_list_pages_content_bytes: url_offset_content_bytes,
             wikidot_compat_html,
             wikidot_compat_text,
+            runtime_css_insertions,
         })
     }
 
@@ -1730,11 +1735,12 @@ impl RenderService {
                 &mut expanded.wikidot_compat_html,
             );
         expanded.wikitext = rendered;
-        let wikidot_css_modules = extract_css_modules(
+        let wikidot_css_modules = extract_css_modules_with_runtime_insertions(
             &mut expanded.wikitext,
             page_info,
             settings,
             &mut expanded.wikidot_compat_html,
+            std::mem::take(&mut expanded.runtime_css_insertions),
         );
         timings.outer_protection_us = elapsed_micros(started);
 
@@ -2017,6 +2023,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_list_pages_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             },
             page_info,
             settings,

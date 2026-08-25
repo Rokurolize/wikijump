@@ -180,6 +180,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             });
         };
         let requested_current_page_id = current_page_id;
@@ -191,6 +192,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             });
         }
 
@@ -200,6 +202,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             });
         }
 
@@ -209,6 +212,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             });
         }
 
@@ -265,6 +269,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             });
         }
         if depth > 0 && module_matches.len() > MAX_NESTED_LISTPAGES_MODULES_PER_PASS {
@@ -273,6 +278,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             });
         }
         let static_parent_references = module_matches
@@ -610,6 +616,7 @@ impl RenderService {
 
         let mut expanded = String::with_capacity(wikitext.len());
         let mut included_pages = Vec::new();
+        let mut runtime_css_insertions = Vec::new();
         let mut pending_delayed_outputs = Vec::<PendingDelayedListPagesOutput>::new();
         let mut url_offset_content_bytes = 0usize;
         let mut content_cache = ListPagesContentCache::default();
@@ -763,6 +770,7 @@ impl RenderService {
                                 compat_html,
                                 compat_text,
                                 &mut pending_delayed_outputs,
+                                &mut runtime_css_insertions,
                             )
                             else {
                                 expanded.push_str(&compat_text.push_escaped_html_text(
@@ -877,6 +885,7 @@ impl RenderService {
                                 compat_html,
                                 compat_text,
                                 &mut pending_delayed_outputs,
+                                &mut runtime_css_insertions,
                             )
                             else {
                                 expanded.push_str(&compat_text.push_escaped_html_text(
@@ -931,6 +940,7 @@ impl RenderService {
             expanded_include_count: initial_remaining_include_expansions
                 .saturating_sub(include_budget.remaining),
             url_offset_content_bytes,
+            runtime_css_insertions,
         };
         expand_list_pages_generated_includes(
             ctx,
@@ -985,6 +995,9 @@ impl RenderService {
             expansion.url_offset_content_bytes = expansion
                 .url_offset_content_bytes
                 .saturating_add(nested.url_offset_content_bytes);
+            expansion
+                .runtime_css_insertions
+                .extend(nested.runtime_css_insertions);
         } else if depth >= MAX_NESTED_LISTPAGES_DEPTH
             && has_list_pages_module_opening_candidate(&nested_source)
         {
@@ -1635,6 +1648,7 @@ impl RenderService {
                             expanded_include_count: 0,
                         },
                         pending_delayed: None,
+                        runtime_css_insertions: Vec::new(),
                     },
                 ));
             }
@@ -2287,6 +2301,7 @@ impl RenderService {
             }
         }
         let mut included_pages = Vec::new();
+        let mut runtime_css_insertions = Vec::new();
         let mut delayed_occurrences = Vec::new();
         let mut delayed_runtime_text_ranges = Vec::new();
         let mut delayed_html_fragments = Vec::new();
@@ -2398,9 +2413,11 @@ impl RenderService {
                 rendered_page_content,
                 rendered_page_summary,
                 rendered_page_first_paragraph,
+                rendered_page_styles,
             ) = if wants_rendered_content || wants_first_paragraph {
                 match page_wikitext.as_deref() {
                     Some(wikitext) => {
+                        let mut rendered_page_styles = Vec::new();
                         let category = page
                             .page_category_id
                             .and_then(|category_id| category_slugs.get(&category_id));
@@ -2443,7 +2460,7 @@ impl RenderService {
                             .and_then(|per_row| per_row.checked_div(render_passes.max(1)))
                             .unwrap_or(0);
                         let rendered_content = if wants_rendered_content {
-                            let rendered = render_list_pages_selected_content_source(
+                            let mut rendered = render_list_pages_selected_content_source(
                                 ctx,
                                 wikitext,
                                 &selected_page_info,
@@ -2458,6 +2475,7 @@ impl RenderService {
                             .await?;
                             include_budget.consume(rendered.expanded_include_count);
                             included_pages.extend(rendered.included_pages);
+                            rendered_page_styles.append(&mut rendered.styles);
                             Some(rendered.body)
                         } else {
                             None
@@ -2475,7 +2493,7 @@ impl RenderService {
                         let rendered_summary = if let Some(summary) =
                             summary_source.as_deref()
                         {
-                            let rendered = if wants_full_default_summary {
+                            let mut rendered = if wants_full_default_summary {
                                 let category_id = page.page_category_id.ok_or_else(|| {
                                     Error::new(
                                         "default ListPages summary page category unavailable",
@@ -2518,6 +2536,7 @@ impl RenderService {
                             };
                             include_budget.consume(rendered.expanded_include_count);
                             included_pages.extend(rendered.included_pages);
+                            rendered_page_styles.append(&mut rendered.styles);
                             Some(rendered.body)
                         } else {
                             None
@@ -2537,32 +2556,39 @@ impl RenderService {
                             {
                                 rendered_summary.clone()
                             } else {
-                                let rendered = render_list_pages_selected_content_source(
-                                    ctx,
-                                    first_paragraph,
-                                    &selected_page_info,
-                                    settings,
-                                    current_site_id,
-                                    viewer_user_id,
-                                    SelectedContentIncludeMode::Preserve,
-                                    max_include_expansions,
-                                    render_cost_budget.clone(),
-                                    url,
-                                )
-                                .await?;
+                                let mut rendered =
+                                    render_list_pages_selected_content_source(
+                                        ctx,
+                                        first_paragraph,
+                                        &selected_page_info,
+                                        settings,
+                                        current_site_id,
+                                        viewer_user_id,
+                                        SelectedContentIncludeMode::Preserve,
+                                        max_include_expansions,
+                                        render_cost_budget.clone(),
+                                        url,
+                                    )
+                                    .await?;
                                 include_budget.consume(rendered.expanded_include_count);
                                 included_pages.extend(rendered.included_pages);
+                                rendered_page_styles.append(&mut rendered.styles);
                                 Some(rendered.body)
                             }
                         } else {
                             None
                         };
-                        (rendered_content, rendered_summary, rendered_first_paragraph)
+                        (
+                            rendered_content,
+                            rendered_summary,
+                            rendered_first_paragraph,
+                            rendered_page_styles,
+                        )
                     }
-                    None => (None, None, None),
+                    None => (None, None, None, Vec::new()),
                 }
             } else {
-                (None, None, None)
+                (None, None, None, Vec::new())
             };
             let substitution_context = ListPagesSubstitutionContext {
                 authored_limit: limit,
@@ -2695,6 +2721,16 @@ impl RenderService {
             if separate {
                 output.push_str(&generated_row_open);
             }
+            if !rendered_page_styles.is_empty() {
+                let marker = compat_html.push_html(String::new());
+                output.push_str(&marker);
+                runtime_css_insertions.push(
+                    super::super::compat::preparation::RuntimeCssInsertion {
+                        marker,
+                        styles: rendered_page_styles,
+                    },
+                );
+            }
             let rendered_body_start = output.len();
             output.push_str(&rendered_body);
             if !append_list_pages_delayed_occurrences(
@@ -2816,6 +2852,7 @@ impl RenderService {
                         .saturating_sub(include_budget.remaining),
                 },
                 pending_delayed,
+                runtime_css_insertions,
             },
         ))
     }
