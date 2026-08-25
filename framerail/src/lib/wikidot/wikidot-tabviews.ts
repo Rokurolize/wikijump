@@ -52,6 +52,10 @@ export function wikidotTabviews(node: HTMLElement) {
     lifecycleTimer = setTimeout(() => {
       for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
         tabView.classList.add("yui-navset-top")
+        const selected = tabView.querySelector<HTMLElement>(
+          ":scope > .yui-nav > li.selected"
+        )
+        selected?.setAttribute("title", "active")
       }
     }, 0)
   }

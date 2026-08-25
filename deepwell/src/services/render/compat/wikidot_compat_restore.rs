@@ -188,11 +188,6 @@ impl RenderService {
                 continue;
             };
             let root = &restored[root_start..root_end];
-            let root = root.replacen(
-                r#"<li class="selected">"#,
-                r#"<li class="selected" title="active">"#,
-                1,
-            );
             let root = WIKIDOT_TABVIEW_PANEL_ID_REGEX
                 .replace_all(&root, |captures: &regex::Captures<'_>| {
                     let index = captures.name("index").map_or("", |value| value.as_str());
