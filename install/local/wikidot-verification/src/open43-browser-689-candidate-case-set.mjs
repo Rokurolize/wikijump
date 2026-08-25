@@ -199,6 +199,79 @@ async function observeTabviews(page) {
   });
 }
 
+async function installDomContentLoadedTabviewCapture(page) {
+  await page.addInitScript(() => {
+    window.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        const rectangle = (element) => {
+          const value = element.getBoundingClientRect();
+          return { x: value.x, y: value.y, width: value.width, height: value.height };
+        };
+        const styles = (element) => {
+          const value = getComputedStyle(element);
+          return {
+            display: value.display,
+            position: value.position,
+            visibility: value.visibility,
+            font_family: value.fontFamily,
+            font_size: value.fontSize,
+          };
+        };
+        const roots = [...document.querySelectorAll("#page-content .yui-navset")];
+        const images = [...document.images];
+        window.__wikijumpB689DomContentLoadedObservation = {
+          tabview_count: roots.length,
+          tabviews: roots.map((root) => {
+            const nav = root.querySelector(":scope > .yui-nav");
+            const content = root.querySelector(":scope > .yui-content");
+            const tabs = nav ? [...nav.children].filter((item) => item.tagName === "LI") : [];
+            const panels = content ? [...content.children] : [];
+            const selected = tabs.find((tab) => tab.classList.contains("selected"));
+            return {
+              class_name: root.className,
+              id_present: root.id.length > 0,
+              styles: styles(root),
+              rectangle: rectangle(root),
+              tab_count: tabs.length,
+              selected_count: tabs.filter((tab) => tab.classList.contains("selected")).length,
+              visible_panel_count: panels.filter((panel) => getComputedStyle(panel).display !== "none").length,
+              panel_count: panels.length,
+              selected_title: selected?.getAttribute("title") ?? null,
+              label_wrapper: selected?.querySelector("a em")?.tagName.toLowerCase() ?? null,
+              panel_ids_present: panels.length > 0 && panels.every((panel) => panel.id.length > 0),
+              first_panel_id: panels[0]?.id ?? null,
+              nav_styles: nav ? styles(nav) : null,
+              content_styles: content ? styles(content) : null,
+              first_panel_styles: panels[0] ? styles(panels[0]) : null,
+              first_panel_rectangle: panels[0] ? rectangle(panels[0]) : null,
+            };
+          }),
+          resource_state: {
+            document_ready_state: document.readyState,
+            stylesheet_count: document.styleSheets.length,
+            image_count: document.images.length,
+            incomplete_image_count: images.filter((image) => !image.complete).length,
+            rendered_image_count: images.filter((image) => {
+              const style = getComputedStyle(image);
+              const box = image.getBoundingClientRect();
+              return image.complete && image.naturalWidth > 0 && style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0;
+            }).length,
+            broken_image_count: images.filter((image) => !image.complete || image.naturalWidth === 0).length,
+            font_status: document.fonts?.status ?? null,
+            resource_entry_count: performance.getEntriesByType("resource").length,
+          },
+        };
+      },
+      { once: true, capture: true },
+    );
+  });
+}
+
+async function readDomContentLoadedTabviewCapture(page) {
+  return await page.evaluate(() => window.__wikijumpB689DomContentLoadedObservation ?? null);
+}
+
 function positiveRectangle(value, name) {
   const rectangleValue = requirePlainObject(value, name);
   for (const field of ["x", "y", "width", "height"]) {
@@ -670,14 +743,17 @@ export function createOpen43B689TabviewCandidateCaseSet() {
                 timeoutMs: 300_000,
                 settleMs: DEFAULT_SETTLE_MS,
                 navigate: async ({ page: capturePage, url: captureUrl, timeoutMs }) => {
+                  await installDomContentLoadedTabviewCapture(capturePage);
                   const response = await capturePage.goto(captureUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+                  const initialObservation = await readDomContentLoadedTabviewCapture(capturePage);
+                  if (initialObservation === null) throw new Error(`B689 DOMContentLoaded observation was not captured: ${slug}`);
                   initialPages.push({
                     slug,
                     input_url: captureUrl,
                     final_url: capturePage.url(),
                     navigation_status: response?.status() ?? 0,
                     ...errors.counts(),
-                    observation: await observeTabviews(capturePage),
+                    observation: initialObservation,
                   });
                   return response;
                 },
