@@ -32,18 +32,6 @@ test("keeps CSS in raw-text context when content attempts to close or forge a st
   assert(html.includes('\\3C style data-wikidot-generated-css="99">'))
 })
 
-test("defers generated CSS imports past the DOMContentLoaded-immediate Wikidot phase", () => {
-  const html = buildGeneratedPageStylesHead([
-    '@import url("https://example.invalid/theme.css");',
-    ".page-local { color: blue; }"
-  ])
-
-  assert.equal(
-    html,
-    '<style type="text/css" data-wikidot-generated-css="0" data-wikidot-style-deferred media="not all">@import url("https://example.invalid/theme.css");</style><style type="text/css" data-wikidot-generated-css="1">.page-local { color: blue; }</style>'
-  )
-})
-
 test("preloads the CJK font selected by the document locale when rendered content needs it", () => {
   assert.equal(
     getCjkFontPreloadHref("en", ["これは日本語です"]),

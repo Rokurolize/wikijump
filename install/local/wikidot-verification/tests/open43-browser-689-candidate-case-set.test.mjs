@@ -184,6 +184,8 @@ function settledTabview(slug) {
   const styles = oracle.tabview.styles ?? { visibility: "visible" };
   return {
     ...oracle.tabview,
+    class_name: oracle.settled.class_name ?? oracle.tabview.class_name,
+    selected_title: oracle.settled.selected_title ?? oracle.tabview.selected_title,
     styles,
     rectangle: slug === "theme:basalt"
       ? oracle.settled.tabview_rectangle

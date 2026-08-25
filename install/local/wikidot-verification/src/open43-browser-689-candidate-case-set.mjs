@@ -57,9 +57,9 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       tabview: Object.freeze({
         count: 1,
         id_present: true,
-        class_name: "yui-navset yui-navset-top",
+        class_name: "yui-navset",
         rectangle: Object.freeze({ x: 123, y: 3817.69, width: 1120, height: 137.44 }),
-        selected_title: "active",
+        selected_title: null,
         label_wrapper: "em",
         panel_ids_present: true,
       }),
@@ -69,6 +69,8 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       resource_state: Object.freeze({ document_ready_state: "interactive" }),
       settled: Object.freeze({
         tabview_rectangle: Object.freeze({ x: 123, y: 4001.97, width: 1120, height: 188.69 }),
+        class_name: "yui-navset yui-navset-top",
+        selected_title: "active",
       }),
     }),
     "scp-8980": Object.freeze({
@@ -480,8 +482,8 @@ function verifySettledPage(page, plan) {
       tabview.visible_panel_count !== 1 ||
       tabview.styles?.visibility !== "visible" ||
       tabview.id_present !== true ||
-      tabview.class_name !== oracle.tabview.class_name ||
-      tabview.selected_title !== oracle.tabview.selected_title ||
+      tabview.class_name !== (oracle.settled.class_name ?? oracle.tabview.class_name) ||
+      tabview.selected_title !== (oracle.settled.selected_title ?? oracle.tabview.selected_title) ||
       tabview.label_wrapper !== oracle.tabview.label_wrapper ||
       tabview.panel_ids_present !== oracle.tabview.panel_ids_present
     ) {

@@ -189,11 +189,6 @@ impl RenderService {
             };
             let root = &restored[root_start..root_end];
             let root = root.replacen(
-                r#"class="yui-navset">"#,
-                r#"class="yui-navset yui-navset-top">"#,
-                1,
-            );
-            let root = root.replacen(
                 r#"<li class="selected">"#,
                 r#"<li class="selected" title="active">"#,
                 1,

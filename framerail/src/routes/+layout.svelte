@@ -75,22 +75,6 @@
     submitWikidotTopSearch(event, window)
   }
 
-  function activateDeferredWikidotStyleFrames() {
-    for (const element of document.head.querySelectorAll<HTMLElement>(
-      "[data-wikidot-style-deferred]"
-    )) {
-      if (element instanceof HTMLLinkElement) {
-        const href = element.dataset.wikidotStyleHref
-        if (href) {
-          element.href = href
-          delete element.dataset.wikidotStyleHref
-        }
-      }
-      element.removeAttribute("media")
-      element.removeAttribute("data-wikidot-style-deferred")
-    }
-  }
-
   function resolveCurrentLayout() {
     if (page.route.id?.startsWith("/[x+2d]/")) {
       // this is a special page, use Wikijump layout
@@ -160,21 +144,6 @@
   onMount(() => {
     let disposed = false
     let stop: (() => void) | undefined
-    let activationTimer: ReturnType<typeof setTimeout> | undefined
-    const scheduleStyleFrameActivation = () => {
-      // Wikidot applies styleFrame CSS after its DOMContentLoaded-immediate
-      // state. Keep parser-produced declarations in canonical head order, but
-      // defer their effect by one task so the initial observable state matches
-      // Wikidot before converging to the settled themed layout.
-      activationTimer = setTimeout(activateDeferredWikidotStyleFrames, 0)
-    }
-    if (document.readyState === "loading") {
-      window.addEventListener("DOMContentLoaded", scheduleStyleFrameActivation, {
-        once: true
-      })
-    } else {
-      scheduleStyleFrameActivation()
-    }
     const uninstallSearchAll = installWikidotSearchAll(window)
     installWikidotNewPageHelper(window)
     void import("$lib/wikidot/wikidot-code-highlighting").then((module) => {
@@ -182,8 +151,6 @@
     })
     return () => {
       disposed = true
-      window.removeEventListener("DOMContentLoaded", scheduleStyleFrameActivation)
-      if (activationTimer !== undefined) clearTimeout(activationTimer)
       stop?.()
       uninstallSearchAll()
     }
@@ -237,11 +204,9 @@
     {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
       {#if declaration.kind === "theme"}
         <link
-          data-wikidot-style-deferred
-          data-wikidot-style-href={declaration.href}
           data-wikidot-style-preloaded
           data-wikidot-style-priority={declaration.priority}
-          media="not all"
+          href={declaration.href}
           rel="stylesheet"
         />
       {:else}

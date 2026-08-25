@@ -31,7 +31,7 @@ test("page CSS keeps its cascade position when it already imports a styleFrame t
   await expect(page.locator("#cascade-probe")).toHaveCSS("color", "rgb(0, 0, 255)")
 })
 
-test("Wikidot page links use document navigation and defer styleFrame CSS past DOMContentLoaded", async ({
+test("Wikidot page links use document navigation with styleFrame CSS ready at DOMContentLoaded", async ({
   page
 }) => {
   const pageErrors: string[] = []
@@ -56,30 +56,6 @@ test("Wikidot page links use document navigation and defer styleFrame CSS past D
     const url = new URL(route.request().url())
     url.pathname = url.pathname.slice(url.pathname.indexOf("/_app/"))
     await route.continue({ url: url.href })
-  })
-  await page.addInitScript(() => {
-    window.addEventListener(
-      "DOMContentLoaded",
-      () => {
-        const pageTitle = document.querySelector("#page-title")
-        const sideBar = document.querySelector("#side-bar")
-        ;(
-          window as Window & {
-            wikijumpDomContentLoadedStyleProbe?: {
-              deferredStyles: number
-              pageTitleDisplay: string | null
-              sideBarDisplay: string | null
-            }
-          }
-        ).wikijumpDomContentLoadedStyleProbe = {
-          deferredStyles: document.querySelectorAll("[data-wikidot-style-deferred]")
-            .length,
-          pageTitleDisplay: pageTitle ? getComputedStyle(pageTitle).display : null,
-          sideBarDisplay: sideBar ? getComputedStyle(sideBar).display : null
-        }
-      },
-      { once: true }
-    )
   })
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   const destinationResponse = await page.request.get("/navigation-style-b", {
@@ -123,28 +99,11 @@ test("Wikidot page links use document navigation and defer styleFrame CSS past D
     link.click()
   })
   await themeRequested
+  releaseThemeResponse()
   await Promise.all([click, navigation])
-  const domContentLoadedStyleProbe = await page.evaluate(
-    () =>
-      (
-        window as Window & {
-          wikijumpDomContentLoadedStyleProbe?: {
-            deferredStyles: number
-            pageTitleDisplay: string | null
-            sideBarDisplay: string | null
-          }
-        }
-      ).wikijumpDomContentLoadedStyleProbe
-  )
-  expect(domContentLoadedStyleProbe).toMatchObject({
-    deferredStyles: 2
-  })
-  expect(domContentLoadedStyleProbe?.pageTitleDisplay).not.toBe("none")
-  expect(domContentLoadedStyleProbe?.sideBarDisplay).not.toBe("none")
   await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(2)
   await expect(page.locator("head [data-wikidot-style-deferred]")).toHaveCount(0)
   await expect(page.locator("#page-title")).toHaveCSS("display", "none")
-  releaseThemeResponse()
   await expect(page.locator("#side-bar")).toHaveCSS("display", "none")
   await expect(page).toHaveURL(/\/navigation-style-b$/u)
   await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)

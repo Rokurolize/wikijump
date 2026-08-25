@@ -7288,11 +7288,7 @@ fn wikidot_compatibility_fallback_renders_tabs_size_and_page_images() {
             Some("scp-wiki"),
         );
 
-    assert!(
-        html.contains(
-            r#"<div class="yui-navset yui-navset-top wikidot-compat-tabview">"#
-        )
-    );
+    assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
     assert!(html.contains(r#"<ul class="yui-nav">"#));
     assert!(html.contains(
         r#"<li class="selected" title="active"><a href="javascript:;"><em>SCPs</em></a></li>"#
@@ -7345,11 +7341,7 @@ fn wikidot_compatibility_fallback_preserves_tabview_bodies_in_hidden_panels() {
         RenderService::render_wikidot_compatibility_fallback_with_code_blocks(source);
 
     assert!(html.contains(r#"<div class="closable-tab">"#));
-    assert!(
-        html.contains(
-            r#"<div class="yui-navset yui-navset-top wikidot-compat-tabview">"#
-        )
-    );
+    assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
     assert!(html.contains(r#"<ul class="yui-nav">"#));
     assert!(html.contains(
         r#"<li class="selected" title="active"><a href="javascript:;"><em>X</em></a></li>"#
@@ -10722,7 +10714,7 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
 
     assert!(restored.starts_with(
         r#"<p>Before</p><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
-<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset yui-navset-top">"#
+<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset">"#
     ));
     assert!(restored.contains(r#"<li class="selected" title="active">"#));
     assert!(restored.contains(
