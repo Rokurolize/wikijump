@@ -57,9 +57,9 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       tabview: Object.freeze({
         count: 1,
         id_present: true,
-        class_name: "yui-navset",
+        class_name: "yui-navset yui-navset-top",
         rectangle: Object.freeze({ x: 123, y: 3817.69, width: 1120, height: 137.44 }),
-        selected_title: null,
+        selected_title: "active",
         label_wrapper: "em",
         panel_ids_present: true,
       }),
