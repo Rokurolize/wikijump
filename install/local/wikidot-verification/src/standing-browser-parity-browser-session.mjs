@@ -151,32 +151,41 @@ export async function installCandidateFilePortRoute(
       redirectUrl.port = files.port;
       requestUrl.href = redirectUrl.href;
     }
-    if (
-      sourceRequestGate !== null &&
-      REDIRECT_STATUSES.has(response.status()) &&
-      route.request().method?.() === "GET"
-    ) {
-      const location = response.headers().location;
-      if (location) {
-        const redirectUrl = new URL(location, requestUrl);
-        if (
-          !new Set([canonicalFilesOrigin, files.origin]).has(
-            redirectUrl.origin,
-          ) &&
-          isWikidotCapturePublicOrigin(
-            redirectUrl,
-            route.request().resourceType?.() ?? "other",
-            "GET",
-          )
-        ) {
-          // A localized /local--files request is exempt from the public gate,
-          // but a missing mirror can redirect back to the exact Wikidot source.
-          // The live request being mirrored consumed one public admission before
-          // that redirect, so consume the corresponding slot here before exposing
-          // the redirect to Chromium. The redirected public request itself is then
-          // admitted normally by installBrowserRequestGate.
-          await sourceRequestGate.acquire();
-        }
+    if (sourceRequestGate !== null && route.request().method?.() === "GET") {
+      const sourcePath = new URL(route.request().url()).pathname;
+      const location = REDIRECT_STATUSES.has(response.status())
+        ? response.headers().location
+        : null;
+      const redirectUrl = location ? new URL(location, requestUrl) : null;
+      const returnsGatedPublicRedirect =
+        redirectUrl !== null &&
+        !new Set([canonicalFilesOrigin, files.origin]).has(
+          redirectUrl.origin,
+        ) &&
+        isWikidotCapturePublicOrigin(
+          redirectUrl,
+          route.request().resourceType?.() ?? "other",
+          "GET",
+        );
+
+      if (sourcePath.startsWith("/local--files/")) {
+        // Wikidot-rendered page-owned file URLs first hit
+        // <site>.wikidot.com/local--files/... and then the corresponding
+        // wdfiles authority. The local candidate mirror collapses those public
+        // stages into one exempt wjfiles request. Preserve the two source-side
+        // admissions before exposing a mirror hit to Chromium. If the mirror
+        // falls back to a public redirect, only synthesize the first stage; the
+        // redirected public request consumes the second admission normally.
+        await sourceRequestGate.acquire();
+        if (!returnsGatedPublicRedirect) await sourceRequestGate.acquire();
+      } else if (
+        sourcePath.startsWith("/local--code/") &&
+        !returnsGatedPublicRedirect
+      ) {
+        // Authored/generated local-code URLs are direct wdfiles requests on
+        // Wikidot. A successful local mirror therefore represents one public
+        // source request. A fallback public redirect is already gated normally.
+        await sourceRequestGate.acquire();
       }
     }
     await route.fulfill({ response });

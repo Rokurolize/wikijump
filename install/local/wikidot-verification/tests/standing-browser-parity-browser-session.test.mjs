@@ -293,7 +293,91 @@ test("candidate file routing preserves the live public admission before a Wikido
   assert.deepEqual(fulfillment, { response: redirect });
 });
 
-test("candidate file routing does not spend a source admission for unrelated public redirects", async () => {
+test("candidate file routing preserves both Wikidot local-file admissions on a mirror hit", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const response = { status: () => 200, headers: () => ({}) };
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+      };
+    },
+    async fetch() {
+      return response;
+    },
+    async fulfill() {},
+  });
+
+  assert.equal(admissions, 2);
+});
+
+test("candidate file routing preserves one direct wdfiles admission on a local-code mirror hit", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const response = { status: () => 200, headers: () => ({}) };
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "stylesheet",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--code/theme%3Abasalt/1",
+      };
+    },
+    async fetch() {
+      return response;
+    },
+    async fulfill() {},
+  });
+
+  assert.equal(admissions, 1);
+});
+
+test("candidate file routing preserves collapsed source admissions when a redirect is outside the public gate", async () => {
   let handler;
   const context = {
     async route(_value, callback) {
@@ -334,7 +418,7 @@ test("candidate file routing does not spend a source admission for unrelated pub
     async fulfill() {},
   });
 
-  assert.equal(admissions, 0);
+  assert.equal(admissions, 2);
 });
 
 test("candidate file routing refuses malformed or ambiguous local origin declarations", async () => {
