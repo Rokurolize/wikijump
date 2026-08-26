@@ -157,6 +157,7 @@ export default defineConfig(
       "./package/**/*",
       "playwright-report/**/*",
       "test-results/**/*",
+      "static/wikidot/scripts/tabview-compat.js",
       "**/vendor/**/*",
       "**/.DS_Store",
       "**/node_modules",
