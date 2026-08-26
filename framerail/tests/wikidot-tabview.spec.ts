@@ -78,7 +78,7 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
           }
         ).wikidotTabviewDomReadyProbe
     )
-  ).toEqual({ className: "yui-navset yui-navset-top", selectedTitle: "active" })
+  ).toEqual({ className: "yui-navset", selectedTitle: null })
 
   expect(
     await page.locator("#page-content > .yui-navset").evaluate((tabview) => ({

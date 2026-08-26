@@ -21,7 +21,7 @@
 use super::super::service::{
     RenderService, WIKIDOT_COMPAT_STYLE_BLOCK_REGEX, WIKIDOT_EMAIL_SPAN_REGEX,
     WIKIDOT_EMBED_PARAGRAPH_REGEX, WIKIDOT_TABVIEW_INIT_SCRIPT,
-    WIKIDOT_TABVIEW_PANEL_ID_REGEX, WIKIDOT_TABVIEW_SCRIPT, WIKIDOT_TABVIEW_SCRIPT_URL,
+    WIKIDOT_TABVIEW_PANEL_ID_REGEX, WIKIDOT_TABVIEW_SCRIPT_URL,
     WIKIJUMP_CODE_BLOCK_OPEN_REGEX, WIKIJUMP_CODE_BLOCK_PANEL_REGEX,
     WIKIJUMP_FOOTNOTE_DATA_ID_REGEX, WIKIJUMP_FOOTNOTE_MARKER_REGEX,
     WIKIJUMP_FOOTNOTE_REF_LEADING_SPACE_REGEX, WIKIJUMP_FOOTNOTE_REF_SPAN_WRAPPER_REGEX,
@@ -104,14 +104,14 @@ impl RenderService {
         if html.contains("wj-code") {
             html = Self::restore_wikidot_code_block_dom_compatibility(&html);
         }
-        if html.contains("wj-tabs") {
-            html = Self::restore_wikidot_tabview_dom_compatibility(&html);
-        }
         if !wikidot_tabview_ids.is_empty() {
             html = Self::restore_wikidot_tabview_resource_compatibility(
                 &html,
                 wikidot_tabview_ids,
             );
+        }
+        if html.contains("wj-tabs") {
+            html = Self::restore_wikidot_tabview_dom_compatibility(&html);
         }
         if html.contains("[[div") || html.contains("[[/div") {
             html = Self::restore_residual_wikidot_div_paragraph_markers(&html);
@@ -257,7 +257,10 @@ impl RenderService {
     ) -> String {
         let html = html.replace(
             r#"<wj-tabs class="wj-tabs">"#,
-            &format!(r#"{WIKIDOT_TABVIEW_SCRIPT}<div class="yui-navset">"#),
+            &format!(
+                r#"<script type="text/javascript" src="{WIKIDOT_TABVIEW_SCRIPT_URL}"></script>
+<div class="yui-navset">"#
+            ),
         );
         let html = WIKIJUMP_TAB_BUTTON_LIST_REGEX
             .replace_all(&html, r#"<ul class="yui-nav">$body</ul>"#);
@@ -268,10 +271,8 @@ impl RenderService {
             .replace_all(&html, r#"<li class="selected"><a href="javascript:;">"#);
         let html = WIKIJUMP_TAB_BUTTON_REGEX
             .replace_all(&html, r#"<li><a href="javascript:;">"#);
-        html.replace("</wj-tabs-button>", "</a></li>\n").replace(
-            "</wj-tabs>",
-            &format!("</div>{WIKIDOT_TABVIEW_INIT_SCRIPT}"),
-        )
+        html.replace("</wj-tabs-button>", "</a></li>\n")
+            .replace("</wj-tabs>", "</div>")
     }
 
     pub(in crate::services::render) fn restore_wikidot_tab_panel_visibility(

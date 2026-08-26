@@ -10653,7 +10653,8 @@ fn restores_wikidot_tabview_dom_classes() {
 
     let restored = RenderService::restore_wikidot_tabview_dom_compatibility(html);
 
-    assert!(!restored.contains("tabview-min.js"));
+    assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
+    assert!(!restored.contains("tabview-compat.js"));
     assert!(restored.contains(r#"<div class="yui-navset">"#));
     assert!(restored.contains(r#"<ul class="yui-nav">"#));
     assert!(restored.contains(r#"<div class="yui-content">"#));
@@ -10739,6 +10740,41 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
         r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><p>After</p>"#
     ));
     assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
+}
+
+#[test]
+fn initializes_resource_tabviews_during_parse_but_leaves_direct_tabviews_for_hydration() {
+    let id = "wiki-tabview-0123456789abcdef0123456789abcdef".to_owned();
+    let html = format!(
+        concat!(
+            r#"<div id="{id}" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>Resource</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0"><p>Resource body</p></div></div></div>"#,
+            r#"<wj-tabs class="wj-tabs"><div class="wj-tabs-button-list"><wj-tabs-button class="wj-tabs-button" aria-selected="true">Direct</wj-tabs-button></div><div class="wj-tabs-panel-list"><div class="wj-tabs-panel">Direct body</div></div></wj-tabs>"#,
+        ),
+        id = id,
+    );
+
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &html,
+            None,
+            &Config::integration_testing(),
+            true,
+            std::slice::from_ref(&id),
+        );
+
+    assert_eq!(restored.matches("tabview-min.js").count(), 2, "{restored}");
+    assert_eq!(
+        restored.matches("tabview-compat.js").count(),
+        1,
+        "{restored}"
+    );
+    assert!(
+        restored.contains(&format!(r#"<div id="{id}" class="yui-navset">"#, id = id,))
+    );
+    assert!(restored.contains(
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
+<div class="yui-navset">"#
+    ));
 }
 
 #[test]
