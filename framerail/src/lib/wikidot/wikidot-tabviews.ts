@@ -47,14 +47,16 @@ function activateTab(link: HTMLAnchorElement): boolean {
 export function wikidotTabviews(node: HTMLElement) {
   const controller = new AbortController()
 
-  if (!document.querySelector('script[src$="/wikidot/scripts/tabview-compat.js"]')) {
+  const fallbackTimer = window.setTimeout(() => {
+    if (document.querySelector('script[src$="/wikidot/scripts/tabview-compat.js"]'))
+      return
     for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
       tabView.classList.add("yui-navset-top")
       tabView
         .querySelector<HTMLElement>(":scope > .yui-nav > li.selected")
         ?.setAttribute("title", "active")
     }
-  }
+  }, 0)
 
   node.addEventListener(
     "click",
@@ -73,6 +75,7 @@ export function wikidotTabviews(node: HTMLElement) {
 
   return {
     destroy() {
+      window.clearTimeout(fallbackTimer)
       controller.abort()
     }
   }
