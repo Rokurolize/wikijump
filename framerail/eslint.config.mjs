@@ -157,7 +157,6 @@ export default defineConfig(
       "./package/**/*",
       "playwright-report/**/*",
       "test-results/**/*",
-      "static/wikidot/scripts/tabview-compat.js",
       "**/vendor/**/*",
       "**/.DS_Store",
       "**/node_modules",
@@ -188,6 +187,12 @@ export default defineConfig(
       rules: {
         "@typescript-eslint/no-require-imports": "off"
       }
+    },
+    {
+      files: ["static/wikidot/scripts/tabview-compat.js"],
+
+      languageOptions: ts.configs.disableTypeChecked.languageOptions,
+      rules: ts.configs.disableTypeChecked.rules
     },
     {
       files: ["**/*.svelte"],
