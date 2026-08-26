@@ -57,14 +57,11 @@ export function wikidotTabviews(node: HTMLElement) {
     }
   }
 
-  if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", activateWikidotTabviewLifecycle, {
-      once: true,
-      signal: controller.signal
-    })
-  } else {
-    activateWikidotTabviewLifecycle()
-  }
+  // The SSR/no-script markup intentionally preserves Wikidot's pre-JS tabview
+  // shape. Once the page action hydrates, promote it synchronously so native
+  // DOMContentLoaded observers see the same already-initialized YUI state that
+  // Wikidot exposes at its DOM-ready boundary.
+  activateWikidotTabviewLifecycle()
 
   node.addEventListener(
     "click",
