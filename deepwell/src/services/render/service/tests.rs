@@ -7347,9 +7347,11 @@ fn wikidot_compatibility_fallback_preserves_tabview_bodies_in_hidden_panels() {
     assert!(html.contains(r#"<div class="closable-tab">"#));
     assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
     assert!(html.contains(r#"<ul class="yui-nav">"#));
-    assert!(html.contains(
-        r#"<li class="selected"><a href="javascript:;"><em>X</em></a></li>"#
-    ));
+    assert!(
+        html.contains(
+            r#"<li class="selected"><a href="javascript:;"><em>X</em></a></li>"#
+        )
+    );
     assert!(html.contains(r#"<li><a href="javascript:;"><em>One</em></a></li>"#));
     assert!(html.contains(r#"<li><a href="javascript:;"><em>Two</em></a></li>"#));
     assert!(html.contains(r#"<div style="display: block;"></div>"#));
@@ -10657,7 +10659,9 @@ fn restores_wikidot_tabview_dom_classes() {
     assert!(restored.contains(r#"<div class="yui-content">"#));
     assert!(restored.contains(r#"<div style="display: block;">First</div>"#));
     assert!(restored.contains(r#"<div style="display:none">Second</div>"#));
-    assert!(restored.contains(r#"<li class="selected"><a href="javascript:;">One</a></li>"#));
+    assert!(
+        restored.contains(r#"<li class="selected"><a href="javascript:;">One</a></li>"#)
+    );
     assert!(restored.contains(r#"<li><a href="javascript:;">Two</a></li>"#));
     assert!(restored.contains("</a></li>\n<li>"));
     assert!(!restored.contains("wj-tabs"));
