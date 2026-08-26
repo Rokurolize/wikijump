@@ -53,6 +53,7 @@
     </div>
   </div>
 </div>
+<div id="dummy-ondomready-block" style="display: none;"></div>
 
 <!-- Ignoring the styling as being a theme it will inevitably style other elements in the entire layout -->
 <!-- svelte-ignore css_unused_selector -->

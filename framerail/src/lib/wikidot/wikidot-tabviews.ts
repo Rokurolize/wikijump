@@ -47,25 +47,13 @@ function activateTab(link: HTMLAnchorElement): boolean {
 export function wikidotTabviews(node: HTMLElement) {
   const controller = new AbortController()
 
-  const activateWikidotTabviewLifecycle = () => {
+  if (!document.querySelector('script[src$="/wikidot/scripts/tabview-compat.js"]')) {
     for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
       tabView.classList.add("yui-navset-top")
-      const selected = tabView.querySelector<HTMLElement>(
-        ":scope > .yui-nav > li.selected"
-      )
-      selected?.setAttribute("title", "active")
+      tabView
+        .querySelector<HTMLElement>(":scope > .yui-nav > li.selected")
+        ?.setAttribute("title", "active")
     }
-  }
-
-  // Preserve Wikidot's pre-JS tabview shape through the DOMContentLoaded
-  // capture boundary, then promote it for the settled interactive state.
-  if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", activateWikidotTabviewLifecycle, {
-      once: true,
-      signal: controller.signal
-    })
-  } else {
-    activateWikidotTabviewLifecycle()
   }
 
   node.addEventListener(

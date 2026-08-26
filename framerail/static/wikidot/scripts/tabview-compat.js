@@ -12,9 +12,13 @@
       ?.setAttribute("title", "active")
   }
 
-  if (document.readyState === "loading") {
-    window.addEventListener("DOMContentLoaded", activate, { once: true })
-  } else {
-    activate()
+  const activateWhenWikidotReady = () => {
+    if (document.body && document.getElementById("dummy-ondomready-block")) {
+      activate()
+      return
+    }
+    setTimeout(activateWhenWikidotReady, 200)
   }
+
+  activateWhenWikidotReady()
 })()
