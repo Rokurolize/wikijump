@@ -193,10 +193,10 @@ impl RenderService {
                 continue;
             };
             let root = restored[root_start..root_end]
-                .replacen(&legacy_opening, &wikidot_opening, 1)
+                .replacen(&wikidot_opening, &legacy_opening, 1)
                 .replacen(
-                    r#"<li class="selected">"#,
                     r#"<li class="selected" title="active">"#,
+                    r#"<li class="selected">"#,
                     1,
                 );
             let root = WIKIDOT_TABVIEW_PANEL_ID_REGEX
@@ -266,19 +266,15 @@ OZONE.dom.onDomReady(function(){{
     ) -> String {
         let html = html.replace(
             r#"<wj-tabs class="wj-tabs">"#,
-            &format!(
-                r#"{WIKIDOT_TABVIEW_SCRIPT}<div class="yui-navset yui-navset-top">"#
-            ),
+            &format!(r#"{WIKIDOT_TABVIEW_SCRIPT}<div class="yui-navset">"#),
         );
         let html = WIKIJUMP_TAB_BUTTON_LIST_REGEX
             .replace_all(&html, r#"<ul class="yui-nav">$body</ul>"#);
         let html = Self::restore_wikidot_tab_panel_visibility(&html);
         let html = WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX
             .replace_all(&html, r#"<div class="yui-content">"#);
-        let html = WIKIJUMP_SELECTED_TAB_BUTTON_REGEX.replace_all(
-            &html,
-            r#"<li class="selected" title="active"><a href="javascript:;">"#,
-        );
+        let html = WIKIJUMP_SELECTED_TAB_BUTTON_REGEX
+            .replace_all(&html, r#"<li class="selected"><a href="javascript:;">"#);
         let html = WIKIJUMP_TAB_BUTTON_REGEX
             .replace_all(&html, r#"<li><a href="javascript:;">"#);
         html.replace("</wj-tabs-button>", "</a></li>\n").replace(

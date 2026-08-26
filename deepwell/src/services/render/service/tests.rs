@@ -7295,7 +7295,7 @@ fn wikidot_compatibility_fallback_renders_tabs_size_and_page_images() {
     assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
     assert!(html.contains(r#"<ul class="yui-nav">"#));
     assert!(html.contains(
-        r#"<li class="selected" title="active"><a href="javascript:;"><em>SCPs</em></a></li>"#
+        r#"<li class="selected"><a href="javascript:;"><em>SCPs</em></a></li>"#
     ));
     assert!(html.contains(r#"<div style="display: block;">"#));
     assert!(html.contains(r#"<span style="font-size: 75%;">"#));
@@ -7348,7 +7348,7 @@ fn wikidot_compatibility_fallback_preserves_tabview_bodies_in_hidden_panels() {
     assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
     assert!(html.contains(r#"<ul class="yui-nav">"#));
     assert!(html.contains(
-        r#"<li class="selected" title="active"><a href="javascript:;"><em>X</em></a></li>"#
+        r#"<li class="selected"><a href="javascript:;"><em>X</em></a></li>"#
     ));
     assert!(html.contains(r#"<li><a href="javascript:;"><em>One</em></a></li>"#));
     assert!(html.contains(r#"<li><a href="javascript:;"><em>Two</em></a></li>"#));
@@ -10652,14 +10652,12 @@ fn restores_wikidot_tabview_dom_classes() {
     let restored = RenderService::restore_wikidot_tabview_dom_compatibility(html);
 
     assert!(!restored.contains("tabview-min.js"));
-    assert!(restored.contains(r#"<div class="yui-navset yui-navset-top">"#));
+    assert!(restored.contains(r#"<div class="yui-navset">"#));
     assert!(restored.contains(r#"<ul class="yui-nav">"#));
     assert!(restored.contains(r#"<div class="yui-content">"#));
     assert!(restored.contains(r#"<div style="display: block;">First</div>"#));
     assert!(restored.contains(r#"<div style="display:none">Second</div>"#));
-    assert!(restored.contains(
-        r#"<li class="selected" title="active"><a href="javascript:;">One</a></li>"#
-    ));
+    assert!(restored.contains(r#"<li class="selected"><a href="javascript:;">One</a></li>"#));
     assert!(restored.contains(r#"<li><a href="javascript:;">Two</a></li>"#));
     assert!(restored.contains("</a></li>\n<li>"));
     assert!(!restored.contains("wj-tabs"));
@@ -10719,9 +10717,9 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
 
     assert!(restored.starts_with(
         r#"<p>Before</p><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
-<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset yui-navset-top">"#
+<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset">"#
     ));
-    assert!(restored.contains(r#"<li class="selected" title="active">"#));
+    assert!(restored.contains(r#"<li class="selected">"#));
     assert!(restored.contains(
         r#"<div id="wiki-tab-0-0" style="display: block;"><p>First</p></div>"#
     ));

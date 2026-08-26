@@ -21,11 +21,8 @@ test("Wikidot-compatible tabviews are complete at the initial no-script paint", 
 
     const tabview = page.locator("#page-content > .yui-navset")
     await expect(tabview).toHaveAttribute("id", /^wiki-tabview-[0-9a-f]{32}$/u)
-    await expect(tabview).toHaveClass(/\byui-navset-top\b/u)
-    await expect(tabview.locator(".yui-nav > li").nth(0)).toHaveAttribute(
-      "title",
-      "active"
-    )
+    await expect(tabview).toHaveClass(/^yui-navset$/u)
+    await expect(tabview.locator(".yui-nav > li").nth(0)).not.toHaveAttribute("title")
     await expect(tabview.locator(".yui-nav a em")).toHaveText(["First", "Second"])
     const panels = tabview.locator(".yui-content > div")
     await expect(panels.nth(0)).toHaveAttribute("id", "wiki-tab-0-0")
