@@ -1,15 +1,11 @@
 ;(() => {
-  const current = document.currentScript
-  const tabView = current?.previousElementSibling
-  if (!(tabView instanceof HTMLElement) || !tabView.classList.contains("yui-navset")) {
-    return
-  }
-
   const activate = () => {
-    tabView.classList.add("yui-navset-top")
-    tabView
-      .querySelector(":scope > .yui-nav > li.selected")
-      ?.setAttribute("title", "active")
+    for (const tabView of document.querySelectorAll(".yui-navset")) {
+      tabView.classList.add("yui-navset-top")
+      tabView
+        .querySelector(":scope > .yui-nav > li.selected")
+        ?.setAttribute("title", "active")
+    }
   }
 
   const activateWhenWikidotReady = () => {
