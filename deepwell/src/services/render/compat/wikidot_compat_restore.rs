@@ -215,17 +215,8 @@ impl RenderService {
                 r#"<script type="text/javascript" src="{WIKIDOT_TABVIEW_SCRIPT_URL}"></script>
 "#
             );
-            let initializer = format!(
-                r#"<script type="text/javascript">
-//<![CDATA[
-OZONE.dom.onDomReady(function(){{
-        var tabView{suffix} = new YAHOO.widget.TabView('{id}');
-                }}, "dummy-ondomready-block");
-
-//]]>
-</script>"#
-            );
-            let replacement = format!("{loader}{root}{initializer}");
+            let _ = suffix;
+            let replacement = format!("{loader}{root}{WIKIDOT_TABVIEW_INIT_SCRIPT}");
             restored.replace_range(root_start..root_end, &replacement);
         }
         restored

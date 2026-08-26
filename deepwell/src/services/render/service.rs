@@ -446,8 +446,7 @@ const WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOLORSPAN";
 pub(super) const WIKIDOT_INLINE_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTINLINEHTML";
 pub(super) const WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTRATEANCHOR";
 pub(super) const WIKIDOT_TABVIEW_SCRIPT: &str = "";
-pub(super) const WIKIDOT_TABVIEW_INIT_SCRIPT: &str =
-    r#"<script type="text/javascript"></script>"#;
+pub(super) const WIKIDOT_TABVIEW_INIT_SCRIPT: &str = r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script>"#;
 pub(super) const WIKIDOT_TABVIEW_SCRIPT_URL: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js";
 const MAX_WIKIDOT_COMPAT_FALLBACK_TITLE_LINKS: usize = 128;
 

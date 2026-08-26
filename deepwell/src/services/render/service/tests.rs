@@ -10733,9 +10733,11 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
         )
     );
     assert!(restored.contains(
-        r#"var tabView0123456789abcdef0123456789abcdef = new YAHOO.widget.TabView('wiki-tabview-0123456789abcdef0123456789abcdef');"#
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script>"#
     ));
-    assert!(restored.ends_with("</script><p>After</p>"));
+    assert!(restored.ends_with(
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><p>After</p>"#
+    ));
     assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
 }
 
