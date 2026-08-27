@@ -28,6 +28,7 @@ use ftml::settings::WikitextSettings;
 use ftml::tree::{CodeBlock, Element, SyntaxTree};
 use regex::Regex;
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -194,14 +195,21 @@ pub(in crate::services::render) fn extract_css_modules_with_runtime_insertions(
 
     let extracted = extract_css_modules(wikitext, page_info, settings, compat_html);
     let mut styles = Vec::new();
+    let mut matched = HashSet::<String>::new();
     for style in extracted {
         if let Some(insertion) = insertions
             .iter()
             .find(|insertion| insertion.marker == style)
         {
+            matched.insert(insertion.marker.clone());
             styles.extend(insertion.styles.iter().cloned());
         } else {
             styles.push(style);
+        }
+    }
+    for insertion in insertions {
+        if !matched.contains(&insertion.marker) {
+            styles.extend(insertion.styles);
         }
     }
     styles
