@@ -33,6 +33,11 @@ export async function capturePng(page, destination, { fullPage = false } = {}) {
     await fs.writeFile(destination, bytes, { mode: 0o600 });
     return { path: destination, bytes: bytes.length, full_page: fullPage };
   } finally {
-    await client?.detach().catch(() => {});
+    if (client !== undefined) {
+      await Promise.race([
+        client.detach().catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, 5000)),
+      ]);
+    }
   }
 }
