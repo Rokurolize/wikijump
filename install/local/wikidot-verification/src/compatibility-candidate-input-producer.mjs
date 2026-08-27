@@ -55,6 +55,7 @@ const B689_SCP8980_FRAGMENTS = Object.freeze([
 ]);
 const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "nav:interwiki", title: "Interwiki Navigation", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/nav:interwiki/source.wikidot.txt", sha256: "75fdb759603f03ac9649f67e61b03d3557bcc4cf94370e05ed3a6cb87d66fe8d" }),
+  Object.freeze({ slug: "info:style", title: "Info Module CSS", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:style/source.wikidot.txt", sha256: "1723b7584ee15a8b350c76424e4eb81917e2d0cb7c06a1c1e062bd006186358a" }),
   Object.freeze({ slug: "info:start", title: "Info Start", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:start/source.wikidot.txt", sha256: "d6f589988a92b86a5bf5c1a052a14e3165b2f95f7974665fada068ca402de8c4" }),
   Object.freeze({ slug: "info:end", title: "Info End", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:end/source.wikidot.txt", sha256: "d433ca1c052bfefcf88e0163dd783e27e28255f47af828ba2b4d831ba125827b" }),
   Object.freeze({ slug: "component:info-cw", title: "Info Content Warning", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:info-cw/source.wikidot.txt", sha256: "b474ffeb7fc1bd46b8ec2f9076ef2ce901e6f8d2d619322f8c821bc5f02c3c1c" }),
