@@ -32,6 +32,7 @@
     resolveWikidotSiteTitle,
     shouldUseSandboxWikidotChrome
   } from "$lib/wikidot/wikidot-chrome"
+  import { buildGeneratedPageStylesHead } from "$lib/generated-page-styles"
   import {
     buildWikidotInlineStyleFrameHead,
     extractWikidotStyleFrameDeclarations
@@ -213,6 +214,7 @@
         {@html buildWikidotInlineStyleFrameHead(declaration)}
       {/if}
     {/each}
+    {@html buildGeneratedPageStylesHead(viewData?.compiled_body_styles ?? [])}
   {/if}
 </svelte:head>
 

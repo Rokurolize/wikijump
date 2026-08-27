@@ -77,7 +77,11 @@
         ? (revision?.compiled_body_styles ?? [])
         : (data.compiled_body_styles ?? [])
   )
-  let compiledBodyStylesHead = $derived(buildGeneratedPageStylesHead(compiledBodyStyles))
+  let compiledBodyStylesHead = $derived(
+    pageLayoutContext.current === Layout.WIKIDOT
+      ? ""
+      : buildGeneratedPageStylesHead(compiledBodyStyles)
+  )
   let renderedBodyHtml = $derived(
     showRevision ? revision?.compiled_body_html : data.compiled_body_html
   )
