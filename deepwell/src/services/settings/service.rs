@@ -195,9 +195,13 @@ impl SettingsService {
                 ErrorType::SiteSettings,
             )
         };
-        let category = CategoryService::get(ctx, site_id, Reference::Id(category_id))
-            .await
-            .or_raise(make_error)?;
+        let category = if category_id == 0 {
+            CategoryService::get(ctx, site_id, Reference::Slug(Cow::Borrowed("_default")))
+                .await
+        } else {
+            CategoryService::get(ctx, site_id, Reference::Id(category_id)).await
+        }
+        .or_raise(make_error)?;
         let default_category = if category.slug == "_default" {
             None
         } else {
