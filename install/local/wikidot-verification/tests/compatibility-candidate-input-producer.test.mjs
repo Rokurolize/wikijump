@@ -42,6 +42,7 @@ test("compatibility candidate input producer owns the exact B689 SCP-8980 source
   assert.equal(fixtures.source.slug, "scp-8980");
   assert.equal(fixtures.source.sha256, "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710");
   assert.deepEqual(fixtures.fragments.map(({ slug }) => slug), ["fragment:scp-8980-1", "fragment:scp-8980-2"]);
+  assert.deepEqual(fixtures.fragments.map(({ tags }) => tags), [["fragment"], ["fragment"]]);
   assert.match(fixtures.source.wikitext, /ListPages parent="\." category="fragment"/u);
   assert.ok(fixtures.fragments.every(({ wikitext }) => wikitext.includes("[[include :scp-wiki:theme:basalt")));
 });

@@ -50,8 +50,8 @@ const B689_THEME_BASALT_USERS = new URL(
   import.meta.url,
 );
 const B689_SCP8980_FRAGMENTS = Object.freeze([
-  Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
-  Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
+  Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
+  Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
 ]);
 const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "nav:interwiki", title: "Interwiki Navigation", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/nav:interwiki/source.wikidot.txt", sha256: "75fdb759603f03ac9649f67e61b03d3557bcc4cf94370e05ed3a6cb87d66fe8d" }),
@@ -104,7 +104,7 @@ export async function b689Scp8980CandidateFixtures() {
   for (const fixture of B689_SCP8980_FRAGMENTS) {
     const wikitext = await fs.readFile(fixture.path, "utf8");
     if (wikitext === "") throw new Error(`B689 SCP-8980 fragment is empty: ${fixture.slug}`);
-    fragments.push({ slug: fixture.slug, title: fixture.title, wikitext });
+    fragments.push({ slug: fixture.slug, title: fixture.title, tags: [...fixture.tags], wikitext });
   }
   return {
     theme: { slug: B689_THEME_BASALT_SOURCE.slug, title: B689_THEME_BASALT_SOURCE.title, tags: [...B689_THEME_BASALT_SOURCE.tags], wikitext: themeWikitext, sha256: B689_THEME_BASALT_SOURCE.sha256 },
@@ -397,7 +397,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
         fixture.slug,
         fixture.title,
         fixture.wikitext,
-        { siteId: standardSiteId, imported: true },
+        { siteId: standardSiteId, imported: true, tags: fixture.tags },
       );
       await rpc(
         "parent_set",
