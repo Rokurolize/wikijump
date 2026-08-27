@@ -50,6 +50,10 @@ const B689_THEME_BASALT_USERS = new URL(
   "../fixtures/open87-basalt-users/runtime-state.json",
   import.meta.url,
 );
+const B689_SCP8980_USERS = new URL(
+  "../fixtures/open43-scp8980-users/runtime-state.json",
+  import.meta.url,
+);
 const B689_SCP8980_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
   Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
@@ -144,6 +148,32 @@ export async function b689BasaltUserFixtures() {
     )
   ) {
     throw new Error("B689 Basalt user runtime-state fixture drifted from retained live evidence");
+  }
+  return users;
+}
+
+export async function b689Scp8980UserFixtures() {
+  const fixture = JSON.parse(await fs.readFile(B689_SCP8980_USERS, "utf8"));
+  if (
+    fixture?.schema !== "wikijump_syntax_differential.runtime_state_fixture.v1" ||
+    !Array.isArray(fixture.wikidot_users) ||
+    fixture.wikidot_users.length !== 1
+  ) {
+    throw new Error("B689 SCP-8980 user runtime-state fixture is invalid");
+  }
+  const users = fixture.wikidot_users.map((user) => ({
+    user_id: user.user_id,
+    name: user.name,
+    slug: user.slug,
+    captured_at: user.provenance?.captured_at,
+  }));
+  if (
+    users[0].user_id !== 2_199_269 ||
+    users[0].name !== "Yossipossi" ||
+    users[0].slug !== "yossipossi" ||
+    !Number.isFinite(Date.parse(users[0].captured_at))
+  ) {
+    throw new Error("B689 SCP-8980 user runtime-state fixture drifted from retained live evidence");
   }
   return users;
 }
@@ -276,10 +306,10 @@ export async function prepareCompatibilityCandidateInputs(args) {
       return payload.result ?? null;
     };
 
-    // B689 renders the exact imported theme:basalt source, whose live DOM contains
-    // three retained Wikidot identities. Seed those already-sealed Open87 identities
-    // before creating the page so FTML resolves [[*user ...]] exactly as Wikidot did.
-    for (const user of await b689BasaltUserFixtures()) {
+    // B689 renders exact imported sources whose live DOM contains four retained
+    // Wikidot identities. Seed them before creating the pages so FTML resolves
+    // [[*user ...]] exactly as Wikidot did.
+    for (const user of [...await b689BasaltUserFixtures(), ...await b689Scp8980UserFixtures()]) {
       const existing = await rpc("user_get", { user: user.user_id });
       if (existing === null) {
         const imported = await rpc("import_wikidot_user", {
@@ -302,10 +332,10 @@ export async function prepareCompatibilityCandidateInputs(args) {
           ip_address: "127.0.0.1",
         });
         if (imported?.user_id !== user.user_id) {
-          throw new Error(`B689 Basalt Wikidot user import failed: ${user.user_id}`);
+          throw new Error(`B689 Wikidot user import failed: ${user.user_id}`);
         }
       } else if (existing.name !== user.name || existing.slug !== user.slug) {
-        throw new Error(`B689 Basalt Wikidot user identity collision: ${user.user_id}`);
+        throw new Error(`B689 Wikidot user identity collision: ${user.user_id}`);
       }
     }
     for (const name of Object.keys(ACTOR_IDS)) {

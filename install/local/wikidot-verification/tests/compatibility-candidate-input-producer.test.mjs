@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
+import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
 
 test("compatibility candidate input producer requires distinct identity-bound paths", () => {
   assert.equal(COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, "wikijump.compatibility_candidate_input_receipt.v1");
@@ -67,6 +67,17 @@ test("compatibility candidate input producer owns the retained B689 Basalt users
       name: "Placeholder McD",
       slug: "placeholder-mcd",
       captured_at: "2026-08-11T23:48:23.973Z",
+    },
+  ]);
+});
+
+test("compatibility candidate input producer owns the retained B689 SCP-8980 author", async () => {
+  assert.deepEqual(await b689Scp8980UserFixtures(), [
+    {
+      user_id: 2_199_269,
+      name: "Yossipossi",
+      slug: "yossipossi",
+      captured_at: "2026-07-15T06:18:01.000Z",
     },
   ]);
 });
