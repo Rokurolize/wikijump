@@ -1,6 +1,9 @@
 ;(() => {
   const current = document.currentScript
-  const tabView = current?.previousElementSibling
+  const previous = current?.previousElementSibling
+  const tabView = previous?.classList.contains("yui-navset")
+    ? previous
+    : previous?.querySelector(".yui-navset")
   if (!(tabView instanceof HTMLElement) || !tabView.classList.contains("yui-navset")) {
     return
   }
