@@ -524,15 +524,18 @@ pub(super) async fn render_list_pages_selected_content_source(
             protect_selected_content_includes(&wikitext, &mut selected_content_text)
         }
     };
-    let mut wikitext =
-        RenderService::suppress_rate_modules_in_list_pages_content(wikitext, settings);
+    let mut selected_content_settings = settings.clone();
+    selected_content_settings.enable_page_syntax = true;
+    let mut wikitext = RenderService::suppress_rate_modules_in_list_pages_content(
+        wikitext,
+        &selected_content_settings,
+    );
     let selected_content_styles = extract_css_modules(
         &mut wikitext,
         page_info,
-        settings,
+        &selected_content_settings,
         &mut selected_content_fragments,
     );
-    let mut selected_content_settings = settings.clone();
     selected_content_settings.enable_html_blocks = true;
     let rendered = Box::pin(RenderService::render_inner(
         ctx,
