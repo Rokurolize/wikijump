@@ -14,6 +14,7 @@
 
 use super::super::super::module_arguments::wikidot_module_argument;
 use super::*;
+use crate::services::render::service::wikidot_inline_span_marker_open;
 use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
 pub(super) fn select_list_pages_rows(
@@ -377,6 +378,71 @@ fn prepare_list_pages_selected_content_runtime(
     output
 }
 
+fn protect_selected_content_spans(
+    source: &str,
+    fragments: &mut CompatHtmlFragments,
+) -> String {
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(source);
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0usize;
+    let mut open_spans = 0usize;
+    while cursor < source.len() {
+        let open = source[cursor..].find("[[span");
+        let close = source[cursor..].find("[[/span]]");
+        let Some((relative, closing)) = (match (open, close) {
+            (Some(open), Some(close)) if close < open => Some((close, true)),
+            (Some(open), _) => Some((open, false)),
+            (None, Some(close)) => Some((close, true)),
+            (None, None) => None,
+        }) else {
+            break;
+        };
+        let start = cursor + relative;
+        if literal_regions.contains(start) {
+            let end = start
+                + if closing {
+                    "[[/span]]".len()
+                } else {
+                    "[[span".len()
+                };
+            output.push_str(&source[cursor..end]);
+            cursor = end;
+            continue;
+        }
+        if closing {
+            let end = start + "[[/span]]".len();
+            if open_spans > 0 {
+                output.push_str(&source[cursor..start]);
+                output.push_str(&fragments.push_html("</span>".to_owned()));
+                open_spans -= 1;
+                cursor = end;
+            } else {
+                output.push_str(&source[cursor..end]);
+                cursor = end;
+            }
+            continue;
+        }
+        let marker_start = &source[start..];
+        let Some(relative_end) = marker_start.find("]]") else {
+            output.push_str(&source[cursor..]);
+            return output;
+        };
+        let end = start + relative_end + 2;
+        let marker = &source[start..end];
+        let Some(open_tag) = wikidot_inline_span_marker_open(marker) else {
+            output.push_str(&source[cursor..end]);
+            cursor = end;
+            continue;
+        };
+        output.push_str(&source[cursor..start]);
+        output.push_str(&fragments.push_html(open_tag));
+        open_spans += 1;
+        cursor = end;
+    }
+    output.push_str(&source[cursor..]);
+    output
+}
+
 /// Selected `%%content%%` is rendered in a nested pass so ordinary Wikidot
 /// syntax in the row still receives the page renderer. Includes are a
 /// deliberate exception: executing them here would make selected page rows
@@ -529,6 +595,8 @@ pub(super) async fn render_list_pages_selected_content_source(
             .as_ref()
             .map_or("", |site| site.name.as_str()),
     );
+    let wikitext =
+        protect_selected_content_spans(&wikitext, &mut selected_content_fragments);
     let mut selected_content_text = CompatTextFragments::new(&wikitext);
     let wikitext = match include_mode {
         SelectedContentIncludeMode::Execute => wikitext,
@@ -573,4 +641,21 @@ pub(super) async fn render_list_pages_selected_content_source(
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn protects_authored_spans_without_touching_unmatched_closers() {
+        let source = r#"before [[span class="bi-y"]]body[[/span]] after [[/span]]"#;
+        let mut fragments = CompatHtmlFragments::new(source);
+        let protected = protect_selected_content_spans(source, &mut fragments);
+
+        assert_eq!(
+            fragments.restore(&format!("<p>{protected}</p>")),
+            r#"<p>before <span class="bi-y">body</span> after [[/span]]</p>"#,
+        );
+    }
 }
