@@ -35,6 +35,7 @@ const FTML_MARKER_FIXTURE_INDEX = new URL("../fixtures/ftml-marker-contract/fixt
 const B689_SCP8980_SOURCE = Object.freeze({
   slug: "scp-8980",
   title: "SCP-8980",
+  tags: Object.freeze(["_cc", "_cc4", "_licensebox", "_listpages", "alive", "bleak", "bureaucracy", "computer", "deepwell-catalog", "director-graham", "electrical", "ethics-committee", "euclid", "fire-suppression-dept", "foundation-personnel", "horror", "humanoid", "odongo-tejani", "phobia-anthology", "psychological-horror", "reviewers-spotlight", "sapient", "scp", "spook-nico-2024-unofficial"]),
   path: new URL("../../../../deepwell/seeder/scp-8980.ftml", import.meta.url),
   sha256: "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710",
 });
@@ -108,7 +109,7 @@ export async function b689Scp8980CandidateFixtures() {
   }
   return {
     theme: { slug: B689_THEME_BASALT_SOURCE.slug, title: B689_THEME_BASALT_SOURCE.title, tags: [...B689_THEME_BASALT_SOURCE.tags], wikitext: themeWikitext, sha256: B689_THEME_BASALT_SOURCE.sha256 },
-    source: { slug: B689_SCP8980_SOURCE.slug, title: B689_SCP8980_SOURCE.title, wikitext: source, sha256: B689_SCP8980_SOURCE.sha256 },
+    source: { slug: B689_SCP8980_SOURCE.slug, title: B689_SCP8980_SOURCE.title, tags: [...B689_SCP8980_SOURCE.tags], wikitext: source, sha256: B689_SCP8980_SOURCE.sha256 },
     fragments,
   };
 }
@@ -390,7 +391,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       b689Fixtures.source.slug,
       b689Fixtures.source.title,
       b689Fixtures.source.wikitext,
-      { siteId: standardSiteId, imported: true },
+      { siteId: standardSiteId, imported: true, tags: b689Fixtures.source.tags },
     );
     for (const fixture of b689Fixtures.fragments) {
       const fragment = await page(
