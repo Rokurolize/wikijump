@@ -19,7 +19,7 @@
   const observer = new MutationObserver(() => {
     if (!document.body || !document.getElementById("dummy-ondomready-block")) return
     observer.disconnect()
-    activate()
+    setTimeout(activate, 50)
   })
   observer.observe(document, { childList: true, subtree: true })
   activateWhenWikidotReady()
