@@ -31,14 +31,22 @@ test("page CSS keeps its cascade position when it already imports a styleFrame t
   await expect(page.locator("#cascade-probe")).toHaveCSS("color", "rgb(0, 0, 255)")
 })
 
-test("Wikidot page links use document navigation without promoting interwiki styleFrame CSS to the parent", async ({
+test("Wikidot page links use document navigation with styleFrame CSS ready at DOMContentLoaded", async ({
   page
 }) => {
   const pageErrors: string[] = []
-  let themeRequestCount = 0
+  let markThemeRequested!: () => void
+  let releaseThemeResponse!: () => void
+  const themeRequested = new Promise<void>((resolve) => {
+    markThemeRequested = resolve
+  })
+  const themeResponseReleased = new Promise<void>((resolve) => {
+    releaseThemeResponse = resolve
+  })
   page.on("pageerror", (error) => pageErrors.push(error.message))
   await page.route("**/navigation-style-b-theme.css", async (route) => {
-    themeRequestCount += 1
+    markThemeRequested()
+    await themeResponseReleased
     await route.fulfill({
       body: "body { background-color: rgb(1, 2, 3); } #side-bar { display: none !important; }",
       contentType: "text/css"
@@ -56,18 +64,15 @@ test("Wikidot page links use document navigation without promoting interwiki sty
   const destinationHtml = await destinationResponse.text()
   expect(destinationResponse.ok()).toBe(true)
   const themeIndex = destinationHtml.indexOf("navigation-style-b-theme.css")
-  const inlineStyleIndex = destinationHtml.indexOf("%23page-title%7Bdisplay%3Anone%7D")
+  const inlineStyleIndex = destinationHtml.indexOf("#page-title{display:none}")
   const generatedStyleIndex = destinationHtml.indexOf(
     ".generated-style-b-one { color: blue; }"
   )
   const headEndIndex = destinationHtml.indexOf("</head>")
-  expect(themeIndex).toBeGreaterThan(headEndIndex)
-  expect(inlineStyleIndex).toBeGreaterThan(headEndIndex)
-  expect(generatedStyleIndex).toBeGreaterThan(0)
+  expect(themeIndex).toBeGreaterThan(0)
+  expect(inlineStyleIndex).toBeGreaterThan(themeIndex)
+  expect(generatedStyleIndex).toBeGreaterThan(inlineStyleIndex)
   expect(generatedStyleIndex).toBeLessThan(headEndIndex)
-  expect(destinationHtml.slice(0, headEndIndex)).not.toContain(
-    "data-wikidot-style-preloaded"
-  )
 
   await page.goto("/navigation-style-a")
   await page.evaluate(
@@ -78,7 +83,8 @@ test("Wikidot page links use document navigation without promoting interwiki sty
   )
   expect(pageErrors).toEqual([])
   await expect(page.locator("#skrollr-body")).toHaveAttribute("data-sveltekit-reload", "")
-  await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(0)
+  await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(1)
+  await expect(page.locator("head [data-wikidot-style-deferred]")).toHaveCount(0)
   expect(await generatedCss(page)).toEqual([".generated-style-a { color: red; }"])
 
   await page.evaluate(() => {
@@ -92,11 +98,13 @@ test("Wikidot page links use document navigation without promoting interwiki sty
   const click = page.locator("#navigate-style-b").evaluate((link: HTMLAnchorElement) => {
     link.click()
   })
+  await themeRequested
+  releaseThemeResponse()
   await Promise.all([click, navigation])
-  await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(0)
-  await expect(page.locator("#page-title")).not.toHaveCSS("display", "none")
-  await expect(page.locator("#side-bar")).not.toHaveCSS("display", "none")
-  expect(themeRequestCount).toBe(0)
+  await expect(page.locator("head [data-wikidot-style-preloaded]")).toHaveCount(2)
+  await expect(page.locator("head [data-wikidot-style-deferred]")).toHaveCount(0)
+  await expect(page.locator("#page-title")).toHaveCSS("display", "none")
+  await expect(page.locator("#side-bar")).toHaveCSS("display", "none")
   await expect(page).toHaveURL(/\/navigation-style-b$/u)
   await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
   expect(

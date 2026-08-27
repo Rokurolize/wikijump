@@ -33,6 +33,10 @@
     shouldUseSandboxWikidotChrome
   } from "$lib/wikidot/wikidot-chrome"
   import {
+    buildWikidotInlineStyleFrameHead,
+    extractWikidotStyleFrameDeclarations
+  } from "$lib/wikidot/wikidot-styleframe"
+  import {
     IOS_ICON_DECLARATIONS,
     IOS_ICON_ROUTE_PREFIX,
     faviconDeclaration,
@@ -120,6 +124,17 @@
   const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
+  const styleFrameDeclarations = $derived(
+    extractWikidotStyleFrameDeclarations(
+      [
+        viewData?.compiled_top_bar_html,
+        viewData?.compiled_side_bar_html,
+        viewData?.compiled_body_html
+      ],
+      page.url.origin,
+      viewData?.compiled_body_styles ?? []
+    )
+  )
   const pageLayoutContext = $state<PageLayoutContext>({
     current: resolveCurrentLayout()
   })
@@ -186,6 +201,18 @@
     {:else if effectiveTheme.type === "custom"}
       {@html customThemeHtml}
     {/if}
+    {#each styleFrameDeclarations as declaration, index (`${declaration.priority}:${declaration.kind}:${declaration.order}:${index}`)}
+      {#if declaration.kind === "theme"}
+        <link
+          data-wikidot-style-preloaded
+          data-wikidot-style-priority={declaration.priority}
+          href={declaration.href}
+          rel="stylesheet"
+        />
+      {:else}
+        {@html buildWikidotInlineStyleFrameHead(declaration)}
+      {/if}
+    {/each}
   {/if}
 </svelte:head>
 
