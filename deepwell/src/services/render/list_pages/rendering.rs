@@ -2466,6 +2466,8 @@ impl RenderService {
                                 &selected_page_info,
                                 settings,
                                 current_site_id,
+                                0,
+                                current_page_id,
                                 viewer_user_id,
                                 SelectedContentIncludeMode::Execute,
                                 max_include_expansions,
@@ -2490,57 +2492,52 @@ impl RenderService {
                                 )
                             }
                         });
-                        let rendered_summary = if let Some(summary) =
-                            summary_source.as_deref()
-                        {
-                            let mut rendered = if wants_full_default_summary {
-                                let category_id = page.page_category_id.ok_or_else(|| {
-                                    Error::new(
-                                        "default ListPages summary page category unavailable",
-                                        ErrorType::Render,
+                        let rendered_summary =
+                            if let Some(summary) = summary_source.as_deref() {
+                                let mut rendered = if wants_full_default_summary {
+                                    render_list_pages_default_summary_source(
+                                        ctx,
+                                        summary,
+                                        if page_preview {
+                                            page_info
+                                        } else {
+                                            &selected_page_info
+                                        },
+                                        settings,
+                                        current_site_id,
+                                        0,
+                                        page.page_id,
+                                        page_preview,
+                                        viewer_user_id,
+                                        max_include_expansions,
+                                        render_cost_budget.clone(),
+                                        url,
                                     )
-                                    })?;
-                                render_list_pages_default_summary_source(
-                                    ctx,
-                                    summary,
-                                    if page_preview {
-                                        page_info
-                                    } else {
-                                        &selected_page_info
-                                    },
-                                    settings,
-                                    current_site_id,
-                                    category_id,
-                                    page.page_id,
-                                    page_preview,
-                                    viewer_user_id,
-                                    max_include_expansions,
-                                    render_cost_budget.clone(),
-                                    url,
-                                )
-                                .await?
+                                    .await?
+                                } else {
+                                    render_list_pages_selected_content_source(
+                                        ctx,
+                                        summary,
+                                        &selected_page_info,
+                                        settings,
+                                        current_site_id,
+                                        0,
+                                        current_page_id,
+                                        viewer_user_id,
+                                        SelectedContentIncludeMode::Preserve,
+                                        max_include_expansions,
+                                        render_cost_budget.clone(),
+                                        url,
+                                    )
+                                    .await?
+                                };
+                                include_budget.consume(rendered.expanded_include_count);
+                                included_pages.extend(rendered.included_pages);
+                                rendered_page_styles.append(&mut rendered.styles);
+                                Some(rendered.body)
                             } else {
-                                render_list_pages_selected_content_source(
-                                    ctx,
-                                    summary,
-                                    &selected_page_info,
-                                    settings,
-                                    current_site_id,
-                                    viewer_user_id,
-                                    SelectedContentIncludeMode::Preserve,
-                                    max_include_expansions,
-                                    render_cost_budget.clone(),
-                                    url,
-                                )
-                                .await?
+                                None
                             };
-                            include_budget.consume(rendered.expanded_include_count);
-                            included_pages.extend(rendered.included_pages);
-                            rendered_page_styles.append(&mut rendered.styles);
-                            Some(rendered.body)
-                        } else {
-                            None
-                        };
                         let rendered_first_paragraph = if wants_first_paragraph {
                             let first_paragraph = summary_source
                                 .as_deref()
@@ -2563,6 +2560,8 @@ impl RenderService {
                                         &selected_page_info,
                                         settings,
                                         current_site_id,
+                                        0,
+                                        current_page_id,
                                         viewer_user_id,
                                         SelectedContentIncludeMode::Preserve,
                                         max_include_expansions,

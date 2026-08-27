@@ -499,6 +499,8 @@ pub(super) async fn render_list_pages_selected_content_source(
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
     current_site_id: i64,
+    current_category_id: i64,
+    current_page_id: i64,
     viewer_user_id: Option<i64>,
     include_mode: SelectedContentIncludeMode,
     max_include_expansions: usize,
@@ -556,8 +558,8 @@ pub(super) async fn render_list_pages_selected_content_source(
         RenderInnerOptions {
             render_context: RenderContext::list_pages_default_summary(
                 current_site_id,
-                0,
-                0,
+                current_category_id,
+                current_page_id,
                 false,
             ),
             viewer_user_id,
