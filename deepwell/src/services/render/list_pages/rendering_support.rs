@@ -485,14 +485,23 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
         return None;
     }
     let mut runtime_css_prefix = String::new();
-    for insertion in &rendered_runtime_css_insertions {
-        if wikitext.matches(&insertion.marker).count() != 1 {
-            continue;
-        }
-        wikitext = wikitext.replacen(&insertion.marker, "", 1);
+    let mut retained_runtime_css_insertions =
+        Vec::with_capacity(rendered_runtime_css_insertions.len());
+    for mut insertion in rendered_runtime_css_insertions {
+        let marker = if wikitext.matches(&insertion.marker).count() == 1 {
+            wikitext = wikitext.replacen(&insertion.marker, "", 1);
+            insertion.marker.clone()
+        } else {
+            // Generated HTML protection may have restored the original marker before this
+            // expansion is resealed. Re-anchor the trusted style payload at the block start.
+            let marker = compat_html.push_html(String::new());
+            insertion.marker = marker.clone();
+            marker
+        };
         runtime_css_prefix.push_str("[[module CSS]]\n");
-        runtime_css_prefix.push_str(&insertion.marker);
+        runtime_css_prefix.push_str(&marker);
         runtime_css_prefix.push_str("\n[[/module]]\n");
+        retained_runtime_css_insertions.push(insertion);
     }
     if !runtime_css_prefix.is_empty() {
         runtime_css_prefix.push_str(&wikitext);
@@ -508,7 +517,7 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
     } else {
         wikitext = register_generated_list_pages_html(wikitext, compat_html);
     }
-    runtime_css_insertions.extend(rendered_runtime_css_insertions);
+    runtime_css_insertions.extend(retained_runtime_css_insertions);
     Some(IncludeExpansion {
         wikitext,
         included_pages,
