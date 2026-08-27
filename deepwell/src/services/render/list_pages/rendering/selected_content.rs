@@ -12,7 +12,6 @@
 
 #![allow(clippy::wildcard_imports)]
 
-use super::super::super::compat::preparation::extract_css_modules;
 use super::super::super::module_arguments::wikidot_module_argument;
 use super::*;
 use ftml::tree::{SocialButtons, SocialSelection, SocialService};
@@ -539,15 +538,9 @@ pub(super) async fn render_list_pages_selected_content_source(
     };
     let mut selected_content_settings = settings.clone();
     selected_content_settings.enable_page_syntax = true;
-    let mut wikitext = RenderService::suppress_rate_modules_in_list_pages_content(
+    let wikitext = RenderService::suppress_rate_modules_in_list_pages_content(
         wikitext,
         &selected_content_settings,
-    );
-    let selected_content_styles = extract_css_modules(
-        &mut wikitext,
-        page_info,
-        &selected_content_settings,
-        &mut selected_content_fragments,
     );
     selected_content_settings.enable_html_blocks = true;
     let rendered = Box::pin(RenderService::render_inner(
@@ -574,11 +567,9 @@ pub(super) async fn render_list_pages_selected_content_source(
     .await?;
     let mut html_output = rendered.html_output;
     let rendered_body = selected_content_text.restore(&html_output.body);
-    let mut styles = selected_content_styles;
-    styles.extend(std::mem::take(&mut html_output.styles));
     Ok(RenderedListPagesSource {
         body: selected_content_fragments.restore(&rendered_body),
-        styles,
+        styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
     })
