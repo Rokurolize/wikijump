@@ -33,6 +33,8 @@ use super::compat::color_and_inline_protection::{
     substitute_wikidot_protected_inline_dashes_with_scan_count,
     wikidot_compat_html_marker,
 };
+#[cfg(test)]
+use super::compat::preparation::extract_css_modules;
 use super::compat::preparation::{
     RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
     neutralize_authored_markers, protect_css_modules_before_first_list_pages,
