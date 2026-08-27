@@ -494,7 +494,11 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
         } else {
             // Generated HTML protection may have restored the original marker before this
             // expansion is resealed. Re-anchor the trusted style payload at the block start.
-            let marker = compat_html.push_html(String::new());
+            let marker = insertion.marker.replacen(
+                "WIKIJUMPWIKIDOTCOMPATHTML",
+                "WIKIJUMPWIKIDOTCOMPATCSS",
+                1,
+            );
             insertion.marker = marker.clone();
             marker
         };
