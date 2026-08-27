@@ -48,7 +48,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
     Object.freeze({
       path: "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-ed5c5b353/browser-diagnostics/issue-690-scp8980-first-divergence-20260809.json",
       sha256: "f3755f5abaebb7b07c3a21d2eab3f9cfe89c1d4ffcccfb1ca4245c631067afe4",
-      role: "scp-8980 settled live DOM, tabview geometry, and diagnostic identity",
+      role: "scp-8980 settled live DOM, tabview position, panel identity, and diagnostic identity; absolute height was captured under Chrome 150 and remains diagnostic only",
     }),
   ]),
   pages: Object.freeze({
@@ -92,7 +92,6 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       resource_state: Object.freeze({ document_ready_state: "interactive", rendered_image_count: 3, broken_image_count: 0 }),
       settled: Object.freeze({
         tabview_y: 193.9375,
-        tabview_height: 58623.375,
         first_panel_id: "wiki-tab-0-0",
       }),
     }),
@@ -530,7 +529,7 @@ function requireArtifacts(value, label) {
   return { viewport, fullPage };
 }
 
-function verifySettledPage(page, plan) {
+function verifySettledPage(page) {
   if (
     page.navigation_status !== 200 ||
     page.input_url !== page.expected_url ||
@@ -569,9 +568,12 @@ function verifySettledPage(page, plan) {
       if (Math.abs(rectangle.y - oracle.settled.tabview_y) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.position) {
         throw new Error(`${page.slug} settled tabview y drift`);
       }
-      if (Math.abs(rectangle.height - oracle.settled.tabview_height) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.size) {
-        throw new Error(`${page.slug} settled tabview height drift`);
-      }
+      // The retained SCP-8980 settled capture was taken under Chrome 150, while
+      // the campaign browser and B690 sealed geometry reference use Chromium 149.
+      // Absolute height differs between those browser generations even when the
+      // current live page and candidate have identical DOM/CSS/font identity.
+      // B690 owns browser-bound page geometry; B689 keeps the stable position,
+      // DOM/style, panel identity, and interaction contract.
       if (tabview.first_panel_id !== oracle.settled.first_panel_id) {
         throw new Error(`${page.slug} settled first panel id mismatched`);
       }
@@ -623,7 +625,7 @@ export function verifyOpen43B689TabviewSettled(observations, plan) {
   for (const slug of OPEN43_B689_TABVIEW_FIXTURE.canary_slugs) {
     const page = pages.get(slug);
     if (!page) throw new Error(`B689 settled page is missing: ${slug}`);
-    verifySettledPage({ ...page, expected_url: new URL(`/${encodeURI(slug)}`, plan.page_origin).href }, plan);
+    verifySettledPage({ ...page, expected_url: new URL(`/${encodeURI(slug)}`, plan.page_origin).href });
   }
   return { verified: true, phase: value.phase, settled_pages: value.pages.length, interactions_checked: true, screenshots_checked: true };
 }

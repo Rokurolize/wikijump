@@ -100,6 +100,7 @@ test("B689 is an executable candidate case bound to the existing canary fixture"
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].tabview.styles, undefined);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].tabview.first_panel_rectangle, undefined);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].tabview.styles.display, "grid");
+  assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].settled.tabview_height, undefined);
   assert.throws(
     () => caseSet.prepareRun({
       candidateIdentity,
@@ -189,7 +190,7 @@ function settledTabview(slug) {
     styles,
     rectangle: slug === "theme:basalt"
       ? oracle.settled.tabview_rectangle
-      : { x: 203, y: oracle.settled.tabview_y, width: 960, height: oracle.settled.tabview_height },
+      : { x: 203, y: oracle.settled.tabview_y, width: 960, height: oracle.tabview.rectangle.height },
     tab_count: 2,
     selected_count: 1,
     visible_panel_count: 1,
@@ -256,9 +257,17 @@ test("B689 settled verification binds the frozen settled geometry and interactio
   basaltDrift.pages[0].observation.tabviews[0].rectangle.height = OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].settled.tabview_rectangle.height - 70.56;
   assert.throws(() => verifyOpen43B689TabviewSettled(basaltDrift, plan), /settled tabview #0.*height/u);
 
-  const scp8980Drift = structuredClone(observations);
-  scp8980Drift.pages[1].observation.tabviews[0].rectangle.y = OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].settled.tabview_y - 20;
-  assert.throws(() => verifyOpen43B689TabviewSettled(scp8980Drift, plan), /settled tabview y drift/u);
+  const scp8980CurrentBrowserGeometry = structuredClone(observations);
+  scp8980CurrentBrowserGeometry.pages[1].observation.tabviews[0].rectangle.height = 57867.5625;
+  assert.equal(
+    verifyOpen43B689TabviewSettled(scp8980CurrentBrowserGeometry, plan).verified,
+    true,
+    "B689 must not bind SCP-8980 absolute height captured under a different browser generation",
+  );
+
+  const scp8980PositionDrift = structuredClone(observations);
+  scp8980PositionDrift.pages[1].observation.tabviews[0].rectangle.y = OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].settled.tabview_y - 20;
+  assert.throws(() => verifyOpen43B689TabviewSettled(scp8980PositionDrift, plan), /settled tabview y drift/u);
 
   const incomplete = structuredClone(observations);
   incomplete.pages[0].resource_completion.status = "loading";
