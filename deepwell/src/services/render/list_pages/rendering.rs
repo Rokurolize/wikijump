@@ -2718,9 +2718,6 @@ impl RenderService {
                     "rendered rows exceed generated-output budget",
                 ));
             }
-            if separate {
-                output.push_str(&generated_row_open);
-            }
             if !rendered_page_styles.is_empty() {
                 let marker = compat_html.push_html(String::new());
                 output.push_str(&marker);
@@ -2730,6 +2727,9 @@ impl RenderService {
                         styles: rendered_page_styles,
                     },
                 );
+            }
+            if separate {
+                output.push_str(&generated_row_open);
             }
             let rendered_body_start = output.len();
             output.push_str(&rendered_body);
