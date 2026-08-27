@@ -3,13 +3,11 @@
     title,
     siteName,
     fontPreloadHrefs,
-    compiledBodyStylesHead,
     metaTags
   }: {
     title: string | null | undefined
     siteName: string
     fontPreloadHrefs: string[]
-    compiledBodyStylesHead: string
     metaTags: { name: string; content: string; all_pages: boolean }[]
   } = $props()
 </script>
@@ -28,5 +26,4 @@
       type="font/woff2"
     />
   {/each}
-  {@html compiledBodyStylesHead}
 </svelte:head>
