@@ -13,6 +13,7 @@
 #![allow(clippy::wildcard_imports)]
 
 use super::super::super::compat::preparation::extract_css_modules;
+use super::super::super::module_arguments::wikidot_module_argument;
 use super::*;
 use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
@@ -68,7 +69,7 @@ pub(super) fn select_list_pages_rows(
 
 static LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-            r#"(?is)\[\[module\s+(?P<name>Clone|Backlinks|PreviousPage|NextPage|PetitionAdmin|SiteGrid)\b(?:[^\]"]+|"[^"]*")*\]\]|\[\[social(?P<social_head>\s+[^\]]*)?\]\]"#,
+            r#"(?is)\[\[module\s+(?P<name>Clone|Backlinks|PreviousPage|NextPage|PetitionAdmin|SiteGrid|ThemePreviewer)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]|\[\[social(?P<social_head>\s+[^\]]*)?\]\]"#,
         )
         .expect("ListPages selected-content module expression is valid")
 });
@@ -354,6 +355,16 @@ fn prepare_list_pages_selected_content_runtime(
                     r#"<div class="error-block">No sites provided.</div>"#
                         .to_owned(),
                 )
+            }
+            Some(name) if name.eq_ignore_ascii_case("ThemePreviewer") => {
+                let head = captures.name("head").map_or("", |head| head.as_str());
+                if wikidot_module_argument(head, "noUi")
+                    .is_some_and(|value| value.eq_ignore_ascii_case("true"))
+                {
+                    String::new()
+                } else {
+                    matched.as_str().to_owned()
+                }
             }
             Some(_) => unreachable!("the selected-content regex names every module"),
         };
