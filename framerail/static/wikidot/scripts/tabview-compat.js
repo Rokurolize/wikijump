@@ -9,6 +9,7 @@
   if (!(tabView instanceof HTMLElement) || !tabView.classList.contains("yui-navset")) {
     return
   }
+  const generatedRow = tabView.parentElement?.classList.contains("list-pages-item")
 
   const activate = () => {
     tabView.classList.add("yui-navset-top")
@@ -25,6 +26,6 @@
     setTimeout(activateWhenWikidotReady, 200)
   }
 
-  if (direct) activateWhenWikidotReady()
+  if (direct && !generatedRow) activateWhenWikidotReady()
   else activate()
 })()
