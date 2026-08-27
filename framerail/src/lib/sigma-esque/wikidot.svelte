@@ -142,4 +142,8 @@
   #content-wrap {
     margin-top: 1.5rem;
   }
+
+  #page-content > .yui-navset {
+    margin-top: 2.25rem;
+  }
 </style>
