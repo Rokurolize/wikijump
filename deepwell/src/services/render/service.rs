@@ -34,9 +34,8 @@ use super::compat::color_and_inline_protection::{
     wikidot_compat_html_marker,
 };
 use super::compat::preparation::{
-    RuntimeCssInsertion, extract_css_modules,
-    extract_css_modules_with_runtime_insertions, neutralize_authored_markers,
-    protect_css_modules_before_first_list_pages,
+    RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
+    neutralize_authored_markers, protect_css_modules_before_first_list_pages,
 };
 use super::compat::text_fragments::CompatTextFragments;
 use super::compat::wikidot_iframe::{
