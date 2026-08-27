@@ -13,7 +13,6 @@
 
   const activate = () => {
     document.getElementById("content-wrap")?.classList.add("wikidot-ready-shell")
-    if (direct && !generatedRow) tabView.classList.add("wikidot-ready-direct-tabview")
     const generatedStyles = [
       ...document.querySelectorAll("style[data-wikidot-generated-css]")
     ]
