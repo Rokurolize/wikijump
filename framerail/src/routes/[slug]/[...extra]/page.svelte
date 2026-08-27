@@ -351,6 +351,7 @@
 </script>
 
 <PageHead
+  {compiledBodyStylesHead}
   fontPreloadHrefs={pageFontPreloadHrefs}
   metaTags={showRevision ? [] : (data.meta_tags ?? [])}
   siteName={data.site.name}
@@ -756,8 +757,6 @@
     bind:pagePaneState
   />
 {/if}
-
-{@html compiledBodyStylesHead}
 
 <style global lang="scss">
   @use "./page";
