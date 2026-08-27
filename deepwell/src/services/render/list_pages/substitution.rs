@@ -2244,6 +2244,13 @@ fn push_list_pages_rendered_fragment_with_mode(
     compat_html: &mut CompatHtmlFragments,
     force_block: bool,
 ) -> String {
+    // A selected-content render can wrap block-valued HTML in one redundant
+    // paragraph. Wikidot's page parser drops that outer paragraph instead of
+    // nesting the block paragraphs.
+    let html = html
+        .strip_prefix("<p>")
+        .and_then(|value| value.strip_suffix("</p>"))
+        .map_or(html, |value| value);
     // The secondary Ad/AdSense handlers emit this exact empty paragraph as a
     // block marker in an ordinary page render.  Inside a ListPages content
     // value Wikidot leaves the surrounding paragraph boundary in place and
@@ -3132,6 +3139,22 @@ mod tests {
         let source = "<p>before</p>\n<p>after</p>";
 
         assert_eq!(list_pages_rendered_inline_fragment(source), "before\nafter");
+    }
+
+    #[test]
+    fn rendered_block_fragment_drops_one_redundant_outer_paragraph() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let marker = push_list_pages_rendered_fragment(
+            r#"<p><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p></p>"#,
+            &mut compat_html,
+        );
+
+        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
+
+        assert_eq!(
+            restored,
+            r#"<div><p><iframe src="/page/html/hash-1" class="html-block-iframe"></iframe></p></div>"#,
+        );
     }
 
     #[test]
