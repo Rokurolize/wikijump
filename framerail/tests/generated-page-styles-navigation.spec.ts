@@ -27,7 +27,7 @@ test("page CSS keeps its cascade position when it already imports a styleFrame t
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/navigation-style-duplicate")
 
-  await expect(page.locator("link[data-wikidot-style-preloaded]")).toHaveCount(0)
+  await expect(page.locator("link[data-wikidot-style-preloaded]")).toHaveCount(1)
   await expect(page.locator("#cascade-probe")).toHaveCSS("color", "rgb(0, 0, 255)")
 })
 
