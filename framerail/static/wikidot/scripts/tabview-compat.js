@@ -26,7 +26,14 @@
     ) {
       const style = document.createElement("style")
       style.dataset.wikidotTabviewGeneratedCss = "true"
-      style.textContent = generatedStyles.map((node) => node.textContent ?? "").join("\n")
+      style.textContent = generatedStyles
+        .flatMap(
+          (node) =>
+            (node.textContent ?? "").match(
+              /[^{}]*\b(?:yui-navset|yui-nav|yui-content)\b[^{}]*\{[^{}]*\}/gu
+            ) ?? []
+        )
+        .join("\n")
       document.head.append(style)
     }
     tabView.classList.add("yui-navset-top")
