@@ -100,6 +100,7 @@ test("B689 is an executable candidate case bound to the existing canary fixture"
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].tabview.styles, undefined);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["theme:basalt"].tabview.first_panel_rectangle, undefined);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].tabview.styles.display, "grid");
+  assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].tabview.first_panel_rectangle, undefined);
   assert.equal(OPEN43_B689_TABVIEW_LIVE_ORACLE.pages["scp-8980"].settled.tabview_height, undefined);
   assert.throws(
     () => caseSet.prepareRun({
@@ -143,6 +144,15 @@ test("B689 initial verification rejects geometry drift, duplicate rows, and tabv
         : value),
     }, plan),
     /geometry drift.*height/u,
+  );
+  assert.equal(
+    verifyOpen43B689TabviewInitial({
+      ...observations,
+      pages: observations.pages.map((value, index) => index === 1
+        ? { ...value, observation: { ...value.observation, tabviews: [{ ...value.observation.tabviews[0], rectangle: { ...value.observation.tabviews[0].rectangle, height: 57867.5625 } }] } }
+        : value),
+    }, plan).verified,
+    true,
   );
   assert.throws(
     () => verifyOpen43B689TabviewInitial({

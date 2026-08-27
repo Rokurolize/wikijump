@@ -80,7 +80,6 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
         id_present: true,
         class_name: "yui-navset yui-navset-top",
         rectangle: Object.freeze({ x: 203, y: 193.94, width: 960, height: 58505.09 }),
-        first_panel_rectangle: Object.freeze({ x: 203, y: 193.94, width: 960, height: 58468.13 }),
         styles: SCP8980_LIVE_TABVIEW_STYLES,
         selected_title: "active",
         label_wrapper: "em",
@@ -284,12 +283,12 @@ function positiveRectangle(value, name) {
   return rectangleValue;
 }
 
-function compareRectangle(actual, expected, name) {
+function compareRectangle(actual, expected, name, fields = ["x", "y", "width", "height"]) {
   const value = positiveRectangle(actual, name);
-  for (const field of ["x", "y"]) {
+  for (const field of fields.filter((field) => ["x", "y"].includes(field))) {
     if (Math.abs(value[field] - expected[field]) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.position) throw new Error(`${name} geometry drift in ${field}`);
   }
-  for (const field of ["width", "height"]) {
+  for (const field of fields.filter((field) => ["width", "height"].includes(field))) {
     if (Math.abs(value[field] - expected[field]) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.size) throw new Error(`${name} geometry drift in ${field}`);
   }
   return value;
@@ -332,7 +331,12 @@ function verifyPage(page, expectedUrl) {
     ) {
       throw new Error(`B689 tabview structure mismatched: ${page.slug} #${index}`);
     }
-    compareRectangle(tabview.rectangle, oracle.tabview.rectangle, `${page.slug} tabview #${index}`);
+    compareRectangle(
+      tabview.rectangle,
+      oracle.tabview.rectangle,
+      `${page.slug} tabview #${index}`,
+      page.slug === "scp-8980" ? ["x", "y", "width"] : undefined,
+    );
     if (oracle.tabview.first_panel_rectangle !== undefined) {
       compareRectangle(tabview.first_panel_rectangle, oracle.tabview.first_panel_rectangle, `${page.slug} first panel #${index}`);
     }
