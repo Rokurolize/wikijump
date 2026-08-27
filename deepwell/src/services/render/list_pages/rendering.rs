@@ -1765,7 +1765,7 @@ impl RenderService {
         )
         .await?;
         let mut query_fields = template.fields();
-        query_fields.tags |= exact_visible_tags || wants_content;
+        query_fields.tags = true;
         query_fields.slug |= wants_first_image;
         query_fields.revision_count |= needs_revision_count;
         let query = PageQuery {
