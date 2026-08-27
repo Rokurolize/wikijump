@@ -1,9 +1,8 @@
 ;(() => {
   const current = document.currentScript
   const previous = current?.previousElementSibling
-  const tabView = previous?.classList.contains("yui-navset")
-    ? previous
-    : previous?.querySelector(".yui-navset")
+  const direct = previous?.classList.contains("yui-navset")
+  const tabView = direct ? previous : previous?.querySelector(".yui-navset")
   if (!(tabView instanceof HTMLElement) || !tabView.classList.contains("yui-navset")) {
     return
   }
@@ -23,5 +22,6 @@
     setTimeout(activateWhenWikidotReady, 200)
   }
 
-  activateWhenWikidotReady()
+  if (direct) activateWhenWikidotReady()
+  else activate()
 })()
