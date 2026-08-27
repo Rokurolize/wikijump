@@ -2248,9 +2248,10 @@ fn push_list_pages_rendered_fragment_with_mode(
     // paragraph. Wikidot's page parser drops that outer paragraph instead of
     // nesting the block paragraphs.
     let html = html
-        .strip_prefix("<p>")
-        .and_then(|value| value.strip_suffix("</p>"))
-        .map_or(html, |value| value);
+        .strip_prefix("<p><p>")
+        .and_then(|value| value.strip_suffix("</p></p>"))
+        .map(|value| format!("<p>{value}</p>"))
+        .unwrap_or_else(|| html.to_owned());
     // The secondary Ad/AdSense handlers emit this exact empty paragraph as a
     // block marker in an ordinary page render.  Inside a ListPages content
     // value Wikidot leaves the surrounding paragraph boundary in place and
@@ -2282,7 +2283,11 @@ fn push_list_pages_rendered_fragment_with_mode(
 }
 
 fn list_pages_rendered_fragment_has_html_block(html: &str) -> bool {
-    html.contains(r#"<iframe "#) && html.contains(r#"class="html-block-iframe""#)
+    // Wikidot's generated style frames are block-valued even though they do
+    // not carry the ordinary HTML-block class.
+    html.contains(r#"<iframe "#)
+        && (html.contains(r#"class="html-block-iframe""#)
+            || html.contains("styleFrame.html"))
 }
 
 fn list_pages_rendered_fragment_has_block_root(html: &str) -> bool {
@@ -3158,6 +3163,22 @@ mod tests {
     }
 
     #[test]
+    fn rendered_style_frame_fragment_escapes_the_outer_row_paragraph() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let marker = push_list_pages_rendered_fragment(
+            r#"<p><p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"></iframe></p><p>body</p></p>"#,
+            &mut compat_html,
+        );
+
+        let restored = compat_html.restore(&format!("<div><p>{marker}</p></div>"));
+
+        assert_eq!(
+            restored,
+            r#"<div><p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"></iframe></p><p>body</p></div>"#,
+        );
+    }
+
+    #[test]
     fn empty_paragraph_restoration_does_not_rescan_the_output_per_marker() {
         let mut source = String::from("<p>before</p>\n");
         for _ in 0..1_024 {
@@ -3187,6 +3208,9 @@ mod tests {
         ));
         assert!(!list_pages_rendered_fragment_has_html_block(
             r#"<p><iframe src="/page/html/hash-1" class="other-iframe"></iframe></p>"#,
+        ));
+        assert!(list_pages_rendered_fragment_has_html_block(
+            r#"<p><iframe src="/-/wikidot-interwiki/styleFrame.html?priority=1"></iframe></p>"#,
         ));
     }
 
