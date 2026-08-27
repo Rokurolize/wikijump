@@ -88,7 +88,9 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       nav_styles: LIVE_NAV_STYLES,
       content_styles: LIVE_CONTENT_STYLES,
       panel_styles: LIVE_CONTENT_STYLES,
-      resource_state: Object.freeze({ document_ready_state: "interactive", rendered_image_count: 3, broken_image_count: 0 }),
+      // Initial external-image counts are timing/site-state diagnostics, not a
+      // stable B689 contract. Settled completion remains required below.
+      resource_state: Object.freeze({ document_ready_state: "interactive" }),
       settled: Object.freeze({
         tabview_y: 193.9375,
         first_panel_id: "wiki-tab-0-0",
