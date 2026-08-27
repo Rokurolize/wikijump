@@ -12,21 +12,22 @@
   const generatedRow = tabView.parentElement?.classList.contains("list-pages-item")
 
   const activate = () => {
-    if (tabView.classList.contains("yui-navset-top")) {
-      const generatedStyles = [
-        ...document.querySelectorAll("style[data-wikidot-generated-css]")
-      ]
-      if (
-        generatedStyles.length > 0 &&
-        !document.querySelector("style[data-wikidot-tabview-generated-css]")
-      ) {
-        const style = document.createElement("style")
-        style.dataset.wikidotTabviewGeneratedCss = "true"
-        style.textContent = generatedStyles
-          .map((node) => node.textContent ?? "")
-          .join("\n")
-        document.head.append(style)
-      }
+    const generatedStyles = [
+      ...document.querySelectorAll("style[data-wikidot-generated-css]")
+    ]
+    const needsTrailingGeneratedCss = generatedStyles.some((node) =>
+      /\.yui-navset\.yui-navset-top[^{]*\{[^}]*display:\s*grid/u.test(
+        node.textContent ?? ""
+      )
+    )
+    if (
+      needsTrailingGeneratedCss &&
+      !document.querySelector("style[data-wikidot-tabview-generated-css]")
+    ) {
+      const style = document.createElement("style")
+      style.dataset.wikidotTabviewGeneratedCss = "true"
+      style.textContent = generatedStyles.map((node) => node.textContent ?? "").join("\n")
+      document.head.append(style)
     }
     tabView.classList.add("yui-navset-top")
     tabView
