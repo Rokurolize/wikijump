@@ -175,7 +175,7 @@ impl RenderService {
         html: &str,
     ) -> String {
         const MARKER: &str = r#"</div></div></div></div></div><p><iframe src="/-/wikidot-interwiki/styleFrame.html"#;
-        const REPLACEMENT: &str = r#"</div></div></div></div><br></div></div><p><iframe src="/-/wikidot-interwiki/styleFrame.html"#;
+        const REPLACEMENT: &str = r#"</div></div></div></div><br></div><p><iframe src="/-/wikidot-interwiki/styleFrame.html"#;
         html.replacen(MARKER, REPLACEMENT, 1)
     }
 
