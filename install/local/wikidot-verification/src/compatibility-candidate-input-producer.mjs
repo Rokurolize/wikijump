@@ -217,6 +217,10 @@ function sql(container, statement, { capture = true } = {}) {
   }).trim();
 }
 
+function sqlLiteral(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
 async function copyPrivateTemplates(templateRoot, outputRoot, bindings) {
   await fs.mkdir(outputRoot, { recursive: false, mode: 0o700 });
   const files = (await fs.readdir(templateRoot))
@@ -376,7 +380,11 @@ export async function prepareCompatibilityCandidateInputs(args) {
       await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags, revision_comments: "compatibility candidate fixture" }, { siteId });
       const created = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (!created || created.wikitext !== wikitext) throw new Error(`candidate fixture readback failed: ${slug}`);
-      if (imported) sql(database, `update page set from_wikidot=true where page_id=${created.page_id}; update page_revision set from_wikidot=true where revision_id=${created.revision_id};`);
+      if (imported) {
+        const slugLiteral = sqlLiteral(slug);
+        const textLiteral = sqlLiteral(wikitext);
+        sql(database, `update page set from_wikidot=true where page_id=${created.page_id}; update page_revision set from_wikidot=true where revision_id=${created.revision_id}; insert into wikidot_page_snapshot(page_id,source_branch,source_site,source_entity_id,source_fullname,source_created_at,source_updated_at,source_revision_count,imported_rating,created_by_name,updated_by_name,title_shown,parent_fullname,comments,source_sha256,meta_sha256,meta_json,last_import_run_id) values(${created.page_id},'master','scp-wiki',(substr(md5('scp-wiki:'||${slugLiteral}),1,8)||'-'||substr(md5('scp-wiki:'||${slugLiteral}),9,4)||'-'||substr(md5('scp-wiki:'||${slugLiteral}),13,4)||'-'||substr(md5('scp-wiki:'||${slugLiteral}),17,4)||'-'||substr(md5('scp-wiki:'||${slugLiteral}),21,12))::uuid,${slugLiteral},now(),now(),1,0,null,null,${sqlLiteral(title)},null,0,decode(md5(${textLiteral})||md5(${textLiteral}),'hex'),decode(md5('{}')||md5('{}'),'hex'),'{}'::jsonb,(select max(import_run_id) from wikidot_corpus_import_run where site_id=${created.site_id}));`);
+      }
       return created;
     };
     const edit = async (pageValue, wikitext, comments) => await rpc("page_edit", { site_id: SITE_ID, page: pageValue.page_id, last_revision_id: pageValue.revision_id, revision_comments: comments, user_id: ACTOR_IDS.editor, wikitext, ip_address: "127.0.0.1" }, { token: tokens.editor.token, siteId: SITE_ID });
@@ -429,6 +437,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       { site_id: standardSiteId, parent: "scp-anthology-2024", child: b689Root.slug },
       { siteId: standardSiteId },
     );
+    sql(database, `update wikidot_page_snapshot set parent_fullname='scp-anthology-2024' where page_id=${b689Root.page_id};`);
     for (const fixture of b689Fixtures.fragments) {
       const fragment = await page(
         fixture.slug,
