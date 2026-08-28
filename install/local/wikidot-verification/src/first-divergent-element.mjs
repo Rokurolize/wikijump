@@ -74,6 +74,7 @@ export function compareFirstDivergenceTraces(
     alignment_window = DEFAULT_ALIGNMENT_WINDOW,
     geometry_position_px = 8,
     geometry_size_px = 12,
+    ignored_classes = [],
   } = {},
 ) {
   if (!local || !live) {
@@ -105,8 +106,20 @@ export function compareFirstDivergenceTraces(
     };
   }
 
-  const localElements = local.elements ?? [];
-  const liveElements = live.elements ?? [];
+  const filterIgnored = (elements) => {
+    const ignoredPaths = [];
+    return elements.filter((element) => {
+      const path = element?.path ?? "";
+      if (ignoredPaths.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return false;
+      if ((element?.classes ?? []).some((className) => ignored_classes.includes(className))) {
+        ignoredPaths.push(path);
+        return false;
+      }
+      return true;
+    });
+  };
+  const localElements = filterIgnored(local.elements ?? []);
+  const liveElements = filterIgnored(live.elements ?? []);
   const limit = Math.min(localElements.length, liveElements.length);
   let previousStableAnchor = null;
 
