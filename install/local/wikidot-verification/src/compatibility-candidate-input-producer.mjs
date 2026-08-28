@@ -399,9 +399,12 @@ export async function prepareCompatibilityCandidateInputs(args) {
     };
     await propagateActors();
 
-    const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false, tags = [] } = {}) => {
+    const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false, tags = [], allowExisting = false } = {}) => {
       const prior = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
-      if (prior !== null) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
+      if (prior !== null) {
+        if (!allowExisting || prior.wikitext !== wikitext || prior.title !== title) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
+        return prior;
+      }
       await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags, revision_comments: "compatibility candidate fixture" }, { siteId });
       const created = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (!created || created.wikitext !== wikitext) throw new Error(`candidate fixture readback failed: ${slug}`);
@@ -442,7 +445,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     for (const dependency of B689_NAVIGATION_DEPENDENCIES) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B689 navigation dependency drifted: ${dependency.slug}`);
-      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags ?? [] });
+      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags ?? [], allowExisting: true });
     }
     const basalt = await rpc("page_get", {
       site_id: standardSiteId,
