@@ -2486,6 +2486,7 @@ impl RenderService {
                             allow_wikidot_styleframe,
                             &wikidot_tabview_ids,
                         );
+                    html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
                     if render_settings.layout == Layout::Wikidot {

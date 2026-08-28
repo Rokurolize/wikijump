@@ -171,6 +171,14 @@ impl RenderService {
         html
     }
 
+    pub(in crate::services::render) fn restore_wikidot_include_block_break(
+        html: &str,
+    ) -> String {
+        const MARKER: &str = r#"</div></div></div></div></div><p><iframe src="/-/wikidot-interwiki/styleFrame.html"#;
+        const REPLACEMENT: &str = r#"</div></div></div></div><br></div></div><p><iframe src="/-/wikidot-interwiki/styleFrame.html"#;
+        html.replacen(MARKER, REPLACEMENT, 1)
+    }
+
     pub(in crate::services::render) fn restore_wikidot_tabview_resource_compatibility(
         html: &str,
         tabview_ids: &[String],
