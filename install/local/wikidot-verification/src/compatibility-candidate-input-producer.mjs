@@ -348,8 +348,8 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const staffToken = `wj:${randomBytes(48).toString("base64url")}`;
     sql(database, `insert into session(session_token,user_id,created_at,expires_at,ip_address,user_agent,restricted,mfa_failed_attempts) values ($x$${staffToken}$x$,-1,now(),now()+interval '24 hours','127.0.0.1','compatibility input producer',false,0);`);
     let rpcId = 0;
-    const rpc = async (method, params, { token = staffToken, siteId = null } = {}) => {
-      const response = await fetch(runtime.deepwell_rpc_url, { method: "POST", headers: { authorization: `Bearer ${runtime.deepwell_rpc_token}`, "content-type": "application/json", ...(token ? { "x-deepwell-session-token": token } : {}), ...(siteId === null ? {} : { "x-deepwell-site-id": String(siteId) }) }, body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }) });
+    const rpc = async (method, params, { token = staffToken, siteId = null, pageRef = null } = {}) => {
+      const response = await fetch(runtime.deepwell_rpc_url, { method: "POST", headers: { authorization: `Bearer ${runtime.deepwell_rpc_token}`, "content-type": "application/json", ...(token ? { "x-deepwell-session-token": token } : {}), ...(siteId === null ? {} : { "x-deepwell-site-id": String(siteId) }), ...(pageRef === null ? {} : { "x-deepwell-page": String(pageRef) }) }, body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }) });
       const payload = JSON.parse(await response.text());
       if (!response.ok || payload.error) throw new Error(`${method}: ${payload.error?.message ?? response.status}`);
       return payload.result ?? null;
@@ -359,7 +359,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (!response.ok) throw new Error(`B690 attachment fetch failed: ${attachment.filename}`);
       const bytes = Buffer.from(await response.arrayBuffer());
       if (bytes.length !== attachment.size || sha256(bytes) !== attachment.sha256) throw new Error(`B690 attachment bytes drifted: ${attachment.filename}`);
-      const pending = await rpc("blob_upload", { user_id: -1, blob_size: bytes.length, scope: "page" }, { siteId: FOREIGN_SITE_ID });
+      const pending = await rpc("blob_upload", { user_id: -1, blob_size: bytes.length, scope: "page" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
       const presigned = new URL(pending.presign_url);
       const localStore = new URL(runtime.object_store_origin);
       presigned.protocol = localStore.protocol;
@@ -367,7 +367,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       presigned.port = localStore.port;
       const put = await fetch(presigned, { method: "PUT", body: bytes });
       if (!put.ok) throw new Error(`B690 attachment upload failed: ${attachment.filename}`);
-      await rpc("file_create", { site_id: FOREIGN_SITE_ID, page_id: pageId, name: attachment.filename, uploaded_blob_id: pending.pending_blob_id, revision_comments: "compatibility candidate fixture", user_id: -1, bypass_filter: true, ip_address: "127.0.0.1" }, { siteId: FOREIGN_SITE_ID });
+      await rpc("file_create", { site_id: FOREIGN_SITE_ID, page_id: pageId, name: attachment.filename, uploaded_blob_id: pending.pending_blob_id, revision_comments: "compatibility candidate fixture", user_id: -1, bypass_filter: true, ip_address: "127.0.0.1" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
     };
 
     // B689 renders exact imported sources whose live DOM contains four retained
