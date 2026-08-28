@@ -102,6 +102,12 @@ const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "component:earthworm", title: "Earthworm", tags: ["component"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:earthworm/source.wikidot.txt", sha256: "8bcc6e0f95038d17852031db5f2eff0d185a2f267dc3bc9a9ea72a635e7330cf" }),
   Object.freeze({ slug: "fragment:scp-anthology-2024-earthworm", title: "Anthology 2024 Earthworm", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:scp-anthology-2024-earthworm/source.wikidot.txt", sha256: "3a5b9f355c8e56ef4edaf28fa8581beadda4d30c16103c48a8601d155e69bcc9" }),
 ]);
+const B690_SCP2117_FRAGMENTS = Object.freeze([
+  Object.freeze({ slug: "fragment:2117-1", title: "SCP-2117-1", tags: ["fragment"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:2117-1/source.wikidot.txt", sha256: "f59b7be43bcc36fac4c3e82acd06b45f694010f50210990e28a36bdbed6934a6" }),
+  Object.freeze({ slug: "fragment:2117-2", title: "SCP-2117-2", tags: ["fragment"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:2117-2/source.wikidot.txt", sha256: "117119a89da7f4c387d9cc471d8924b0284929026a55ff2625c53ed082575430" }),
+  Object.freeze({ slug: "fragment:2117-3", title: "SCP-2117-3", tags: ["fragment"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:2117-3/source.wikidot.txt", sha256: "2ba1947eb4ecf92ff0bce4747b2869a3ebbe7a89f6bf8ed4d8e55d66c896492c" }),
+  Object.freeze({ slug: "fragment:2117-4", title: "SCP-2117-4", tags: ["fragment"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:2117-4/source.wikidot.txt", sha256: "6d0ba43c58f7117ceb288362f0558ab0d52163de03d1d869c4dec43f1318c90c" }),
+]);
 const B689_PRESERVED_DEPENDENCIES = new Set(["component:interwiki-style", "component:betterfootnotes", "component:acs-animation"]);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
@@ -468,6 +474,15 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const canary = await rpc("page_get", { site_id: standardSiteId, page: slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
       if (canary) await rpc("page_rerender", { site_id: standardSiteId, category_id: canary.page_category_id, page_id: canary.page_id }, { siteId: standardSiteId });
     }
+    const scp2117 = await rpc("page_get", { site_id: standardSiteId, page: "scp-2117", details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
+    if (!scp2117) throw new Error("B690 navigation dependency is missing: scp-2117");
+    for (const dependency of B690_SCP2117_FRAGMENTS) {
+      const wikitext = await fs.readFile(dependency.path, "utf8");
+      if (sha256(wikitext) !== dependency.sha256) throw new Error(`B690 navigation dependency drifted: ${dependency.slug}`);
+      const fragment = await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags });
+      await rpc("parent_set", { site_id: standardSiteId, parent: scp2117.slug, child: fragment.slug }, { siteId: standardSiteId });
+    }
+    await rpc("page_rerender", { site_id: standardSiteId, category_id: scp2117.page_category_id, page_id: scp2117.page_id }, { siteId: standardSiteId });
     const basalt = await rpc("page_get", {
       site_id: standardSiteId,
       page: b689Fixtures.theme.slug,
