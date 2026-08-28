@@ -241,9 +241,9 @@ function settledPage(slug, plan) {
     row.interactions = {
       initial: interactionState(0),
       after_click: { ...interactionState(1), focused_clicked_anchor: true },
-      after_enter: interactionState(0),
-      after_arrow_right: interactionState(0),
-      after_space: interactionState(0),
+      after_enter: interactionState(1),
+      after_arrow_right: interactionState(1),
+      after_space: interactionState(1),
     };
   }
   return row;
@@ -292,7 +292,7 @@ test("B689 settled verification binds the frozen settled geometry and interactio
   assert.throws(() => verifyOpen43B689TabviewSettled(focusLost, plan), /preserve focus/u);
 
   const inertViolated = structuredClone(observations);
-  inertViolated.pages[1].interactions.after_arrow_right = interactionState(1);
+  inertViolated.pages[1].interactions.after_arrow_right = interactionState(0);
   assert.throws(() => verifyOpen43B689TabviewSettled(inertViolated, plan), /ArrowRight/u);
 
   const reusedArtifact = structuredClone(observations);

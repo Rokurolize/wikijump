@@ -611,9 +611,11 @@ function verifySettledPage(page) {
     if (interactions.after_click.focused_clicked_anchor !== true) {
       throw new Error("B689 interaction click did not preserve focus on the clicked anchor");
     }
-    requireSelected(interactions.after_enter, 0, "interaction after Enter");
-    requireSelected(interactions.after_arrow_right, 0, "interaction after ArrowRight");
-    requireSelected(interactions.after_space, 0, "interaction after Space");
+    // Wikidot's javascript:; tab anchors do not implement keyboard tab
+    // activation: after the click, these keys leave the selected tab unchanged.
+    requireSelected(interactions.after_enter, 1, "interaction after Enter");
+    requireSelected(interactions.after_arrow_right, 1, "interaction after ArrowRight");
+    requireSelected(interactions.after_space, 1, "interaction after Space");
   }
 }
 
