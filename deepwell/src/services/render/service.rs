@@ -4170,6 +4170,11 @@ impl RenderService {
                 nested_include_counts.push(expansion.expanded_include_count);
 
                 let mut nested_wikitext = expansion.wikitext;
+                Self::prepare_wikidot_conditionals_for_include_expansion(
+                    &mut nested_wikitext,
+                    expansion_context.page_info,
+                    compat_text,
+                );
                 remove_nested_include_boundaries(&mut nested_wikitext);
                 fetched_pages.push(Some(nested_wikitext));
                 nested_included_pages.push(expansion.included_pages);
