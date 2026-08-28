@@ -103,6 +103,7 @@ const VIEWPORT = Object.freeze({
   width: OPEN43_B689_TABVIEW_LIVE_ORACLE.viewport.width,
   height: OPEN43_B689_TABVIEW_LIVE_ORACLE.viewport.height,
 });
+const B689_SETTLE_MS = 4_000;
 const CANARIES = Object.freeze(
   OPEN43_B689_TABVIEW_FIXTURE.canary_slugs.map((slug) =>
     STANDING_BROWSER_CANARIES.find((canary) => canary.slug === slug),
@@ -749,7 +750,7 @@ export function createOpen43B689TabviewCandidateCaseSet() {
                 contract: canary,
                 viewport: VIEWPORT,
                 timeoutMs: 300_000,
-                settleMs: DEFAULT_SETTLE_MS,
+                settleMs: B689_SETTLE_MS,
                 navigate: async ({ page: capturePage, url: captureUrl, timeoutMs }) => {
                   await installDomContentLoadedTabviewCapture(capturePage);
                   const response = await capturePage.goto(captureUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
