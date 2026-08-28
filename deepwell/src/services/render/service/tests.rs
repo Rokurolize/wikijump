@@ -11193,6 +11193,28 @@ fn restores_standalone_residual_wikidot_separator_lines() {
 }
 
 #[test]
+fn normalizes_alignment_markers_before_include_expansion() {
+    let mut source = concat!(
+        "[[=]]\n",
+        "[[<]]\n",
+        "body\n",
+        "[[/<]]\n",
+        "[[/=]]\n",
+        "[[code]]\n",
+        "[[=]]\n",
+        "[[/code]]\n",
+    )
+    .to_owned();
+
+    RenderService::normalize_wikidot_alignment_markers(&mut source);
+
+    assert!(source.contains("[[div style=\"text-align: center;\"]]\n"));
+    assert!(source.contains("[[div style=\"text-align: left;\"]]\n"));
+    assert!(source.contains("[[/div]]\n[[/div]]\n"));
+    assert!(source.contains("[[code]]\n[[=]]\n[[/code]]"));
+}
+
+#[test]
 fn leaves_standalone_residual_wikidot_separator_lines_inside_raw_text() {
     let html = concat!(
         "<style>\n",

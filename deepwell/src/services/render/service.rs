@@ -3322,6 +3322,41 @@ impl RenderService {
         }
     }
 
+    fn normalize_wikidot_alignment_markers(wikitext: &mut String) {
+        let source = wikitext.clone();
+        let mut output = String::with_capacity(source.len());
+        let mut offset = 0;
+        for line in source.split_inclusive('\n') {
+            let line_body = line.strip_suffix('\n').unwrap_or(line);
+            let trimmed = line_body.trim();
+            let replacement = match trimmed {
+                "[[=]]" => Some("[[div style=\"text-align: center;\"]]"),
+                "[[<]]" | "[[&lt;]]" => Some("[[div style=\"text-align: left;\"]]"),
+                "[[>]]" | "[[&gt;]]" => Some("[[div style=\"text-align: right;\"]]"),
+                "[[/=]]" | "[[/<]]" | "[[/&lt;]]" | "[[/>]]" | "[[/&gt;]]" => {
+                    Some("[[/div]]")
+                }
+                _ => None,
+            };
+            if let Some(replacement) = replacement {
+                let marker_start = offset + line_body.find(trimmed).unwrap_or(0);
+                if !Self::is_inside_wikidot_literal_region(&source, marker_start) {
+                    let prefix_len = line_body.len() - line_body.trim_start().len();
+                    let suffix_len = line_body.len() - line_body.trim_end().len();
+                    output.push_str(&line_body[..prefix_len]);
+                    output.push_str(replacement);
+                    output.push_str(&line_body[line_body.len() - suffix_len..]);
+                    output.push('\n');
+                    offset += line.len();
+                    continue;
+                }
+            }
+            output.push_str(line);
+            offset += line.len();
+        }
+        *wikitext = output;
+    }
+
     fn is_wikidot_multiline_include_head(line: &str) -> bool {
         let Some(rest) = line.strip_prefix("[[include") else {
             return false;
@@ -3980,6 +4015,7 @@ impl RenderService {
         Box::pin(async move {
             let mut wikitext = wikitext;
             Self::normalize_wikidot_multiline_includes(&mut wikitext);
+            Self::normalize_wikidot_alignment_markers(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }
