@@ -363,7 +363,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const pending = await rpc("blob_upload", { user_id: -1, blob_size: bytes.length, scope: "page" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
       const presigned = new URL(pending.presign_url);
       const status = await new Promise((resolve, reject) => {
-        const request = http.request({ method: "PUT", hostname: presigned.hostname, port: presigned.port || 80, path: `${presigned.pathname}${presigned.search}`, headers: { "content-length": bytes.length }, lookup: (_hostname, _options, callback) => callback(null, filesIp, 4) }, (response) => { response.resume(); response.on("end", () => resolve(response.statusCode ?? 0)); });
+        const request = http.request({ method: "PUT", hostname: presigned.hostname, port: presigned.port || 80, path: `${presigned.pathname}${presigned.search}`, headers: { "content-length": bytes.length }, lookup: (_hostname, options, callback) => options?.all ? callback(null, [{ address: filesIp, family: 4 }]) : callback(null, filesIp, 4) }, (response) => { response.resume(); response.on("end", () => resolve(response.statusCode ?? 0)); });
         request.on("error", reject);
         request.end(bytes);
       });
