@@ -71,7 +71,9 @@ use super::include_attachment_owners::{
     split_wikidot_include_argument_segments, wikidot_include_directive_ranges,
     wikidot_include_segment_is_space,
 };
-use super::include_comment_branches::remove_unresolved_include_comment_branches;
+use super::include_comment_branches::{
+    remove_nested_include_boundaries, remove_unresolved_include_comment_branches,
+};
 use super::include_missing::{
     PreparedIncluder, collect_include_display_pages,
     collect_missing_include_replacements, expand_malformed_include_targets,
@@ -4167,7 +4169,9 @@ impl RenderService {
                 remaining_includes -= expansion.expanded_include_count;
                 nested_include_counts.push(expansion.expanded_include_count);
 
-                fetched_pages.push(Some(expansion.wikitext));
+                let mut nested_wikitext = expansion.wikitext;
+                remove_nested_include_boundaries(&mut nested_wikitext);
+                fetched_pages.push(Some(nested_wikitext));
                 nested_included_pages.push(expansion.included_pages);
             }
 
