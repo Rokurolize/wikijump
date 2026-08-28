@@ -102,6 +102,7 @@ const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "component:earthworm", title: "Earthworm", tags: ["component"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:earthworm/source.wikidot.txt", sha256: "8bcc6e0f95038d17852031db5f2eff0d185a2f267dc3bc9a9ea72a635e7330cf" }),
   Object.freeze({ slug: "fragment:scp-anthology-2024-earthworm", title: "Anthology 2024 Earthworm", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:scp-anthology-2024-earthworm/source.wikidot.txt", sha256: "3a5b9f355c8e56ef4edaf28fa8581beadda4d30c16103c48a8601d155e69bcc9" }),
 ]);
+const B689_PRESERVED_DEPENDENCIES = new Set(["component:interwiki-style", "component:betterfootnotes", "component:acs-animation"]);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
   "framerail-route-action-denial-storage.json",
@@ -455,10 +456,11 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B689 navigation dependency drifted: ${dependency.slug}`);
       const tags = dependency.tags ?? JSON.parse(await fs.readFile(path.join(path.dirname(dependency.path), "meta.json"), "utf8")).tags;
-      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags, allowExisting: true });
+      const importedTags = B689_PRESERVED_DEPENDENCIES.has(dependency.slug) ? [] : tags;
+      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: importedTags, allowExisting: true });
     }
     for (const dependency of [...B689_NAVIGATION_DEPENDENCIES].reverse()) {
-      if (dependency.slug.startsWith("theme:")) continue;
+      if (dependency.slug.startsWith("theme:") || B689_PRESERVED_DEPENDENCIES.has(dependency.slug)) continue;
       const pageValue = await rpc("page_get", { site_id: standardSiteId, page: dependency.slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
       if (pageValue) await rpc("page_rerender", { site_id: standardSiteId, category_id: pageValue.page_category_id, page_id: pageValue.page_id }, { siteId: standardSiteId });
     }
