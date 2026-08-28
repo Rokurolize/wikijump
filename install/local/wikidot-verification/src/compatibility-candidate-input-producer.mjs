@@ -108,6 +108,9 @@ const B690_SCP2117_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:2117-3", title: "SCP-2117-3", tags: ["fragment"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:2117-3/source.wikidot.txt", sha256: "2ba1947eb4ecf92ff0bce4747b2869a3ebbe7a89f6bf8ed4d8e55d66c896492c" }),
   Object.freeze({ slug: "fragment:2117-4", title: "SCP-2117-4", tags: ["fragment"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/fragment:2117-4/source.wikidot.txt", sha256: "6d0ba43c58f7117ceb288362f0558ab0d52163de03d1d869c4dec43f1318c90c" }),
 ]);
+const B690_SCP2117_DEPENDENCIES = Object.freeze([
+  Object.freeze({ slug: "component:pride-highlighter", title: "Pride Highlighter", tags: ["component"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:pride-highlighter/source.wikidot.txt", sha256: "06e4dbf96df00ff85e59289b43970f4ed535b6e24c80f3db9dbd6cfc888a4325" }),
+]);
 const B689_PRESERVED_DEPENDENCIES = new Set(["component:interwiki-style", "component:betterfootnotes", "component:acs-animation"]);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
@@ -476,6 +479,11 @@ export async function prepareCompatibilityCandidateInputs(args) {
     }
     const scp2117 = await rpc("page_get", { site_id: standardSiteId, page: "scp-2117", details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
     if (!scp2117) throw new Error("B690 navigation dependency is missing: scp-2117");
+    for (const dependency of B690_SCP2117_DEPENDENCIES) {
+      const wikitext = await fs.readFile(dependency.path, "utf8");
+      if (sha256(wikitext) !== dependency.sha256) throw new Error(`B690 navigation dependency drifted: ${dependency.slug}`);
+      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags });
+    }
     for (const dependency of B690_SCP2117_FRAGMENTS) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B690 navigation dependency drifted: ${dependency.slug}`);
