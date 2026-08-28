@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
+import http from "node:http";
 import path from "node:path";
 
 import { buildQ1026UserIdentitySource } from "./open43-q1026-user-identity-candidate-case-set.mjs";
@@ -361,12 +362,12 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (bytes.length !== attachment.size || sha256(bytes) !== attachment.sha256) throw new Error(`B690 attachment bytes drifted: ${attachment.filename}`);
       const pending = await rpc("blob_upload", { user_id: -1, blob_size: bytes.length, scope: "page" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
       const presigned = new URL(pending.presign_url);
-      const localStore = new URL(runtime.object_store_origin);
-      presigned.protocol = localStore.protocol;
-      presigned.hostname = localStore.hostname;
-      presigned.port = localStore.port;
-      const put = await fetch(presigned, { method: "PUT", body: bytes });
-      if (!put.ok) throw new Error(`B690 attachment upload failed: ${attachment.filename} (${put.status})`);
+      const status = await new Promise((resolve, reject) => {
+        const request = http.request({ method: "PUT", hostname: presigned.hostname, port: presigned.port || 80, path: `${presigned.pathname}${presigned.search}`, headers: { "content-length": bytes.length }, lookup: (_hostname, _options, callback) => callback(null, filesIp, 4) }, (response) => { response.resume(); response.on("end", () => resolve(response.statusCode ?? 0)); });
+        request.on("error", reject);
+        request.end(bytes);
+      });
+      if (status < 200 || status >= 300) throw new Error(`B690 attachment upload failed: ${attachment.filename} (${status})`);
       await rpc("file_create", { site_id: FOREIGN_SITE_ID, page_id: pageId, name: attachment.filename, uploaded_blob_id: pending.pending_blob_id, revision_comments: "compatibility candidate fixture", user_id: -1, bypass_filter: true, ip_address: "127.0.0.1" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
     };
 
