@@ -1382,7 +1382,6 @@ impl RenderService {
         };
         select_metacomponent_documentation(&mut wikitext, metacomponent_context);
         let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
-        Self::remove_preview_component_separator_markers(&mut wikitext);
         let mut included_pages = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ImagePrelude);
             if settings.enable_page_syntax {
@@ -3376,20 +3375,6 @@ impl RenderService {
             .find(|character: char| character.is_ascii_whitespace() || character == '|')
             .unwrap_or(rest.len());
         target_end > 0
-    }
-
-    fn remove_preview_component_separator_markers(wikitext: &mut String) {
-        while let Some((before_start, before_end, after_start, after_end)) =
-            Self::find_preview_component_separator_markers(wikitext)
-        {
-            let mut cleaned = String::with_capacity(
-                wikitext.len() - (before_end - before_start) - (after_end - after_start),
-            );
-            cleaned.push_str(&wikitext[..before_start]);
-            cleaned.push_str(&wikitext[before_end..after_start]);
-            cleaned.push_str(&wikitext[after_end..]);
-            *wikitext = cleaned;
-        }
     }
 
     fn expand_wikidot_image_block_includes(
