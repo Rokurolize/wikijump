@@ -455,7 +455,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B689 navigation dependency drifted: ${dependency.slug}`);
       await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags ?? [], allowExisting: true });
     }
-    for (const slug of ["scp-744", "scp-2117", "scp-5516", "scp-8980", "theme:basalt"]) {
+    for (const slug of ["scp-744", "scp-2117", "scp-5516"]) {
       const canary = await rpc("page_get", { site_id: standardSiteId, page: slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
       if (canary) await rpc("page_rerender", { site_id: standardSiteId, category_id: canary.page_category_id, page_id: canary.page_id }, { siteId: standardSiteId });
     }
