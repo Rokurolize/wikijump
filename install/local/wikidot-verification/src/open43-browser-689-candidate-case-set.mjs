@@ -50,6 +50,11 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       sha256: "f3755f5abaebb7b07c3a21d2eab3f9cfe89c1d4ffcccfb1ca4245c631067afe4",
       role: "scp-8980 settled live DOM, tabview position, panel identity, and diagnostic identity; absolute height was captured under Chrome 150 and remains diagnostic only",
     }),
+    Object.freeze({
+      path: "/home/roku/wjlab/evidence/compat-release-7acd2fe9fa1f-20260828/diagnostics/live-proxy-theme-basalt/observation.json",
+      sha256: "fd64a7f4c0738a823604fa8af2a603df30ed956e9ac98de41364e10453c16b1b",
+      role: "fresh Chromium 149 live proxy capture for the browser-bound theme:basalt settled geometry",
+    }),
   ]),
   pages: Object.freeze({
     "theme:basalt": Object.freeze({
@@ -68,7 +73,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       // panel dimensions into the theme:basalt initial phase.
       resource_state: Object.freeze({ document_ready_state: "interactive" }),
       settled: Object.freeze({
-        tabview_rectangle: Object.freeze({ x: 123, y: 3954.65625, width: 1120, height: 188.6875 }),
+        tabview_rectangle: Object.freeze({ x: 123, y: 4001.97, width: 1120, height: 188.69 }),
         class_name: "yui-navset yui-navset-top",
         selected_title: "active",
       }),
