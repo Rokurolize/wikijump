@@ -453,7 +453,12 @@ export async function prepareCompatibilityCandidateInputs(args) {
     for (const dependency of B689_NAVIGATION_DEPENDENCIES) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B689 navigation dependency drifted: ${dependency.slug}`);
-      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags ?? [], allowExisting: true });
+      const tags = dependency.tags ?? JSON.parse(await fs.readFile(path.join(path.dirname(dependency.path), "meta.json"), "utf8")).tags;
+      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags, allowExisting: true });
+    }
+    for (const dependency of [...B689_NAVIGATION_DEPENDENCIES].reverse()) {
+      const pageValue = await rpc("page_get", { site_id: standardSiteId, page: dependency.slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
+      if (pageValue) await rpc("page_rerender", { site_id: standardSiteId, category_id: pageValue.page_category_id, page_id: pageValue.page_id }, { siteId: standardSiteId });
     }
     for (const slug of ["scp-744", "scp-2117", "scp-5516"]) {
       const canary = await rpc("page_get", { site_id: standardSiteId, page: slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
