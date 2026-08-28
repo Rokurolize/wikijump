@@ -366,7 +366,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       presigned.hostname = localStore.hostname;
       presigned.port = localStore.port;
       const put = await fetch(presigned, { method: "PUT", body: bytes });
-      if (!put.ok) throw new Error(`B690 attachment upload failed: ${attachment.filename}`);
+      if (!put.ok) throw new Error(`B690 attachment upload failed: ${attachment.filename} (${put.status})`);
       await rpc("file_create", { site_id: FOREIGN_SITE_ID, page_id: pageId, name: attachment.filename, uploaded_blob_id: pending.pending_blob_id, revision_comments: "compatibility candidate fixture", user_id: -1, bypass_filter: true, ip_address: "127.0.0.1" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
     };
 
