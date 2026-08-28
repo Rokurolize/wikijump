@@ -59,6 +59,7 @@ const B689_SCP8980_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
 ]);
 const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
+  Object.freeze({ slug: "scp-anthology-2024", title: "SCP Anthology 2024", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-anthology-2024/source.wikidot.txt", sha256: "367053d643ed041a371bc0bf04f50d0bb32812aa5a754564f62520a616d64185" }),
   Object.freeze({ slug: "nav:interwiki", title: "Interwiki Navigation", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/nav:interwiki/source.wikidot.txt", sha256: "75fdb759603f03ac9649f67e61b03d3557bcc4cf94370e05ed3a6cb87d66fe8d" }),
   Object.freeze({ slug: "info:style", title: "Info Module CSS", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:style/source.wikidot.txt", sha256: "1723b7584ee15a8b350c76424e4eb81917e2d0cb7c06a1c1e062bd006186358a" }),
   Object.freeze({ slug: "info:start", title: "Info Start", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:start/source.wikidot.txt", sha256: "d6f589988a92b86a5bf5c1a052a14e3165b2f95f7974665fada068ca402de8c4" }),
@@ -422,6 +423,11 @@ export async function prepareCompatibilityCandidateInputs(args) {
       b689Fixtures.source.title,
       b689Fixtures.source.wikitext,
       { siteId: standardSiteId, imported: true, tags: b689Fixtures.source.tags },
+    );
+    await rpc(
+      "parent_set",
+      { site_id: standardSiteId, parent: "scp-anthology-2024", child: b689Root.slug },
+      { siteId: standardSiteId },
     );
     for (const fixture of b689Fixtures.fragments) {
       const fragment = await page(
