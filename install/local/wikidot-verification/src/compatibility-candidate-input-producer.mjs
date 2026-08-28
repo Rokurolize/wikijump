@@ -59,6 +59,9 @@ const B689_SCP8980_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
 ]);
 const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
+  Object.freeze({ slug: "scp-744", title: "SCP-744", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-744/source.wikidot.txt", sha256: "6342f7c46b2a86ec5f76e2a35a15a168b315b0fab4869c22a5d26d8dc22c8f06" }),
+  Object.freeze({ slug: "scp-2117", title: "SCP-2117", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-2117/source.wikidot.txt", sha256: "6e3c90dd5b6c0847f664399e1c3fbbb374c1e4b56df1f44bd65b19493af0ec3a" }),
+  Object.freeze({ slug: "scp-5516", title: "SCP-5516", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-5516/source.wikidot.txt", sha256: "9ccece7725093347c5da5578544d23533cc7ca884f05183d2d2e0dcbf6723f74" }),
   Object.freeze({ slug: "scp-anthology-2024", title: "SCP Anthology 2024", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-anthology-2024/source.wikidot.txt", sha256: "367053d643ed041a371bc0bf04f50d0bb32812aa5a754564f62520a616d64185" }),
   Object.freeze({ slug: "nav:interwiki", title: "Interwiki Navigation", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/nav:interwiki/source.wikidot.txt", sha256: "75fdb759603f03ac9649f67e61b03d3557bcc4cf94370e05ed3a6cb87d66fe8d" }),
   Object.freeze({ slug: "info:style", title: "Info Module CSS", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:style/source.wikidot.txt", sha256: "1723b7584ee15a8b350c76424e4eb81917e2d0cb7c06a1c1e062bd006186358a" }),
