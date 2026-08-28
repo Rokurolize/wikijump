@@ -458,6 +458,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags, allowExisting: true });
     }
     for (const dependency of [...B689_NAVIGATION_DEPENDENCIES].reverse()) {
+      if (dependency.slug.startsWith("theme:")) continue;
       const pageValue = await rpc("page_get", { site_id: standardSiteId, page: dependency.slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
       if (pageValue) await rpc("page_rerender", { site_id: standardSiteId, category_id: pageValue.page_category_id, page_id: pageValue.page_id }, { siteId: standardSiteId });
     }
