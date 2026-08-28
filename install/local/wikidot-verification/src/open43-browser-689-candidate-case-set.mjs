@@ -146,7 +146,7 @@ async function observeTabviews(page) {
   return await page.evaluate(() => {
     const rectangle = (element) => {
       const value = element.getBoundingClientRect();
-      return { x: value.x, y: value.y, width: value.width, height: value.height };
+      return { x: value.x + window.scrollX, y: value.y + window.scrollY, width: value.width, height: value.height };
     };
     const styles = (element) => {
       const value = getComputedStyle(element);
