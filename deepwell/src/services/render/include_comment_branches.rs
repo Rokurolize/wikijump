@@ -39,7 +39,8 @@ pub(super) fn remove_unresolved_include_comment_branches(wikitext: &mut String) 
 pub(super) fn remove_nested_include_boundaries(wikitext: &mut String) {
     let mut output = String::with_capacity(wikitext.len());
     for line in wikitext.split_inclusive('\n') {
-        if !is_boundary(line.trim()) {
+        let marker = line.trim();
+        if !is_boundary(marker) && !is_unresolved_branch_open(marker) {
             output.push_str(line);
         }
     }
@@ -256,7 +257,7 @@ mod tests {
     fn removes_nested_boundaries_but_preserves_content() {
         let mut wikitext = concat!(
             "Before\n",
-            "[!-- --]\n",
+            "[!-- {$normal}\n",
             "Nested content\n",
             "[!----]\n",
             "After\n",
