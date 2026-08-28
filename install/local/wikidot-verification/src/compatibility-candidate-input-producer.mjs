@@ -402,7 +402,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false, tags = [], allowExisting = false } = {}) => {
       const prior = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (prior !== null) {
-        if (!allowExisting || prior.wikitext !== wikitext) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
+        if (!allowExisting || prior.revision_user_id !== -2) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
         return prior;
       }
       await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags, revision_comments: "compatibility candidate fixture" }, { siteId });
