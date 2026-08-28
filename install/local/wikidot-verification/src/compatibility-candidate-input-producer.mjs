@@ -78,6 +78,10 @@ const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "theme:y2k", title: "Y2K Theme", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/theme:y2k/source.wikidot.txt", sha256: "c2c102c15afbf03460f7045110a8d70c0615020e459c647a4ad82651ab649c8a" }),
   Object.freeze({ slug: "component:betterfootnotes", title: "Better Footnotes", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:betterfootnotes/source.wikidot.txt", sha256: "066c8183fe39451b88e4d53a6b08306829d21846170d14b0688d91f3c6203bc0" }),
   Object.freeze({ slug: "component:acs-animation", title: "ACS Animation", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:acs-animation/source.wikidot.txt", sha256: "783b8842c42bf25d37e6c95bccc9db6cef7d16a817463a579cf7a204e039398a" }),
+  Object.freeze({ slug: "component:info-ayers", title: "Info Ayers", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:info-ayers/source.wikidot.txt", sha256: "13d93ba5a4bcc53a41826a18c74725c55f8432fbe942bc954b6743c717fc3a30" }),
+  Object.freeze({ slug: "component:interwiki-style", title: "Interwiki Style", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:interwiki-style/source.wikidot.txt", sha256: "0450ad3c256930db4d98fc63ab0e59743257d8e89e2f7266e793a69d35dc73c7" }),
+  Object.freeze({ slug: "component:image-block", title: "Image Block", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:image-block/source.wikidot.txt", sha256: "8621baf34484b27a1202c117ea91b4172866a6a74d5d14d0f11fa1859ba03948" }),
+  Object.freeze({ slug: "component:image-block-base", title: "Image Block Base", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:image-block-base/source.wikidot.txt", sha256: "0bb0988ec9094851e9fd09a8bb1d1ec499df9912056daaaaae3bd020712350d3" }),
   Object.freeze({ slug: "component:wikimodule", title: "Wikimodule", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:wikimodule/source.wikidot.txt", sha256: "ef4bfd34df766917ba794fc997876e316e92242facb1f482eea67552f82ae548" }),
   Object.freeze({ slug: "component:license-box", title: "License Box", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:license-box/source.wikidot.txt", sha256: "7265140db4097f4247c0e723b00d3cdfed20e62038266429289753c05ebf890e" }),
   Object.freeze({ slug: "component:license-box-end", title: "License Box End", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:license-box-end/source.wikidot.txt", sha256: "7b2ab00f5bcdc9440565bc30dc37b526da0cdf2f5b8162e677cceaab249062ee" }),
@@ -446,6 +450,10 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B689 navigation dependency drifted: ${dependency.slug}`);
       await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags ?? [], allowExisting: true });
+    }
+    for (const slug of ["scp-744", "scp-2117", "scp-5516", "scp-8980", "theme:basalt"]) {
+      const canary = await rpc("page_get", { site_id: standardSiteId, page: slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
+      if (canary) await rpc("page_rerender", { site_id: standardSiteId, category_id: canary.page_category_id, page_id: canary.page_id }, { siteId: standardSiteId });
     }
     const basalt = await rpc("page_get", {
       site_id: standardSiteId,
