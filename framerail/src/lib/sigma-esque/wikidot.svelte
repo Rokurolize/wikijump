@@ -138,12 +138,4 @@
       height: initial;
     }
   }
-
-  #content-wrap.wikidot-ready-shell {
-    margin-top: 1.5rem;
-  }
-
-  #page-content > .yui-navset.wikidot-ready-direct-tabview {
-    margin-top: 2.25rem;
-  }
 </style>

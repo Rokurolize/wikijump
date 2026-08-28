@@ -12,7 +12,6 @@
   const generatedRow = tabView.parentElement?.classList.contains("list-pages-item")
 
   const activate = () => {
-    document.getElementById("content-wrap")?.classList.add("wikidot-ready-shell")
     const generatedStyles = [
       ...document.querySelectorAll("style[data-wikidot-generated-css]")
     ]
