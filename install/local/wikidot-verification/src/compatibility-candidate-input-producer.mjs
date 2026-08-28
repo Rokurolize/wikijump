@@ -411,6 +411,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const prior = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (prior !== null) {
         if (!allowExisting || ![-1, -2].includes(prior.revision_user_id)) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
+        if (imported && tags.length > 0) sql(database, `update page_revision set tags=ARRAY[${tags.map(sqlLiteral).join(",")}]::text[] where revision_id=${prior.revision_id};`);
         return prior;
       }
       await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags, revision_comments: "compatibility candidate fixture" }, { siteId });
