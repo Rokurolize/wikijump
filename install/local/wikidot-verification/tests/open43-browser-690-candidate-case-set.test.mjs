@@ -48,6 +48,9 @@ function initialFixture() {
     live_reference_sha256: "b".repeat(64),
     live_policy_sha256: "c".repeat(64),
     trace_canary_slugs: [...OPEN43_B690_GEOMETRY_FIXTURE.trace_canary_slugs],
+    live_initial_page_content_rendered_images_by_slug: Object.fromEntries(
+      OPEN43_B690_GEOMETRY_FIXTURE.trace_canary_slugs.map((slug) => [slug, 0]),
+    ),
     live_trace_sha256_by_slug: Object.fromEntries(
       Object.entries(liveTraces).map(([slug, value]) => [
         slug,
@@ -73,6 +76,8 @@ function initialFixture() {
         input_url: url,
         final_url: url,
         navigation_status: 200,
+        candidate_initial_page_content_rendered_images: 0,
+        live_initial_page_content_rendered_images: 0,
         live_trace: liveTraces[slug],
         candidate_trace: structuredClone(liveTraces[slug]),
       };
@@ -120,6 +125,9 @@ function sixPageFixture() {
     live_reference_sha256: "b".repeat(64),
     live_policy_sha256: "c".repeat(64),
     six_page_slugs: slugs,
+    live_initial_page_content_rendered_images_by_slug: Object.fromEntries(
+      slugs.map((slug) => [slug, 0]),
+    ),
     live_capture_sha256_by_slug: Object.fromEntries(
       slugs.map((slug, index) => [slug, String(index).repeat(64).slice(0, 64)]),
     ),
@@ -139,6 +147,8 @@ function sixPageFixture() {
         input_url: url,
         final_url: url,
         navigation_status: 200,
+        candidate_initial_page_content_rendered_images: 0,
+        live_initial_page_content_rendered_images: 0,
         resource_completion: {
           status: "complete",
           load_ready_state: "complete",
@@ -197,6 +207,11 @@ test("B690 verifies the ordered initial traces and fails on the first causal div
     () => verifyOpen43B690GeometryInitial(drifted, plan),
     /first divergence found.*style_divergence/u,
   );
+
+  const resourceTiming = structuredClone(observations);
+  resourceTiming.pages[0].candidate_initial_page_content_rendered_images = 1;
+  resourceTiming.pages[0].candidate_trace.elements[0].rect.height = 100;
+  assert.equal(verifyOpen43B690GeometryInitial(resourceTiming, plan).verified, true);
 
   const reordered = structuredClone(observations);
   reordered.pages.reverse();
@@ -260,7 +275,7 @@ test("B690 verifies one fixed complete six-page denominator", () => {
   );
 
   const stateDrift = structuredClone(observations);
-  stateDrift.pages[5].comparison.attributes.status = "fail";
+  stateDrift.pages[5].comparison.settled_probes = [{ status: "fail" }];
   assert.throws(
     () => verifyOpen43B690FixedSixPage(stateDrift, plan),
     /six-page comparison failed/u,

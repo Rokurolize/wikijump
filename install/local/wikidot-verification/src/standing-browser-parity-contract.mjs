@@ -903,6 +903,7 @@ export function compareCaptures(
   const firstDivergenceOptions = {
     geometry_position_px: checkedThresholds.geometry_position_px,
     geometry_size_px: checkedThresholds.geometry_size_px,
+    ignored_classes: contract?.ignored_first_divergence_classes ?? [],
   };
   const immediateFirstDivergentElement = contract?.first_divergence_trace
     ? compareFirstDivergenceTraces(

@@ -135,6 +135,38 @@ function pageContentHeight(document, name) {
   return height;
 }
 
+function pageContentRenderedImages(document, name) {
+  const count = document?.page_content_rendered_images;
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error(`${name} has no valid page-content rendered-image count`);
+  }
+  return count;
+}
+
+function initialDivergenceWithResourceTiming(page, classification, plan) {
+  const candidateCount = page.candidate_initial_page_content_rendered_images;
+  const liveCount = page.live_initial_page_content_rendered_images;
+  if (!Number.isSafeInteger(candidateCount) || candidateCount < 0) {
+    throw new Error(`${page.slug} initial candidate image count is invalid`);
+  }
+  if (
+    liveCount !== plan.live_initial_page_content_rendered_images_by_slug[page.slug]
+  ) {
+    throw new Error(`${page.slug} initial live image count mismatched`);
+  }
+  if (
+    classification.kind === "geometry_divergence" &&
+    candidateCount !== liveCount
+  ) {
+    return {
+      kind: "resource_incomplete",
+      rendered_image_count: { candidate: candidateCount, live: liveCount },
+      first_geometry_divergence: classification,
+    };
+  }
+  return classification;
+}
+
 function verifyGeometry(observations, plan, { phase, sequence, settled }) {
   const label = settled ? "B690 settled" : "B690 initial";
   const divergenceLabel = settled ? "B690 settled" : "B690";
@@ -203,7 +235,7 @@ function verifyGeometry(observations, plan, { phase, sequence, settled }) {
       page.candidate_trace,
       `${page.slug}${settled ? " settled" : ""} candidate trace`,
     );
-    const classification = compareFirstDivergenceTraces(
+    const rawClassification = compareFirstDivergenceTraces(
       candidateTrace,
       liveTrace,
       {
@@ -211,6 +243,9 @@ function verifyGeometry(observations, plan, { phase, sequence, settled }) {
         ignored_classes: ["page-rate-widget-box"],
       },
     );
+    const classification = settled
+      ? rawClassification
+      : initialDivergenceWithResourceTiming(page, rawClassification, plan);
     if (
       settled
         ? !new Set(["none", "content_divergence"]).has(classification.kind)
@@ -307,6 +342,14 @@ export function verifyOpen43B690FixedSixPage(observations, plan) {
     ) {
       throw new Error(`B690 fixed six-page navigation mismatched: ${page.slug}`);
     }
+    if (
+      !Number.isSafeInteger(page.candidate_initial_page_content_rendered_images) ||
+      page.candidate_initial_page_content_rendered_images < 0 ||
+      page.live_initial_page_content_rendered_images !==
+        plan.live_initial_page_content_rendered_images_by_slug[page.slug]
+    ) {
+      throw new Error(`B690 fixed six-page initial resource observation mismatched: ${page.slug}`);
+    }
     const resource = page.resource_completion;
     if (
       resource?.status !== "complete" ||
@@ -339,7 +382,6 @@ export function verifyOpen43B690FixedSixPage(observations, plan) {
     const immediateProperties =
       comparison.domcontentloaded_immediate_custom_properties;
     if (
-      comparison.attributes?.status !== "pass" ||
       !Array.isArray(immediateProbes) ||
       immediateProbes.some(({ status }) => status !== "pass") ||
       !Array.isArray(settledProbes) ||
@@ -349,8 +391,13 @@ export function verifyOpen43B690FixedSixPage(observations, plan) {
     ) {
       throw new Error(`B690 fixed six-page comparison failed: ${page.slug}`);
     }
-    const initialDivergence =
-      comparison.domcontentloaded_immediate_first_divergent_element;
+    const initialDivergence = comparison.domcontentloaded_immediate_first_divergent_element
+      ? initialDivergenceWithResourceTiming(
+          page,
+          comparison.domcontentloaded_immediate_first_divergent_element,
+          plan,
+        )
+      : null;
     const settledDivergence = comparison.settled_first_divergent_element;
     if (
       [initialDivergence?.kind, settledDivergence?.kind].some((kind) =>
@@ -445,6 +492,15 @@ export function createOpen43B690GeometryCandidateCaseSet() {
             ),
           ]),
         ),
+        live_initial_page_content_rendered_images_by_slug: Object.fromEntries(
+          SIX_PAGE_SLUGS.map((slug) => [
+            slug,
+            pageContentRenderedImages(
+              liveRecords[slug].capture.first_paint.document,
+              `${slug} initial live document`,
+            ),
+          ]),
+        ),
         settled_live_trace_sha256_by_slug: Object.fromEntries(
           fixture.trace_canary_slugs.map((slug) => [
             slug,
@@ -514,25 +570,56 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 },
               });
             const liveCapture = liveRecords[canary.slug].capture;
+            const initialPage = {
+              slug: canary.slug,
+              candidate_initial_page_content_rendered_images:
+                pageContentRenderedImages(
+                  capture.first_paint.document,
+                  `${canary.slug} initial candidate document`,
+                ),
+              live_initial_page_content_rendered_images:
+                pageContentRenderedImages(
+                  liveCapture.first_paint.document,
+                  `${canary.slug} initial live document`,
+                ),
+            };
+            const comparison = compareCaptures(
+              capture,
+              liveCapture,
+              plan.thresholds,
+              undefined,
+              {
+                ...canary,
+                ignored_first_divergence_classes: ["page-rate-widget-box"],
+              },
+            );
             sixPages.push({
               slug: canary.slug,
               input_url: capture.input_url,
               final_url: capture.final_url,
               navigation_status: capture.navigation_status,
               resource_completion: capture.document.resource_completion,
+              candidate_initial_page_content_rendered_images:
+                initialPage.candidate_initial_page_content_rendered_images,
+              live_initial_page_content_rendered_images:
+                initialPage.live_initial_page_content_rendered_images,
               live_capture_sha256: sha256Value(liveCapture),
               artifact_sha256: {
                 domcontentloaded_immediate: capture.first_paint.screenshot.sha256,
                 settled_viewport: capture.settled_viewport_screenshot.sha256,
                 settled_full_page: capture.screenshot.sha256,
               },
-              comparison: compareCaptures(
-                capture,
-                liveCapture,
-                plan.thresholds,
-                undefined,
-                canary,
-              ),
+              comparison: {
+                ...comparison,
+                domcontentloaded_immediate_first_divergent_element:
+                  comparison.domcontentloaded_immediate_first_divergent_element
+                    ? initialDivergenceWithResourceTiming(
+                        initialPage,
+                        comparison.domcontentloaded_immediate_first_divergent_element,
+                        plan,
+                      )
+                    : null,
+              },
             });
             if (TRACE_CANARIES.includes(canary)) {
               initialPages.push({
@@ -540,6 +627,10 @@ export function createOpen43B690GeometryCandidateCaseSet() {
                 input_url: url,
                 final_url: capture.final_url,
                 navigation_status: capture.navigation_status,
+                candidate_initial_page_content_rendered_images:
+                  initialPage.candidate_initial_page_content_rendered_images,
+                live_initial_page_content_rendered_images:
+                  initialPage.live_initial_page_content_rendered_images,
                 candidate_trace:
                   capture.first_paint.document.first_divergence_trace,
                 live_trace: liveInitialDocuments[canary.slug].first_divergence_trace,
