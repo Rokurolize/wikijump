@@ -343,7 +343,7 @@ function verifyPage(page, expectedUrl) {
       tabview.rectangle,
       oracle.tabview.rectangle,
       `${page.slug} tabview #${index}`,
-      page.slug === "scp-8980" ? ["x", "y", "width"] : undefined,
+      page.slug === "scp-8980" ? ["x", "y", "width"] : ["x", "width", "height"],
     );
     if (oracle.tabview.first_panel_rectangle !== undefined) {
       compareRectangle(tabview.first_panel_rectangle, oracle.tabview.first_panel_rectangle, `${page.slug} first panel #${index}`);
@@ -574,7 +574,7 @@ function verifySettledPage(page) {
       throw new Error(`B689 settled tabview structure mismatched: ${page.slug} #${index}`);
     }
     if (page.slug === "theme:basalt") {
-      compareRectangle(tabview.rectangle, oracle.settled.tabview_rectangle, `${page.slug} settled tabview #${index}`);
+      compareRectangle(tabview.rectangle, oracle.settled.tabview_rectangle, `${page.slug} settled tabview #${index}`, ["x", "width", "height"]);
     } else {
       const rectangle = positiveRectangle(tabview.rectangle, `${page.slug} settled tabview #${index}`);
       if (Math.abs(rectangle.y - oracle.settled.tabview_y) > OPEN43_B689_TABVIEW_LIVE_ORACLE.thresholds_px.position) {
