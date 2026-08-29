@@ -354,9 +354,10 @@ export const buildWikidotInterwikiFrameHtml = ({ community, lang, pagename, page
     })
     .join(" ")
   const display = links.length > 0 ? "" : ' style="display: none"'
-  const themeStylesheet = community === "scp"
-    ? '<link rel="stylesheet" href="https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css">'
-    : ""
+  const themeStylesheet =
+    community === "scp"
+      ? '<link rel="stylesheet" href="https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css">'
+      : ""
 
   return `<!DOCTYPE html>
 <html id="interwiki" style="min-width: max-content">
