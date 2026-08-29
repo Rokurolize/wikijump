@@ -477,6 +477,13 @@ export async function prepareCompatibilityCandidateInputs(args) {
       throw new Error("fresh candidate is missing the maintained scp-wiki site");
     }
     const standardSiteId = standardSite.site_id;
+    let topia = await rpc("site_get", { site: "topia" });
+    if (topia === null) {
+      const created = await rpc("site_create", { slug: "topia", name: "Topia", tagline: "", description: "compatibility candidate foreign include fixture", default_page: null, layout: "wikidot", license: "cc-by-sa-3.0", locale: "en", ip_address: "127.0.0.1" });
+      topia = await rpc("site_get", { site: created.site_id });
+    }
+    if (!Number.isSafeInteger(topia?.site_id)) throw new Error("B690 foreign include fixture site is unavailable");
+    await page("pride-animated-source", "Pride Animated Source", "", { siteId: topia.site_id, imported: true });
     sql(database, `insert into wikidot_corpus_import_run(site_id,source_branch,source_site,manifest_sha256,manifest_row_count,complete_inventory,state,finished_at,summary) values(${standardSiteId},'master','scp-wiki',decode(md5('B689 candidate graph')||md5('B689 candidate graph'),'hex'),0,true,'done',now(),'{}'::jsonb);`);
     for (const dependency of B689_NAVIGATION_DEPENDENCIES) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
