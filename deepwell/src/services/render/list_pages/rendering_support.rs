@@ -486,9 +486,12 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
     }
     let mut runtime_css_prefix = String::new();
     for insertion in rendered_runtime_css_insertions {
-        runtime_css_prefix.push_str("[[module CSS]]\n");
-        runtime_css_prefix.push_str(&insertion.marker);
-        runtime_css_prefix.push_str("\n[[/module]]\n");
+        if wikitext.matches(&insertion.marker).count() == 1 {
+            wikitext = wikitext.replacen(&insertion.marker, "", 1);
+            runtime_css_prefix.push_str("[[module CSS]]\n");
+            runtime_css_prefix.push_str(&insertion.marker);
+            runtime_css_prefix.push_str("\n[[/module]]\n");
+        }
         runtime_css_insertions.push(insertion);
     }
     if !runtime_css_prefix.is_empty() {
