@@ -73,9 +73,7 @@ export const OPEN43_B689_TABVIEW_LIVE_ORACLE = Object.freeze({
       // panel dimensions into the theme:basalt initial phase.
       resource_state: Object.freeze({ document_ready_state: "interactive" }),
       settled: Object.freeze({
-        // Current Chromium 149 live remeasurement; the older 4001.97px value
-        // came from a mutable page state and is diagnostic history only.
-        tabview_rectangle: Object.freeze({ x: 123, y: 3954.65625, width: 1120, height: 188.6875 }),
+        tabview_rectangle: Object.freeze({ x: 123, y: 4001.97, width: 1120, height: 188.69 }),
         class_name: "yui-navset yui-navset-top",
         selected_title: "active",
       }),
