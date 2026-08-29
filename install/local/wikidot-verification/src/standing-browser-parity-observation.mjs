@@ -438,7 +438,7 @@ async function capturedScreenshot(filePath, fullPage) {
 export async function prewarmBrowserParityLazyImages(page) {
   await page.evaluate(async () => {
     const initialScrollY = window.scrollY;
-    for (const image of document.images) {
+    for (const image of [...document.images]) {
       image.scrollIntoView({ block: "center", inline: "nearest" });
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
