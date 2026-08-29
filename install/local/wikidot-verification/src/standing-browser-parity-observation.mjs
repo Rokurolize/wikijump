@@ -626,6 +626,9 @@ export async function captureBrowserParityObservation({
     await onPhase?.("settled");
     const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     if (settleMs > 0) await page.waitForTimeout(settleMs);
+    // Full-page capture can trigger lazy image loading.  Establish that
+    // browser-visible settled layout before taking the geometry observation.
+    await capturePng(page, fullPagePath, { fullPage: true });
     document = await captureDocumentObservation(page, {
       contract,
       phase: "settled",
