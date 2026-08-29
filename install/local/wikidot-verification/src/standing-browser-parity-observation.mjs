@@ -435,6 +435,17 @@ async function capturedScreenshot(filePath, fullPage) {
   };
 }
 
+export async function prewarmBrowserParityLazyImages(page) {
+  await page.evaluate(async () => {
+    const initialScrollY = window.scrollY;
+    for (const image of document.images) {
+      image.scrollIntoView({ block: "center", inline: "nearest" });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    window.scrollTo(0, initialScrollY);
+  });
+}
+
 export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   const remaining = (label) => {
@@ -624,11 +635,11 @@ export async function captureBrowserParityObservation({
     });
     await capturePng(page, firstPath);
     await onPhase?.("settled");
-    const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     if (settleMs > 0) await page.waitForTimeout(settleMs);
-    // Full-page capture can trigger lazy image loading.  Establish that
-    // browser-visible settled layout before taking the geometry observation.
-    await capturePng(page, fullPagePath, { fullPage: true });
+    // Visit every viewport before waiting so lazy images can enter the
+    // browser-visible settled state without an expensive full-page capture.
+    await prewarmBrowserParityLazyImages(page);
+    const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     document = await captureDocumentObservation(page, {
       contract,
       phase: "settled",
