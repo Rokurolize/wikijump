@@ -76,7 +76,8 @@ function artifactHashes() {
 function requestGate() {
   return {
     schema: "wikijump_full_parity.browser_request_gate.v1",
-    interval_ms: 4_000,
+    execution_mode: "candidate",
+    interval_ms: 0,
     next_admissible_at_epoch_ms: 0,
     retry_after_until_epoch_ms: 0,
     enforcement_failed: false,

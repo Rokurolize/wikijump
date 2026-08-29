@@ -32,6 +32,18 @@ const THROTTLE_CONFIG_SCHEMA = "wikijump.standing_browser_throttle_config.v1";
 const MAX_CANDIDATE_FILE_REDIRECTS = 10;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
+export function parityBrowserExecutionMode(mode) {
+  if (mode === "live-reference") return "live";
+  if (mode === "candidate" || mode === "candidate-case") return "candidate";
+  throw new Error(`unsupported parity browser mode: ${mode}`);
+}
+
+export function parityBrowserRequestIntervalMs(mode) {
+  return parityBrowserExecutionMode(mode) === "live"
+    ? DEFAULT_REQUEST_INTERVAL_MS
+    : 0;
+}
+
 function requirePlaywright(browserRoot) {
   const requireFromRoot = createRequire(path.join(browserRoot, "package.json"));
   try {
@@ -229,6 +241,7 @@ export function parityBrowserThrottleConfig({
   credentialPolicy = "none",
   publicOrigins = [],
 }) {
+  const executionMode = parityBrowserExecutionMode(args.mode);
   const caseSetPublicOrigins = requireExactHttpsOrigins(
     publicOrigins,
     "browser public origins",
@@ -268,7 +281,8 @@ export function parityBrowserThrottleConfig({
     status: "sealed_before_browser_request",
     run_id: runId,
     mode: args.mode,
-    interval_ms: DEFAULT_REQUEST_INTERVAL_MS,
+    execution_mode: executionMode,
+    interval_ms: parityBrowserRequestIntervalMs(args.mode),
     browser_capture_lock: { path: lock.path, owner: lock.owner },
     live_completion_policy: {
       sha256: policy.sha256,
@@ -318,6 +332,7 @@ export async function createParityBrowserControls({
   publicOrigins = [],
 }) {
   const runId = randomUUID();
+  const executionMode = parityBrowserExecutionMode(args.mode);
   // Live-reference capture shares one host-global admission state. A caller
   // must not be able to select a second lock/state pair from the public CLI.
   const lock = await acquireBrowserCaptureLock({ runId });
@@ -326,7 +341,7 @@ export async function createParityBrowserControls({
   try {
     gate = await createPersistentBrowserRequestGate({
       statePath: lock.statePath,
-      intervalMs: DEFAULT_REQUEST_INTERVAL_MS,
+      intervalMs: parityBrowserRequestIntervalMs(args.mode),
     });
     const { localOrigins, fileRouteOriginSets } =
       candidateLocalOriginSets(candidate);
@@ -380,7 +395,11 @@ export async function createParityBrowserControls({
         });
         const finalGateSnapshot = failure
           ? null
-          : { ...gate.snapshot(), config_sha256: configSeal.sha256 };
+          : {
+              ...gate.snapshot(),
+              execution_mode: executionMode,
+              config_sha256: configSeal.sha256,
+            };
         if (!failure) {
           await lock.confirmState().catch((error) => {
             failure ??= error;

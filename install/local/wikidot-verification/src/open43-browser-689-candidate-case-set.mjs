@@ -491,7 +491,7 @@ async function runNavigationLifecycle(page, awayUrl) {
     : route.abort("blockedbyclient");
   // The navigation row verifies URL/history and tab reset semantics, not live external-resource
   // parity. The settled rows above already prove the fully loaded live geometry. Avoid routing
-  // unrelated Wikidot CDN assets through the four-second parity throttle on every back/forward
+  // unrelated Wikidot CDN assets through the public-request throttle on every back/forward
   // hop; keep the candidate document and its local application/file assets exact.
   await page.route("**/*", lifecycleRoute);
   try {

@@ -5,6 +5,8 @@ import {
   candidateLocalOriginSets,
   isParityBrowserPublicOrigin,
   installCandidateFilePortRoute,
+  parityBrowserExecutionMode,
+  parityBrowserRequestIntervalMs,
   parityBrowserThrottleConfig,
 } from "../src/standing-browser-parity-browser-session.mjs";
 
@@ -67,10 +69,23 @@ test("browser throttle receipt binds exact case-set public origins", () => {
     publicOrigins: ["https://www.youtube.com", "https://embed.acast.com"],
   });
 
+  assert.equal(parityBrowserExecutionMode("candidate-case"), "candidate");
+  assert.equal(parityBrowserRequestIntervalMs("candidate-case"), 0);
+  assert.equal(parityBrowserExecutionMode("live-reference"), "live");
+  assert.equal(parityBrowserRequestIntervalMs("live-reference"), 4_000);
+  assert.equal(config.execution_mode, "candidate");
+  assert.equal(config.interval_ms, 0);
   assert.deepEqual(config.case_set_public_origins, [
     "https://www.youtube.com",
     "https://embed.acast.com",
   ]);
+  const liveConfig = parityBrowserThrottleConfig({
+    ...base,
+    args: { mode: "live-reference" },
+    publicOrigins: [],
+  });
+  assert.equal(liveConfig.execution_mode, "live");
+  assert.equal(liveConfig.interval_ms, 4_000);
   assert.throws(
     () =>
       parityBrowserThrottleConfig({

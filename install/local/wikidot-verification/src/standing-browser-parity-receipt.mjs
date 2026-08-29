@@ -395,9 +395,14 @@ function validateFinalRequestGate(value) {
   if (gate.schema !== "wikijump_full_parity.browser_request_gate.v1") {
     throw new Error("candidate parity request gate has an unsupported schema");
   }
-  if (!Number.isInteger(gate.interval_ms) || gate.interval_ms < 4_000) {
+  if (gate.execution_mode !== "candidate") {
     throw new Error(
-      "candidate parity request gate must preserve the initial 0.25 req/s throttle",
+      "candidate parity request gate must be sealed in candidate execution mode",
+    );
+  }
+  if (gate.interval_ms !== 0) {
+    throw new Error(
+      "candidate parity request gate must not apply the live public-request throttle",
     );
   }
   if (gate.enforcement_failed !== false) {
