@@ -360,6 +360,7 @@ export const buildWikidotInterwikiFrameHtml = ({ community, lang, pagename, page
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="stylesheet" href="https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--theme/base/css/style.css">
     <title>Local Wikidot interwiki frame</title>
     <script>
       const resizeLocalInterwikiFrame = () => {
