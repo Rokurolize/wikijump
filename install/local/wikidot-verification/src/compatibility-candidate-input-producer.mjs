@@ -1,7 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs/promises";
-import http from "node:http";
 import path from "node:path";
 
 import { buildQ1026UserIdentitySource } from "./open43-q1026-user-identity-candidate-case-set.mjs";
@@ -112,7 +111,6 @@ const B690_SCP2117_FRAGMENTS = Object.freeze([
 const B690_SCP2117_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "component:pride-highlighter", title: "Pride Highlighter", tags: ["component"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/component:pride-highlighter/source.wikidot.txt", sha256: "06e4dbf96df00ff85e59289b43970f4ed535b6e24c80f3db9dbd6cfc888a4325" }),
 ]);
-const B690_SCP2117_ATTACHMENT = Object.freeze({ url: "https://scp-wiki.wdfiles.com/local--files/fragment:2117-1/2117.png", filename: "2117.png", sha256: "a983e8b6f65dab350f950f2ab898f399f2aff6f806f3c680fd22d70140f42e73", size: 496537 });
 const B689_PRESERVED_DEPENDENCIES = new Set(["component:interwiki-style", "component:betterfootnotes", "component:acs-animation"]);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
@@ -355,22 +353,6 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (!response.ok || payload.error) throw new Error(`${method}: ${payload.error?.message ?? response.status}`);
       return payload.result ?? null;
     };
-    const uploadAttachment = async (pageId, attachment) => {
-      const response = await fetch(attachment.url, { headers: { "user-agent": "Mozilla/5.0" } });
-      if (!response.ok) throw new Error(`B690 attachment fetch failed: ${attachment.filename}`);
-      const bytes = Buffer.from(await response.arrayBuffer());
-      if (bytes.length !== attachment.size || sha256(bytes) !== attachment.sha256) throw new Error(`B690 attachment bytes drifted: ${attachment.filename}`);
-      const pending = await rpc("blob_upload", { user_id: -1, blob_size: bytes.length, scope: "page" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
-      const presigned = new URL(pending.presign_url);
-      const status = await new Promise((resolve, reject) => {
-        const request = http.request({ method: "PUT", hostname: presigned.hostname, port: presigned.port || 80, path: `${presigned.pathname}${presigned.search}`, headers: { "content-length": bytes.length }, lookup: (_hostname, options, callback) => options?.all ? callback(null, [{ address: filesIp, family: 4 }]) : callback(null, filesIp, 4) }, (response) => { response.resume(); response.on("end", () => resolve(response.statusCode ?? 0)); });
-        request.on("error", reject);
-        request.end(bytes);
-      });
-      if (status < 200 || status >= 300) throw new Error(`B690 attachment upload failed: ${attachment.filename} (${status})`);
-      await rpc("file_create", { site_id: FOREIGN_SITE_ID, page_id: pageId, name: attachment.filename, uploaded_blob_id: pending.pending_blob_id, revision_comments: "compatibility candidate fixture", user_id: -1, bypass_filter: true, ip_address: "127.0.0.1" }, { siteId: FOREIGN_SITE_ID, pageRef: pageId });
-    };
-
     // B689 renders exact imported sources whose live DOM contains four retained
     // Wikidot identities. Seed them before creating the pages so FTML resolves
     // [[*user ...]] exactly as Wikidot did.
@@ -507,7 +489,6 @@ export async function prepareCompatibilityCandidateInputs(args) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B690 navigation dependency drifted: ${dependency.slug}`);
       const fragment = await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: dependency.tags });
-      if (dependency.slug === "fragment:2117-1") await uploadAttachment(fragment.page_id, B690_SCP2117_ATTACHMENT);
       await rpc("parent_set", { site_id: standardSiteId, parent: scp2117.slug, child: fragment.slug }, { siteId: standardSiteId });
     }
     await rpc("page_rerender", { site_id: standardSiteId, category_id: scp2117.page_category_id, page_id: scp2117.page_id }, { siteId: standardSiteId });
