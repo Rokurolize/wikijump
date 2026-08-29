@@ -11193,7 +11193,14 @@ fn leaves_standalone_residual_wikidot_alignment_closer_without_opener() {
 
 #[test]
 fn restores_standalone_residual_wikidot_separator_lines() {
-    let html = concat!("Before\n", "------\n", "@@ @@\n", "~~~~\n", "After\n",);
+    let html = concat!(
+        "Before\n",
+        "------\n",
+        "@@ @@\n",
+        "<ul><li>item</li></ul><br>\n",
+        "~~~~\n",
+        "After\n",
+    );
 
     let restored = RenderService::restore_residual_wikidot_separator_markers(html);
 
@@ -11203,9 +11210,23 @@ fn restores_standalone_residual_wikidot_separator_lines() {
         restored
             .contains(r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#)
     );
+    assert!(!restored.contains("</ul><br>"));
     assert!(!restored.contains("------"));
     assert!(!restored.contains("@@ @@"));
     assert!(!restored.contains("~~~~"));
+}
+
+#[test]
+fn preserves_non_list_break_before_residual_separator() {
+    let html = "<div>before</div><br>\n~~~~\n";
+
+    let restored = RenderService::restore_residual_wikidot_separator_markers(html);
+
+    assert!(restored.contains("</div><br>\n"));
+    assert!(
+        restored
+            .contains(r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#)
+    );
 }
 
 #[test]

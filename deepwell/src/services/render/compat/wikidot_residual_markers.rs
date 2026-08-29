@@ -317,6 +317,7 @@ impl RenderService {
                 }
 
                 if trimmed == "~~~~" {
+                    Self::remove_synthetic_wikidot_list_break(&mut output);
                     Self::push_replaced_standalone_wikidot_marker_line(
                         &mut output,
                         line_body,
@@ -338,6 +339,18 @@ impl RenderService {
         }
 
         output
+    }
+
+    fn remove_synthetic_wikidot_list_break(output: &mut String) {
+        for close in ["</ul>", "</ol>"] {
+            for line_end in ["\r\n", "\n"] {
+                let suffix = format!("{close}<br>{line_end}");
+                if output.ends_with(&suffix) {
+                    output.truncate(output.len() - "<br>".len() - line_end.len());
+                    return;
+                }
+            }
+        }
     }
 
     pub(in crate::services::render) fn restore_residual_wikidot_heading_markers(
