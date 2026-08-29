@@ -44,6 +44,7 @@ const LOCAL_SCP_FILE_IMAGE_SOURCES = [
 /** @type {CspSources} */
 const WIKIDOT_IMAGE_SOURCES = [
   "https://scp-wiki.wikidot.com",
+  "https://www.wikidot.com",
   "https://scp-jp-storage.wikidot.com",
   "https://scpsandboxcn.wikidot.com",
   "https://*.wdfiles.com",

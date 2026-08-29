@@ -24,6 +24,7 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   )
   for (const origin of [
     "https://scp-wiki.wikidot.com",
+    "https://www.wikidot.com",
     "https://scp-jp-storage.wikidot.com",
     "https://scpsandboxcn.wikidot.com"
   ]) {
