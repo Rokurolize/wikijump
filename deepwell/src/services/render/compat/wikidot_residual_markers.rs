@@ -335,7 +335,7 @@ impl RenderService {
                 }
             }
 
-            if trimmed == RESIDUAL_CLEAR_DIV {
+            if trimmed.starts_with(RESIDUAL_CLEAR_DIV) {
                 Self::remove_synthetic_wikidot_list_break(&mut output);
             }
             output.push_str(line_body);
