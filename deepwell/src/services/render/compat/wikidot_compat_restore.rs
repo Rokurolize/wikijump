@@ -136,6 +136,7 @@ impl RenderService {
             || html.contains("\n----")
             || html.contains("@@ @@")
             || html.contains("~~~~")
+            || html.contains("clear:both; height: 0px; font-size: 1px")
         {
             html = Self::restore_residual_wikidot_separator_markers(&html);
         }
