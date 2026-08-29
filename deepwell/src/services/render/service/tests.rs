@@ -8245,6 +8245,22 @@ fn expands_wikidot_image_block_includes_with_nested_caption_markup() {
 }
 
 #[test]
+fn image_block_prepass_keeps_extensionless_root_attachments_implicit() {
+    let mut wikitext =
+        "[[include component:image-block name=Lobster|caption=An attachment.]]"
+            .to_owned();
+    let page_info = fallback_test_page_info("scp-5516", "SCP-5516");
+
+    RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info, None);
+
+    assert!(wikitext.contains("[[image Lobster]]"), "{wikitext}");
+    assert!(
+        !wikitext.contains("local--files/scp-5516/Lobster"),
+        "{wikitext}"
+    );
+}
+
+#[test]
 fn expands_scp_2117_shaped_image_block_with_fragment_src_and_absolute_link() {
     let mut wikitext = concat!(
         "[[include component:image-block ",

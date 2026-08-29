@@ -3676,6 +3676,18 @@ impl RenderService {
             return name.to_owned();
         }
 
+        // Wikidot keeps extensionless root-page attachments on its implicit
+        // attachment path, which supplies the medium resize and original-file
+        // link. Qualified include owners still use the direct URL path below.
+        if attachment_owner.is_none()
+            && !name
+                .rsplit('/')
+                .next()
+                .is_some_and(|file| file.contains('.'))
+        {
+            return name.to_owned();
+        }
+
         let owner =
             Self::wikidot_image_block_attachment_owner(page_info, attachment_owner);
 
