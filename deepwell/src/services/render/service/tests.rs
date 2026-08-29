@@ -11230,6 +11230,19 @@ fn preserves_non_list_break_before_residual_separator() {
 }
 
 #[test]
+fn removes_list_break_before_nested_restored_separator() {
+    let html = concat!(
+        "<ul><li>item</li></ul><br>\n",
+        r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#,
+        "\n",
+    );
+
+    let restored = RenderService::restore_residual_wikidot_separator_markers(html);
+
+    assert!(!restored.contains("</ul><br>"));
+}
+
+#[test]
 fn normalizes_alignment_markers_before_include_expansion() {
     let mut source = concat!(
         "[[=]]\n",

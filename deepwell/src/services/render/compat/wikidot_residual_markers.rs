@@ -24,6 +24,9 @@ use super::super::service::{
 };
 use std::ops::Range;
 
+const RESIDUAL_CLEAR_DIV: &str =
+    r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#;
+
 impl RenderService {
     pub(in crate::services::render) fn restore_residual_wikidot_div_paragraph_markers(
         html: &str,
@@ -322,7 +325,7 @@ impl RenderService {
                         &mut output,
                         line_body,
                         line_end,
-                        r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#,
+                        RESIDUAL_CLEAR_DIV,
                     );
                     raw_text_depth = Self::update_residual_div_raw_text_depth(
                         raw_text_depth,
@@ -332,6 +335,9 @@ impl RenderService {
                 }
             }
 
+            if trimmed == RESIDUAL_CLEAR_DIV {
+                Self::remove_synthetic_wikidot_list_break(&mut output);
+            }
             output.push_str(line_body);
             output.push_str(line_end);
             raw_text_depth =
