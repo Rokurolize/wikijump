@@ -2719,7 +2719,6 @@ impl RenderService {
             }
             if !rendered_page_styles.is_empty() {
                 let marker = compat_text.push("");
-                output.push_str(&marker);
                 runtime_css_insertions.push(
                     super::super::compat::preparation::RuntimeCssInsertion {
                         marker,
