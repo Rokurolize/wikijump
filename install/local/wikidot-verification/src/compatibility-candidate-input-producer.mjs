@@ -356,7 +356,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       return payload.result ?? null;
     };
     const uploadAttachment = async (pageId, attachment) => {
-      const response = await fetch(attachment.url);
+      const response = await fetch(attachment.url, { headers: { "user-agent": "Mozilla/5.0" } });
       if (!response.ok) throw new Error(`B690 attachment fetch failed: ${attachment.filename}`);
       const bytes = Buffer.from(await response.arrayBuffer());
       if (bytes.length !== attachment.size || sha256(bytes) !== attachment.sha256) throw new Error(`B690 attachment bytes drifted: ${attachment.filename}`);
