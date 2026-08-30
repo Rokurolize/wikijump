@@ -711,6 +711,27 @@ test("source-owned receipt verifier verifies a complete candidate receipt and it
   assert.equal(admission.parity.pairs_total, STANDING_BROWSER_CANARIES.length);
 });
 
+test("candidate parity admission keeps development profiles out of promotion", async (context) => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "standing-browser-admission-development-"),
+  );
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  identity.candidate.profile = "development-build";
+  const paths = await fixture(root, identity);
+  await assert.rejects(
+    verifyStandingCandidateParityAdmission({
+      receiptPath: paths.receiptPath,
+      candidateIdentityPath: paths.identityPath,
+      liveReferencePath: paths.referencePath,
+      liveCompletionPolicyPath: paths.policyPath,
+      now: new Date("2026-07-20T00:00:00.000Z"),
+      collectExecutionIdentity: async (candidate) => executionIdentity(candidate),
+    }),
+    /requires production-build/u,
+  );
+});
+
 test("source-owned receipt verifier rejects an identity file that differs from the receipt", async (context) => {
   const root = await fs.mkdtemp(
     path.join(os.tmpdir(), "standing-browser-admission-"),

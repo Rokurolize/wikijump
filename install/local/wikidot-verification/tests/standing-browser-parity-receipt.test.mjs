@@ -247,6 +247,21 @@ test("candidate identity rejects mutable image tags and a standing project", () 
   );
 });
 
+test("candidate identity accepts the lightweight development profile", () => {
+  const development = identity();
+  development.candidate.profile = "development-build";
+  assert.equal(
+    validateCandidateParityIdentity(development).candidate.profile,
+    "development-build",
+  );
+  const unsupported = identity();
+  unsupported.candidate.profile = "release-build";
+  assert.throws(
+    () => validateCandidateParityIdentity(unsupported),
+    /must be development-build or production-build/u,
+  );
+});
+
 test("candidate identity rejects placeholder digests and Git objects", () => {
   const placeholder = identity();
   placeholder.artifact_key = "a".repeat(64);

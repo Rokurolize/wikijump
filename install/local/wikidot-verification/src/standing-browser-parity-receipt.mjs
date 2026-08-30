@@ -21,6 +21,8 @@ import {
 import { validateCandidateRuntimeObservation } from "./standing-browser-runtime-identity.mjs";
 import { validateCandidateExecutionIdentity } from "./standing-browser-execution-identity.mjs";
 
+const CANDIDATE_PROFILES = new Set(["development-build", "production-build"]);
+
 function requireGitObject(value, name) {
   if (typeof value !== "string" || !/^[0-9a-f]{40}$/u.test(value)) {
     throw new Error(`${name} must be a full lowercase Git object id`);
@@ -278,8 +280,10 @@ export function validateCandidateParityIdentity(value) {
   if (normalized.candidate.port_443_published !== false) {
     throw new Error("candidate.port_443_published must be false");
   }
-  if (normalized.candidate.profile !== "production-build") {
-    throw new Error("candidate.profile must be production-build");
+  if (!CANDIDATE_PROFILES.has(normalized.candidate.profile)) {
+    throw new Error(
+      "candidate.profile must be development-build or production-build",
+    );
   }
   if (normalized.candidate.source_clean !== true) {
     throw new Error("candidate.source_clean must be true");
