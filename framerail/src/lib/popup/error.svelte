@@ -128,7 +128,7 @@
     text-align: center;
     background-color: #57575788;
   }
-  .modal {
+  .modal-container > .modal {
     display: inline-block;
     width: 30%;
     padding: 10px;
@@ -139,7 +139,7 @@
     border: 1px solid var(--border);
     border-radius: 10px;
   }
-  .modal h2 {
+  .modal-container > .modal h2 {
     margin-top: 0;
   }
   .modal-message-extra {

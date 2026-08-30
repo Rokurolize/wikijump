@@ -202,6 +202,9 @@ test("the Wikidot error dialog exposes the real visible display state", async ()
   )
 
   assert.match(popup, /id="odialog-container"\s+style:display="block"/u)
+  assert.match(popup, /\.modal-container > \.modal \{/u)
+  assert.match(popup, /\.modal-container > \.modal h2 \{/u)
+  assert.doesNotMatch(popup, /^\s*\.modal\s*\{/mu)
   assert.doesNotMatch(popup, /basalt-compat/u)
 })
 
