@@ -49,7 +49,8 @@ const WIKIDOT_IMAGE_SOURCES = [
   "https://scpsandboxcn.wikidot.com",
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
-  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
+  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
+  "https://d2qhngyckgiutd.cloudfront.net"
 ]
 /** @type {CspSources} */
 const WIKIDOT_STYLE_SOURCES = [
