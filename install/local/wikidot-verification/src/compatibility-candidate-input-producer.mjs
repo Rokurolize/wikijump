@@ -59,8 +59,8 @@ const B689_SCP8980_USERS = new URL(
   import.meta.url,
 );
 const B689_SCP8980_FRAGMENTS = Object.freeze([
-  Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
-  Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
+  Object.freeze({ slug: "fragment:scp-8980-1", title: "SCP-8980 Fragment 1", rating: 1559, tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-1.ftml", import.meta.url) }),
+  Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", rating: 1559, tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
 ]);
 const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
   Object.freeze({ slug: "scp-744", title: "SCP-744", rating: 100, tags: ["_cc", "_licensebox", "auditory", "bleak", "building", "cernunnos", "cognitohazard", "corporate", "euclid", "horror", "psychological-horror", "reality-bending", "rewrite", "scp", "spatial", "surrealism", "the-trashfire"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-744/source.wikidot.txt", sha256: "6342f7c46b2a86ec5f76e2a35a15a168b315b0fab4869c22a5d26d8dc22c8f06" }),
@@ -165,7 +165,7 @@ export async function b689Scp8980CandidateFixtures() {
   for (const fixture of B689_SCP8980_FRAGMENTS) {
     const wikitext = await fs.readFile(fixture.path, "utf8");
     if (wikitext === "") throw new Error(`B689 SCP-8980 fragment is empty: ${fixture.slug}`);
-    fragments.push({ slug: fixture.slug, title: fixture.title, tags: [...fixture.tags], wikitext });
+    fragments.push({ slug: fixture.slug, title: fixture.title, rating: fixture.rating, tags: [...fixture.tags], wikitext });
   }
   return {
     theme: { slug: B689_THEME_BASALT_SOURCE.slug, title: B689_THEME_BASALT_SOURCE.title, tags: [...B689_THEME_BASALT_SOURCE.tags], wikitext: themeWikitext, sha256: B689_THEME_BASALT_SOURCE.sha256 },
@@ -579,7 +579,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
         fixture.slug,
         fixture.title,
         fixture.wikitext,
-        { siteId: standardSiteId, imported: true, tags: fixture.tags },
+        { siteId: standardSiteId, imported: true, tags: fixture.tags, rating: fixture.rating },
       );
       await rpc(
         "parent_set",
