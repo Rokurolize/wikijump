@@ -43,7 +43,11 @@
   }
 
   const activateWhenWikidotReady = () => {
-    if (document.body && document.getElementById("dummy-ondomready-block")) {
+    if (
+      document.readyState !== "loading" &&
+      document.body &&
+      document.getElementById("dummy-ondomready-block")
+    ) {
       activate()
       return
     }
@@ -51,5 +55,32 @@
   }
 
   if (direct && !generatedRow) activateWhenWikidotReady()
-  else activate()
+  else {
+    activate()
+    tabView.addEventListener("click", (event) => {
+      if (!(event.target instanceof Element)) return
+      const link = event.target.closest(".yui-nav > li > a")
+      if (!(link instanceof HTMLAnchorElement) || !tabView.contains(link)) return
+      const item = link.parentElement
+      const tabList = item?.parentElement
+      const content = tabView.querySelector(":scope > .yui-content")
+      const items =
+        tabList?.tagName === "UL"
+          ? [...tabList.children].filter((child) => child.tagName === "LI")
+          : []
+      const panels = content ? [...content.children] : []
+      const selectedIndex = items.indexOf(item)
+      if (selectedIndex < 0 || selectedIndex >= panels.length) return
+      for (const [index, tabItem] of items.entries()) {
+        tabItem.classList.toggle("selected", index === selectedIndex)
+        if (index === selectedIndex) tabItem.setAttribute("title", "active")
+        else tabItem.removeAttribute("title")
+      }
+      for (const [index, panel] of panels.entries()) {
+        if (panel instanceof HTMLElement)
+          panel.style.display = index === selectedIndex ? "block" : "none"
+      }
+      event.preventDefault()
+    })
+  }
 })()
