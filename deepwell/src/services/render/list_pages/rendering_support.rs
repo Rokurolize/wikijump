@@ -484,8 +484,19 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
     if !expansion_budget.try_consume_generated_output_bytes(boundary_repair_bytes) {
         return None;
     }
+    let mut runtime_css_prefix = String::new();
     for insertion in rendered_runtime_css_insertions {
+        if wikitext.matches(&insertion.marker).count() == 1 {
+            wikitext = wikitext.replacen(&insertion.marker, "", 1);
+            runtime_css_prefix.push_str("[[module CSS]]\n");
+            runtime_css_prefix.push_str(&insertion.marker);
+            runtime_css_prefix.push_str("\n[[/module]]\n");
+        }
         runtime_css_insertions.push(insertion);
+    }
+    if !runtime_css_prefix.is_empty() {
+        runtime_css_prefix.push_str(&wikitext);
+        wikitext = runtime_css_prefix;
     }
     if let Some(mut pending_delayed) = pending_delayed {
         wrap_pending_list_pages_delayed_output(
