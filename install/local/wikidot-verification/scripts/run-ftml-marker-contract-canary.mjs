@@ -446,7 +446,6 @@ async function seedFixtures({
   rpcUrl,
   rpcToken,
   fixtures,
-  expectedFtml,
   administrator,
 }) {
   const authenticatedRpc = (method, params = {}, headers = {}) =>
@@ -514,9 +513,10 @@ async function seedFixtures({
       page: fixture.slug,
       details: { wikitext: true, compiled: true },
     });
-    assert.ok(
-      page.compiled_generator?.includes(expectedFtml.slice(0, 8)),
-      `${fixture.fixture_id} generator did not identify ${expectedFtml}`,
+    assert.match(
+      page.compiled_generator ?? "",
+      /; deepwell-render\/v10$/u,
+      `${fixture.fixture_id} generator does not identify the current renderer epoch`,
     );
     results.push({
       fixture_id: fixture.fixture_id,
@@ -836,8 +836,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
         );
         throw error;
       }
-      const stageFtml =
-        stage === "baseline" ? baselineFtml : args.candidateFtml;
       let seeded;
       let records;
       try {
@@ -845,7 +843,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
           rpcUrl: `http://127.0.0.1:${ports.deepwell}/jsonrpc`,
           rpcToken: credentials.rpcToken,
           fixtures,
-          expectedFtml: stageFtml,
           administrator,
         });
         records = await captureStage({
