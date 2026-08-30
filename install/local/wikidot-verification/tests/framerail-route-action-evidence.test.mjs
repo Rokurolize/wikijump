@@ -327,6 +327,11 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
       captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') > captureScript.indexOf('scenario, "selection", navigationStatus, outputDir'),
     "success activation must wait for the browser DOMContentLoaded readiness boundary after selection evidence"
   )
+  assert.ok(
+    captureScript.indexOf('await page.waitForLoadState("networkidle"') > captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') &&
+      captureScript.indexOf('await page.waitForLoadState("networkidle"') < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
+    "success activation must wait for the browser network-idle hydration boundary before arming signals"
+  )
   assert.match(
     captureScript,
     /X11_IMPORT_EXECUTABLE[\s\S]*"-window",[\s\S]*"root",[\s\S]*"-crop",[\s\S]*geometry\.crop[\s\S]*"jpeg:-"[\s\S]*DISPLAY: captureDisplay\.display/u,

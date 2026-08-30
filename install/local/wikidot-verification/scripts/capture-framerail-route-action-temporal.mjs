@@ -1059,6 +1059,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
     if (scenario.id === "success") {
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       await page.waitForLoadState("domcontentloaded", {timeout: triggerTimeoutMs});
+      await page.waitForLoadState("networkidle", {timeout: triggerTimeoutMs});
       const loadingSignal = subject.loading.kind === "dom"
         ? armDomPredicate(page, subject.loading, signalTimeoutMs, `${subject.id} loading`)
         : armBrowserEvent(page, subject.loading, signalTimeoutMs, `${subject.id} loading`);
