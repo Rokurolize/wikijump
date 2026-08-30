@@ -544,10 +544,7 @@ fn restore_block_html_from_paragraph(
         return None;
     }
 
-    let leading_end = match trailing_break_start(leading) {
-        Some(index) if !is_wikidot_spacer_with_break(&leading[..index]) => index,
-        _ => leading.len(),
-    };
+    let leading_end = trailing_break_start(leading).unwrap_or(leading.len());
     let trailing_start = leading_break_end(trailing).unwrap_or(0);
     let unwrap_leading = options.unwrap_residual_div_paragraph_prefix
         && starts_with_unmatched_residual_wikidot_div(&leading[..leading_end]);
@@ -584,10 +581,6 @@ fn restore_block_html_from_paragraph(
         *cursor = marker_end + trailing_start;
     }
     Some(fragment_start)
-}
-
-fn is_wikidot_spacer_with_break(value: &str) -> bool {
-    value.trim() == r#"<span style="white-space: pre-wrap;"> </span>"#
 }
 
 fn starts_with_unmatched_residual_wikidot_div(value: &str) -> bool {
@@ -1053,22 +1046,6 @@ mod tests {
         assert_eq!(
             fragments.restore(&format!("<p><script>unsafe</script><br>{marker}</p>")),
             format!("<p><script>unsafe</script><br>{marker}</p>"),
-        );
-    }
-
-    #[test]
-    fn block_html_preserves_wikidot_spacer_break_before_block() {
-        let mut fragments = CompatHtmlFragments::new("");
-        let marker = fragments.push_block_html("<div>trusted block</div>".to_owned());
-
-        assert_eq!(
-            fragments.restore(&format!(
-                r#"<p><span style="white-space: pre-wrap;"> </span><br>{marker}</p>"#,
-            )),
-            concat!(
-                r#"<p><span style="white-space: pre-wrap;"> </span><br></p>"#,
-                "<div>trusted block</div>",
-            ),
         );
     }
 

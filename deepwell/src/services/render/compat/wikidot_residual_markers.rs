@@ -310,7 +310,7 @@ impl RenderService {
                         &mut output,
                         line_body,
                         line_end,
-                        r#"<p><span style="white-space: pre-wrap;"> </span></p>"#,
+                        r#"<p><span style="white-space: pre-wrap;"> </span><br></p>"#,
                     );
                     raw_text_depth = Self::update_residual_div_raw_text_depth(
                         raw_text_depth,

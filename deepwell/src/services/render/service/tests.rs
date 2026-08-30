@@ -11205,7 +11205,9 @@ fn restores_standalone_residual_wikidot_separator_lines() {
     let restored = RenderService::restore_residual_wikidot_separator_markers(html);
 
     assert!(restored.contains("Before\n<hr>\n"));
-    assert!(restored.contains(r#"<p><span style="white-space: pre-wrap;"> </span></p>"#));
+    assert!(
+        restored.contains(r#"<p><span style="white-space: pre-wrap;"> </span><br></p>"#)
+    );
     assert!(
         restored
             .contains(r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#)
