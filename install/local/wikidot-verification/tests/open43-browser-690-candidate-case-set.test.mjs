@@ -240,6 +240,7 @@ test("B690 verifies settled resource completion before the total-height boundary
 
   const causal = structuredClone(observations);
   causal.pages[0].candidate_trace.elements[0].style.display = "inline";
+  causal.pages[0].candidate_trace.incomplete_image_count = 1;
   assert.equal(verifyOpen43B690GeometrySettled(causal, plan).verified, true);
   causal.pages[0].candidate_page_content_height = 200;
   causal.pages[0].candidate_trace.elements[0].rect.height = 200;

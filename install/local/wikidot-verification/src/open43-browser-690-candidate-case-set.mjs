@@ -127,9 +127,15 @@ function validateTrace(trace, name) {
   return value;
 }
 
-function compareGeometryTraces(local, live, thresholds) {
+function compareGeometryTraces(
+  local,
+  live,
+  thresholds,
+  { ignoreIncompleteImages = false } = {},
+) {
   const withoutStyles = (trace) => ({
     ...trace,
+    ...(ignoreIncompleteImages ? { incomplete_image_count: 0 } : {}),
     elements: trace.elements.map((element) => {
       const copy = { ...element };
       delete copy.style;
@@ -272,6 +278,7 @@ function verifyGeometry(observations, plan, { phase, sequence, settled }) {
         ...plan.thresholds,
         ignored_classes: ["page-rate-widget-box"],
       },
+      { ignoreIncompleteImages: settled },
     );
     const classification = settled
       ? rawClassification
