@@ -201,13 +201,17 @@ function initialDivergenceWithResourceTiming(page, classification, plan) {
     throw new Error(`${page.slug} initial live image count mismatched`);
   }
   if (
-    classification.kind === "geometry_divergence" &&
+    new Set([
+      "geometry_divergence",
+      "extra_local_element",
+      "missing_local_element",
+    ]).has(classification.kind) &&
     candidateCount !== liveCount
   ) {
     return {
       kind: "resource_incomplete",
       rendered_image_count: { candidate: candidateCount, live: liveCount },
-      first_geometry_divergence: classification,
+      first_divergence: classification,
     };
   }
   return classification;

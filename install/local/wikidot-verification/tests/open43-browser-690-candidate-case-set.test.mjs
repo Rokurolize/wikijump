@@ -214,6 +214,41 @@ test("B690 verifies the ordered initial traces and fails on the first causal div
   resourceTiming.pages[0].candidate_trace.elements[0].rect.height = 100;
   assert.equal(verifyOpen43B690GeometryInitial(resourceTiming, plan).verified, true);
 
+  const structuralResourceTiming = structuredClone(observations);
+  const structuralPage = structuralResourceTiming.pages[0];
+  const originalElement = structuralPage.live_trace.elements[0];
+  const movedElement = {
+    ...originalElement,
+    path: "p[2]",
+    normalized_direct_text_sha256: "b".repeat(64),
+  };
+  const bridgeElement = {
+    ...originalElement,
+    path: "p[3]",
+    normalized_direct_text_sha256: "c".repeat(64),
+  };
+  structuralPage.live_trace = {
+    ...structuralPage.live_trace,
+    captured_count: 2,
+    element_count: 2,
+    elements: [originalElement, movedElement],
+  };
+  structuralPage.candidate_trace = {
+    ...structuralPage.candidate_trace,
+    captured_count: 3,
+    element_count: 3,
+    elements: [movedElement, bridgeElement, originalElement],
+  };
+  structuralPage.candidate_initial_page_content_rendered_images = 1;
+  plan.live_trace_sha256_by_slug[structuralPage.slug] =
+    sha256Value(structuralPage.live_trace);
+  const structuralVerified = verifyOpen43B690GeometryInitial(
+    structuralResourceTiming,
+    plan,
+  );
+  assert.equal(structuralVerified.verified, true);
+  assert.equal(structuralVerified.classifications[0].kind, "resource_incomplete");
+
   const reordered = structuredClone(observations);
   reordered.pages.reverse();
   assert.throws(
