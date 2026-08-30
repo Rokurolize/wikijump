@@ -442,7 +442,7 @@ export async function prewarmBrowserParityLazyImages(page) {
       image.scrollIntoView({ block: "center", inline: "nearest" });
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
-    window.scrollTo(0, initialScrollY);
+    window.scrollTo({ left: 0, top: initialScrollY, behavior: "instant" });
   });
 }
 
