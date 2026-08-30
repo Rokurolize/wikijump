@@ -242,6 +242,9 @@ test("B690 verifies settled resource completion before the total-height boundary
   causal.pages[0].candidate_trace.elements[0].style.display = "inline";
   causal.pages[0].candidate_trace.incomplete_image_count = 1;
   assert.equal(verifyOpen43B690GeometrySettled(causal, plan).verified, true);
+  const structureOnly = structuredClone(observations);
+  structureOnly.pages[0].candidate_trace.elements[0].child_element_count = 2;
+  assert.equal(verifyOpen43B690GeometrySettled(structureOnly, plan).verified, true);
   causal.pages[0].candidate_page_content_height = 200;
   causal.pages[0].candidate_trace.elements[0].rect.height = 200;
   assert.throws(

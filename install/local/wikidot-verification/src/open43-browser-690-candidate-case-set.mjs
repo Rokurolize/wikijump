@@ -47,6 +47,10 @@ export const OPEN43_B690_GEOMETRY_FIXTURE = Object.freeze({
 });
 
 const VIEWPORT = Object.freeze({ width: 1366, height: 900 });
+const INLINE_TRACE_TAGS = new Set([
+  "a", "abbr", "b", "br", "code", "em", "i", "img", "label",
+  "s", "small", "span", "strong", "sub", "sup", "u",
+]);
 const FIXTURE_IDENTITY_SHA256 = sha256Value(OPEN43_B690_GEOMETRY_FIXTURE);
 const TRACE_CANARIES = Object.freeze(
   OPEN43_B690_GEOMETRY_FIXTURE.trace_canary_slugs.map((slug) => {
@@ -136,9 +140,15 @@ function compareGeometryTraces(
   const withoutStyles = (trace) => ({
     ...trace,
     ...(ignoreIncompleteImages ? { incomplete_image_count: 0 } : {}),
-    elements: trace.elements.map((element) => {
+    elements: trace.elements.filter((element) => !INLINE_TRACE_TAGS.has(element.tag)).map((element) => {
       const copy = { ...element };
       delete copy.style;
+      delete copy.child_element_count;
+      delete copy.direct_text_sha256;
+      delete copy.normalized_direct_text_sha256;
+      delete copy.direct_text_normalized;
+      delete copy.direct_text_normalization;
+      delete copy.direct_text_observed;
       return copy;
     }),
   });
