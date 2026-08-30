@@ -113,6 +113,7 @@ struct ServeParams<'a> {
     filename: &'a str,
     file_size: u64,
     is_head: bool,
+    content_type: &'a str,
 }
 
 async fn serve_file(
@@ -128,6 +129,7 @@ async fn serve_file(
     let etag = format!("\"{}\"", file_info.s3_hash);
     let last_modified = httpdate::fmt_http_date(file_info.revision_created_at.into());
     let is_head = *method == Method::HEAD;
+    let content_type = response_content_type(filename, &file_info.mime);
     let params = ServeParams {
         etag: &etag,
         last_modified: &last_modified,
@@ -135,6 +137,7 @@ async fn serve_file(
         filename,
         file_size,
         is_head,
+        content_type,
     };
 
     if headers
@@ -203,7 +206,7 @@ async fn serve_full(
             params.as_attachment,
             params.filename,
         )
-        .header(header::CONTENT_TYPE, &file_info.mime)
+        .header(header::CONTENT_TYPE, params.content_type)
         .header(header::CONTENT_LENGTH, params.file_size)
         .body(body),
     )
@@ -243,7 +246,7 @@ async fn serve_single_range(
             params.as_attachment,
             params.filename,
         )
-        .header(header::CONTENT_TYPE, &file_info.mime)
+        .header(header::CONTENT_TYPE, params.content_type)
         .header(header::CONTENT_RANGE, content_range)
         .header(header::CONTENT_LENGTH, range.len())
         .body(body),
@@ -262,7 +265,7 @@ async fn serve_multi_range(
     if params.is_head {
         let len = multipart_content_length(
             &boundary,
-            &file_info.mime,
+            params.content_type,
             ranges,
             params.file_size,
         );
@@ -303,7 +306,7 @@ async fn serve_multi_range(
              Content-Type: {}\r\n\
              Content-Range: bytes {}-{}/{}\r\n\
              \r\n",
-            file_info.mime, range.start, range.end, params.file_size,
+            params.content_type, range.start, range.end, params.file_size,
         );
         body.extend_from_slice(part_header.as_bytes());
         body.extend_from_slice(&data);
@@ -443,6 +446,17 @@ pub async fn handle_file_download(
 
 // ------------ Response builders ------------
 
+fn response_content_type<'a>(filename: &str, mime: &'a str) -> &'a str {
+    if filename
+        .rsplit_once('.')
+        .is_some_and(|(_, extension)| extension.eq_ignore_ascii_case("css"))
+    {
+        "text/css"
+    } else {
+        mime
+    }
+}
+
 fn base_headers(
     status: StatusCode,
     etag: &str,
@@ -543,6 +557,22 @@ mod tests {
     use tokio::net::TcpListener as TokioTcpListener;
 
     const WIKIDOT_MISSING_FILE_HTML: &[u8] = b"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n";
+
+    #[test]
+    fn css_files_use_stylesheet_content_type() {
+        assert_eq!(
+            response_content_type("departuremono.css", "text/plain"),
+            "text/css"
+        );
+        assert_eq!(
+            response_content_type("DEPARTUREMONO.CSS", "text/plain"),
+            "text/css"
+        );
+        assert_eq!(
+            response_content_type("plain.txt", "text/plain"),
+            "text/plain"
+        );
+    }
 
     async fn file_handler_rpc(body: Bytes) -> Response {
         let request: Value = serde_json::from_slice(&body).unwrap();
