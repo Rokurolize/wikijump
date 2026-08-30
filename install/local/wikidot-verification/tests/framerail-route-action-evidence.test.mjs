@@ -322,6 +322,11 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     captureScript.indexOf('scenario, "selection", navigationStatus, outputDir') < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
     "selection evidence must be sealed before activation wait timeouts are armed"
   )
+  assert.ok(
+    captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') < captureScript.indexOf("const loadingSignal = subject.loading.kind") &&
+      captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') > captureScript.indexOf('scenario, "selection", navigationStatus, outputDir'),
+    "success activation must wait for the browser DOMContentLoaded readiness boundary after selection evidence"
+  )
   assert.match(
     captureScript,
     /X11_IMPORT_EXECUTABLE[\s\S]*"-window",[\s\S]*"root",[\s\S]*"-crop",[\s\S]*geometry\.crop[\s\S]*"jpeg:-"[\s\S]*DISPLAY: captureDisplay\.display/u,
