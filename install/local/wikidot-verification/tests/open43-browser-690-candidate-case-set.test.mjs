@@ -323,6 +323,36 @@ test("B690 verifies one fixed complete six-page denominator", () => {
     /six-page comparison failed/u,
   );
 
+  const initialResourceTiming = structuredClone(observations);
+  initialResourceTiming.pages[0].candidate_initial_page_content_rendered_images = 1;
+  initialResourceTiming.pages[0].comparison.domcontentloaded_immediate_probes = [
+    {
+      id: "header_subtitle",
+      selector: "#header h1 a span",
+      pseudo: "::after",
+      properties: [{ status: "pass" }],
+      pseudo_layout: { status: "fail" },
+      status: "fail",
+    },
+  ];
+  initialResourceTiming.pages[0].comparison.settled_probes = [
+    {
+      id: "header_subtitle",
+      selector: "#header h1 a span",
+      pseudo: "::after",
+      status: "pass",
+    },
+  ];
+  assert.equal(
+    verifyOpen43B690FixedSixPage(initialResourceTiming, plan).verified,
+    true,
+  );
+  initialResourceTiming.pages[0].candidate_initial_page_content_rendered_images = 0;
+  assert.throws(
+    () => verifyOpen43B690FixedSixPage(initialResourceTiming, plan),
+    /six-page comparison failed/u,
+  );
+
   const divergent = structuredClone(observations);
   divergent.pages[4].comparison.settled_first_divergent_element.kind =
     "style_divergence";

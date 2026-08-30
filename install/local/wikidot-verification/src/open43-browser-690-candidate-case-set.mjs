@@ -352,6 +352,26 @@ export function verifyOpen43B690GeometrySettled(observations, plan) {
   });
 }
 
+function initialProbePassesOrIsResourceTiming(page, probe, settledProbes) {
+  if (probe.status === "pass") return true;
+  if (
+    page.candidate_initial_page_content_rendered_images ===
+      page.live_initial_page_content_rendered_images ||
+    !Array.isArray(probe.properties) ||
+    probe.properties.some(({ status }) => status !== "pass") ||
+    probe.pseudo_layout?.status !== "fail"
+  ) {
+    return false;
+  }
+  return settledProbes.some(
+    (settled) =>
+      settled.id === probe.id &&
+      settled.selector === probe.selector &&
+      settled.pseudo === probe.pseudo &&
+      settled.status === "pass",
+  );
+}
+
 export function verifyOpen43B690FixedSixPage(observations, plan) {
   const value = requirePlainObject(
     observations,
@@ -434,8 +454,11 @@ export function verifyOpen43B690FixedSixPage(observations, plan) {
       comparison.domcontentloaded_immediate_custom_properties;
     if (
       !Array.isArray(immediateProbes) ||
-      immediateProbes.some(({ status }) => status !== "pass") ||
       !Array.isArray(settledProbes) ||
+      immediateProbes.some(
+        (probe) =>
+          !initialProbePassesOrIsResourceTiming(page, probe, settledProbes),
+      ) ||
       settledProbes.some(({ status }) => status !== "pass") ||
       !Array.isArray(immediateProperties) ||
       immediateProperties.some(({ status }) => status !== "pass")
