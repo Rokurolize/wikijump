@@ -1085,6 +1085,8 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       }
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
     } else {
+      await page.waitForLoadState("domcontentloaded", {timeout: triggerTimeoutMs});
+      await page.waitForLoadState("networkidle", {timeout: triggerTimeoutMs});
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
       const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
       void resultSignal.catch(() => undefined);
