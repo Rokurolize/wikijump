@@ -38,7 +38,7 @@ test("compatibility candidate input producer owns the exact B689 SCP-8980 source
   const fixtures = await b689Scp8980CandidateFixtures();
   assert.equal(fixtures.theme.slug, "theme:basalt");
   assert.deepEqual(fixtures.theme.tags, ["theme"]);
-  assert.equal(fixtures.theme.sha256, "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a");
+  assert.equal(fixtures.theme.sha256, "a29d8d0f285f4e291975f0139519ddfb472e7d6f458bb1d7c14189c9a2e922c0");
   assert.equal(fixtures.source.slug, "scp-8980");
   assert.equal(fixtures.source.sha256, "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710");
   assert.equal(fixtures.source.tags.length, 24);

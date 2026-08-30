@@ -48,7 +48,7 @@ const B689_THEME_BASALT_SOURCE = Object.freeze({
   rating: 312,
   tags: Object.freeze(["theme"]),
   path: new URL("../../../../deepwell/seeder/theme-basalt.ftml", import.meta.url),
-  sha256: "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+  sha256: "a29d8d0f285f4e291975f0139519ddfb472e7d6f458bb1d7c14189c9a2e922c0",
 });
 const B689_THEME_BASALT_USERS = new URL(
   "../fixtures/open87-basalt-users/runtime-state.json",

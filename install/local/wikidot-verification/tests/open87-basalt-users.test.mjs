@@ -35,14 +35,14 @@ test("Open87 Basalt static evidence metadata binds exact mock importer operation
   ];
   const expectedPageEvidence = {
     source: "install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl",
-    capture_file_sha256: "17ec06b4d731c8772111d19806487dbb0c57d587b448d79db43072b04b0a0c2f",
+    capture_file_sha256: "b014619289b3b29f3b67d9fdedbe56cc261b0a37a03fdb629889040507d7e86d",
     captured_at: "2026-08-11T23:48:23.973Z",
     capture_line: 1,
     site: "scp-wiki",
     slug: "theme:basalt",
     wikidot_url: "https://scp-wiki.wikidot.com/theme:basalt",
     page_identity: 1312334753,
-    saved_source_sha256: "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
+    saved_source_sha256: "a29d8d0f285f4e291975f0139519ddfb472e7d6f458bb1d7c14189c9a2e922c0",
     wikidot_html_sha256: "d53a350b7deec493d5bb9a93f1eb63e027557564768fb4cda82a5ae20878bf52",
     raw_live_dom: {
       path: "/home/roku/wjlab/evidence/ftml-pin-2e5be6f2-conditional-canary/browser-rendering-candidate-final2/EN_theme_basalt-63ed4b2bb703/live.dom.html",
