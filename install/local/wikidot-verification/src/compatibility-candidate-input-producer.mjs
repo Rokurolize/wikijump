@@ -37,6 +37,7 @@ const FTML_MARKER_FIXTURE_INDEX = new URL("../fixtures/ftml-marker-contract/fixt
 const B689_SCP8980_SOURCE = Object.freeze({
   slug: "scp-8980",
   title: "SCP-8980",
+  rating: 1559,
   tags: Object.freeze(["_cc", "_cc4", "_licensebox", "_listpages", "alive", "bleak", "bureaucracy", "computer", "deepwell-catalog", "director-graham", "electrical", "ethics-committee", "euclid", "fire-suppression-dept", "foundation-personnel", "horror", "humanoid", "odongo-tejani", "phobia-anthology", "psychological-horror", "reviewers-spotlight", "sapient", "scp", "spook-nico-2024-unofficial"]),
   path: new URL("../../../../deepwell/seeder/scp-8980.ftml", import.meta.url),
   sha256: "11ecede90b114c425afc60f7f146a697bdc4ca4aaa16e23fc213d947feb86710",
@@ -44,6 +45,7 @@ const B689_SCP8980_SOURCE = Object.freeze({
 const B689_THEME_BASALT_SOURCE = Object.freeze({
   slug: "theme:basalt",
   title: "Basalt Theme",
+  rating: 312,
   tags: Object.freeze(["theme"]),
   path: new URL("../../../../deepwell/seeder/theme-basalt.ftml", import.meta.url),
   sha256: "732c3d5922479d119cc31b834520ef84dfe5f0acb1c48cb497884757e3b1554a",
@@ -61,9 +63,9 @@ const B689_SCP8980_FRAGMENTS = Object.freeze([
   Object.freeze({ slug: "fragment:scp-8980-2", title: "SCP-8980 Fragment 2", tags: ["fragment"], path: new URL("../../../../deepwell/seeder/fragment-scp-8980-2.ftml", import.meta.url) }),
 ]);
 const B689_NAVIGATION_DEPENDENCIES = Object.freeze([
-  Object.freeze({ slug: "scp-744", title: "SCP-744", tags: ["_cc", "_licensebox", "auditory", "bleak", "building", "cernunnos", "cognitohazard", "corporate", "euclid", "horror", "psychological-horror", "reality-bending", "rewrite", "scp", "spatial", "surrealism", "the-trashfire"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-744/source.wikidot.txt", sha256: "6342f7c46b2a86ec5f76e2a35a15a168b315b0fab4869c22a5d26d8dc22c8f06" }),
-  Object.freeze({ slug: "scp-2117", title: "SCP-2117", tags: ["_cc", "_licensebox", "_listpages", "black-rabbit-company", "extraterrestrial", "heimdall", "illustrated", "inscription", "observational", "rewrite", "scp", "spatial", "thaumiel", "vehicle"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-2117/source.wikidot.txt", sha256: "6e3c90dd5b6c0847f664399e1c3fbbb374c1e4b56df1f44bd65b19493af0ec3a" }),
-  Object.freeze({ slug: "scp-5516", title: "SCP-5516", tags: ["_cc", "_licensebox", "ambrose-restaurant", "animal", "aquatic", "crustacean", "ethics-committee", "hive-mind", "safe", "scp"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-5516/source.wikidot.txt", sha256: "9ccece7725093347c5da5578544d23533cc7ca884f05183d2d2e0dcbf6723f74" }),
+  Object.freeze({ slug: "scp-744", title: "SCP-744", rating: 100, tags: ["_cc", "_licensebox", "auditory", "bleak", "building", "cernunnos", "cognitohazard", "corporate", "euclid", "horror", "psychological-horror", "reality-bending", "rewrite", "scp", "spatial", "surrealism", "the-trashfire"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-744/source.wikidot.txt", sha256: "6342f7c46b2a86ec5f76e2a35a15a168b315b0fab4869c22a5d26d8dc22c8f06" }),
+  Object.freeze({ slug: "scp-2117", title: "SCP-2117", rating: 310, tags: ["_cc", "_licensebox", "_listpages", "black-rabbit-company", "extraterrestrial", "heimdall", "illustrated", "inscription", "observational", "rewrite", "scp", "spatial", "thaumiel", "vehicle"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-2117/source.wikidot.txt", sha256: "6e3c90dd5b6c0847f664399e1c3fbbb374c1e4b56df1f44bd65b19493af0ec3a" }),
+  Object.freeze({ slug: "scp-5516", title: "SCP-5516", rating: 78, tags: ["_cc", "_licensebox", "ambrose-restaurant", "animal", "aquatic", "crustacean", "ethics-committee", "hive-mind", "safe", "scp"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/scp-5516/source.wikidot.txt", sha256: "9ccece7725093347c5da5578544d23533cc7ca884f05183d2d2e0dcbf6723f74" }),
   Object.freeze({ slug: "classification-committee-memo", title: "Classification Committee Memo", tags: ["_licensebox", "director-aktus", "essay"], path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/classification-committee-memo/source.wikidot.txt", sha256: "541333d3eebf3f5eda8643f1f14feacfb60e47c26081bb0ab8bb84b683140ad2" }),
   Object.freeze({ slug: "info:start", title: "Info Start", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:start/source.wikidot.txt", sha256: "d6f589988a92b86a5bf5c1a052a14e3165b2f95f7974665fada068ca402de8c4" }),
   Object.freeze({ slug: "info:more", title: "Info More", path: "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/en/pages/info:more/source.wikidot.txt", sha256: "839e6a242e27de4f93c54005fcc7edcb0819b4ba95394884dd88b7b8dc9c93cb" }),
@@ -473,11 +475,13 @@ export async function prepareCompatibilityCandidateInputs(args) {
     };
     await propagateActors();
 
-    const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false, tags = [], allowExisting = false } = {}) => {
+    const page = async (slug, title, wikitext, { siteId = SITE_ID, imported = false, tags = [], rating = 0, allowExisting = false } = {}) => {
+      if (!Number.isSafeInteger(rating)) throw new Error(`candidate fixture rating is not an integer: ${slug}`);
       const prior = await rpc("page_get", { site_id: siteId, page: slug, details: { wikitext: true, compiled: false } }, { siteId });
       if (prior !== null) {
         if (!allowExisting || ![-1, -2].includes(prior.revision_user_id)) throw new Error(`candidate fixture already exists: ${siteId}:${slug}`);
         if (imported && tags.length > 0) sql(database, `update page_revision set tags=ARRAY[${tags.map(sqlLiteral).join(",")}]::text[] where revision_id=${prior.revision_id};`);
+        if (imported) sql(database, `update wikidot_page_snapshot set imported_rating=${rating} where page_id=${prior.page_id};`);
         return prior;
       }
       await rpc("page_create", { site_id: siteId, slug, title, alt_title: null, wikitext, layout: "wikidot", user_id: -1, ip_address: "127.0.0.1", tags, revision_comments: "compatibility candidate fixture" }, { siteId });
@@ -486,7 +490,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (imported) {
         const slugLiteral = sqlLiteral(slug);
         const textLiteral = sqlLiteral(wikitext);
-        sql(database, `update page set from_wikidot=true where page_id=${created.page_id}; update page_revision set from_wikidot=true where revision_id=${created.revision_id}; insert into wikidot_corpus_import_run(site_id,source_branch,source_site,manifest_sha256,manifest_row_count,complete_inventory,state,finished_at,summary) select ${created.site_id},'master',(select slug from site where site_id=${created.site_id}),decode(md5('B689 candidate graph '||${created.site_id})||md5('B689 candidate graph '||${created.site_id}),'hex'),0,true,'done',now(),'{}'::jsonb where not exists (select 1 from wikidot_corpus_import_run where site_id=${created.site_id} and source_branch='master' and source_site=(select slug from site where site_id=${created.site_id})); insert into wikidot_page_snapshot(page_id,source_branch,source_site,source_entity_id,source_fullname,source_created_at,source_updated_at,source_revision_count,imported_rating,created_by_name,updated_by_name,title_shown,parent_fullname,comments,source_sha256,meta_sha256,meta_json,last_import_run_id) values(${created.page_id},'master',(select slug from site where site_id=${created.site_id}),(substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),1,8)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),9,4)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),13,4)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),17,4)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),21,12))::uuid,${slugLiteral},now(),now(),1,0,null,null,${sqlLiteral(title)},null,0,decode(md5(${textLiteral})||md5(${textLiteral}),'hex'),decode(md5('{}')||md5('{}'),'hex'),'{}'::jsonb,(select max(import_run_id) from wikidot_corpus_import_run where site_id=${created.site_id}));`);
+        sql(database, `update page set from_wikidot=true where page_id=${created.page_id}; update page_revision set from_wikidot=true where revision_id=${created.revision_id}; insert into wikidot_corpus_import_run(site_id,source_branch,source_site,manifest_sha256,manifest_row_count,complete_inventory,state,finished_at,summary) select ${created.site_id},'master',(select slug from site where site_id=${created.site_id}),decode(md5('B689 candidate graph '||${created.site_id})||md5('B689 candidate graph '||${created.site_id}),'hex'),0,true,'done',now(),'{}'::jsonb where not exists (select 1 from wikidot_corpus_import_run where site_id=${created.site_id} and source_branch='master' and source_site=(select slug from site where site_id=${created.site_id})); insert into wikidot_page_snapshot(page_id,source_branch,source_site,source_entity_id,source_fullname,source_created_at,source_updated_at,source_revision_count,imported_rating,created_by_name,updated_by_name,title_shown,parent_fullname,comments,source_sha256,meta_sha256,meta_json,last_import_run_id) values(${created.page_id},'master',(select slug from site where site_id=${created.site_id}),(substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),1,8)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),9,4)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),13,4)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),17,4)||'-'||substr(md5((select slug from site where site_id=${created.site_id})||':'||${slugLiteral}),21,12))::uuid,${slugLiteral},now(),now(),1,${rating},null,null,${sqlLiteral(title)},null,0,decode(md5(${textLiteral})||md5(${textLiteral}),'hex'),decode(md5('{}')||md5('{}'),'hex'),'{}'::jsonb,(select max(import_run_id) from wikidot_corpus_import_run where site_id=${created.site_id}));`);
       }
       return created;
     };
@@ -522,7 +526,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       if (sha256(wikitext) !== dependency.sha256) throw new Error(`B689 navigation dependency drifted: ${dependency.slug}`);
       const tags = dependency.tags ?? JSON.parse(await fs.readFile(path.join(path.dirname(dependency.path), "meta.json"), "utf8")).tags;
       const importedTags = B689_PRESERVED_DEPENDENCIES.has(dependency.slug) ? [] : tags;
-      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: importedTags, allowExisting: true });
+      await page(dependency.slug, dependency.title, wikitext, { siteId: standardSiteId, imported: true, tags: importedTags, rating: dependency.rating, allowExisting: true });
     }
     for (const dependency of [...B689_NAVIGATION_DEPENDENCIES].reverse()) {
       if (dependency.slug.startsWith("theme:") || B689_PRESERVED_DEPENDENCIES.has(dependency.slug)) continue;
@@ -562,7 +566,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       b689Fixtures.source.slug,
       b689Fixtures.source.title,
       b689Fixtures.source.wikitext,
-      { siteId: standardSiteId, imported: true, tags: b689Fixtures.source.tags },
+      { siteId: standardSiteId, imported: true, tags: b689Fixtures.source.tags, rating: b689Fixtures.source.rating },
     );
     await rpc(
       "parent_set",
