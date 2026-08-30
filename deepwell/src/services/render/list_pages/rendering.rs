@@ -2843,7 +2843,9 @@ impl RenderService {
             )?;
         let mut output = output;
         for insertion in &runtime_css_insertions {
+            output.push_str("\n[[module CSS]]\n");
             output.push_str(&insertion.marker);
+            output.push_str("\n[[/module]]\n");
         }
         Ok(ListPagesBlockRenderResult::Expanded(
             ListPagesRenderedBlock {
