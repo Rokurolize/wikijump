@@ -1193,6 +1193,11 @@ Captures the six issue #1372 temporal intervals for all 14 subjects. The URL fla
 export async function runTemporalCapture(args) {
   const contractFile = await jsonIdentity(args.contract, "run_contract", "wikijump.framerail_route_action_browser_run.v1");
   const contract = contractFile.descriptor;
+  const executionMode = args.executionMode ?? "live";
+  const requestIntervalMs = args.requestIntervalMs ?? DEFAULT_REQUEST_INTERVAL_MS;
+  if (!["candidate", "live"].includes(executionMode) || !Number.isSafeInteger(requestIntervalMs) || requestIntervalMs < 0 || (executionMode === "candidate" && requestIntervalMs !== 0) || (executionMode === "live" && requestIntervalMs < DEFAULT_REQUEST_INTERVAL_MS)) {
+    throw new Error("temporal capture execution mode and request interval are incompatible");
+  }
   const {scenarios: contractScenarios} = validateTemporalRunContract(contract);
   const urls = urlsFromArgs(args);
   const runId = args.runId;
@@ -1238,14 +1243,15 @@ export async function runTemporalCapture(args) {
       storage_state: runOwnedStorageStates[scenario.id],
     }));
     captureLock = await acquireBrowserCaptureLock({runId});
-    requestGate = await createPersistentBrowserRequestGate({statePath: captureLock.statePath, intervalMs: DEFAULT_REQUEST_INTERVAL_MS});
+    requestGate = await createPersistentBrowserRequestGate({statePath: captureLock.statePath, intervalMs: requestIntervalMs});
     await writeExclusiveJson(requestGateConfigPath, {
       schema: "wikijump_full_parity.browser_request_gate_config.v1",
       status: "sealed_before_browser_request",
       run_id: runId,
       lock: {path: captureLock.path, owner: captureLock.owner},
       state_path: captureLock.statePath,
-      interval_ms: DEFAULT_REQUEST_INTERVAL_MS,
+      execution_mode: executionMode,
+      interval_ms: requestIntervalMs,
       source_context_exempt_origins: [],
       local_context_exempt_origins: localOrigins,
       public_request_policy: "every HTTP(S) request except an exact local-context origin is admitted by the shared gate",
@@ -1372,6 +1378,8 @@ export async function runTemporalCapture(args) {
           display_depth: captureDisplay.depth,
         },
         request_gate_config: requestGateConfigPath,
+        execution_mode: executionMode,
+        request_interval_ms: requestIntervalMs,
         request_gate: requestGate.snapshot(),
       },
     };

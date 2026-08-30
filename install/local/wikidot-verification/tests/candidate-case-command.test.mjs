@@ -116,6 +116,8 @@ test("issue #1372 candidate case set invokes the temporal seam and maps all 84 r
           run_contract_identity: {path: contractPath, sha256: createHash("sha256").update(await fs.readFile(contractPath)).digest("hex")},
           capture_script_identity: {path: scriptPath, sha256: scriptSha256},
           request_gate_config: path.join(temporalOutput, "request-gate-config.json"),
+          execution_mode: "candidate",
+          request_interval_ms: 0,
         },
         cleanup_observed: {browser_sessions_closed: 3, egress_proxies_closed: true, request_gate_flushed: true, capture_lock_released: true, storage_states_removed: true},
       }), {flag: "wx"});
@@ -147,6 +149,8 @@ test("issue #1372 candidate case set invokes the temporal seam and maps all 84 r
   const rows = await run.execute();
   assert.equal(rows.length, 84);
   assert.equal(temporalArgs.outputDir, path.join(outputRoot, "framerail-route-action-temporal"));
+  assert.equal(temporalArgs.executionMode, "candidate");
+  assert.equal(temporalArgs.requestIntervalMs, 0);
   assert.equal(run.verifyCase(rows[0].case_id, rows[0].observations).verified, true);
   assert.equal((await run.cleanup()).public_absence_verified, true);
 });
@@ -197,6 +201,8 @@ async function issue1372PrepareRun({evidenceBuilder = (rows) => rows, candidateC
           run_contract_identity: {path: contractPath1372, sha256: contractSha256},
           capture_script_identity: {path: scriptPath1372, sha256: scriptSha256},
           request_gate_config: path.join(temporalOutput, "request-gate-config.json"),
+          execution_mode: "candidate",
+          request_interval_ms: 0,
         },
         cleanup_observed: {browser_sessions_closed: 3, egress_proxies_closed: true, request_gate_flushed: true, capture_lock_released: true, storage_states_removed: true},
       }), {flag: "wx"});

@@ -90,6 +90,7 @@ function assertTemporalIdentity(result, contract, contractSha256, candidateIdent
   }
   if (result.capture?.run_contract_identity?.path !== CONTRACT_PATH || result.capture.run_contract_identity.sha256 !== contractSha256 || result.capture.capture_script_identity?.path !== path.join(REPOSITORY_ROOT, contract.capture.script) || result.capture.capture_script_identity.sha256 !== contract.capture.script_sha256) throw new Error("temporal result contract or script identity is not sealed");
   if (result.capture.request_gate_config !== path.join(outputDir, "request-gate-config.json")) throw new Error("temporal result request-gate path is not run-owned");
+  if (result.capture.execution_mode !== "candidate" || result.capture.request_interval_ms !== 0) throw new Error("temporal result did not prove candidate execution mode without a fixed request throttle");
 }
 
 export async function createFramerailRouteActionCandidateCaseSet({temporalRunner = runTemporalCapture} = {}) {
@@ -111,7 +112,7 @@ export async function createFramerailRouteActionCandidateCaseSet({temporalRunner
         runtimeBindings: input.runtimeBindings,
         privateInputIdentity: {temporal_capture_input_sha256: privateInputSha256},
         browserCredentialPolicy: "none",
-        plan: {schema: "wikijump.framerail_route_action_candidate_plan.v1", run_id: runId, contract_path: CONTRACT_RELATIVE_PATH, contract_sha256: contractSha256, case_ids: definitions.map(({case_id}) => case_id)},
+        plan: {schema: "wikijump.framerail_route_action_candidate_plan.v1", run_id: runId, execution_mode: "candidate", request_interval_ms: 0, contract_path: CONTRACT_RELATIVE_PATH, contract_sha256: contractSha256, case_ids: definitions.map(({case_id}) => case_id)},
         async execute() {
           if (signal?.aborted) throw signal.reason ?? new Error("temporal candidate capture was aborted");
           const temporalOutputDir = path.join(outputDir, TEMPORAL_OUTPUT_NAME);
@@ -136,6 +137,8 @@ export async function createFramerailRouteActionCandidateCaseSet({temporalRunner
             success_missing_url: urls.success.missing_page,
             success_saved_url: urls.success.saved_page,
             runId,
+            executionMode: "candidate",
+            requestIntervalMs: 0,
             timeoutMs: input.capture.timeout_ms ?? 30_000,
             ignoreHttpsErrors: input.capture.ignore_https_errors === true,
           };
