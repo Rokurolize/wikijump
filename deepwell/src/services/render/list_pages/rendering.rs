@@ -2719,7 +2719,6 @@ impl RenderService {
             }
             if !rendered_page_styles.is_empty() {
                 let marker = compat_text.push("");
-                output.push_str(&marker);
                 runtime_css_insertions.push(
                     super::super::compat::preparation::RuntimeCssInsertion {
                         marker,
@@ -2842,6 +2841,10 @@ impl RenderService {
                     .as_ref()
                     .and_then(|titles| titles.page_existence()),
             )?;
+        let mut output = output;
+        for insertion in &runtime_css_insertions {
+            output.push_str(&insertion.marker);
+        }
         Ok(ListPagesBlockRenderResult::Expanded(
             ListPagesRenderedBlock {
                 expansion: IncludeExpansion {
