@@ -131,6 +131,14 @@ async function withTimeout(promise, message) {
   }
 }
 
+export async function waitForLegacyActionReadiness(page) {
+  await page.waitForFunction(
+    () => typeof globalThis.WIKIDOT?.page?.listeners?.userInfo === "function",
+    undefined,
+    { timeout: TIMEOUT_MS },
+  );
+}
+
 export class Open43A1030RateBrowserAdapter {
   #browserContexts;
   #pageOrigin;
@@ -337,6 +345,7 @@ export class Open43A1030RateBrowserAdapter {
     let doubleSuppressed = false;
     try {
       await mutationPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await waitForLegacyActionReadiness(mutationPage);
       const rateUp = mutationPage.locator(RATE_UP);
       await rateUp.waitFor({ state: "visible", timeout: TIMEOUT_MS });
 
@@ -444,6 +453,7 @@ export class Open43A1030RateBrowserAdapter {
     let doubleSuppressed = false;
     try {
       await mutationPage.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await waitForLegacyActionReadiness(mutationPage);
       const fourthStar = mutationPage.locator(STAR_IMAGE).nth(3);
       await fourthStar.waitFor({ state: "visible", timeout: TIMEOUT_MS });
 

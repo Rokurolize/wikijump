@@ -11,7 +11,7 @@ import {
   createOpen43A1030RateCandidateCaseSet,
 } from "../src/open43-a1030-rate-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
-import { captureProof } from "../src/open43-a1030-rate-browser-adapter.mjs";
+import { captureProof, waitForLegacyActionReadiness } from "../src/open43-a1030-rate-browser-adapter.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const SITE_ID = 6000003;
@@ -266,6 +266,18 @@ test("A1030 records expected external stylesheet ORB failures without hiding oth
   });
   assert.equal(proof.expected_external_stylesheet_failure_count, 1);
   assert.equal(proof.failure_count, 1);
+});
+
+test("A1030 waits for the legacy action owner before interacting", async () => {
+  let ready = false;
+  await waitForLegacyActionReadiness({
+    async waitForFunction(predicate) {
+      globalThis.WIKIDOT = { page: { listeners: { userInfo: () => undefined } } };
+      ready = predicate();
+      delete globalThis.WIKIDOT;
+    },
+  });
+  assert.equal(ready, true);
 });
 
 test("A1030 executes through the shared runner and cleans its run-owned pages", async (t) => {
