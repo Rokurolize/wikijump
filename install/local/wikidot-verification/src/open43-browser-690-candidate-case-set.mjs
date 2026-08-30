@@ -127,6 +127,36 @@ function validateTrace(trace, name) {
   return value;
 }
 
+function compareGeometryTraces(local, live, thresholds) {
+  const withoutStyles = (trace) => ({
+    ...trace,
+    elements: trace.elements.map((element) => {
+      const copy = { ...element };
+      delete copy.style;
+      return copy;
+    }),
+  });
+  return compareFirstDivergenceTraces(
+    withoutStyles(local),
+    withoutStyles(live),
+    thresholds,
+  );
+}
+
+function divergenceHasGeometry(divergence, thresholds) {
+  const delta = divergence?.geometry_delta ??
+    Object.fromEntries(["x", "y", "width", "height"].map((key) => [
+      key,
+      (divergence?.local?.rect?.[key] ?? 0) -
+        (divergence?.live?.rect?.[key] ?? 0),
+    ]));
+  return ["x", "y"].some((key) =>
+    Math.abs((delta?.[key] ?? 0)) > thresholds.geometry_position_px,
+  ) || ["width", "height"].some((key) =>
+    Math.abs((delta?.[key] ?? 0)) > thresholds.geometry_size_px,
+  );
+}
+
 function pageContentHeight(document, name) {
   const height = document?.geometry?.["#page-content"]?.rect?.height;
   if (!Number.isFinite(height) || height <= 0) {
@@ -235,7 +265,7 @@ function verifyGeometry(observations, plan, { phase, sequence, settled }) {
       page.candidate_trace,
       `${page.slug}${settled ? " settled" : ""} candidate trace`,
     );
-    const rawClassification = compareFirstDivergenceTraces(
+    const rawClassification = compareGeometryTraces(
       candidateTrace,
       liveTrace,
       {
@@ -400,8 +430,11 @@ export function verifyOpen43B690FixedSixPage(observations, plan) {
       : null;
     const settledDivergence = comparison.settled_first_divergent_element;
     if (
-      [initialDivergence?.kind, settledDivergence?.kind].some((kind) =>
-        ["geometry_divergence", "style_divergence"].includes(kind),
+      [initialDivergence, settledDivergence].some(
+        (divergence) =>
+          divergence?.kind === "geometry_divergence" ||
+          (divergence?.kind === "style_divergence" &&
+            divergenceHasGeometry(divergence, plan.thresholds ?? DEFAULT_THRESHOLDS)),
       )
     ) {
       throw new Error(

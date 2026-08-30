@@ -203,9 +203,10 @@ test("B690 verifies the ordered initial traces and fails on the first causal div
 
   const drifted = structuredClone(observations);
   drifted.pages[0].candidate_trace.elements[0].style.display = "inline";
+  drifted.pages[0].candidate_trace.elements[0].rect.height = 100;
   assert.throws(
     () => verifyOpen43B690GeometryInitial(drifted, plan),
-    /first divergence found.*style_divergence/u,
+    /first divergence found.*geometry_divergence/u,
   );
 
   const resourceTiming = structuredClone(observations);
@@ -239,10 +240,12 @@ test("B690 verifies settled resource completion before the total-height boundary
 
   const causal = structuredClone(observations);
   causal.pages[0].candidate_trace.elements[0].style.display = "inline";
+  assert.equal(verifyOpen43B690GeometrySettled(causal, plan).verified, true);
   causal.pages[0].candidate_page_content_height = 200;
+  causal.pages[0].candidate_trace.elements[0].rect.height = 200;
   assert.throws(
     () => verifyOpen43B690GeometrySettled(causal, plan),
-    /first divergence found.*style_divergence/u,
+    /first divergence found.*geometry_divergence/u,
   );
 
   const tall = structuredClone(observations);
@@ -284,6 +287,12 @@ test("B690 verifies one fixed complete six-page denominator", () => {
   const divergent = structuredClone(observations);
   divergent.pages[4].comparison.settled_first_divergent_element.kind =
     "style_divergence";
+  divergent.pages[4].comparison.settled_first_divergent_element.local = {
+    rect: { x: 0, y: 0, width: 100, height: 100 },
+  };
+  divergent.pages[4].comparison.settled_first_divergent_element.live = {
+    rect: { x: 0, y: 0, width: 100, height: 20 },
+  };
   assert.throws(
     () => verifyOpen43B690FixedSixPage(divergent, plan),
     /first divergence found/u,
