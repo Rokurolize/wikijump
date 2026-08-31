@@ -36,6 +36,7 @@ jobs:
       framerail: ${{ steps.changes.outputs.framerail }}
       locales: ${{ steps.changes.outputs.locales }}
       workflow: ${{ steps.changes.outputs.workflow }}
+      verification: ${{ steps.changes.outputs.verification }}
     steps:
       - name: Select validation mode
         id: mode
@@ -233,6 +234,41 @@ jobs:
           cargo clippy --locked --tests --no-deps
           cargo run --locked
 
+  verification:
+    name: Verification checks
+    needs: classify
+    if: needs.classify.outputs.verification == 'true'
+    runs-on: ubuntu-latest
+    env:
+      DEEPWELL_RPC_TOKEN: "0000000000000000000000000000000000000000000000000000000000000000"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+        with:
+          version: 11.10.0
+
+      - name: Setup Node
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+          cache-dependency-path: install/local/wikidot-verification/pnpm-lock.yaml
+
+      - name: Install verification dependencies
+        run: pnpm --dir install/local/wikidot-verification install --frozen-lockfile
+
+      - name: Run verification checks
+        run: |
+          pnpm --dir install/local/wikidot-verification test
+          node --test install/standing/tests/verify-promotion-precondition.test.mjs
+          node scripts/generate-wikidot-specifications.mjs --check
+          node scripts/initialize-wikidot-implementation-ledger.mjs --check
+
   gate:
     # Keep one stable advisory aggregate. Publish CI / gate only when this run
     # validates the classifier and every selected component result. A
@@ -246,6 +282,7 @@ jobs:
       - wws
       - framerail
       - locales
+      - verification
     if: ${{ always() }}
     runs-on: ubuntu-latest
     env:
@@ -262,6 +299,8 @@ jobs:
       FRAMERAIL_RESULT: ${{ needs.framerail.result }}
       LOCALES_SELECTED: ${{ needs.classify.outputs.locales }}
       LOCALES_RESULT: ${{ needs.locales.result }}
+      VERIFICATION_SELECTED: ${{ needs.classify.outputs.verification }}
+      VERIFICATION_RESULT: ${{ needs.verification.result }}
     steps:
       - name: Metadata edit no-op
         if: ${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null }}
@@ -295,8 +334,10 @@ jobs:
           validate_selection wws "${WWS_SELECTED}"
           validate_selection framerail "${FRAMERAIL_SELECTED}"
           validate_selection locales "${LOCALES_SELECTED}"
+          validate_selection verification "${VERIFICATION_SELECTED}"
           check workflow "${WORKFLOW_SELECTED}" "${WORKFLOW_RESULT}"
           check deepwell "${DEEPWELL_SELECTED}" "${DEEPWELL_RESULT}"
           check wws "${WWS_SELECTED}" "${WWS_RESULT}"
           check framerail "${FRAMERAIL_SELECTED}" "${FRAMERAIL_RESULT}"
           check locales "${LOCALES_SELECTED}" "${LOCALES_RESULT}"
+          check verification "${VERIFICATION_SELECTED}" "${VERIFICATION_RESULT}"

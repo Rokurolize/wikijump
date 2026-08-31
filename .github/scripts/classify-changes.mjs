@@ -12,6 +12,7 @@ const WORKFLOW_POLICY_SUBJECTS = new Set([
 
 const selectAll = (selected) => {
   for (const group of GROUPS) selected[group] = true
+  selected.verification = true
 }
 
 const metadataOnly = (file) =>
@@ -42,7 +43,6 @@ export function classifyChanges(paths, all = false) {
 
   if (all) {
     selectAll(selected)
-    selected.verification = true
     return selected
   }
 

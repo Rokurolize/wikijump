@@ -164,10 +164,12 @@ test("classifier and gate changes fail closed", () => {
   ]) {
     const selected = classifyChanges([file])
     for (const group of GROUPS) assert.equal(selected[group], true, `${file}: ${group}`)
+    assert.equal(selected.verification, true, `${file}: verification`)
   }
 
   const manual = classifyChanges([], true)
   for (const group of GROUPS) assert.equal(manual[group], true, group)
+  assert.equal(manual.verification, true, "verification")
 })
 
 test("Browser CI changes select Framerail and workflow policy", () => {
@@ -188,6 +190,7 @@ test("documentation is cheap and unknown paths fail closed", () => {
   ]) {
     const selected = classifyChanges([file])
     for (const group of GROUPS) assert.equal(selected[group], true, `${file}: ${group}`)
+    assert.equal(selected.verification, true, `${file}: verification`)
   }
 })
 
@@ -393,6 +396,19 @@ test("central gate owns workflow policy and locales validation", () => {
   const source = workflow("ci-gate.yaml")
   assert.match(source, /node --test \.github\/tests\/\*\.test\.mjs/)
   assert.match(source, /cargo run --locked/)
+})
+
+test("verification changes are part of the required aggregate gate", () => {
+  const source = workflow("ci-gate.yaml")
+  const classify = jobBlock(source, "classify").join("\n")
+  const verification = jobBlock(source, "verification").join("\n")
+  const gate = jobBlock(source, "gate").join("\n")
+  assert.match(classify, /verification: \$\{\{ steps\.changes\.outputs\.verification \}\}/u)
+  assert.match(verification, /needs\.classify\.outputs\.verification == 'true'/u)
+  assert.match(verification, /pnpm --dir install\/local\/wikidot-verification test/u)
+  assert.match(gate, /- verification\n/u)
+  assert.match(gate, /VERIFICATION_RESULT: \$\{\{ needs\.verification\.result \}\}/u)
+  assert.match(gate, /check verification/u)
 })
 
 test("actions in touched workflows are immutable pins with version comments", () => {

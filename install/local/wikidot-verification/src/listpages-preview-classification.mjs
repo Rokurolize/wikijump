@@ -6,6 +6,7 @@ import {
   validateWikidotReference,
   visibleText,
 } from "./syntax-differential.mjs";
+import {localVisibleText} from "./local-output-comparison.mjs";
 import {
   compareListPagesPreviewHtml,
   LISTPAGES_PREVIEW_DIFFERENTIAL_SCHEMA,
@@ -2904,7 +2905,7 @@ export async function classifyListPagesPreviewDifferential({
         if (
           typeof row.local?.raw_html !== "string" ||
           row.local.html_sha256 !== sha256(row.local.raw_html) ||
-          row.local.visible_text !== visibleText(row.local.raw_html) ||
+          row.local.visible_text !== localVisibleText(row.local.raw_html) ||
           row.live?.html_sha256 !== reference.raw_html_sha256 ||
           row.live.visible_text !== visibleText(reference.raw_html)
         ) {

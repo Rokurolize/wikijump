@@ -32,6 +32,31 @@ test("duplicate issue numbers fail closed", async () => {
   assert.match(result.stderr, /duplicate issue number/);
 });
 
+test("inherited batch names fail closed", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
+  const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));
+  ledger.entries[0].batch = "toString";
+  const file = path.join(temporary, "ledger.json");
+  await fs.writeFile(file, JSON.stringify(ledger));
+  const result = run(file);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /unknown batch/);
+});
+
+test("passed implemented issues cannot self-authorize missing commits", async () => {
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
+  const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));
+  const entry = ledger.entries.find((candidate) => candidate.number === 1038);
+  entry.status = "passed";
+  entry.implementation_commits = [];
+  entry.goal = "current implementation; exact current-head replay";
+  const file = path.join(temporary, "ledger.json");
+  await fs.writeFile(file, JSON.stringify(ledger));
+  const result = run(file);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /no implementation commit/);
+});
+
 test("tracking completion fails while child work remains", async () => {
   const temporary = await fs.mkdtemp(path.join(os.tmpdir(), "wj-ledger-"));
   const ledger = JSON.parse(await fs.readFile(canonical, "utf8"));

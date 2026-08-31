@@ -26,11 +26,11 @@ const numbers = ledger.entries.map((entry) => entry.number);
 if (new Set(numbers).size !== numbers.length) throw new Error("duplicate issue number");
 for (const entry of ledger.entries) {
   if (!Number.isSafeInteger(entry.number) || entry.number <= 0) throw new Error("invalid issue number");
-  if (!ledger.batches[entry.batch]) throw new Error(`unknown batch for #${entry.number}`);
+  if (!Object.hasOwn(ledger.batches, entry.batch)) throw new Error(`unknown batch for #${entry.number}`);
   if (!Array.isArray(entry.artifacts) || !Array.isArray(entry.implementation_commits)) throw new Error(`invalid evidence fields for #${entry.number}`);
   if (entry.status === "passed") {
     if (entry.artifacts.length === 0) throw new Error(`passed issue #${entry.number} has no artifact`);
-    if (entry.number !== 1089 && entry.implementation_commits.length === 0 && entry.goal !== "current implementation; exact current-head replay") {
+    if (entry.number !== 1089 && entry.implementation_commits.length === 0) {
       throw new Error(`passed implemented issue #${entry.number} has no implementation commit`);
     }
     if (entry.number !== 1089) {
