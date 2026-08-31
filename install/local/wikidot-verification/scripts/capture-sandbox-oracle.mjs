@@ -453,6 +453,7 @@ async function main(argv) {
   const cleanupFailures = [];
   let cleanupSuccesses = 0;
   let requestGateSnapshot = null;
+  let requestGateError = null;
   const cleanupLocalPage = async (resource, identity, fixtureId) => {
     try {
       const result = await withTimeout(cleanupCreatedPage(wikijump, resource, identity), `local cleanup ${fixtureId}`);
@@ -589,11 +590,13 @@ async function main(argv) {
     }
   } finally {
     await Promise.resolve(browser?.close?.()).catch(() => undefined);
-    requestGateSnapshot = mergeRequestGateSnapshots(
-      previousRequestGateSnapshot,
-      await Promise.resolve(controls?.close?.()).catch(() => null),
-      args.forceFixtures,
-    );
+    const currentRequestGateSnapshot = await Promise.resolve(controls?.close?.()).catch((error) => {
+      requestGateError = {name: error?.name ?? "Error", message: error?.message ?? String(error)};
+      return null;
+    });
+    requestGateSnapshot = requestGateError === null
+      ? mergeRequestGateSnapshots(previousRequestGateSnapshot, currentRequestGateSnapshot, args.forceFixtures)
+      : null;
     await Promise.resolve(wikijump.close()).catch(() => undefined);
     await Promise.resolve(wikidot.close()).catch(() => undefined);
   }
@@ -629,9 +632,10 @@ async function main(argv) {
   await fs.writeFile(path.join(args.outputDir, "frozen-captures.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_captures.v1", captures: frozenRows}, null, 2)}\n`, {flag: outputFlag});
   await fs.writeFile(path.join(args.outputDir, "contracts.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_contracts.v1", contracts: contractRows}, null, 2)}\n`, {flag: outputFlag});
   await fs.writeFile(path.join(args.outputDir, "oracle-verdict.json"), `${JSON.stringify(aggregate.verdict, null, 2)}\n`, {flag: outputFlag});
-  await fs.writeFile(path.join(args.outputDir, "capture-receipt.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_capture_receipt.v1", status: aggregate.exitCode === 0 && cleanupFailures.length === 0 ? "pass" : "fail", run_id: args.runId, registry_path: args.registry, registry_sha256: await sha256File(args.registry), sources_path: args.sources, sources_sha256: await sha256File(args.sources), live_origin: LIVE_ORIGIN, local_origin: LOCAL_ORIGIN, runtime_identity: runtimeIdentity, request_gate: requestGateSnapshot, blocked_host_policy: {policy_version: policy.value.policy_version, policy_sha256: policy.sha256, by_fixture: blockedHostPolicyByFixture}, cleanup: {created_and_removed_pages: cleanupSuccesses, residual_pages: cleanupFailures.map(({fixture_id, target, resource, error}) => ({fixture_id, target, resource, error})), failures: cleanupFailures}}, null, 2)}\n`, {flag: outputFlag});
+  const requestGatePassed = requestGateError === null && requestGateSnapshot !== null;
+  await fs.writeFile(path.join(args.outputDir, "capture-receipt.json"), `${JSON.stringify({schema: "wikijump_local_lab.sandbox_oracle_capture_receipt.v1", status: aggregate.exitCode === 0 && cleanupFailures.length === 0 && requestGatePassed ? "pass" : "fail", run_id: args.runId, registry_path: args.registry, registry_sha256: await sha256File(args.registry), sources_path: args.sources, sources_sha256: await sha256File(args.sources), live_origin: LIVE_ORIGIN, local_origin: LOCAL_ORIGIN, runtime_identity: runtimeIdentity, request_gate: requestGateSnapshot, request_gate_error: requestGateError, blocked_host_policy: {policy_version: policy.value.policy_version, policy_sha256: policy.sha256, by_fixture: blockedHostPolicyByFixture}, cleanup: {created_and_removed_pages: cleanupSuccesses, residual_pages: cleanupFailures.map(({fixture_id, target, resource, error}) => ({fixture_id, target, resource, error})), failures: cleanupFailures}}, null, 2)}\n`, {flag: outputFlag});
   console.log(JSON.stringify({status: aggregate.verdict.aggregate.fail === 0 ? "pass" : "fail", fixtures: aggregate.verdict.fixture_count, failed: aggregate.verdict.aggregate.fail, output_dir: args.outputDir}));
-  return aggregate.exitCode === 0 && cleanupFailures.length === 0 ? 0 : 1;
+  return aggregate.exitCode === 0 && cleanupFailures.length === 0 && requestGatePassed ? 0 : 1;
 }
 
 try {
