@@ -90,7 +90,7 @@ export function has<K extends string, T>(
 /** Removes all properties assigned to `undefined` in an object. */
 export function removeUndefined<T>(obj: T) {
   // this wacky approach is faster as it avoids an iterator
-  const keys = Object.keys(obj) as (keyof T)[]
+  const keys = Object.keys(obj as object) as (keyof T)[]
   for (let i = 0; i < keys.length; i++) {
     if (obj[keys[i]] === undefined) delete obj[keys[i]]
   }

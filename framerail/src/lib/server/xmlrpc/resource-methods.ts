@@ -1024,15 +1024,15 @@ async function getDeepwellPageLifecycleIdentity(
   } catch {
     throw pageLifecycleIdentityUnavailable()
   }
-  if (
-    !isDeepwellPageLifecycleIdentity(identity) ||
-    identity.created_by === null ||
-    identity.updated_by === null
-  ) {
+  if (!isDeepwellPageLifecycleIdentity(identity)) {
+    throw pageLifecycleIdentityUnavailable()
+  }
+  const { created_by, updated_by } = identity
+  if (created_by === null || updated_by === null) {
     throw pageLifecycleIdentityUnavailable()
   }
 
-  return identity
+  return { created_by, updated_by }
 }
 
 async function preflightExistingPageLifecycleIdentity(

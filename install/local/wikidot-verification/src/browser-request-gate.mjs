@@ -494,6 +494,15 @@ async function servePublicRoute(route, {gate, responseCache}) {
   await route.fulfill(entry);
 }
 
+/**
+ * @param {import("@playwright/test").BrowserContext} context
+ * @param {{
+ *   gate: object
+ *   exemptOrigins?: string[]
+ *   responseCache?: object | null
+ *   publicOriginPredicate?: ((value: string, resourceType: string, method: string) => boolean) | null
+ * }} [options]
+ */
 export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null} = {}) {
   if (!gate || typeof gate.acquire !== "function" || typeof gate.deferForRetryAfter !== "function" || typeof gate.failClosed !== "function" || typeof gate.recordLocalExempt !== "function" || typeof gate.recordUnsupportedRequestBlocked !== "function" || typeof gate.recordWebSocketBlocked !== "function") throw new Error("browser request gate is malformed");
   if (!context || typeof context.route !== "function" || typeof context.routeWebSocket !== "function" || typeof context.on !== "function") throw new Error("browser context cannot enforce request-level capture controls");

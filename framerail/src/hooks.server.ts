@@ -76,6 +76,7 @@ async function readAnonymousArticleResponseCacheForEvent(
         store: tokenStore,
         siteId
       })
+      if (!fences) return null
       const tokenMetadata = buildAnonymousArticleResponseCacheFences({
         siteId,
         siteSlug,
@@ -182,22 +183,22 @@ export const handle: Handle = async ({ event, resolve }) => {
           metadata: locals.anonymousArticleResponseCacheMetadata,
           response
         })
-        if (wroteResponse && tokenStore) {
-          const metadata = locals.anonymousArticleResponseCacheMetadata
+        const metadata = locals.anonymousArticleResponseCacheMetadata
+        if (wroteResponse && tokenStore && metadata) {
           const tokenMetadata = buildAnonymousArticleResponseCacheFences({
-            siteId: metadata?.siteId,
-            siteSlug: metadata?.siteSlug,
-            requestHost: metadata?.requestHost,
+            siteId: metadata.siteId,
+            siteSlug: metadata.siteSlug,
+            requestHost: metadata.requestHost,
             route: getArticleRoute(event),
-            requestLocales: metadata?.requestLocales,
-            backendLocales: metadata?.backendLocales,
-            publicContentFence: metadata?.publicContentFence,
-            permissionFence: metadata?.permissionFence
+            requestLocales: metadata.requestLocales,
+            backendLocales: metadata.backendLocales,
+            publicContentFence: metadata.publicContentFence,
+            permissionFence: metadata.permissionFence
           })
           await writeAnonymousArticleResponseToken({
             store: tokenStore,
             tokenMetadata,
-            deepwellArticlePageCacheKey: metadata?.deepwellArticlePageCacheKey
+            deepwellArticlePageCacheKey: metadata.deepwellArticlePageCacheKey
           })
         }
       }

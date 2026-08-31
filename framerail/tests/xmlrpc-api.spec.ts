@@ -2178,7 +2178,11 @@ test("XML-RPC files.get_one rejects metadata above the local 6 MB read limit bef
   const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
   expect(fileLogResponse.status()).toBe(200)
   const fileLog = await fileLogResponse.json()
-  expect(fileLog.fileGet.map(({ params }) => params.details.data)).toEqual([false])
+  expect(
+    fileLog.fileGet.map(
+      ({ params }: { params: { details: { data: boolean } } }) => params.details.data
+    )
+  ).toEqual([false])
 })
 
 test("XML-RPC files.get_one allows the local 6 MB boundary using a tiny synthetic payload", async ({
@@ -2202,7 +2206,11 @@ test("XML-RPC files.get_one allows the local 6 MB boundary using a tiny syntheti
   const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
   expect(fileLogResponse.status()).toBe(200)
   const fileLog = await fileLogResponse.json()
-  expect(fileLog.fileGet.map(({ params }) => params.details.data)).toEqual([false, true])
+  expect(
+    fileLog.fileGet.map(
+      ({ params }: { params: { details: { data: boolean } } }) => params.details.data
+    )
+  ).toEqual([false, true])
 })
 
 test("XML-RPC files.get_meta still returns metadata above the local files.get_one read limit", async ({

@@ -132,7 +132,7 @@ export function highlightWikidotCodeBlock(block: HTMLElement): Promise<void> {
 
   const job = (async () => {
     for (;;) {
-      const code = block.querySelector("pre > code")
+      const code = block.querySelector<HTMLElement>("pre > code")
       const requestedLanguage = block.dataset.wjLanguage?.trim()
       if (!code || !requestedLanguage) return
 
