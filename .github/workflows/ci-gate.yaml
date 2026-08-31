@@ -20,8 +20,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && (github.event.action != 'edited' || github.event.changes.base != null) && format('ci-pr-{0}', github.event.pull_request.number) || format('ci-run-{0}', github.run_id) }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' && (github.event.action != 'edited' || github.event.changes.base != null) }}
+  group: ${{ github.event_name == 'pull_request' && (github.event.action != 'edited' || github.event.changes.base != null) && format('ci-pr-{0}', github.event.pull_request.number) || github.event_name == 'push' && format('ci-push-{0}', github.ref) || format('ci-run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.event.action != 'edited' || github.event.changes.base != null) }}
 
 jobs:
   classify:

@@ -15,6 +15,10 @@ const selectAll = (selected) => {
   selected.verification = true
 }
 
+const selectWorkflow = (selected) => {
+  selected.workflow = true
+}
+
 const metadataOnly = (file) =>
   file.startsWith("docs/") ||
   ["AGENTS.md", "CLAUDE.md", "CODEOWNERS", "LICENSE.md", "README.md", "SECURITY.md"].includes(file)
@@ -56,7 +60,7 @@ export function classifyChanges(paths, all = false) {
       file === ".github/scripts/classify-changes.mjs" ||
       file === ".github/tests/ci-gate-workflow.test.mjs"
     ) {
-      selectAll(selected)
+      selectWorkflow(selected)
       continue
     }
 
