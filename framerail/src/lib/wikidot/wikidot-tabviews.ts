@@ -46,6 +46,31 @@ function activateTab(link: HTMLAnchorElement): boolean {
 
 export function wikidotTabviews(node: HTMLElement) {
   const controller = new AbortController()
+  let cancelled = false
+
+  const activateInitialTabviews = () => {
+    for (const tabView of node.querySelectorAll<HTMLElement>(".yui-navset")) {
+      tabView.classList.add("yui-navset-top")
+      tabView
+        .querySelector<HTMLElement>(":scope > .yui-nav > li.selected")
+        ?.setAttribute("title", "active")
+    }
+  }
+
+  const activateWhenWikidotReady = () => {
+    if (cancelled) return
+    if (
+      document.readyState !== "loading" &&
+      document.body &&
+      document.getElementById("dummy-ondomready-block")
+    ) {
+      activateInitialTabviews()
+      return
+    }
+    window.setTimeout(activateWhenWikidotReady, 200)
+  }
+
+  activateWhenWikidotReady()
 
   node.addEventListener(
     "click",
@@ -64,6 +89,7 @@ export function wikidotTabviews(node: HTMLElement) {
 
   return {
     destroy() {
+      cancelled = true
       controller.abort()
     }
   }
