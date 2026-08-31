@@ -323,12 +323,12 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     "selection evidence must be sealed before activation wait timeouts are armed"
   )
   assert.ok(
-    captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') < captureScript.indexOf("const loadingSignal = subject.loading.kind") &&
-      captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') > captureScript.indexOf('scenario, "selection", navigationStatus, outputDir'),
-    "success activation must wait for the browser DOMContentLoaded readiness boundary after selection evidence"
+    captureScript.indexOf("await waitForCandidateDocumentReady(page") < captureScript.indexOf("const loadingSignal = subject.loading.kind") &&
+      captureScript.indexOf("await waitForCandidateDocumentReady(page") > captureScript.indexOf('scenario, "selection", navigationStatus, outputDir'),
+    "success activation must wait for the browser document readiness boundary after selection evidence"
   )
   assert.ok(
-    captureScript.indexOf("await waitForCandidateNetworkIdle(page") > captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') &&
+    captureScript.indexOf("await waitForCandidateNetworkIdle(page") > captureScript.indexOf("await waitForCandidateDocumentReady(page") &&
       captureScript.indexOf("await waitForCandidateNetworkIdle(page") < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
     "success activation must wait for the browser network-idle hydration boundary before arming signals"
   )
