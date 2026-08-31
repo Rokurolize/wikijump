@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import subprocess
 from pathlib import Path
 
 
@@ -21,6 +22,16 @@ def sha256(path):
     return hashlib.sha256(read_bytes(path)).hexdigest()
 
 
+def verify_repository():
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    tree = subprocess.run(["git", "rev-parse", "HEAD^{tree}"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    if head != BASE_COMMIT or tree != BASE_TREE:
+        raise RuntimeError(f"repository identity is {head}/{tree}, expected {BASE_COMMIT}/{BASE_TREE}")
+    dirty = subprocess.run(["git", "status", "--porcelain=v1", "--untracked-files=all"], cwd=ROOT, check=True, capture_output=True).stdout
+    if dirty.strip():
+        raise RuntimeError("repository must be clean before source attribution")
+
+
 def witness(path, anchors):
     source = read_bytes(path).decode()
     lines = source.splitlines()
@@ -37,6 +48,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
+    verify_repository()
 
     fixture = json.loads(read_bytes(FIXTURE_PATH))
     inventory = json.loads(read_bytes(INVENTORY_PATH))
@@ -142,7 +154,8 @@ def main():
     }
     output = ROOT / args.output
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(artifact, indent=2) + "\n")
+    with output.open("x") as handle:
+        handle.write(json.dumps(artifact, indent=2) + "\n")
 
 
 if __name__ == "__main__":
