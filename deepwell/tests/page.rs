@@ -10749,8 +10749,10 @@ async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
     const PRIVATE_CATEGORY: &str = "fixture-sitechanges-private";
     const PRIVATE_PAGE: &str = "fixture-sitechanges-private-page";
     const PUBLIC_PAGE: &str = "fixture-sitechanges-public-page";
+    const HIDDEN_PAGE: &str = "fixture-sitechanges-hidden-page";
     const PUBLIC_TITLE: &str = "Fixture SiteChanges Public Page";
     const PRIVATE_TITLE: &str = "Fixture SiteChanges Private Page";
+    const HIDDEN_TITLE: &str = "Fixture SiteChanges Hidden Page";
     const HOLDER: &str = "fixture-sitechanges-holder";
     const SOURCE: &str = "SITECHANGES_START\n[[module SiteChanges]]\nSITECHANGES_END";
 
@@ -10768,6 +10770,37 @@ async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
         "public SiteChanges fixture",
     )
     .await;
+    let hidden_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HIDDEN_PAGE,
+        HIDDEN_TITLE,
+        "hidden SiteChanges fixture",
+    )
+    .await;
+    let hidden_page_id = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(HIDDEN_PAGE)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("hidden SiteChanges page lookup should succeed")
+        .expect("hidden SiteChanges page should exist")
+        .page_id;
+    run_endpoint!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": hidden_page_id,
+            "revision_id": hidden_revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["comments", "title", "slug"],
+        }),
+    );
     let mut private_revision_id = create_listpages_test_page(
         &mut runner,
         site_id,
@@ -10826,7 +10859,12 @@ async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
             preview.body,
         );
     }
-    for forbidden in [PRIVATE_TITLE, PRIVATE_CATEGORY, "[[module SiteChanges"] {
+    for forbidden in [
+        PRIVATE_TITLE,
+        HIDDEN_TITLE,
+        PRIVATE_CATEGORY,
+        "[[module SiteChanges",
+    ] {
         assert!(
             !preview.body.contains(forbidden),
             "anonymous preview must not contain {forbidden:?}:\n{}",
@@ -10851,7 +10889,9 @@ async fn sitechanges_default_snapshot_filters_before_the_initial_page_limit() {
         other => panic!("expected a found SiteChanges page view, got {other:?}"),
     };
     assert!(
-        anonymous_body.contains(PUBLIC_TITLE) && !anonymous_body.contains(PRIVATE_TITLE),
+        anonymous_body.contains(PUBLIC_TITLE)
+            && !anonymous_body.contains(PRIVATE_TITLE)
+            && !anonymous_body.contains(HIDDEN_TITLE),
         "saved anonymous page_view must filter hidden revisions before selecting its first 20 rows:\n{anonymous_body}",
     );
 
