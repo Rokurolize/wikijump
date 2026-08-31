@@ -380,6 +380,8 @@ fn expand_next_previous_page_without_current_page(
 
 fn find_next_previous_page_occurrences(source: &str) -> Vec<NextPreviousOccurrence<'_>> {
     let mut occurrences = Vec::new();
+    let close_positions =
+        find_ascii_case_insensitive_positions(source.as_bytes(), b"[[/module]]");
     let mut search_start = 0;
     while let Some(captures) =
         NEXT_PREVIOUS_PAGE_OPEN_REGEX.captures(&source[search_start..])
@@ -400,12 +402,10 @@ fn find_next_previous_page_occurrences(source: &str) -> Vec<NextPreviousOccurren
             .next()
             .is_some_and(|character| matches!(character, '\n' | '\r'))
         {
-            match source[open_end..]
-                .to_ascii_lowercase()
-                .find("[[/module]]")
-                .map(|offset| open_end + offset)
-            {
-                Some(close_start) => {
+            match close_positions.get(
+                close_positions.partition_point(|&close_start| close_start < open_end),
+            ) {
+                Some(&close_start) => {
                     let close_end = close_start + "[[/module]]".len();
                     (close_end, &source[open_end..close_start])
                 }
@@ -425,6 +425,20 @@ fn find_next_previous_page_occurrences(source: &str) -> Vec<NextPreviousOccurren
         search_start = end;
     }
     occurrences
+}
+
+fn find_ascii_case_insensitive_positions(source: &[u8], needle: &[u8]) -> Vec<usize> {
+    source
+        .windows(needle.len())
+        .enumerate()
+        .filter_map(|(index, candidate)| {
+            candidate
+                .iter()
+                .zip(needle)
+                .all(|(left, right)| left.eq_ignore_ascii_case(right))
+                .then_some(index)
+        })
+        .collect()
 }
 
 fn parse_next_previous_page_arguments(
@@ -852,6 +866,19 @@ mod tests {
             ))
             .len(),
             1,
+        );
+    }
+
+    #[test]
+    fn next_previous_occurrence_scan_handles_many_unclosed_modules() {
+        let source = "[[module NextPage]]\n".repeat(16_384);
+        let occurrences = find_next_previous_page_occurrences(&source);
+
+        assert_eq!(occurrences.len(), 16_384);
+        assert!(
+            occurrences
+                .iter()
+                .all(|occurrence| occurrence.body.is_empty())
         );
     }
 
