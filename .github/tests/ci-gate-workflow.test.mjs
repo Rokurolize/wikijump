@@ -156,15 +156,16 @@ test("component and lockfile changes select complete validation", () => {
   assert.equal(toolchain.locales, true)
 })
 
-test("classifier and gate changes fail closed", () => {
+test("classifier and gate changes run only workflow policy", () => {
   for (const file of [
     ".github/workflows/ci-gate.yaml",
     ".github/scripts/classify-changes.mjs",
     ".github/tests/ci-gate-workflow.test.mjs"
   ]) {
     const selected = classifyChanges([file])
-    for (const group of GROUPS) assert.equal(selected[group], true, `${file}: ${group}`)
-    assert.equal(selected.verification, true, `${file}: verification`)
+    assert.equal(selected.workflow, true, `${file}: workflow`)
+    for (const group of GROUPS.filter((group) => group !== "workflow")) assert.equal(selected[group], false, `${file}: ${group}`)
+    assert.equal(selected.verification, false, `${file}: verification`)
   }
 
   const manual = classifyChanges([], true)
