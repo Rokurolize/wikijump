@@ -128,7 +128,17 @@ impl LegacyActionService {
             .or_raise(|| {
                 Error::new("failed to load legacy action page source", ErrorType::Text)
             })?;
-        let registry = LegacyActionRegistry::from_wikidot_source(&source);
+        let registry = LegacyActionRegistry::from_wikidot_source_bounded(
+            source,
+            ctx.config().render_timeout,
+        )
+        .await
+        .ok_or_else(|| {
+            Error::new(
+                "failed to build legacy action due to timeout",
+                ErrorType::RenderTimeout,
+            )
+        })?;
         if registry.fingerprint(input.action_index).as_deref()
             != Some(input.action_fingerprint.as_str())
         {

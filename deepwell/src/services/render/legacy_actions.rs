@@ -18,6 +18,7 @@ use ftml::render::html::{HtmlRender, HtmlResourceRequirement};
 use ftml::settings::{WikitextMode, WikitextSettings};
 use ftml::tree::{StandaloneButtonAction, TagAlteration};
 use std::borrow::Cow;
+use std::time::Duration;
 
 /// One fixed runtime action emitted by trusted render code.
 ///
@@ -170,6 +171,19 @@ impl LegacyActionRegistry {
         Self::from_resource_requirements(&output.resource_requirements)
     }
 
+    pub async fn from_wikidot_source_bounded(
+        source: String,
+        timeout_duration: Duration,
+    ) -> Option<Self> {
+        tokio::time::timeout(
+            timeout_duration,
+            tokio::task::spawn_blocking(move || Self::from_wikidot_source(&source)),
+        )
+        .await
+        .ok()?
+        .ok()
+    }
+
     pub fn get(&self, index: usize) -> Option<&LegacyActionDescriptor> {
         self.actions.get(index).map(|action| &action.descriptor)
     }
@@ -242,6 +256,17 @@ impl LegacyActionRegistry {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn source_registry_uses_the_bounded_worker_path() {
+        let registry = LegacyActionRegistry::from_wikidot_source_bounded(
+            "[[button Edit]]".to_owned(),
+            Duration::from_secs(1),
+        )
+        .await
+        .expect("a small source should finish within the render budget");
+        assert_eq!(registry.browser_actions().len(), 1);
+    }
 
     #[test]
     fn set_tags_removes_before_adding_and_preserves_hidden_boundaries() {

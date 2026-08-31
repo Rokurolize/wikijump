@@ -1231,8 +1231,18 @@ impl ViewService {
                 wikidot_breadcrumbs,
                 attributions,
             } => {
-                let legacy_actions = LegacyActionRegistry::from_wikidot_source(&wikitext)
-                    .browser_actions_for_wikidot_html(&compiled_body_html);
+                let legacy_actions = LegacyActionRegistry::from_wikidot_source_bounded(
+                    wikitext.clone(),
+                    ctx.config().render_timeout,
+                )
+                .await
+                .ok_or_else(|| {
+                    Error::new(
+                        "failed to build legacy actions due to timeout",
+                        ErrorType::RenderTimeout,
+                    )
+                })?
+                .browser_actions_for_wikidot_html(&compiled_body_html);
                 let membership_actions = membership_browser_actions_for_page(
                     ctx,
                     &page,
