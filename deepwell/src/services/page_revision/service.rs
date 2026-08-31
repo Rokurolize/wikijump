@@ -2001,7 +2001,22 @@ impl PageRevisionService {
             TextService::get(ctx, &from_revision.wikitext_hash),
             TextService::get(ctx, &to_revision.wikitext_hash),
         )?;
-        let lines = build_revision_diff(&from_wikitext, &to_wikitext)?;
+        let lines = tokio::time::timeout(
+            ctx.config().render_timeout,
+            tokio::task::spawn_blocking(move || {
+                build_revision_diff(&from_wikitext, &to_wikitext)
+            }),
+        )
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to build revision diff due to timeout",
+                ErrorType::RenderTimeout,
+            )
+        })?
+        .or_raise(|| {
+            Error::new("failed to join revision diff task", ErrorType::Render)
+        })??;
 
         Ok(Some(PageRevisionDiffOutput {
             site_id,
