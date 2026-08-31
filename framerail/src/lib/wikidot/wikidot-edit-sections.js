@@ -52,15 +52,24 @@ export const findWikidotEditSections = (source, pageContent) => {
     }
   }
 
+  const nextPeerStarts = Array(sourceHeadings.length)
+  const nextPeerByLevel = Array(7).fill(source.length)
+  for (let index = sourceHeadings.length - 1; index >= 0; index--) {
+    const heading = sourceHeadings[index]
+    let nextPeerStart = source.length
+    for (let level = 1; level <= heading.level; level++) {
+      nextPeerStart = Math.min(nextPeerStart, nextPeerByLevel[level])
+    }
+    nextPeerStarts[index] = nextPeerStart
+    nextPeerByLevel[heading.level] = heading.start
+  }
+
   return sourceHeadings.map((heading, index) => {
-    const nextPeer = sourceHeadings
-      .slice(index + 1)
-      .find((candidate) => candidate.level <= heading.level)
     return {
       index,
       level: heading.level,
       start: heading.start,
-      end: nextPeer?.start ?? source.length
+      end: nextPeerStarts[index]
     }
   })
 }
