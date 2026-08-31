@@ -741,7 +741,7 @@ impl RenderService {
                         settings,
                         arguments,
                         &template,
-                        include_budget,
+                        &mut include_budget,
                         &render_cost_budget,
                         prefetched_pages,
                         prefetched_displays.as_ref(),
@@ -762,7 +762,7 @@ impl RenderService {
                             let Some(IncludeExpansion {
                                 wikitext: replacement,
                                 included_pages: replacement_included_pages,
-                                expanded_include_count: replacement_expanded_include_count,
+                                expanded_include_count: _,
                             }) = prepare_list_pages_rendered_block(
                                 rendered,
                                 boundaries,
@@ -779,7 +779,6 @@ impl RenderService {
                                 cursor = block.end;
                                 continue;
                             };
-                            include_budget.consume(replacement_expanded_include_count);
                             url_offset_content_bytes = url_offset_content_bytes
                                 .saturating_add(url_offset_list_pages_content_bytes(
                                     offset_origin,
@@ -856,7 +855,7 @@ impl RenderService {
                         settings,
                         arguments,
                         &template,
-                        include_budget,
+                        &mut include_budget,
                         &render_cost_budget,
                         None,
                         None,
@@ -877,7 +876,7 @@ impl RenderService {
                             let Some(IncludeExpansion {
                                 wikitext: replacement,
                                 included_pages: replacement_included_pages,
-                                expanded_include_count: replacement_expanded_include_count,
+                                expanded_include_count: _,
                             }) = prepare_list_pages_rendered_block(
                                 rendered,
                                 boundaries,
@@ -894,7 +893,6 @@ impl RenderService {
                                 cursor = block.end;
                                 continue;
                             };
-                            include_budget.consume(replacement_expanded_include_count);
                             url_offset_content_bytes = url_offset_content_bytes
                                 .saturating_add(url_offset_list_pages_content_bytes(
                                     offset_origin,
@@ -1441,7 +1439,7 @@ impl RenderService {
         settings: &WikitextSettings,
         arguments: ListPagesArguments,
         template: &ListPagesTemplatePlan,
-        mut include_budget: IncludeExpansionBudget,
+        include_budget: &mut IncludeExpansionBudget,
         render_cost_budget: &SharedRenderCostBudget,
         mut prefetched_pages: Option<FoundPages>,
         prefetched_displays: Option<&ListPagesBatchDisplays>,
