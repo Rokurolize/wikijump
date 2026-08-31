@@ -48,7 +48,7 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
     directives["style-src"]?.some((source) => source === "https://fonts.googleapis.com")
   )
   assert(
-    directives["script-src"]?.some(
+    !directives["script-src"]?.some(
       (source) => source === "https://d3g0gp89917ko0.cloudfront.net"
     )
   )

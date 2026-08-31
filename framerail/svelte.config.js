@@ -35,7 +35,7 @@ const CURRENT_SITE_FILE_ORIGIN = "https://wikijump-current-site.invalid"
 /** @type {CspSources} */
 const WIKIDOT_LEGACY_IMAGE_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
 /** @type {CspSources} */
-const WIKIDOT_LEGACY_SCRIPT_SOURCES = ["https://d3g0gp89917ko0.cloudfront.net"]
+const WIKIDOT_LEGACY_SCRIPT_SOURCES = []
 /** @type {CspSources} */
 const LOCAL_SCP_FILE_IMAGE_SOURCES = [
   "https://scp-wiki.wjfiles.localhost",
