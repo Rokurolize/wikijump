@@ -40,7 +40,8 @@ impl RenderService {
         html_output: &mut HtmlOutput,
     ) -> bool {
         let mut requirement_ids = HashSet::new();
-        let mut replacements = Vec::new();
+        let mut resolved = String::with_capacity(html_output.body.len());
+        let mut cursor = 0;
 
         for requirement in &html_output.resource_requirements {
             let Some(requirement) = requirement.embed_video_requirement() else {
@@ -53,19 +54,19 @@ impl RenderService {
 
             let marker =
                 format!(r#"<div class="{WIKIDOT_EMBED_VIDEO_MARKER}" id="{id}"></div>"#,);
-            if html_output.body.match_indices(&marker).count() != 1 {
+            let Some(relative_start) = html_output.body[cursor..].find(&marker) else {
                 return false;
-            }
+            };
+            let marker_start = cursor + relative_start;
+            resolved.push_str(&html_output.body[cursor..marker_start]);
             let replacement =
                 render_allowlisted_media(requirement.embed_video().payload())
                     .unwrap_or_else(|| WIKIDOT_EMBED_VIDEO_NO_MATCH.to_owned());
-            replacements.push((marker, replacement));
+            resolved.push_str(&replacement);
+            cursor = marker_start + marker.len();
         }
 
-        let mut resolved = html_output.body.clone();
-        for (marker, replacement) in replacements {
-            resolved = resolved.replacen(&marker, &replacement, 1);
-        }
+        resolved.push_str(&html_output.body[cursor..]);
         let unresolved_marker_prefix =
             format!(r#"<div class="{WIKIDOT_EMBED_VIDEO_MARKER}""#);
         if resolved.contains(&unresolved_marker_prefix) {

@@ -2554,7 +2554,7 @@ impl RenderService {
         });
 
         let FtmlRenderOutput {
-            mut html_output,
+            html_output,
             errors,
             html_block_texts,
             code_blocks,
@@ -2565,7 +2565,29 @@ impl RenderService {
             })?
             .or_raise(|| Error::new("failed to join render task", ErrorType::Render))?;
 
-        if !Self::resolve_wikidot_embed_video_requirements(&mut html_output) {
+        let (mut html_output, embed_video_resolved) = timeout(
+            render_timeout,
+            task::spawn_blocking(move || {
+                let mut html_output = html_output;
+                let resolved =
+                    Self::resolve_wikidot_embed_video_requirements(&mut html_output);
+                (html_output, resolved)
+            }),
+        )
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to resolve typed Wikidot embedvideo requirements due to timeout",
+                ErrorType::RenderTimeout,
+            )
+        })?
+        .or_raise(|| {
+            Error::new(
+                "failed to join Wikidot embedvideo resolution task",
+                ErrorType::Render,
+            )
+        })?;
+        if !embed_video_resolved {
             return Err(Error::new(
                 "failed to resolve typed Wikidot embedvideo requirements",
                 ErrorType::Render,
