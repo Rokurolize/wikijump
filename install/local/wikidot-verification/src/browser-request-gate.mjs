@@ -26,6 +26,7 @@ const CAPTURE_DEPENDENCY_RESOURCE_TYPES = new Set([
   "font",
   "image",
 ]);
+const INTERWIKI_FRAME_PATHS = new Set(["/interwikiFrame.html", "/styleFrame.html"]);
 
 function defaultNow() {
   return Date.now();
@@ -156,9 +157,19 @@ export function localBrowserCaptureOrigins(value) {
   return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
-export function isWikidotCapturePublicOrigin(value, resourceType, method) {
+export function isWikidotCapturePublicOrigin(value, resourceType, method, initiatorUrl = null) {
   const url = value instanceof URL ? value : new URL(value);
   const hostname = url.hostname.toLowerCase();
+  const interwikiScript = url.protocol === "https:" && hostname === "interwiki.scpwiki.com" && method === "GET" && resourceType === "script" && ["/interwiki.js", "/resizeIframe.js"].includes(url.pathname);
+  let initiatedByInterwikiFrame = false;
+  if (interwikiScript && typeof initiatorUrl === "string") {
+    try {
+      const initiator = new URL(initiatorUrl);
+      initiatedByInterwikiFrame = initiator.protocol === "https:" && initiator.hostname === hostname && INTERWIKI_FRAME_PATHS.has(initiator.pathname);
+    } catch {
+      initiatedByInterwikiFrame = false;
+    }
+  }
   return new Set(["http:", "https:"]).has(url.protocol) &&
     !url.username &&
     !url.password &&
@@ -169,7 +180,8 @@ export function isWikidotCapturePublicOrigin(value, resourceType, method) {
       (url.protocol === "https:" &&
         hostname === "interwiki.scpwiki.com" &&
         method === "GET" &&
-        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType));
+        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType &&
+        (resourceType !== "script" || initiatedByInterwikiFrame)));
 }
 
 export function isCaptureDependencyResourceType(resourceType) {
@@ -547,6 +559,7 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
           url,
           route.request().resourceType(),
           route.request().method(),
+          typeof route.request().frame === "function" ? route.request().frame()?.url() : null,
         ) &&
         !isCaptureDependencyResourceType(route.request().resourceType())
       ) {
