@@ -309,6 +309,10 @@ class Open43MediaRun {
   }
 
   async #consumePendingBlob(state, publicProof) {
+    await this.#rpc("blob_cancel", {
+      user_id: this.#session.editorUserId,
+      pending_blob_id: state.pending.pending_blob_id,
+    });
     this.#resources.release(state.token, publicProof);
     this.#pending.delete(state.pending.pending_blob_id);
   }
