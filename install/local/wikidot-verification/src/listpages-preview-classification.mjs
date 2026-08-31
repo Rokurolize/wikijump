@@ -119,6 +119,15 @@ function bareDefaultListPagesFixtureShape(nodes) {
   const links = [];
   for (const row of rows) {
     const elements = (row.children ?? []).filter((node) => node.type === "element");
+    if (elements.length !== 3 || descendantElements(row, (node) =>
+      ["script", "iframe", "object", "embed"].includes(node.name) ||
+      (node.attrs ?? []).some((attribute) =>
+        /^on/iu.test(attribute.name) ||
+        ((attribute.name === "href" || attribute.name === "src") && !attribute.value.startsWith("/")),
+      ),
+    ).length > 0) {
+      return null;
+    }
     const heading = elements[0];
     const byline = elements[1];
     const headingLinks = descendantElements(
