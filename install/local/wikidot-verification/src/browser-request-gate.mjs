@@ -156,9 +156,10 @@ export function localBrowserCaptureOrigins(value) {
   return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
-export function isWikidotCapturePublicOrigin(value, resourceType, method) {
+export function isWikidotCapturePublicOrigin(value, resourceType, method, initiatorFrameUrl = null) {
   const url = value instanceof URL ? value : new URL(value);
   const hostname = url.hostname.toLowerCase();
+  const interwikiFrame = initiatorFrameUrl === null ? null : new URL(initiatorFrameUrl);
   return new Set(["http:", "https:"]).has(url.protocol) &&
     !url.username &&
     !url.password &&
@@ -169,7 +170,8 @@ export function isWikidotCapturePublicOrigin(value, resourceType, method) {
       (url.protocol === "https:" &&
         hostname === "interwiki.scpwiki.com" &&
         method === "GET" &&
-        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType));
+        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType &&
+        (resourceType !== "script" || interwikiFrame?.origin === "https://interwiki.scpwiki.com")));
 }
 
 export function isCaptureDependencyResourceType(resourceType) {
@@ -500,7 +502,7 @@ async function servePublicRoute(route, {gate, responseCache}) {
  *   gate: object
  *   exemptOrigins?: string[]
  *   responseCache?: object | null
- *   publicOriginPredicate?: ((value: string, resourceType: string, method: string) => boolean) | null
+ *   publicOriginPredicate?: ((value: string, resourceType: string, method: string, initiatorFrameUrl: string | null) => boolean) | null
  * }} [options]
  */
 export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null} = {}) {
@@ -547,6 +549,13 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
           url,
           route.request().resourceType(),
           route.request().method(),
+          (() => {
+            try {
+              return route.request().frame?.()?.url?.() ?? null;
+            } catch {
+              return null;
+            }
+          })(),
         ) &&
         !isCaptureDependencyResourceType(route.request().resourceType())
       ) {

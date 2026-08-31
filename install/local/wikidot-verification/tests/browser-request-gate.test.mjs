@@ -58,9 +58,9 @@ function createContext() {
   };
 }
 
-function createRoute(url, {abortError = null, continueError = null, method = "GET", resourceType = "script", headers = {}, fetchResponse = null} = {}) {
+function createRoute(url, {abortError = null, continueError = null, method = "GET", resourceType = "script", headers = {}, fetchResponse = null, frameUrl = null} = {}) {
   const actions = [];
-  const request = {url: () => url, method: () => method, resourceType: () => resourceType, headers: () => headers};
+  const request = {url: () => url, method: () => method, resourceType: () => resourceType, headers: () => headers, frame: () => frameUrl === null ? null : {url: () => frameUrl}};
   return {
     actions,
     request() {
@@ -161,8 +161,9 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   const styleFrame = createRoute("https://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=example", {resourceType: "document"});
   const styleFrameAsScript = createRoute("https://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=example", {resourceType: "script"});
   const styleFramePost = createRoute("https://interwiki.scpwiki.com/styleFrame.html?priority=1&theme=example", {method: "POST", resourceType: "document"});
-  const interwikiRuntime = createRoute("https://interwiki.scpwiki.com/interwiki.js", {resourceType: "script"});
-  const resizeRuntime = createRoute("https://interwiki.scpwiki.com/resizeIframe.js", {resourceType: "script"});
+  const interwikiRuntime = createRoute("https://interwiki.scpwiki.com/interwiki.js", {resourceType: "script", frameUrl: "https://interwiki.scpwiki.com/interwikiFrame.html"});
+  const resizeRuntime = createRoute("https://interwiki.scpwiki.com/resizeIframe.js", {resourceType: "script", frameUrl: "https://interwiki.scpwiki.com/interwikiFrame.html"});
+  const interwikiRuntimeFromMainPage = createRoute("https://interwiki.scpwiki.com/interwiki.js", {resourceType: "script", frameUrl: "https://scp-wiki.wikijump.localhost/scp-173"});
   const unknownInterwikiScript = createRoute("https://interwiki.scpwiki.com/other.js", {resourceType: "script"});
 
   await handler(ad);
@@ -173,14 +174,15 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   await handler(styleFramePost);
   await handler(interwikiRuntime);
   await handler(resizeRuntime);
+  await handler(interwikiRuntimeFromMainPage);
   await handler(unknownInterwikiScript);
 
   assert.deepEqual(ad.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.deepEqual(css.actions, [{type: "continue"}]);
   assert.deepEqual(page.actions, [{type: "continue"}]);
   assert.equal(gate.snapshot().public_requests, 5);
-  assert.deepEqual(gate.snapshot().blocked_hosts, {"api.rlcdn.com": 1, "interwiki.scpwiki.com": 3});
-  assert.deepEqual(gate.snapshot().blocked_hosts_by_fixture, {"syntax-collapsible": {"api.rlcdn.com": 1, "interwiki.scpwiki.com": 3}});
+  assert.deepEqual(gate.snapshot().blocked_hosts, {"api.rlcdn.com": 1, "interwiki.scpwiki.com": 4});
+  assert.deepEqual(gate.snapshot().blocked_hosts_by_fixture, {"syntax-collapsible": {"api.rlcdn.com": 1, "interwiki.scpwiki.com": 4}});
   assert.equal(isWikidotCapturePublicOrigin("https://css.wikidot.com"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://wikidot.com"), true);
   assert.equal(isWikidotCapturePublicOrigin("http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/WIKIDOT.combined.js"), true);
@@ -189,13 +191,15 @@ test("the public gate admits Wikidot and css.wikidot.com but blocks unrelated pu
   assert.deepEqual(styleFramePost.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.deepEqual(interwikiRuntime.actions, [{type: "continue"}]);
   assert.deepEqual(resizeRuntime.actions, [{type: "continue"}]);
+  assert.deepEqual(interwikiRuntimeFromMainPage.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.deepEqual(unknownInterwikiScript.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/styleFrame.html?priority=1", "document", "GET"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwikiFrame.html?lang=en", "document", "GET"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/styleFrame.html", "script", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/styleFrame.html", "document", "POST"), false);
-  assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwiki.js", "script", "GET"), true);
-  assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/resizeIframe.js", "script", "GET"), true);
+  assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwiki.js", "script", "GET"), false);
+  assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/interwiki.js", "script", "GET", "https://interwiki.scpwiki.com/interwikiFrame.html"), true);
+  assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/resizeIframe.js", "script", "GET", "https://interwiki.scpwiki.com/interwikiFrame.html"), true);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/other.js", "script", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("https://interwiki.scpwiki.com/other.html", "document", "GET"), false);
   assert.equal(isWikidotCapturePublicOrigin("http://interwiki.scpwiki.com/styleFrame.html", "document", "GET"), false);

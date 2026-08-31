@@ -317,10 +317,11 @@ export function isParityBrowserPublicOrigin(
   resourceType,
   method,
   publicOrigins = [],
+  initiatorFrameUrl = null,
 ) {
   const url = value instanceof URL ? value : new URL(value);
   return (
-    isWikidotCapturePublicOrigin(url, resourceType, method) ||
+    isWikidotCapturePublicOrigin(url, resourceType, method, initiatorFrameUrl) ||
     (method === "GET" && publicOrigins.includes(url.origin))
   );
 }
@@ -472,12 +473,13 @@ export async function launchParityBrowser({
     const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
-      publicOriginPredicate: (url, resourceType, method) =>
+      publicOriginPredicate: (url, resourceType, method, initiatorFrameUrl) =>
         isParityBrowserPublicOrigin(
           url,
           resourceType,
           method,
           controls.publicOrigins,
+          initiatorFrameUrl,
         ),
     });
     if (local) {
