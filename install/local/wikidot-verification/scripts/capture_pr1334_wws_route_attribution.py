@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -119,7 +120,13 @@ def main():
     if output.is_symlink():
         raise SystemExit("output_path_not_allowed: artifact must not be a symlink")
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n")
+    descriptor = os.open(
+        output,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+        0o644,
+    )
+    with os.fdopen(descriptor, "w") as handle:
+        handle.write(json.dumps(artifact, indent=2, sort_keys=True) + "\n")
 
 if __name__ == "__main__":
     main()

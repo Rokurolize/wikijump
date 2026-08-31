@@ -2,6 +2,7 @@
 import argparse
 import hashlib
 import json
+import os
 import stat
 import subprocess
 import tomllib
@@ -310,7 +311,13 @@ def main() -> None:
     if args.output.is_symlink():
         raise ValueError("output_path_not_allowed: artifact must not be a symlink")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(serialized, encoding="utf-8")
+    descriptor = os.open(
+        args.output,
+        os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+        0o644,
+    )
+    with os.fdopen(descriptor, "w", encoding="utf-8") as output:
+        output.write(serialized)
 
 
 if __name__ == "__main__":
