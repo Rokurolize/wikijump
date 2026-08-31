@@ -50,6 +50,7 @@ use sea_orm::{
     FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, Statement, Value,
 };
 use std::net::IpAddr;
+use time::OffsetDateTime;
 
 pub const MAXIMUM_FILE_NAME_LENGTH: usize = 256;
 
@@ -954,8 +955,10 @@ impl FileService {
         #[derive(Debug, FromQueryResult)]
         struct VisibleFileRowQuery {
             file_id: i64,
+            created_at: OffsetDateTime,
             name: String,
             revision_id: Option<i64>,
+            mime: Option<String>,
             size: Option<i64>,
             content_type_label: Option<String>,
             content_type_description: Option<String>,
@@ -964,11 +967,11 @@ impl FileService {
         let statement = Statement::from_sql_and_values(
             txn.get_database_backend(),
             concat!(
-                "SELECT f.file_id, f.name, latest.revision_id, latest.size, ",
+                "SELECT f.file_id, f.created_at, f.name, latest.revision_id, latest.mime, latest.size, ",
                 "latest.content_type_label, latest.content_type_description, latest.hidden ",
                 "FROM file f ",
                 "LEFT JOIN LATERAL (",
-                "SELECT fr.revision_id, fr.size, fr.content_type_label, ",
+                "SELECT fr.revision_id, fr.mime, fr.size, fr.content_type_label, ",
                 "fr.content_type_description, fr.hidden ",
                 "FROM file_revision fr ",
                 "WHERE fr.site_id = f.site_id AND fr.page_id = f.page_id ",
@@ -1016,9 +1019,14 @@ impl FileService {
             let Some(size) = row.size.filter(|size| *size >= 0) else {
                 return Ok(None);
             };
+            let Some(mime) = row.mime.filter(|mime| !mime.is_empty()) else {
+                return Ok(None);
+            };
             visible.push(VisibleFileRow {
                 file_id: row.file_id,
+                created_at: row.created_at,
                 name: row.name,
+                mime,
                 size,
                 content_type,
             });
