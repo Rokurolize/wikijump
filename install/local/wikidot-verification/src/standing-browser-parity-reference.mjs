@@ -148,10 +148,21 @@ async function validateLiveCapture(capture, pair, root, policy) {
   if (value.navigation_status !== 200 || value.capture_error) {
     throw new Error(`live reference is incomplete for ${pair.live_url}`);
   }
-  validateRequestGateAborts(
+  const requestGateAborts = validateRequestGateAborts(
     value.request_gate_aborts,
     `live request-gate aborts for ${pair.live_url}`,
   );
+  for (const abort of requestGateAborts) {
+    const failure = {
+      kind: "request_failed",
+      url: abort.url,
+      resource_type: abort.resource_type,
+      error: abort.error,
+    };
+    if (!policyAllowsFailure(policy, failure, value)) {
+      throw new Error(`live reference contains an unapproved request-gate abort: ${abort.url}`);
+    }
+  }
   if (
     value.first_paint?.document?.phase !==
     "domcontentloaded_immediate_observation"

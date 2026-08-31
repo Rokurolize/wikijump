@@ -183,7 +183,49 @@ test("live-reference sealing rejects an unrecognized request-gate attribution", 
   );
 });
 
-async function writeReference(directory, pair, live, rawPolicy = policy()) {
+test("live-reference loading requires policy approval for request-gate aborts", async (context) => {
+  const directory = await fs.mkdtemp(
+    path.join(os.tmpdir(), "standing-browser-live-reference-policy-"),
+  );
+  context.after(() => fs.rm(directory, { recursive: true, force: true }));
+  const pair = {
+    local_url: "https://scp-wiki.wikijump.localhost:18443/scp-9506",
+    live_url: "https://scp-wiki.wikidot.com/scp-9506",
+  };
+  const artifacts = await screenshotArtifacts(directory);
+  const live = capture(pair, artifacts, {
+    request_gate_aborts: [{
+      kind: "request_gate_abort",
+      url: "https://cdn.example.test/blocked.js",
+      resource_type: "script",
+      error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+      decision: "unsupported_public_origin_resource_type",
+      abort_reason: "blockedbyclient",
+    }],
+  });
+
+  const stored = await writeReference(
+    directory,
+    pair,
+    live,
+    policy(),
+    { ...requestGate(), unsupported_requests_blocked: 1 },
+  );
+  await assert.rejects(loadSealedLiveReference({
+    filePath: stored.file,
+    expectedSha256: stored.sha256,
+    pairs: [pair],
+    viewport,
+    thresholds,
+    policy: stored.policy,
+    policySha256: stored.policySha256,
+    policyFilePath: stored.policyFile,
+  }),
+    /unapproved request-gate abort/u,
+  );
+});
+
+async function writeReference(directory, pair, live, rawPolicy = policy(), requestGateValue = requestGate()) {
   const policyFile = path.join(directory, "completion-policy.json");
   await fs.writeFile(policyFile, `${JSON.stringify(rawPolicy)}\n`, {
     mode: 0o600,
@@ -201,7 +243,7 @@ async function writeReference(directory, pair, live, rawPolicy = policy()) {
       version: "fixture",
       executable_sha256: "b".repeat(64),
     },
-    requestGate: requestGate(),
+    requestGate: requestGateValue,
     generatedAt: "2026-07-20T00:00:00.000Z",
   });
   const file = path.join(directory, "standing-browser-live-reference.json");
