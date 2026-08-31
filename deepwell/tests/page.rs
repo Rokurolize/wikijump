@@ -1672,7 +1672,7 @@ async fn normal_page_create_allocates_category_numbers_without_consuming_conflic
 }
 
 #[tokio::test]
-async fn normal_page_creates_do_not_serialize_on_category_settings() {
+async fn normal_page_creates_serialize_conflict_checks_on_category_settings() {
     let runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({ "site": "test" }))
         .expect("seeded test site should exist")
@@ -1711,39 +1711,44 @@ async fn normal_page_creates_do_not_serialize_on_category_settings() {
         .await
         .expect("second page-create transaction should start");
     let second_context = ServiceContext::new(&state, &second_transaction);
-    tokio::time::timeout(
-        StdDuration::from_secs(2),
-        PageService::create(
-            &second_context,
-            CreatePage {
-                site_id: site.site_id,
-                wikitext: String::from("Second concurrent normal page"),
-                title: String::from("Second concurrent normal page"),
-                alt_title: None,
-                tags: Vec::new(),
-                slug: format!("normal-concurrency-second-{}", cuid()),
-                layout: Some(Layout::Wikidot),
-                revision_comments: String::from("exercise normal page concurrency"),
-                user_id: ADMIN_USER_ID,
-                bypass_filter: true,
-                ip_address: common::IP_ADDRESS,
-            },
-        ),
-    )
-    .await
-    .expect("a normal page create must not wait for another page in the category")
-    .expect("second normal page should be created");
+    let mut second_create = Box::pin(PageService::create(
+        &second_context,
+        CreatePage {
+            site_id: site.site_id,
+            wikitext: String::from("Second concurrent normal page"),
+            title: String::from("Second concurrent normal page"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: format!("normal-concurrency-second-{}", cuid()),
+            layout: Some(Layout::Wikidot),
+            revision_comments: String::from("exercise normal page concurrency"),
+            user_id: ADMIN_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    ));
+    assert!(
+        tokio::time::timeout(StdDuration::from_millis(100), second_create.as_mut())
+            .await
+            .is_err(),
+        "a normal page create must wait for the category conflict lock",
+    );
 
-    drop(second_context);
-    second_transaction
-        .rollback()
-        .await
-        .expect("second page-create transaction should roll back");
     drop(first_context);
     first_transaction
         .rollback()
         .await
         .expect("first page-create transaction should roll back");
+    tokio::time::timeout(StdDuration::from_secs(2), second_create.as_mut())
+        .await
+        .expect("second normal page create should proceed after the category lock is released")
+        .expect("second normal page should be created");
+    drop(second_create);
+    drop(second_context);
+    second_transaction
+        .rollback()
+        .await
+        .expect("second page-create transaction should roll back");
 }
 
 #[tokio::test]
