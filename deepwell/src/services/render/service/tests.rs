@@ -10562,8 +10562,12 @@ fn restores_wikidot_tabview_dom_classes() {
 
     let restored = RenderService::restore_wikidot_tabview_dom_compatibility(html);
 
-    assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
-    assert!(!restored.contains("tabview-compat.js"));
+    assert_eq!(restored.matches("tabview-min.js").count(), 0, "{restored}");
+    assert_eq!(
+        restored.matches("tabview-compat.js").count(),
+        1,
+        "{restored}"
+    );
     assert!(restored.contains(r#"<div class="yui-navset">"#));
     assert!(restored.contains(r#"<ul class="yui-nav">"#));
     assert!(restored.contains(r#"<div class="yui-content">"#));
@@ -10630,8 +10634,7 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
         );
 
     assert!(restored.starts_with(
-        r#"<p>Before</p><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
-<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset">"#
+        r#"<p>Before</p><div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset">"#
     ));
     assert!(restored.contains(r#"<li class="selected">"#));
     assert!(restored.contains(
@@ -10648,7 +10651,7 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
     assert!(restored.ends_with(
         r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><p>After</p>"#
     ));
-    assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
+    assert_eq!(restored.matches("tabview-min.js").count(), 0, "{restored}");
 }
 
 #[test]
@@ -10671,7 +10674,7 @@ fn initializes_resource_tabviews_during_parse_but_leaves_direct_tabviews_for_hyd
             std::slice::from_ref(&id),
         );
 
-    assert_eq!(restored.matches("tabview-min.js").count(), 2, "{restored}");
+    assert_eq!(restored.matches("tabview-min.js").count(), 0, "{restored}");
     assert_eq!(
         restored.matches("tabview-compat.js").count(),
         1,
@@ -10681,8 +10684,7 @@ fn initializes_resource_tabviews_during_parse_but_leaves_direct_tabviews_for_hyd
         restored.contains(&format!(r#"<div id="{id}" class="yui-navset">"#, id = id,))
     );
     assert!(restored.contains(
-        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
-<div class="yui-navset">"#
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><div class="yui-navset">"#
     ));
 }
 
