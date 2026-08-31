@@ -19,13 +19,23 @@ export function createCandidateBrowserContexts({
   signal = null,
   credentialPolicy = "none",
   publicOrigins = [],
+  privateInputIdentitySha256 = null,
 }) {
+  if (credentialPolicy !== "none") {
+    if (!Number.isSafeInteger(credentialPolicy?.storage_state_count) || credentialPolicy.storage_state_count < 1 || !/^[0-9a-f]{64}$/u.test(credentialPolicy.private_input_identity_sha256 ?? "")) {
+      throw new Error("candidate browser credential policy is malformed");
+    }
+    if (privateInputIdentitySha256 !== credentialPolicy.private_input_identity_sha256) {
+      throw new Error("candidate browser credential policy does not bind private input identity");
+    }
+  }
   let controls = null;
   let controlsPromise = null;
   let closed = false;
   let activeFixture = null;
   const sessions = [];
   const ownedContexts = new WeakSet();
+  let credentialedContextCount = 0;
 
   async function getControls() {
     if (closed) throw new Error("candidate browser contexts are closed");
@@ -55,6 +65,14 @@ export function createCandidateBrowserContexts({
     },
 
     async newCandidateContext({ storageState = null, viewport = DEFAULT_VIEWPORT } = {}) {
+      if (credentialPolicy === "none" && storageState !== null) {
+        throw new Error("candidate browser credential policy forbids storage state");
+      }
+      if (credentialPolicy !== "none") {
+        if (storageState === null) throw new Error("credentialed candidate browser context requires storage state");
+        if (credentialedContextCount >= credentialPolicy.storage_state_count) throw new Error("candidate browser credential context count exceeds policy");
+        credentialedContextCount += 1;
+      }
       const activeControls = await getControls();
       const session = await launchParityBrowser({
         browserRoot: DEFAULT_PARITY_BROWSER_ROOT,
@@ -96,6 +114,9 @@ export function createCandidateBrowserContexts({
           failures.push(error);
           return null;
         });
+      }
+      if (credentialPolicy !== "none" && credentialedContextCount !== credentialPolicy.storage_state_count) {
+        failures.push(new Error("candidate browser credential context count does not match policy"));
       }
       if (failures.length > 0) {
         throw new AggregateError(failures, "candidate browser contexts failed to close");
