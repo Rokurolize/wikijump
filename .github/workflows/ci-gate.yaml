@@ -196,10 +196,6 @@ jobs:
           pnpm --dir framerail test:unit
           pnpm --dir framerail lint
 
-      - name: Build candidate
-        if: ${{ needs.classify.outputs.candidate == 'true' }}
-        run: pnpm --dir framerail build
-
   locales:
     name: Locales checks
     needs: classify
