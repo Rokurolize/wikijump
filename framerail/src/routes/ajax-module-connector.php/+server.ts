@@ -298,7 +298,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         status: "ok",
         body: renderWikidotManageSiteGeneral(preload.site),
         js_include: [
-          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteGeneralModule.js"
+          "https://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteGeneralModule.js"
         ]
       }
     },
