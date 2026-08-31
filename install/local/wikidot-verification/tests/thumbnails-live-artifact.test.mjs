@@ -106,7 +106,14 @@ function validateCases(cases) {
 }
 
 function validateArtifact(cases, artifact) {
+  if (!artifact.capture_source) {
+    assert.equal(artifact.outcome, "blocked");
+    assert.equal(artifact.evidence_complete, false);
+    return "historical-unbound";
+  }
   assert.equal(artifact.schema, "wikijump.thumbnails_live_evidence.v1");
+  assert.match(artifact.capture_source.commit, /^[0-9a-f]{40}$/u);
+  assert.match(artifact.capture_source.tree, /^[0-9a-f]{40}$/u);
   assert.equal(artifact.surface_id, "catalog-feature:thumbnails");
   assert.equal(artifact.integration_commit, integrationCommit);
   assert.equal(artifact.authority.specification_path, specificationPath);
@@ -220,13 +227,17 @@ test("thumbnail live artifact is internally valid and preserves COMPLETE or BLOC
   const cases = readJson(casesPath);
   const artifact = readJson(artifactPath);
   validateCases(cases);
-  validateArtifact(cases, artifact);
+  assert.ok(["historical-unbound", undefined].includes(validateArtifact(cases, artifact)));
+  const boundArtifact = structuredClone(artifact);
+  boundArtifact.capture_source = {commit: "0".repeat(40), tree: "0".repeat(40)};
+  boundArtifact.capture_script.sha256 = sha256(fs.readFileSync(scriptPath));
+  validateArtifact(cases, boundArtifact);
 
   const swappedSizes = structuredClone(cases);
   [swappedSizes.documented.site.sizes, swappedSizes.documented.theme.sizes] = [swappedSizes.documented.theme.sizes, swappedSizes.documented.site.sizes];
   assert.throws(() => validateCases(swappedSizes));
 
-  const belowThreshold = structuredClone(artifact);
+  const belowThreshold = structuredClone(boundArtifact);
   belowThreshold.outcome = "complete";
   belowThreshold.evidence_complete = true;
   belowThreshold.blocker = null;
@@ -236,18 +247,18 @@ test("thumbnail live artifact is internally valid and preserves COMPLETE or BLOC
   belowThreshold.rule_summaries.site.negative_boundary_observation_count = 1;
   assert.throws(() => validateArtifact(cases, belowThreshold));
 
-  const headHash = structuredClone(artifact);
+  const headHash = structuredClone(boundArtifact);
   const headObservation = headHash.observations.find(({method, attempted}) => method === "HEAD" && attempted);
   if (headObservation) {
     headObservation.final.body_sha256 = "0".repeat(64);
     assert.throws(() => validateArtifact(cases, headHash));
   }
 
-  const credentialField = structuredClone(artifact);
+  const credentialField = structuredClone(boundArtifact);
   credentialField.capture_policy = {cookie_value: "forbidden"};
   assert.throws(() => validateArtifact(cases, credentialField));
 
-  const blockerMissing = structuredClone(artifact);
+  const blockerMissing = structuredClone(boundArtifact);
   blockerMissing.outcome = "blocked";
   blockerMissing.evidence_complete = false;
   blockerMissing.blocker = null;
@@ -255,7 +266,7 @@ test("thumbnail live artifact is internally valid and preserves COMPLETE or BLOC
   blockerMissing.rule_summaries.theme.status = "unestablished";
   assert.throws(() => validateArtifact(cases, blockerMissing));
 
-  const blockedEstablished = structuredClone(artifact);
+  const blockedEstablished = structuredClone(boundArtifact);
   blockedEstablished.outcome = "blocked";
   blockedEstablished.evidence_complete = false;
   blockedEstablished.blocker = {reason: "insufficient_rule_boundary", stage: "rule_evaluation"};
