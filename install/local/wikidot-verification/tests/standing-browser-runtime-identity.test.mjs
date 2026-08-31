@@ -266,6 +266,13 @@ test("effective runtime identity normalizes Docker-reordered environment and mou
       `${name} order is not a runtime configuration change`,
     );
   }
+
+  const { inspect } = preparedFixture();
+  inspect.Config.Env = ["DUPLICATE=first", "DUPLICATE=second"];
+  assert.throws(
+    () => effectiveRuntimeServicesSha256([inspect]),
+    /Config\.Env has duplicate variable DUPLICATE/,
+  );
 });
 
 test("effective runtime identity preserves order-sensitive Docker arrays", () => {

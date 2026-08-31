@@ -266,6 +266,18 @@ function orderedRuntimeArray(value) {
   return value.map(safeRuntimeValue);
 }
 
+function sortedRuntimeEnvironment(value, role) {
+  const environment = orderedRuntimeArray(value);
+  const names = new Set();
+  for (const entry of environment) {
+    if (typeof entry !== "string") continue;
+    const name = entry.split("=", 1)[0];
+    if (names.has(name)) throw new Error(`candidate ${role} container Config.Env has duplicate variable ${name}`);
+    names.add(name);
+  }
+  return environment.sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+}
+
 function selectedRuntimeLabels(labels) {
   const selected = Object.fromEntries(
     Object.entries(labels).filter(
@@ -307,7 +319,7 @@ function effectiveServiceConfiguration(inspect, role) {
       ),
       entrypoint: safeRuntimeValue(config.Entrypoint ?? null),
       cmd: safeRuntimeValue(config.Cmd ?? null),
-      env: sortedRuntimeArray(config.Env),
+      env: sortedRuntimeEnvironment(config.Env, role),
       working_dir: safeRuntimeValue(config.WorkingDir ?? null),
       user: safeRuntimeValue(config.User ?? null),
       hostname: safeRuntimeValue(config.Hostname ?? null),
