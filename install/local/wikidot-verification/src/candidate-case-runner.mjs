@@ -129,6 +129,8 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   const identity = assertCandidateIdentityFresh(validateCandidateParityIdentity(rawIdentity));
   requireSha256(candidateIdentitySha256, "candidate identity SHA-256");
   requireSha256(privateInputSha256, "private input SHA-256");
+  if (candidateIdentitySha256 !== sha256Value(rawIdentity)) throw new Error("candidate identity SHA-256 does not match the supplied identity");
+  if (privateInputSha256 !== sha256Value(privateInput)) throw new Error("private input SHA-256 does not match the supplied input");
   const caseSet = validateCaseSet(rawCaseSet);
   const dependencies = { ...defaultDependencies(), ...overrides };
   if (!RUN_ID.test(runId)) throw new Error("candidate case run ID is invalid");
