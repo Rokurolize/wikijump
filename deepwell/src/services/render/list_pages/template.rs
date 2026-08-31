@@ -358,17 +358,14 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
         return Some((ListPagesSections::default(), body.to_owned(), false));
     };
 
-    let head_pair = pairs
-        .iter()
-        .filter(|pair| {
-            pair.kind == ListPagesSectionKind::Head
-                && pair.close_end <= body_pair.open_start
-                && section_gap_contains_only_closes(
-                    &body[pair.close_end..body_pair.open_start],
-                    ListPagesSectionKind::Head,
-                )
-        })
-        .max_by_key(|pair| pair.close_end);
+    let head_pair = pairs.iter().rev().find(|pair| {
+        pair.kind == ListPagesSectionKind::Head
+            && pair.close_end <= body_pair.open_start
+            && section_gap_contains_only_closes(
+                &body[pair.close_end..body_pair.open_start],
+                ListPagesSectionKind::Head,
+            )
+    });
     let head_starts_on_next_line = head_pair.is_some_and(|pair| {
         matches!(
             body[pair.content_start..pair.content_end]
@@ -1044,6 +1041,15 @@ mod tests {
 #[cfg(test)]
 mod section_tests {
     use super::*;
+
+    #[test]
+    fn section_recovery_scans_only_the_nearest_head_pair() {
+        let source = format!("{}[[body]]B[[/body]]", "[[head]]H[[/head]]".repeat(256),);
+        let plan = ListPagesTemplatePlan::compile(&source)
+            .expect("repeated head sections should remain within the template limit");
+        assert_eq!(plan.head_section(), Some("H"));
+        assert_eq!(plan.body(), "B");
+    }
 
     #[test]
     fn splits_the_evidenced_head_body_foot_template() {
