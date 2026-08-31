@@ -37,8 +37,15 @@ test("base, fixture, script, inventory identity, and privacy", async () => {
     }
   }
   visit(artifact)
+  const allowedSourcePaths = new Set(fixture.allowed_source_input_paths)
+  const allowedPublicTestPaths = new Set(fixture.allowed_public_test_paths)
   for (const record of artifact.records) {
-    for (const source of [record.registry_declaration, record.dispatch_branch, record.specification, record.route_source, ...(record.public_test_witnesses ?? [])].filter(Boolean)) {
+    for (const source of [record.registry_declaration, record.dispatch_branch, record.specification, record.route_source].filter(Boolean)) {
+      assert.equal(allowedSourcePaths.has(source.path), true, `source path is outside the fixture allowlist: ${source.path}`)
+      assert.equal(source.sha256, historicalSha256(artifact.base_commit, source.path))
+    }
+    for (const source of record.public_test_witnesses ?? []) {
+      assert.equal(allowedPublicTestPaths.has(source.path), true, `public test path is outside the fixture allowlist: ${source.path}`)
       assert.equal(source.sha256, historicalSha256(artifact.base_commit, source.path))
     }
   }
