@@ -341,11 +341,12 @@ pub(super) fn render_front_forum_items(
     compat_html: &mut CompatHtmlFragments,
 ) -> (String, usize, bool) {
     match owned_front_forum_body(wikitext, opener_end) {
-        Some(body) => (
-            forum_front::render_custom_body(items, body.source, compat_html),
-            body.replacement_end,
-            true,
-        ),
+        Some(body) => {
+            match forum_front::render_custom_body(items, body.source, compat_html) {
+                Some(rendered) => (rendered, body.replacement_end, true),
+                None => (forum_front::render(items), body.replacement_end, false),
+            }
+        }
         None => (forum_front::render(items), opener_end, false),
     }
 }
