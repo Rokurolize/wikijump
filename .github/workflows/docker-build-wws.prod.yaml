@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   build:
+    if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && contains(github.event.pull_request.labels.*.name, 'release-certification')) }}
     uses: ./.github/workflows/docker-build-template.yaml
     with:
       image-repository: wikijump/wws
