@@ -26,7 +26,13 @@ export function validateRouteTarget(value) {
 
 export function validateUserInfoUrl(value) {
   const parsed = new URL(value);
-  if (parsed.origin !== publicOrigin || !/^\/user:info\/[^/]+$/u.test(parsed.pathname)) throw new Error(`UserInfo capture left the declared route: ${value}`);
+  const target = parsed.pathname.slice("/user:info/".length);
+  let validTarget = false;
+  try {
+    validateRouteTarget(decodeURIComponent(target));
+    validTarget = true;
+  } catch {}
+  if (parsed.origin !== publicOrigin || !/^\/user:info\/[^/]+$/u.test(parsed.pathname) || !validTarget) throw new Error(`UserInfo capture left the declared route: ${value}`);
   return parsed;
 }
 
