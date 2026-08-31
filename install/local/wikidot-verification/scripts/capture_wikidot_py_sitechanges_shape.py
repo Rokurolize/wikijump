@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import argparse
 from collections import Counter
 from contextlib import contextmanager
@@ -11,12 +13,6 @@ from pathlib import Path
 from typing import Any, Iterator
 from urllib.parse import parse_qsl
 
-import httpx
-import wikidot
-from bs4 import BeautifulSoup, Tag
-from wikidot.connector.ajax import AjaxModuleConnectorConfig
-
-
 ARTIFACT_SCHEMA = "wikijump.wikidot_py_sitechanges_shape_live.v1"
 CASES_SCHEMA = "wikijump.wikidot_py_sitechanges_shape_cases.v1"
 PINNED_COMMIT = "2434bf77744488cb2095327c9e0e4450add78df3"
@@ -24,6 +20,9 @@ SURFACE_ID = "wikidot-py-amc-module:changes/SiteChangesListModule:parameters=opt
 REDACTED_FIELDS = {"wikidot_token7"}
 MAX_STRUCTURE_MARKERS = 12
 MAX_EXACT_BODY_BYTES = 256
+ALLOWED_SITE = "sandbox-for-codex"
+ALLOWED_ROLES = {"positive", "control", "negative_control", "separate_surface_control"}
+ALLOWED_CONTROL_FIELDS = {"moduleName", "perpage", "page", "options", "pageId", "categoryId", "unknownField"}
 
 
 def sha256_file(path: Path) -> str:
@@ -40,7 +39,35 @@ def load_cases(path: Path) -> dict[str, Any]:
         raise ValueError(f"unexpected cases schema: {cases.get('schema')!r}")
     if cases.get("surface_id") != SURFACE_ID:
         raise ValueError("cases target the wrong surface")
-    ids = [case.get("id") for case in cases.get("cases", [])]
+    plans = cases.get("cases")
+    if not isinstance(plans, list) or not plans:
+        raise ValueError("cases must contain a non-empty case list")
+    for plan in plans:
+        if not isinstance(plan, dict) or not isinstance(plan.get("id"), str) or not plan["id"]:
+            raise ValueError("case IDs must be non-empty strings")
+        if plan.get("role") not in ALLOWED_ROLES:
+            raise ValueError(f"case {plan['id']} has an unsupported role")
+        if plan.get("driver") == "Site.get_recent_changes":
+            if plan["role"] != "positive" or set(plan) != {"id", "role", "driver", "limit"}:
+                raise ValueError(f"client case {plan['id']} has an invalid shape")
+            if plan["limit"] is not None and (not isinstance(plan["limit"], int) or isinstance(plan["limit"], bool) or plan["limit"] < 1):
+                raise ValueError(f"client case {plan['id']} has an invalid limit")
+            continue
+        if plan.get("driver") != "Site.amc_request control" or "body_fields_in_order" not in plan:
+            raise ValueError(f"case {plan['id']} has an unsupported driver")
+        fields = plan["body_fields_in_order"]
+        if not isinstance(fields, list) or not fields or any(not isinstance(field, list) or len(field) != 2 for field in fields):
+            raise ValueError(f"control case {plan['id']} has invalid fields")
+        names = [field[0] for field in fields]
+        if names[0] != "moduleName" or len(names) != len(set(names)) or not set(names) <= ALLOWED_CONTROL_FIELDS:
+            raise ValueError(f"control case {plan['id']} has an unsafe field set")
+        if "unknownField" in names and plan["id"] != "control-unknown-field":
+            raise ValueError(f"control case {plan['id']} has an unexpected field")
+        if any(not isinstance(name, str) or not isinstance(value, (str, int)) or isinstance(value, bool) for name, value in fields):
+            raise ValueError(f"control case {plan['id']} has invalid field values")
+        if dict(fields).get("moduleName") != "changes/SiteChangesListModule":
+            raise ValueError(f"control case {plan['id']} targets an unexpected module")
+    ids = [case["id"] for case in plans]
     if len(ids) != len(set(ids)) or not ids:
         raise ValueError("case IDs must be nonempty and unique")
     return cases
@@ -86,6 +113,8 @@ def element_signature(tag: Tag) -> str:
 
 
 def body_summary(body: str) -> dict[str, Any]:
+    from bs4 import BeautifulSoup
+
     body_bytes = body.encode()
     soup = BeautifulSoup(body, "lxml")
     signatures = [element_signature(tag) for tag in soup.find_all(True)]
@@ -144,6 +173,8 @@ class WireRecorder:
 
     @contextmanager
     def installed(self) -> Iterator[None]:
+        import httpx
+
         original_send = httpx.AsyncClient.send
         recorder = self
 
@@ -211,10 +242,13 @@ def capture_case(site: Any, plan: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
+    import wikidot
+    from wikidot.connector.ajax import AjaxModuleConnectorConfig
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--cases", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--site", default="sandbox-for-codex")
+    parser.add_argument("--site", choices=(ALLOWED_SITE,), default=ALLOWED_SITE)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(f"refusing to replace existing artifact: {args.output}")
