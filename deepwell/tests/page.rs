@@ -20550,7 +20550,7 @@ async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
     let site_id = site.site.site_id;
     make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
 
-    create_listpages_test_page(
+    let target_revision_id = create_listpages_test_page(
         &mut runner,
         site_id,
         TARGET_SLUG,
@@ -20617,6 +20617,94 @@ async fn page_backlinks_view_filters_before_exposing_titles_and_slugs() {
         serde_json::to_value(&backlinks).expect("public backlinks view should serialize");
     assert!(!serialized.to_string().contains("page_id"));
     assert!(!serialized.to_string().contains("Private Linker"));
+
+    let private_category_id = PageCategoryTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page_category::Column::SiteId.eq(site_id))
+                .add(page_category::Column::Slug.eq(PRIVATE_CATEGORY)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("private backlinks category lookup should succeed")
+        .expect("private backlinks category should exist")
+        .category_id;
+    let target_page_id = PageTable::find()
+        .filter(
+            sea_orm::Condition::all()
+                .add(page::Column::SiteId.eq(site_id))
+                .add(page::Column::Slug.eq(TARGET_SLUG)),
+        )
+        .one(runner.context().transaction())
+        .await
+        .expect("backlinks target lookup should succeed")
+        .expect("backlinks target should exist")
+        .page_id;
+    let transaction = runner.context().transaction();
+    let inserted_private_connections = transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "WITH pages AS (",
+                "INSERT INTO page (site_id, page_category_id, slug, layout) ",
+                "SELECT $1, $2, $3 || series, 'wikidot' ",
+                "FROM generate_series(1, 501) AS series ",
+                "RETURNING page_id, slug), revisions AS (",
+                "INSERT INTO page_revision (revision_type, created_at, updated_at, ",
+                "revision_number, page_id, site_id, user_id, from_wikidot, changes, ",
+                "wikitext_hash, compiled_body_html_hash, compiled_body_styles_hash, ",
+                "compiled_top_bar_html_hash, compiled_side_bar_html_hash, compiled_at, ",
+                "compiled_generator, comments, hidden, title, alt_title, slug, tags) ",
+                "SELECT source.revision_type, source.created_at, source.updated_at, ",
+                "source.revision_number, pages.page_id, source.site_id, source.user_id, ",
+                "source.from_wikidot, source.changes, source.wikitext_hash, ",
+                "source.compiled_body_html_hash, source.compiled_body_styles_hash, ",
+                "source.compiled_top_bar_html_hash, source.compiled_side_bar_html_hash, ",
+                "source.compiled_at, source.compiled_generator, source.comments, ",
+                "source.hidden, source.title, source.alt_title, pages.slug, source.tags ",
+                "FROM pages CROSS JOIN page_revision source ",
+                "WHERE source.revision_id = $4 RETURNING page_id) ",
+                "INSERT INTO page_connection ",
+                "(from_page_id, to_page_id, connection_type, count) ",
+                "SELECT revisions.page_id, $5, 'link', 1 FROM revisions",
+            ),
+            [
+                Value::from(site_id),
+                Value::from(private_category_id),
+                Value::from("fixture-page-backlinks-view-private-overflow-"),
+                Value::from(target_revision_id),
+                Value::from(target_page_id),
+            ],
+        ))
+        .await
+        .expect("private backlinks overflow connections should insert");
+    assert_eq!(inserted_private_connections.rows_affected(), 501);
+
+    let updated_private_pages = transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "UPDATE page SET latest_revision_id = page_revision.revision_id ",
+                "FROM page_revision WHERE page.page_id = page_revision.page_id ",
+                "AND page.site_id = $1 AND page.slug LIKE $2 || '%'",
+            ),
+            [
+                Value::from(site_id),
+                Value::from("fixture-page-backlinks-view-private-overflow-"),
+            ],
+        ))
+        .await
+        .expect("private backlinks overflow pages should receive revisions");
+    assert_eq!(updated_private_pages.rows_affected(), 501);
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("private backlinks overflow permissions should be invalidated");
+    let hidden_overflow = run_endpoint!(
+        runner,
+        page_backlinks_view,
+        json!({"site_id": site_id, "page": TARGET_SLUG}),
+    );
+    assert_eq!(hidden_overflow, backlinks);
 
     set_listpages_test_category_slug(&runner, site_id, TARGET_SLUG, PRIVATE_CATEGORY)
         .await;
