@@ -26,6 +26,7 @@ const NON_ADMIN_TOKEN = "private-non-admin-token";
 const EXPIRED_TOKEN = "private-expired-token";
 const RPC_TOKEN = "private-deepwell-rpc-token";
 const TLS_CA = "private-candidate-tls-ca";
+const PRIVATE_INPUT = { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA };
 const REVISION_CONFLICT_MESSAGE = "The request is in some way malformed or incorrect";
 const FIXTURE = Object.freeze({
   site_id: 6_000_003,
@@ -171,7 +172,16 @@ function fakePublicBoundary(events) {
         });
         state.site.settings_revision += 1;
       }
-      return { http_status: status, content_type: "application/json", response_body_sha256: sha256Value(`${name}:${status}`) };
+      const wrongOrigin = (options.origin ?? PAGE_ORIGIN) !== PAGE_ORIGIN;
+      return {
+        http_status: status,
+        transport_status: status,
+        action_type: wrongOrigin ? "transport_rejection" : status === 200 ? "success" : "error",
+        content_type: "application/json",
+        response_body_sha256: sha256Value(
+          wrongOrigin ? '{"message":"Cross-site POST form submissions are forbidden"}' : `${name}:${status}`,
+        ),
+      };
     },
   };
   return { state, session };
@@ -379,8 +389,8 @@ test("the #754 analytics group executes its cases through the shared runner", as
   const result = await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
-    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
-    privateInputSha256: sha256Value("private-input"),
+    privateInput: PRIVATE_INPUT,
+    privateInputSha256: sha256Value(PRIVATE_INPUT),
     outputDir: path.join(root, "evidence"),
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -410,7 +420,7 @@ test("the #755 theme group changes only category themes", async (t) => {
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
     privateInput: {},
-    privateInputSha256: sha256Value("private-input"),
+    privateInputSha256: sha256Value({}),
     outputDir: path.join(root, "evidence"),
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -444,8 +454,8 @@ test("the real Settings CandidateCaseSet runs all nine configured cases exactly 
   const result = await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
-    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
-    privateInputSha256: sha256Value("private-input"),
+    privateInput: PRIVATE_INPUT,
+    privateInputSha256: sha256Value(PRIVATE_INPUT),
     outputDir: path.join(root, "evidence"),
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -569,8 +579,8 @@ test("the real toolbar candidate group runs through the canonical runner with an
   const options = {
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
-    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
-    privateInputSha256: sha256Value("private-input"),
+    privateInput: PRIVATE_INPUT,
+    privateInputSha256: sha256Value(PRIVATE_INPUT),
     outputDir,
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -601,7 +611,7 @@ test("the real toolbar candidate group runs through the canonical runner with an
   for (const receipt of [initial, settled]) {
     assert.equal(receipt.status, "pass");
     assert.equal(receipt.candidate_identity_sha256, sha256Value(identity));
-    assert.equal(receipt.private_input_sha256, sha256Value("private-input"));
+    assert.equal(receipt.private_input_sha256, sha256Value(PRIVATE_INPUT));
     assert.equal(receipt.evidence_identity.fixture_sha256, sha256Value(FIXTURE));
     assert.match(receipt.evidence_identity.source_sha256, /^[0-9a-f]{64}$/u);
     assert.match(receipt.evidence_identity.cleanup_sha256, /^[0-9a-f]{64}$/u);
@@ -632,7 +642,7 @@ test("#1046 runs its three public cases without changing unrelated settings", as
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
     privateInput: {},
-    privateInputSha256: sha256Value("private-input"),
+    privateInputSha256: sha256Value({}),
     outputDir: path.join(root, "evidence"),
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -670,7 +680,7 @@ test("the real Settings CaseSet verifies direct and client theme evidence indepe
     t.after(() => fs.rm(root, { recursive: true, force: true }));
     const identity = candidateIdentity();
     await assert.rejects(
-      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies(events, []) }),
+      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: sha256Value({}), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies(events, []) }),
       pattern,
     );
   }
@@ -682,7 +692,7 @@ test("Settings rejects any sealed candidate identity outside the exact editable 
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wrong-open43-settings-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await assert.rejects(
-    runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies([], []) }),
+    runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: sha256Value({}), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies([], []) }),
     /exact non-standing scpaiueouiuiuiui\.wikijump\.localhost/u,
   );
 });
