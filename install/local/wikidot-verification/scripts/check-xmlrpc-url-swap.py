@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import sys
@@ -49,6 +50,15 @@ class ConformanceError(Exception):
     """A public XML-RPC response violated the URL-swap contract."""
 
 
+def is_loopback_host(host: str) -> bool:
+    if host.lower().rstrip(".") == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
 def required_environment(name: str) -> str:
     value = os.environ.get(name)
     if not value:
@@ -65,6 +75,10 @@ def authenticated_endpoint(endpoint: str, username: str, password: str) -> str:
     if parsed.path != "/xml-rpc-api.php":
         raise ConformanceError(
             "XMLRPC_CONFORMANCE_ENDPOINT must target /xml-rpc-api.php"
+        )
+    if not is_loopback_host(parsed.hostname):
+        raise ConformanceError(
+            "XMLRPC_CONFORMANCE_ENDPOINT must target a loopback host"
         )
 
     host = parsed.hostname
