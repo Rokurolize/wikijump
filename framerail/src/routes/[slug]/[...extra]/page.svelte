@@ -102,12 +102,12 @@
     // for hydration. Keep those anchors through hydration, then remove only
     // the two boundary nodes so imported Wikidot content has no framework DOM.
     const firstChild = pageContent.firstChild
-    if (firstChild?.nodeType === Node.COMMENT_NODE && firstChild.nodeValue === "") {
+    if (firstChild?.nodeType === Node.COMMENT_NODE) {
       firstChild.remove()
     }
 
     const lastChild = pageContent.lastChild
-    if (lastChild?.nodeType === Node.COMMENT_NODE && lastChild.nodeValue === "") {
+    if (lastChild?.nodeType === Node.COMMENT_NODE) {
       lastChild.remove()
     }
   }
