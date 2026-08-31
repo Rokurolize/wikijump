@@ -74,6 +74,7 @@ const MANAGE_SITE_NON_ADMIN_HTML: &str = concat!(
 const PETITION_ADMIN_ANONYMOUS_HTML: &str = r#"<div class="error-block"><div class="title">Permission error</div>This tool is for use by the administrators of this site</div>"#;
 const SITE_GRID_EMPTY_MESSAGE: &str = "No sites provided.";
 const SITE_GRID_EMPTY_HTML: &str = r#"<div class="error-block">No sites provided.</div>"#;
+const MAX_SITE_UTILITY_MODULES_PER_RENDER: usize = 32;
 
 static SITE_UTILITY_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
@@ -152,12 +153,16 @@ pub(super) async fn expand_site_utility_modules(
 
     let mut output = String::with_capacity(wikitext.len());
     let mut cursor = 0;
+    let mut expanded_count = 0;
     for captures in SITE_UTILITY_MODULE_REGEX.captures_iter(&wikitext) {
         let matched = captures
             .get(0)
             .expect("a site utility module capture always has a complete match");
         if literal_regions.contains(matched.start()) {
             continue;
+        }
+        if expanded_count == MAX_SITE_UTILITY_MODULES_PER_RENDER {
+            break;
         }
         let name = captures
             .name("name")
@@ -197,6 +202,7 @@ pub(super) async fn expand_site_utility_modules(
         output.push_str(&wikitext[cursor..matched.start()]);
         output.push_str(&compat_html.push_block_html(rendered.to_owned()));
         cursor = matched.end();
+        expanded_count += 1;
     }
     if cursor == 0 {
         return Ok(wikitext);
