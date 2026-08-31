@@ -81,7 +81,7 @@ site_name = contract["site"]
 fullname = contract["page_fullname"]
 actor_label = contract["actor_label"]
 body_limit = contract["body_limit_bytes"]
-origin = f"http://{site_name}.wikidot.com"
+origin = f"https://{site_name}.wikidot.com"
 page_url = f"{origin}/{fullname}"
 ajax_url = f"{origin}/ajax-module-connector.php"
 baseline_source = "Comments hideForm authenticated actor evidence fixture."
@@ -99,7 +99,7 @@ cleanup = {
 }
 observed_cases = []
 
-config = AjaxModuleConnectorConfig(allow_insecure_session_transport_for=site_name)
+config = AjaxModuleConnectorConfig()
 with wikidot.Client(
     username=os.environ["WIKIDOT_USERNAME"],
     password=os.environ["WIKIDOT_PASSWORD"],
