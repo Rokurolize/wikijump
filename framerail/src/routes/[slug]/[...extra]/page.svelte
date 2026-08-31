@@ -5,7 +5,6 @@
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { Layout, PagePane } from "$lib/types"
   import { resolve } from "$app/paths"
-  import { buildWikidotPageTagsHtml } from "$lib/wikidot/wikidot-page-tags"
   import {
     buildGeneratedPageStylesHead,
     getPageFontPreloadHrefs
@@ -25,6 +24,7 @@
     requestLegacySetTags
   } from "$lib/wikidot/wikidot-legacy-action-request"
   import { wikidotMembershipActions } from "$lib/wikidot/wikidot-membership-actions"
+  import { wikidotGalleryLightbox } from "$lib/wikidot/wikidot-gallery-lightbox"
   import { requestMembershipJoin } from "$lib/wikidot/wikidot-membership-action-request"
   import { toggleWikidotEditSections } from "$lib/wikidot/wikidot-edit-sections"
   import { wikidotTabviews } from "$lib/wikidot/wikidot-tabviews"
@@ -35,6 +35,7 @@
   import CurrentPageMetadata from "./CurrentPageMetadata.svelte"
   import PageHead from "./PageHead.svelte"
   import PagePaneContent from "./PagePaneContent.svelte"
+  import WikidotFoundPageTags from "./WikidotFoundPageTags.svelte"
 
   import type { PageProps } from "./$types"
   import type { Optional } from "$lib/types"
@@ -76,7 +77,11 @@
         ? (revision?.compiled_body_styles ?? [])
         : (data.compiled_body_styles ?? [])
   )
-  let compiledBodyStylesHead = $derived(buildGeneratedPageStylesHead(compiledBodyStyles))
+  let compiledBodyStylesHead = $derived(
+    pageLayoutContext.current === Layout.WIKIDOT
+      ? ""
+      : buildGeneratedPageStylesHead(compiledBodyStyles)
+  )
   let renderedBodyHtml = $derived(
     showRevision ? revision?.compiled_body_html : data.compiled_body_html
   )
@@ -394,6 +399,7 @@
       class:hidden={dataFormEditing}
       use:wikidotLegacyActions={legacyActionParameters}
       use:wikidotMembershipActions={membershipActionParameters}
+      use:wikidotGalleryLightbox={showRevision ? revision?.wikitext : data.wikitext}
       use:wikidotTabviews
     >
       {@html showRevision ? revision?.compiled_body_html : data.compiled_body_html}
@@ -402,14 +408,10 @@
 
   {#if showRevision}
     {#if revision?.tags?.length}
-      <div class="page-tags" class:hidden={dataFormEditing}>
-        <span>{@html buildWikidotPageTagsHtml(revision.tags)}</span>
-      </div>
+      <WikidotFoundPageTags hidden={dataFormEditing} tags={revision.tags} />
     {/if}
   {:else if data.page_revision?.tags?.length}
-    <div class="page-tags" class:hidden={dataFormEditing}>
-      <span>{@html buildWikidotPageTagsHtml(data.page_revision.tags)}</span>
-    </div>
+    <WikidotFoundPageTags hidden={dataFormEditing} tags={data.page_revision.tags} />
   {/if}
 
   {#if data.options?.edit}
@@ -511,7 +513,10 @@
           id="files-button"
           class="btn btn-default"
           href="javascript:;"
-          onclick={() => activatePagePane(PagePane.File)}
+          onclick={(event) => {
+            event.preventDefault()
+            activatePagePane(PagePane.File)
+          }}
           type="button"
         >
           {wikidotPageActions?.files ?? data.internationalization?.files}

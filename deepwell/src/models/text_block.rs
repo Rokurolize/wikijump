@@ -19,6 +19,7 @@ pub struct Model {
     pub block_name: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub text_type: Option<String>,
+    pub wikidot_sha1: Option<Vec<u8>>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

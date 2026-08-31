@@ -1,0 +1,103 @@
+{
+  "schema": "wikijump.listpages_section_zero_generated_html_live.v1",
+  "issue": "Rokurolize/wikijump#1383",
+  "captured_at_utc": "2026-08-14T19:18:12Z/2026-08-14T19:18:54Z",
+  "access": "anonymous read-only HTTP and PagePreviewModule",
+  "site": {
+    "unix_name": "scp-jp",
+    "site_id": 578002,
+    "page_fullname": "esoteric-syntax",
+    "page_id": 49427550,
+    "revision_id": 1530840768,
+    "revision_number": 49,
+    "revision_updated_at_utc": "2025-07-05T23:49:56Z",
+    "source_bytes": 139426,
+    "source_sha256": "cdeb16f3a0b6287c765b9a61d3b36ff60a6124d8af9c0b6ca3eb949c90675c08"
+  },
+  "corpus": {
+    "repository_commit": "58b996999930e88dec937db5eaa6363c94b48b8e",
+    "repository_tree": "cbc8cecfb109ecf12e18b725203c486a9654a2d5",
+    "capture_id": "baa4b8545fd56c9809999b33189fe00ca1cedfa2c80dd0b5a8e7accf516926ee",
+    "path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/jp/pages/esoteric-syntax/source.wikidot.txt",
+    "source_bytes": 139388,
+    "source_sha256": "ffde7b55d8aaddc334fd44fecc4330e4108c0764adaa4333fb8f6fcfdff6a153",
+    "relevant_lines": "1024-1124",
+    "relevant_fragment_bytes": 4633,
+    "relevant_fragment_terminal_newline_included": false,
+    "relevant_fragment_sha256": "16b8e31d6243bc2e831aeee0b16e2e2f998e3f5ebc28982f4c136ee3929a4664",
+    "live_fragment_matches_corpus": true
+  },
+  "client": {
+    "name": "wikidot.py",
+    "version": "4.4.1",
+    "repository_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+    "repository_tree": "7511e9dc88e5f585ff44f58a6275ff2634c34e3c",
+    "lock_sha256": "8644ed6c80c8f658549f8eae20c20cbb6ab5873c34c72b61da4fecac294b8def",
+    "probe_wrapper_sha256": "ed912a115469573bbcc9c071be42b97455331d085f84ab1404cd1a75b9ff5a15"
+  },
+  "cases": [
+    {
+      "case_id": "issue-1383-preview-section-zero-positive",
+      "section_index": 0,
+      "opener_suffix": "html",
+      "request_sha256": "74dd2ecb37d09e8d4390bc90a65ffe71db91369d62be2dbf66e94e1e766490ff",
+      "response_bytes": 125,
+      "response_sha256": "bef4baf5c50122b1e46361fd8c9b31dd84d8da51293fafab5838f43ef9f63486",
+      "observed": ["literal [[html]] opener", "escaped payload", "zero iframe elements"]
+    },
+    {
+      "case_id": "issue-1383-preview-out-of-range-positive",
+      "section_index": 999,
+      "opener_suffix": "html",
+      "request_sha256": "fb826ba982ffc5736e4809b33b9f8358cebdf3c471aa32bc8a0acac3ded682d4",
+      "response_bytes": 131,
+      "response_sha256": "e148585264520acc1c4648c460f5b2b3acd6472e7432535c524c4f5e91af1e7a",
+      "observed": ["literal [[html]] opener", "escaped payload", "zero iframe elements"]
+    },
+    {
+      "case_id": "issue-1383-preview-section-one-negative",
+      "section_index": 1,
+      "opener_suffix": "html",
+      "request_sha256": "ae42b61a5aeabbb3c422a764e61f66aa981d7f1e15fd7ad845508e5365b93d32",
+      "response_bytes": 100196,
+      "response_sha256": "7b0009b623a96e55f9eeb08907c92e40c00270974588d6748d5d6c9f57194a17",
+      "observed": ["nonempty section prevents html opener", "escaped payload remains", "zero iframe elements"]
+    },
+    {
+      "case_id": "issue-1383-preview-invalid-opener-negative",
+      "section_index": 0,
+      "opener_suffix": "htmlx",
+      "request_sha256": "1e6195d432e1509786a184bcc352a0e7adc2557bdf1c88f3a9e406ccea6bc905",
+      "response_bytes": 135,
+      "response_sha256": "03c3597accfe28f4d6ce1f147988f700618ba3385a107b55a3c4eedfb756232c",
+      "observed": ["literal [[htmlx]] opener", "escaped payload remains", "zero iframe elements"]
+    }
+  ],
+  "saved_page": {
+    "url": "http://scp-jp.wikidot.com/esoteric-syntax/offset/1/page5_limit/1",
+    "captured_at_utc": "2026-08-14T19:18:54Z",
+    "http_status": 200,
+    "backend": "011c3e7d1296302df",
+    "cache": "MISS",
+    "etag": "75d080fa27ccf939429f84e3c35c6963",
+    "response_bytes": 208269,
+    "response_sha256": "ea9e25a0ad350b394c5a969df5c7e811e90830f4f214da3b809a3ffcc283e479",
+    "generated_frames": [
+      {
+        "path": "/esoteric-syntax/html/668a781a839df736f0d8ab65744b864aa1b45dfd-1074733761963070935",
+        "payload_sha256": "4e336b351cf222805b4fd685ee08f6dbadf484060edb250111cbcbe1b4349032",
+        "indicators": ["start1", "fontsize", "page5_limit"]
+      },
+      {
+        "path": "/esoteric-syntax/html/adc09eba127efe89ac78c73aa61b720ab1c04122-13914403681582394611",
+        "payload_sha256": "d0820191da228c3da3a567e7194ad09708a2adefbf8d8a081ce64baf73d7ef17",
+        "indicators": ["updated_at = \"%%date|1751759396%%\"", "view_clock"]
+      }
+    ],
+    "negative_indicator": "the nonempty-section form remains split literal text with escaped content and no iframe"
+  },
+  "public_test_anchors": [
+    "deepwell/tests/list_pages.rs#delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview",
+    "deepwell/tests/page.rs#listpages_generated_html_preview_saved_section_controls"
+  ]
+}

@@ -339,9 +339,14 @@ async fn soft_deleted_users_cannot_authenticate_by_retained_name_or_slug() {
     let runner = TestRunner::setup().await;
     let n = next_n();
     let (name, user_id) = create_auth_test_user(&runner, n, false).await;
-    let deleted = UserService::delete(runner.context(), Reference::Id(user_id))
-        .await
-        .expect("auth test user should be deleted");
+    let deleted = UserService::delete(
+        runner.context(),
+        Reference::Id(user_id),
+        user_id,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("auth test user should be deleted");
 
     for identifier in [name.as_str(), deleted.slug.as_str()] {
         let error = run_endpoint_err!(runner, auth_login, login_params(identifier));

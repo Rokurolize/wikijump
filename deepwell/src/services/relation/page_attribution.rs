@@ -300,7 +300,7 @@ impl RelationService {
             page,
             removed_by,
         }: ClearPageAttributions<'_>,
-    ) -> Result<()> {
+    ) -> Result<u64> {
         let txn = ctx.transaction();
         let page = PageService::get(ctx, site_id, page).await.or_raise(|| {
             Error::new(
@@ -325,14 +325,14 @@ impl RelationService {
             ..Default::default()
         };
 
-        Relation::update_many()
+        let result = Relation::update_many()
             .set(delete_model)
             .filter(page_attributions_condition(page.page_id))
             .exec(txn)
             .await
             .or_raise(make_error)?;
 
-        Ok(())
+        Ok(result.rows_affected)
     }
 }
 

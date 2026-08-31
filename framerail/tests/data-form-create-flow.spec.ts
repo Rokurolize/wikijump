@@ -26,12 +26,21 @@ test("data-form create flow renders controls and stores Wikidot source", async (
   await expect(page.locator("textarea.debug")).toHaveCount(0)
   await expect(page.locator("#page-content")).toHaveCount(0)
   await expect(page.getByText("UNTRANSLATED:Page not found")).toHaveCount(0)
-  await expect(page.locator("#edit-page-form")).toHaveClass(/(?:^|\s)data-form(?:\s|$)/u)
+  await expect(page.locator("#edit-page-form")).toHaveClass("form-horizontal data-form")
   await expect(page.locator("input[name='form-use']")).toHaveValue("true")
   await expect(page.locator("input[name='form-fields']")).toHaveValue("name,choice")
   await expect(page.locator("#edit-page-title")).toHaveValue("Example")
   await expect(page.locator("input[name='field-name']")).toHaveValue("")
+  await expect(page.locator("input[name='field-name']")).toHaveClass(
+    "form-control form-text"
+  )
   await expect(page.locator("input[name='field-choice'][value='b']")).toBeChecked()
+  await expect(page.locator("input[name='field-choice'][value='a']")).toHaveClass(
+    "form-select"
+  )
+  await expect(page.locator("input[name='field-choice'][value='b']")).toHaveClass(
+    "form-select"
+  )
 
   await page.locator("input[name='field-name']").press("Enter")
   const writesAfterEnter = await request
@@ -68,6 +77,296 @@ test("data-form create flow renders controls and stores Wikidot source", async (
         tags: []
       }
     })
+})
+
+test("data-form date field renders its basic control and preserves submitted scalars", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  const missingResponse = await page.goto("/data-form-date-field-flow:example")
+  expect(missingResponse?.status()).toBe(404)
+  await page.locator("#create-it-now-link a").click()
+  await expect(page).toHaveURL(/data-form-date-field-flow:example\/edit\/true$/u)
+  const date = page.locator("input[name='field-date']")
+  await expect(date).toHaveAttribute("type", "text")
+  await expect(date).toHaveClass(/form-control form-date/u)
+  await expect(date).toHaveAttribute("size", "24")
+  await expect(date).toHaveClass(/hasDatepicker/u)
+  const dateTrigger = page.locator("button.ui-datepicker-trigger")
+  await expect(dateTrigger).toHaveCount(1)
+  await dateTrigger.click()
+  await expect(page.locator(".ui-datepicker")).toBeVisible()
+  const today = page.locator(".ui-datepicker-calendar td.ui-datepicker-today a")
+  await expect(today).toHaveCount(1)
+  await today.click()
+  await expect(date).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/u)
+  await page.keyboard.press("Escape")
+
+  await date.fill("02/29/2024")
+  await page.locator("#edit-save-button").click()
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string; wikitext?: string } }) =>
+          entry.params.slug === "data-form-date-field-flow:example"
+      )
+    })
+    .toMatchObject({ params: { wikitext: "date: 02/29/2024" } })
+})
+
+test("data-form datepicker selections save the evidenced Unix-second scalar", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-date-field-flow:example/edit/true")
+
+  const date = page.locator("input[name='field-date']")
+  const dateTrigger = page.locator("button.ui-datepicker-trigger")
+  await dateTrigger.click()
+  await expect(page.locator(".ui-datepicker")).toBeVisible()
+  await page.locator(".ui-datepicker-calendar td.ui-datepicker-today a").click()
+  await expect(date).toHaveValue(/^\d{2}\/\d{2}\/\d{4}$/u)
+  await page.locator("#edit-save-button").click()
+
+  await expect
+    .poll(async () => {
+      const writes = await request
+        .get(`${FIXTURE_URL}/last-page-write-requests`)
+        .then((response) => response.json())
+      return writes.pageCreate.find(
+        (entry: { params: { slug?: string; wikitext?: string } }) =>
+          entry.params.slug === "data-form-date-field-flow:example"
+      )
+    })
+    .toMatchObject({ params: { wikitext: /^date: -?\d+$/u } })
+})
+
+test("pagepath Create new matches the immediate Wikidot tree mutation and survives form cancel", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-pagepath-flow:example/edit/true")
+
+  const hidden = page.locator("input[name='field-origin']")
+  await expect(hidden).toHaveClass("dataform-pagepath-value")
+  await expect(hidden).toHaveValue("")
+  await expect(page.locator("input.dataform-pagepath-category")).toHaveValue(
+    "data-form-pagepath-tree"
+  )
+  await expect(page.locator("input.dataform-pagepath-max-level")).toHaveValue("3")
+
+  const root = page.locator(
+    "select.dataform-pagepath-select-children-of-data-form-pagepath-tree---_root"
+  )
+  await expect(root.locator("option")).toHaveText(["", "alpha", "Create new"])
+  await root.selectOption("data-form-pagepath-tree:alpha")
+  await expect(hidden).toHaveValue("data-form-pagepath-tree:alpha")
+
+  const alpha = page.locator(
+    "select.dataform-pagepath-select-children-of-data-form-pagepath-tree---alpha"
+  )
+  await expect(alpha.locator("option")).toHaveText(["", "beta", "Create new"])
+  await alpha.selectOption("+")
+  const newItem = page.locator(".dataform-pagepath-chooser input.text")
+  await expect(newItem).toHaveValue("New item")
+  await expect(
+    page.locator(".dataform-pagepath-chooser a[href='javascript:;']")
+  ).toHaveText("[x]")
+  await expect(hidden).toHaveValue("data-form-pagepath-tree:alpha")
+
+  await newItem.fill("gamma")
+  await newItem.press("Enter")
+  await expect(hidden).toHaveValue("data-form-pagepath-tree:gamma")
+  await expect(alpha).toHaveValue("data-form-pagepath-tree:gamma")
+  await expect(alpha.locator("option")).toHaveText(["", "beta", "gamma", "Create new"])
+  await expect(
+    page.locator(
+      "select.dataform-pagepath-select-children-of-data-form-pagepath-tree---gamma option"
+    )
+  ).toHaveText(["", "Create new"])
+
+  const writesAfterCreateNew = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writesAfterCreateNew.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-tree:gamma"
+    )
+  ).toMatchObject({
+    params: {
+      slug: "data-form-pagepath-tree:gamma",
+      title: "gamma",
+      wikitext: "",
+      tags: []
+    }
+  })
+  expect(
+    writesAfterCreateNew.parentUpdate.find(
+      (entry: { params: { child?: string } }) =>
+        entry.params.child === "data-form-pagepath-tree:gamma"
+    )
+  ).toMatchObject({
+    params: {
+      child: "data-form-pagepath-tree:gamma",
+      add: ["data-form-pagepath-tree:alpha"]
+    }
+  })
+  expect(
+    writesAfterCreateNew.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-flow:example"
+    )
+  ).toBeUndefined()
+
+  await page.locator("#edit-cancel-button").click()
+  const writesAfterCancel = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(writesAfterCancel.pageCreate).toEqual([])
+  expect(
+    writesAfterCancel.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-flow:example"
+    )
+  ).toBeUndefined()
+  await page.goto("/data-form-pagepath-tree:gamma")
+  await expect(page.locator("#page-title")).toHaveText("gamma")
+})
+
+test("pagepath first root child bootstraps _root and remains selected in the editor", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-pagepath-root-flow:example/edit/true")
+
+  const hidden = page.locator("input[name='field-origin']")
+  const root = page.locator(
+    "select.dataform-pagepath-select-children-of-data-form-pagepath-root-tree---_root"
+  )
+  await expect(root.locator("option")).toHaveText(["", "Create new"])
+
+  await root.selectOption("+")
+  const newItem = page.locator(".dataform-pagepath-chooser input.text")
+  await newItem.fill("alpha")
+  await newItem.press("Enter")
+
+  await expect(hidden).toHaveValue("data-form-pagepath-root-tree:alpha")
+  await expect(root).toHaveValue("data-form-pagepath-root-tree:alpha")
+  await expect(root.locator("option")).toHaveText(["", "alpha", "Create new"])
+  await expect(
+    page.locator(
+      "select.dataform-pagepath-select-children-of-data-form-pagepath-root-tree---alpha option"
+    )
+  ).toHaveText(["", "Create new"])
+
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-root-tree:_root"
+    )
+  ).toMatchObject({
+    params: {
+      slug: "data-form-pagepath-root-tree:_root",
+      title: "Data-form-pagepath-root-tree",
+      wikitext: "",
+      tags: []
+    }
+  })
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-root-tree:alpha"
+    )
+  ).toMatchObject({
+    params: {
+      slug: "data-form-pagepath-root-tree:alpha",
+      title: "alpha",
+      wikitext: "",
+      tags: []
+    }
+  })
+  expect(
+    writes.parentUpdate.find(
+      (entry: { params: { child?: string } }) =>
+        entry.params.child === "data-form-pagepath-root-tree:alpha"
+    )
+  ).toMatchObject({
+    params: {
+      child: "data-form-pagepath-root-tree:alpha",
+      add: ["data-form-pagepath-root-tree:_root"]
+    }
+  })
+  expect(
+    writes.pageCreate.find(
+      (entry: { params: { slug?: string } }) =>
+        entry.params.slug === "data-form-pagepath-root-flow:example"
+    )
+  ).toBeUndefined()
+
+  await page.locator("#edit-cancel-button").click()
+  await page.goto("/data-form-pagepath-root-tree:alpha")
+  await expect(page.locator("#page-title")).toHaveText("alpha")
+})
+
+test("date options edit reload formats stored seconds and serializes alt fields", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-write-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/data-form-date-options-flow:example/edit")
+
+  const primary = page.locator("input[name='field-date-primary']")
+  const secondary = page.locator("input[name='field-date-secondary']")
+  const alt = page.locator("input[name='field-alt-date']")
+  await expect(primary).toHaveValue("09/19/2014")
+  await expect(secondary).toHaveValue("Friday, 12 December 2014")
+  await expect(alt).toHaveValue("9/19/2014")
+  await expect(page.locator("button.ui-datepicker-trigger")).toHaveCount(2)
+
+  const expectedSelection = await page.evaluate(() => {
+    const selected = new Date(2014, 8, 20)
+    return {
+      timestamp: String(Math.trunc(selected.getTime() / 1000)),
+      alt: "9/20/2014"
+    }
+  })
+  await page.locator("button.ui-datepicker-trigger").first().click()
+  await expect(page.locator(".ui-datepicker")).toBeVisible()
+  await page.locator(".ui-datepicker-calendar a[data-date='20']").click()
+  await expect(alt).toHaveValue(expectedSelection.alt)
+  await page.locator("#edit-save-button").click()
+
+  await expect(page.locator("#edit-page-form")).toHaveCount(0)
+  const writes = await request
+    .get(`${FIXTURE_URL}/last-page-write-requests`)
+    .then((response) => response.json())
+  expect(
+    writes.pageEdit.find(
+      (entry: { params: { page?: number } }) => entry.params.page === 3000400
+    )
+  ).toMatchObject({
+    params: {
+      page: 3000400,
+      last_revision_id: 9000400,
+      wikitext: `date-primary: ${expectedSelection.timestamp}\ndate-secondary: 1418360400\nalt-date: '${expectedSelection.alt}'`
+    }
+  })
 })
 
 test("data-form text and select controls match live validation and storage", async ({

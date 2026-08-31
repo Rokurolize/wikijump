@@ -10,11 +10,13 @@ import {
 } from "$lib/server/ajax-module-connector-page-reads.js"
 import { authGetSession } from "$lib/server/auth/get-session"
 import { client } from "$lib/server/deepwell"
-import { wikidotForumModule } from "$lib/server/deepwell/forum"
+import { siteEducationalUpgrade } from "$lib/server/deepwell/admin"
+import { forumPostCreate, wikidotForumModule } from "$lib/server/deepwell/forum"
 import { wikidotMembersListModule } from "$lib/server/deepwell/membership"
 import { adminView, preloadView } from "$lib/server/deepwell/views"
 import { pageFileList } from "$lib/server/deepwell/page-file"
 import {
+  pageDelete,
   pageEdit,
   pageGet,
   pageHistory,
@@ -32,17 +34,18 @@ import {
   wikidotSiteChangesModule
 } from "$lib/server/deepwell/page"
 import {
+  renderWikidotListDrafts,
   renderWikidotOrphanedPages,
   renderWikidotSiteTools,
   renderWikidotWantedPages
 } from "$lib/server/wikidot-site-tools.js"
-import { resolvePageMutationUserId } from "$lib/server/load/local-authoring-actor"
 import {
   getPreloadBackendLocales,
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
 import { loadSiteInfo } from "$lib/server/load/site-info"
 import { renderWikidotManageSiteGeneral } from "$lib/server/wikidot-manage-site-general.js"
+import { renderWikidotManageSiteEducational } from "$lib/server/wikidot-manage-site-educational.js"
 
 import type { RequestHandler } from "./$types"
 
@@ -78,7 +81,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
   const resolveNewPageUserId = () => {
     userIdPromise ??= (async () => {
       const session = sessionToken ? await authGetSession(sessionToken) : undefined
-      return resolvePageMutationUserId(session?.user_id, siteSlug, siteId, siteId)
+      return session?.user_id
     })()
     return userIdPromise
   }
@@ -137,6 +140,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         ...requestContext,
         page: pageId
       }),
+    createForumPost: (input) => forumPostCreate(input, requestContext),
     renderEditMetaModule: async ({
       siteId: requestSiteId,
       pageId
@@ -188,6 +192,46 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         ...requestContext,
         page: pageId
       }),
+    deletePage: async ({
+      siteId: requestSiteId,
+      pageId
+    }: {
+      siteId: number
+      pageId: number
+    }) => {
+      const userId = await resolveNewPageUserId()
+      if (userId === undefined) {
+        throw new Error("deletePage requires a page mutation actor")
+      }
+      const page = (await pageGet(requestSiteId, pageId, {
+        ...requestContext,
+        page: pageId
+      })) as { slug?: string; revision_id?: number } | null
+      const revisionId = page?.revision_id
+      if (
+        page === null ||
+        typeof page.slug !== "string" ||
+        revisionId === undefined ||
+        !Number.isSafeInteger(revisionId)
+      ) {
+        throw new Error("deletePage target is unavailable")
+      }
+      await pageDelete(
+        {
+          siteId: requestSiteId,
+          pageId,
+          userId,
+          userIpAddr: getClientAddress(),
+          slug: page.slug,
+          lastRevisionId: revisionId,
+          revisionComments: ""
+        },
+        {
+          ...requestContext,
+          page: pageId
+        }
+      )
+    },
     renderListPages: ({
       siteId,
       moduleBody,
@@ -258,6 +302,47 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
         ]
       }
     },
+    renderManageSiteEducationalModule: async ({ siteId }: { siteId: number }) => {
+      const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
+      const authorization = await adminView(siteId, locales, sessionToken)
+      if (authorization.type !== "site_found" || !authorization.data.is_master_admin) {
+        return null
+      }
+
+      const preload = await preloadView(siteId, locales, sessionToken)
+      if (preload.site.educational) return null
+      return {
+        status: "ok",
+        body: renderWikidotManageSiteEducational(),
+        js_include: [
+          "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteUpgradeEduModule.js"
+        ]
+      }
+    },
+    upgradeEducationalSite: async ({
+      siteId,
+      organization,
+      purpose
+    }: {
+      siteId: number
+      organization: string
+      purpose: string
+    }) => {
+      if (!sessionToken) throw new Error("Educational upgrade requires a session")
+      const session = await authGetSession(sessionToken)
+      if (!session) throw new Error("Educational upgrade requires a valid session")
+      const locales = getPreloadBackendLocales(getPreloadRequestLocales(request))
+      const preload = await preloadView(siteId, locales, sessionToken)
+      await siteEducationalUpgrade(
+        siteId,
+        preload.site.settings_revision,
+        session.user_id,
+        getClientAddress(),
+        organization,
+        purpose,
+        { sessionToken, siteId }
+      )
+    },
     renderSiteToolsModule: async ({
       siteId,
       moduleName
@@ -276,6 +361,9 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       if (moduleName === "sitetools/OrphanedPagesModule") {
         const pages = await siteToolsOrphanedPages(siteId, requestContext)
         return { status: "ok", body: renderWikidotOrphanedPages(pages) }
+      }
+      if (moduleName === "list/ListDraftsModule") {
+        return { status: "ok", body: renderWikidotListDrafts() }
       }
       return { status: "not_ok", body: "" }
     },

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto"
+
 import { classifyWikidotSiteChangesRequest } from "./wikidot-site-changes.js"
 
 const AJAX_MODULE_CONNECTOR_HEADERS = {
@@ -23,7 +25,21 @@ const FORUM_READ_MODULE_PARAMETERS = new Map([
 const FORUM_POSITIVE_DECIMAL_FIELDS = new Set(["pageId", "c", "p", "t", "pageNo", "page"])
 const SITE_CHANGES_MODULE = "changes/SiteChangesListModule"
 const MEMBERS_LIST_MODULE = "membership/MembersListModule"
+const USERINFO_MODULE = "profile/UserInfoModule"
+const USERINFO_NO_USER_BODY = '<div class="error-block">No user specified.</div>'
 const MANAGE_SITE_GENERAL_MODULE = "managesite/ManageSiteGeneralModule"
+const MANAGE_SITE_EDUCATIONAL_MODULE = "managesite/ManageSiteUpgradeEduModule"
+const EDUCATIONAL_UPGRADE_ACTION = "UpgradesAction"
+const EDUCATIONAL_UPGRADE_EVENT = "upgradeEdu"
+const EDUCATIONAL_UPGRADE_FIELDS = new Set([
+  "moduleName",
+  "action",
+  "event",
+  "organization",
+  "purpose",
+  "wikidot_token7",
+  "callbackIndex"
+])
 const MEMBERS_LIST_PARAMETERS = new Set(["group", "order", "page"])
 const MEMBERS_LIST_DEFAULT_PARAMETERS = new Set(["group", "page"])
 const SITE_TOOLS_READ_MODULES = new Map([
@@ -78,11 +94,46 @@ const LIST_PAGES_PARAMETERS = new Set([
 ])
 const NEWPAGE_ACTION = "misc/NewPageHelperAction"
 const NEWPAGE_EVENT = "createNewPage"
+const DATA_FORM_ACTION = "DataFormAction"
+const DATA_FORM_NEW_PAGE_EVENT = "newPage"
+const DATA_FORM_NEW_PAGE_FIELDS = new Set([
+  "action",
+  "event",
+  "category",
+  "parent",
+  "title",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex"
+])
 const PAGE_DISCUSSION_ACTION = "ForumAction"
 const PAGE_DISCUSSION_EVENT = "createPageDiscussionThread"
+const FORUM_POST_EVENT = "savePost"
+const FORUM_POST_FIELDS = new Set([
+  "action",
+  "event",
+  "moduleName",
+  "wikidot_token7",
+  "callbackIndex",
+  "threadId",
+  "parentId",
+  "title",
+  "source",
+  "guestName",
+  "guestEmail"
+])
 const EDIT_META_MODULE = "edit/EditMetaModule"
 const EDIT_META_ACTION = "WikiPageAction"
 const EDIT_META_EVENTS = new Set(["saveMetaTag", "deleteMetaTag"])
+const PAGE_DELETE_EVENT = "deletePage"
+const PAGE_DELETE_MODULE = "Empty"
+const PAGE_DELETE_ACTION_FIELDS = new Set([
+  "action",
+  "event",
+  "page_id",
+  "moduleName",
+  "wikidot_token7"
+])
 const EDIT_META_READ_FIELDS = new Set(["moduleName", "pageId", "wikidot_token7"])
 const EDIT_META_ACTION_FIELDS = new Set([
   "action",
@@ -169,6 +220,18 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     body: string
  *     js_include?: string[]
  *   } | null>
+ *   renderManageSiteEducationalModule?: (input: {
+ *     siteId: number
+ *   }) => Promise<{
+ *     status: string
+ *     body: string
+ *     js_include?: string[]
+ *   } | null>
+ *   upgradeEducationalSite?: (input: {
+ *     siteId: number
+ *     organization: string
+ *     purpose: string
+ *   }) => Promise<void>
  *   renderPageReadModule?: (input: ForumModuleRenderInput) => Promise<{
  *     status: string
  *     body: string
@@ -185,6 +248,15 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     siteId: number
  *     pageId: number
  *   }) => Promise<{ thread_id: number; thread_unix_title: string } | null>
+ *   createForumPost?: (input: {
+ *     siteId: number
+ *     threadId: number
+ *     parentPostId: number | null
+ *     title: string
+ *     source: string
+ *     guestName?: string
+ *     guestEmailMd5?: string
+ *   }) => Promise<{ forum_post_id: number }>
  *   renderEditMetaModule?: (input: {
  *     siteId: number
  *     pageId: number
@@ -202,8 +274,15 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  *     name: string
  *     allPages: boolean
  *   }) => Promise<void>
+ *   deletePage?: (input: {
+ *     siteId: number
+ *     pageId: number
+ *   }) => Promise<void>
  * }} AjaxModuleConnectorOptions
  */
+
+const isValidAjaxModuleStatus = (status) =>
+  typeof status === "string" && status.length > 0
 
 /**
  * @param {Record<string, unknown>} body
@@ -211,10 +290,15 @@ const MAX_NEWPAGE_FORMAT_LENGTH = 512
  * @param {HeadersInit} [extraHeaders]
  */
 const jsonResponse = (body, status = 200, extraHeaders = {}) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...AJAX_MODULE_CONNECTOR_HEADERS, ...extraHeaders }
-  })
+  new Response(
+    JSON.stringify(
+      isValidAjaxModuleStatus(body.status) ? body : { ...body, status: "not_ok" }
+    ),
+    {
+      status,
+      headers: { ...AJAX_MODULE_CONNECTOR_HEADERS, ...extraHeaders }
+    }
+  )
 
 /**
  * @param {string} moduleName
@@ -242,7 +326,10 @@ const isSupportedPageReadShape = (moduleName, parameters) => {
 
 /**
  * @param {Request} request
- * @returns {Promise<Map<string, string>>}
+ * @returns {Promise<{
+ *   fields: Map<string, string>
+ *   duplicateFields: Set<string>
+ * }>}
  */
 const readUrlEncodedForm = async (request) => {
   const contentType = request.headers.get("content-type")?.split(";", 1)[0].trim()
@@ -263,7 +350,7 @@ const readUrlEncodedForm = async (request) => {
 
   const reader = request.body?.getReader()
   if (reader === undefined) {
-    return new Map()
+    return { fields: new Map(), duplicateFields: new Set() }
   }
 
   /** @type {Uint8Array[]} */
@@ -292,13 +379,12 @@ const readUrlEncodedForm = async (request) => {
   const body = new TextDecoder("utf-8", { fatal: true }).decode(bytes)
   const form = new URLSearchParams(body)
   const values = new Map()
+  const duplicateFields = new Set()
   for (const [key, value] of form) {
-    if (values.has(key)) {
-      throw new TypeError(`AJAX Module Connector field is duplicated: ${key}`)
-    }
+    if (values.has(key)) duplicateFields.add(key)
     values.set(key, value)
   }
-  return values
+  return { fields: values, duplicateFields }
 }
 
 /**
@@ -587,15 +673,19 @@ export const handleAjaxModuleConnectorRequest = async (
     renderSiteChangesModule,
     renderMembersList,
     renderManageSiteGeneralModule,
+    renderManageSiteEducationalModule,
+    upgradeEducationalSite,
     renderPageReadModule,
     renderSiteToolsModule,
     createNewPage,
     canCreateNewPage = true,
     pageExists,
     createPageDiscussion,
+    createForumPost,
     renderEditMetaModule,
     saveMetaTag,
-    deleteMetaTag
+    deleteMetaTag,
+    deletePage
   }
 ) => {
   if (request.method !== "POST") {
@@ -606,10 +696,15 @@ export const handleAjaxModuleConnectorRequest = async (
     )
   }
 
-  /** @type {Map<string, string>} */
-  let fields
+  /**
+   * @type {{
+   *   fields: Map<string, string>
+   *   duplicateFields: Set<string>
+   * }}
+   */
+  let parsedForm
   try {
-    fields = await readUrlEncodedForm(request)
+    parsedForm = await readUrlEncodedForm(request)
   } catch (error) {
     const status = error instanceof RangeError ? 413 : 400
     return jsonResponse(
@@ -624,7 +719,19 @@ export const handleAjaxModuleConnectorRequest = async (
     )
   }
 
+  const { fields, duplicateFields } = parsedForm
   const moduleName = fields.get("moduleName")
+  if (moduleName !== "list/ListPagesModule" && duplicateFields.size > 0) {
+    const duplicateField = duplicateFields.values().next().value
+    return jsonResponse(
+      {
+        status: "not_ok",
+        message: `AJAX Module Connector field is duplicated: ${duplicateField}`
+      },
+      400
+    )
+  }
+
   if (moduleName === MANAGE_SITE_GENERAL_MODULE) {
     if (fields.size !== 1) {
       return jsonResponse({
@@ -666,6 +773,103 @@ export const handleAjaxModuleConnectorRequest = async (
         cssInclude: [],
         jsInclude: []
       })
+    }
+  }
+
+  if (moduleName === MANAGE_SITE_EDUCATIONAL_MODULE) {
+    if (fields.size !== 1) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+
+    if (!renderManageSiteEducationalModule) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module: ${moduleName}`
+      })
+    }
+
+    try {
+      const output = await renderManageSiteEducationalModule({ siteId })
+      if (!output) {
+        return jsonResponse({
+          status: "not_ok",
+          body: "",
+          callbackIndex: null,
+          CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+          cssInclude: [],
+          jsInclude: []
+        })
+      }
+      return jsonResponse({
+        status: output.status,
+        body: output.body,
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: output.js_include ?? []
+      })
+    } catch (error) {
+      console.error("AJAX ManageSite educational rendering failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        body: "",
+        callbackIndex: null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+        cssInclude: [],
+        jsInclude: []
+      })
+    }
+  }
+
+  if (
+    fields.get("action") === EDUCATIONAL_UPGRADE_ACTION &&
+    fields.get("event") === EDUCATIONAL_UPGRADE_EVENT
+  ) {
+    const organization = fieldValue(fields, "organization")
+    const purpose = fieldValue(fields, "purpose")
+    const validShape =
+      [...fields.keys()].every((field) => EDUCATIONAL_UPGRADE_FIELDS.has(field)) &&
+      fields.get("moduleName") === "Empty" &&
+      organization.trim().length > 0 &&
+      purpose.trim().length > 0
+    if (!validShape || !upgradeEducationalSite) {
+      return jsonResponse({ status: "not_ok" })
+    }
+    try {
+      await upgradeEducationalSite({ siteId, organization, purpose })
+      return jsonResponse({ status: "ok" })
+    } catch (error) {
+      console.error("AJAX educational site upgrade failed", error)
+      return jsonResponse({ status: "not_ok" })
+    }
+  }
+
+  if (
+    fields.get("action") === EDIT_META_ACTION &&
+    fields.get("event") === PAGE_DELETE_EVENT
+  ) {
+    const pageIdValue = fieldValue(fields, "page_id")
+    const shapeIsSupported =
+      fields.get("moduleName") === PAGE_DELETE_MODULE &&
+      [...fields.keys()].every((field) => PAGE_DELETE_ACTION_FIELDS.has(field)) &&
+      isPositiveSafeDecimal(pageIdValue)
+    if (!shapeIsSupported) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${fields.get("moduleName") ?? ""}`
+      })
+    }
+
+    if (!deletePage) return jsonResponse({ status: "not_ok" })
+    try {
+      await deletePage({ siteId, pageId: Number.parseInt(pageIdValue, 10) })
+      return jsonResponse({ status: "ok" })
+    } catch (error) {
+      console.error("AJAX deletePage action failed", error)
+      return jsonResponse({ status: "not_ok" })
     }
   }
 
@@ -769,6 +973,78 @@ export const handleAjaxModuleConnectorRequest = async (
     }
   }
 
+  if (
+    fields.get("action") === DATA_FORM_ACTION &&
+    fields.get("event") === DATA_FORM_NEW_PAGE_EVENT
+  ) {
+    const category = fieldValue(fields, "category")
+    const parentPage = fieldValue(fields, "parent")
+    const title = fieldValue(fields, "title")
+    const callbackIndex = fields.has("callbackIndex")
+      ? fieldValue(fields, "callbackIndex")
+      : null
+    const supportedShape =
+      moduleName === "Empty" &&
+      category.length > 0 &&
+      title.length > 0 &&
+      [...fields.keys()].every((field) => DATA_FORM_NEW_PAGE_FIELDS.has(field))
+    if (
+      !supportedShape ||
+      !createNewPage ||
+      !(await resolveCanCreateNewPage(canCreateNewPage))
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    }
+
+    const fullname = toWikidotUnixName({
+      pageName: title,
+      categoryName: category
+    })
+    if (!fullname || (pageExists && (await pageExists(fullname)))) {
+      return jsonResponse({
+        status: "not_ok",
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    }
+    try {
+      const rootFullname = `${category}:_root`
+      if (parentPage === "" && (!pageExists || !(await pageExists(rootFullname)))) {
+        await createNewPage({
+          slug: rootFullname,
+          title: category.charAt(0).toUpperCase() + category.slice(1),
+          wikitext: "",
+          tags: [],
+          parentPage: null
+        })
+      }
+      await createNewPage({
+        slug: fullname,
+        title,
+        wikitext: "",
+        tags: [],
+        parentPage: parentPage || rootFullname
+      })
+      return jsonResponse({
+        status: "ok",
+        fullname,
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    } catch (error) {
+      console.error("AJAX DataForm pagepath creation failed", error)
+      return jsonResponse({
+        status: "not_ok",
+        callbackIndex,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
+    }
+  }
+
   if (fields.get("action") === NEWPAGE_ACTION && fields.get("event") === NEWPAGE_EVENT) {
     try {
       return await handleNewPageHelperRequest(fields, {
@@ -782,6 +1058,62 @@ export const handleAjaxModuleConnectorRequest = async (
         status: "not_ok",
         message: "Unable to create NewPage target"
       })
+    }
+  }
+
+  if (
+    fields.get("action") === PAGE_DISCUSSION_ACTION &&
+    fields.get("event") === FORUM_POST_EVENT
+  ) {
+    const threadIdValue = fieldValue(fields, "threadId")
+    const parentIdValue = fieldValue(fields, "parentId")
+    const guestNamePresent = fields.has("guestName")
+    const guestEmailPresent = fields.has("guestEmail")
+    const guestName = fieldValue(fields, "guestName")
+    const guestEmail = fieldValue(fields, "guestEmail").trim()
+    const parentPostId =
+      parentIdValue === ""
+        ? null
+        : isPositiveSafeDecimal(parentIdValue)
+          ? Number.parseInt(parentIdValue, 10)
+          : undefined
+    const guestIdentityValid =
+      !guestNamePresent && !guestEmailPresent
+        ? true
+        : guestNamePresent &&
+          guestEmailPresent &&
+          guestName.trim().length > 0 &&
+          guestEmail.length <= 50 &&
+          /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(guestEmail)
+    const shapeIsSupported =
+      moduleName === "Empty" &&
+      isPositiveSafeDecimal(threadIdValue) &&
+      parentPostId !== undefined &&
+      fields.has("source") &&
+      [...fields.keys()].every((field) => FORUM_POST_FIELDS.has(field)) &&
+      guestIdentityValid
+    if (!shapeIsSupported || !createForumPost) {
+      return jsonResponse({ status: "not_ok" })
+    }
+
+    try {
+      const created = await createForumPost({
+        siteId,
+        threadId: Number.parseInt(threadIdValue, 10),
+        parentPostId,
+        title: fieldValue(fields, "title"),
+        source: fieldValue(fields, "source"),
+        ...(guestNamePresent
+          ? {
+              guestName,
+              guestEmailMd5: createHash("md5").update(guestEmail).digest("hex")
+            }
+          : {})
+      })
+      return jsonResponse({ status: "ok", postId: created.forum_post_id })
+    } catch (error) {
+      console.error("AJAX forum savePost action failed", error)
+      return jsonResponse({ status: "not_ok" })
     }
   }
 
@@ -958,6 +1290,32 @@ export const handleAjaxModuleConnectorRequest = async (
     }
   }
 
+  if (moduleName === USERINFO_MODULE) {
+    const supportedFields = new Set([
+      "moduleName",
+      "user_id",
+      "wikidot_token7",
+      "callbackIndex"
+    ])
+    if (
+      [...fields.keys()].some((field) => !supportedFields.has(field)) ||
+      fieldValue(fields, "user_id") !== ""
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
+    return jsonResponse({
+      status: "ok",
+      body: USERINFO_NO_USER_BODY,
+      callbackIndex: null,
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      cssInclude: [],
+      jsInclude: []
+    })
+  }
+
   const siteToolsShape = moduleName ? SITE_TOOLS_READ_MODULES.get(moduleName) : undefined
   if (siteToolsShape && moduleName) {
     if (!renderSiteToolsModule) {
@@ -1036,6 +1394,16 @@ export const handleAjaxModuleConnectorRequest = async (
           message: `Unsupported AJAX module shape: ${moduleName}`
         })
       }
+    }
+    if (moduleName === "viewsource/ViewSourceModule" && parameters.page_id === "0") {
+      return jsonResponse({
+        status: "no_page",
+        message: "The page does not exist",
+        callbackIndex: fields.has("callbackIndex")
+          ? fieldValue(fields, "callbackIndex")
+          : null,
+        CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000)
+      })
     }
     if (
       Object.keys(parameters).length !== pageReadParameters.size ||
@@ -1173,23 +1541,20 @@ export const handleAjaxModuleConnectorRequest = async (
     })
   }
 
-  const moduleBody = fields.get("module_body")
-  if (moduleBody === undefined) {
-    return jsonResponse({
-      status: "not_ok",
-      message: "ListPages module_body is required"
-    })
-  }
+  const moduleBody = fields.get("module_body") ?? ""
 
   /** @type {Record<string, string>} */
   const parameters = {}
   for (const [key, value] of fields) {
     if (CONTROL_FIELDS.has(key)) continue
-    if (!LIST_PAGES_PARAMETERS.has(key.toLowerCase())) {
+    if (key.startsWith("_")) {
       return jsonResponse({
         status: "not_ok",
         message: `Unsupported AJAX module shape: ${moduleName}`
       })
+    }
+    if (!LIST_PAGES_PARAMETERS.has(key.toLowerCase())) {
+      continue
     }
     parameters[key] = value
   }

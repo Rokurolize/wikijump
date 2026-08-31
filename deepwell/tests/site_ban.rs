@@ -28,9 +28,12 @@ use deepwell::constants::{
 use deepwell::error::prelude::*;
 use deepwell::models::audit_log::{self, Entity as AuditLog};
 use deepwell::models::relation::{self, Entity as Relation};
-use deepwell::services::role::{InternalCreateRoleInput, RoleService};
-use deepwell::services::{RelationService, RequestContext};
-use deepwell::types::RelationType;
+use deepwell::services::permission::PermissionService;
+use deepwell::services::role::{
+    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+};
+use deepwell::services::{RelationService, RequestContext, UserService};
+use deepwell::types::{Action, Permission, Reference, RelationType, Resource};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
 use serde_json::json;
 
@@ -108,6 +111,78 @@ async fn latest_audit_event(
         .expect("Expected audit event was not found")
 }
 
+fn request_actor(user_id: Option<i64>) -> RequestContext {
+    RequestContext {
+        user_id,
+        ..Default::default()
+    }
+}
+
+async fn audit_event_count(
+    runner: &TestRunner,
+    event_type: &str,
+    site_id: i64,
+    target_user_id: i64,
+) -> usize {
+    AuditLog::find()
+        .filter(audit_log::Column::EventType.eq(event_type))
+        .filter(audit_log::Column::SiteId.eq(site_id))
+        .filter(audit_log::Column::UserId.eq(target_user_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("Unable to query site-ban audit events")
+        .len()
+}
+
+async fn assert_site_ban_set_denied(
+    runner: &mut TestRunner,
+    request: RequestContext,
+    site_id: i64,
+    target_user_id: i64,
+    created_by: i64,
+) {
+    runner.set_request_context(request);
+    let error = run_endpoint_err!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": target_user_id,
+            "metadata": {
+                "banned_until": null,
+                "reason": "authorization probe",
+            },
+            "created_by": created_by,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+async fn assert_site_ban_remove_denied(
+    runner: &mut TestRunner,
+    request: RequestContext,
+    site_id: i64,
+    target_user_id: i64,
+    removed_by: i64,
+) {
+    runner.set_request_context(request);
+    let error = run_endpoint_err!(
+        runner,
+        site_ban_remove,
+        json!({
+            "site_id": site_id,
+            "user_id": target_user_id,
+            "removed_by": removed_by,
+            "reason": "authorization probe",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+}
+
+// The registered-RPC harness commits an independent transaction and cannot
+// share these rollback-contained fixtures, so this exercises the endpoint seam.
 #[tokio::test]
 async fn lifecycle_membership_blocking_and_audit() {
     let mut runner = TestRunner::setup().await;
@@ -204,6 +279,107 @@ async fn lifecycle_membership_blocking_and_audit() {
         }),
     );
     assert!(membership.is_some(), "Site membership was not created");
+
+    let create_audit_count =
+        audit_event_count(&runner, "site_ban.create", site_id, user_id).await;
+
+    // Ordinary actor on the target site.
+    assert_site_ban_set_denied(
+        &mut runner,
+        request_actor(Some(UNKNOWN_USER_ID)),
+        site_id,
+        user_id,
+        UNKNOWN_USER_ID,
+    )
+    .await;
+
+    // Grant that actor role:assign on a different site; target-site authority
+    // must remain unchanged.
+    let other_site_id =
+        run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+            .expect("Seeded editable site not found")
+            .site
+            .site_id;
+    let manager_role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id: other_site_id,
+            name: String::from("Cross-site Site Ban Manager"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to create cross-site manager role");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id: other_site_id,
+            role_reference: Reference::Id(manager_role.role_id),
+            new_permissions: vec![Permission {
+                resource_type: Resource::Role,
+                resource_category: None,
+                action: Action::Assign,
+            }],
+            cascade_removals: false,
+            updating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to configure cross-site manager role");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: UNKNOWN_USER_ID,
+            role_id: manager_role.role_id,
+            site_id: other_site_id,
+            assigning_user_id: ADMIN_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to grant cross-site manager role");
+
+    for (request, created_by) in [
+        (request_actor(Some(UNKNOWN_USER_ID)), UNKNOWN_USER_ID),
+        (request_actor(None), ADMIN_USER_ID),
+        (request_actor(Some(ADMIN_USER_ID)), UNKNOWN_USER_ID),
+    ] {
+        assert_site_ban_set_denied(&mut runner, request, site_id, user_id, created_by)
+            .await;
+    }
+
+    let ban = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({"site_id": site_id, "user_id": user_id}),
+    );
+    let membership = run_endpoint!(
+        runner,
+        membership_get,
+        json!({"site_id": site_id, "user_id": user_id}),
+    );
+    let roles = run_endpoint!(
+        runner,
+        get_user_roles,
+        json!({"site_id": site_id, "user_id": user_id}),
+    );
+    let create_audit_count_after =
+        audit_event_count(&runner, "site_ban.create", site_id, user_id).await;
+    assert!(ban.is_none(), "Denied request created a site ban");
+    assert!(membership.is_some(), "Denied request removed membership");
+    assert!(
+        roles.iter().any(|item| item.role_id == role.role_id),
+        "Denied request removed the target role",
+    );
+    assert_eq!(create_audit_count_after, create_audit_count);
+
+    runner.set_request_context(request_actor(Some(ADMIN_USER_ID)));
 
     // Creating the ban must remove the existing membership.
     run_endpoint!(
@@ -336,6 +512,30 @@ async fn lifecycle_membership_blocking_and_audit() {
     assert_eq!(create_event.extra_string_1.as_deref(), Some(REASON));
     assert_eq!(create_event.extra_string_2, None);
 
+    let remove_audit_count =
+        audit_event_count(&runner, "site_ban.remove", site_id, user_id).await;
+    for (request, removed_by) in [
+        (request_actor(Some(user_id)), user_id),
+        (request_actor(Some(UNKNOWN_USER_ID)), UNKNOWN_USER_ID),
+        (request_actor(None), ADMIN_USER_ID),
+        (request_actor(Some(ADMIN_USER_ID)), UNKNOWN_USER_ID),
+    ] {
+        assert_site_ban_remove_denied(&mut runner, request, site_id, user_id, removed_by)
+            .await;
+    }
+    let active_ban = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({"site_id": site_id, "user_id": user_id}),
+    )
+    .expect("Denied request removed the site ban");
+    let remove_audit_count_after =
+        audit_event_count(&runner, "site_ban.remove", site_id, user_id).await;
+    assert_eq!(active_ban.relation_id, ban.relation_id);
+    assert_eq!(remove_audit_count_after, remove_audit_count);
+
+    runner.set_request_context(request_actor(Some(ADMIN_USER_ID)));
+
     // Removing the ban must soft-delete it and add another audit event.
     let removed = run_endpoint!(
         runner,
@@ -378,8 +578,204 @@ async fn lifecycle_membership_blocking_and_audit() {
 }
 
 #[tokio::test]
+async fn authorized_manager_can_remove_ban_after_target_is_tombstoned() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(request_actor(Some(ADMIN_USER_ID)));
+    let site_id = test_site_id(&runner).await;
+
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Tombstoned Site Ban Target",
+            "email": "tombstoned-site-ban-target@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let manager_role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: String::from("Tombstoned Site Ban Manager"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to create site-ban manager role");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(manager_role.role_id),
+            new_permissions: vec![Permission {
+                resource_type: Resource::Role,
+                resource_category: None,
+                action: Action::Assign,
+            }],
+            cascade_removals: false,
+            updating_user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to configure site-ban manager role");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            user_id: UNKNOWN_USER_ID,
+            role_id: manager_role.role_id,
+            site_id,
+            assigning_user_id: ADMIN_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to grant site-ban manager role");
+
+    run_endpoint!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": target.user_id,
+            "metadata": {
+                "banned_until": null,
+                "reason": "tombstone removal test",
+            },
+            "created_by": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(deleted.deleted_at.is_some());
+
+    runner.set_request_context(request_actor(Some(UNKNOWN_USER_ID)));
+    let error = run_endpoint_err!(
+        runner,
+        site_ban_set,
+        json!({
+            "site_id": site_id,
+            "user_id": target.user_id,
+            "metadata": {
+                "banned_until": null,
+                "reason": "must not recreate against a deleted user",
+            },
+            "created_by": UNKNOWN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserNotFound);
+
+    assert_site_ban_remove_denied(
+        &mut runner,
+        request_actor(Some(UNKNOWN_USER_ID)),
+        site_id,
+        target.user_id,
+        ADMIN_USER_ID,
+    )
+    .await;
+    assert_site_ban_remove_denied(
+        &mut runner,
+        request_actor(Some(SAMPLE_USER_ID)),
+        site_id,
+        target.user_id,
+        SAMPLE_USER_ID,
+    )
+    .await;
+
+    runner.set_request_context(request_actor(Some(ADMIN_USER_ID)));
+    let other_site_id =
+        run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+            .expect("Seeded editable site not found")
+            .site
+            .site_id;
+    for (candidate_site_id, candidate_user_id) in
+        [(other_site_id, target.user_id), (site_id, 700_999_i64)]
+    {
+        let error = run_endpoint_err!(
+            runner,
+            site_ban_remove,
+            json!({
+                "site_id": candidate_site_id,
+                "user_id": candidate_user_id,
+                "removed_by": ADMIN_USER_ID,
+                "reason": "non-matching site ban",
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::SiteBanRelation);
+    }
+    let active = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({"site_id": site_id, "user_id": target.user_id}),
+    );
+    assert!(active.is_some(), "Rejected removal removed the site ban");
+
+    runner.set_request_context(request_actor(Some(UNKNOWN_USER_ID)));
+    let removed = run_endpoint!(
+        runner,
+        site_ban_remove,
+        json!({
+            "site_id": site_id,
+            "user_id": target.user_id,
+            "removed_by": UNKNOWN_USER_ID,
+            "reason": "target account was deleted",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(removed.deleted_by, Some(UNKNOWN_USER_ID));
+    assert!(removed.deleted_at.is_some());
+
+    let ban = run_endpoint!(
+        runner,
+        site_ban_get,
+        json!({"site_id": site_id, "user_id": target.user_id}),
+    );
+    assert!(ban.is_none(), "Removed site ban is still active");
+
+    let tombstone =
+        UserService::get_real(runner.context(), Reference::Id(target.user_id))
+            .await
+            .expect("Tombstoned target user was not found");
+    assert!(
+        tombstone.deleted_at.is_some(),
+        "Removing the site ban restored the target account",
+    );
+
+    let remove_event =
+        latest_audit_event(&runner, "site_ban.remove", site_id, target.user_id).await;
+    assert_eq!(remove_event.extra_id_1, Some(UNKNOWN_USER_ID));
+    assert_eq!(remove_event.extra_id_2, Some(removed.relation_id));
+    assert_eq!(
+        remove_event.extra_string_1.as_deref(),
+        Some("target account was deleted"),
+    );
+}
+
+#[tokio::test]
 async fn expiration_cleanup_preserves_future_and_permanent_bans() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
     let site_id = test_site_id(&runner).await;
     let user_id = UNKNOWN_USER_ID;
 
@@ -526,7 +922,11 @@ async fn expiration_cleanup_preserves_future_and_permanent_bans() {
 
 #[tokio::test]
 async fn expiration_cleanup_does_not_remove_a_replacement_ban() {
-    let runner = TestRunner::setup().await;
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
     let site_id = test_site_id(&runner).await;
     let user_id = UNKNOWN_USER_ID;
 

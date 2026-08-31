@@ -34,6 +34,8 @@ export async function loadUser(
   const locales = parentData.locales
 
   const response = await userView(siteId, locales, sessionToken, username)
+  const unsupportedImportedUser =
+    response.type === "user_found" && response.data.user.user_type === "wikidot"
 
   let translateKeys: TranslateKeys = {
     ...defaults.translateKeys,
@@ -47,6 +49,7 @@ export async function loadUser(
 
   switch (response.type) {
     case "user_found":
+      if (unsupportedImportedUser) errorStatus = 404
       break
     case "user_missing":
       errorStatus = 404
@@ -69,25 +72,31 @@ export async function loadUser(
 
   const viewData: {
     user?: Partial<UserModel & { avatar: string }>
-  } = response.data ?? {}
+  } = {}
 
-  if (errorStatus !== null && response.type === "user_missing") {
+  if (
+    (errorStatus !== null && response.type === "user_missing") ||
+    unsupportedImportedUser
+  ) {
     translateKeys = {
       ...translateKeys,
       "user-not-exist": {},
       "user-not-logged-in": {}
     }
-  } else if (errorStatus === null && response.type === "user_found") {
+  } else if (
+    errorStatus === null &&
+    response.type === "user_found" &&
+    response.data.user.user_type !== "wikidot"
+  ) {
     const isViewingAnotherUser =
       parentData.user_session?.user?.user_id !== response.data.user.user_id
 
-    viewData.user = sanitizeUserData(response.data.user, isViewingAnotherUser)
+    const user = response.data.user
+    viewData.user = sanitizeUserData(user, isViewingAnotherUser)
 
     // Get user avatar image
-    if (response.data.user.avatar_s3_hash !== null) {
-      const avatar = await getFileByHash(
-        new Uint8Array(response.data.user.avatar_s3_hash)
-      )
+    if (user.avatar_s3_hash !== null) {
+      const avatar = await getFileByHash(new Uint8Array(user.avatar_s3_hash))
       const dataurl = `data:${avatar.type};base64,${Buffer.from(
         await avatar.arrayBuffer()
       ).toString("base64")}`
@@ -124,7 +133,7 @@ export async function loadUser(
   const pageData = {
     ...parentData,
     ...viewData,
-    view: response.type,
+    view: unsupportedImportedUser ? "user_missing" : response.type,
     internationalization
   }
 
@@ -168,6 +177,7 @@ export function sanitizeUserData(
       "email_validation_info",
       "email_validation_at",
       "locales",
+      "forum_signature",
       "real_name",
       "gender",
       "birthday",
@@ -212,7 +222,7 @@ export async function userEditAction({
       locales
     } = form.data
 
-    const res = await userEdit(
+    await userEdit(
       session.user_id,
       ipAddress,
       {
@@ -236,7 +246,7 @@ export async function userEditAction({
       getRequestContext(locals)
     )
 
-    return withFiles({ form, res })
+    return withFiles({ form })
   } catch (error) {
     return failForActionError(error, { form })
   }

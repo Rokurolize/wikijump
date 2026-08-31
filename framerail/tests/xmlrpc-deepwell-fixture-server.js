@@ -43,6 +43,7 @@ const handleUpload = (request, response) => {
  */
 const handleDiagnosticRequest = (request, response) => {
   if (request.method !== "GET") return false
+  const url = new URL(request.url ?? "/", `http://127.0.0.1:${PORT}`)
 
   if (request.url === "/last-page-tags-request") {
     sendJson(response, fixtureState.lastPageTagsSelectRequest)
@@ -56,6 +57,17 @@ const handleDiagnosticRequest = (request, response) => {
     const snapshot = structuredClone(fixtureState.pageReadRequests)
     resetRequestGroups(fixtureState.pageReadRequests)
     sendJson(response, snapshot)
+    return true
+  }
+  if (request.url === "/page-revision-diff-requests") {
+    sendJson(response, fixtureState.pageReadRequests.pageRevisionDiff)
+    return true
+  }
+  if (url.pathname === "/release-page-revision-diff") {
+    const release = fixtureState.pendingPageRevisionDiffResponse
+    fixtureState.pendingPageRevisionDiffResponse = null
+    release?.(url.searchParams.get("outcome") === "success" ? "success" : "failure")
+    sendJson(response, { released: release !== null })
     return true
   }
   if (request.url === "/last-article-read-requests") {

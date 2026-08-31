@@ -1,13 +1,10 @@
 import assert from "node:assert/strict"
-import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import test from "node:test"
+import { historicalSha256, historicalText } from "./historical-git.mjs"
 
-const root = new URL("../../../../", import.meta.url)
 const artifactUrl = new URL("artifacts/pr1334-xmlrpc-surface-attribution-20260810.json", new URL("../", import.meta.url))
-const fixtureUrl = new URL("fixtures/pr1334-xmlrpc-surface-attribution.json", new URL("../", import.meta.url))
-const scriptUrl = new URL("scripts/capture_pr1334_xmlrpc_surface_attribution.py", new URL("../", import.meta.url))
-const inventoryUrl = new URL("docs/development/compatibility-surface-inventory.json", root)
+const captureCommit = "fa8e3f381e290caeff9e78bd8ab4468075e61469"
 
 async function loadArtifact() {
   try {
@@ -19,15 +16,14 @@ async function loadArtifact() {
 }
 
 const artifact = await loadArtifact()
-const fixture = JSON.parse(await readFile(fixtureUrl, "utf8"))
-const digest = async (url) => createHash("sha256").update(await readFile(url)).digest("hex")
+const fixture = JSON.parse(historicalText(captureCommit, "install/local/wikidot-verification/fixtures/pr1334-xmlrpc-surface-attribution.json"))
 const recordById = new Map(artifact.records.map((record) => [record.surface_id, record]))
 
 test("base, fixture, script, inventory identity, and privacy", async () => {
   assert.equal(artifact.base_commit, fixture.base_commit)
-  assert.equal(artifact.fixture_sha256, await digest(fixtureUrl))
-  assert.equal(artifact.capture_script_sha256, await digest(scriptUrl))
-  assert.equal(artifact.inventory_sha256, await digest(inventoryUrl))
+  assert.equal(artifact.fixture_sha256, historicalSha256(captureCommit, "install/local/wikidot-verification/fixtures/pr1334-xmlrpc-surface-attribution.json"))
+  assert.equal(artifact.capture_script_sha256, historicalSha256(captureCommit, "install/local/wikidot-verification/scripts/capture_pr1334_xmlrpc_surface_attribution.py"))
+  assert.equal(artifact.inventory_sha256, historicalSha256(captureCommit, "docs/development/compatibility-surface-inventory.json"))
   assert.equal(artifact.private_output_retained, false)
   const text = JSON.stringify(artifact)
   assert.doesNotMatch(text, /(?:\/home\/|\/mnt\/|[A-Za-z]:\\)/)
@@ -43,7 +39,7 @@ test("base, fixture, script, inventory identity, and privacy", async () => {
   visit(artifact)
   for (const record of artifact.records) {
     for (const source of [record.registry_declaration, record.dispatch_branch, record.specification, record.route_source, ...(record.public_test_witnesses ?? [])].filter(Boolean)) {
-      assert.equal(source.sha256, await digest(new URL(source.path, root)))
+      assert.equal(source.sha256, historicalSha256(artifact.base_commit, source.path))
     }
   }
 })

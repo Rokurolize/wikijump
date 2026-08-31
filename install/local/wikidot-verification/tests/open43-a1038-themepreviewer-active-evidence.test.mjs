@@ -9,7 +9,7 @@ process.chdir(fileURLToPath(new URL("../../../../", import.meta.url)));
 const fixturePath = "install/local/wikidot-verification/fixtures/open43-a1038-themepreviewer-active.json";
 const artifactPath = "install/local/wikidot-verification/artifacts/open43-a1038-themepreviewer-active-live.json";
 const scriptPath = "install/local/wikidot-verification/scripts/capture_wikidot_themepreviewer_active.py";
-const requirementsPath = "install/local/wikidot-verification/requirements.txt";
+const historicalRequirementsPath = "install/local/wikidot-verification/requirements-2434bf77744488cb2095327c9e0e4450add78df3.txt";
 const base = "43471ea5a4759e3cf855bf3a3ec5456d0901ce01";
 const surfaces = [
   "open43-audit-case:A1038_THEMEPREVIEWER_ACTIVE",
@@ -106,7 +106,7 @@ test("live evidence remains bounded, distinct, source-independent, and non-closi
   }
   const fixtureBytes = await readFile(fixturePath);
   const scriptBytes = await readFile(scriptPath);
-  const requirementsBytes = await readFile(requirementsPath);
+  const requirementsBytes = await readFile(historicalRequirementsPath);
   const requirements = requirementsBytes.toString("utf8");
   const commit = requirements.match(/Rokurolize\/wikidot\.py@([0-9a-f]{40})/)?.[1];
 

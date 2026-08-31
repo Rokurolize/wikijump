@@ -41,6 +41,7 @@ use crate::types::{Maybe, Reference};
 use crate::utils::now;
 use crate::utils::regex_replace_in_place;
 use paste::paste;
+use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, DbErr, EntityTrait, NotSet,
     QueryFilter, Set, SqlErr,
@@ -222,10 +223,18 @@ impl UserService {
             // has a matching slug. Import activation uses the Wikidot ID as
             // the identity and may choose a new Wikijump name.
             Some(user_id) => {
+                let wikidot_user_id = i32::try_from(user_id).map_err(|_| {
+                    Error::new(
+                        format!(
+                            "cannot create user with ID {user_id}, which does not fit in a Wikidot user ID"
+                        ),
+                        ErrorType::BadRequest,
+                    )
+                })?;
                 let result = WikidotUser::find()
                     .filter(
                         Condition::all()
-                            .add(wikidot_user::Column::UserId.eq(user_id))
+                            .add(wikidot_user::Column::UserId.eq(wikidot_user_id))
                             .add(wikidot_user::Column::IsDeleted.eq(false)),
                     )
                     .one(txn)
@@ -606,6 +615,7 @@ impl UserService {
 
                 // set manually, down below
                 avatar_uploaded_blob_id: Maybe::Unset,
+                forum_signature: Maybe::Unset,
 
                 // bio fields
                 real_name: Maybe::Set(real_name),
@@ -683,6 +693,7 @@ impl UserService {
 
                 // Could be a valid ID
                 Some(id) => WikidotUser::find_by_id(id)
+                    .filter(wikidot_user::Column::IsDeleted.eq(false))
                     .one(txn)
                     .await
                     .or_raise(make_error)?,
@@ -692,7 +703,7 @@ impl UserService {
                 .filter(
                     Condition::all()
                         .add(wikidot_user::Column::Slug.eq(slug.as_ref()))
-                        .add(wikidot_user::Column::IsDeleted.eq(true)),
+                        .add(wikidot_user::Column::IsDeleted.eq(false)),
                 )
                 .one(txn)
                 .await
@@ -792,6 +803,10 @@ impl UserService {
             )
         };
 
+        if let Maybe::Set(Some(signature)) = &input.forum_signature {
+            validate_forum_signature(signature)?;
+        }
+
         // Gather data for audit log entry
         {
             let mut previous_fields = UserFields::default();
@@ -848,6 +863,16 @@ impl UserService {
             if let Maybe::Set(blob_id) = &input.avatar_uploaded_blob_id {
                 previous_fields.avatar = Maybe::Set(blob_id.is_some());
                 changed_fields.avatar = Maybe::Set(blob_id.is_some());
+            }
+            if let Maybe::Set(signature) = &input.forum_signature {
+                previous_fields.forum_signature = Maybe::Set(
+                    user.forum_signature
+                        .as_deref()
+                        .is_some_and(|value| !value.is_empty()),
+                );
+                changed_fields.forum_signature = Maybe::Set(
+                    signature.as_deref().is_some_and(|value| !value.is_empty()),
+                );
             }
 
             AuditService::log(
@@ -1000,9 +1025,8 @@ impl UserService {
             let s3_hash = match uploaded_blob_id {
                 None => None,
                 Some(uploaded_blob_id) => {
-                    let config = ctx.config();
-                    let FinalizeBlobUploadOutput { s3_hash, size, .. } =
-                        BlobService::finish_unscoped_upload(
+                    let FinalizeBlobUploadOutput { s3_hash, .. } =
+                        BlobService::finish_avatar_upload(
                             ctx,
                             user.user_id,
                             &uploaded_blob_id,
@@ -1010,25 +1034,15 @@ impl UserService {
                         .await
                         .or_raise(make_error)?;
 
-                    if size > config.maximum_avatar_size {
-                        error!(
-                            "Uploaded avatar size is too big {} > {}",
-                            size, config.maximum_avatar_size,
-                        );
-                        bail!(Error::new(
-                            format!(
-                                "failed to update user, avatar size is too big ({} > {} bytes)",
-                                size, config.maximum_avatar_size,
-                            ),
-                            ErrorType::BlobTooBig,
-                        ));
-                    }
-
                     Some(s3_hash.to_vec())
                 }
             };
 
             model.avatar_s3_hash = Set(s3_hash);
+        }
+
+        if let Maybe::Set(signature) = input.forum_signature {
+            model.forum_signature = Set(signature.filter(|value| !value.is_empty()));
         }
 
         // Update user
@@ -1338,6 +1352,8 @@ impl UserService {
     pub async fn delete(
         ctx: &ServiceContext<'_>,
         reference: Reference<'_>,
+        deleting_user_id: i64,
+        ip_address: IpAddr,
     ) -> Result<WikijumpUserModel> {
         let txn = ctx.transaction();
 
@@ -1364,16 +1380,48 @@ impl UserService {
             .await
             .or_raise(make_error)?;
 
-        // Set deletion flag
-        let model = user::ActiveModel {
-            user_id: Set(user.user_id),
-            deleted_at: Set(Some(now())),
-            ..Default::default()
-        };
+        // Atomically claim the active-to-deleted transition. A concurrent or
+        // repeated request observes zero affected rows and must not audit it.
+        let deletion = WikijumpUser::update_many()
+            .col_expr(user::Column::DeletedAt, Expr::value(Some(now())))
+            .filter(
+                Condition::all()
+                    .add(user::Column::UserId.eq(user.user_id))
+                    .add(user::Column::DeletedAt.is_null()),
+            )
+            .exec(txn)
+            .await
+            .or_raise(make_error)?;
 
-        // Update and return
-        let user = model.update(txn).await.or_raise(make_error)?;
-        Ok(user)
+        match deletion.rows_affected {
+            0 => {}
+            1 => {
+                AuditService::log(
+                    ctx,
+                    ip_address,
+                    AuditEvent::UserDelete {
+                        user_id: user.user_id,
+                        deleting_user_id,
+                    },
+                )
+                .await
+                .or_raise(make_error)?;
+            }
+            rows_affected => {
+                return Err(Error::new(
+                    format!(
+                        "user deletion updated {rows_affected} rows for user ID {}",
+                        user.user_id,
+                    ),
+                    ErrorType::User,
+                )
+                .into());
+            }
+        }
+
+        Self::get_real(ctx, Reference::Id(user.user_id))
+            .await
+            .or_raise(make_error)
     }
 
     async fn run_name_filter(
@@ -1463,6 +1511,22 @@ impl UserService {
         debug!("Got next user ID {user_id} in sequence from known_user");
         Ok(user_id)
     }
+}
+
+fn validate_forum_signature(signature: &str) -> Result<()> {
+    if signature.chars().count() > 400 {
+        bail!(Error::new(
+            "forum signature cannot exceed 400 characters",
+            ErrorType::BadRequest,
+        ));
+    }
+    if signature.split('\n').count() > 4 {
+        bail!(Error::new(
+            "forum signature cannot exceed 4 lines",
+            ErrorType::BadRequest,
+        ));
+    }
+    Ok(())
 }
 
 fn is_verified_email_unique_violation(error: &DbErr) -> bool {

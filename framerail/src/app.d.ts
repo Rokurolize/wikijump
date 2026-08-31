@@ -50,6 +50,7 @@ declare global {
     interface Locals {
       requestContext: RequestContext
       siteLocale?: string
+      wikidotDocument?: boolean
       wikidotRequestInfo?: ReturnType<typeof buildWikidotRequestInfo>
       anonymousArticleResponseCacheMetadata?: {
         siteId: number

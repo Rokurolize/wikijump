@@ -28,7 +28,7 @@ use crate::hash::slice_to_blob_hash;
 use crate::models::file::{self, Entity as File, Model as FileModel};
 use crate::models::file_revision::Model as FileRevisionModel;
 use crate::services::ServiceContext;
-use crate::services::audit::ObjectScope;
+use crate::services::audit::{AuditEvent, ObjectScope};
 use crate::services::blob::{ContentTypeDescriptor, FinalizeBlobUploadOutput};
 use crate::services::file_revision::{
     CreateFileRevision, CreateFileRevisionBody, CreateFirstFileRevision,
@@ -36,7 +36,9 @@ use crate::services::file_revision::{
     GetFileRevision,
 };
 use crate::services::filter::{FilterClass, FilterType};
-use crate::services::{BlobService, FileRevisionService, FilterService, PageService};
+use crate::services::{
+    AuditService, BlobService, FileRevisionService, FilterService, PageService,
+};
 use crate::types::{FileOrder, FileRevisionType};
 use crate::types::{Maybe, Reference};
 use crate::utils::now;
@@ -45,7 +47,7 @@ use paste::paste;
 use sea_orm::ActiveValue;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
-    FromQueryResult, QueryFilter, QueryOrder, Set, Statement, Value,
+    FromQueryResult, QueryFilter, QueryOrder, QuerySelect, Set, Statement, Value,
 };
 use std::net::IpAddr;
 
@@ -159,7 +161,19 @@ impl FileService {
         .await
         .or_raise(make_error)?;
 
-        // TODO audit log
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::FileCreate {
+                user_id,
+                site_id,
+                page_id,
+                file_id: output.file_id,
+                revision_id: output.file_revision_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
 
         Ok(output)
     }
@@ -192,6 +206,23 @@ impl FileService {
         };
 
         let txn = ctx.transaction();
+        // Serialize edits before validating the revision snapshot or promoting a blob.
+        File::find_by_id(file_id)
+            .filter(file::Column::SiteId.eq(site_id))
+            .filter(file::Column::PageId.eq(page_id))
+            .lock_exclusive()
+            .one(txn)
+            .await
+            .or_raise(make_error)?
+            .ok_or_raise(|| {
+                Error::new(
+                    format!(
+                        "file ID {} does not exist on page ID {} in site ID {}",
+                        file_id, page_id, site_id,
+                    ),
+                    ErrorType::FileNotFound,
+                )
+            })?;
         let last_revision =
             FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
                 .await
@@ -295,6 +326,22 @@ impl FileService {
         )
         .await
         .or_raise(make_error)?;
+
+        if let Some(ref output) = revision_output {
+            AuditService::log(
+                ctx,
+                ip_address,
+                AuditEvent::FileEdit {
+                    user_id,
+                    site_id,
+                    page_id,
+                    file_id,
+                    revision_id: output.file_revision_id,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
 
         Ok(revision_output)
     }
@@ -478,6 +525,10 @@ impl FileService {
         })
     }
 
+    fn restore_file_query(file_id: i64) -> sea_orm::Select<File> {
+        File::find_by_id(file_id).lock_exclusive()
+    }
+
     /// Restores a deleted file.
     ///
     /// This undeletes a file, moving it from the deleted sphere to the specified location.
@@ -496,8 +547,15 @@ impl FileService {
         }: RestoreFile<'_>,
     ) -> Result<RestoreFileOutput> {
         let txn = ctx.transaction();
-        let file = Self::get_direct(ctx, file_id, true)
+        // Serialize restores before checking deleted state or creating the
+        // resurrection revision. A concurrent restore waits here, then sees
+        // the committed active state and fails without creating a revision or
+        // audit event.
+        let file = Self::restore_file_query(file_id)
+            .one(txn)
             .await
+            .or_raise(|| Error::new("failed to restore file", ErrorType::File))?
+            .ok_or_raise(|| Error::new("file does not exist", ErrorType::FileNotFound))
             .or_raise(|| Error::new("failed to restore file", ErrorType::File))?;
 
         let make_error = || {
@@ -584,6 +642,20 @@ impl FileService {
             ..Default::default()
         };
         model.update(txn).await.or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::FileUndelete {
+                user_id,
+                site_id,
+                page_id: new_page_id,
+                file_id,
+                revision_id: output.file_revision_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
 
         Ok(RestoreFileOutput {
             page_id: new_page_id,
@@ -736,6 +808,23 @@ impl FileService {
             ..Default::default()
         };
         model.update(txn).await.or_raise(make_error)?;
+
+        if let Some(ref output) = revision_output {
+            AuditService::log(
+                ctx,
+                ip_address,
+                AuditEvent::FileRollback {
+                    user_id,
+                    site_id,
+                    page_id,
+                    file_id,
+                    revision_id: output.file_revision_id,
+                    revision_number,
+                },
+            )
+            .await
+            .or_raise(make_error)?;
+        }
 
         Ok(revision_output)
     }
@@ -1169,4 +1258,20 @@ fn check_last_revision(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sea_orm::{DbBackend, QueryTrait};
+
+    #[test]
+    fn restore_file_lookup_holds_an_exclusive_row_lock() {
+        let statement = FileService::restore_file_query(123)
+            .build(DbBackend::Postgres)
+            .to_string();
+
+        assert!(statement.contains(r#""file"."file_id" = 123"#));
+        assert!(statement.ends_with("FOR UPDATE"));
+    }
 }

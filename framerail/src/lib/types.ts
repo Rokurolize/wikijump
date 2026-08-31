@@ -36,6 +36,7 @@ export interface SiteModel {
   google_analytics_profile: Nullable<string>
   show_top_toolbar: boolean
   show_bottom_toolbar: boolean
+  educational: boolean
 }
 
 // deepwell src/models/page_category.rs
@@ -121,6 +122,7 @@ export interface UserModel {
   multi_factor_recovery_codes: Nullable<string[]>
   locales: string[]
   avatar_s3_hash: Nullable<number[]>
+  forum_signature: Nullable<string>
   real_name: Nullable<string>
   gender: Nullable<string>
   birthday: Nullable<string>
@@ -128,6 +130,26 @@ export interface UserModel {
   biography: Nullable<string>
   website: Nullable<string>
   user_page: Nullable<string>
+}
+
+// deepwell src/models/wikidot_user.rs plus services/user/structs.rs discriminator
+export interface WikidotUserModel {
+  user_id: number
+  user_type: "wikidot"
+  created_at: string
+  fetched_at: string
+  is_deleted: boolean
+  name: Nullable<string>
+  slug: Nullable<string>
+  avatar_s3_hash: Nullable<number[]>
+  real_name: Nullable<string>
+  gender: Nullable<string>
+  birthday: Nullable<string>
+  location: Nullable<string>
+  biography: Nullable<string>
+  website: Nullable<string>
+  karma: number
+  is_pro: boolean
 }
 
 // deepwell src/models/page.rs

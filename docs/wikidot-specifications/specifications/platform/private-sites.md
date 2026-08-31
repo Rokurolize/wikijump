@@ -3,6 +3,7 @@
 - Feature ID: `private-sites`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,53 @@ Enforce private-site visibility, membership access, unauthorized landing behavio
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+
+### P1 - invocation grammar and scalar interpretation
+
+- A site can be private. View access is granted to site members and explicitly configured extra-access users; other users receive the configured unauthorized landing experience rather than the site's protected content.
+
+### P2 - parser stage, nesting, and composition
+
+- Private-site visibility is site/permission state, not wiki syntax. Navigation pages and normal page source retain their ordinary grammar.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Public/private state, extra-access identities, unauthorized landing page, and optional navigation suppression are site settings. Switching visibility MUST NOT rewrite private page source or membership records.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Members and extra-access users may view according to the documented model; extra-access users remain ordinary registered users for modification permissions. Unauthorized users MUST not receive private pages, navigation, feeds, or metadata beyond the configured landing boundary.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Private visibility filters content before counts/listings. Historical free-plan member/extra-access limits are plan-dependent and MUST use the effective current plan contract rather than leak hidden users through pagination.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Unauthorized browser requests route to the configured landing page. Private RSS feeds use HTTP Basic Authentication with the user's separate private-feed password rather than the normal login password.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The landing-page experience may suppress top/side navigation globally or by category configuration so private navigation content is not revealed. Authorized users receive the site's normal layout.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Visibility changes must invalidate public caches before unauthorized responses can reuse protected content. Feed/browser failures MUST fail closed to non-disclosure.
 
 
 ## Suggested public TDD seams

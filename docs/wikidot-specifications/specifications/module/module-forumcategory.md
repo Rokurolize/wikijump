@@ -30,7 +30,7 @@ incomplete documentation-derived evidence below.
 - Observation ID: `forum-q1034-readonly-route-core-20260809`
 - Classification: `documentation-omission`
 - Observed at: `2026-08-09`
-- Analysis: Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, or browser transitions.
+- Analysis: Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category order control and pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, order-link navigation or sorted behavior, or browser transitions.
 
 Normative behavior:
 
@@ -42,8 +42,16 @@ Normative behavior:
 - The thread response jsInclude order is ForumViewThreadPostsModule.js then ForumViewThreadModule.js; the posts response lists only ForumViewThreadPostsModule.js. These remote URLs are observed response metadata and do not establish loader authority.
 - forum/ForumRecentPostsListModule uses page and categoryId. The empty category selects all visible categories, an existing category narrows the result, and a nonexistent numeric category returns status ok with an empty post container.
 - The observed public GET routes are /forum/start, /forum/start/hidden/show, /forum/c-<id>/<name>, /forum/c-<id>/p/<page>, and /forum/t-<id>/<name>. Missing category and thread routes remain successful page responses with the observed error text; other suffixes are not established.
+- Immediately after the category description and before the new-thread control, pager, and thread table, every observed category page renders the exact default order projection <div class="options">Order by: <div class="btn btn-primary disabled btn-small btn-sm"><strong>Last post date</strong></div> <a href="/forum/c-<category-id>/sort/start" class="btn btn-primary btn-small btn-sm">Thread starting date</a></div>. This establishes the retained DOM and dynamic category ID only; it does not establish /sort/start navigation, sorted behavior, or the new-thread control.
 - The category response has duplicate top and bottom pagers on full pages and one top pager on final partial and out-of-range pages. Page 1 links 1, 2, 3, ..., 10, 11 and next 2; page 2 links previous 1, 1, 2, 3, 4, ..., 10, 11 and next 3; page 11 links previous 10, 1, 2, ..., 9, 10, 11; page 12 deliberately says page 12 of 11 and links previous 11, 1, 2, ..., 10, 11, 12, and next 13. Pager hrefs use /forum/c-<id>/p/<page>.
 - All captured requests are anonymous and read-only. Observed controls and templates do not establish Comments, new-thread, post, edit, delete, lock, move, or other mutation authority.
+
+Raw HTTP captures:
+
+- scp-category-1113520-page-1 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-1.html` (SHA-256 `5910330cc219f216925076a661019a8f624aada45629606c9f3b4bdde579a247`)
+- scp-category-1113520-page-2 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-2.html` (SHA-256 `d43aa71385e23b7670ff9aba13afda2fa2d58e5ae93b647bb32cbb62bd37ef50`)
+- scp-category-1113520-page-11 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-11.html` (SHA-256 `e97127cf83883f3938cafa65182549174762b0a470d6ae4f875eda902a198d7c`)
+- scp-category-1113520-page-12 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-12.html` (SHA-256 `4a7207b4d90c8009570ee284fd9fd8f77a6193b26f0b85d7df22d5ee46a0134a`)
 
 Evidence:
 

@@ -71,6 +71,12 @@ pub struct SiteForumSettings {
 }
 
 #[derive(Deserialize, Debug, Clone)]
+pub struct EducationalUpgrade {
+    pub organization: String,
+    pub purpose: String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
 pub struct UpdateSite<'a> {
     pub site: Reference<'a>,
     pub user_id: i64,
@@ -102,4 +108,5 @@ pub struct UpdateSiteBody {
     pub windows_tile_source: Maybe<Option<String>>,
     pub google_analytics: Maybe<UpdateGoogleAnalyticsSettings>,
     pub toolbars: Maybe<ToolbarSettings>,
+    pub educational_upgrade: Maybe<EducationalUpgrade>,
 }

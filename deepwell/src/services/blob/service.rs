@@ -294,6 +294,7 @@ impl BlobService {
         pending_blob_user_id: i64,
         s3_path: &str,
         expected_length: usize,
+        maximum_length: Option<usize>,
     ) -> Result<FinalizeBlobUploadOutput> {
         let state = ctx.state();
         let db_state = Arc::clone(&state);
@@ -311,6 +312,7 @@ impl BlobService {
             pending_blob_user_id,
             s3_path,
             expected_length,
+            maximum_length,
         )
         .await;
 
@@ -325,6 +327,7 @@ impl BlobService {
         pending_blob_user_id: i64,
         s3_path: &str,
         expected_length: usize,
+        maximum_length: Option<usize>,
     ) -> Result<FinalizeBlobUploadOutput> {
         let bucket = ctx.s3_files_bucket();
         let txn = ctx.transaction();
@@ -349,6 +352,23 @@ impl BlobService {
                 bail!(s3_error(&response, "finalizing uploaded blob"));
             }
         };
+
+        if maximum_length.is_some_and(|maximum_length| data.len() > maximum_length) {
+            let maximum_length = maximum_length.expect("checked as present");
+            error!(
+                "Uploaded blob is too big for this operation ({} > {})",
+                data.len(),
+                maximum_length,
+            );
+            bail!(Error::new(
+                format!(
+                    "uploaded blob is too big for this operation ({} > {} bytes)",
+                    data.len(),
+                    maximum_length,
+                ),
+                ErrorType::BlobTooBig,
+            ));
+        }
 
         if expected_length != data.len() {
             error!(
@@ -525,6 +545,7 @@ impl BlobService {
         user_id: i64,
         pending_blob_id: &str,
         expected_owner: PendingBlobOwner,
+        maximum_length: Option<i64>,
     ) -> Result<FinalizeBlobUploadOutput> {
         info!("Finishing a pending blob upload");
 
@@ -545,11 +566,31 @@ impl BlobService {
         .await
         .or_raise(make_error)?;
 
+        if maximum_length.is_some_and(|maximum_length| expected_length > maximum_length) {
+            let maximum_length = maximum_length.expect("checked as present");
+            error!(
+                "Promised blob length is too big for this operation ({} > {})",
+                expected_length, maximum_length,
+            );
+            bail!(Error::new(
+                format!(
+                    "promised blob length is too big for this operation ({} > {} bytes)",
+                    expected_length, maximum_length,
+                ),
+                ErrorType::BlobTooBig,
+            ));
+        }
+
         let output = match moved_hash {
             // Need to move from pending to main hash area
             None => {
                 let expected_length =
                     expected_length.try_into_usize().or_raise(make_error)?;
+                let maximum_length = maximum_length
+                    .map(|maximum_length| {
+                        maximum_length.try_into_usize().or_raise(make_error)
+                    })
+                    .transpose()?;
 
                 Self::move_uploaded(
                     ctx,
@@ -557,6 +598,7 @@ impl BlobService {
                     user_id,
                     &s3_path,
                     expected_length,
+                    maximum_length,
                 )
                 .await
                 .or_raise(make_error)?
@@ -567,6 +609,20 @@ impl BlobService {
                 let BlobMetadata { mime, size, .. } = Self::get_metadata(ctx, &hash_vec)
                     .await
                     .or_raise(make_error)?;
+                if maximum_length.is_some_and(|maximum_length| size > maximum_length) {
+                    let maximum_length = maximum_length.expect("checked as present");
+                    error!(
+                        "Finalized blob is too big for this operation ({} > {})",
+                        size, maximum_length,
+                    );
+                    bail!(Error::new(
+                        format!(
+                            "finalized blob is too big for this operation ({} > {} bytes)",
+                            size, maximum_length,
+                        ),
+                        ErrorType::BlobTooBig,
+                    ));
+                }
                 let content_type = match (content_type_label, content_type_description) {
                     (Some(label), Some(description)) => {
                         ContentTypeDescriptor { label, description }
@@ -598,8 +654,29 @@ impl BlobService {
         user_id: i64,
         pending_blob_id: &str,
     ) -> Result<FinalizeBlobUploadOutput> {
-        Self::finish_upload(ctx, user_id, pending_blob_id, PendingBlobOwner::Unscoped)
-            .await
+        Self::finish_upload(
+            ctx,
+            user_id,
+            pending_blob_id,
+            PendingBlobOwner::Unscoped,
+            None,
+        )
+        .await
+    }
+
+    pub async fn finish_avatar_upload(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        pending_blob_id: &str,
+    ) -> Result<FinalizeBlobUploadOutput> {
+        Self::finish_upload(
+            ctx,
+            user_id,
+            pending_blob_id,
+            PendingBlobOwner::Unscoped,
+            Some(ctx.config().maximum_avatar_size),
+        )
+        .await
     }
 
     pub async fn finish_page_upload(
@@ -614,6 +691,7 @@ impl BlobService {
             user_id,
             pending_blob_id,
             PendingBlobOwner::Page { site_id, page_id },
+            None,
         )
         .await
     }

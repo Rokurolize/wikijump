@@ -77,13 +77,13 @@ static WIKIDOT_RENDERED_ANCHOR_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?s)<a href="[^"]+">(.*?)</a>"#).unwrap());
 static WIKIDOT_STYLEFRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org)/styleFrame\.html\?[^"]+)" style="display: none"></iframe>$"#,
+        r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org|scpwikicn\.com)/styleFrame\.html\?[^"]+)" style="display: none"></iframe>$"#,
     )
     .unwrap()
 });
 static WIKIDOT_INTERWIKI_FRAME_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org)/interwikiFrame\.html\?[^"]+)" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>$"#,
+        r#"^<iframe src="(?P<src>//interwiki\.(?:scpwiki\.com|scp-jp\.org|scpwikicn\.com)/interwikiFrame\.html\?[^"]+)" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>$"#,
     )
     .unwrap()
 });
@@ -117,9 +117,16 @@ impl RenderService {
         wikitext: &mut String,
     ) -> Vec<String> {
         let mut iframes = Vec::new();
+        let source = wikitext.as_str();
         let protected = WIKIDOT_EMBED_BLOCK_REGEX
-            .replace_all(wikitext, |captures: &regex::Captures<'_>| {
-                let whole = captures.get(0).map_or("", |matched| matched.as_str());
+            .replace_all(source, |captures: &regex::Captures<'_>| {
+                let Some(matched) = captures.get(0) else {
+                    return String::new();
+                };
+                let whole = matched.as_str();
+                if Self::is_inside_wikidot_literal_region(source, matched.start()) {
+                    return whole.to_owned();
+                }
                 let opened = captures.name("block").map(|matched| matched.as_str());
                 let closed = captures.name("close").map(|matched| matched.as_str());
                 if opened != closed {

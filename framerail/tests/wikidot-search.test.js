@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
   installWikidotSearchAll,
+  submitWikidotTopSearch,
   wikidotSearchAllPath,
   wikidotSearchPath
 } from "../src/lib/wikidot/wikidot-search.js"
@@ -17,6 +18,28 @@ test("Wikidot top search preserves and path-encodes the submitted query", () => 
     wikidotSearchPath("Search this site"),
     "/search:site/q/Search%20this%20site"
   )
+})
+
+test("Wikidot top search intercepts the legacy dummy form action", () => {
+  const window = { location: { href: "/dummy" } }
+  let prevented = false
+  const handled = submitWikidotTopSearch(
+    {
+      currentTarget: {
+        elements: {
+          namedItem: (name) => (name === "query" ? { value: "  a/b? c  " } : null)
+        }
+      },
+      preventDefault() {
+        prevented = true
+      }
+    },
+    window
+  )
+
+  assert.equal(handled, true)
+  assert.equal(prevented, true)
+  assert.equal(window.location.href, "/search:site/q/%20%20a%2Fb%3F%20c%20%20")
 })
 
 test("Wikidot SearchAll preserves its area and path-encodes the submitted query", () => {

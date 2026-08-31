@@ -11,7 +11,7 @@ import { parseUserLocalePreferences } from "$lib/user-settings.js"
 import { fail, redirect } from "@sveltejs/kit"
 import { superValidate } from "sveltekit-superforms"
 import { valibot } from "sveltekit-superforms/adapters"
-import { minLength, object, pipe, string } from "valibot"
+import { maxLength, minLength, object, pipe, string } from "valibot"
 
 import type { PreloadDataAsync } from "$lib/server/deepwell/views"
 import type { RequestEvent } from "@sveltejs/kit"
@@ -24,15 +24,22 @@ export async function loadUserSettings(parent: PreloadDataAsync) {
 
   const locales = parentData.user_session.user.locales?.join(" ") ?? ""
   const displaySettingsForm = await superValidate(
-    { locales },
+    {
+      locales,
+      signature: parentData.user_session.user.forum_signature ?? ""
+    },
     valibot(userDisplaySettingsSchema)
   )
-  const internationalization = await translate(parentData.locales, {
-    settings: {},
-    save: {},
-    cancel: {},
-    "user-profile-info.locales": {}
-  })
+  const internationalization = await translate(
+    parentData.locales,
+    {
+      settings: {},
+      save: {},
+      cancel: {},
+      "user-profile-info.locales": {}
+    },
+    []
+  )
 
   return {
     ...parentData,
@@ -51,6 +58,10 @@ export async function userDisplaySettingsAction({
   if (!form.valid) {
     return fail(400, { form })
   }
+  const signature = form.data.signature.replace(/\r\n?/g, "\n")
+  if (signature.split("\n").length > 4) {
+    return fail(400, { form, message: "Forum signatures are limited to four lines." })
+  }
 
   const sessionToken = cookies.get("wikijump_token")
   if (!sessionToken) return failForMissingSession({ form })
@@ -61,11 +72,12 @@ export async function userDisplaySettingsAction({
     if (locales.length === 0) {
       return fail(400, { form, message: "At least one display language is required." })
     }
+    form.data.locales = locales.join(" ")
 
     await userEdit(
       session.user_id,
       getClientAddress(),
-      { locales },
+      { locales, forumSignature: signature || null },
       getRequestContext(locals)
     )
     return { form }
@@ -75,5 +87,9 @@ export async function userDisplaySettingsAction({
 }
 
 export const userDisplaySettingsSchema = object({
-  locales: pipe(string(), minLength(1, "At least one display language is required."))
+  locales: pipe(string(), minLength(1, "At least one display language is required.")),
+  signature: pipe(
+    string(),
+    maxLength(400, "Forum signatures are limited to 400 characters.")
+  )
 })

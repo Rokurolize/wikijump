@@ -1048,15 +1048,11 @@ impl RenderService {
 
         let mut output = String::new();
         output.push_str(WIKIDOT_TABVIEW_SCRIPT);
-        output.push_str(
-            r#"<div class="yui-navset yui-navset-top wikidot-compat-tabview">"#,
-        );
+        output.push_str(r#"<div class="yui-navset wikidot-compat-tabview">"#);
         output.push_str(r#"<ul class="yui-nav">"#);
         for (index, (title, _)) in tabs.iter().enumerate() {
             if index == 0 {
-                output.push_str(
-                    r#"<li class="selected" title="active"><a href="javascript:;"><em>"#,
-                );
+                output.push_str(r#"<li class="selected"><a href="javascript:;"><em>"#);
             } else {
                 output.push_str(r#"<li><a href="javascript:;"><em>"#);
             }

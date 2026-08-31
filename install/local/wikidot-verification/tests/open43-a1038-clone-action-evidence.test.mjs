@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
+import {historicalSha256} from "./historical-git.mjs";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const fixturePath = "install/local/wikidot-verification/fixtures/open43-a1038-clone-action.json";
@@ -58,7 +59,7 @@ function validateFixture(fixture) {
   assert.equal(forbiddenSites.has(fixture.source_site), false);
   assert.equal(forbiddenSites.has(fixture.destination_site), false);
   assert.equal(fixture.dependency.wikidot_py_commit, "2434bf77744488cb2095327c9e0e4450add78df3");
-  assert.equal(sha256File(fixture.dependency.requirements_path), fixture.dependency.requirements_sha256);
+  assert.equal(historicalSha256(base, fixture.dependency.requirements_path), fixture.dependency.requirements_sha256);
   assert.deepEqual(fixture.observation_ids.positive, ["a1038-clone-shell-positive-1", "a1038-clone-shell-positive-2"]);
   assert.deepEqual(fixture.observation_ids.negative, ["a1038-clone-shell-negative-1", "a1038-clone-shell-negative-2"]);
   assert.deepEqual(fixture.budgets, {

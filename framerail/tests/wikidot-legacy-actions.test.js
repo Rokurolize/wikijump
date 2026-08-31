@@ -6,6 +6,7 @@ import {
   performWikidotLegacyAction,
   planWikidotRateActionBindings,
   planWikidotStandaloneActionBindings,
+  updateWikidotRateWidget,
   wikidotLegacyActions
 } from "../src/lib/wikidot/wikidot-legacy-actions.js"
 import {
@@ -59,6 +60,92 @@ test("typed standalone actions call only their fixed browser behavior", async ()
     ["print"],
     ["set-tags", 7, "0123456789abcdef0123456789abcdef"]
   ])
+})
+
+test("custom-class standalone print controls use the typed browser action", async () => {
+  const selector = 'a[href="javascript:;"]'
+  const print = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [print] : [])
+  }
+  print.parentElement = root
+  let printCalls = 0
+
+  wikidotLegacyActions(root, {
+    actions: [{ type: "print" }],
+    runtime: { print: () => (printCalls += 1) }
+  })
+
+  assert.equal(
+    await listeners.get("click")({
+      target: print,
+      preventDefault: () => {},
+      stopPropagation: () => {}
+    }),
+    true
+  )
+  assert.equal(printCalls, 1)
+})
+
+test("standalone edit clicks use the exact control set and fail closed on extras", async () => {
+  const selector = 'a[href="javascript:;"]'
+  const exact = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [exact] : [])
+  }
+  exact.parentElement = root
+  let editCalls = 0
+
+  wikidotLegacyActions(root, {
+    actions: [{ type: "edit" }],
+    runtime: { edit: () => (editCalls += 1) }
+  })
+  let prevented = false
+  let stopped = false
+  assert.equal(
+    await listeners.get("click")({
+      target: exact,
+      preventDefault: () => (prevented = true),
+      stopPropagation: () => (stopped = true)
+    }),
+    true
+  )
+  assert.equal(prevented, true)
+  assert.equal(stopped, true)
+  assert.equal(editCalls, 1)
+
+  const extra = actionElement()
+  const mismatch = actionElement()
+  const mismatchListeners = new Map()
+  const mismatchRoot = {
+    addEventListener: (name, listener) => mismatchListeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [mismatch, extra] : [])
+  }
+  mismatch.parentElement = mismatchRoot
+  wikidotLegacyActions(mismatchRoot, {
+    actions: [{ type: "edit" }],
+    runtime: { edit: () => (editCalls += 1) }
+  })
+  prevented = false
+  stopped = false
+  assert.equal(
+    await mismatchListeners.get("click")({
+      target: mismatch,
+      preventDefault: () => (prevented = true),
+      stopPropagation: () => (stopped = true)
+    }),
+    undefined
+  )
+  assert.equal(prevented, false)
+  assert.equal(stopped, false)
+  assert.equal(editCalls, 1)
 })
 
 test("Rate actions pass only registry-owned vote values", async () => {
@@ -129,6 +216,109 @@ test("Rate sidecars bind only the exact renderer-owned control sequence", () => 
     planWikidotRateActionBindings([], [starControls, starControls], starActions),
     []
   )
+})
+
+test("initialized Rate stars preserve the live hidden score value", () => {
+  const created = []
+  const widget = {
+    dataset: { rating: "4" },
+    ownerDocument: {
+      createElement: () => {
+        const element = actionElement()
+        element.append = () => {}
+        created.push(element)
+        return element
+      }
+    },
+    style: {},
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    append: () => {}
+  }
+  const root = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelectorAll: (selector) =>
+      selector === ".page-rate-widget-start" ? [widget] : []
+  }
+
+  wikidotLegacyActions(root, { actions: [], runtime: {} })
+
+  assert.equal(created.at(-1).name, "score")
+  assert.equal(created.at(-1).type, "hidden")
+  assert.equal(created.at(-1).value, "4")
+})
+
+test("legacy printuser onclick is rebound without evaluating authored script", () => {
+  const attributes = new Map([
+    ["href", "http://www.wikidot.com/user:info/r11-editor"],
+    ["onclick", "WIKIDOT.page.listeners.userInfo(20000007); return false;"]
+  ])
+  const printuser = {
+    onclick: null,
+    getAttribute: (name) => attributes.get(name) ?? null
+  }
+  const root = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelectorAll: (selector) => {
+      if (
+        selector === '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]'
+      ) {
+        return [printuser]
+      }
+      return []
+    }
+  }
+  const calls = []
+  const prior = globalThis.WIKIDOT
+  globalThis.WIKIDOT = {
+    page: { listeners: { userInfo: (userId) => calls.push(userId) } }
+  }
+  try {
+    const action = wikidotLegacyActions(root, { actions: [], runtime: {} })
+    assert.equal(typeof printuser.onclick, "function")
+    assert.equal(printuser.onclick({}), false)
+    assert.deepEqual(calls, [20000007])
+    action.destroy()
+    assert.equal(printuser.onclick, null)
+  } finally {
+    globalThis.WIKIDOT = prior
+  }
+})
+
+test("legacy printuser binding installs the missing Wikidot userInfo runtime", () => {
+  const prior = globalThis.WIKIDOT
+  globalThis.WIKIDOT = { modules: {} }
+  const root = {
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    querySelectorAll: () => []
+  }
+  try {
+    wikidotLegacyActions(root, { actions: [], runtime: {} })
+    assert.equal(typeof globalThis.WIKIDOT.page.listeners.userInfo, "function")
+    assert.equal(globalThis.WIKIDOT.page.listeners.userInfo(20000013), false)
+  } finally {
+    globalThis.WIKIDOT = prior
+  }
+})
+
+test("a Rate action updates the live hidden star score after the server response", () => {
+  const score = { value: "0" }
+  const stars = {
+    dataset: { rating: "0" },
+    querySelector: (selector) => (selector === 'input[name="score"]' ? score : null),
+    querySelectorAll: () => []
+  }
+  const widget = {
+    querySelector: (selector) => (selector === ".page-rate-widget-start" ? stars : null)
+  }
+  const element = { closest: () => widget }
+
+  updateWikidotRateWidget(element, 4)
+
+  assert.equal(score.value, "4")
 })
 
 test("unsupported sidecar actions fail closed without calling authored names", async () => {
@@ -241,6 +431,10 @@ test("sidecar binding preserves exact DOM and fails closed on a count mismatch",
     assert.equal(control.getAttribute("data-wikijump-legacy-action"), null)
     assert.equal(control.getAttribute("onclick"), null)
   }
+})
+
+test("standalone action binding fails closed on a malformed present sidecar", () => {
+  assert.deepEqual(planWikidotStandaloneActionBindings([actionElement()], [null]), [])
 })
 
 test("Rate DOM is intercepted but remains inert without a typed sidecar", () => {
@@ -365,6 +559,12 @@ test("unsupported membership descriptors and authored lookalikes fail closed", a
     false
   )
   assert.equal(joined, false)
+})
+
+test("Join binding fails closed on a malformed present sidecar", () => {
+  const control = actionElement()
+  control.matches = () => true
+  assert.deepEqual(planWikidotJoinActionBindings([control], [null]), [])
 })
 
 test("a sidecar mismatch intercepts the exact legacy onclick without joining", () => {

@@ -57,12 +57,16 @@ pub(super) async fn load(
     visibility: &mut ForumPageVisibility<'_, '_>,
     page_id: i64,
     order: ForumCommentsOrder,
+    hide_form: bool,
 ) -> Result<ForumCommentsLoad> {
-    let Some(thread_id) =
+    let Some((thread_id, forum_category_id)) =
         resolve_page_discussion_thread(ctx, site_id, visibility, page_id).await?
     else {
         return Ok(ForumCommentsLoad::NoPage);
     };
+    let can_post = visibility
+        .forum_category_is_postable(site_id, forum_category_id)
+        .await?;
     let root_count = count_comment_roots(ctx, site_id, thread_id).await?;
     let Some(comments) = load_comment_nodes(ctx, site_id, thread_id, order).await? else {
         return Ok(ForumCommentsLoad::Saturated);
@@ -73,7 +77,9 @@ pub(super) async fn load(
     };
     Ok(ForumCommentsLoad::Found(ForumCommentsOutput {
         thread_id,
-        body: render_comments(thread_id, &comments, root_count, order),
+        body: render_comments(
+            thread_id, &comments, root_count, order, can_post, hide_form,
+        ),
         scripts,
     }))
 }
@@ -83,7 +89,7 @@ async fn resolve_page_discussion_thread(
     site_id: i64,
     visibility: &mut ForumPageVisibility<'_, '_>,
     page_id: i64,
-) -> Result<Option<i64>> {
+) -> Result<Option<(i64, i64)>> {
     let make_error = || {
         Error::new(
             "failed to resolve page discussion thread",
@@ -137,7 +143,7 @@ async fn resolve_page_discussion_thread(
     if !group_exists {
         return Ok(None);
     }
-    Ok(Some(thread.forum_thread_id))
+    Ok(Some((thread.forum_thread_id, thread.forum_category_id)))
 }
 
 async fn count_comment_roots(
@@ -186,7 +192,8 @@ async fn load_comment_nodes(
                     "revision.user_id AS revision_user_id, revision.title, ",
                     "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
                     "wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, ",
-                    "local_user.slug AS local_user_slug, ",
+                    "local_user.slug AS local_user_slug, local_user.forum_signature, ",
+                    "fp.guest_name, fp.guest_email_md5, ",
                     "revision_wu.name AS revision_wikidot_user_name, ",
                     "revision_wu.slug AS revision_wikidot_user_slug, ",
                     "revision_local.name AS revision_local_user_name, ",
@@ -221,7 +228,7 @@ async fn load_comment_nodes(
         return Ok(None);
     }
 
-    let posts = hydrate_forum_posts(ctx, candidates).await?;
+    let posts = hydrate_forum_posts(ctx, site_id, candidates).await?;
     let mut posts_by_parent = BTreeMap::<Option<i64>, Vec<ForumThreadPostView>>::new();
     for post in posts {
         posts_by_parent
@@ -262,11 +269,17 @@ fn render_comments(
     comments: &[ForumCommentNode],
     root_count: u64,
     order: ForumCommentsOrder,
+    can_post: bool,
+    hide_form: bool,
 ) -> String {
-    let new_post = concat!(
-        "<a href=\"javascript:;\" id=\"new-post-button\" ",
-        "onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.newPost(event,null)\" ",
-        "style=\"display:  block ; margin-bottom:1em\">Add a New Comment</a>",
+    let form_open = can_post && !hide_form;
+    let new_post = format!(
+        concat!(
+            "<a href=\"javascript:;\" id=\"new-post-button\" ",
+            "onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.newPost(event,null)\" ",
+            "style=\"display:  {} ; margin-bottom:1em\">Add a New Comment</a>"
+        ),
+        if form_open { "none" } else { "block" },
     );
     let options = concat!(
         "<div class=\"options\" id=\"comments-options-shown\">",
@@ -280,7 +293,7 @@ fn render_comments(
         "<script type=\"text/javascript\">WIKIDOT.forumThreadId = {thread_id};</script>",
     );
     if order == ForumCommentsOrder::Reverse {
-        output.push_str(new_post);
+        output.push_str(&new_post);
     }
     output.push_str(options);
     output.push_str("<div id=\"thread-container-posts\" style=\"display: none\">");
@@ -289,7 +302,10 @@ fn render_comments(
     output.push_str(&pager);
     output.push_str("</div>");
     if order == ForumCommentsOrder::Forward {
-        output.push_str(new_post);
+        output.push_str(&new_post);
+    }
+    if form_open {
+        output.push_str(&render_new_post_form(thread_id));
     }
     output.push_str(concat!(
         "<div style=\"display:none\" id=\"post-options-template\">",
@@ -298,6 +314,26 @@ fn render_comments(
         "<a href=\"javascript:;\" onclick=\"WIKIDOT.modules.ForumViewThreadModule.listeners.deletePost(event,'%POST_ID%')\" class=\"btn btn-danger btn-small btn-sm\">Delete</a></div>",
     ));
     output
+}
+
+fn render_new_post_form(thread_id: i64) -> String {
+    format!(
+        concat!(
+            "<div id=\"new-post-form-container\"><div id=\"new-post-div\" class=\"well\">",
+            "<form id=\"new-post-form\" onkeypress=\"return OZONE.utils.disableEnterKey(event)\">",
+            "<input type=\"hidden\" name=\"threadId\" value=\"{}\"/>",
+            "<input type=\"hidden\" name=\"parentId\" value=\"\"/>",
+            "<span id=\"np-editor-title\">Post title:</span><br />",
+            "<input class=\"text form-control\" id=\"np-title\" type=\"text\" name=\"title\" value=\"\" maxlength=\"120\"/>",
+            "<div id=\"np-editor-panel\" class=\"wd-editor-toolbar-panel\"></div>",
+            "<div><textarea id=\"np-text\" name=\"source\" rows=\"10\" cols=\"50\" class=\"form-control\"></textarea></div>",
+            "<div class=\"buttons alignleft\"><input class=\"btn btn-danger btn-small btn-sm\" type=\"button\" value=\"Cancel\" id=\"np-cancel\" onclick=\"WIKIDOT.modules.ForumNewPostFormModule.listeners.cancel(event)\">",
+            "<input class=\"btn btn-default btn-small btn-sm\" type=\"button\" value=\"Preview\" id=\"np-preview\" onclick=\"WIKIDOT.modules.ForumNewPostFormModule.listeners.preview(event)\">",
+            "<input class=\"btn btn-primary btn-small btn-sm\" type=\"button\" value=\"Post it\" id=\"np-post\" onclick=\"WIKIDOT.modules.ForumNewPostFormModule.listeners.save(event)\"></div>",
+            "</form></div></div>",
+        ),
+        thread_id,
+    )
 }
 
 fn render_comment_nodes(nodes: &[ForumCommentNode]) -> String {

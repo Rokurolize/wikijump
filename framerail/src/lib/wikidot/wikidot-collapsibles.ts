@@ -27,6 +27,34 @@ function activateCollapsible(link: HTMLAnchorElement): boolean {
   return true
 }
 
+function accordionControl(node: HTMLElement, target: EventTarget | null) {
+  if (!(target instanceof Element)) return null
+
+  const link = target.closest<HTMLAnchorElement>(
+    'a.accordion-toggle[data-toggle="collapse"]'
+  )
+  if (!link || !node.contains(link)) return null
+
+  const href = link.getAttribute("href")
+  if (!href?.startsWith("#")) return null
+
+  try {
+    const panel = node.querySelector(href)
+    return panel instanceof HTMLElement ? { link, panel } : null
+  } catch {
+    return null
+  }
+}
+
+function activateAccordion(control: {
+  link: HTMLAnchorElement
+  panel: HTMLElement
+}): boolean {
+  const expanded = control.panel.classList.toggle("in")
+  control.link.setAttribute("aria-expanded", String(expanded))
+  return true
+}
+
 function collapsibleLink(node: HTMLElement, target: EventTarget | null) {
   if (!(target instanceof Element)) return null
 
@@ -40,6 +68,12 @@ export function wikidotCollapsibles(node: HTMLElement) {
   node.addEventListener(
     "click",
     (event) => {
+      const accordion = accordionControl(node, event.target)
+      if (accordion && activateAccordion(accordion)) {
+        event.preventDefault()
+        return
+      }
+
       const link = collapsibleLink(node, event.target)
       if (!link || !activateCollapsible(link)) return
 
@@ -51,6 +85,15 @@ export function wikidotCollapsibles(node: HTMLElement) {
   node.addEventListener(
     "keydown",
     (event) => {
+      const accordion = accordionControl(node, event.target)
+      if (
+        accordion &&
+        (event.key === " " || event.key === "Spacebar" || event.key === "Enter")
+      ) {
+        if (activateAccordion(accordion)) event.preventDefault()
+        return
+      }
+
       if (event.key !== " " && event.key !== "Spacebar") return
 
       const link = collapsibleLink(node, event.target)

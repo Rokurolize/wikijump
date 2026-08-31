@@ -1,4 +1,7 @@
-import { DEEPWELL_PERMISSION_DENIED } from "../deepwell/public-error.js"
+import {
+  DEEPWELL_PERMISSION_DENIED,
+  isInvalidSessionTokenError
+} from "../deepwell/public-error.js"
 import type { JsonValue } from "$lib/types"
 import { fail } from "@sveltejs/kit"
 import { parse } from "valibot"
@@ -100,9 +103,11 @@ export function failForActionError(
       ? 400
       : error instanceof MissingActionSessionError
         ? 401
-        : details.code === DEEPWELL_PERMISSION_DENIED
-          ? 403
-          : fallbackStatus
+        : isInvalidSessionTokenError(error)
+          ? 401
+          : details.code === DEEPWELL_PERMISSION_DENIED
+            ? 403
+            : fallbackStatus
   return fail(
     status,
     sanitizePayload({

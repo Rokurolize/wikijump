@@ -14,6 +14,7 @@ export const STANDING_BROWSER_EXECUTION_MODULES = Object.freeze([
   "install/local/wikidot-verification/src/browser-request-gate.mjs",
   "install/local/wikidot-verification/src/capture-egress-proxy.mjs",
   "install/local/wikidot-verification/src/standing-browser-canaries.mjs",
+  "install/local/wikidot-verification/src/first-divergent-element.mjs",
   "install/local/wikidot-verification/src/standing-browser-parity-browser-session.mjs",
   "install/local/wikidot-verification/src/standing-browser-parity-contract.mjs",
   "install/local/wikidot-verification/src/standing-browser-parity-observation.mjs",

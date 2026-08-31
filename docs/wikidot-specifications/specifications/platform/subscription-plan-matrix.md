@@ -3,6 +3,7 @@
 - Feature ID: `subscription-plan-matrix`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Display the documented plan capabilities, prices, limits, and comparison matrix.
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `special-page-module-summary` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/module-special-page-summary.json` (SHA-256 `5d99c1f543ca08c590d037c950a3afd765c2282b2c6cd61c0fef8d5f7b5c8ae3`): CreateAccount, DeleteAccount, FrontSpecialMini, NewSite, and SitesTagCloud have current special-page output while CurrencyConvert contributes no identifiable current module DOM on the plans page.
+
+### P1 - invocation grammar and scalar interpretation
+
+- The current live plans source defines Pro Lite, Pro, and Pro Plus rows with their displayed annual prices, site/storage/member/file-size/SSL/support capabilities and Upgrade links. These current source values are the canonical public comparison matrix.
+
+### P2 - parser stage, nesting, and composition
+
+- The plan page is authored Wikidot content plus special-page CurrencyConvert invocation; the plan capability matrix itself is ordinary rendered page content, not a parser feature.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Selecting Upgrade begins account subscription state owned by the account system. Rendering the matrix does not mutate the user's plan.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- The comparison page is public; actual upgrade purchase/account status is authenticated/private.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Plan cards preserve authored order and one row/card per plan; no pagination or algorithmic ranking is specified.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Upgrade actions route to /account/upgrade. Current CurrencyConvert invocations contribute no identifiable DOM in the observed plans response, so displayed USD values are the normative current public values.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The current source defines the plan card/list classes, featured Pro styling, plan-name/price/action rows, and upgrade buttons. CSS presentation follows that authored matrix.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Prices/capabilities may change through future Wikidot source revisions; compatibility is bound to the current live source identity and must be refreshed rather than hard-coded forever.
 
 
 ## Suggested public TDD seams

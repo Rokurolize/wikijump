@@ -23,8 +23,8 @@ use crate::models::page::Model as PageModel;
 use crate::models::page_parent::Model as PageParentModel;
 use crate::services::page::GetPageReference;
 use crate::services::parent::{
-    GetParentRelationships, ParentDescription, RemoveParentOutput, UpdateParents,
-    UpdateParentsOutput,
+    DirectParentMetadata, GetParentRelationships, ParentDescription, RemoveParentOutput,
+    UpdateParents, UpdateParentsOutput,
 };
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::types::{Action, Permission, Reference, Resource};
@@ -50,6 +50,87 @@ pub async fn parent_relationships_get(
                 ErrorType::PageParent,
             )
         })
+}
+
+/// Resolve the one direct parent visible to the current request actor.
+///
+/// The registered JSON-RPC method starts a repeatable-read transaction before
+/// resolving its request context, so session lookup, relationship selection,
+/// visibility checks, and the deliberately narrow metadata projection observe
+/// one coherent database snapshot. This does not claim that authorization
+/// cannot change before the response is delivered. A missing or hidden child,
+/// or a missing, ambiguous, deleted, cross-site, or hidden parent, is represented
+/// by the same null result so callers cannot use this method as a visibility
+/// oracle.
+pub async fn parent_get_direct_metadata(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<DirectParentMetadata>> {
+    let GetPageReference {
+        site_id,
+        page: child_reference,
+    } = parse!(params, PageParent);
+    let make_error = || {
+        Error::new(
+            "failed to resolve direct parent metadata",
+            ErrorType::PageParent,
+        )
+    };
+
+    let Some(child) = PageService::get_optional(ctx, site_id, child_reference)
+        .await
+        .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+    if !page_is_viewable(ctx, site_id, &child)
+        .await
+        .or_raise(make_error)?
+    {
+        return Ok(None);
+    }
+    let relationships =
+        ParentService::get_parents(ctx, site_id, Reference::Id(child.page_id))
+            .await
+            .or_raise(make_error)?;
+    let [relationship] = relationships.as_slice() else {
+        return Ok(None);
+    };
+    let Some(parent) = PageService::get_optional(
+        ctx,
+        site_id,
+        Reference::Id(relationship.parent_page_id),
+    )
+    .await
+    .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+
+    if !page_is_viewable(ctx, site_id, &parent)
+        .await
+        .or_raise(make_error)?
+    {
+        return Ok(None);
+    }
+
+    let Some(revision_id) = parent.latest_revision_id else {
+        return Ok(None);
+    };
+    let Some(revision) = PageRevisionService::get_direct_optional(ctx, revision_id)
+        .await
+        .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+    if revision.page_id != parent.page_id || revision.site_id != site_id {
+        return Ok(None);
+    }
+
+    Ok(Some(DirectParentMetadata {
+        slug: parent.slug,
+        title: revision.title,
+    }))
 }
 
 pub async fn parent_get(

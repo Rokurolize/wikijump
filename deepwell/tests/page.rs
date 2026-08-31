@@ -23,22 +23,29 @@ mod common;
 
 use self::common::TestRunner;
 use cuid2::cuid;
+use deepwell::api::{
+    ServerState, build_server_at, build_server_state, build_server_state_without_workers,
+};
+use deepwell::config::{Config, Secrets};
 use deepwell::constants::{
     ADMIN_USER_ID, ANONYMOUS_USER_ID, SAMPLE_USER_ID, SYSTEM_USER_ID, UNKNOWN_USER_ID,
 };
+use deepwell::error::exn_error_to_rpc_error;
 use deepwell::error::prelude::*;
 use deepwell::hash::{blob_hash_to_hex, sha512_hash};
 use deepwell::license::License;
 use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
 use deepwell::models::blob_pending::{self, Entity as BlobPendingTable};
 use deepwell::models::file;
+use deepwell::models::file_revision::Entity as FileRevisionTable;
 use deepwell::models::forum_post::{self, Entity as ForumPostTable};
 use deepwell::models::forum_thread::Entity as ForumThreadTable;
 use deepwell::models::known_user;
 use deepwell::models::page::{self, Entity as PageTable};
 use deepwell::models::page_category::{self, Entity as PageCategoryTable};
-use deepwell::models::page_revision::Entity as PageRevisionTable;
+use deepwell::models::page_revision::{self, Entity as PageRevisionTable};
 use deepwell::models::role_permission::{self, Entity as RolePermissionTable};
+use deepwell::models::session::Entity as SessionTable;
 use deepwell::models::text;
 use deepwell::models::text_block;
 use deepwell::models::user::Entity as UserTable;
@@ -53,7 +60,7 @@ use deepwell::services::forum_post::{
     CreateForumPost, UpdateForumPost, UpdateForumPostBody,
 };
 use deepwell::services::forum_thread::CreateForumThread;
-use deepwell::services::page::CreatePage;
+use deepwell::services::page::{CreatePage, GetPageOutput};
 use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::page_query::{
     AuthorSelector, CategoriesSelector, ComparisonOperation, DataFormSelector,
@@ -65,9 +72,10 @@ use deepwell::services::page_revision::{PageRevisionService, RerenderType};
 use deepwell::services::permission::{
     CheckPermissionContext, PermissionCache, PermissionService,
 };
+use deepwell::services::public_cache::PublicContentCache;
 use deepwell::services::relation::{
-    CreatePageWatch, CreateSiteMember, RemovePageWatch, SiteMemberAccepted,
-    SiteMemberData,
+    CreatePageWatch, CreateSiteMember, PageAttribution, PageAttributionKind,
+    RemovePageWatch, SiteMemberAccepted, SiteMemberData,
 };
 use deepwell::services::render::{LegacyActionRegistry, UrlArgumentPair, UrlArguments};
 use deepwell::services::role::{
@@ -76,11 +84,14 @@ use deepwell::services::role::{
 use deepwell::services::score::ScoreValue as QueryScoreValue;
 use deepwell::services::session::CreateSession;
 use deepwell::services::site::UpdateSiteBody;
+use deepwell::services::text_block::{MIME_HTML, TextBlock};
+use deepwell::services::user::UpdateUserBody;
 use deepwell::services::view::{GetArticleViewOutput, GetPageViewOutput};
 use deepwell::services::{
     FileRevisionService, ForumPostService, ForumService, ForumThreadService, LinkService,
     PageService, RelationService, RenderService, RequestContext, ServiceContext,
-    SessionService, SettingsService, SiteService, TextService, ThemeSetting,
+    SessionService, SettingsService, SiteService, TextBlockService, TextService,
+    ThemeSetting, UserService,
 };
 use deepwell::types::{
     Action, ConnectionType, Maybe, PageId, PageLockType, PageRevisionType, Permission,
@@ -88,13 +99,16 @@ use deepwell::types::{
 };
 use futures::FutureExt;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, EntityTrait, IntoActiveModel,
-    PaginatorTrait, QueryFilter, QueryOrder, Set, Statement, TransactionTrait, Value,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseBackend, EntityTrait,
+    IntoActiveModel, PaginatorTrait, QueryFilter, QueryOrder, Set, Statement,
+    TransactionTrait, Value,
 };
-use serde_json::json;
+use serde_json::{Value as JsonValue, json};
+use sha1::{Digest as Sha1Digest, Sha1};
 use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 use std::collections::BTreeSet;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::panic::{AssertUnwindSafe, resume_unwind};
 use std::time::Duration as StdDuration;
 use time::{Duration, OffsetDateTime};
@@ -185,6 +199,154 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
     assert!(member.membership_actions.is_empty());
 }
 
+#[tokio::test]
+async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded mirror site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site.site_id),
+        ..Default::default()
+    });
+
+    let cases = [
+        (
+            "bibliography",
+            "((bibcite alpha))\n[[bibliography]]\n: alpha : Public preview bibliography marker\n[[/bibliography]]",
+            "[[bibliography]]",
+        ),
+        (
+            "block-formatting",
+            "[[=]]\nPublic preview centered marker\n[[/=]]",
+            "[[=]]",
+        ),
+        (
+            "block-quotes",
+            "> Public preview quote marker",
+            "> Public preview quote marker",
+        ),
+        (
+            "code-blocks",
+            "[[code]]\nPublic preview code marker\n[[/code]]",
+            "[[code]]",
+        ),
+        ("date", "[[date 1237135440 format=\"%e %b %Y\"]]", "[[date"),
+        (
+            "definition-lists",
+            ": Public preview term : Public preview definition",
+            ": Public preview term :",
+        ),
+        (
+            "footnotes",
+            "Public preview footnote marker[[footnote]]Public preview note body[[/footnote]]\n[[footnoteblock]]",
+            "[[footnote]]",
+        ),
+        (
+            "headings",
+            "+ Public preview heading marker",
+            "+ Public preview heading marker",
+        ),
+        (
+            "horizontal-rules",
+            "Public preview before rule\n----\nPublic preview after rule",
+            "----",
+        ),
+        (
+            "inline-formatting",
+            "**Public preview bold marker**",
+            "**Public preview bold marker**",
+        ),
+        (
+            "lists",
+            "* Public preview list marker",
+            "* Public preview list marker",
+        ),
+        ("math", "[[math]]\nx^2\n[[/math]]", "[[math]]"),
+        (
+            "notes",
+            "[[note]]\nPublic preview note marker\n[[/note]]",
+            "[[note]]",
+        ),
+        (
+            "table-of-contents",
+            "[[toc]]\n+ Public preview toc heading",
+            "[[toc]]",
+        ),
+        (
+            "tables",
+            "|| Public preview table marker ||",
+            "|| Public preview table marker ||",
+        ),
+        (
+            "text-size",
+            "[[size 150%]]Public preview size marker[[/size]]",
+            "[[size 150%]]",
+        ),
+    ];
+
+    for (label, wikitext, forbidden_literal) in cases {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site.site_id,
+                "title": format!("Public syntax preview {label}"),
+                "wikitext": wikitext,
+            }),
+        );
+        assert!(
+            !preview.body.contains(forbidden_literal),
+            "{label} should be consumed by the public preview parser: {}",
+            preview.body,
+        );
+    }
+
+    let paragraphs = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview paragraphs",
+            "wikitext": "Public preview paragraph one\n\nPublic preview paragraph two",
+        }),
+    );
+    assert!(
+        paragraphs
+            .body
+            .contains("<p>Public preview paragraph one</p>")
+    );
+    assert!(
+        paragraphs
+            .body
+            .contains("<p>Public preview paragraph two</p>")
+    );
+
+    let typography = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview typography",
+            "wikitext": "Public preview dots... and em -- dash",
+        }),
+    );
+    assert!(!typography.body.contains("dots..."));
+    assert!(!typography.body.contains("em -- dash"));
+
+    let escaping = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview universal escaping",
+            "wikitext": "@<Public preview umlaut: &#252;>@",
+        }),
+    );
+    assert!(escaping.body.contains("Public preview umlaut: ü"));
+    assert!(!escaping.body.contains("@<"));
+}
+
 fn set_mutation_request_context(
     runner: &mut TestRunner,
     user_id: i64,
@@ -197,6 +359,233 @@ fn set_mutation_request_context(
         site_id: Some(site_id),
         page_reference: Some(page_reference),
     });
+}
+
+async fn import_cacheable_page_attribution_fixture(
+    runner: &mut TestRunner,
+    site_id: i64,
+    label: &str,
+) -> (i64, String) {
+    let run_id = cuid();
+    let page_id = rand::random_range(1_700_000_000_i64..1_799_999_999_i64);
+    let revision_id = rand::random_range(1_800_000_000_i64..1_899_999_999_i64);
+    let slug = format!("page-attribution-cache-{label}-{run_id}");
+
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(slug.clone())),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page,
+        json!({
+            "page_id": page_id,
+            "site_id": site_id,
+            "created_at": "1970-01-01T00:00:00Z",
+            "slug": slug,
+            "locked": false,
+            "discussion_thread_id": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page_revision,
+        json!({
+            "revision_id": revision_id,
+            "revision_type": "create",
+            "created_at": time::OffsetDateTime::UNIX_EPOCH,
+            "updated_at": null,
+            "revision_number": 0,
+            "page_id": page_id,
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "wikitext": format!("Imported attribution cache {label} fixture."),
+            "comments": format!("import page attribution cache {label} fixture"),
+            "title": format!("Page attribution cache {label} fixture"),
+            "slug": slug,
+            "tags": [],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("import post-commit actions should complete before cache assertions");
+
+    (page_id, slug)
+}
+
+struct CachedAttributionArticle {
+    attributions: Vec<PageAttribution>,
+    cache_key: String,
+    fence: String,
+}
+
+async fn load_cached_attribution_article(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> CachedAttributionArticle {
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    match run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetArticleViewOutput {
+            page: GetPageViewOutput::Found { attributions, .. },
+            article_page_cache_key: Some(cache_key),
+            public_content_cache_fence: Some(fence),
+            ..
+        } => CachedAttributionArticle {
+            attributions,
+            cache_key,
+            fence,
+        },
+        other => panic!("expected a cacheable imported article, got {other:?}"),
+    }
+}
+
+async fn import_cacheable_gallery_fixture(
+    runner: &mut TestRunner,
+    site_id: i64,
+) -> (i64, String) {
+    let run_id = cuid();
+    let page_id = rand::random_range(1_700_000_000_i64..1_799_999_999_i64);
+    let revision_id = rand::random_range(1_800_000_000_i64..1_899_999_999_i64);
+    let slug = format!("gallery-file-cache-{run_id}");
+
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(slug.clone())),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page,
+        json!({
+            "page_id": page_id,
+            "site_id": site_id,
+            "created_at": "1970-01-01T00:00:00Z",
+            "slug": slug,
+            "locked": false,
+            "discussion_thread_id": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        import_wikidot_page_revision,
+        json!({
+            "revision_id": revision_id,
+            "revision_type": "create",
+            "created_at": time::OffsetDateTime::UNIX_EPOCH,
+            "updated_at": null,
+            "revision_number": 0,
+            "page_id": page_id,
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "[[gallery]]",
+            "comments": "import Gallery file-cache fixture",
+            "title": "Gallery file-cache fixture",
+            "slug": slug,
+            "tags": [],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("Gallery import post-commit actions should complete");
+
+    (page_id, slug)
+}
+
+struct CachedGalleryArticle {
+    body: String,
+    cache_key: String,
+    fence: String,
+}
+
+async fn load_cached_gallery_article(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &str,
+) -> CachedGalleryArticle {
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    match run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetArticleViewOutput {
+            page:
+                GetPageViewOutput::Found {
+                    compiled_body_html, ..
+                },
+            article_page_cache_key: Some(cache_key),
+            public_content_cache_fence: Some(fence),
+            ..
+        } => CachedGalleryArticle {
+            body: compiled_body_html,
+            cache_key,
+            fence,
+        },
+        other => panic!("expected a cacheable imported Gallery article, got {other:?}"),
+    }
+}
+
+async fn complete_gallery_file_mutation(
+    runner: &mut TestRunner,
+    site_id: i64,
+    page_id: i64,
+    slug: &str,
+    before: &CachedGalleryArticle,
+) -> CachedGalleryArticle {
+    let before_commit = load_cached_gallery_article(runner, site_id, slug).await;
+    assert_eq!(before_commit.fence, before.fence);
+    assert_eq!(before_commit.cache_key, before.cache_key);
+
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("file mutation post-commit actions should complete");
+    let before_worker = load_cached_gallery_article(runner, site_id, slug).await;
+    assert_ne!(before_worker.fence, before.fence);
+    assert_ne!(before_worker.cache_key, before.cache_key);
+    assert_eq!(
+        before_worker.body, before.body,
+        "the transaction-local rerender simulation has not run yet",
+    );
+
+    rerender_file_fixture_page(runner, page_id).await;
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("Gallery rerender post-commit actions should complete");
+    load_cached_gallery_article(runner, site_id, slug).await
 }
 
 async fn set_page_rating_policy(
@@ -573,6 +962,7 @@ async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
             "page_id": created.page_id,
             "revision_id": created.revision_id,
             "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["wikitext"],
         }),
     );
@@ -589,6 +979,455 @@ async fn revision_diff_returns_typed_lines_without_exposing_hidden_source() {
     assert!(
         hidden.is_none(),
         "a hidden source revision must make the entire pair unavailable",
+    );
+}
+
+#[tokio::test]
+async fn page_revision_visibility_accepts_only_known_fields_and_fails_closed() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-hidden-fields";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    let site_id = site.site_id;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "first revision body",
+            "title": "First revision title",
+            "alt_title": "First revision alternate title",
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "first revision comments",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "create a newer revision",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision body",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("a newer revision should be created");
+
+    let hidden = [
+        "wikitext",
+        "compiled",
+        "comments",
+        "title",
+        "alt_title",
+        "slug",
+        "tags",
+    ];
+    let revision = run_endpoint!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": hidden,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    );
+    assert_eq!(revision.hidden, hidden.map(str::to_owned));
+    assert!(revision.wikitext.is_none());
+    assert!(revision.compiled_body_html.is_none());
+    assert!(revision.compiled_body_styles.is_none());
+    assert!(revision.compiled_top_bar_html.is_none());
+    assert!(revision.compiled_side_bar_html.is_none());
+    assert!(revision.comments.is_none());
+    assert!(revision.title.is_none());
+    assert!(revision.alt_title.is_none());
+    assert!(revision.slug.is_none());
+    assert!(revision.tags.is_none());
+
+    let persisted = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    )
+    .expect("the moderated revision should remain readable");
+    assert_eq!(persisted.hidden, hidden.map(str::to_owned));
+    assert!(persisted.wikitext.is_none());
+    assert!(persisted.compiled_body_html.is_none());
+
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup should succeed")
+        .expect("the revision should exist");
+    let hidden_before_rejection = stored.hidden.clone();
+    let updated_at_before_rejection = stored.updated_at;
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["comments", "Comments"],
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageRevision);
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup after rejection should succeed")
+        .expect("the revision should still exist");
+    assert_eq!(stored.hidden, hidden_before_rejection);
+    assert_eq!(stored.updated_at, updated_at_before_rejection);
+
+    let wrong_site = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site_id + 1,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["unknown"],
+        }),
+    );
+    assert_contains_error!(wrong_site, ErrorType::PageRevision);
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup after wrong-site rejection should succeed")
+        .expect("the revision should still exist");
+    assert_eq!(stored.hidden, hidden_before_rejection);
+    assert_eq!(stored.updated_at, updated_at_before_rejection);
+}
+
+#[tokio::test]
+async fn page_revision_visibility_changes_are_audited_once_with_attribution() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-visibility-audit";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "revision body",
+            "title": "Revision visibility audit",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "comments to moderate",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let update = json!({
+        "site_id": site.site_id,
+        "page_id": created.page_id,
+        "revision_id": created.revision_id,
+        "user_id": ADMIN_USER_ID,
+        "ip_address": common::IP_ADDRESS,
+        "hidden": ["comments"],
+    });
+    let revision = run_endpoint!(runner, page_revision_edit, update.clone());
+    assert_eq!(revision.hidden, vec![String::from("comments")]);
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("the page revision visibility audit lookup should succeed");
+    assert_eq!(events.len(), 1, "the changed visibility must be audited");
+    let event = &events[0];
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(created.page_id));
+    assert_eq!(event.extra_id_1, Some(created.revision_id));
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the updated revision lookup should succeed")
+        .expect("the updated revision should exist");
+    let updated_at = stored.updated_at;
+
+    run_endpoint!(runner, page_revision_edit, update);
+
+    let event_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the page revision visibility audit count should succeed");
+    assert_eq!(event_count, 1, "an unchanged hidden set is a true no-op");
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the no-op revision lookup should succeed")
+        .expect("the no-op revision should still exist");
+    assert_eq!(
+        stored.updated_at, updated_at,
+        "a no-op must not rewrite the row"
+    );
+}
+
+#[tokio::test]
+async fn page_revision_visibility_update_and_audit_roll_back_atomically() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-visibility-audit-rollback";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "revision body",
+            "title": "Revision visibility audit rollback",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "comments to moderate",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("the visibility update savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(created.page_id)),
+            ..Default::default()
+        });
+    deepwell::endpoints::all::page_revision_edit(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["comments"],
+        })),
+    )
+    .await
+    .expect("the transactional visibility update should succeed");
+
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .count(&transaction)
+        .await
+        .expect("the transactional visibility audit count should succeed");
+    assert_eq!(audit_count, 1);
+    transaction
+        .rollback()
+        .await
+        .expect("the visibility update savepoint should roll back");
+
+    let stored = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the rolled-back revision lookup should succeed")
+        .expect("the rolled-back revision should still exist");
+    assert!(
+        stored.hidden.is_empty(),
+        "the revision update must roll back"
+    );
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("page_revision.update_visibility"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.revision_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the rolled-back visibility audit count should succeed");
+    assert_eq!(
+        audit_count, 0,
+        "the audit event must roll back with the update"
+    );
+}
+
+#[tokio::test]
+async fn page_revision_reads_reject_legacy_unknown_hidden_fields_without_panicking() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-revision-legacy-hidden-field";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "legacy malformed revision",
+            "title": "Legacy malformed revision",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "legacy malformed revision",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let revision = PageRevisionTable::find_by_id(created.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the revision lookup should succeed")
+        .expect("the revision should exist");
+    let mut revision = revision.into_active_model();
+    revision.hidden = Set(vec!["legacy_unknown".to_owned()]);
+    revision
+        .update(runner.context().transaction())
+        .await
+        .expect("the malformed legacy fixture should be constructed");
+
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PageRevision);
+}
+
+#[tokio::test]
+async fn latest_page_revision_still_cannot_hide_wikitext() {
+    const SITE_SLUG: &str = "scpaiueouiuiuiui";
+    const PAGE_SLUG: &str = "authoring-latest-revision-wikitext";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("the editable local authoring site should exist")
+        .site;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site.site_id,
+            "wikitext": "latest revision source remains visible",
+            "title": "Latest revision source",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "latest revision source",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let before = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true},
+        }),
+    )
+    .expect("the latest revision should initially be readable");
+    let error = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_id": created.revision_id,
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["wikitext"],
+        }),
+    );
+    assert_contains_error!(error, ErrorType::CannotHideLatestRevision);
+    assert_eq!(ErrorType::CannotHideLatestRevision.code(), 4302);
+
+    let revision = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": site.site_id,
+            "page_id": created.page_id,
+            "revision_number": 0,
+            "details": {"wikitext": true},
+        }),
+    )
+    .expect("the latest revision should remain readable");
+    assert!(revision.hidden.is_empty());
+    assert_eq!(revision.updated_at, before.updated_at);
+    assert_eq!(
+        revision.wikitext.as_deref(),
+        Some("latest revision source remains visible")
     );
 }
 
@@ -1310,6 +2149,268 @@ async fn imported_page_layout_provenance_preserves_explicit_page_override() {
 }
 
 #[tokio::test]
+async fn initial_page_creation_uses_destination_category_layout() {
+    const SITE_SLUG: &str = "test";
+    const CATEGORY_SLUG: &str = "category-layout-create";
+    const PAGE_SLUG: &str = "category-layout-create:page";
+    const LAYOUT_MARKER: &str = "destination category layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikidot",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Fixture-only setup: category layout has no registered update endpoint.
+    // This immutable precondition must not be used to observe create behavior.
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, CATEGORY_SLUG)
+            .await
+            .expect("destination category fixture should exist");
+    let mut category = category.into_active_model();
+    category.layout = Set(Some("wikijump".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("destination category layout fixture should update");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Category layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create category layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><code class="wj-monospace">{LAYOUT_MARKER}</code></p>"#),
+        "the stored public body should use the destination category layout",
+    );
+}
+
+#[tokio::test]
+async fn initial_page_creation_explicit_layout_beats_destination_category_layout() {
+    const SITE_SLUG: &str = "test";
+    const CATEGORY_SLUG: &str = "explicit-layout-create";
+    const PAGE_SLUG: &str = "explicit-layout-create:page";
+    const LAYOUT_MARKER: &str = "explicit page layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikijump",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    // Fixture-only setup: category layout has no registered update endpoint.
+    // This immutable precondition must not be used to observe create behavior.
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, CATEGORY_SLUG)
+            .await
+            .expect("destination category fixture should exist");
+    let mut category = category.into_active_model();
+    category.layout = Set(Some("wikijump".to_owned()));
+    category
+        .update(runner.context().transaction())
+        .await
+        .expect("destination category layout fixture should update");
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Explicit page layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create explicit layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><tt>{LAYOUT_MARKER}</tt></p>"#),
+        "the stored public body should use the explicit page layout",
+    );
+}
+
+#[tokio::test]
+async fn initial_page_creation_without_category_override_uses_site_layout() {
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "site-layout-create:page";
+    const LAYOUT_MARKER: &str = "site fallback layout";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "layout": "wikidot",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("{{{{{LAYOUT_MARKER}}}}}"),
+            "title": "Site fallback layout creation fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create site fallback layout fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let compiled_body_html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous page view, got {other:?}"),
+    };
+
+    assert_eq!(
+        compiled_body_html,
+        format!(r#"<p><tt>{LAYOUT_MARKER}</tt></p>"#),
+        "the stored public body should fall back to the site layout",
+    );
+}
+
+#[tokio::test]
 async fn basic_edit() {
     let mut runner = TestRunner::setup().await;
 
@@ -1459,6 +2560,225 @@ async fn basic_edit() {
     assert_eq!(page.revision_type, PageRevisionType::Regular);
     assert_eq!(page.revision_user_id, ADMIN_USER_ID);
     assert_eq!(page.page_category_slug, "_default");
+}
+
+#[tokio::test]
+async fn page_editing_history_preserves_each_page_change_as_a_recoverable_revision() {
+    let mut runner = TestRunner::setup().await;
+
+    const SITE_SLUG: &str = "test";
+    const PAGE_SLUG: &str = "page-editing-history-fixture";
+    const MOVED_PAGE_SLUG: &str = "page-editing-history-fixture-moved";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded site should exist")
+        .site;
+    let site_id = site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(PAGE_SLUG.into())),
+    });
+
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "++ One\n\nInitial",
+            "title": "History fixture",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": null,
+            "revision_comments": "create history fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let content_edit = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "edit page content",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "++ One\n\nSection replacement",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("content edit should create a revision");
+
+    let title_edit = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": content_edit.revision_id,
+            "revision_comments": "edit page title",
+            "user_id": ADMIN_USER_ID,
+            "title": "Renamed history title",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("title edit should create a revision");
+
+    let moved = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "new_slug": MOVED_PAGE_SLUG,
+            "last_revision_id": title_edit.revision_id,
+            "revision_comments": "rename history fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_eq!(moved.revision_number, 3);
+
+    let revisions = run_endpoint!(
+        runner,
+        page_revision_range,
+        json!({
+            "site_id": site_id,
+            "page_id": created.page_id,
+            "revision_number": moved.revision_number,
+            "revision_direction": "before",
+            "limit": 4,
+            "details": {"wikitext": true},
+        }),
+    );
+    let revisions = serde_json::to_value(revisions)
+        .expect("revision history should serialize at the public endpoint");
+    assert_eq!(revisions.as_array().map(Vec::len), Some(4));
+    assert_eq!(
+        revisions
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|revision| revision["revision_number"].as_i64().unwrap())
+            .collect::<Vec<_>>(),
+        vec![3, 2, 1, 0],
+    );
+    assert_eq!(revisions[0]["revision_type"], "move");
+    assert_eq!(revisions[1]["revision_type"], "regular");
+    assert_eq!(revisions[2]["revision_type"], "regular");
+    assert_eq!(revisions[3]["revision_type"], "create");
+    assert_eq!(revisions[2]["wikitext"], "++ One\n\nSection replacement");
+    assert_eq!(revisions[1]["wikitext"], "++ One\n\nSection replacement");
+    assert_eq!(revisions[3]["wikitext"], "++ One\n\nInitial");
+    assert_eq!(revisions[1]["title"], "Renamed history title");
+    assert_eq!(revisions[2]["title"], "History fixture");
+
+    let stale = run_endpoint_err!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+            "last_revision_id": created.revision_id,
+            "revision_comments": "stale edit must not overwrite history",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "stale content",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+}
+
+#[tokio::test]
+async fn documented_expression_parser_functions_render_at_the_public_preview_seam() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Documented expression parser functions",
+            "wikitext": concat!(
+                "ABS=[[#expr abs(-100) ]]\n",
+                "MIN=[[#expr min(4, 1, -4, 6, -10) ]]\n",
+                "MAX=[[#expr max(4, 1, -4, 6, -10) ]]\n",
+                "MATH=[[#expr 2*(2-1) ]]\n",
+                "IF_TRUE=[[#if true | TRUE | FALSE ]]\n",
+                "IF_FALSE=[[#if false | TRUE | FALSE ]]\n",
+                "IF_ZERO=[[#if 0 | TRUE | FALSE ]]\n",
+                "IF_NULL=[[#if null | TRUE | FALSE ]]\n",
+                "IF_NULL_UPPER=[[#if NULL | TRUE | FALSE ]]\n",
+                "IFEXPR=[[#ifexpr 2*(2-1) == 2 | YES | NO ]]",
+            ),
+        }),
+    );
+
+    for expected in [
+        "ABS=100",
+        "MIN=-10",
+        "MAX=6",
+        "MATH=2",
+        "IF_TRUE=TRUE",
+        "IF_FALSE=FALSE",
+        "IF_ZERO=FALSE",
+        "IF_NULL=FALSE",
+        "IF_NULL_UPPER=TRUE",
+        "IFEXPR=YES",
+    ] {
+        assert!(
+            preview.body.contains(expected),
+            "documented expression output {expected:?} missing from:\n{}",
+            preview.body,
+        );
+    }
+    assert!(!preview.body.contains("[[#expr"));
+    assert!(!preview.body.contains("[[#if"));
+}
+
+#[tokio::test]
+async fn expression_size_boundary_fails_closed_at_the_public_preview_seam() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+
+    let at_bound = format!("[[#expr 1{}+0]]", " ".repeat(253));
+    let over_bound = format!("[[#expr 1{}+0]]", " ".repeat(254));
+    assert_eq!(at_bound.len() - 10, 256);
+    assert_eq!(over_bound.len() - 10, 257);
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Expression size boundary",
+            "wikitext": format!("AT_BOUND={at_bound}\nOVER_BOUND={over_bound}"),
+        }),
+    );
+
+    assert!(
+        preview.body.contains("AT_BOUND=1"),
+        "the 256-byte expression must still evaluate:\n{}",
+        preview.body,
+    );
+    assert!(
+        !preview.body.contains("OVER_BOUND=1"),
+        "the 257-byte expression must not evaluate:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("OVER_BOUND=[[#expr 1 +0]]"),
+        "the 257-byte expression must remain literal and unevaluated (fail closed):\n{}",
+        preview.body,
+    );
 }
 
 #[tokio::test]
@@ -1814,14 +3134,487 @@ async fn rerender_uses_latest_navigation_page_revision() {
     assert!(
         rerendered_home
             .compiled_generator
-            .ends_with("; deepwell-render/v8")
+            .ends_with("; deepwell-render/v10")
     );
+}
+
+async fn create_navigation_fixture_page(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &'static str,
+    title: &'static str,
+    wikitext: &'static str,
+) -> GetPageOutput {
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": wikitext,
+            "title": title,
+            "alt_title": null,
+            "slug": slug,
+            "layout": "wikidot",
+            "revision_comments": format!("create {title}"),
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": created.page_id,
+        }),
+    )
+    .unwrap_or_else(|| panic!("navigation fixture page {slug} should exist"))
+}
+
+async fn rerender_navigation_fixture_page(runner: &mut TestRunner, page: &GetPageOutput) {
+    set_mutation_request_context(
+        runner,
+        ADMIN_USER_ID,
+        page.site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": page.site_id,
+            "category_id": page.page_category_id,
+            "page_id": page.page_id,
+        }),
+    );
+}
+
+async fn public_page_view_navigation(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &'static str,
+    found: bool,
+) -> (Option<String>, Option<String>, Option<bool>) {
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    match (found, view) {
+        (
+            true,
+            GetPageViewOutput::Found {
+                compiled_top_bar_html,
+                compiled_side_bar_html,
+                page_revision,
+                ..
+            },
+        ) => (
+            compiled_top_bar_html,
+            compiled_side_bar_html,
+            Some(page_revision.updated_at.is_some()),
+        ),
+        (
+            false,
+            GetPageViewOutput::Missing {
+                compiled_top_bar_html,
+                compiled_side_bar_html,
+                ..
+            },
+        ) => (compiled_top_bar_html, compiled_side_bar_html, None),
+        (_, other) => panic!("unexpected public page view for {slug}: {other:?}"),
+    }
+}
+
+async fn public_page_view_top_bar(
+    runner: &mut TestRunner,
+    site_id: i64,
+    slug: &'static str,
+    found: bool,
+) -> Option<String> {
+    public_page_view_navigation(runner, site_id, slug, found)
+        .await
+        .0
+}
+
+#[tokio::test]
+async fn page_create_refreshes_only_executable_dynamic_navigation_after_recording_latest_revision()
+ {
+    for (case, nav_source, rerender_expected) in [
+        (
+            "mixed-whitespace",
+            "[[module\tListPages \t tags=\"+fresh\"\t separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
+            true,
+        ),
+        (
+            "whitespace-include",
+            "[[ \t include nav:create-freshness-component-whitespace-include]]",
+            true,
+        ),
+        (
+            "cr-include",
+            "[[\rinclude nav:create-freshness-component-whitespace-include]]",
+            false,
+        ),
+        (
+            "comment-include",
+            "[[[!-- parser-space --]include nav:create-freshness-component-whitespace-include]]",
+            false,
+        ),
+        (
+            "code-literal",
+            "[[code]]\n[[module ListPages tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]\n[[/code]]",
+            false,
+        ),
+        (
+            "invalid-name",
+            "[[module ListPagesExtra tags=\"+fresh\"]]NAV=%%fullname%%[[/module]]",
+            false,
+        ),
+    ] {
+        let mut runner = TestRunner::setup().await;
+        let site_id =
+            run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+                .expect("editable local authoring site should exist")
+                .site
+                .site_id;
+        let top_slug =
+            Box::leak(format!("nav:create-freshness-top-{case}").into_boxed_str());
+        let side_slug =
+            Box::leak(format!("nav:create-freshness-side-{case}").into_boxed_str());
+        let page_slug =
+            Box::leak(format!("create-freshness-{case}:target").into_boxed_str());
+        let top_title =
+            Box::leak(format!("Page create freshness top {case}").into_boxed_str());
+        let side_title =
+            Box::leak(format!("Page create freshness side {case}").into_boxed_str());
+        if case == "whitespace-include" {
+            create_navigation_fixture_page(
+                &mut runner,
+                site_id,
+                "nav:create-freshness-component-whitespace-include",
+                "Page create freshness whitespace include component",
+                "[[module ListPages tags=\"+fresh\" separate=\"no\" wrapper=\"no\"]]NAV=%%fullname%%[[/module]]",
+            )
+            .await;
+        }
+        create_navigation_fixture_page(
+            &mut runner,
+            site_id,
+            top_slug,
+            top_title,
+            nav_source,
+        )
+        .await;
+        create_navigation_fixture_page(
+            &mut runner,
+            site_id,
+            side_slug,
+            side_title,
+            nav_source,
+        )
+        .await;
+        let site = run_endpoint!(runner, site_get, json!({"site": site_id}),)
+            .expect("editable local authoring site should still exist");
+        runner.set_request_context(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        run_endpoint!(
+            runner,
+            site_update,
+            json!({
+                "site": site_id,
+                "user_id": ADMIN_USER_ID,
+                "expected_settings_revision": site.settings.revision,
+                "top_bar_page": top_slug,
+                "side_bar_page": side_slug,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Borrowed(page_slug)),
+        );
+        run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site_id,
+                "wikitext": "Page creation navigation freshness target body",
+                "title": format!("Page creation navigation freshness target {case}"),
+                "alt_title": null,
+                "slug": page_slug,
+                "tags": ["fresh"],
+                "layout": "wikidot",
+                "revision_comments": format!("create navigation freshness target {case}"),
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+
+        let (top_bar, side_bar, timing) =
+            public_page_view_navigation(&mut runner, site_id, page_slug, true).await;
+        let top_bar = top_bar.expect("configured top bar should be compiled");
+        let side_bar = side_bar.expect("configured side bar should be compiled");
+        assert_eq!(
+            timing.expect("found view has revision lifecycle state"),
+            rerender_expected,
+            "{case}",
+        );
+        for (position, navigation) in [("top", top_bar), ("side", side_bar)] {
+            assert_eq!(
+                navigation.contains(&format!("NAV={page_slug}")),
+                rerender_expected,
+                "{case} {position} navigation must reflect whether its module executes",
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn deleted_site_navigation_is_absent_from_found_and_missing_page_views() {
+    const NAV_SLUG: &str = "nav:deleted-site-navigation-fixture";
+    const PAGE_SLUG: &str = "deleted-site-navigation-article";
+    const MISSING_SLUG: &str = "deleted-site-navigation-missing";
+    const MARKER: &str = "deleted site navigation marker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
+        .expect("editable local authoring site should exist");
+    let site_id = site.site.site_id;
+    let navigation = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        NAV_SLUG,
+        "Deleted site navigation fixture",
+        MARKER,
+    )
+    .await;
+    let article = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Deleted site navigation article",
+        "Deleted site navigation article body",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "top_bar_page": NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found)
+            .await
+            .expect("configured top bar should be present");
+        assert!(
+            top_bar.contains(MARKER),
+            "configured top bar should contain the marker for {slug}:\n{top_bar}",
+        );
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(navigation.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": navigation.page_id,
+            "last_revision_id": navigation.revision_id,
+            "revision_comments": "delete configured site navigation",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found).await;
+        assert_eq!(
+            top_bar, None,
+            "deleted configured navigation must be absent for {slug}",
+        );
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(navigation.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": navigation.page_id,
+            "slug": NAV_SLUG,
+            "revision_comments": "restore configured site navigation",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false), (NAV_SLUG, true)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found)
+            .await
+            .expect("restored top bar should be present");
+        assert!(
+            top_bar.contains(MARKER),
+            "restored top bar should contain the marker for {slug}:\n{top_bar}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn deleted_category_navigation_does_not_fall_back_to_site_navigation() {
+    const SITE_NAV_SLUG: &str = "nav:deleted-category-site-fallback-fixture";
+    const CATEGORY_NAV_SLUG: &str = "nav:deleted-category-navigation-fixture";
+    const PAGE_SLUG: &str = "deleted-category-navigation:article";
+    const MISSING_SLUG: &str = "deleted-category-navigation:missing";
+    const SITE_MARKER: &str = "site navigation fallback must stay absent";
+    const CATEGORY_MARKER: &str = "deleted category navigation marker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        SITE_NAV_SLUG,
+        "Category navigation site fallback fixture",
+        SITE_MARKER,
+    )
+    .await;
+    let category_navigation = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        CATEGORY_NAV_SLUG,
+        "Deleted category navigation fixture",
+        CATEGORY_MARKER,
+    )
+    .await;
+    let article = create_navigation_fixture_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Deleted category navigation article",
+        "Deleted category navigation article body",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": ADMIN_USER_ID,
+            "expected_settings_revision": site.settings.revision,
+            "top_bar_page": SITE_NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": article.page_category_id,
+            "user_id": ADMIN_USER_ID,
+            "top_bar_page": CATEGORY_NAV_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found)
+            .await
+            .expect("category top bar should be present");
+        assert!(top_bar.contains(CATEGORY_MARKER), "{slug}:\n{top_bar}");
+        assert!(!top_bar.contains(SITE_MARKER), "{slug}:\n{top_bar}");
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(category_navigation.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": category_navigation.page_id,
+            "last_revision_id": category_navigation.revision_id,
+            "revision_comments": "delete configured category navigation",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    rerender_navigation_fixture_page(&mut runner, &article).await;
+
+    for (slug, found) in [(PAGE_SLUG, true), (MISSING_SLUG, false)] {
+        let top_bar = public_page_view_top_bar(&mut runner, site_id, slug, found).await;
+        assert_eq!(
+            top_bar, None,
+            "a deleted category override must stay absent rather than inherit site navigation for {slug}",
+        );
+    }
 }
 
 #[tokio::test]
 async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page() {
-    const SOURCE: &str = r###"[[a href="##"]]Issue 610 fragment closer[[/a]]"###;
+    const SOURCE: &str = r###"[[a href="##"]]Issue 610 fragment closer[[/a]] ##red|Issue 610 color boundary##"###;
     const EXPECTED_ANCHOR: &str = r###"<a href="##">Issue 610 fragment closer</a>"###;
+    const EXPECTED_COLOR: &str =
+        r###"<span style="color: red">Issue 610 color boundary</span>"###;
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
@@ -1849,6 +3642,11 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
     assert!(
         !preview.body.contains(r#"href="/&#35;&#35;""#),
         "PagePreview rewrote the fragment-only href as a path:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(EXPECTED_COLOR),
+        "PagePreview must still render an ordinary color marker outside the link:\n{}",
         preview.body,
     );
 
@@ -1933,13 +3731,169 @@ async fn wikidot_fragment_only_double_hash_href_survives_preview_and_saved_page(
         !side_bar.contains("All wikis") && !side_bar.contains(r#"href="/&#35;&#35;""#),
         "page_view reused stale navigation or rewrote the href:\n{side_bar}",
     );
+    assert!(
+        side_bar.contains(EXPECTED_COLOR),
+        "saved navigation rerender must still render an ordinary color marker outside the link:\n{side_bar}",
+    );
+}
+
+#[tokio::test]
+async fn page_attribution_update_refreshes_cached_anonymous_article_view() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let (page_id, slug) =
+        import_cacheable_page_attribution_fixture(&mut runner, site.site_id, "update")
+            .await;
+    let before = load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert!(before.attributions.is_empty());
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_update,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "updated_by": ADMIN_USER_ID,
+            "attributions": [{
+                "user_id": SAMPLE_USER_ID,
+                "metadata": {
+                    "attribution_type": "author",
+                    "attribution_date": "2026-08-13",
+                },
+            }],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("page attribution update post-commit actions should complete");
+
+    let after = load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert_ne!(after.fence, before.fence);
+    assert_ne!(after.cache_key, before.cache_key);
+    assert_eq!(after.attributions.len(), 1);
+    assert_eq!(after.attributions[0].user_id, SAMPLE_USER_ID);
+    assert_eq!(
+        after.attributions[0].metadata.attribution_type,
+        PageAttributionKind::Author,
+    );
+    assert_eq!(
+        after.attributions[0].metadata.attribution_date,
+        time::Date::from_calendar_date(2026, time::Month::August, 13)
+            .expect("fixture attribution date should be valid"),
+    );
+}
+
+#[tokio::test]
+async fn page_attribution_delete_refreshes_cached_article_only_when_rows_are_cleared() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let (page_id, slug) =
+        import_cacheable_page_attribution_fixture(&mut runner, site.site_id, "delete")
+            .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_update,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "updated_by": ADMIN_USER_ID,
+            "attributions": [{
+                "user_id": SAMPLE_USER_ID,
+                "metadata": {
+                    "attribution_type": "author",
+                    "attribution_date": "2026-08-13",
+                },
+            }],
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("attribution setup post-commit actions should complete");
+
+    let before = load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert_eq!(before.attributions.len(), 1);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_delete,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "removed_by": ADMIN_USER_ID,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("effective attribution delete post-commit actions should complete");
+
+    let after_delete =
+        load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert!(after_delete.attributions.is_empty());
+    assert_ne!(after_delete.fence, before.fence);
+    assert_ne!(after_delete.cache_key, before.cache_key);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_attribution_delete,
+        json!({
+            "site_id": site.site_id,
+            "page": page_id,
+            "removed_by": ADMIN_USER_ID,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("repeated attribution delete post-commit drain should succeed");
+
+    let after_repeated_delete =
+        load_cached_attribution_article(&mut runner, site.site_id, &slug).await;
+    assert!(after_repeated_delete.attributions.is_empty());
+    assert_eq!(after_repeated_delete.fence, after_delete.fence);
+    assert_eq!(after_repeated_delete.cache_key, after_delete.cache_key);
 }
 
 #[tokio::test]
 async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     const SLUG: &str = "renderer-epoch-cache-fixture";
     const CURRENT_BODY: &str = "renderer epoch current body";
-    const STALE_BODY: &str = "stale deepwell-render/v7 body";
+    const STALE_BODY: &str = "stale deepwell-render/v9 body";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
@@ -1982,11 +3936,14 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     });
     let mut stale_page = run_endpoint!(runner, page_view, input.clone());
     let GetPageViewOutput::Found {
-        compiled_body_html, ..
+        page_revision,
+        compiled_body_html,
+        ..
     } = &mut stale_page
     else {
         panic!("renderer epoch fixture should have a public page view");
     };
+    page_revision.compiled_generator = "fixture-ftml; deepwell-render/v9".to_owned();
     *compiled_body_html = STALE_BODY.to_owned();
 
     let metadata = run_endpoint!(runner, article_view_cache_metadata, input.clone());
@@ -1994,12 +3951,12 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         .article_page_cache_key
         .expect("imported static page should have an anonymous cache key");
     assert!(
-        current_key.starts_with("deepwell:article-view:page:v8:"),
+        current_key.starts_with("deepwell:article-view:page:v10:"),
         "source-freeze cache key must carry the final renderer epoch: {current_key}",
     );
     let stale_key = current_key.replacen(
-        "deepwell:article-view:page:v8:",
-        "deepwell:article-view:page:v7:",
+        "deepwell:article-view:page:v10:",
+        "deepwell:article-view:page:v9:",
         1,
     );
     assert_ne!(stale_key, current_key);
@@ -2007,9 +3964,13 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
         serde_json::to_string(&stale_page).expect("stale page should serialize");
     let mut redis = runner.context().redis();
     redis
-        .set::<_, _, ()>(&stale_key, stale_json)
+        .set::<_, _, ()>(&stale_key, &stale_json)
         .await
-        .expect("stale v7 page should be inserted into the test cache");
+        .expect("stale v9 page should be inserted into the test cache");
+    redis
+        .set::<_, _, ()>(&current_key, &stale_json)
+        .await
+        .expect("stale artifact under the current cache key should be inserted");
     drop(redis);
 
     let view = run_endpoint!(runner, article_view, input);
@@ -2026,6 +3987,152 @@ async fn renderer_epoch_invalidates_pre_freeze_compiled_artifacts() {
     assert_eq!(served_key, current_key);
     assert!(compiled_body_html.contains(CURRENT_BODY));
     assert!(!compiled_body_html.contains(STALE_BODY));
+}
+
+#[tokio::test]
+async fn page_view_rerenders_stale_persisted_compiled_artifact() {
+    const SLUG: &str = "renderer-epoch-persisted-fixture";
+    const CURRENT_BODY: &str = "renderer epoch persisted current body";
+    const STALE_BODY: &str = "stale deepwell-render/v9 persisted body";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SLUG,
+        "Renderer epoch persisted fixture",
+        CURRENT_BODY,
+    )
+    .await;
+
+    let stale_body_hash = TextService::create(runner.context(), STALE_BODY.to_owned())
+        .await
+        .expect("stale compiled body should be stored");
+    let revision = PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("renderer epoch revision lookup should not fail")
+        .expect("renderer epoch revision should exist");
+    let mut revision = revision.into_active_model();
+    revision.compiled_body_html_hash = Set(stale_body_hash.to_vec());
+    revision.compiled_generator = Set("fixture-ftml; deepwell-render/v9".to_owned());
+    revision
+        .update(runner.context().transaction())
+        .await
+        .expect("stale compiled artifact should be attached");
+
+    let anonymous_error = run_endpoint_err!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(format!("{anonymous_error:?}").contains("failed to generate page view"));
+    let anonymous_article_error = run_endpoint_err!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        format!("{anonymous_article_error:?}").contains("failed to generate page view")
+    );
+
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "renderer epoch stale artifact test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let article = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token.clone(),
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetArticleViewOutput {
+        page:
+            GetPageViewOutput::Found {
+                page_revision,
+                compiled_body_html,
+                ..
+            },
+        ..
+    } = article
+    else {
+        panic!("article view should refresh a stale persisted page");
+    };
+    assert!(
+        page_revision
+            .compiled_generator
+            .ends_with("; deepwell-render/v10")
+    );
+    assert!(compiled_body_html.contains(CURRENT_BODY));
+    assert!(!compiled_body_html.contains(STALE_BODY));
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": admin_session_token,
+            "route": {"slug": SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        page_revision,
+        compiled_body_html,
+        ..
+    } = view
+    else {
+        panic!("renderer epoch fixture should return a found page view");
+    };
+    assert!(
+        page_revision
+            .compiled_generator
+            .ends_with("; deepwell-render/v10"),
+        "page view must expose the current compiled generator",
+    );
+    assert!(compiled_body_html.contains(CURRENT_BODY));
+    assert!(!compiled_body_html.contains(STALE_BODY));
+
+    let persisted = PageRevisionTable::find_by_id(revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("rerendered revision lookup should not fail")
+        .expect("rerendered revision should exist");
+    assert!(
+        persisted
+            .compiled_generator
+            .ends_with("; deepwell-render/v10"),
+        "read-time refresh should persist the current compiled generator",
+    );
+    let persisted_body =
+        TextService::get(runner.context(), &persisted.compiled_body_html_hash)
+            .await
+            .expect("rerendered compiled body should be readable");
+    assert!(persisted_body.contains(CURRENT_BODY));
+    assert!(!persisted_body.contains(STALE_BODY));
 }
 
 #[tokio::test]
@@ -2174,6 +4281,29 @@ async fn article_view_cache_respects_anonymous_permission_revocation() {
         first_cache_key, second_cache_key,
         "permission revocation must move anonymous article cache reads to a new key"
     );
+
+    let missing = run_endpoint!(
+        runner,
+        article_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "article-cache-permission-revocation:missing",
+                "extra": "",
+            },
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetArticleViewOutput {
+        page: GetPageViewOutput::Permissions { banned: false, .. },
+        ..
+    } = missing
+    else {
+        panic!(
+            "a missing page in a category without page:view permission must not expose the missing-page action surface"
+        );
+    };
 }
 
 #[tokio::test]
@@ -2323,6 +4453,118 @@ async fn article_cache_and_include_dependencies_use_exact_template_source() {
             .iter()
             .any(|connection| connection.to_page_id == include.page_id),
         "a template-only include must record the article-to-include dependency used by include outdating",
+    );
+}
+
+#[tokio::test]
+async fn imported_countpages_sources_are_excluded_from_article_view_cache_metadata() {
+    const DIRECT_SLUG: &str = "article-cache-countpages-direct:holder";
+    const WHITESPACE_FALLBACK_SLUG: &str =
+        "article-cache-countpages-whitespace-fallback:holder";
+    const TEMPLATE_SLUG: &str = "article-cache-countpages-template:_template";
+    const TEMPLATED_SLUG: &str = "article-cache-countpages-template:holder";
+    const LITERAL_SLUG: &str = "article-cache-countpages-literal:holder";
+    const EXECUTABLE_COUNT_PAGES: &str = "[[module CountPages category=\"article-cache-countpages-target\"]]%%total%%[[/module]]";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DIRECT_SLUG,
+        "Imported direct CountPages cache fixture",
+        EXECUTABLE_COUNT_PAGES,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        WHITESPACE_FALLBACK_SLUG,
+        "Imported whitespace fallback CountPages cache fixture",
+        "[[module CountPages category=\"article-cache-countpages-target\" tags=\"@URL |+fresh\"]]%%total%%[[/module]]",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_SLUG,
+        "Imported templated CountPages cache template",
+        &format!("{EXECUTABLE_COUNT_PAGES}\n%%content%%"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATED_SLUG,
+        "Imported templated CountPages cache fixture",
+        "cache-safe templated page body",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        LITERAL_SLUG,
+        "Imported literal CountPages cache fixture",
+        "[[code]]\n[[module CountPages category=\"article-cache-countpages-target\"]]%%total%%[[/module]]\n[[/code]]",
+    )
+    .await;
+
+    for slug in [
+        DIRECT_SLUG,
+        WHITESPACE_FALLBACK_SLUG,
+        TEMPLATED_SLUG,
+        LITERAL_SLUG,
+    ] {
+        let page = PageTable::find()
+            .filter(
+                sea_orm::Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::Slug.eq(slug)),
+            )
+            .one(runner.context().transaction())
+            .await
+            .expect("CountPages cache fixture lookup should succeed")
+            .expect("CountPages cache fixture should exist");
+        let mut page = page.into_active_model();
+        page.from_wikidot = Set(true);
+        page.update(runner.context().transaction())
+            .await
+            .expect("CountPages cache fixture should be marked imported");
+    }
+
+    for slug in [DIRECT_SLUG, WHITESPACE_FALLBACK_SLUG, TEMPLATED_SLUG] {
+        let metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert_eq!(
+            metadata.article_page_cache_key, None,
+            "executable CountPages must deny imported article caching for {slug}",
+        );
+    }
+
+    let literal_metadata = run_endpoint!(
+        runner,
+        article_view_cache_metadata,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": LITERAL_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        literal_metadata.article_page_cache_key.is_some(),
+        "literal CountPages text must remain eligible for imported article caching",
     );
 }
 
@@ -3225,6 +5467,7 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
             "[[include component:image-block name=leaf.png|link=#]]\n",
             "[[include component:image-block name=2117.png|alt=alt|alt-text=An image|link=\"https://scp-wiki.wdfiles.com/local--files/fragment:attachment-owner-leaf/2117.png\"]]\n",
             "[[image direct-leaf.png]]\n",
+            "[[f=image centered-leaf.png]]\n",
             "[[image \"leaf two.png\"]]\n",
             "[[include component:attachment-owner-wrapper",
             " | asset=forwarded.png",
@@ -3340,6 +5583,13 @@ async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
     assert!(
         html.contains("/local--files/fragment:attachment-owner-leaf/direct-leaf.png"),
         "a direct relative image must retain the nested included source owner: {html}"
+    );
+    assert!(
+        html.contains("/local--files/fragment:attachment-owner-leaf/centered-leaf.png")
+            && !html.contains(
+                "/local--files/fixture-attachment-owner-consumer/centered-leaf.png",
+            ),
+        "f=image must retain the nested included source owner: {html}",
     );
     assert!(
         html.contains("/local--files/fragment:attachment-owner-leaf/leaf%20two.png"),
@@ -3602,6 +5852,215 @@ async fn page_view_separates_generated_css_modules_from_compiled_body_html() {
     )
     .expect("fixture revision should exist");
     assert_eq!(revision.compiled_body_styles, Some(compiled_body_styles));
+}
+
+#[tokio::test]
+async fn saved_page_view_rewrites_exact_cn_interwiki_embed_iframes() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let slug = "cn-interwiki-embed-fixture";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        slug,
+        "CN Interwiki Embed Fixture",
+        concat!(
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=cn-interwiki-embed-fixture" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//cn.interwiki.scpwikicn.com/interwikiFrame.html?stop=subdomain" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="http://interwiki.scpwikicn.com/interwikiFrame.html?stop=http" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrames.html?stop=path-typo" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe class="html-block-iframe scpnet-interwiki-frame" src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=reordered" allowtransparency="true"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=added" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame" title="added"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[!-- [[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=comment" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]] --]\n",
+            "[[code]]\n[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=code" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n[[/code]]\n",
+            r#"@@[[embed]]<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=escape" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>[[/embed]]@@"#,
+            "\n[[html]]\n[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=html" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n[[/html]]\n",
+            r#"[[iframe //interwiki.scpwikicn.com/interwikiFrame.html?stop=iframe]]"#,
+            "\n[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?stop=unbalanced" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        ),
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found page view, got {other:?}"),
+    };
+
+    for expected in [
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=cn-interwiki-embed-fixture" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+    ] {
+        assert!(
+            html.contains(expected),
+            "saved page_view should rewrite the exact CN interwiki iframe and preserve its query verbatim: {html}",
+        );
+        assert_eq!(html.matches(expected).count(), 1, "{html}");
+    }
+    assert_eq!(
+        html.matches("/-/wikidot-interwiki/").count(),
+        2,
+        "wildcard/subdomain, HTTP, path typo, attribute changes, malformed embed, literal-owned source, and [[iframe]] must remain outside the exact rewrite contract: {html}",
+    );
+    for stop in [
+        "stop=subdomain",
+        "stop=http",
+        "stop=path-typo",
+        "stop=reordered",
+        "stop=added",
+        "stop=unbalanced",
+        "stop=comment",
+        "stop=code",
+        "stop=escape",
+        "stop=html",
+        "stop=iframe",
+    ] {
+        assert!(
+            !html.contains(&format!("/-/wikidot-interwiki/interwikiFrame.html?{stop}")),
+            "unsupported boundary {stop:?} must not be rewritten: {html}",
+        );
+    }
+}
+
+#[tokio::test]
+async fn saved_page_view_rewrites_cn_interwiki_embeds_after_listpages_expansion() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let slug = "fixture:cn-interwiki-listpages-consumer";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "component:cn-interwiki-parameterized",
+        "Parameterized CN Interwiki Fixture",
+        concat!(
+            "[[module ListPages range=\".\" limit=\"1\"]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang={$lang}&community={$community}&type={$type}&pagename=%%fullname%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "component:cn-interwiki-sidebar",
+        "CN Interwiki Sidebar Fixture",
+        concat!(
+            "[[module ListPages range=\".\" limit=\"1\"]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=%%name%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[/module]]\n",
+            "[[module ListPages range=\".\" limit=\"1\"]]\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/interwikiFrame.html?lang=cn&community=wl&type=sidebar&pagename=%%fullname%%" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+            "\n[[/embed]]\n\n",
+            "[[embed]]\n",
+            r#"<iframe src="//interwiki.scpwikicn.com/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle-wl.css" style="display: none"></iframe>"#,
+            "\n[[/embed]]\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        slug,
+        "CN Interwiki ListPages Consumer",
+        concat!(
+            "[[include component:cn-interwiki-parameterized\n",
+            "|lang=cn\n",
+            "|community=scp\n",
+            "|type=sidebar\n",
+            "]]\n",
+            "[[include component:cn-interwiki-sidebar]]",
+        ),
+    )
+    .await;
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found page view, got {other:?}"),
+    };
+
+    for expected in [
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=fixture:cn-interwiki-listpages-consumer" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=scp&type=sidebar&pagename=cn-interwiki-listpages-consumer" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle.css" style="display: none"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/interwikiFrame.html?lang=cn&community=wl&type=sidebar&pagename=fixture:cn-interwiki-listpages-consumer" allowtransparency="true" class="html-block-iframe scpnet-interwiki-frame"></iframe>"#,
+        r#"<iframe src="/-/wikidot-interwiki/styleFrame.html?priority=0&type=sidebar&theme=https%3A%2F%2Finterwiki.scpwikicn.com%2Fcss%2Fstyle-wl.css" style="display: none"></iframe>"#,
+    ] {
+        assert_eq!(
+            html.matches(expected).count(),
+            1,
+            "saved page_view should rewrite the retained CN ListPages shape after include and delayed-variable expansion: {html}",
+        );
+    }
+    assert_eq!(html.matches("/-/wikidot-interwiki/").count(), 5, "{html}");
+    for unresolved in [
+        "{$lang}",
+        "{$community}",
+        "{$type}",
+        "%%fullname%%",
+        "%%name%%",
+    ] {
+        assert!(!html.contains(unresolved), "{unresolved}: {html}");
+    }
 }
 
 #[tokio::test]
@@ -4106,6 +6565,20 @@ async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl()
         "explicit Gallery selection should retain authored order and skip non-images:\n{explicit}",
     );
     assert!(explicit.contains("image-b.png"), "{explicit}");
+    assert!(
+        explicit.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/fixture-gallery-current-page/image-b.png/thumbnail.jpg" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "explicit filename entries must use the selected resized asset:
+{explicit}",
+    );
+    assert!(
+        !explicit.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--files/fixture-gallery-current-page/image-b.png" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "explicit filename entries must not use the original asset as the image source:
+{explicit}",
+    );
     assert!(!explicit.contains("image-a.png"), "{explicit}");
     assert!(!explicit.contains("notes.txt"), "{explicit}");
 
@@ -4176,6 +6649,253 @@ async fn wikidot_gallery_selects_authorized_current_page_images_after_page_acl()
 }
 
 #[tokio::test]
+async fn file_mutation_deferred_actions_fence_warm_anonymous_gallery_cache() {
+    const FILE_NAME: &str = "cache-fresh-gallery-image.png";
+    const EMPTY_GALLERY: &str =
+        "Sorry, we couldn't find any images attached to this page.";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let (page_id, slug) =
+        import_cacheable_gallery_fixture(&mut runner, site.site_id).await;
+
+    let warm = load_cached_gallery_article(&mut runner, site.site_id, &slug).await;
+    assert!(warm.body.contains(EMPTY_GALLERY), "{}", warm.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    let mut png = vec![
+        137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0,
+        0, 1, 8, 4, 0, 0, 0, 181, 28, 12, 2, 0, 0, 0, 11, 73, 68, 65, 84, 120, 218, 99,
+        100, 248, 15, 0, 1, 5, 1, 1, 39, 24, 227, 102, 0, 0, 0, 0, 73, 69, 78, 68, 174,
+        66, 96, 130,
+    ];
+    let pending_blob_id = cuid();
+    png.extend_from_slice(pending_blob_id.as_bytes());
+    let (pending, png) = create_committed_page_pending_blob_with_data_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page_id,
+        pending_blob_id,
+        png,
+    )
+    .await;
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page_id,
+            "name": FILE_NAME,
+            "uploaded_blob_id": pending.pending_blob_id.clone(),
+            "revision_comments": "create Gallery cache image",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let fresh =
+        complete_gallery_file_mutation(&mut runner, site.site_id, page_id, &slug, &warm)
+            .await;
+    assert!(fresh.body.contains(FILE_NAME), "{}", fresh.body);
+    assert!(!fresh.body.contains(EMPTY_GALLERY), "{}", fresh.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        file_delete,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page_id,
+            "file": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "delete Gallery cache image",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let deleted =
+        complete_gallery_file_mutation(&mut runner, site.site_id, page_id, &slug, &fresh)
+            .await;
+    assert!(deleted.body.contains(EMPTY_GALLERY), "{}", deleted.body);
+    assert!(!deleted.body.contains(FILE_NAME), "{}", deleted.body);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page_id),
+    );
+    run_endpoint!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page_id,
+            "file_id": created.file_id,
+            "revision_comments": "restore Gallery cache image",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let restored = complete_gallery_file_mutation(
+        &mut runner,
+        site.site_id,
+        page_id,
+        &slug,
+        &deleted,
+    )
+    .await;
+    assert!(restored.body.contains(FILE_NAME), "{}", restored.body);
+    assert!(!restored.body.contains(EMPTY_GALLERY), "{}", restored.body);
+
+    cleanup_committed_page_pending_blob_fixture(runner.state(), &pending, &png)
+        .await
+        .expect("Gallery PNG fixture cleanup should succeed");
+}
+
+#[tokio::test]
+async fn changed_file_revision_fences_but_noop_and_failed_revision_do_not() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded home page should exist");
+    let pending_blob_id = create_prefinalized_empty_page_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": "file-revision-fence.png",
+            "uploaded_blob_id": pending_blob_id,
+            "revision_comments": "create file revision fence fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("file fixture post-commit actions should complete");
+    let initial_fence = PublicContentCache::cache_fence(runner.context(), site.site_id)
+        .await
+        .expect("initial public-content fence should be readable");
+
+    let no_op = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "semantic no-op",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(no_op.is_none());
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("no-op post-commit drain should succeed");
+    assert_eq!(
+        PublicContentCache::cache_fence(runner.context(), site.site_id)
+            .await
+            .expect("post-no-op fence should be readable"),
+        initial_fence,
+    );
+
+    let error = run_endpoint_err!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "invalid empty-name edit",
+            "user_id": ADMIN_USER_ID,
+            "name": "",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::FileNameEmpty);
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("failed edit post-commit drain should succeed");
+    assert_eq!(
+        PublicContentCache::cache_fence(runner.context(), site.site_id)
+            .await
+            .expect("post-failure fence should be readable"),
+        initial_fence,
+    );
+
+    run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": created.file_id,
+            "last_revision_id": created.file_revision_id,
+            "revision_comments": "changed name",
+            "user_id": ADMIN_USER_ID,
+            "name": "file-revision-fence-renamed.png",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("changed file edit should create a revision");
+    runner
+        .context()
+        .run_post_commit_actions()
+        .await
+        .expect("changed edit post-commit actions should complete");
+    assert_ne!(
+        PublicContentCache::cache_fence(runner.context(), site.site_id)
+            .await
+            .expect("post-change fence should be readable"),
+        initial_fence,
+    );
+}
+
+#[tokio::test]
 async fn wikidot_gallery_explicit_entries_resolve_only_owned_visible_files() {
     const TARGET_SLUG: &str = "fixture-gallery-explicit-target";
     const FILE_NAME: &str = "gallery image.png";
@@ -4234,6 +6954,13 @@ async fn wikidot_gallery_explicit_entries_resolve_only_owned_visible_files() {
             "https://scp-wiki.wjfiles.com/local--files/fixture-gallery-explicit-target/gallery%20image.png",
         ),
         "the resolved entry must use the local owned-file route:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains(
+            r#"<img src="https://scp-wiki.wjfiles.com/local--files/fixture-gallery-explicit-target/gallery%20image.png" alt="" class="gallery-image-size-thumbnail" />"#,
+        ),
+        "an explicit owned URL must remain the image source:\n{}",
         preview.body,
     );
     assert!(
@@ -4388,10 +7115,19 @@ async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix(
         );
         assert!(
             preview.body.contains(&format!(
+                r#"<img src="https://scp-wiki.wjfiles.com/local--files/{TARGET_SLUG}/{FILE_NAME}" alt="" class="gallery-image-size-{}""#,
+                case.expected_size,
+            )),
+            "{} should preserve the original asset for an owned explicit URL:\n{}",
+            case.case_id,
+            preview.body,
+        );
+        assert!(
+            !preview.body.contains(&format!(
                 "/local--resized-images/{TARGET_SLUG}/{FILE_NAME}/{}.jpg",
                 case.expected_size,
             )),
-            "{} should bind the expected resized variant:\n{}",
+            "{} must not replace an owned explicit URL with a resized asset:\n{}",
             case.case_id,
             preview.body,
         );
@@ -5203,7 +7939,7 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
         "[[button edit text=\"Edit here\" onclick=\"alert(1)\"]]\n",
         "[[button history]]\n",
         "[[button source]]\n",
-        "[[button print style=\"color: #444\"]]\n",
+        "[[button print class=\"custom-action\" style=\"color: #444\"]]\n",
         "[[button set-tags -* +favorite text=\"Change tags\"]]\n",
         "[[button unsupported text=\"Never active\"]]",
     );
@@ -5290,8 +8026,12 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
     for html in [saved, preview.body] {
         assert_eq!(
             html.matches(r#"class="wiki-standalone-button""#).count(),
-            5,
-            "all supported standalone actions must retain the Wikidot button class: {html}",
+            4,
+            "standalone actions without a custom class must retain the Wikidot button class: {html}",
+        );
+        assert!(
+            html.contains(r#"class="custom-action""#),
+            "the custom print class must replace the default class: {html}",
         );
         assert_eq!(
             html.matches(r#"href="javascript:;""#).count(),
@@ -5322,10 +8062,18 @@ async fn wikidot_standalone_actions_keep_exact_html_and_expose_typed_sidecars() 
             !html.contains("data-wikijump"),
             "Wikijump hooks must remain outside served Wikidot DOM: {html}"
         );
-        assert!(
-            !html.contains("onclick"),
-            "authored script must stay inert: {html}"
-        );
+        for generated_handler in [
+            r#"onclick="WIKIDOT.page.listeners.editClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.historyClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.viewSourceClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.printClick(event)""#,
+            r#"onclick="WIKIDOT.page.listeners.updateTagsByButton(event, &#39;-* +favorite&#39;)""#,
+        ] {
+            assert!(
+                html.contains(generated_handler),
+                "generated Wikidot action handler is missing: {generated_handler}: {html}",
+            );
+        }
         assert!(
             !html.contains("alert(1)"),
             "authored script must stay inert: {html}"
@@ -5771,6 +8519,157 @@ async fn page_render_emits_wikidot_rate_widget_structure() {
 }
 
 #[tokio::test]
+async fn page_render_bodyless_rate_does_not_claim_a_later_sibling_module_closer() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let page_info = PageInfo {
+        page: Cow::Borrowed("rate-sibling-module-fixture"),
+        category: None,
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Rate Sibling Module Fixture"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let source = concat!(
+        "[[module Rate]]\n",
+        "[[div class=\"article-start\"]]VISIBLE ARTICLE BODY[[/div]]\n",
+        "[[module CSS]]\n",
+        ".sibling { display: block; }\n",
+        "[[/module]]\n",
+        "VISIBLE ARTICLE TAIL\n",
+    );
+
+    let output =
+        RenderService::render(runner.context(), source.to_owned(), &page_info, &settings)
+            .await
+            .expect("bodyless Rate followed by a sibling module should render");
+    let html = output.html_output.body;
+
+    assert!(html.contains("VISIBLE ARTICLE BODY"), "{html}");
+    assert!(html.contains("VISIBLE ARTICLE TAIL"), "{html}");
+    assert_eq!(html.matches(r#"class="page-rate-widget-box""#).count(), 1);
+    assert!(!html.contains("[[module CSS]]"), "{html}");
+}
+
+#[tokio::test]
+async fn page_render_basalt_rate_does_not_claim_active_iftags_through_eof() {
+    let runner = TestRunner::setup().await;
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut page_info = PageInfo {
+        page: Cow::Borrowed("basalt"),
+        category: Some(Cow::Borrowed("theme")),
+        site: Cow::Borrowed("scp-wiki"),
+        title: Cow::Borrowed("Basalt"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: vec![Cow::Borrowed("co-authored"), Cow::Borrowed("theme")],
+        language: Cow::Borrowed("en"),
+    };
+
+    let active = RenderService::render(
+        runner.context(),
+        include_str!("../seeder/theme-basalt.ftml").to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with Rate inside an active gate should succeed");
+    let active_html = active.html_output.body;
+
+    assert!(
+        active_html.contains(r#"class="page-rate-widget-box""#),
+        "{active_html}"
+    );
+    assert!(
+        active_html.contains("Basalt</strong> is an aesthetic theme"),
+        "{active_html}"
+    );
+    assert!(!active_html.contains("[[iftags"), "{active_html}");
+    assert!(!active_html.contains("[[/iftags]]"), "{active_html}");
+
+    page_info.tags.clear();
+    let inactive = RenderService::render(
+        runner.context(),
+        include_str!("../seeder/theme-basalt.ftml").to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with the Basalt theme gate inactive should succeed");
+    let inactive_html = inactive.html_output.body;
+
+    assert!(
+        !inactive_html.contains(r#"class="page-rate-widget-box""#),
+        "{inactive_html}"
+    );
+    assert!(
+        !inactive_html.contains("Basalt</strong> is an aesthetic theme"),
+        "{inactive_html}"
+    );
+
+    page_info.tags.push(Cow::Borrowed("theme"));
+    let literal = RenderService::render(
+        runner.context(),
+        concat!(
+            "[[iftags +theme]]\n",
+            "[[code]]\n",
+            "[[/iftags]]\n",
+            "[[/code]]\n",
+            "visible after literal\n",
+            "[[/iftags]]\n",
+        )
+        .to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with a conditional closer inside code should succeed");
+    let literal_html = literal.html_output.body;
+
+    assert!(
+        literal_html.contains("visible after literal"),
+        "{literal_html}"
+    );
+    assert!(
+        literal_html.contains("<pre><code>[[/iftags]]"),
+        "{literal_html}"
+    );
+
+    let paired_rate = RenderService::render(
+        runner.context(),
+        concat!(
+            "[[iftags +theme]]\n",
+            "[[module Rate]]\n",
+            "[[/iftags]]\n",
+            "[[/module]]\n",
+            "visible after paired Rate\n",
+            "[[/iftags]]\n",
+        )
+        .to_owned(),
+        &page_info,
+        &settings,
+    )
+    .await
+    .expect("page render with a conditional closer inside paired Rate should succeed");
+    let paired_rate_html = paired_rate.html_output.body;
+
+    assert!(
+        paired_rate_html.contains(r#"class="page-rate-widget-box""#),
+        "{paired_rate_html}"
+    );
+    assert!(
+        paired_rate_html.contains("visible after paired Rate"),
+        "{paired_rate_html}"
+    );
+    assert!(
+        !paired_rate_html.contains("[[/iftags]]"),
+        "{paired_rate_html}"
+    );
+}
+
+#[tokio::test]
 async fn saved_rate_sidecar_binds_exact_revision_and_mutates_idempotently() {
     const SLUG: &str = "fixture-rate-action-sidecar";
     const SOURCE: &str = "[[module Rate]]";
@@ -6136,6 +9035,12 @@ async fn page_render_star_rate_module_consumes_body_and_substitutes_live_variabl
 async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundaries() {
     const EXTANT_USER_ID: i64 = 19_102_600;
     const DELETED_USER_ID: i64 = 19_102_601;
+    const NAME_ONLY_USER_ID: i64 = 19_102_602;
+    const COLLISION_FIRST_USER_ID: i64 = 19_102_603;
+    const COLLISION_SECOND_USER_ID: i64 = 19_102_604;
+    const UNICODE_USER_ID: i64 = 19_102_605;
+    const NUMERIC_ID_USER_ID: i64 = 2;
+    const DISPLAY_NUMERIC_NAME_USER_ID: i64 = 19_102_606;
     const PAGE_SLUG: &str = "fixture-wikidot-user-identity-matrix";
 
     let mut runner = TestRunner::setup().await;
@@ -6146,8 +9051,17 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
     transaction
         .execute_raw(Statement::from_sql_and_values(
             transaction.get_database_backend(),
-            "INSERT INTO known_user (user_id) VALUES ($1), ($2)",
-            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+            "INSERT INTO known_user (user_id) VALUES ($1), ($2), ($3), ($4), ($5), ($6), ($7), ($8)",
+            [
+                Value::from(EXTANT_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(NAME_ONLY_USER_ID),
+                Value::from(COLLISION_FIRST_USER_ID),
+                Value::from(COLLISION_SECOND_USER_ID),
+                Value::from(UNICODE_USER_ID),
+                Value::from(NUMERIC_ID_USER_ID),
+                Value::from(DISPLAY_NUMERIC_NAME_USER_ID),
+            ],
         ))
         .await
         .expect("user-block known-user fixtures should be inserted");
@@ -6159,9 +9073,24 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
                 "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
                 ") VALUES ",
                 "($1, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Extant User', 'extant-user', 5, FALSE), ",
-                "($2, NOW() - INTERVAL '1 second', NOW(), TRUE, 'Deleted User', 'deleted-user', 0, FALSE)",
+                "($2, NOW() - INTERVAL '1 second', NOW(), TRUE, 'Deleted User', 'deleted-user', 0, FALSE), ",
+                "($3, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Name Only User', 'name-only-slug', 5, FALSE), ",
+                "($4, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Shared Person', 'shared-person-first', 5, FALSE), ",
+                "($5, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Shared_Person', 'shared-person-second', 5, FALSE), ",
+                "($6, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Éclair\tName\u{00a0}JP', 'unicode-name', 5, FALSE), ",
+                "($7, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Numeric Target', 'numeric-target', 5, FALSE), ",
+                "($8, NOW() - INTERVAL '1 second', NOW(), FALSE, '2', 'display-two', 5, FALSE)",
             ),
-            [Value::from(EXTANT_USER_ID), Value::from(DELETED_USER_ID)],
+            [
+                Value::from(EXTANT_USER_ID),
+                Value::from(DELETED_USER_ID),
+                Value::from(NAME_ONLY_USER_ID),
+                Value::from(COLLISION_FIRST_USER_ID),
+                Value::from(COLLISION_SECOND_USER_ID),
+                Value::from(UNICODE_USER_ID),
+                Value::from(NUMERIC_ID_USER_ID),
+                Value::from(DISPLAY_NUMERIC_NAME_USER_ID),
+            ],
         ))
         .await
         .expect("user-block Wikidot fixtures should be inserted");
@@ -6169,6 +9098,12 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
     let source = format!(
         concat!(
             "NAME=[[user Extant User]]\n",
+            "NAME_ONLY=[[user Name Only User]]\n",
+            "COLLISION=[[*user Shared Person]]\n",
+            "UNKNOWN_AVATAR=[[*user Unknown Avatar User]]\n",
+            "UNICODE=[[user éCLAIR\u{00a0}name\tjp]]\n",
+            "NUMERIC_ID=[[*user 2]]\n",
+            "NUMERIC_NAME=[[user display-two]]\n",
             "ID=[[*user {EXTANT_USER_ID}]]\n",
             "DELETED=[[user Deleted User]]\n",
             "A=[[user v7ws=\"alpha\tbeta\u{00a0}gamma\"]]\n",
@@ -6223,14 +9158,49 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
         other => panic!("expected saved Wikidot user matrix, got {other:?}"),
     };
 
-    assert!(
-        html.contains("http://www.wikidot.com/user:info/extant-user")
-            && html.contains(&format!(
-                "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID}); return false;"
-            ))
-            && html.contains(">Extant User</a>"),
-        "extant name and numeric ID references should share the imported identity:\n{html}",
-    );
+    for (label, output) in [
+        ("preview", html.as_str()),
+        ("saved page", saved_html.as_str()),
+    ] {
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/extant-user")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID}); return false;"
+                ))
+                && output.contains(">Extant User</a>"),
+            "{label} extant name and numeric ID references should share the imported identity:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/name-only-slug")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({NAME_ONLY_USER_ID}); return false;"
+                ))
+                && output.contains(">Name Only User</a>"),
+            "{label} should resolve the imported display name even when its slug differs:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/unicode-name")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({UNICODE_USER_ID}); return false;"
+                ))
+                && output.contains(">Éclair"),
+            "{label} should use the shared Unicode whitespace and case normalization contract:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/numeric-target")
+                && output.contains("WIKIDOT.page.listeners.userInfo(2); return false;")
+                && output.contains(">Numeric Target</a>"),
+            "{label} numeric ID lookup must survive a display name normalized as 2:\n{output}",
+        );
+        assert!(
+            output.contains("http://www.wikidot.com/user:info/display-two")
+                && output.contains(&format!(
+                    "WIKIDOT.page.listeners.userInfo({DISPLAY_NUMERIC_NAME_USER_ID}); return false;"
+                ))
+                && output.contains(">2</a>"),
+            "{label} should still resolve the separately loaded user whose display name is 2:\n{output}",
+        );
+    }
     assert_eq!(
         html.matches(&format!(
             "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID})"
@@ -6245,6 +9215,10 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
     let live_missing_user_fragments = [
         concat!(
             r#"<span class="error-inline"><em>Deleted User</em>"#,
+            " does not match any existing user name</span>",
+        ),
+        concat!(
+            r#"<span class="error-inline"><em>Unknown Avatar User</em>"#,
             " does not match any existing user name</span>",
         ),
         concat!(
@@ -6290,13 +9264,213 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             output
                 .matches("does not match any existing user name")
                 .count(),
-            8,
-            "{label} must fail closed for the deleted identity and seven unknown lookup keys:\n{output}",
+            10,
+            "{label} must fail closed for the deleted identity, colliding name, starred unknown, and seven unknown lookup keys:\n{output}",
         );
         assert!(
             !output.contains("user:info/deleted-user"),
             "{label} must not expose a profile URL for the deleted identity:\n{output}",
         );
+        assert!(
+            output.contains(concat!(
+                r#"<span class="error-inline"><em>Shared Person</em>"#,
+                " does not match any existing user name</span>",
+            )),
+            "{label} must fail closed for colliding normalized display names:\n{output}",
+        );
+        assert!(
+            !output.contains("user:info/shared-person-first"),
+            "{label}: {output}"
+        );
+        assert!(
+            !output.contains("user:info/shared-person-second"),
+            "{label}: {output}"
+        );
+        for marker in [
+            "DELETED=",
+            "COLLISION=",
+            "UNKNOWN_AVATAR=",
+            "A=",
+            "B=",
+            "C=",
+            "D=",
+            "E=",
+            "F=",
+            "G=",
+        ] {
+            let start = output
+                .match_indices(marker)
+                .find_map(|(start, _)| {
+                    let before = output[..start].trim_end_matches(['\r', '\n']);
+                    (before.is_empty()
+                        || ["<p>", "<br>", "<br/>", "<br />"]
+                            .iter()
+                            .any(|boundary| before.ends_with(boundary)))
+                    .then_some(start)
+                })
+                .unwrap_or_else(|| panic!("{label} missing {marker}: {output}"));
+            let case = &output[start..];
+            let end = case
+                .find("<br")
+                .or_else(|| case.find("</p>"))
+                .unwrap_or(case.len());
+            let case = &case[..end];
+            for forbidden in ["<a", "onclick=", "printuser", "avatar"] {
+                assert!(
+                    !case.contains(forbidden),
+                    "{label} {marker} must not emit {forbidden}: {case}"
+                );
+            }
+        }
+    }
+}
+
+#[tokio::test]
+async fn basalt_runtime_state_users_rerender_identity_profile_subtrees() {
+    let runtime_state: serde_json::Value = serde_json::from_str(include_str!(
+        "../../install/local/wikidot-verification/fixtures/open87-basalt-users/runtime-state.json"
+    ))
+    .expect("the committed Basalt runtime-state fixture should be valid JSON");
+    let evidence: serde_json::Value = serde_json::from_str(include_str!(
+        "../../install/local/wikidot-verification/fixtures/open87-basalt-users/evidence.jsonl"
+    ))
+    .expect("the committed Basalt evidence projection should be valid JSON");
+    let fixture_users = runtime_state["wikidot_users"]
+        .as_array()
+        .expect("the Basalt runtime-state fixture should contain Wikidot users");
+    let evidence_users = evidence["users"]
+        .as_array()
+        .expect("the Basalt evidence projection should contain user counts");
+    assert_eq!(fixture_users.len(), 3);
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let transaction = runner.context().transaction();
+    for user in fixture_users {
+        let user_id = user["user_id"]
+            .as_i64()
+            .expect("fixture user ID should be an integer");
+        let name = user["name"]
+            .as_str()
+            .expect("fixture user name should be a string");
+        let slug = user["slug"]
+            .as_str()
+            .expect("fixture user slug should be a string");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                "INSERT INTO known_user (user_id) VALUES ($1)",
+                [Value::from(user_id)],
+            ))
+            .await
+            .expect("Basalt known-user fixture row should be inserted");
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                transaction.get_database_backend(),
+                concat!(
+                    "INSERT INTO wikidot_user (",
+                    "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                    ") VALUES ($1, NOW() - INTERVAL '1 second', NOW(), FALSE, $2, $3, 0, FALSE)",
+                ),
+                [
+                    Value::from(user_id),
+                    Value::from(name.to_owned()),
+                    Value::from(slug.to_owned()),
+                ],
+            ))
+            .await
+            .expect("Basalt Wikidot user fixture row should be inserted");
+    }
+
+    let basalt = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site.site_id, "page": "theme:basalt"}),
+    )
+    .expect("the seeded Basalt page should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: Some(Reference::Id(basalt.page_id)),
+    });
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site.site.site_id,
+            "category_id": basalt.page_category_id,
+            "page_id": basalt.page_id,
+        }),
+    );
+    let basalt = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site.site.site_id,
+            "page": "theme:basalt",
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("the seeded Basalt page should exist after rerender");
+    let html = basalt
+        .compiled_body_html
+        .expect("the rerendered Basalt page should include compiled HTML");
+    assert_eq!(
+        html.matches(r#"<span class="printuser avatarhover">"#)
+            .count(),
+        evidence["occurrences"]["source_total"]
+            .as_u64()
+            .expect("source total should be an integer") as usize,
+    );
+
+    let more_memos_prefix = concat!(
+        r#"<div class="collapsible-block"><div class="collapsible-block-folded">"#,
+        r#"<a class="collapsible-block-link" href="javascript:;">+&nbsp;More&nbsp;memos</a></div>"#,
+        r#"<div class="collapsible-block-unfolded" style="display:none">"#,
+    );
+    assert_eq!(html.matches(more_memos_prefix).count(), 1);
+    let more_memos_start = html
+        .find(more_memos_prefix)
+        .expect("the + More memos collapsible should exist");
+    let collapsed_content = html[more_memos_start..]
+        .find(r#"<div class="collapsible-block-content">"#)
+        .map(|offset| more_memos_start + offset)
+        .expect("the + More memos collapsible should have content");
+    let collapsed_end = html[collapsed_content..]
+        .find("</div></div>")
+        .map(|offset| collapsed_content + offset)
+        .expect("the + More memos content should close");
+    let collapsed_html = &html[collapsed_content..collapsed_end];
+
+    for user in fixture_users {
+        let user_id = user["user_id"].as_i64().expect("fixture user ID");
+        let name = user["name"].as_str().expect("fixture user name");
+        let slug = user["slug"].as_str().expect("fixture user slug");
+        let counts = evidence_users
+            .iter()
+            .find(|entry| entry["user_id"].as_i64() == Some(user_id))
+            .expect("each runtime-state user should have evidence counts");
+        let occurrences = counts["source_occurrences"]
+            .as_u64()
+            .expect("source occurrences should be an integer")
+            as usize;
+        let profile = format!("http://www.wikidot.com/user:info/{slug}");
+        let onclick =
+            format!("WIKIDOT.page.listeners.userInfo({user_id}); return false;");
+        let avatar_prefix = format!(
+            r#"<span class="printuser avatarhover"><a href="{profile}" onclick="{onclick}"><img class="small" "#,
+        );
+        let name_suffix =
+            format!(r#"</a><a href="{profile}" onclick="{onclick}">{name}</a></span>"#,);
+        assert_eq!(html.matches(&avatar_prefix).count(), occurrences, "{html}");
+        assert_eq!(html.matches(&name_suffix).count(), occurrences, "{html}");
+
+        if counts["source_occurrences"] != counts["rendered_avatar_occurrences"] {
+            assert_eq!(collapsed_html.matches(&avatar_prefix).count(), 1, "{html}");
+            assert_eq!(collapsed_html.matches(&name_suffix).count(), 1, "{html}");
+        }
     }
 }
 
@@ -6529,6 +9703,228 @@ async fn listusers_module_matches_live_preview_and_runtime_viewer() {
 }
 
 #[tokio::test]
+async fn members_module_ssr_and_ajax_share_100_row_duplicate_relation_boundary() {
+    const FIXTURE_USER_ID: i64 = 19_103_500;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let transaction = runner.context().transaction();
+
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "DELETE FROM relation WHERE dest_type = 'site' AND dest_id = $1 ",
+                "AND from_type = 'user' AND relation_type IN ('member', 'site-member')",
+            ),
+            [Value::from(site_id)],
+        ))
+        .await
+        .expect("existing member-directory fixtures should be cleared");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO known_user (user_id) ",
+                "SELECT $1 + fixture.n::BIGINT FROM generate_series(0, 100) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("SSR member known-user fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO wikidot_user (",
+                "user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro",
+                ") SELECT $1 + fixture.n::BIGINT, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00', NOW(), fixture.n > 50, ",
+                "'SSR Member ' || lpad(fixture.n::TEXT, 3, '0'), ",
+                "'ssr-member-' || lpad(fixture.n::TEXT, 3, '0'), 2, FALSE ",
+                "FROM generate_series(0, 100) AS fixture(n)",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("SSR member identity fixtures should be inserted");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") SELECT 'member', 'site', $2, 'user', $1 + fixture.n::BIGINT, ",
+                "'{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:00:00+00' + fixture.n * INTERVAL '1 second' ",
+                "FROM generate_series(0, 100) AS fixture(n)",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("SSR member relation fixtures should be inserted");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Members SSR cardinality",
+            "wikitext": "[[module Members]]",
+        }),
+    );
+    assert_eq!(
+        preview.body.matches("<tr>").count(),
+        51,
+        "a 51-member default directory should fit on one supported 100-row page:\n{}",
+        preview.body,
+    );
+    assert!(
+        preview.body.contains("SSR Member 050")
+            && !preview.body.contains("class=\"pager\""),
+        "the 51st member must render without a continuation target:\n{}",
+        preview.body,
+    );
+
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "UPDATE wikidot_user SET is_deleted = FALSE ",
+                "WHERE user_id BETWEEN $1 + 51 AND $1 + 100",
+            ),
+            [Value::from(FIXTURE_USER_ID)],
+        ))
+        .await
+        .expect("continuation identity fixtures should become eligible");
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "INSERT INTO relation (",
+                "relation_type, dest_type, dest_id, from_type, from_id, metadata, created_by, created_at",
+                ") VALUES ('site-member', 'site', $2, 'user', $1, '{}'::jsonb, $3, ",
+                "TIMESTAMPTZ '2020-01-01 00:03:20+00')",
+            ),
+            [
+                Value::from(FIXTURE_USER_ID),
+                Value::from(site_id),
+                Value::from(SYSTEM_USER_ID),
+            ],
+        ))
+        .await
+        .expect("duplicate legacy member relation should be inserted");
+
+    const PAGE_SLUG: &str = "fixture-members-ssr-cardinality";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        PAGE_SLUG,
+        "Fixture Members SSR cardinality",
+        concat!(
+            "DEFAULT_START\n",
+            "[[module Members]]\n",
+            "DEFAULT_END\n",
+            "NONDEFAULT_START\n",
+            "[[module Members order=\"nameDesc\"]]\n",
+            "NONDEFAULT_END",
+        ),
+    )
+    .await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected saved Members cardinality fixture, got {other:?}"),
+    };
+    let default = html
+        .split_once("DEFAULT_START")
+        .and_then(|(_, tail)| tail.split_once("DEFAULT_END"))
+        .map(|(default, _)| default)
+        .expect("default directory should remain between authored markers");
+    let nondefault = html
+        .split_once("NONDEFAULT_START")
+        .and_then(|(_, tail)| tail.split_once("NONDEFAULT_END"))
+        .map(|(nondefault, _)| nondefault)
+        .expect("non-default directory should remain between authored markers");
+
+    assert_eq!(
+        default.matches("<tr>").count(),
+        100,
+        "the default saved-page slice must match the public AMC cardinality:\n{default}",
+    );
+    for index in 0..100 {
+        assert!(
+            default.contains(&format!("SSR Member {index:03}")),
+            "SSR page 1 must contain consecutive distinct member {index:03} despite a duplicate relation:\n{default}",
+        );
+    }
+    assert!(
+        default.contains("SSR Member 099")
+            && !default.contains("SSR Member 100")
+            && default.contains(r#"<span class="pager-no">page 1 of 2</span>"#)
+            && default.contains("updateMemberList1(2)")
+            && default.contains("membership/MembersListModule"),
+        "the 101st default member must remain behind the supported page-2 continuation:\n{default}",
+    );
+    assert_eq!(
+        nondefault.matches("<tr>").count(),
+        100,
+        "the documented non-default order may render its evidenced first slice:\n{nondefault}",
+    );
+    assert!(
+        nondefault.find("SSR Member 100") < nondefault.find("SSR Member 099")
+            && !nondefault.contains("SSR Member 000")
+            && !nondefault.contains("class=\"pager\"")
+            && !nondefault.contains("updateMemberList")
+            && !nondefault.contains("membership/MembersListModule"),
+        "a non-default first slice must not advertise an AMC continuation Framerail rejects:\n{nondefault}",
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let continuation = run_endpoint!(
+        runner,
+        wikidot_members_list_module,
+        json!({
+            "site_id": site_id,
+            "parameters": {"group": "", "order": "joined", "page": "2"},
+        }),
+    );
+    assert_eq!(continuation.status, "ok");
+    assert_eq!(continuation.body.matches("<tr>").count(), 1);
+    assert!(
+        continuation.body.contains("SSR Member 100")
+            && !continuation.body.contains("SSR Member 099"),
+        "the supported continuation must begin exactly after the 100-row SSR slice:\n{}",
+        continuation.body,
+    );
+}
+
+#[tokio::test]
 async fn members_module_queries_only_visible_site_members_and_roles() {
     const ALPHA_USER_ID: i64 = 19_103_200;
     const ZETA_USER_ID: i64 = 19_103_201;
@@ -6694,15 +10090,15 @@ async fn members_module_queries_only_visible_site_members_and_roles() {
             html.contains(r#"id="ml-1""#)
                 && html.contains(r#"id="ml-2""#)
                 && moderators.contains("Alpha Member")
-                && !moderators.contains("Zeta Member")
-                && moderators.contains("p.group     = 'moderators'"),
+                && !moderators.contains("Zeta Member"),
             "module IDs must be unique and moderator rows must come from this site's active role assignments:\n{html}",
         );
         assert!(
-            members.contains("p.group     = ''")
-                && members.contains("p.order     = 'nameDesc'")
-                && members.contains("membership/MembersListModule"),
-            "member directory must retain Wikidot's read-only paging contract:\n{members}",
+            !members.contains("updateMemberList")
+                && !members.contains("membership/MembersListModule")
+                && !moderators.contains("updateMemberList")
+                && !moderators.contains("membership/MembersListModule"),
+            "non-default order and group directories must not advertise an unsupported continuation:\n{html}",
         );
         assert!(
             !html.contains("ml-607935")
@@ -8072,6 +11468,241 @@ async fn adsenseunit_module_matches_live_deprecated_empty_output() {
 }
 
 #[tokio::test]
+async fn syntax_links_match_frozen_live_semantics_with_documented_security_divergence() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Frozen live link syntax boundaries",
+            "wikitext": concat!(
+                "[[[some page| custom text]]]\n\n",
+                "[*https://example.com/ Example]\n\n",
+                "[# empty link]\n\n",
+                "[support@example.com email me]\n\n",
+                "[wikipedia:Albert_Einstein Albert]\n\n",
+                "[#_editpage edit]\n\n",
+                "[#_notawikidotcommand unknown]",
+            ),
+        }),
+    );
+    let html = preview.body;
+
+    for expected in [
+        r#"<a class="newpage" href="/some-page">custom text</a>"#,
+        // Issue #1388 owns the extra rel attribute as a security divergence
+        // from Wikidot's otherwise identical new-window anchor.
+        r#"<a href="https://example.com/" target="_blank" rel="noopener noreferrer">Example</a>"#,
+        r#"<a href="javascript:;">empty link</a>"#,
+        r#"<span class="wiki-email">moc.elpmaxe|troppus#em liame</span>"#,
+        r#"<a href="http://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
+        r##"<a href="#_editpage">edit</a>"##,
+        r##"<a href="#_notawikidotcommand">unknown</a>"##,
+    ] {
+        assert!(
+            html.contains(expected),
+            "public preview must retain the frozen anonymous Wikidot link boundary {expected:?}:\n{html}",
+        );
+    }
+
+    assert!(!html.contains("support@example.com"));
+    assert!(!html.contains("onclick=\"WIKIDOT.page"));
+}
+
+#[tokio::test]
+async fn foldable_list_initial_dom_matches_frozen_live_page_preview() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Foldable list initial DOM",
+            "wikitext": concat!(
+                "[[div class=\"foldable-list-container\"]]\n",
+                "* Main\n",
+                " * Child\n",
+                "  * Grandchild\n",
+                "[[/div]]",
+            ),
+        }),
+    );
+
+    let html = preview.body;
+    // Wikidot inserts serialization-only newlines between adjacent tags at
+    // this boundary. Compare the DOM-bearing tag/text sequence rather than
+    // requiring those non-visible whitespace text nodes from the raw AJAX
+    // response.
+    let normalized = html.replace(">\n<", "><");
+    assert!(
+        normalized.contains(concat!(
+            "<div class=\"foldable-list-container\"><ul><li>Main\n",
+            "<ul><li>Child\n",
+            "<ul>",
+            "<li>Grandchild</li></ul></li></ul></li></ul></div>",
+        ),),
+        "public preview must preserve the frozen foldable-list container and authored nested-list DOM:\n{html}",
+    );
+    assert!(!html.contains("foldable-list-toggle"));
+}
+
+#[tokio::test]
+async fn social_syntax_matches_frozen_live_service_selection_and_widget_identity() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+
+    let cases: [(&str, &[&str]); 3] = [
+        (
+            "[[social]]",
+            &[
+                "BlinkList",
+                "blogmarks",
+                "del.icio.us",
+                "digg",
+                "Fark",
+                "feedmelinks",
+                "Furl",
+                "LinkaGoGo",
+                "NewsVine",
+                "Netvouz",
+                "Reddit",
+                "YahooMyWeb",
+                "Facebook",
+            ],
+        ),
+        (
+            "[[social digg,furl,del.icio.us,facebook]]",
+            &["digg", "Furl", "del.icio.us", "Facebook"],
+        ),
+        ("[[social facebook,not-a-service]]", &["Facebook"]),
+    ];
+
+    for (source, expected_titles) in cases {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": "TITLE",
+                "wikitext": source,
+            }),
+        );
+        let html = preview.body;
+
+        let id_prefix = r#"<span id="social"#;
+        let id_start = html
+            .find(id_prefix)
+            .map(|index| index + id_prefix.len())
+            .expect("social output should expose the live generated-id prefix");
+        let id_suffix = &html[id_start..];
+        let id_end = id_suffix
+            .find('"')
+            .expect("social generated id should terminate in the opening span");
+        let generated_digits = &id_suffix[..id_end];
+        assert!(
+            !generated_digits.is_empty()
+                && generated_digits
+                    .chars()
+                    .all(|character| character.is_ascii_digit()),
+            "social id suffix must remain generated decimal digits: {html}",
+        );
+        let social_id = format!("social{generated_digits}");
+        assert!(
+            html.contains(&format!(r##"var socialspan = $j("#{social_id}")[0];"##)),
+            "social runtime script must target the exact generated widget id: {html}",
+        );
+        assert!(
+            html.contains(
+                "http%3A%2F%2Fscp-wiki.wikidot.com%2Fajax-module-connector.php"
+            ),
+            "social service URLs must carry the current Wikidot site connector URL: {html}",
+        );
+        assert!(
+            html.contains(
+                "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--images/social/",
+            ),
+            "social icons must retain the frozen Wikidot resource prefix: {html}",
+        );
+
+        assert_eq!(
+            html.matches(r#"style="margin: 0 2px""#).count(),
+            expected_titles.len(),
+            "social output must render exactly the selected supported services: {html}",
+        );
+        let mut cursor = 0;
+        for title in expected_titles {
+            let needle = format!(r#"title="{title}""#);
+            let relative = html[cursor..]
+                .find(&needle)
+                .unwrap_or_else(|| panic!("missing social provider {title:?}: {html}"));
+            cursor += relative + needle.len();
+        }
+        assert!(!html.contains("not-a-service"));
+        assert!(!html.contains("[[social"));
+
+        if source == "[[social]]" {
+            for service_url in [
+                "http://www.blinklist.com/index.php?Action=Blink/addblink.php",
+                "http://blogmarks.net/my/new.php?mini=1",
+                "http://del.icio.us/post?url=",
+                "http://digg.com/submit?phase=2",
+                "http://cgi.fark.com/cgi/fark/edit.pl?new_url=",
+                "http://feedmelinks.com/categorize?from=toolbar",
+                "http://www.furl.net/storeIt.jsp?u=",
+                "http://www.linkagogo.com/go/AddNoPopup?url=",
+                "http://www.newsvine.com/_tools/seed&amp;save?u=",
+                "http://www.netvouz.com/action/submitBookmark?url=",
+                "http://reddit.com/submit?url=",
+                "http://myweb2.search.yahoo.com/myresults/bookmarklet?u=",
+                "http://www.facebook.com/share.php?u=",
+            ] {
+                assert!(
+                    html.contains(service_url),
+                    "default social output must retain live service URL {service_url:?}: {html}",
+                );
+            }
+            assert!(
+                html.contains("new_comment=SCP+Foundation&amp;linktype=Misc"),
+                "Fark output must carry the current site title with Wikidot plus encoding: {html}",
+            );
+            assert!(
+                html.contains("encodeURIComponent(document.title)"),
+                "social runtime script must preserve Wikidot title substitution: {html}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
 async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -8553,6 +12184,263 @@ async fn searchall_module_matches_live_form_and_unavailable_route_contract() {
 }
 
 #[tokio::test]
+async fn currencyconvert_executes_only_on_the_www_plans_system_page() {
+    const SOURCE: &str = concat!(
+        "BEFORE\n",
+        "[[module CurrencyConvert]]\n",
+        "[[div class=\"plan-price\"]]\n",
+        "$49.90\n",
+        "[[/div]]\n",
+        "[[/module]]\n",
+        "AFTER",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let www = run_endpoint!(runner, site_get, json!({"site": "www"}))
+        .expect("seeded www system site should exist")
+        .site;
+    create_listpages_test_page(
+        &mut runner,
+        www.site_id,
+        "plans",
+        "Subscription plans",
+        SOURCE,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(www.site_id),
+        ..Default::default()
+    });
+    let plans = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": www.site_id,
+            "session_token": null,
+            "route": {"slug": "plans", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found www plans view, got {other:?}"),
+    };
+    assert!(
+        plans.contains("BEFORE")
+            && plans.contains(r#"<div class="plan-price">"#)
+            && plans.contains("$49.90")
+            && plans.contains("AFTER")
+            && !plans.contains("CurrencyConvert")
+            && !plans.contains("No such module"),
+        "the www plans system page should consume CurrencyConvert and render its body:\n{plans}",
+    );
+
+    let ordinary = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded ordinary test site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(ordinary.site_id),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": ordinary.site_id,
+            "title": "CurrencyConvert ordinary page control",
+            "wikitext": SOURCE,
+        }),
+    );
+    assert!(
+        preview.body.contains("No such module")
+            && preview.body.contains("CurrencyConvert"),
+        "ordinary pages must keep CurrencyConvert on Wikidot's unknown-module boundary:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
+async fn hardened_www_special_modules_execute_only_on_their_system_pages() {
+    let mut runner = TestRunner::setup().await;
+    let www = run_endpoint!(runner, site_get, json!({"site": "www"}))
+        .expect("seeded www system site should exist")
+        .site;
+    for (slug, title, source) in [
+        ("start:start", "Wikidot start", "[[module CreateAccount]]"),
+        (
+            "action:deleteaccount",
+            "Delete account",
+            "[[module DeleteAccount]]",
+        ),
+        (
+            "inc:what-is-wikidot",
+            "What is Wikidot",
+            "[[module FrontSpecialMini]]",
+        ),
+        ("new-site", "New site", "[[module NewSite]]"),
+        (
+            "search",
+            "Search sites",
+            "[[module SitesTagCloud limit=\"200\"]]",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, www.site_id, slug, title, source).await;
+    }
+
+    let anonymous_view = async |runner: &mut TestRunner, slug: &str| {
+        runner.set_request_context(RequestContext {
+            site_id: Some(www.site_id),
+            ..Default::default()
+        });
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": www.site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found www special view for {slug}, got {other:?}"),
+        }
+    };
+
+    let create_account = anonymous_view(&mut runner, "start:start").await;
+    assert!(
+        create_account.contains("create-account-form")
+            && create_account.contains("Create account")
+            && create_account.contains("Please leave this checkbox blank")
+            && create_account.contains("Terms of Service")
+            && !create_account.contains("No such module"),
+        "anonymous www start page must render CreateAccount:\n{create_account}",
+    );
+    let delete_account = anonymous_view(&mut runner, "action:deleteaccount").await;
+    assert_eq!(
+        delete_account.trim(),
+        "<div class=\"error-block\">Invalid verification code. If you are terminating your account, please start again</div>",
+    );
+    let front_special = anonymous_view(&mut runner, "inc:what-is-wikidot").await;
+    assert!(
+        front_special.contains(r#"class="wikidot-front-special-stats""#)
+            && front_special.contains("pages <span class=\"number\">")
+            && front_special.contains("edits today <span class=\"number\">")
+            && front_special.contains("people <span class=\"number\">")
+            && front_special.contains("signed-up today <span class=\"number\">"),
+        "FrontSpecialMini must render four volatile aggregate counters:\n{front_special}",
+    );
+    let new_site = anonymous_view(&mut runner, "new-site").await;
+    assert!(
+        new_site.contains(r#"id="new-site-box""#)
+            && new_site.contains("We need you to have an account to create a new site")
+            && new_site.contains("Sign in")
+            && new_site.contains("Create account"),
+        "anonymous NewSite must render the frozen sign-in/create-account state:\n{new_site}",
+    );
+    let tag_cloud = anonymous_view(&mut runner, "search").await;
+    assert!(
+        tag_cloud.contains(r#"class="sites-tag-cloud-box""#),
+        "SitesTagCloud must own the www search system-page wrapper:\n{tag_cloud}",
+    );
+
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "www special module actor test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(www.site_id),
+        ..Default::default()
+    });
+    let authenticated_start = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": www.site_id,
+            "session_token": session_token.clone(),
+            "route": {"slug": "start:start", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected authenticated www start view, got {other:?}"),
+    };
+    assert!(
+        authenticated_start.contains("Hello,")
+            && authenticated_start.contains("My Account")
+            && !authenticated_start.contains("createaccount-form"),
+        "authenticated CreateAccount must render Wikidot's account greeting state:\n{authenticated_start}",
+    );
+    let authenticated_new_site = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": www.site_id,
+            "session_token": session_token,
+            "route": {"slug": "new-site", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected authenticated www new-site view, got {other:?}"),
+    };
+    assert!(
+        authenticated_new_site.contains(r#"id="new-site-form""#)
+            && authenticated_new_site.contains("Title")
+            && authenticated_new_site.contains("Web address")
+            && authenticated_new_site.contains("Language")
+            && authenticated_new_site.contains("privacy"),
+        "authenticated NewSite must render the site-creation form state:\n{authenticated_new_site}",
+    );
+
+    let ordinary = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded ordinary test site should exist")
+        .site;
+    runner.set_request_context(RequestContext {
+        site_id: Some(ordinary.site_id),
+        ..Default::default()
+    });
+    for name in [
+        "CreateAccount",
+        "DeleteAccount",
+        "FrontSpecialMini",
+        "NewSite",
+        "SitesTagCloud",
+    ] {
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": ordinary.site_id,
+                "title": format!("{name} ordinary control"),
+                "wikitext": format!("[[module {name}]]"),
+            }),
+        );
+        assert!(
+            preview.body.contains("No such module") && preview.body.contains(name),
+            "ordinary pages must retain Wikidot's unknown-module boundary for {name}:\n{}",
+            preview.body,
+        );
+    }
+}
+
+#[tokio::test]
 async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries() {
     async fn load_forum_mini_page_view(
         runner: &TestRunner,
@@ -8885,6 +12773,7 @@ async fn forum_mini_modules_match_live_order_limits_routes_and_owner_boundaries(
             && !active_threads.contains("Private Page Activity Marker"),
         "{active_threads}",
     );
+    assert!(active_threads.contains("</span> ,"), "{active_threads}",);
 
     let recent_posts =
         load_forum_mini_page_view(&runner, site_id, "fixture-mini-recent-posts").await;
@@ -9459,8 +13348,28 @@ async fn recent_threads_matches_live_placeholder_and_owner_boundaries() {
     );
 }
 
-#[tokio::test]
-async fn forum_comments_list_resolves_only_visible_page_discussions() {
+#[test]
+fn forum_comments_list_resolves_only_visible_page_discussions() {
+    // The imported-depth fixture exceeds the test harness's 2 MiB async poll
+    // stack. Keep it on the bounded runtime used by the adjacent forum fixture.
+    std::thread::Builder::new()
+        .name("forum-comments-list-test".to_owned())
+        .stack_size(8 * 1024 * 1024)
+        .spawn(|| {
+            tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("forum comments list test runtime should build")
+                .block_on(
+                    forum_comments_list_resolves_only_visible_page_discussions_impl(),
+                );
+        })
+        .expect("forum comments list test thread should spawn")
+        .join()
+        .expect("forum comments list test thread should complete");
+}
+
+async fn forum_comments_list_resolves_only_visible_page_discussions_impl() {
     async fn create_comment(
         runner: &TestRunner,
         forum_thread_id: i64,
@@ -9692,6 +13601,16 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     )
     .await;
     create_comment(&runner, hidden_thread_id, None, 420).await;
+
+    let (_, _hide_form_denied_thread_id) = create_discussion_page(
+        &mut runner,
+        site_id,
+        category.forum_category_id,
+        "fixture-forum-comments-hideform-denied",
+        "Page Comments Hide Form Denied",
+        r#"[[module Comments hideForm="true"]]"#,
+    )
+    .await;
 
     let (_, invalid_thread_id) = create_discussion_page(
         &mut runner,
@@ -9946,6 +13865,16 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
             && !hidden_body.contains("thread-container-posts")
             && !hidden_body.contains("Page Comment 420"),
         "exact hide=true should keep the saved Comments shell inert:\n{hidden_body}",
+    );
+
+    let hide_form_denied_body =
+        saved_comments_body(&runner, site_id, "fixture-forum-comments-hideform-denied")
+            .await;
+    assert!(
+        hide_form_denied_body.contains(r#"id="comments-options-shown""#)
+            && hide_form_denied_body.contains(r#"id="new-post-button""#)
+            && !hide_form_denied_body.contains(r#"id="new-post-form""#),
+        "a denied actor must retain the Comments link without an input form:\n{hide_form_denied_body}",
     );
 
     let invalid_body = saved_comments_body(
@@ -10276,6 +14205,473 @@ async fn forum_comments_list_resolves_only_visible_page_discussions() {
     assert_eq!(public_posts_after, public_posts_before);
 }
 
+#[tokio::test]
+async fn frontforum_custom_body_matches_observed_public_preview_boundaries() {
+    fn custom_div_body<'a>(html: &'a str, class: &str) -> &'a str {
+        let marker = format!(r#"<div class="{class}">"#);
+        let (_, after_marker) = html
+            .split_once(&marker)
+            .unwrap_or_else(|| panic!("missing {marker}: {html}"));
+        after_marker
+            .split_once("</div>")
+            .unwrap_or_else(|| panic!("unclosed {marker}: {html}"))
+            .0
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Custom Body Group".to_owned(),
+            description: "Custom body group description".to_owned(),
+            visible: true,
+            sort_index: Some(20_000),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body forum group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Custom Body Category".to_owned(),
+            description: "Custom body category description".to_owned(),
+            sort_index: Some(10),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body forum category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: SAMPLE_USER_ID,
+            associated_page_id: None,
+            title: "Custom Body Thread".to_owned(),
+            description: "Independent custom body description".to_owned(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body forum thread should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: SAMPLE_USER_ID,
+            title: "Custom Body Post".to_owned(),
+            wikitext: "Independent custom body content <observable>".to_owned(),
+            comments: "custom-body public preview fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("custom-body first post should be created");
+    runner.set_request_context(RequestContext::default());
+
+    let output = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum custom-body fixture",
+            "wikitext": format!(
+                concat!(
+                    "[[module FrontForum category=\"{}\" limit=\"1\"]]\n",
+                    "[[div class=\"custom-title\"]]\n%%title%%\n[[/div]]\n",
+                    "[[div class=\"custom-linked\"]]\n%%linked_title%%\n[[/div]]\n",
+                    "[[div class=\"custom-link\"]]\n%%link%%\n[[/div]]\n",
+                    "[[div class=\"custom-author\"]]\n%%author%%\n[[/div]]\n",
+                    "[[div class=\"custom-date\"]]\n%%date|%Y-%m-%d%%\n[[/div]]\n",
+                    "[[div class=\"custom-comments\"]]\n%%comments%%\n[[/div]]\n",
+                    "[[div class=\"custom-category\"]]\n%%category%%\n[[/div]]\n",
+                    "[[div class=\"custom-description\"]]\n%%short%%\n[[/div]]\n",
+                    "[[div class=\"custom-content\"]]\n%%body%%\n[[/div]]\n",
+                    "[[div class=\"custom-unknown\"]]\n%%unknown%%\n[[/div]]\n",
+                    "[[/module]]",
+                ),
+                category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    let thread_path = format!("/forum/t-{}/custom-body-thread", thread.forum_thread_id,);
+    assert!(
+        custom_div_body(&output, "custom-title").contains("Custom Body Thread"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-linked").contains(&format!(
+            r#"<a href="{thread_path}">Custom Body Thread</a>"#,
+        )),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-link")
+            .contains(&thread_path.replace('/', "&#x2F;")),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-author")
+            .contains(r#"<span class="printuser">User</span>"#),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-date").contains("format_%25Y-%25m-%25d"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-comments")
+            .contains(&format!(r#"<a href="{thread_path}">Comments: 0</a>"#)),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-category")
+            .contains("Custom Body Group / Custom Body Category"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-description")
+            .contains("Independent custom body description"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-content")
+            .contains("Independent custom body content &lt;observable&gt;"),
+        "{output}",
+    );
+    assert!(
+        custom_div_body(&output, "custom-unknown").contains("%%unknown%%")
+            && !output.contains("[[/module]]"),
+        "{output}",
+    );
+
+    let malformed = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "front-forum malformed custom-body fixture",
+            "wikitext": format!(
+                "[[module FrontForum category=\"{};bad\" limit=\"1\"]]\nCUSTOM-BODY-SHOULD-NOT-RENDER %%title%%\n[[/module]]",
+                category.forum_category_id,
+            ),
+        }),
+    )
+    .body;
+    assert!(
+        malformed.contains(r#"Problem parsing attribute "category"."#)
+            && !malformed.contains("CUSTOM-BODY-SHOULD-NOT-RENDER")
+            && !malformed.contains("Custom Body Thread"),
+        "{malformed}",
+    );
+}
+
+#[tokio::test]
+async fn frontforum_feed_arguments_preserve_the_ordinary_public_render() {
+    async fn saved_body(runner: &TestRunner, site_id: i64, slug: &str) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected a found FrontForum feed argument page, got {other:?}")
+            }
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "FrontForum Feed Argument Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: Some(20_001),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "FrontForum Feed Argument Category".to_owned(),
+            description: String::new(),
+            sort_index: Some(1),
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: SAMPLE_USER_ID,
+            associated_page_id: None,
+            title: "FrontForum Feed Argument Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument thread should be created");
+    ForumPostService::create(
+        runner.context(),
+        CreateForumPost {
+            forum_thread_id: thread.forum_thread_id,
+            parent_post_id: None,
+            user_id: SAMPLE_USER_ID,
+            title: "FrontForum Feed Argument Post".to_owned(),
+            wikitext: "FrontForum feed argument body".to_owned(),
+            comments: "create FrontForum feed argument fixture".to_owned(),
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("FrontForum feed argument post should be created");
+
+    let ordinary_source = format!(
+        r#"[[module FrontForum category="{}" limit="1"]]"#,
+        category.forum_category_id,
+    );
+    let ordinary_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "FrontForum ordinary feed-argument control",
+            "wikitext": ordinary_source,
+        }),
+    )
+    .body;
+    assert!(
+        ordinary_preview.contains("FrontForum Feed Argument Thread")
+            && ordinary_preview.contains(r#"<div class="front-forum-box">"#),
+        "ordinary FrontForum fixture must be populated: {ordinary_preview}",
+    );
+
+    let accepted_suffixes = [
+        r#"feed="readonlyfeed" feedTitle="Read only feed""#,
+        r#"feed="readonlyfeed2""#,
+        r#"feed="""#,
+        r#"feed="../bad""#,
+    ];
+    let literal_suffixes = ["feed='readonlyfeed'", "feedTitle='Read only feed'"];
+    let rejected_suffixes = [
+        r#"Feed="readonlyfeed""#,
+        r#"feedName="readonlyfeed""#,
+        r#"feed="one" feed="two""#,
+        r#"feedTitle="one" feedTitle="two""#,
+    ];
+    let mut failures = Vec::new();
+    for (index, suffix) in accepted_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("FrontForum feed argument preview {index}"),
+                "wikitext": source,
+            }),
+        )
+        .body;
+        if preview != ordinary_preview {
+            failures.push(format!(
+                "preview accepted suffix {suffix:?} did not preserve the ordinary body: {preview}"
+            ));
+        }
+    }
+    for (index, suffix) in rejected_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("FrontForum rejected feed argument preview {index}"),
+                "wikitext": source,
+            }),
+        )
+        .body;
+        if !preview.contains("No such module") || preview.contains("front-forum-box") {
+            failures.push(format!(
+                "preview rejected suffix {suffix:?} did not fail closed: {preview}"
+            ));
+        }
+    }
+    for (index, suffix) in literal_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let expected = format!(
+            "<p>{}</p>",
+            source.replace('"', "&quot;").replace('\'', "&#39;")
+        );
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("FrontForum literal feed argument preview {index}"),
+                "wikitext": source,
+            }),
+        )
+        .body;
+        if preview != expected || preview.contains("front-forum-box") {
+            failures.push(format!(
+                "preview literal suffix {suffix:?} was not preserved exactly: {preview}"
+            ));
+        }
+    }
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-frontforum-feed-argument-control",
+        "FrontForum Feed Argument Control",
+        &ordinary_source,
+    )
+    .await;
+    for (index, suffix) in accepted_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &format!("fixture-frontforum-feed-argument-{index}"),
+            &format!("FrontForum Feed Argument {index}"),
+            &source,
+        )
+        .await;
+    }
+    for (index, suffix) in rejected_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &format!("fixture-frontforum-rejected-feed-argument-{index}"),
+            &format!("FrontForum Rejected Feed Argument {index}"),
+            &source,
+        )
+        .await;
+    }
+    for (index, suffix) in literal_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &format!("fixture-frontforum-literal-feed-argument-{index}"),
+            &format!("FrontForum Literal Feed Argument {index}"),
+            &source,
+        )
+        .await;
+    }
+    runner.set_request_context(RequestContext::default());
+
+    let ordinary_saved =
+        saved_body(&runner, site_id, "fixture-frontforum-feed-argument-control").await;
+    for (index, suffix) in accepted_suffixes.iter().enumerate() {
+        let saved = saved_body(
+            &runner,
+            site_id,
+            &format!("fixture-frontforum-feed-argument-{index}"),
+        )
+        .await;
+        if saved != ordinary_saved {
+            failures.push(format!(
+                "page_view accepted suffix {suffix:?} did not preserve the ordinary body: {saved}"
+            ));
+        }
+    }
+    for (index, suffix) in rejected_suffixes.iter().enumerate() {
+        let saved = saved_body(
+            &runner,
+            site_id,
+            &format!("fixture-frontforum-rejected-feed-argument-{index}"),
+        )
+        .await;
+        if !saved.contains("No such module") || saved.contains("front-forum-box") {
+            failures.push(format!(
+                "page_view rejected suffix {suffix:?} did not fail closed: {saved}"
+            ));
+        }
+    }
+    for (index, suffix) in literal_suffixes.iter().enumerate() {
+        let source = format!(
+            r#"[[module FrontForum category="{}" limit="1" {suffix}]]"#,
+            category.forum_category_id,
+        );
+        let expected = format!(
+            "<p>{}</p>",
+            source.replace('"', "&quot;").replace('\'', "&#39;")
+        );
+        let saved = saved_body(
+            &runner,
+            site_id,
+            &format!("fixture-frontforum-literal-feed-argument-{index}"),
+        )
+        .await;
+        if saved != expected || saved.contains("front-forum-box") {
+            failures.push(format!(
+                "page_view literal suffix {suffix:?} was not preserved exactly: {saved}"
+            ));
+        }
+    }
+
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
 #[test]
 fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination() {
     // This comprehensive forum fixture exceeds the test harness's 2 MiB async
@@ -10515,6 +14911,20 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && !empty_recent_posts.contains(r#"<div class="pager">"#),
         "{empty_recent_posts}",
     );
+
+    UserService::update(
+        runner.context(),
+        Reference::Id(SAMPLE_USER_ID),
+        common::IP_ADDRESS,
+        UpdateUserBody {
+            forum_signature: Maybe::Set(Some(
+                "**Forum signature**\nSecond line".to_owned(),
+            )),
+            ..Default::default()
+        },
+    )
+    .await
+    .expect("forum signature fixture should be stored on the posting user");
 
     for number in 0..21 {
         let thread = create_thread(
@@ -11119,11 +15529,18 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             .body
             .contains(r#"<div class="forum-start-box">"#)
             && forum_start_ajax.body.contains("Read Model Visible Group")
-            && !forum_start_ajax.body.contains("Read Model Hidden Group"),
+            && !forum_start_ajax.body.contains("Read Model Hidden Group")
+            && !forum_start_ajax.body.contains("Order by:"),
         "{}",
         forum_start_ajax.body,
     );
 
+    let category_order = |category_id| {
+        format!(
+            r#"<div class="options">Order by: <div class="btn btn-primary disabled btn-small btn-sm"><strong>Last post date</strong></div> <a href="/forum/c-{category_id}/sort/start" class="btn btn-primary btn-small btn-sm">Thread starting date</a></div>"#,
+        )
+    };
+    let primary_category_order = category_order(primary_category.forum_category_id);
     let category_ajax = run_endpoint!(
         runner,
         wikidot_forum_module,
@@ -11146,7 +15563,25 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && !category_ajax
                 .body
                 .contains("Private Page Discussion Marker")
+            && category_ajax.body.matches(&primary_category_order).count() == 1
             && !category_ajax.body.contains("Create a new thread"),
+        "{}",
+        category_ajax.body,
+    );
+    let description_position = category_ajax
+        .body
+        .find("Primary &lt;category&gt; description</div>")
+        .expect("category description should render");
+    let order_position = category_ajax
+        .body
+        .find(&primary_category_order)
+        .expect("default category order projection should render");
+    let table_position = category_ajax
+        .body
+        .find(r#"<table style="width: 98%" class="table">"#)
+        .expect("category thread table should render");
+    assert!(
+        description_position < order_position && order_position < table_position,
         "{}",
         category_ajax.body,
     );
@@ -11160,7 +15595,33 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
         }),
     );
     assert_eq!(missing_category_ajax.status, "no_category");
-    assert!(missing_category_ajax.body.is_empty());
+    assert!(
+        missing_category_ajax.body.is_empty()
+            && !missing_category_ajax.body.contains("Order by:")
+    );
+    let empty_category_ajax = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewCategoryModule",
+            "parameters": {
+                "c": empty_category.forum_category_id.to_string(),
+                "p": "1",
+            },
+        }),
+    );
+    let empty_category_order = category_order(empty_category.forum_category_id);
+    assert_eq!(empty_category_ajax.status, "ok");
+    assert_eq!(
+        empty_category_ajax
+            .body
+            .matches(&empty_category_order)
+            .count(),
+        1,
+        "{}",
+        empty_category_ajax.body,
+    );
     let empty_second_page = run_endpoint!(
         runner,
         wikidot_forum_module,
@@ -11247,9 +15708,15 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
         }),
     );
     assert_eq!(second_category_page.status, "ok");
+    let pagination_category_order = category_order(pagination_category.forum_category_id);
     assert!(
         second_category_page.body.contains("Pagination Thread 00")
             && !second_category_page.body.contains("Pagination Thread 20")
+            && second_category_page
+                .body
+                .matches(&pagination_category_order)
+                .count()
+                == 1
             && second_category_page
                 .body
                 .contains(r#"<span class="pager-no">page 2 of 2</span>"#)
@@ -11262,6 +15729,18 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
                 .matches(r#"<div class="pager">"#)
                 .count()
                 == 1,
+        "{}",
+        second_category_page.body,
+    );
+    assert!(
+        second_category_page
+            .body
+            .find(&pagination_category_order)
+            .expect("default category order projection should render")
+            < second_category_page
+                .body
+                .find(r#"<div class="pager">"#)
+                .expect("later category page pager should render"),
         "{}",
         second_category_page.body,
     );
@@ -11292,6 +15771,14 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
                 r#"<div class="post-container" id="fpc-{root_id}">"#,
             ))
             && thread_ajax.body.contains("Visible Post 00 edited")
+            && thread_ajax
+                .body
+                .contains(r#"<div class="signature"><hr class="signature-separator"/>"#)
+            && thread_ajax
+                .body
+                .contains("<strong>Forum signature</strong>")
+            && thread_ajax.body.contains("Second line")
+            && !thread_ajax.body.contains("**Forum signature**")
             && thread_ajax.body.contains(r#"<div class="changes">"#)
             && thread_ajax.body.contains("Last edited on")
             && thread_ajax
@@ -11301,6 +15788,7 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && thread_ajax.body.contains("Unfold All")
             && thread_ajax.body.contains("Edit Title &amp; Description")
             && thread_ajax.body.contains("New Post")
+            && !thread_ajax.body.contains("Order by:")
             && thread_ajax.body.contains(r#"id="post-options-template""#),
         "{}",
         thread_ajax.body,
@@ -11333,6 +15821,9 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             && !thread_posts_ajax.body.contains("Visible Post 20")
             && !thread_posts_ajax.body.contains("Private Newest Post")
             && thread_posts_ajax.body.contains("Visible Post 00 edited")
+            && thread_posts_ajax
+                .body
+                .contains(r#"<div class="signature"><hr class="signature-separator"/>"#)
             && thread_posts_ajax.body.contains("Last edited on")
             && !thread_posts_ajax.body.contains("Edit")
             && !thread_posts_ajax.body.contains("Delete"),
@@ -11401,6 +15892,9 @@ async fn forum_start_and_recent_posts_filter_before_counts_order_and_pagination_
             .starts_with(r#"<div id="recent-posts-container">"#)
             && recent_posts_ajax.body.contains("Visible Post 21")
             && recent_posts_ajax.body.contains("Public Page Comment")
+            && recent_posts_ajax
+                .body
+                .contains(r#"<div class="signature"><hr class="signature-separator"/>"#)
             && !recent_posts_ajax.body.contains("Private Newest Post")
             && !recent_posts_ajax.body.contains("Hidden Newest Post"),
         "{}",
@@ -12840,6 +17334,145 @@ async fn wikidot_page_preview_keeps_html_blocks_literal_while_saved_pages_execut
 }
 
 #[tokio::test]
+async fn listpages_generated_html_preview_saved_section_controls() {
+    const TARGET_SLUG: &str = "fixture-listpages-section-zero-html-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        "ListPages Section Zero HTML Target",
+        "SECTION_ONE",
+    )
+    .await;
+    for (case, section, opener, marker, executes_when_saved) in [
+        ("section-zero", 0, "html", "SECTION_ZERO_HTML", true),
+        (
+            "section-out-of-range",
+            999,
+            "html",
+            "SECTION_OUT_OF_RANGE_HTML",
+            true,
+        ),
+        ("section-one", 1, "html", "SECTION_ONE_HTML", false),
+        ("invalid-opener", 0, "htmlx", "INVALID_OPENER_HTML", false),
+    ] {
+        let consumer_slug = format!("fixture-listpages-generated-html-{case}");
+        let source = format!(
+            concat!(
+                "[[module ListPages name=\"{}\" separate=\"no\" wrapper=\"no\"]]\n",
+                "ROW_EVALUATED:%%title%%\n",
+                "[[%%content{{{}}}%%{}]]\n",
+                "<b>{}</b>\n",
+                "[[/html]]\n",
+                "[[/module]]",
+            ),
+            TARGET_SLUG, section, opener, marker,
+        );
+
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        let preview = run_endpoint!(
+            runner,
+            wikidot_page_preview,
+            json!({
+                "site_id": site_id,
+                "title": format!("ListPages generated HTML {case} preview"),
+                "wikitext": &source,
+            }),
+        );
+        assert!(
+            preview
+                .body
+                .contains(&format!("&lt;b&gt;{marker}&lt;/b&gt;"))
+                && preview
+                    .body
+                    .contains("ROW_EVALUATED:ListPages Section Zero HTML Target")
+                && !preview.body.contains("%%content{")
+                && !preview.body.contains("%%title%%")
+                && !preview.body.contains("[[module ListPages")
+                && !preview.body.contains("html-block-iframe"),
+            "{case} PagePreview must evaluate the row while keeping its generated HTML shape literal:\n{}",
+            preview.body,
+        );
+        if executes_when_saved {
+            assert!(
+                preview.body.contains("[[html]]") && preview.body.contains("[[/html]]"),
+                "{case}: {}",
+                preview.body
+            );
+        } else if section == 1 {
+            assert!(
+                preview.body.contains("[[SECTION_ONEhtml]]")
+                    && preview.body.contains("[[/html]]"),
+                "{case} must preserve the nonempty-section opener and literal closer: {}",
+                preview.body,
+            );
+        } else {
+            assert!(
+                preview.body.contains("[[htmlx]]") && preview.body.contains("[[/html]]"),
+                "{case} must preserve the invalid opener and literal closer: {}",
+                preview.body,
+            );
+        }
+
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            &consumer_slug,
+            &format!("ListPages Generated HTML {case}"),
+            &source,
+        )
+        .await;
+        runner.set_request_context(RequestContext {
+            site_id: Some(site_id),
+            ..Default::default()
+        });
+        let view = run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": &consumer_slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        let GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } = view
+        else {
+            panic!("expected saved generated HTML consumer, got {view:?}");
+        };
+        assert_eq!(
+            compiled_body_html.contains("html-block-iframe"),
+            executes_when_saved,
+            "{case} saved view used the wrong HTML execution state:\n{compiled_body_html}",
+        );
+        if executes_when_saved {
+            assert!(
+                compiled_body_html.contains(&format!(r#"src="/{consumer_slug}/html/1""#))
+                    && !compiled_body_html.contains(marker),
+                "{case} saved HTML must use its hosted iframe:\n{compiled_body_html}",
+            );
+        } else {
+            assert!(
+                compiled_body_html.contains(&format!("&lt;b&gt;{marker}&lt;/b&gt;"))
+                    && compiled_body_html
+                        .contains("ROW_EVALUATED:ListPages Section Zero HTML Target"),
+                "{case} saved non-HTML output must retain the evaluated row and escaped payload:\n{compiled_body_html}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
 async fn html_block_render_leaves_image_block_include_literal() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -13668,7 +18301,7 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             (Token::LeftBlock, ParseErrorKind::NoRulesMatch),
             (Token::RightBlock, ParseErrorKind::NoRulesMatch),
         ];
-        assert_eq!(parser_errors.len(), expected.len() * 2);
+        assert_eq!(parser_errors.len(), expected.len() * 4);
         for group in parser_errors.chunks_exact(expected.len()) {
             assert!(
                 group
@@ -13688,6 +18321,10 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
     let category = "fixture-nextpreviouspage";
     let required_tag = "fixture-nextpreviouspage-required";
     let shared_tag = "fixture-nextpreviouspage-shared";
+    const IMPORT_RUN_ID: i64 = 944_006;
+    const CREATOR_ID: i64 = 10_382_659;
+    const CREATOR_NAME: &str = "voted-fated-smuggler";
+    const CREATOR_SLUG: &str = "voted-fated-smuggler";
 
     CategoryService::get_or_create(runner.context(), site_id, category)
         .await
@@ -13709,6 +18346,39 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
         "Bravo body.",
     )
     .await;
+    let bravo_page_id =
+        listpages_test_page_id(&runner, site_id, "fixture-nextpreviouspage:bravo").await;
+    create_listpages_test_import_run(&runner, site_id, IMPORT_RUN_ID, 1).await;
+    set_imported_author(
+        &runner,
+        site_id,
+        IMPORT_RUN_ID,
+        (
+            bravo_page_id,
+            "fixture-nextpreviouspage:bravo",
+            944_006,
+            CREATOR_NAME,
+        ),
+    )
+    .await;
+    let transaction = runner.context().transaction();
+    transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            "UPDATE wikidot_page_snapshot \
+             SET meta_json = jsonb_build_object( \
+                 'created_by_id', $1::bigint, \
+                 'created_by_unix', $2::text \
+             ) \
+             WHERE page_id = $3",
+            [
+                Value::from(CREATOR_ID),
+                Value::from(CREATOR_SLUG),
+                Value::from(bravo_page_id),
+            ],
+        ))
+        .await
+        .expect("NextPreviousPage imported author provenance should be attached");
     let holder_slug = "fixture-nextpreviouspage:charlie";
     let holder_revision = create_listpages_test_page(
         &mut runner,
@@ -13774,9 +18444,14 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             "TAG_EQUALS=%%linked_title%%|%%fullname%%\n",
             "[[/module]]\n",
             "TAG_EQUALS_END\n\n",
+            "DEFAULT_START\n",
+            "[[module PreviousPage category=\"{category}\"]]\n",
+            "DEFAULT_END\n\n",
             "INLINE_START\n",
             "start-[[module NextPage]]-middle\n",
             "start-[[module PreviousPage]]-middle\n",
+            "prefix-[[module NextPage]]-suffix\n",
+            "  [[module PreviousPage]]\n",
             "INLINE_END\n\n",
             "NEXTPREV_END",
         ),
@@ -13913,14 +18588,45 @@ async fn nextpreviouspage_module_renders_live_selection_templates_and_runtime_up
             && tag_equals.contains("/fixture-nextpreviouspage:delta"),
         "NextPreviousPage tag selectors should filter candidates while using the current page as the position anchor:\n{html}",
     );
+    let default = section(&html, "DEFAULT_START", "DEFAULT_END");
+    let expected_creator_href =
+        format!(r#"href="http://www.wikidot.com/user:info/{CREATOR_SLUG}""#);
+    let expected_avatar_src = format!(
+        "src=\"http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+    );
+    let expected_karma_style = format!(
+        r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+    );
+    for expected in [
+        r#"<div class="list-pages-box">"#,
+        r#"<div class="list-pages-item">"#,
+        r#"<h1><span><a href="/fixture-nextpreviouspage:bravo">Bravo NextPreviousPage</a></span></h1>"#,
+        r#"<p>by <span class="printuser avatarhover">"#,
+        expected_creator_href.as_str(),
+        expected_avatar_src.as_str(),
+        expected_karma_style.as_str(),
+        r#"<span class="odate time_"#,
+        "Bravo body.",
+    ] {
+        assert!(
+            default.contains(expected),
+            "bare PreviousPage must preserve the shared ListPages default title, local author, date, and body DOM: {expected:?}\n{default}",
+        );
+    }
+    assert!(
+        !default.contains("data-wikijump-compat-"),
+        "generated PreviousPage DOM must not expose internal compatibility markers:\n{default}",
+    );
     let inline = section(&html, "INLINE_START", "INLINE_END");
     assert!(
         inline.contains("start-[[module NextPage]]-middle")
-            && inline.contains("start-[[module PreviousPage]]-middle"),
+            && inline.contains("start-[[module PreviousPage]]-middle")
+            && inline.contains("prefix-[[module NextPage]]-suffix")
+            && inline.contains("[[module PreviousPage]]"),
         "inline NextPage and PreviousPage invocations must remain literal:\n{inline}",
     );
-    assert_eq!(html.matches("[[module NextPage]]").count(), 1);
-    assert_eq!(html.matches("[[module PreviousPage]]").count(), 1);
+    assert_eq!(html.matches("[[module NextPage]]").count(), 2);
+    assert_eq!(html.matches("[[module PreviousPage]]").count(), 2);
 
     let last = run_endpoint!(
         runner,
@@ -14085,6 +18791,265 @@ async fn pages_by_tag_module_renders_tagged_pages_ordered_by_title() {
     );
 }
 
+#[tokio::test]
+async fn pages_by_tag_saved_page_views_follow_current_tagged_page_state() {
+    async fn load_public_view(
+        runner: &TestRunner,
+        site_id: i64,
+        holder_slug: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": holder_slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found PagesByTag page view, got {other:?}"),
+        }
+    }
+
+    fn assert_only_alpha(html: &str, alpha_slug: &str, beta_slug: &str) {
+        let expected =
+            format!(r#"<a href="/{alpha_slug}">Alpha Current PagesByTag Match</a>"#,);
+        assert!(
+            html.contains(&expected),
+            "the current matching alpha row should be selected:\n{html}",
+        );
+        assert!(
+            !html.contains(beta_slug) && html.matches("pages-list-item").count() == 1,
+            "nonmatching pages must not change the selected row:\n{html}",
+        );
+    }
+
+    fn assert_empty(html: &str, alpha_slug: &str, beta_slug: &str) {
+        assert!(
+            !html.contains(alpha_slug)
+                && !html.contains(beta_slug)
+                && !html.contains("pages-list-item"),
+            "the current selector should have no matching rows:\n{html}",
+        );
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let tag = "fixture-pbt-current-tag";
+    let other_tag = "fixture-pbt-current-other-tag";
+    let category = "fixture-pbt-current";
+    let holder_slug = "fixture-pbt-current-holder";
+    let alpha_slug = "fixture-pbt-current:alpha";
+    let beta_slug = "fixture-pbt-current:beta";
+
+    let beta_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        beta_slug,
+        "Beta Nonmatching PagesByTag Page",
+        "Beta body.",
+    )
+    .await;
+    let mut beta_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        beta_slug,
+        beta_revision,
+        &[other_tag],
+    )
+    .await;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        holder_slug,
+        "Fixture Current PagesByTag Holder",
+        &format!(r#"[[module PagesByTag tag="{tag}" category="{category}"]]"#),
+    )
+    .await;
+    let initial = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&initial, alpha_slug, beta_slug);
+    let stored_before_matching_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("PagesByTag holder should have stored compiled details")
+    .compiled_body_html
+    .expect("PagesByTag holder should have stored compiled HTML");
+    assert_empty(&stored_before_matching_page, alpha_slug, beta_slug);
+
+    let alpha_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        alpha_slug,
+        "Alpha Current PagesByTag Match",
+        "Alpha body.",
+    )
+    .await;
+    let mut alpha_revision =
+        set_listpages_test_tags(&mut runner, site_id, alpha_slug, alpha_revision, &[tag])
+            .await;
+    let alpha = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": alpha_slug}),
+    )
+    .expect("matching PagesByTag page should exist");
+    let beta = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": beta_slug}),
+    )
+    .expect("nonmatching PagesByTag page should exist");
+
+    let stored_after_matching_page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": holder_slug,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("PagesByTag holder should retain stored compiled details")
+    .compiled_body_html
+    .expect("PagesByTag holder should retain stored compiled HTML");
+    assert_eq!(
+        stored_after_matching_page, stored_before_matching_page,
+        "matching page mutations must not rewrite the holder's save-time compilation",
+    );
+    assert_empty(&stored_after_matching_page, alpha_slug, beta_slug);
+
+    let after_alpha = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_alpha, alpha_slug, beta_slug);
+
+    beta_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        beta_slug,
+        beta_revision,
+        &[other_tag, "fixture-pbt-current-mutated"],
+    )
+    .await;
+    let after_nonmatching_tag_edit =
+        load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_nonmatching_tag_edit, alpha_slug, beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(beta.page_id),
+    );
+    let moved_beta_slug = "fixture-pbt-current-other:beta";
+    run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": beta.page_id,
+            "new_slug": moved_beta_slug,
+            "last_revision_id": beta_revision,
+            "revision_comments": "move nonmatching PagesByTag fixture page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let after_nonmatching_move = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_nonmatching_move, alpha_slug, moved_beta_slug);
+
+    alpha_revision =
+        set_listpages_test_tags(&mut runner, site_id, alpha_slug, alpha_revision, &[])
+            .await;
+    let after_tag_removal = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&after_tag_removal, alpha_slug, moved_beta_slug);
+
+    alpha_revision =
+        set_listpages_test_tags(&mut runner, site_id, alpha_slug, alpha_revision, &[tag])
+            .await;
+    let after_tag_restore = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_tag_restore, alpha_slug, moved_beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(alpha.page_id),
+    );
+    let moved_alpha_slug = "fixture-pbt-current-other:alpha";
+    let moved_alpha = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": alpha.page_id,
+            "new_slug": moved_alpha_slug,
+            "last_revision_id": alpha_revision,
+            "revision_comments": "move matching PagesByTag fixture out of category",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    alpha_revision = moved_alpha.revision_id;
+    let after_matching_move = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&after_matching_move, moved_alpha_slug, moved_beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(alpha.page_id),
+    );
+    let restored_alpha = run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": alpha.page_id,
+            "new_slug": alpha_slug,
+            "last_revision_id": alpha_revision,
+            "revision_comments": "restore matching PagesByTag fixture category",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    alpha_revision = restored_alpha.revision_id;
+    let after_category_restore = load_public_view(&runner, site_id, holder_slug).await;
+    assert_only_alpha(&after_category_restore, alpha_slug, moved_beta_slug);
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(alpha.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": alpha.page_id,
+            "last_revision_id": alpha_revision,
+            "revision_comments": "delete matching PagesByTag fixture page",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let after_delete = load_public_view(&runner, site_id, holder_slug).await;
+    assert_empty(&after_delete, alpha_slug, moved_beta_slug);
+}
+
 /// A tag matching nothing still renders the heading and an empty list, while
 /// argument forms with no live capture stay literal.
 #[tokio::test]
@@ -14109,7 +19074,10 @@ async fn pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms(
             "LITERAL_END\n\n",
             "NOARG_START\n\n",
             "[[module PagesByTag]]\n\n",
-            "NOARG_END",
+            "NOARG_END\n\n",
+            "CODE_START\n\n",
+            "[[code]]\n[[module PagesByTag tag=\"a\"]]\n[[/code]]\n\n",
+            "CODE_END",
         ),
     )
     .await;
@@ -14165,6 +19133,13 @@ async fn pages_by_tag_module_renders_empty_list_and_preserves_unevidenced_forms(
     assert!(
         !noarg.contains("tagged-pages-list") && !noarg.contains("PagesByTag"),
         "tagless module renders nothing: {noarg}",
+    );
+    let code = &html[html.find("CODE_START").expect("code marker")
+        ..html.find("CODE_END").expect("code end marker")];
+    assert!(
+        code.contains("[[module PagesByTag tag=&quot;a&quot;]]")
+            && !code.contains("tagged-pages-list"),
+        "PagesByTag text in a code block must remain literal: {code}",
     );
 }
 
@@ -15716,6 +20691,139 @@ async fn site_tools_orphaned_pages_filters_before_exposing_ordered_rows() {
 }
 
 #[tokio::test]
+async fn site_tools_orphaned_pages_ignores_deleted_linkers_without_changing_link_rules() {
+    const DELETED_TARGET_SLUG: &str =
+        "fixture-site-tools-orphaned-lifecycle-deleted-target";
+    const ACTIVE_TARGET_SLUG: &str =
+        "fixture-site-tools-orphaned-lifecycle-active-target";
+    const SELF_LINK_SLUG: &str = "fixture-site-tools-orphaned-lifecycle-self-link";
+    const INCLUDE_TARGET_SLUG: &str =
+        "fixture-site-tools-orphaned-lifecycle-include-target";
+    const DELETED_LINKER_SLUG: &str = "site-tools-orphaned-lifecycle-deleted-linker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("editable local authoring site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, wikitext) in [
+        (
+            DELETED_TARGET_SLUG,
+            "Deleted Linker Target",
+            "target linked only from a page that will be deleted",
+        ),
+        (
+            ACTIVE_TARGET_SLUG,
+            "Active Linker Target",
+            "target linked from a live page",
+        ),
+        (
+            SELF_LINK_SLUG,
+            "Self Link Target",
+            &format!("[[[{SELF_LINK_SLUG}]]]"),
+        ),
+        (
+            INCLUDE_TARGET_SLUG,
+            "Include-only Target",
+            "target included but not linked",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, wikitext).await;
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DELETED_LINKER_SLUG)),
+    );
+    let deleted_linker = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[[{DELETED_TARGET_SLUG}]]]"),
+            "title": "Deleted OrphanedPages Linker",
+            "alt_title": null,
+            "slug": DELETED_LINKER_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deleted OrphanedPages linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-orphaned-lifecycle-active-linker",
+        "Active OrphanedPages Linker",
+        &format!("[[[{ACTIVE_TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "site-tools-orphaned-lifecycle-include-source",
+        "OrphanedPages Include Source",
+        &format!("[[include {INCLUDE_TARGET_SLUG}]]"),
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let orphan_slugs = |rows: &[deepwell::services::view::SiteToolsPageView]| {
+        rows.iter()
+            .map(|row| row.slug.clone())
+            .collect::<BTreeSet<_>>()
+    };
+    let before_delete = run_endpoint!(
+        runner,
+        site_tools_orphaned_pages,
+        json!({"site_id": site_id}),
+    );
+    let before_delete = orphan_slugs(&before_delete);
+    assert!(!before_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!before_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(before_delete.contains(SELF_LINK_SLUG));
+    assert!(before_delete.contains(INCLUDE_TARGET_SLUG));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(deleted_linker.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_linker.page_id,
+            "last_revision_id": deleted_linker.revision_id,
+            "revision_comments": "delete OrphanedPages linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let after_delete = run_endpoint!(
+        runner,
+        site_tools_orphaned_pages,
+        json!({"site_id": site_id}),
+    );
+    let after_delete = orphan_slugs(&after_delete);
+    assert!(after_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!after_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(after_delete.contains(SELF_LINK_SLUG));
+    assert!(after_delete.contains(INCLUDE_TARGET_SLUG));
+}
+
+#[tokio::test]
 async fn site_tools_wanted_pages_filters_sources_before_grouping_ordered_targets() {
     const PREFIX: &str = "fixture-site-tools-wanted-missing-";
     const PRIVATE_CATEGORY: &str = "fixture-site-tools-wanted-private";
@@ -15908,7 +21016,7 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 
     for expected in [
         "BF_DEFAULT_START",
-        r#"<div class="backlinks-module-box"><ul>"#,
+        "<div class=\"backlinks-module-box\">\n\t\t\t<ul>",
         r#"<a href="/fixture-backlinks-linker-alpha">Fixture Backlinks Linker Alpha</a>"#,
         r#"<a href="/fixture-backlinks-linker-beta">Fixture Backlinks Linker Beta</a>"#,
         "BF_DEFAULT_END",
@@ -15921,6 +21029,17 @@ async fn backlinks_module_renders_current_page_incoming_links() {
             "Backlinks module output should contain {expected:?}:\n{html}"
         );
     }
+
+    let expected_live_rows = concat!(
+        "<div class=\"backlinks-module-box\">\n\t\t\t<ul>\n",
+        "\t\t\t\t\t\t\t<li>\n\t\t\t\t\t\t<a href=\"/fixture-backlinks-linker-alpha\">Fixture Backlinks Linker Alpha</a>\n\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t\t\t<li>\n\t\t\t\t\t\t<a href=\"/fixture-backlinks-linker-beta\">Fixture Backlinks Linker Beta</a>\n\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t</ul>\n\t</div>",
+    );
+    assert!(
+        html.contains(expected_live_rows),
+        "Backlinks rows must retain the observed live DOM shape:\n{html}"
+    );
 
     for forbidden in [
         "TODO: module Backlinks",
@@ -15979,6 +21098,452 @@ async fn backlinks_module_renders_current_page_incoming_links() {
         "Backlinks must query the current link graph on the next page view:\n{runtime_html}",
     );
     assert!(runtime_html.contains("start-[[module Backlinks]]-middle"));
+}
+
+#[tokio::test]
+async fn backlinks_module_page_preview_renders_current_page_incoming_links() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let target_slug = "fixture-backlinks-preview-target";
+    let target_source = "BF_PREVIEW_START\n[[module Backlinks]]\nBF_PREVIEW_END";
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Fixture Backlinks Preview Target",
+        target_source,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-linker-alpha",
+        "Fixture Backlinks Preview Linker Alpha",
+        &format!("[[[{target_slug}|preview target link]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-linker-beta",
+        "Fixture Backlinks Preview Linker Beta",
+        &format!("[[[{target_slug}|preview target link]]]"),
+    )
+    .await;
+
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("Backlinks preview target should exist");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "Fixture Backlinks Preview Target",
+            "wikitext": target_source,
+        }),
+    );
+    let expected_live_rows = concat!(
+        "<div class=\"backlinks-module-box\">\n\t\t\t<ul>\n",
+        "\t\t\t\t\t\t\t<li>\n",
+        "\t\t\t\t\t\t<a href=\"/fixture-backlinks-preview-linker-alpha\">Fixture Backlinks Preview Linker Alpha</a>\n",
+        "\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t\t\t<li>\n",
+        "\t\t\t\t\t\t<a href=\"/fixture-backlinks-preview-linker-beta\">Fixture Backlinks Preview Linker Beta</a>\n",
+        "\t\t\t\t\t</li>\n",
+        "\t\t\t\t\t</ul>\n\t</div>",
+    );
+    assert!(
+        preview.body.contains(expected_live_rows),
+        "PagePreview must render the observed populated Backlinks DOM for its explicit page context:\n{}",
+        preview.body,
+    );
+}
+
+#[tokio::test]
+async fn backlinks_page_preview_controls_identity_visibility_and_scan_boundaries() {
+    const SOURCE: &str = "[[module Backlinks]]";
+    const EMPTY_BOX: &str = "\n<div class=\"backlinks-module-box\">\n</div>\n";
+    const PRIVATE_CATEGORY: &str = "fixture-backlinks-preview-private";
+    const SCAN_SOURCE_PREFIX: &str = "fixture-backlinks-preview-scan-source-";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let target_slug = "fixture-backlinks-preview-boundary-target";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Backlinks Preview Boundary Target",
+        SOURCE,
+    )
+    .await;
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("Backlinks preview target should exist");
+
+    let escaped_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-escape-source",
+        "Backlinks Preview Escape Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let escaped_revision = PageRevisionTable::find_by_id(escaped_revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("escaped source revision lookup should succeed")
+        .expect("escaped source revision should exist");
+    let escaped_page = PageTable::find_by_id(escaped_revision.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("escaped source page lookup should succeed")
+        .expect("escaped source page should exist");
+    let mut escaped_revision = escaped_revision.into_active_model();
+    escaped_revision.title = Set("Backlinks <Escape> & \"Title\"".to_owned());
+    escaped_revision.slug = Set("fixture-backlinks-escape-&\"".to_owned());
+    escaped_revision
+        .update(runner.context().transaction())
+        .await
+        .expect("escaped source revision should update");
+    let mut escaped_page = escaped_page.into_active_model();
+    escaped_page.slug = Set("fixture-backlinks-escape-&\"".to_owned());
+    escaped_page
+        .update(runner.context().transaction())
+        .await
+        .expect("escaped source page should update");
+
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-private-source",
+        "Backlinks Private Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    set_listpages_test_category_slug(
+        &runner,
+        site_id,
+        "fixture-backlinks-preview-private-source",
+        PRIVATE_CATEGORY,
+    )
+    .await;
+
+    let hidden_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-hidden-source",
+        "Backlinks Hidden Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let hidden_revision = PageRevisionTable::find_by_id(hidden_revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("hidden source revision lookup should succeed")
+        .expect("hidden source revision should exist");
+    let mut hidden_revision = hidden_revision.into_active_model();
+    hidden_revision.hidden = Set(vec!["title".to_owned(), "slug".to_owned()]);
+    hidden_revision
+        .update(runner.context().transaction())
+        .await
+        .expect("hidden source revision should update");
+
+    let deleted_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-deleted-source",
+        "Backlinks Deleted Source",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let deleted_revision = PageRevisionTable::find_by_id(deleted_revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("deleted source revision lookup should succeed")
+        .expect("deleted source revision should exist");
+    let deleted_page = PageTable::find_by_id(deleted_revision.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("deleted source page lookup should succeed")
+        .expect("deleted source page should exist");
+    let mut deleted_page = deleted_page.into_active_model();
+    deleted_page.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    deleted_page
+        .update(runner.context().transaction())
+        .await
+        .expect("deleted source page should update");
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "unrelated renamed preview", "wikitext": SOURCE}),
+    );
+    assert!(preview.body.contains("backlinks-module-box"));
+    assert!(
+        preview
+            .body
+            .contains("fixture-backlinks-escape-&amp;&quot;")
+    );
+    assert!(
+        preview
+            .body
+            .contains("Backlinks &lt;Escape&gt; &amp; \"Title\"")
+    );
+    for forbidden in [
+        "Backlinks Private Source",
+        "Backlinks Hidden Source",
+        "fixture-backlinks-preview-hidden-source",
+        "Backlinks Deleted Source",
+    ] {
+        assert!(
+            !preview.body.contains(forbidden),
+            "Backlinks leaked {forbidden:?}: {}",
+            preview.body
+        );
+    }
+
+    let empty_slug = "fixture-backlinks-preview-empty-target";
+    create_listpages_test_page(&mut runner, site_id, empty_slug, "Empty Target", SOURCE)
+        .await;
+    let empty_target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": empty_slug}),
+    )
+    .expect("empty Backlinks target should exist");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(empty_target.page_id)),
+        ..Default::default()
+    });
+    let empty = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "empty", "wikitext": SOURCE}),
+    );
+    assert_eq!(empty.body, EMPTY_BOX);
+
+    let non_backlink_source =
+        "[[module PageTree]]\n[[module ChildPages]]\n[[module NextPage]]";
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    let identity_free = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "identity-free", "wikitext": non_backlink_source}),
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let identified = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "identified", "wikitext": non_backlink_source}),
+    );
+    assert_eq!(identified.body, identity_free.body);
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    let absent = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "absent", "wikitext": SOURCE}),
+    );
+    assert_eq!(absent.body, EMPTY_BOX);
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(i64::MAX)),
+        ..Default::default()
+    });
+    let missing = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "missing", "wikitext": SOURCE}),
+    );
+    assert_eq!(missing.body, EMPTY_BOX);
+
+    let stale_slug = "fixture-backlinks-preview-stale-target";
+    create_listpages_test_page(&mut runner, site_id, stale_slug, "Stale Target", SOURCE)
+        .await;
+    let stale = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": stale_slug}),
+    )
+    .expect("stale Backlinks target should exist");
+    let stale_page = PageTable::find_by_id(stale.page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("stale Backlinks target lookup should succeed")
+        .expect("stale Backlinks target lookup should return a page");
+    let mut stale_page = stale_page.into_active_model();
+    stale_page.deleted_at = Set(Some(OffsetDateTime::now_utc()));
+    stale_page
+        .update(runner.context().transaction())
+        .await
+        .expect("stale Backlinks target should update");
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(stale.page_id)),
+        ..Default::default()
+    });
+    let stale_preview = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "stale", "wikitext": SOURCE}),
+    );
+    assert_eq!(stale_preview.body, EMPTY_BOX);
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let syntax_only = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "syntax-only",
+            "wikitext": SOURCE,
+            "syntax_only": true,
+        }),
+    );
+    assert!(syntax_only.body.contains(SOURCE));
+    let other_site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("second seeded site should exist");
+    let other_page_id = create_listpages_test_page(
+        &mut runner,
+        other_site.site.site_id,
+        "fixture-backlinks-preview-other-site-target",
+        "Other Site Target",
+        SOURCE,
+    )
+    .await;
+    let other_page_id = PageRevisionTable::find_by_id(other_page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("other-site revision lookup should succeed")
+        .expect("other-site revision should exist")
+        .page_id;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(other_page_id)),
+        ..Default::default()
+    });
+    let mismatched = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "mismatched", "wikitext": SOURCE}),
+    );
+    assert_eq!(mismatched.body, EMPTY_BOX);
+
+    let template_revision_id = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-preview-scan-template",
+        "Backlinks Scan Template",
+        &format!("[[[{target_slug}|target link]]]"),
+    )
+    .await;
+    let target_category_id = target.page_category_id;
+    let transaction = runner.context().transaction();
+    let inserted_connections = transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "WITH pages AS (",
+                "INSERT INTO page (site_id, page_category_id, slug, layout) ",
+                "SELECT $1, $2, $3 || series, 'wikidot' ",
+                "FROM generate_series(1, 501) AS series ",
+                "RETURNING page_id, slug), revisions AS (",
+                "INSERT INTO page_revision (revision_type, created_at, updated_at, ",
+                "revision_number, page_id, site_id, user_id, from_wikidot, changes, ",
+                "wikitext_hash, compiled_body_html_hash, compiled_body_styles_hash, ",
+                "compiled_top_bar_html_hash, compiled_side_bar_html_hash, compiled_at, ",
+                "compiled_generator, comments, hidden, title, alt_title, slug, tags) ",
+                "SELECT source.revision_type, source.created_at, source.updated_at, ",
+                "source.revision_number, pages.page_id, source.site_id, source.user_id, ",
+                "source.from_wikidot, source.changes, source.wikitext_hash, ",
+                "source.compiled_body_html_hash, source.compiled_body_styles_hash, ",
+                "source.compiled_top_bar_html_hash, source.compiled_side_bar_html_hash, ",
+                "source.compiled_at, source.compiled_generator, source.comments, ",
+                "source.hidden, source.title, source.alt_title, pages.slug, source.tags ",
+                "FROM pages CROSS JOIN page_revision source ",
+                "WHERE source.revision_id = $4 RETURNING revision_id, page_id) ",
+                "INSERT INTO page_connection ",
+                "(from_page_id, to_page_id, connection_type, count) ",
+                "SELECT revisions.page_id, $5, 'link', 1 FROM revisions",
+            ),
+            [
+                Value::from(site_id),
+                Value::from(target_category_id),
+                Value::from(SCAN_SOURCE_PREFIX),
+                Value::from(template_revision_id),
+                Value::from(target.page_id),
+            ],
+        ))
+        .await
+        .expect("Backlinks scan-boundary sources should be inserted");
+    assert_eq!(inserted_connections.rows_affected(), 501);
+    let updated_pages = transaction
+        .execute_raw(Statement::from_sql_and_values(
+            transaction.get_database_backend(),
+            concat!(
+                "UPDATE page SET latest_revision_id = page_revision.revision_id ",
+                "FROM page_revision WHERE page.page_id = page_revision.page_id ",
+                "AND page.site_id = $1 AND page.slug LIKE $2 || '%'",
+            ),
+            [Value::from(site_id), Value::from(SCAN_SOURCE_PREFIX)],
+        ))
+        .await
+        .expect("Backlinks scan-boundary pages should receive their revisions");
+    assert_eq!(updated_pages.rows_affected(), 501);
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(target.page_id)),
+        ..Default::default()
+    });
+    let saturated = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({"site_id": site_id, "title": "saturated", "wikitext": SOURCE}),
+    );
+    assert!(!saturated.body.contains("backlinks-module-box"));
 }
 
 #[tokio::test]
@@ -16200,6 +21765,160 @@ async fn orphanedpages_module_lists_pages_without_incoming_internal_links() {
 }
 
 #[tokio::test]
+async fn orphanedpages_module_refreshes_after_linker_soft_delete() {
+    const HOLDER_SLUG: &str = "fixture-orphanedpages-lifecycle-holder";
+    const DELETED_TARGET_SLUG: &str = "fixture-orphanedpages-lifecycle-deleted-target";
+    const ACTIVE_TARGET_SLUG: &str = "fixture-orphanedpages-lifecycle-active-target";
+    const SELF_LINK_SLUG: &str = "fixture-orphanedpages-lifecycle-self-link";
+    const INCLUDE_TARGET_SLUG: &str = "fixture-orphanedpages-lifecycle-include-target";
+    const DELETED_LINKER_SLUG: &str = "orphanedpages-lifecycle-deleted-linker";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}))
+        .expect("editable local authoring site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title, wikitext) in [
+        (
+            DELETED_TARGET_SLUG,
+            "Deleted Module Linker Target",
+            "linked only from a page that will be deleted",
+        ),
+        (
+            ACTIVE_TARGET_SLUG,
+            "Active Module Linker Target",
+            "linked from a live page",
+        ),
+        (
+            SELF_LINK_SLUG,
+            "Self-linked Module Target",
+            &format!("[[[{SELF_LINK_SLUG}]]]"),
+        ),
+        (
+            INCLUDE_TARGET_SLUG,
+            "Include-only Module Target",
+            "included but not linked",
+        ),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, wikitext).await;
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DELETED_LINKER_SLUG)),
+    );
+    let deleted_linker = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": format!("[[[{DELETED_TARGET_SLUG}]]]"),
+            "title": "Deleted OrphanedPages Module Linker",
+            "alt_title": null,
+            "slug": DELETED_LINKER_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create deleted OrphanedPages module linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "orphanedpages-lifecycle-active-linker",
+        "Active OrphanedPages Module Linker",
+        &format!("[[[{ACTIVE_TARGET_SLUG}]]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "orphanedpages-lifecycle-include-source",
+        "OrphanedPages Module Include Source",
+        &format!("[[include {INCLUDE_TARGET_SLUG}]]"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "OrphanedPages Lifecycle Holder",
+        "[[module OrphanedPages]]",
+    )
+    .await;
+
+    let before_delete = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let before_delete = match before_delete {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found OrphanedPages view, got {other:?}"),
+    };
+    assert!(!before_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!before_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(before_delete.contains(SELF_LINK_SLUG));
+    assert!(before_delete.contains(INCLUDE_TARGET_SLUG));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(deleted_linker.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_linker.page_id,
+            "last_revision_id": deleted_linker.revision_id,
+            "revision_comments": "delete OrphanedPages module linker",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let stored_after_delete =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(
+        !stored_after_delete.contains(DELETED_TARGET_SLUG),
+        "the saved artifact predates the link-graph mutation"
+    );
+
+    let after_delete = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let after_delete = match after_delete {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found OrphanedPages view, got {other:?}"),
+    };
+    assert!(after_delete.contains(DELETED_TARGET_SLUG));
+    assert!(!after_delete.contains(ACTIVE_TARGET_SLUG));
+    assert!(after_delete.contains(SELF_LINK_SLUG));
+    assert!(after_delete.contains(INCLUDE_TARGET_SLUG));
+}
+
+#[tokio::test]
 async fn wantedpages_module_groups_missing_internal_links_by_target() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -16418,6 +22137,260 @@ async fn newpage_module_resolves_existing_templates_in_rendered_pages() {
         ),
         "missing NewPage template should render Wikidot's error block:\n{missing_html}"
     );
+}
+
+#[tokio::test]
+async fn saved_newpage_views_resolve_templates_from_current_anonymous_state() {
+    const TEMPLATE_SLUG: &str = "template:fixture-newpage-freshness-target";
+    const TEMPLATE_OLD_TITLE: &str = "Fixture NewPage Freshness Old";
+    const TEMPLATE_NEW_TITLE: &str = "Fixture NewPage Freshness Current";
+    const HOLDER_SLUG: &str = "fixture-newpage-freshness-holder";
+    const COMPOSED_TEMPLATE_SLUG: &str = "fixture-newpage-freshness-composed:_template";
+    const COMPOSED_HOLDER_SLUG: &str = "fixture-newpage-freshness-composed:holder";
+    const PRIVATE_CATEGORY: &str = "fixture-newpage-freshness-private";
+    const MISSING_TEMPLATE_SLUG: &str =
+        "template:fixture-newpage-freshness-created-later";
+    const MISSING_HOLDER_SLUG: &str = "fixture-newpage-freshness-missing-holder";
+
+    fn assert_single_template(html: &str, page_id: i64) {
+        assert!(
+            html.contains(&format!(
+                r#"<input type="hidden" name="template" value="{page_id}"/>"#,
+            )),
+            "single-template NewPage output should contain page ID {page_id}:\n{html}",
+        );
+        assert!(
+            !html.contains("<select name=\"template\""),
+            "one template should not render a selector:\n{html}",
+        );
+    }
+
+    async fn load_view(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+        session_token: Option<&str>,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found NewPage holder view, got {other:?}"),
+        }
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let template_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        TEMPLATE_SLUG,
+        TEMPLATE_OLD_TITLE,
+        "NewPage freshness template source.",
+    )
+    .await;
+    let template_id = listpages_test_page_id(&runner, site_id, TEMPLATE_SLUG).await;
+    let stable_template_slug = "template:fixture-newpage-freshness-stable";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        stable_template_slug,
+        "Fixture NewPage Freshness Stable",
+        "Stable NewPage template source.",
+    )
+    .await;
+
+    let newpage_source = format!(
+        r#"[[module NewPage template="{TEMPLATE_SLUG},{stable_template_slug}"]]"#,
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HOLDER_SLUG,
+        "Fixture NewPage Freshness Holder",
+        &newpage_source,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPOSED_TEMPLATE_SLUG,
+        "Fixture NewPage Freshness Category Template",
+        &format!("{newpage_source}\n%%content%%"),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPOSED_HOLDER_SLUG,
+        "Fixture NewPage Freshness Composed Holder",
+        "COMPOSED_NEWPAGE_CONTENT",
+    )
+    .await;
+
+    let stored_holder =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    let stored_composed =
+        load_listpages_test_compiled_html(&runner, site_id, COMPOSED_HOLDER_SLUG).await;
+    for stored in [&stored_holder, &stored_composed] {
+        assert!(stored.contains(TEMPLATE_OLD_TITLE), "{stored}");
+        assert!(!stored.contains(TEMPLATE_NEW_TITLE), "{stored}");
+    }
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(template_id),
+    );
+    let edited_template = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": template_id,
+            "last_revision_id": template_revision,
+            "revision_comments": "change NewPage freshness template title",
+            "user_id": ADMIN_USER_ID,
+            "title": TEMPLATE_NEW_TITLE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("NewPage template title edit should create a revision");
+
+    for slug in [HOLDER_SLUG, COMPOSED_HOLDER_SLUG] {
+        let current = load_view(&runner, site_id, slug, None).await;
+        assert!(
+            current.contains(TEMPLATE_NEW_TITLE) && !current.contains(TEMPLATE_OLD_TITLE),
+            "saved NewPage view should use the independently edited title for {slug}:\n{current}",
+        );
+    }
+    assert_eq!(
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await,
+        stored_holder,
+        "a fresh NewPage GET must not rewrite the holder's stored compiled HTML",
+    );
+    assert_eq!(
+        load_listpages_test_compiled_html(&runner, site_id, COMPOSED_HOLDER_SLUG).await,
+        stored_composed,
+        "a category-template-hosted NewPage GET must not rewrite stored compiled HTML",
+    );
+
+    let admin_session = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "NewPage anonymous template visibility test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("administrator session should be created");
+    make_listpages_test_category_admin_only(&runner, site_id, PRIVATE_CATEGORY).await;
+    set_listpages_test_category_slug(&runner, site_id, TEMPLATE_SLUG, PRIVATE_CATEGORY)
+        .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("NewPage visibility cache should invalidate");
+
+    let missing_error = format!(
+        r#"<div class="error-block">Template "{TEMPLATE_SLUG}" can not be found.</div>"#,
+    );
+    for session in [None, Some(admin_session.as_str())] {
+        let hidden = load_view(&runner, site_id, HOLDER_SLUG, session).await;
+        assert!(
+            hidden.contains(&missing_error),
+            "anonymous and authenticated views must both resolve NewPage templates with anonymous visibility:\n{hidden}",
+        );
+        assert!(!hidden.contains(TEMPLATE_NEW_TITLE), "{hidden}");
+    }
+
+    set_listpages_test_category_slug(&runner, site_id, TEMPLATE_SLUG, "template").await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("restored NewPage visibility cache should invalidate");
+    let visible_again = load_view(&runner, site_id, HOLDER_SLUG, None).await;
+    assert!(
+        visible_again.contains(TEMPLATE_NEW_TITLE),
+        "{visible_again}"
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(template_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": template_id,
+            "last_revision_id": edited_template.revision_id,
+            "revision_comments": "delete NewPage freshness template",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted = load_view(&runner, site_id, HOLDER_SLUG, None).await;
+    assert!(deleted.contains(&missing_error), "{deleted}");
+
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": template_id,
+            "revision_comments": "restore NewPage freshness template",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let restored = load_view(&runner, site_id, HOLDER_SLUG, None).await;
+    assert!(restored.contains(TEMPLATE_NEW_TITLE), "{restored}");
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        MISSING_HOLDER_SLUG,
+        "Fixture NewPage Late Template Holder",
+        &format!(r#"[[module NewPage template="{MISSING_TEMPLATE_SLUG}"]]"#),
+    )
+    .await;
+    let late_missing = load_view(&runner, site_id, MISSING_HOLDER_SLUG, None).await;
+    assert!(
+        late_missing.contains(&format!(
+            r#"Template "{MISSING_TEMPLATE_SLUG}" can not be found."#,
+        )),
+        "{late_missing}",
+    );
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        MISSING_TEMPLATE_SLUG,
+        "Fixture NewPage Created Later",
+        "Late-created NewPage template source.",
+    )
+    .await;
+    let late_template_id =
+        listpages_test_page_id(&runner, site_id, MISSING_TEMPLATE_SLUG).await;
+    let late_created = load_view(&runner, site_id, MISSING_HOLDER_SLUG, None).await;
+    assert_single_template(&late_created, late_template_id);
+    assert!(!late_created.contains("can not be found"), "{late_created}");
 }
 
 #[tokio::test]
@@ -20433,10 +26406,10 @@ async fn listpages_imported_creator_identity_uses_structured_corpus_provenance()
         format!("http://www.wikidot.com/user:info/{CREATOR_SLUG}"),
         format!("WIKIDOT.page.listeners.userInfo({CREATOR_ID})"),
         format!(
-            "src=\"https://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
+            "src=\"http://www.wikidot.com/avatar.php?userid={CREATOR_ID}&amp;amp;size=small&amp;amp;timestamp="
         ),
         format!(
-            r#"style="background-image:url(https://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
+            r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u={CREATOR_ID})""#
         ),
     ] {
         assert!(
@@ -24542,6 +30515,228 @@ async fn forum_post_reads_require_parent_page_view_permission() {
 }
 
 #[tokio::test]
+async fn anonymous_forum_post_create_persists_private_derived_guest_identity_and_renders_gravatar()
+ {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let group = ForumService::create_group(
+        runner.context(),
+        CreateForumGroup {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            name: "Guest Gravatar Group".to_owned(),
+            description: String::new(),
+            visible: true,
+            sort_index: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("guest Gravatar group should be created");
+    let category = ForumService::create_category(
+        runner.context(),
+        CreateForumCategory {
+            forum_group_id: group.forum_group_id,
+            user_id: ADMIN_USER_ID,
+            name: "Guest Gravatar Category".to_owned(),
+            description: String::new(),
+            sort_index: None,
+            max_nest_level: Some(3),
+            per_page_discussion: Some(false),
+            layout: None,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("guest Gravatar category should be created");
+    let thread = ForumThreadService::create(
+        runner.context(),
+        CreateForumThread {
+            forum_category_id: category.forum_category_id,
+            user_id: ADMIN_USER_ID,
+            associated_page_id: None,
+            title: "Guest Gravatar Thread".to_owned(),
+            description: String::new(),
+            sticky: false,
+            from_wikidot: false,
+        },
+    )
+    .await
+    .expect("guest Gravatar thread should be created");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let denied = run_endpoint_err!(
+        runner,
+        forum_post_create,
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "denied guest Gravatar body",
+            "guest_name": "Denied Guest",
+            "guest_email_md5": "84991830db6f52c0a36a85d452311203",
+        }),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    let anonymous_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("anonymous")),
+    )
+    .await
+    .expect("anonymous role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(anonymous_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::ForumCategory),
+        resource_category_id: Set(Some(category.forum_category_id)),
+        action: Set(Action::Create),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("anonymous forum post permission should be inserted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("forum permission cache should be invalidated");
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let created = run_endpoint!(
+        runner,
+        forum_post_create,
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "guest Gravatar body",
+            "guest_name": "Guest Name",
+            "guest_email_md5": "84991830db6f52c0a36a85d452311203",
+        }),
+    );
+
+    let rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    assert_eq!(rendered.status, "ok");
+    assert!(
+        rendered
+            .body
+            .contains(&format!(r#"id="fpc-{}""#, created.forum_post_id))
+    );
+    assert!(rendered.body.contains(concat!(
+        r#"<span class="printuser avatarhover"><a href="javascript:;"><img alt="" class="small" "#,
+        r#"src="http://www.gravatar.com/avatar.php?gravatar_id=84991830db6f52c0a36a85d452311203&amp;default=http://www.wikidot.com/common--images/avatars/default/a16.png&amp;size=16"/></a>Guest Name (guest)</span>"#,
+    )));
+
+    let admin_role = RoleService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed("admin")),
+    )
+    .await
+    .expect("admin role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(admin_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::ForumCategory),
+        resource_category_id: Set(Some(category.forum_category_id)),
+        action: Set(Action::Create),
+        ..Default::default()
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("administrator forum post permission should be inserted");
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("administrator forum permission cache should be invalidated");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let authenticated = run_endpoint!(
+        runner,
+        forum_post_create,
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "authenticated body",
+            "guest_name": "Must Be Ignored",
+            "guest_email_md5": "84991830db6f52c0a36a85d452311203",
+        }),
+    );
+    let authenticated_rendered = run_endpoint!(
+        runner,
+        wikidot_forum_module,
+        json!({
+            "site_id": site_id,
+            "module_name": "forum/ForumViewThreadPostsModule",
+            "parameters": {"t": thread.forum_thread_id.to_string(), "pageNo": "1"},
+        }),
+    );
+    let authenticated_start = authenticated_rendered
+        .body
+        .find(&format!(r#"id="fpc-{}""#, authenticated.forum_post_id))
+        .expect("authenticated forum post should render");
+    let authenticated_tail = &authenticated_rendered.body[authenticated_start..];
+    assert!(authenticated_tail.contains("Administrator"));
+    assert!(!authenticated_tail.contains("Must Be Ignored (guest)"));
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    for input in [
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "missing guest identity",
+        }),
+        json!({
+            "site_id": site_id,
+            "forum_thread_id": thread.forum_thread_id,
+            "parent_post_id": null,
+            "title": "",
+            "wikitext": "malformed guest identity",
+            "guest_name": "Guest Name",
+            "guest_email_md5": "not-a-md5",
+        }),
+    ] {
+        let error = run_endpoint_err!(runner, forum_post_create, input);
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+}
+
+#[tokio::test]
 async fn page_get_files_requires_parent_page_view_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
@@ -24876,6 +31071,39 @@ async fn page_mutations_require_page_permissions() {
         site_id,
         Reference::Id(page.page_id),
     );
+    let before_denied_delete =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+    let error = run_endpoint_err!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "blocked delete without delete action",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_denied_delete,
+        "delete permission denial must precede stale-revision checks and preserve state",
+    );
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::Delete],
+        "sample-deleter",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page delete permission cache should be invalidated");
     let _deleted = run_endpoint!(
         runner,
         page_delete,
@@ -24990,9 +31218,7 @@ async fn page_move_requires_destination_create_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
     const SOURCE_CATEGORY: &str = "fixture-page-move-source-private";
-    const DESTINATION_CATEGORY: &str = "fixture-page-move-destination-private";
     const PAGE_SLUG: &str = "fixture-page-move-source-private:target";
-    const BLOCKED_DESTINATION_SLUG: &str = "fixture-page-move-destination-private:target";
     const ALLOWED_DESTINATION_SLUG: &str = "fixture-page-move-source-private:moved";
 
     let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
@@ -25008,16 +31234,6 @@ async fn page_move_requires_destination_create_permission() {
         "sample-mutator",
     )
     .await;
-    make_page_mutation_test_category_for_user(
-        &runner,
-        site_id,
-        DESTINATION_CATEGORY,
-        ADMIN_USER_ID,
-        &[Action::View, Action::Create, Action::Edit],
-        "admin-mutator",
-    )
-    .await;
-
     set_mutation_request_context(
         &mut runner,
         SAMPLE_USER_ID,
@@ -25047,20 +31263,87 @@ async fn page_move_requires_destination_create_permission() {
         site_id,
         Reference::Id(page.page_id),
     );
+    let before_source_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
     let error = run_endpoint_err!(
         runner,
         page_move,
         json!({
             "site_id": site_id,
             "page": page.page_id,
-            "new_slug": BLOCKED_DESTINATION_SLUG,
+            "new_slug": ALLOWED_DESTINATION_SLUG,
             "last_revision_id": page.revision_id,
-            "revision_comments": "blocked cross-category move",
+            "revision_comments": "blocked same-category move without rename",
             "user_id": SAMPLE_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_source_denial,
+        "source rename denial must preserve page, revision, category, audit, and text-block state",
+    );
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        SOURCE_CATEGORY,
+        UNKNOWN_USER_ID,
+        &[Action::Rename],
+        "unknown-renamer",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page move permission cache should be invalidated");
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+
+    let before_destination_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+    let error = run_endpoint_err!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "new_slug": ALLOWED_DESTINATION_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "blocked same-category move without destination create",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_destination_denial,
+        "destination create denial must preserve page, revision, category, audit, and text-block state",
+    );
+
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        SOURCE_CATEGORY,
+        UNKNOWN_USER_ID,
+        &[Action::Create],
+        "unknown-creator",
+    )
+    .await;
+    PermissionCache::invalidate_site(runner.context(), site_id)
+        .await
+        .expect("page move destination permission cache should be invalidated");
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
 
     let moved = run_endpoint!(
         runner,
@@ -25071,7 +31354,7 @@ async fn page_move_requires_destination_create_permission() {
             "new_slug": ALLOWED_DESTINATION_SLUG,
             "last_revision_id": page.revision_id,
             "revision_comments": "authorized same-category move",
-            "user_id": SAMPLE_USER_ID,
+            "user_id": UNKNOWN_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
     );
@@ -25174,7 +31457,7 @@ async fn page_get_score_requires_view_permission_and_site_ownership() {
 }
 
 #[tokio::test]
-async fn page_get_deleted_filters_pages_by_edit_permission() {
+async fn page_get_deleted_filters_pages_by_delete_permission() {
     const PRIVATE_CATEGORY: &str = "fixture-page-deleted-metadata-private";
     const PAGE_SLUG: &str = "fixture-page-deleted-metadata-private:target";
 
@@ -25188,8 +31471,17 @@ async fn page_get_deleted_filters_pages_by_edit_permission() {
         site_id,
         PRIVATE_CATEGORY,
         ADMIN_USER_ID,
-        &[Action::View, Action::Create, Action::Edit],
+        &[Action::View, Action::Create, Action::Edit, Action::Delete],
         "deleted-metadata-admin",
+    )
+    .await;
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        SAMPLE_USER_ID,
+        &[Action::View, Action::Edit],
+        "deleted-metadata-editor",
     )
     .await;
 
@@ -25255,7 +31547,7 @@ async fn page_get_deleted_filters_pages_by_edit_permission() {
     );
     assert!(
         deleted_pages.is_empty(),
-        "deleted page metadata must not be returned without edit permission"
+        "deleted page metadata must not be returned with edit but without delete permission"
     );
 
     runner.set_request_context(RequestContext {
@@ -25276,6 +31568,546 @@ async fn page_get_deleted_filters_pages_by_edit_permission() {
 }
 
 #[tokio::test]
+async fn restored_countpages_page_stores_and_serves_its_current_self_count() {
+    const PAGE_SLUG: &str = "fixture-page-restore-countpages:self";
+    const COUNT_MARKER: &str = "RESTORED_SELF_COUNT=1";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "[[module CountPages]]RESTORED_SELF_COUNT=%%total%%[[/module]]",
+            "title": "Restored CountPages Self Count",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    let deleted = run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let deleted = serde_json::to_value(deleted)
+        .expect("CountPages deletion output should serialize");
+    let deleted_revision_id = deleted["revision_id"]
+        .as_i64()
+        .expect("CountPages deletion should return its revision ID");
+
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "revision_comments": "restore CountPages fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+        ..Default::default()
+    });
+    let stored = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("restored CountPages page should be readable");
+    assert!(stored.revision_id > deleted_revision_id);
+    let stored_html = stored
+        .compiled_body_html
+        .expect("restored CountPages page should store compiled HTML");
+    assert!(
+        stored_html.contains(COUNT_MARKER),
+        "restored CountPages stored HTML must count the now-live page itself:\n{stored_html}",
+    );
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view
+    else {
+        panic!("restored CountPages page should have a public view: {view:?}");
+    };
+    assert!(
+        compiled_body_html.contains(COUNT_MARKER),
+        "restored CountPages public view must count the now-live page itself:\n{compiled_body_html}",
+    );
+}
+
+#[tokio::test]
+async fn restored_page_uses_destination_template_countpages_after_explicit_restore() {
+    const SOURCE_SLUG: &str = "fixture-page-restore-countpages-source:templated";
+    const DESTINATION_CATEGORY: &str = "fixture-page-restore-countpages-destination";
+    const DESTINATION_TEMPLATE_SLUG: &str =
+        "fixture-page-restore-countpages-destination:_template";
+    const DESTINATION_SLUG: &str =
+        "fixture-page-restore-countpages-destination:templated";
+    const COUNT_MARKER: &str = "RESTORED_TEMPLATE_COUNT=1";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DESTINATION_TEMPLATE_SLUG,
+        "Restore CountPages Destination Template",
+        "[[module CountPages]]RESTORED_TEMPLATE_COUNT=%%total%%[[/module]]\n\n%%content%%",
+    )
+    .await;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SOURCE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "RESTORED_TEMPLATE_CONTENT",
+            "title": "Restored Destination Template CountPages",
+            "alt_title": null,
+            "slug": SOURCE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create destination template restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete destination template restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "slug": DESTINATION_SLUG,
+            "revision_comments": "restore into CountPages template category",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(DESTINATION_SLUG))),
+        ..Default::default()
+    });
+    let stored = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": DESTINATION_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("explicitly restored CountPages template page should be readable");
+    assert_eq!(stored.page_id, page.page_id);
+    assert_eq!(stored.slug, DESTINATION_SLUG);
+    assert_eq!(stored.page_category_slug, DESTINATION_CATEGORY);
+    let stored_html = stored
+        .compiled_body_html
+        .expect("explicitly restored template page should store compiled HTML");
+    for expected in [COUNT_MARKER, "RESTORED_TEMPLATE_CONTENT"] {
+        assert!(
+            stored_html.contains(expected),
+            "restored template-composed body should contain {expected:?}:\n{stored_html}",
+        );
+    }
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": DESTINATION_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        page: viewed_page,
+        compiled_body_html,
+        ..
+    } = view
+    else {
+        panic!("explicitly restored template page should have a public view: {view:?}");
+    };
+    assert_eq!(viewed_page.slug, DESTINATION_SLUG);
+    assert_eq!(viewed_page.page_category_id, stored.page_category_id);
+    for expected in [COUNT_MARKER, "RESTORED_TEMPLATE_CONTENT"] {
+        assert!(
+            compiled_body_html.contains(expected),
+            "public restored template view should contain {expected:?}:\n{compiled_body_html}",
+        );
+    }
+
+    assert!(
+        run_endpoint!(
+            runner,
+            page_get,
+            json!({"site_id": site_id, "page": SOURCE_SLUG}),
+        )
+        .is_none(),
+        "the pre-restore slug must remain unavailable",
+    );
+}
+
+#[tokio::test]
+async fn restored_literal_and_unsupported_countpages_shapes_stay_inert() {
+    const PAGE_SLUG: &str = "fixture-page-restore-countpages:literal";
+    const SOURCE: &str = concat!(
+        "[[code]]\n",
+        "[[module CountPages]]CODE_LITERAL_COUNT=%%total%%[[/module]]\n",
+        "[[/code]]\n\n",
+        "[[module CountPages tags=\"@URL\"]]DYNAMIC_LITERAL_COUNT=%%total%%[[/module]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(PAGE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "Restored Literal CountPages Shapes",
+            "alt_title": null,
+            "slug": PAGE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create literal CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let before = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("literal CountPages fixture should be readable")
+    .compiled_body_html
+    .expect("literal CountPages fixture should store compiled HTML");
+    assert!(before.contains("CODE_LITERAL_COUNT=%%total%%"));
+    assert!(before.contains("DYNAMIC_LITERAL_COUNT=%%total%%"));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete literal CountPages restore fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "revision_comments": "restore literal CountPages fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(PAGE_SLUG))),
+        ..Default::default()
+    });
+    let after = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("restored literal CountPages fixture should be readable")
+    .compiled_body_html
+    .expect("restored literal CountPages fixture should store compiled HTML");
+    assert_eq!(after, before);
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": PAGE_SLUG, "extra": "/tag/should-not-activate"},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        compiled_body_html, ..
+    } = view
+    else {
+        panic!("restored literal CountPages page should have a public view: {view:?}");
+    };
+    assert_eq!(compiled_body_html, before);
+}
+
+#[tokio::test]
+async fn restore_rerender_failure_rolls_back_resurrection_identity_and_revision() {
+    let run_id = cuid();
+    let source_category = format!("fixture-page-restore-rollback-source-{run_id}");
+    let destination_category =
+        format!("fixture-page-restore-rollback-destination-{run_id}");
+    let source_slug = format!("{source_category}:target");
+    let destination_slug = format!("{destination_category}:target");
+    let fault_function = format!("force_restore_rerender_failure_{run_id}");
+    let fault_trigger = format!("force_restore_rerender_failure_{run_id}");
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Owned(source_slug.clone())),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "[[module CountPages]]RESTORE_ROLLBACK_COUNT=%%total%%[[/module]]",
+            "title": "Restore Rerender Rollback Target",
+            "alt_title": null,
+            "slug": source_slug,
+            "layout": "wikidot",
+            "revision_comments": "create restore rollback target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "delete restore rollback target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let before = serde_json::to_value(run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({"site_id": site_id, "slug": source_slug}),
+    ))
+    .expect("deleted restore rollback state should serialize");
+    assert_eq!(before.as_array().map(Vec::len), Some(1));
+
+    runner
+        .context()
+        .transaction()
+        .execute_unprepared(&format!(
+            concat!(
+                "CREATE FUNCTION pg_temp.{fault_function}() RETURNS trigger ",
+                "LANGUAGE plpgsql AS $$ BEGIN ",
+                "RAISE EXCEPTION 'forced restore full rerender failure'; ",
+                "END $$; ",
+                "CREATE TRIGGER {fault_trigger} ",
+                "BEFORE UPDATE OF compiled_body_html_hash ON page_revision ",
+                "FOR EACH ROW WHEN (NEW.page_id = {page_id}) ",
+                "EXECUTE FUNCTION pg_temp.{fault_function}()",
+            ),
+            fault_function = fault_function,
+            fault_trigger = fault_trigger,
+            page_id = page.page_id,
+        ))
+        .await
+        .expect("restore rerender fault trigger should install");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("restore rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let error = deepwell::endpoints::all::page_restore(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "slug": destination_slug,
+            "revision_comments": "force failure after resurrection publication",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect_err("post-publication full rerender should hit the body-update fault");
+    assert!(
+        format!("{error:?}").contains("forced restore full rerender failure"),
+        "restore should fail in the post-publication full rerender: {error:?}",
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("failed restore savepoint should roll back");
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let after = serde_json::to_value(run_endpoint!(
+        runner,
+        page_get_deleted,
+        json!({"site_id": site_id, "slug": source_slug}),
+    ))
+    .expect("rolled-back deleted page state should serialize");
+    assert_eq!(after, before);
+    assert!(
+        run_endpoint!(
+            runner,
+            page_get,
+            json!({"site_id": site_id, "page": destination_slug}),
+        )
+        .is_none(),
+        "failed explicit restore must not publish the destination identity",
+    );
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": destination_slug, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    assert!(
+        matches!(view, GetPageViewOutput::Missing { .. }),
+        "failed explicit restore destination must stay publicly missing: {view:?}",
+    );
+}
+
+#[tokio::test]
 async fn page_restore_default_slug_requires_destination_create_permission() {
     let mut runner = TestRunner::setup().await;
     const SITE_SLUG: &str = "scp-wiki";
@@ -25285,17 +32117,32 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
     const EXPLICIT_PAGE_SLUG: &str = "fixture-page-restore-private:explicit";
     const EXPLICIT_DESTINATION_SLUG: &str =
         "fixture-page-restore-destination-private:explicit";
+    const CONFLICT_SLUG: &str = "fixture-page-restore-private:conflict";
 
     let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
         .expect("Seeded site not found");
     let site_id = site.site.site_id;
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("restore permission fixture actor should be a site member");
 
     make_page_mutation_test_category_for_user(
         &runner,
         site_id,
         PRIVATE_CATEGORY,
         ADMIN_USER_ID,
-        &[Action::View, Action::Create, Action::Edit],
+        &[Action::View, Action::Create, Action::Edit, Action::Delete],
         "admin-mutator",
     )
     .await;
@@ -25304,8 +32151,17 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         site_id,
         PRIVATE_CATEGORY,
         SAMPLE_USER_ID,
-        &[Action::View, Action::Edit],
+        &[Action::View, Action::Edit, Action::Delete],
         "sample-editor",
+    )
+    .await;
+    make_page_mutation_test_category_for_user(
+        &runner,
+        site_id,
+        PRIVATE_CATEGORY,
+        UNKNOWN_USER_ID,
+        &[Action::View, Action::Create, Action::Edit],
+        "unknown-editor-creator",
     )
     .await;
     make_page_mutation_test_category_for_user(
@@ -25343,6 +32199,28 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
 
     set_mutation_request_context(
         &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(CONFLICT_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "restore conflict target",
+            "title": "Restore Conflict Target",
+            "alt_title": null,
+            "slug": CONFLICT_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "create restore conflict target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
         SAMPLE_USER_ID,
         site_id,
         Reference::Id(page.page_id),
@@ -25360,6 +32238,42 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         }),
     );
 
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    let before_source_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+    let error = run_endpoint_err!(
+        runner,
+        page_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "slug": CONFLICT_SLUG,
+            "revision_comments": "blocked restore without delete action",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_source_denial,
+        "restore source denial must precede destination conflict checks and preserve state",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        SAMPLE_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    let before_destination_denial =
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await;
+
     let error = run_endpoint_err!(
         runner,
         page_restore,
@@ -25372,6 +32286,11 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        snapshot_page_action_mutation_state(&runner, site_id, page.page_id).await,
+        before_destination_denial,
+        "restore destination denial must preserve page, revision, category, audit, and text-block state",
+    );
 
     set_mutation_request_context(
         &mut runner,
@@ -25453,7 +32372,7 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
         site_id,
         Reference::Id(explicit_page.page_id),
     );
-    let _restored = run_endpoint!(
+    let restored = run_endpoint!(
         runner,
         page_restore,
         json!({
@@ -25464,6 +32383,56 @@ async fn page_restore_default_slug_requires_destination_create_permission() {
             "user_id": ADMIN_USER_ID,
             "ip_address": common::IP_ADDRESS,
         }),
+    );
+    let restored =
+        serde_json::to_value(restored).expect("explicit restore output should serialize");
+    assert_eq!(restored["slug"], EXPLICIT_DESTINATION_SLUG);
+    assert_eq!(restored["revision_number"], 2);
+    assert_eq!(restored["parser_errors"], json!([]));
+    let restored_revision_id = restored["revision_id"]
+        .as_i64()
+        .expect("explicit restore output should include a revision ID");
+
+    let destination_category = CategoryService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed(DESTINATION_CATEGORY)),
+    )
+    .await
+    .expect("explicit restore destination category should exist");
+    let restored_page = PageService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed(EXPLICIT_DESTINATION_SLUG)),
+    )
+    .await
+    .expect("explicit restore destination slug should resolve");
+    assert_eq!(restored_page.page_id, explicit_page.page_id);
+    assert_eq!(restored_page.slug, EXPLICIT_DESTINATION_SLUG);
+    assert_eq!(
+        restored_page.page_category_id,
+        destination_category.category_id
+    );
+    assert_eq!(restored_page.latest_revision_id, Some(restored_revision_id));
+
+    let restored_revision =
+        PageRevisionService::get_latest(runner.context(), site_id, explicit_page.page_id)
+            .await
+            .expect("explicit restore revision should be latest");
+    assert_eq!(restored_revision.revision_id, restored_revision_id);
+    assert_eq!(restored_revision.revision_type, PageRevisionType::Undelete);
+    assert_eq!(restored_revision.slug, EXPLICIT_DESTINATION_SLUG);
+
+    assert!(
+        PageService::get_optional(
+            runner.context(),
+            site_id,
+            Reference::Slug(Cow::Borrowed(EXPLICIT_PAGE_SLUG)),
+        )
+        .await
+        .expect("old explicit restore slug lookup should succeed")
+        .is_none(),
+        "old explicit restore slug must no longer resolve",
     );
 }
 
@@ -25888,6 +32857,86 @@ async fn file_mutations_require_parent_page_edit_permission() {
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
 
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the denied file restore audit count should succeed");
+    assert_eq!(audit_count, 0, "denied restores must not be audited");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("the file restore savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(SAMPLE_USER_ID),
+            site_id: Some(site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let transactional_restore = deepwell::endpoints::all::file_restore(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "file_id": restore_file.file_id,
+            "new_page": destination_page.page_id,
+            "revision_comments": "transactional file restore",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("the transactional file restore should succeed");
+    let transactional_event = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .one(&transaction)
+        .await
+        .expect("the transactional file restore audit lookup should succeed")
+        .expect("the transactional file restore should emit an audit event");
+    assert_eq!(transactional_event.page_id, Some(destination_page.page_id));
+    assert_eq!(
+        transactional_event.extra_id_2,
+        Some(transactional_restore.file_revision_id)
+    );
+    let transactional_file = file::Entity::find_by_id(restore_file.file_id)
+        .one(&transaction)
+        .await
+        .expect("the transactional restored file lookup should succeed")
+        .expect("the transactional restored file should exist");
+    assert_eq!(transactional_file.page_id, destination_page.page_id);
+    assert!(transactional_file.deleted_at.is_none());
+
+    transaction
+        .rollback()
+        .await
+        .expect("the file restore savepoint should roll back");
+    let rolled_back_file = file::Entity::find_by_id(restore_file.file_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("the rolled-back file lookup should succeed")
+        .expect("the rolled-back file should exist");
+    assert_eq!(rolled_back_file.page_id, page.page_id);
+    assert!(
+        rolled_back_file.deleted_at.is_some(),
+        "the file restore state update must roll back"
+    );
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the rolled-back file restore audit count should succeed");
+    assert_eq!(
+        audit_count, 0,
+        "the file restore audit event must roll back with the state update"
+    );
+
     let restored = run_endpoint!(
         runner,
         file_restore,
@@ -25902,6 +32951,42 @@ async fn file_mutations_require_parent_page_edit_permission() {
     );
     assert_eq!(restored.file_id, restore_file_id);
     assert!(restored.file_revision_id > deleted_restore.file_revision_id);
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("the successful file restore audit lookup should succeed");
+    assert_eq!(events.len(), 1, "a successful restore must be audited once");
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(SAMPLE_USER_ID));
+    assert_eq!(event.site_id, Some(site_id));
+    assert_eq!(event.page_id, Some(restored.page_id));
+    assert_eq!(event.extra_id_1, Some(restored.file_id));
+    assert_eq!(event.extra_id_2, Some(restored.file_revision_id));
+    assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+
+    let error = run_endpoint_err!(
+        runner,
+        file_restore,
+        json!({
+            "site_id": site_id,
+            "page_id": page.page_id,
+            "file_id": restore_file.file_id,
+            "revision_comments": "repeated file restore",
+            "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::FileNotDeleted);
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.undelete"))
+        .filter(AuditLogColumn::ExtraId1.eq(restore_file.file_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("the repeated file restore audit count should succeed");
+    assert_eq!(audit_count, 1, "a repeated restore must not be audited");
 
     let rollback_file = run_endpoint!(
         runner,
@@ -26051,8 +33136,27 @@ async fn create_committed_page_pending_blob_fixture(
     page_id: i64,
 ) -> (PagePendingBlobFixture, Vec<u8>) {
     let pending_blob_id = cuid();
-    let s3_path = format!("uploads/{pending_blob_id}");
     let data = format!("issue 1062 page-owned upload {pending_blob_id}").into_bytes();
+    create_committed_page_pending_blob_with_data_fixture(
+        runner,
+        user_id,
+        site_id,
+        page_id,
+        pending_blob_id,
+        data,
+    )
+    .await
+}
+
+async fn create_committed_page_pending_blob_with_data_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+    pending_blob_id: String,
+    data: Vec<u8>,
+) -> (PagePendingBlobFixture, Vec<u8>) {
+    let s3_path = format!("uploads/{pending_blob_id}");
     let response = runner
         .state()
         .s3_files_bucket
@@ -26089,6 +33193,776 @@ async fn create_committed_page_pending_blob_fixture(
         },
         data,
     )
+}
+
+async fn create_prefinalized_empty_page_blob_fixture(
+    runner: &TestRunner,
+    user_id: i64,
+    site_id: i64,
+    page_id: i64,
+) -> String {
+    let pending_blob_id = cuid();
+    let mut pending = page_pending_blob_model(
+        pending_blob_id.clone(),
+        format!("uploads/{pending_blob_id}"),
+        user_id,
+        Some(site_id),
+        Some(page_id),
+        0,
+    );
+    pending.s3_hash = Set(Some(EMPTY_BLOB_HASH.to_vec()));
+    pending.content_type_label = Set(Some("empty".to_owned()));
+    pending.content_type_description = Set(Some("empty".to_owned()));
+    pending
+        .insert(runner.context().transaction())
+        .await
+        .expect("pre-finalized empty pending blob fixture should be inserted");
+    pending_blob_id
+}
+
+#[tokio::test]
+async fn file_edit_public_endpoint_audits_success_once_and_not_denial() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-edit-audit-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let file = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file edit audit fixture revision should exist");
+    let supplied_ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 48));
+
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "file edit audit denial",
+            "user_id": UNKNOWN_USER_ID,
+            "name": format!("denied-{fixture_name}"),
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("denied file-edit audit count should succeed"),
+        0,
+        "denied file edits must not be audited",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "file edit audit success",
+            "user_id": ADMIN_USER_ID,
+            "name": format!("edited-{fixture_name}"),
+            "ip_address": supplied_ip,
+        }),
+    )
+    .expect("changed file edit should create a revision");
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.edit"))
+        .filter(AuditLogColumn::ExtraId1.eq(file_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("successful file-edit audit lookup should succeed");
+    assert_eq!(events.len(), 1, "successful file edit should audit once");
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(page.page_id));
+    assert_eq!(event.extra_id_1, Some(file_id));
+    assert_eq!(event.extra_id_2, Some(edited.file_revision_id));
+    assert_eq!(event.ip_address, supplied_ip.to_string());
+}
+
+#[tokio::test]
+async fn file_edit_semantic_no_op_emits_no_audit_event() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-edit-no-op-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let file = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file edit no-op fixture revision should exist");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "semantically empty file edit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        edited.is_none(),
+        "semantic no-op should not create a revision"
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("file-edit no-op audit count should succeed"),
+        0,
+        "semantic no-op must not be audited",
+    );
+}
+
+#[tokio::test]
+async fn file_edit_revision_and_audit_roll_back_together() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-edit-rollback-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let file = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file edit rollback fixture revision should exist");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("file-edit rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let edited = deepwell::endpoints::all::file_edit(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": file.revision_id,
+            "revision_comments": "transactional file edit",
+            "user_id": ADMIN_USER_ID,
+            "name": format!("edited-{fixture_name}"),
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional file edit should succeed")
+    .expect("transactional file edit should create a revision");
+
+    assert!(
+        FileRevisionTable::find_by_id(edited.file_revision_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file revision lookup should succeed")
+            .is_some()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(edited.file_revision_id))
+            .count(&transaction)
+            .await
+            .expect("transactional file-edit audit lookup should succeed"),
+        1,
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("file-edit savepoint should roll back");
+
+    assert!(
+        FileRevisionTable::find_by_id(edited.file_revision_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file revision lookup should succeed")
+            .is_none()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.edit"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(edited.file_revision_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back file-edit audit lookup should succeed"),
+        0,
+    );
+    let current = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("rolled-back file edit fixture revision should remain");
+    assert_eq!(current.revision_id, file.revision_id);
+    assert_eq!(current.name, fixture_name);
+}
+
+#[tokio::test]
+async fn file_rollback_public_endpoint_audits_only_created_revisions() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-rollback-audit-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let initial = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file rollback audit fixture revision should exist");
+    let edited_name = format!("edited-{fixture_name}");
+    let supplied_ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 49));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": initial.revision_id,
+            "revision_comments": "prepare file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "name": edited_name,
+            "ip_address": supplied_ip,
+        }),
+    )
+    .expect("file edit should prepare rollback audit fixture");
+
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": edited_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "denied file rollback audit",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("denied file-rollback audit count should succeed"),
+        0,
+        "denied file rollbacks must not be audited",
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let rolled_back = run_endpoint!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": edited_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "successful file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    )
+    .expect("changed file rollback should create a revision");
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.rollback"))
+        .filter(AuditLogColumn::ExtraId1.eq(file_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("successful file-rollback audit lookup should succeed");
+    assert_eq!(
+        events.len(),
+        1,
+        "successful file rollback should audit once"
+    );
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(page.page_id));
+    assert_eq!(event.extra_id_1, Some(file_id));
+    assert_eq!(event.extra_id_2, Some(rolled_back.file_revision_id));
+    assert_eq!(event.extra_number, Some(initial.revision_number));
+    assert_eq!(event.ip_address, supplied_ip.to_string());
+
+    let error = run_endpoint_err!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": fixture_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "stale file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+
+    let no_op = run_endpoint!(
+        runner,
+        file_rollback,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": fixture_name,
+            "last_revision_id": rolled_back.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "no-op file rollback audit",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert!(no_op.is_none(), "unchanged file rollback should be a no-op");
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("stale and no-op file-rollback audit count should succeed"),
+        1,
+        "stale and no-op file rollbacks must not be audited",
+    );
+}
+
+#[tokio::test]
+async fn file_rollback_revision_and_audit_roll_back_together() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let fixture_name = format!("file-rollback-transaction-{}.txt", cuid());
+    let file_id =
+        create_empty_file_fixture(&runner, site.site_id, page.page_id, &fixture_name)
+            .await;
+    let initial = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("file rollback transaction fixture revision should exist");
+    let edited_name = format!("edited-{fixture_name}");
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let edited = run_endpoint!(
+        runner,
+        file_edit,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file_id": file_id,
+            "last_revision_id": initial.revision_id,
+            "revision_comments": "prepare transactional file rollback",
+            "user_id": ADMIN_USER_ID,
+            "name": edited_name,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("file edit should prepare transactional rollback fixture");
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("file-rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let rolled_back = deepwell::endpoints::all::file_rollback(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "file": edited_name,
+            "last_revision_id": edited.file_revision_id,
+            "revision_number": initial.revision_number,
+            "revision_comments": "transactional file rollback",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional file rollback should succeed")
+    .expect("transactional file rollback should create a revision");
+
+    assert!(
+        FileRevisionTable::find_by_id(rolled_back.file_revision_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file revision lookup should succeed")
+            .is_some()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(rolled_back.file_revision_id))
+            .count(&transaction)
+            .await
+            .expect("transactional file-rollback audit lookup should succeed"),
+        1,
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("file-rollback savepoint should roll back");
+
+    assert!(
+        FileRevisionTable::find_by_id(rolled_back.file_revision_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file revision lookup should succeed")
+            .is_none()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.rollback"))
+            .filter(AuditLogColumn::ExtraId1.eq(file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(rolled_back.file_revision_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back file-rollback audit lookup should succeed"),
+        0,
+    );
+    let current = FileRevisionService::get_latest(
+        runner.context(),
+        site.site_id,
+        page.page_id,
+        file_id,
+    )
+    .await
+    .expect("rolled-back file rollback fixture revision should remain");
+    assert_eq!(current.revision_id, edited.file_revision_id);
+    assert_eq!(current.name, edited_name);
+}
+
+#[tokio::test]
+async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let pending_blob_id = create_prefinalized_empty_page_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+    let supplied_ip = IpAddr::V4(Ipv4Addr::new(198, 51, 100, 47));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let created = run_endpoint!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": format!("audit-success-{pending_blob_id}.txt"),
+            "uploaded_blob_id": pending_blob_id,
+            "revision_comments": "file create audit success",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.create"))
+        .all(runner.context().transaction())
+        .await
+        .expect("file-create audit lookup should succeed");
+    assert_eq!(events.len(), 1, "successful file create should audit once");
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.site_id, Some(site.site_id));
+    assert_eq!(event.page_id, Some(page.page_id));
+    assert_eq!(event.extra_id_1, Some(created.file_id));
+    assert_eq!(event.extra_id_2, Some(created.file_revision_id));
+    assert_eq!(event.ip_address, supplied_ip.to_string());
+
+    set_mutation_request_context(
+        &mut runner,
+        UNKNOWN_USER_ID,
+        site.site_id,
+        Reference::Id(page.page_id),
+    );
+    let error = run_endpoint_err!(
+        runner,
+        file_create,
+        json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": "audit-denied.txt",
+            "uploaded_blob_id": "not-used-before-permission-denial",
+            "revision_comments": "file create audit denial",
+            "user_id": UNKNOWN_USER_ID,
+            "ip_address": supplied_ip,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    let event_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("file-create audit count after denial should succeed");
+    assert_eq!(event_count, 1, "denied file create should not be audited");
+}
+
+#[tokio::test]
+async fn file_create_file_revision_and_audit_roll_back_together() {
+    let runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist")
+        .site;
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site.site_id, "page": "home"}),
+    )
+    .expect("seeded test home should exist");
+    let pending_blob_id = create_prefinalized_empty_page_blob_fixture(
+        &runner,
+        ADMIN_USER_ID,
+        site.site_id,
+        page.page_id,
+    )
+    .await;
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("file-create rollback savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(ADMIN_USER_ID),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Id(page.page_id)),
+            ..Default::default()
+        });
+    let created = deepwell::endpoints::all::file_create(
+        &ctx,
+        common::make_params(json!({
+            "site_id": site.site_id,
+            "page_id": page.page_id,
+            "name": format!("audit-rollback-{pending_blob_id}.txt"),
+            "uploaded_blob_id": pending_blob_id,
+            "revision_comments": "file create audit rollback",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional file create should succeed");
+
+    assert!(
+        file::Entity::find_by_id(created.file_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file lookup should succeed")
+            .is_some()
+    );
+    assert!(
+        FileRevisionTable::find_by_id(created.file_revision_id)
+            .one(&transaction)
+            .await
+            .expect("transactional file revision lookup should succeed")
+            .is_some()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.create"))
+            .filter(AuditLogColumn::ExtraId1.eq(created.file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(created.file_revision_id))
+            .count(&transaction)
+            .await
+            .expect("transactional file-create audit lookup should succeed"),
+        1,
+    );
+    drop(ctx);
+    transaction
+        .rollback()
+        .await
+        .expect("file-create savepoint should roll back");
+
+    assert!(
+        file::Entity::find_by_id(created.file_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file lookup should succeed")
+            .is_none()
+    );
+    assert!(
+        FileRevisionTable::find_by_id(created.file_revision_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("rolled-back file revision lookup should succeed")
+            .is_none()
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("file.create"))
+            .filter(AuditLogColumn::ExtraId1.eq(created.file_id))
+            .filter(AuditLogColumn::ExtraId2.eq(created.file_revision_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back file-create audit lookup should succeed"),
+        0,
+    );
 }
 
 async fn cleanup_committed_page_pending_blob_fixture(
@@ -26708,6 +34582,11 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     const PAGE_SLUG: &str = "fixture-private-text-block-read";
     const PUBLIC_PAGE_SLUG: &str = "fixture-public-text-block-read";
     const PRIVATE_CATEGORY: &str = "fixture-text-block-read-private-view";
+    const PUBLIC_HTML_BYTES: &[u8] = b"public hosted HTML raw bytes";
+    const PRIVATE_HTML_BYTES: &[u8] = b"private hosted HTML raw bytes";
+    const DUPLICATE_HTML_BYTES: &[u8] = b"duplicate hosted HTML raw bytes";
+    const TWO_VISIBLE_HTML_BYTES: &[u8] = b"two visible hosted HTML raw bytes";
+    const OVERFLOW_HTML_BYTES: &[u8] = b"overflow hosted HTML raw bytes";
 
     let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
         .expect("Seeded site not found");
@@ -26745,6 +34624,7 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
         1,
         None,
         "sentinel-private-html-block",
+        Some(PRIVATE_HTML_BYTES),
     )
     .await;
     create_text_block_fixture(
@@ -26754,6 +34634,17 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
         2,
         Some("secret-code"),
         "sentinel-private-code-block",
+        None,
+    )
+    .await;
+    create_text_block_fixture(
+        &runner,
+        page.page_id,
+        TextBlockType::Html,
+        2,
+        None,
+        "sentinel-private-duplicate-html-block",
+        Some(DUPLICATE_HTML_BYTES),
     )
     .await;
 
@@ -26773,15 +34664,61 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
         }),
     );
     assert!(public_page.parser_errors.is_empty());
+    TextBlockService::add_blocks(
+        runner.context(),
+        public_page.page_id,
+        TextBlockType::Html,
+        &[TextBlock {
+            text: std::str::from_utf8(PUBLIC_HTML_BYTES).unwrap(),
+            text_type: None,
+            mime: MIME_HTML,
+            name: None,
+        }],
+    )
+    .await
+    .expect("public HTML block should be uploaded through add_blocks");
     create_text_block_fixture(
         &runner,
         public_page.page_id,
         TextBlockType::Html,
-        1,
+        2,
         None,
-        &format!("{}_html_1", public_page.page_id),
+        "sentinel-public-duplicate-html-block",
+        Some(DUPLICATE_HTML_BYTES),
     )
     .await;
+    create_text_block_fixture(
+        &runner,
+        public_page.page_id,
+        TextBlockType::Html,
+        3,
+        None,
+        "sentinel-public-visible-duplicate-html-block-1",
+        Some(TWO_VISIBLE_HTML_BYTES),
+    )
+    .await;
+    create_text_block_fixture(
+        &runner,
+        public_page.page_id,
+        TextBlockType::Html,
+        4,
+        None,
+        "sentinel-public-visible-duplicate-html-block-2",
+        Some(TWO_VISIBLE_HTML_BYTES),
+    )
+    .await;
+    for index in 5_i16..=37_i16 {
+        create_text_block_fixture(
+            &runner,
+            public_page.page_id,
+            TextBlockType::Html,
+            index,
+            None,
+            &format!("sentinel-overflow-html-block-{index}"),
+            Some(OVERFLOW_HTML_BYTES),
+        )
+        .await;
+    }
 
     runner.set_request_context(RequestContext::default());
 
@@ -26797,10 +34734,104 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     )
     .expect("public text block should exist");
     assert_eq!(public_block.index, 1);
-    assert_eq!(
-        public_block.s3_filename,
-        format!("{}_html_1", public_page.page_id)
+    assert!(
+        public_block
+            .s3_filename
+            .starts_with(&format!("text-blocks/{}/html/", public_page.page_id))
     );
+
+    let public_sha1 = format!("{:x}", Sha1::digest(PUBLIC_HTML_BYTES));
+    let public_by_hash = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": public_sha1.clone(),
+        }),
+    )
+    .expect("public HTML block should resolve by raw-byte SHA-1");
+    assert_eq!(public_by_hash.index, 1);
+    assert_eq!(public_by_hash.s3_filename, public_block.s3_filename);
+
+    let duplicate_sha1 = format!("{:x}", Sha1::digest(DUPLICATE_HTML_BYTES));
+    let duplicate_anonymous = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": duplicate_sha1.clone(),
+        }),
+    )
+    .expect("anonymous lookup should skip the private duplicate and find public HTML");
+    assert_eq!(duplicate_anonymous.index, 2);
+    assert_eq!(
+        duplicate_anonymous.s3_filename,
+        "sentinel-public-duplicate-html-block"
+    );
+
+    let two_visible_sha1 = format!("{:x}", Sha1::digest(TWO_VISIBLE_HTML_BYTES));
+    let two_visible = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": two_visible_sha1,
+        }),
+    );
+    assert!(
+        two_visible.is_none(),
+        "two ACL-visible rows with one SHA-1 must fail closed"
+    );
+
+    let overflow_sha1 = format!("{:x}", Sha1::digest(OVERFLOW_HTML_BYTES));
+    let overflow = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": overflow_sha1,
+        }),
+    );
+    assert!(
+        overflow.is_none(),
+        "33 matching rows must fail closed before ACL resolution"
+    );
+
+    let mismatch_sha1 = format!(
+        "{}{}",
+        if public_sha1.as_bytes()[0] == b'0' {
+            '1'
+        } else {
+            '0'
+        },
+        &public_sha1[1..],
+    );
+    let mismatch = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": mismatch_sha1,
+        }),
+    );
+    assert!(mismatch.is_none());
+
+    let private_sha1 = format!("{:x}", Sha1::digest(PRIVATE_HTML_BYTES));
+    let private_anonymous = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": private_sha1.clone(),
+        }),
+    );
+    assert!(private_anonymous.is_none());
 
     let error = run_endpoint_err!(
         runner,
@@ -26853,6 +34884,35 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     assert_eq!(private_html.index, 1);
     assert_eq!(private_html.s3_filename, "sentinel-private-html-block");
 
+    let private_by_hash = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": private_sha1,
+            "session_token": admin_session_token,
+        }),
+    )
+    .expect("admin should resolve private HTML block by raw-byte SHA-1");
+    assert_eq!(private_by_hash.index, 1);
+    assert_eq!(private_by_hash.s3_filename, "sentinel-private-html-block");
+
+    let duplicate_admin = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "block_type": "html",
+            "sha1": duplicate_sha1,
+            "session_token": admin_session_token,
+        }),
+    );
+    assert!(
+        duplicate_admin.is_none(),
+        "private plus public rows are two ACL-visible matches for admin"
+    );
+
     let private_code = run_endpoint!(
         runner,
         text_block_get_index,
@@ -26867,6 +34927,222 @@ async fn text_block_get_index_requires_parent_page_view_permission() {
     .expect("private named code block should exist");
     assert_eq!(private_code.index, 2);
     assert_eq!(private_code.s3_filename, "sentinel-private-code-block");
+
+    let old_html_bytes: Vec<u8> = runner
+        .state()
+        .s3_tblocks_bucket
+        .get_object(&public_block.s3_filename)
+        .await
+        .expect("existing HTML object should be readable")
+        .into();
+    let html_prefix = format!("text-blocks/{}/html/", public_page.page_id);
+    let old_html_keys = runner
+        .state()
+        .s3_tblocks_bucket
+        .list(html_prefix.clone(), None)
+        .await
+        .expect("existing HTML objects should be listable")
+        .into_iter()
+        .flat_map(|page| page.contents)
+        .map(|object| object.key)
+        .collect::<BTreeSet<_>>();
+    runner
+        .context()
+        .transaction()
+        .execute_raw(Statement::from_string(
+            DatabaseBackend::Postgres,
+            format!(
+                "ALTER TABLE text_block ADD CONSTRAINT issue1370_force_insert_{} CHECK (false) NOT VALID",
+                public_page.page_id
+            ),
+        ))
+        .await
+        .expect("forced text-block insert failure should be installed");
+    let failed_replacement = TextBlockService::add_blocks(
+        runner.context(),
+        public_page.page_id,
+        TextBlockType::Html,
+        &[TextBlock {
+            text: "this replacement must not overwrite the old object",
+            text_type: None,
+            mime: MIME_HTML,
+            name: None,
+        }],
+    )
+    .await;
+    assert!(
+        failed_replacement.is_err(),
+        "a forced database failure must fail the replacement"
+    );
+    let new_html_keys = runner
+        .state()
+        .s3_tblocks_bucket
+        .list(html_prefix, None)
+        .await
+        .expect("HTML objects should remain listable after rollback")
+        .into_iter()
+        .flat_map(|page| page.contents)
+        .map(|object| object.key)
+        .collect::<BTreeSet<_>>();
+    assert!(
+        old_html_keys == new_html_keys,
+        "a failed replacement must remove only its newly uploaded object"
+    );
+    let preserved_html_bytes: Vec<u8> = runner
+        .state()
+        .s3_tblocks_bucket
+        .get_object(&public_block.s3_filename)
+        .await
+        .expect("the old HTML object should survive rollback")
+        .into();
+    assert_eq!(
+        preserved_html_bytes, old_html_bytes,
+        "a failed same-index replacement must preserve the old object bytes"
+    );
+    runner
+        .state()
+        .s3_tblocks_bucket
+        .delete_object(&public_block.s3_filename)
+        .await
+        .expect("public HTML fixture cleanup should succeed");
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn startup_backfills_legacy_html_sha1_and_validates_constraint() {
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("workerless Deepwell state should build");
+    let page_id = PageTable::find()
+        .one(&state.database)
+        .await
+        .expect("seeded page lookup should succeed")
+        .expect("seeded page should exist")
+        .page_id;
+    let block_index = i16::MAX;
+    let rejected_block_index = i16::MAX - 1;
+    let missing_block_index = i16::MAX - 2;
+    let s3_filename = format!("issue1370-startup-legacy-{}", cuid());
+    let missing_s3_filename = format!("issue1370-startup-missing-{}", cuid());
+    let raw_bytes = b"legacy HTML bytes for startup backfill";
+
+    state
+        .s3_tblocks_bucket
+        .put_object(&s3_filename, raw_bytes)
+        .await
+        .expect("legacy HTML bytes should upload");
+    let txn = state
+        .database
+        .begin()
+        .await
+        .expect("legacy fixture transaction should begin");
+    txn.execute_raw(Statement::from_string(
+        txn.get_database_backend(),
+        "ALTER TABLE text_block ADD COLUMN IF NOT EXISTS wikidot_sha1 BYTEA",
+    ))
+    .await
+    .expect("legacy fixture should establish the SHA-1 column");
+    txn.execute_raw(Statement::from_string(
+        txn.get_database_backend(),
+        "ALTER TABLE text_block DROP CONSTRAINT IF EXISTS text_block_html_wikidot_sha1_present",
+    ))
+    .await
+    .expect("legacy fixture should remove the validation constraint");
+    text_block::ActiveModel {
+        block_type: Set(TextBlockType::Html),
+        page_id: Set(page_id),
+        block_index: Set(missing_block_index),
+        s3_filename: Set(missing_s3_filename),
+        block_name: Set(None),
+        text_type: Set(None),
+        wikidot_sha1: Set(None),
+    }
+    .insert(&txn)
+    .await
+    .expect("missing legacy HTML row should be inserted");
+    text_block::ActiveModel {
+        block_type: Set(TextBlockType::Html),
+        page_id: Set(page_id),
+        block_index: Set(block_index),
+        s3_filename: Set(s3_filename.clone()),
+        block_name: Set(None),
+        text_type: Set(None),
+        wikidot_sha1: Set(None),
+    }
+    .insert(&txn)
+    .await
+    .expect("legacy HTML row should be inserted");
+    txn.execute_raw(Statement::from_string(
+        txn.get_database_backend(),
+        "ALTER TABLE text_block ADD CONSTRAINT text_block_html_wikidot_sha1_present CHECK (block_type <> 'html' OR wikidot_sha1 IS NOT NULL) NOT VALID",
+    ))
+    .await
+    .expect("legacy fixture should restore the unvalidated constraint");
+    txn.commit()
+        .await
+        .expect("legacy fixture transaction should commit");
+    drop(state);
+
+    assert!(
+        build_server_state(Config::integration_testing(), Secrets::load())
+            .await
+            .is_err(),
+        "startup must fail when legacy HTML backfill cannot read S3"
+    );
+    let cleanup_state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("workerless state should clean up the failed startup fixture");
+    text_block::Entity::delete_by_id((TextBlockType::Html, page_id, missing_block_index))
+        .exec(&cleanup_state.database)
+        .await
+        .expect("missing legacy row cleanup should succeed");
+    drop(cleanup_state);
+
+    let state = build_server_state(Config::integration_testing(), Secrets::load())
+        .await
+        .expect("startup should backfill and validate legacy HTML rows");
+    let populated =
+        text_block::Entity::find_by_id((TextBlockType::Html, page_id, block_index))
+            .one(&state.database)
+            .await
+            .expect("backfilled row lookup should succeed")
+            .expect("backfilled row should remain present");
+    assert_eq!(
+        populated.wikidot_sha1,
+        Some(Sha1::digest(raw_bytes).to_vec())
+    );
+
+    let rejected = text_block::ActiveModel {
+        block_type: Set(TextBlockType::Html),
+        page_id: Set(page_id),
+        block_index: Set(rejected_block_index),
+        s3_filename: Set(format!("issue1370-startup-rejected-{}", cuid())),
+        block_name: Set(None),
+        text_type: Set(None),
+        wikidot_sha1: Set(None),
+    }
+    .insert(&state.database)
+    .await;
+    assert!(
+        rejected.is_err(),
+        "validated constraint must reject a remaining NULL HTML identity"
+    );
+
+    text_block::Entity::delete_by_id((TextBlockType::Html, page_id, block_index))
+        .exec(&state.database)
+        .await
+        .expect("legacy row cleanup should succeed");
+    state
+        .s3_tblocks_bucket
+        .delete_object(&s3_filename)
+        .await
+        .expect("legacy object cleanup should succeed");
 }
 
 async fn create_empty_file_fixture(
@@ -26999,6 +35275,7 @@ async fn create_text_block_fixture(
     block_index: i16,
     block_name: Option<&str>,
     s3_filename: &str,
+    raw_bytes: Option<&[u8]>,
 ) {
     text_block::ActiveModel {
         block_type: Set(block_type),
@@ -27007,6 +35284,7 @@ async fn create_text_block_fixture(
         s3_filename: Set(s3_filename.to_owned()),
         block_name: Set(block_name.map(str::to_owned)),
         text_type: Set(None),
+        wikidot_sha1: Set(raw_bytes.map(|bytes| Sha1::digest(bytes).to_vec())),
     }
     .insert(runner.context().transaction())
     .await
@@ -27130,6 +35408,52 @@ async fn make_page_mutation_test_category_for_user(
     )
     .await
     .expect("user should receive private mutation role");
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct PageActionMutationSnapshot {
+    page: page::Model,
+    revision_count: u64,
+    categories: Vec<page_category::Model>,
+    audit_count: u64,
+    text_blocks: Vec<(text_block::Model, Vec<u8>)>,
+}
+
+async fn snapshot_page_action_mutation_state(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+) -> PageActionMutationSnapshot {
+    let page = PageTable::find_by_id(page_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("page-action snapshot page lookup should succeed")
+        .expect("page-action snapshot page should exist");
+    let revision_count = PageRevisionTable::find()
+        .filter(page_revision::Column::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("page-action snapshot revision count should be readable");
+    let categories = PageCategoryTable::find()
+        .filter(page_category::Column::SiteId.eq(site_id))
+        .order_by_asc(page_category::Column::CategoryId)
+        .all(runner.context().transaction())
+        .await
+        .expect("page-action snapshot categories should be readable");
+    let audit_count = AuditLogTable::find()
+        .filter(AuditLogColumn::PageId.eq(page_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("page-action snapshot audit count should be readable");
+    let text_blocks = snapshot_page_text_blocks(runner, page_id).await;
+
+    PageActionMutationSnapshot {
+        page,
+        revision_count,
+        categories,
+        audit_count,
+        text_blocks,
+    }
 }
 
 async fn set_test_user_name(runner: &TestRunner, user_id: i64, name: &str) {
@@ -29002,14 +37326,66 @@ async fn page_tags_select_requires_an_authenticated_request_context() {
 #[tokio::test]
 async fn page_select_requires_an_authenticated_request_context() {
     let runner = TestRunner::setup().await;
-    let error = run_endpoint_err!(
+    for selectors in [
+        json!({}),
+        json!({"categories": []}),
+        json!({"tags_any": []}),
+        json!({"categories": [], "tags_any": []}),
+    ] {
+        let mut params = selectors;
+        params["site"] = json!("scp-wiki");
+        let error = run_endpoint_err!(runner, page_select, params);
+        assert_contains_error!(error, ErrorType::PermissionDenied);
+    }
+}
+
+#[tokio::test]
+async fn page_select_resolves_the_site_before_empty_selectors() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site.site.site_id),
+        page_reference: None,
+    });
+
+    let baseline = exn_error_to_rpc_error(run_endpoint_err!(
         runner,
         page_select,
-        json!({
-            "site": "scp-wiki",
-        }),
-    );
-    assert_contains_error!(error, ErrorType::PermissionDenied);
+        json!({"site": "xmlrpc-missing-site"}),
+    ));
+    let baseline_shape = (baseline.code(), baseline.message().to_owned());
+
+    for selectors in [
+        json!({"categories": []}),
+        json!({"tags_any": []}),
+        json!({"categories": [], "tags_any": []}),
+        json!({"tags_all": []}),
+        json!({"tags_none": []}),
+    ] {
+        let mut params = selectors;
+        params["site"] = json!("xmlrpc-missing-site");
+        let error =
+            exn_error_to_rpc_error(run_endpoint_err!(runner, page_select, params,));
+        assert_eq!(
+            (error.code(), error.message().to_owned()),
+            baseline_shape,
+            "empty selectors must preserve the ordinary missing-site fault shape",
+        );
+    }
+
+    for selectors in [
+        json!({"categories": []}),
+        json!({"tags_any": []}),
+        json!({"categories": [], "tags_any": []}),
+    ] {
+        let mut params = selectors;
+        params["site"] = json!("scp-wiki");
+        let selected = run_endpoint!(runner, page_select, params);
+        assert!(selected.is_empty());
+    }
 }
 
 #[tokio::test]
@@ -29957,6 +38333,268 @@ async fn countpages_substitutes_total_for_tagged_pages() {
             "CountPages fixture should not contain {forbidden:?}:\n{html}"
         );
     }
+}
+
+#[tokio::test]
+async fn countpages_saved_page_views_follow_current_matching_page_state() {
+    async fn load_public_view(
+        runner: &TestRunner,
+        site_id: i64,
+        slug: &str,
+        extra: &str,
+    ) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": extra},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found CountPages page view, got {other:?}"),
+        }
+    }
+
+    fn assert_count(html: &str, marker: &str, expected: usize) {
+        assert!(
+            html.contains(&format!("{marker}={expected}")),
+            "CountPages view should contain {marker}={expected}:\n{html}",
+        );
+        assert!(
+            !html.contains(&format!("{marker}=%%total%%")),
+            "executable CountPages must substitute its total:\n{html}",
+        );
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category = "fixture-countpages-freshness";
+    let template_category = "fixture-countpages-freshness-template";
+    let tag = "fixture-countpages-freshness-match";
+    let direct_slug = "fixture-countpages-freshness:direct";
+    let template_slug = "fixture-countpages-freshness-template:_template";
+    let templated_slug = "fixture-countpages-freshness-template:templated";
+    let fallback_slug = "fixture-countpages-freshness:fallback";
+    let dynamic_slug = "fixture-countpages-freshness:dynamic";
+    let literal_slug = "fixture-countpages-freshness:literal";
+    let target_slug = "fixture-countpages-freshness:target";
+
+    CategoryService::get_or_create(runner.context(), site_id, category)
+        .await
+        .expect("CountPages freshness category should be created");
+    CategoryService::get_or_create(runner.context(), site_id, template_category)
+        .await
+        .expect("CountPages freshness template category should be created");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        direct_slug,
+        "Fixture CountPages Freshness Direct",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"+{tag}\" limit=\"20\"]]DIRECT_COUNT=%%total%%[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        template_slug,
+        "Fixture CountPages Freshness Template",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"+{tag}\" limit=\"20\"]]TEMPLATE_COUNT=%%total%%[[/module]]\n\n%%content%%",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        templated_slug,
+        "Fixture CountPages Freshness Templated",
+        "TEMPLATED_CONTENT",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        fallback_slug,
+        "Fixture CountPages Freshness URL Fallback",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"@URL|+{tag}\" limit=\"20\"]]FALLBACK_COUNT=%%total%%[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        dynamic_slug,
+        "Fixture CountPages Freshness Dynamic Literal",
+        &format!(
+            "[[module CountPages category=\"{category}\" tags=\"@URL\" limit=\"20\"]]DYNAMIC_COUNT=%%total%%[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        literal_slug,
+        "Fixture CountPages Freshness Literal",
+        &format!(
+            "[[code]]\n[[module CountPages category=\"{category}\" tags=\"+{tag}\" limit=\"20\"]]CODE_COUNT=%%total%%[[/module]]\n[[/code]]\n\n[[module CountPages]][[/module]]",
+        ),
+    )
+    .await;
+
+    let stored_direct =
+        load_listpages_test_compiled_html(&runner, site_id, direct_slug).await;
+    let stored_dynamic =
+        load_listpages_test_compiled_html(&runner, site_id, dynamic_slug).await;
+    let stored_literal =
+        load_listpages_test_compiled_html(&runner, site_id, literal_slug).await;
+    assert_count(&stored_direct, "DIRECT_COUNT", 0);
+    assert!(stored_dynamic.contains("DYNAMIC_COUNT=%%total%%"));
+    assert!(stored_literal.contains("CODE_COUNT=%%total%%"));
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(target_slug)),
+    );
+    let created = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "CountPages freshness matching target.",
+            "title": "Fixture CountPages Freshness Matching Target",
+            "alt_title": null,
+            "slug": target_slug,
+            "layout": "wikidot",
+            "tags": [tag],
+            "revision_comments": "create matching CountPages freshness target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("CountPages freshness target should exist");
+
+    for (slug, marker) in [
+        (direct_slug, "DIRECT_COUNT"),
+        (templated_slug, "TEMPLATE_COUNT"),
+        (fallback_slug, "FALLBACK_COUNT"),
+    ] {
+        let html = load_public_view(&runner, site_id, slug, "").await;
+        assert_count(&html, marker, 1);
+        if slug == templated_slug {
+            assert!(html.contains("TEMPLATED_CONTENT"));
+        }
+    }
+    assert_count(
+        &load_public_view(
+            &runner,
+            site_id,
+            fallback_slug,
+            "/tag/conflicting-route-tag",
+        )
+        .await,
+        "FALLBACK_COUNT",
+        1,
+    );
+
+    let dynamic_with_route =
+        load_public_view(&runner, site_id, dynamic_slug, &format!("/tag/{tag}")).await;
+    assert_eq!(
+        dynamic_with_route, stored_dynamic,
+        "bare tags=\"@URL\" must stay literal even when the route supplies a tag",
+    );
+    let literal_after_create = load_public_view(&runner, site_id, literal_slug, "").await;
+    assert_eq!(
+        literal_after_create, stored_literal,
+        "CountPages in code and a closed empty marker must not create runtime freshness",
+    );
+
+    let removed_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        target_slug,
+        created.revision_id,
+        &[],
+    )
+    .await;
+    for (slug, marker) in [
+        (direct_slug, "DIRECT_COUNT"),
+        (templated_slug, "TEMPLATE_COUNT"),
+        (fallback_slug, "FALLBACK_COUNT"),
+    ] {
+        assert_count(
+            &load_public_view(&runner, site_id, slug, "").await,
+            marker,
+            0,
+        );
+    }
+
+    let restored_revision = set_listpages_test_tags(
+        &mut runner,
+        site_id,
+        target_slug,
+        removed_revision,
+        &[tag],
+    )
+    .await;
+    assert_count(
+        &load_public_view(&runner, site_id, direct_slug, "").await,
+        "DIRECT_COUNT",
+        1,
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(target.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": target.page_id,
+            "last_revision_id": restored_revision,
+            "revision_comments": "delete matching CountPages freshness target",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    for (slug, marker) in [
+        (direct_slug, "DIRECT_COUNT"),
+        (templated_slug, "TEMPLATE_COUNT"),
+        (fallback_slug, "FALLBACK_COUNT"),
+    ] {
+        assert_count(
+            &load_public_view(&runner, site_id, slug, "").await,
+            marker,
+            0,
+        );
+    }
+
+    let stored_after_mutations =
+        load_listpages_test_compiled_html(&runner, site_id, direct_slug).await;
+    assert_eq!(
+        stored_after_mutations, stored_direct,
+        "matching page mutations must not rewrite the holder's save-time compilation",
+    );
 }
 
 /// Live capture (sandbox-for-codex, 2026-08-06): an unclosed CountPages
@@ -31398,6 +40036,234 @@ async fn first_revision_rerenders_tagcloud() {
     );
 }
 
+#[tokio::test]
+async fn saved_tagcloud_page_view_follows_independent_tag_mutations() {
+    async fn load_public_view(runner: &TestRunner, site_id: i64, slug: &str) -> String {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected found TagCloud page view, got {other:?}"),
+        }
+    }
+
+    async fn import_holder(
+        runner: &mut TestRunner,
+        site_id: i64,
+        page_id: i64,
+        revision_id: i64,
+        slug: &str,
+        source: &str,
+    ) {
+        set_mutation_request_context(
+            runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Slug(Cow::Owned(slug.to_owned())),
+        );
+        run_endpoint!(
+            runner,
+            import_wikidot_page,
+            json!({
+                "page_id": page_id,
+                "site_id": site_id,
+                "created_at": "2026-08-13T00:00:00Z",
+                "slug": slug,
+                "locked": false,
+                "discussion_thread_id": null,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        run_endpoint!(
+            runner,
+            import_wikidot_page_revision,
+            json!({
+                "revision_id": revision_id,
+                "revision_type": "create",
+                "created_at": "2026-08-13 00:00:00.0 +00:00:00",
+                "updated_at": null,
+                "revision_number": 0,
+                "page_id": page_id,
+                "site_id": site_id,
+                "user_id": ADMIN_USER_ID,
+                "wikitext": source,
+                "comments": "import TagCloud cache fixture",
+                "title": "Imported TagCloud Freshness Holder",
+                "slug": slug,
+                "tags": [],
+            }),
+        );
+    }
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let category = "fixture-tagcloud-freshness";
+    let holder_slug = "fixture-tagcloud-freshness:holder";
+    let duplicate_2d_slug = "fixture-tagcloud-freshness:duplicate-2d";
+    let target_slug = "fixture-tagcloud-freshness:target";
+    let link_target = "fixture-tagcloud-freshness:tags";
+    let tag = "fixture-tagcloud-freshness-current";
+
+    CategoryService::get_or_create(runner.context(), site_id, category)
+        .await
+        .expect("TagCloud freshness category should be created");
+    let target_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Fixture TagCloud Freshness Target",
+        "TagCloud freshness target.",
+    )
+    .await;
+    import_holder(
+        &mut runner,
+        site_id,
+        2_140_170_000,
+        2_140_171_000,
+        holder_slug,
+        &format!("[[module TagCloud category=\"{category}\" target=\"{link_target}\"]]",),
+    )
+    .await;
+    import_holder(
+        &mut runner,
+        site_id,
+        2_140_170_001,
+        2_140_171_001,
+        duplicate_2d_slug,
+        &format!(
+            "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"3d\" mode=\"2d\"]]",
+        ),
+    )
+    .await;
+    let inert_holders = [
+        (
+            "fixture-tagcloud-freshness:literal",
+            format!(
+                "[[code]]\n[[module TagCloud category=\"{category}\" target=\"{link_target}\"]]\n[[/code]]",
+            ),
+        ),
+        (
+            "fixture-tagcloud-freshness:3d",
+            format!(
+                "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"3d\"]]",
+            ),
+        ),
+        (
+            "fixture-tagcloud-freshness:duplicate-3d",
+            format!(
+                "[[module TagCloud category=\"{category}\" target=\"{link_target}\" mode=\"2d\" mode=\"3d\"]]",
+            ),
+        ),
+        (
+            "fixture-tagcloud-freshness:parser-invalid",
+            format!(
+                "[[module TagCloud category=\"{category}\" target=\"{link_target}\" broken]]",
+            ),
+        ),
+    ];
+    for (index, (slug, source)) in inert_holders.iter().enumerate() {
+        import_holder(
+            &mut runner,
+            site_id,
+            2_140_170_002 + index as i64,
+            2_140_171_002 + index as i64,
+            slug,
+            source,
+        )
+        .await;
+    }
+
+    let stored_before =
+        load_listpages_test_compiled_html(&runner, site_id, holder_slug).await;
+    let stored_duplicate_2d =
+        load_listpages_test_compiled_html(&runner, site_id, duplicate_2d_slug).await;
+    let mut stored_inert = Vec::new();
+    for (slug, _) in &inert_holders {
+        stored_inert.push((
+            *slug,
+            load_listpages_test_compiled_html(&runner, site_id, slug).await,
+        ));
+    }
+    assert!(!stored_before.contains(tag));
+    assert!(!stored_duplicate_2d.contains(tag));
+
+    for slug in [holder_slug, duplicate_2d_slug] {
+        let cache_metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert_eq!(
+            cache_metadata.article_page_cache_key, None,
+            "an imported executable TagCloud page must not cache tag-dependent HTML for {slug}",
+        );
+    }
+    for (slug, _) in &inert_holders {
+        let cache_metadata = run_endpoint!(
+            runner,
+            article_view_cache_metadata,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": {"slug": slug, "extra": ""},
+                "locales": ["en-US", "en"],
+            }),
+        );
+        assert!(
+            cache_metadata.article_page_cache_key.is_some(),
+            "literal, effective 3d, and parser-invalid TagCloud shapes should remain cache-eligible for {slug}",
+        );
+    }
+
+    set_listpages_test_tags(&mut runner, site_id, target_slug, target_revision, &[tag])
+        .await;
+
+    let view_html = load_public_view(&runner, site_id, holder_slug).await;
+    assert!(
+        view_html.contains(&format!(
+            r#"<a class="tag" href="/{link_target}/tag/{tag}/category/{category}""#,
+        )),
+        "saved TagCloud view should use current category tags and its authored link target:\n{view_html}",
+    );
+    let duplicate_2d_html = load_public_view(&runner, site_id, duplicate_2d_slug).await;
+    assert!(
+        duplicate_2d_html.contains(&format!(
+            r#"<a class="tag" href="/{link_target}/tag/{tag}/category/{category}""#,
+        )),
+        "the last mode attribute should make this TagCloud executable:\n{duplicate_2d_html}",
+    );
+    for (slug, stored) in stored_inert {
+        assert_eq!(
+            load_public_view(&runner, site_id, slug).await,
+            stored,
+            "literal, effective 3d, and parser-invalid TagCloud shapes must not opt into runtime freshness for {slug}",
+        );
+    }
+
+    let stored_after =
+        load_listpages_test_compiled_html(&runner, site_id, holder_slug).await;
+    assert_eq!(
+        stored_after, stored_before,
+        "a TagCloud GET rerender must not rewrite the holder's stored compiled artifact",
+    );
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-29): `TagCloud` emits a
 /// `pages-tag-cloud-box` of tag anchors, filters by category, interpolates
 /// font/color styles over the displayed alphabetical tag slice, treats a
@@ -32084,6 +40950,46 @@ async fn pagecalendar_module_renders_live_category_links_and_counts() {
         "duplicate PageCalendar category attributes should use the last category value observed on live Wikidot:\n{html}",
     );
 
+    let selected_month_view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {"slug": holder, "extra": "/date/2026.7"},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let selected_month_html = match selected_month_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found PageCalendar date view, got {other:?}"),
+    };
+    let selected_explicit =
+        section(&selected_month_html, "EXPLICIT_START", "EXPLICIT_END");
+    let month_link = format!(r#"<a href="/{holder}/date/2026.7">July (4)</a>"#);
+    let month_link_start = selected_explicit
+        .find(&month_link)
+        .expect("the routed PageCalendar month should render");
+    let month_row_start = selected_explicit[..month_link_start]
+        .rfind("<li")
+        .expect("the selected month should have a list row");
+    let year_link = format!(r#"<a href="/{holder}/date/2026">2026 (4)</a>"#);
+    let year_link_start = selected_explicit
+        .find(&year_link)
+        .expect("the routed PageCalendar year should render");
+    let year_row_start = selected_explicit[..year_link_start]
+        .rfind("<li")
+        .expect("the selected year should have a list row");
+    assert!(
+        selected_explicit[month_row_start..month_link_start]
+            .contains(r#"class="selected""#)
+            && !selected_explicit[year_row_start..year_link_start]
+                .contains(r#"class="selected""#),
+        "PageCalendar month URL should select only the month row:\n{selected_month_html}",
+    );
+
     assert!(!html.contains("[[module PageCalendar"), "{html}");
 }
 
@@ -32528,6 +41434,134 @@ async fn page_query_orders_by_page_slug_without_category_prefix() {
         slugs,
         ["zcategory:alpha", "acategory:beta", "mcategory:gamma"],
         "PageSlug order should sort by page slug, not by full category-qualified slug",
+    );
+}
+
+#[tokio::test]
+async fn page_query_revision_order_keeps_unrequested_count_out_of_results() {
+    const LOW_SLUG: &str = "page-query-revision-order-low";
+    const HIGH_SLUG: &str = "page-query-revision-order-high";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        LOW_SLUG,
+        "PageQuery revision-order low",
+        "one revision",
+    )
+    .await;
+    let high_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        HIGH_SLUG,
+        "PageQuery revision-order high",
+        "first revision",
+    )
+    .await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(HIGH_SLUG)),
+    );
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": HIGH_SLUG,
+            "last_revision_id": high_revision,
+            "revision_comments": "add second PageQuery revision-order revision",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "second revision",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("revision-order high fixture edit should create a revision");
+
+    let fixture_slugs = [Cow::Borrowed(LOW_SLUG), Cow::Borrowed(HIGH_SLUG)];
+    let mut query = PageQuery {
+        current_page_id: 0,
+        current_site_id: site_id,
+        queried_site_id: Some(site_id),
+        page_type: PageTypeSelector::All,
+        categories: CategoriesSelector {
+            included_categories: IncludedCategories::All,
+            excluded_categories: &[],
+        },
+        tags: TagCondition {
+            any_present: &[],
+            all_present: &[],
+            none_present: &[],
+            untagged: false,
+        },
+        page_parent: PageParentSelector::All,
+        contains_outgoing_links: &[],
+        creation_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        update_date: DateSelector::FromPresent {
+            start: OffsetDateTime::UNIX_EPOCH,
+        },
+        author: AuthorSelector::All,
+        score: &[],
+        votes: &[],
+        offset: 0,
+        range: RangeSelector::Current,
+        name: None,
+        slug: None,
+        slugs: &fixture_slugs,
+        data_form_fields: &[],
+        order: Some(OrderBySelector {
+            property: OrderProperty::Revisions,
+            ascending: false,
+        }),
+        candidate_limit: None,
+        pagination: PaginationSelector {
+            limit: Some(10),
+            ..Default::default()
+        },
+        variables: &[],
+        fields: FoundPageFields {
+            slug: true,
+            revision_count: false,
+            ..Default::default()
+        },
+    };
+
+    let ordered = PageQueryService::find(runner.context(), query.clone())
+        .await
+        .expect("ordering-only revision query should succeed");
+    assert_eq!(
+        ordered
+            .pages
+            .iter()
+            .map(|row| row.slug.as_deref())
+            .collect::<Vec<_>>(),
+        [Some(HIGH_SLUG), Some(LOW_SLUG)],
+        "the internally projected count must still control revision ordering",
+    );
+    assert!(
+        ordered.pages.iter().all(|row| row.revision_count.is_none()),
+        "revision ordering must not expose an unrequested public result field",
+    );
+
+    query.fields.revision_count = true;
+    let requested = PageQueryService::find(runner.context(), query)
+        .await
+        .expect("revision query with requested count should succeed");
+    assert_eq!(
+        requested
+            .pages
+            .iter()
+            .map(|row| (row.slug.as_deref(), row.revision_count))
+            .collect::<Vec<_>>(),
+        [(Some(HIGH_SLUG), Some(2)), (Some(LOW_SLUG), Some(1))],
     );
 }
 
@@ -34562,6 +43596,847 @@ async fn score_selectors_at_limit_render_countpages_normally() {
         count_html.contains("SCORE_SELECTOR_LIMIT_COUNT=1"),
         "CountPages selectors at the limit must still execute normally:\n{count_html}",
     );
+}
+
+async fn page_move_rpc_request(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    session_token: Option<&str>,
+    site_id: Option<i64>,
+    page: Option<&str>,
+    method: &str,
+    params: JsonValue,
+) -> JsonValue {
+    let mut request = client
+        .post(format!("http://{address}"))
+        .bearer_auth(
+            std::env::var("DEEPWELL_RPC_TOKEN")
+                .expect("test RPC token must be configured"),
+        )
+        .json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params,
+        }));
+    if let Some(session_token) = session_token {
+        request = request.header("X-Deepwell-Session-Token", session_token);
+    }
+    if let Some(site_id) = site_id {
+        request = request.header("X-Deepwell-Site-Id", site_id);
+    }
+    if let Some(page) = page {
+        request = request.header("X-Deepwell-Page", page);
+    }
+
+    request
+        .send()
+        .await
+        .expect("public page move RPC request should complete")
+        .json()
+        .await
+        .expect("public page move RPC response should be JSON")
+}
+
+fn page_move_rpc_result(response: JsonValue, method: &str) -> JsonValue {
+    assert!(
+        response.get("error").is_none(),
+        "public page move fixture method {method} failed: {response}",
+    );
+    response.get("result").cloned().unwrap_or(JsonValue::Null)
+}
+
+struct PageMoveRpcCleanup {
+    site_id: Option<i64>,
+    user_id: Option<i64>,
+    session_token: Option<String>,
+    page_ids: Vec<i64>,
+    revision_ids: Vec<i64>,
+    category_ids: Vec<i64>,
+    owned_category_page_ids: Vec<i64>,
+    relation_ids: Vec<i64>,
+}
+
+impl PageMoveRpcCleanup {
+    fn new() -> Self {
+        Self {
+            site_id: None,
+            user_id: None,
+            session_token: None,
+            page_ids: Vec::new(),
+            revision_ids: Vec::new(),
+            category_ids: Vec::new(),
+            owned_category_page_ids: Vec::new(),
+            relation_ids: Vec::new(),
+        }
+    }
+}
+
+async fn cleanup_page_move_rpc_fixture(
+    state: &ServerState,
+    cleanup: &PageMoveRpcCleanup,
+) -> std::result::Result<(), String> {
+    let Some(site_id) = cleanup.site_id else {
+        return Ok(());
+    };
+    let transaction =
+        state.database.begin().await.map_err(|error| {
+            format!("page move cleanup transaction failed: {error:?}")
+        })?;
+
+    let mut category_ids = cleanup
+        .category_ids
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+    for &page_id in &cleanup.owned_category_page_ids {
+        if let Some(page) = PageTable::find_by_id(page_id)
+            .one(&transaction)
+            .await
+            .map_err(|error| {
+                format!("page move fixture page-category lookup failed: {error:?}")
+            })?
+        {
+            category_ids.insert(page.page_category_id);
+        }
+    }
+
+    let relation_ids = cleanup
+        .relation_ids
+        .iter()
+        .copied()
+        .collect::<BTreeSet<_>>();
+
+    let mut text_hashes = BTreeSet::new();
+    for &revision_id in &cleanup.revision_ids {
+        if let Some(revision) = PageRevisionTable::find_by_id(revision_id)
+            .one(&transaction)
+            .await
+            .map_err(|error| {
+                format!("page move fixture revision lookup failed: {error:?}")
+            })?
+        {
+            text_hashes.insert(revision.wikitext_hash);
+            text_hashes.insert(revision.compiled_body_html_hash);
+            text_hashes.extend(revision.compiled_body_styles_hash);
+            text_hashes.extend(revision.compiled_top_bar_html_hash);
+            text_hashes.extend(revision.compiled_side_bar_html_hash);
+        }
+    }
+
+    for relation_id in relation_ids {
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                "DELETE FROM relation WHERE relation_id = $1",
+                [Value::from(relation_id)],
+            ))
+            .await
+            .map_err(|error| {
+                format!("page move fixture relation cleanup failed: {error:?}")
+            })?;
+    }
+    for &page_id in &cleanup.page_ids {
+        let statements = [
+            "DELETE FROM page_parent WHERE parent_page_id = $1 OR child_page_id = $1",
+            "DELETE FROM page_connection WHERE from_page_id = $1 OR to_page_id = $1",
+            "DELETE FROM page_connection_missing WHERE from_page_id = $1",
+            "DELETE FROM page_link WHERE page_id = $1",
+            "DELETE FROM page_lock WHERE page_id = $1",
+            "DELETE FROM page_vote WHERE page_id = $1",
+            "DELETE FROM text_block WHERE page_id = $1",
+            "UPDATE page SET latest_revision_id = NULL WHERE page_id = $1",
+            "DELETE FROM audit_log WHERE page_id = $1",
+        ];
+        for sql in statements {
+            transaction
+                .execute_raw(Statement::from_sql_and_values(
+                    DatabaseBackend::Postgres,
+                    sql,
+                    [Value::from(page_id)],
+                ))
+                .await
+                .map_err(|error| {
+                    format!("page move fixture page cleanup failed: {error:?}")
+                })?;
+        }
+    }
+    for &revision_id in &cleanup.revision_ids {
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                "DELETE FROM page_revision WHERE revision_id = $1",
+                [Value::from(revision_id)],
+            ))
+            .await
+            .map_err(|error| {
+                format!("page move fixture revision cleanup failed: {error:?}")
+            })?;
+    }
+    for &page_id in &cleanup.page_ids {
+        PageTable::delete_by_id(page_id)
+            .exec(&transaction)
+            .await
+            .map_err(|error| {
+                format!("page move fixture page deletion failed: {error:?}")
+            })?;
+    }
+    for category_id in category_ids {
+        PageCategoryTable::delete_by_id(category_id)
+            .exec(&transaction)
+            .await
+            .map_err(|error| {
+                format!("page move fixture category cleanup failed: {error:?}")
+            })?;
+    }
+    if let Some(session_token) = &cleanup.session_token {
+        SessionTable::delete_by_id(session_token)
+            .exec(&transaction)
+            .await
+            .map_err(|error| {
+                format!("page move fixture session cleanup failed: {error:?}")
+            })?;
+    }
+    if let Some(user_id) = cleanup.user_id {
+        let ctx = ServiceContext::new(state, &transaction);
+        PermissionCache::invalidate_user(&ctx, site_id, user_id)
+            .await
+            .map_err(|error| {
+                format!("page move fixture permission-cache cleanup failed: {error:?}")
+            })?;
+    }
+    for hash in text_hashes {
+        transaction
+            .execute_raw(Statement::from_sql_and_values(
+                DatabaseBackend::Postgres,
+                "DELETE FROM text WHERE hash = $1 AND NOT EXISTS (SELECT 1 FROM page_revision WHERE wikitext_hash = text.hash OR compiled_body_html_hash = text.hash OR compiled_body_styles_hash = text.hash OR compiled_top_bar_html_hash = text.hash OR compiled_side_bar_html_hash = text.hash) AND NOT EXISTS (SELECT 1 FROM message_record WHERE wikitext_hash = text.hash OR compiled_hash = text.hash) AND NOT EXISTS (SELECT 1 FROM message_draft WHERE wikitext_hash = text.hash OR compiled_hash = text.hash) AND NOT EXISTS (SELECT 1 FROM forum_post_revision WHERE wikitext_hash = text.hash OR compiled_html_hash = text.hash)",
+                [Value::from(hash)],
+            ))
+            .await
+            .map_err(|error| {
+                format!("page move fixture text cleanup failed: {error:?}")
+            })?;
+    }
+    transaction
+        .commit()
+        .await
+        .map_err(|error| format!("page move fixture cleanup commit failed: {error:?}"))
+}
+
+struct PageMoveRpcCreatePage<'a> {
+    slug: &'a str,
+    title: &'a str,
+    wikitext: String,
+    owns_category: bool,
+}
+
+async fn page_move_rpc_create_page(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    session_token: &str,
+    user_id: i64,
+    site_id: i64,
+    request: PageMoveRpcCreatePage<'_>,
+    cleanup: &mut PageMoveRpcCleanup,
+) -> JsonValue {
+    let PageMoveRpcCreatePage {
+        slug,
+        title,
+        wikitext,
+        owns_category,
+    } = request;
+    let created = page_move_rpc_result(
+        page_move_rpc_request(
+            client,
+            address,
+            Some(session_token),
+            Some(site_id),
+            Some(slug),
+            "page_create",
+            json!({
+                "site_id": site_id,
+                "wikitext": wikitext,
+                "title": title,
+                "alt_title": null,
+                "slug": slug,
+                "layout": null,
+                "revision_comments": "create page move rollback fixture",
+                "user_id": user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        )
+        .await,
+        "page_create rollback fixture",
+    );
+    if let Some(page_id) = created["page_id"].as_i64() {
+        cleanup.page_ids.push(page_id);
+        if owns_category {
+            cleanup.owned_category_page_ids.push(page_id);
+        }
+    }
+    if let Some(revision_id) = created["revision_id"].as_i64() {
+        cleanup.revision_ids.push(revision_id);
+    }
+    if owns_category {
+        let page = page_move_rpc_get_page(client, address, site_id, slug).await;
+        if let Some(category_id) = page["page_category_id"].as_i64()
+            && !cleanup.category_ids.contains(&category_id)
+        {
+            cleanup.category_ids.push(category_id);
+        }
+    }
+    created
+}
+
+async fn page_move_rpc_get_page(
+    client: &reqwest::Client,
+    address: SocketAddr,
+    site_id: i64,
+    slug: &str,
+) -> JsonValue {
+    page_move_rpc_result(
+        page_move_rpc_request(
+            client,
+            address,
+            None,
+            Some(site_id),
+            Some(slug),
+            "page_get",
+            json!({"site_id": site_id, "page": slug}),
+        )
+        .await,
+        "page_get rollback fixture",
+    )
+}
+
+#[tokio::test]
+async fn page_move_renders_with_destination_category_context() {
+    let mut runner = TestRunner::setup().await;
+
+    const SITE_SLUG: &str = "test";
+    const SOURCE_CATEGORY: &str = "fixture-page-move-render-source";
+    const DESTINATION_CATEGORY: &str = "fixture-page-move-render-destination";
+    const SOURCE_SLUG: &str = "fixture-page-move-render-source:target";
+    const DESTINATION_SLUG: &str = "fixture-page-move-render-destination:target";
+    const SOURCE_TOP_BAR_SLUG: &str = "fixture-page-move-render-nav:source-top";
+    const DESTINATION_TOP_BAR_SLUG: &str = "fixture-page-move-render-nav:destination-top";
+    const SOURCE_CONTEXT_SLUG: &str = "fixture-page-move-render-source:context-marker";
+    const DESTINATION_CONTEXT_SLUG: &str =
+        "fixture-page-move-render-destination:context-marker";
+    const SOURCE_MARKER: &str = "PAGE_MOVE_SOURCE_TOP_BAR_MARKER";
+    const DESTINATION_MARKER: &str = "PAGE_MOVE_DESTINATION_TOP_BAR_MARKER";
+
+    let site = run_endpoint!(runner, site_get, json!({"site": SITE_SLUG}))
+        .expect("seeded test site should exist")
+        .site;
+    let site_id = site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SOURCE_TOP_BAR_SLUG,
+        "Page Move Source Top Bar",
+        SOURCE_MARKER,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DESTINATION_TOP_BAR_SLUG,
+        "Page Move Destination Top Bar",
+        DESTINATION_MARKER,
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        SOURCE_CONTEXT_SLUG,
+        "Page Move Source Context Marker",
+        "Page move source context marker.",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DESTINATION_CONTEXT_SLUG,
+        "Page Move Destination Context Marker",
+        "Page move destination context marker.",
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let source_category = run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": SOURCE_CATEGORY,
+            "user_id": ADMIN_USER_ID,
+            "top_bar_page": SOURCE_TOP_BAR_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let destination_category = run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": DESTINATION_CATEGORY,
+            "user_id": ADMIN_USER_ID,
+            "top_bar_page": DESTINATION_TOP_BAR_SLUG,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(SOURCE_SLUG)),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": concat!(
+                "[[module ListPages name=\"context-marker\" limit=\"1\" separate=\"no\" wrapper=\"no\"]]\n",
+                "PAGE_MOVE_BODY_CONTEXT=%%fullname%%\n",
+                "[[/module]]",
+            ),
+            "title": "Page Move Destination Render Context",
+            "alt_title": null,
+            "slug": SOURCE_SLUG,
+            "layout": null,
+            "revision_comments": "create page move render fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Id(page.page_id),
+    );
+    run_endpoint!(
+        runner,
+        page_move,
+        json!({
+            "site_id": site_id,
+            "page": page.page_id,
+            "new_slug": DESTINATION_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "move across render contexts",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": DESTINATION_SLUG,
+                "extra": "",
+            },
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let GetPageViewOutput::Found {
+        page,
+        compiled_body_html,
+        compiled_top_bar_html,
+        ..
+    } = view
+    else {
+        panic!("moved destination should have a public page view: {view:?}");
+    };
+    let top_bar = compiled_top_bar_html.expect("moved page should have a top bar");
+
+    assert_eq!(page.slug, DESTINATION_SLUG);
+    assert_eq!(page.page_category_id, destination_category.category_id);
+    assert_ne!(page.page_category_id, source_category.category_id);
+    assert!(
+        compiled_body_html.contains(DESTINATION_CONTEXT_SLUG),
+        "move revision body should query the destination category context:\n{compiled_body_html}",
+    );
+    assert!(
+        !compiled_body_html.contains(SOURCE_CONTEXT_SLUG),
+        "move revision body must not retain the source category context:\n{compiled_body_html}",
+    );
+    assert!(
+        top_bar.contains(DESTINATION_MARKER),
+        "move revision should compile the destination category top bar:\n{top_bar}",
+    );
+    assert!(
+        !top_bar.contains(SOURCE_MARKER),
+        "move revision must not retain the source category top bar:\n{top_bar}",
+    );
+}
+
+#[tokio::test]
+async fn page_move_render_failure_rolls_back_destination_identity() {
+    let run_id = cuid();
+    let source_category = format!("fixture-page-move-rollback-source-{run_id}");
+    let destination_category = format!("fixture-page-move-rollback-destination-{run_id}");
+    let source_slug = format!("{source_category}:target");
+    let destination_slug = format!("{destination_category}:target");
+    let destination_template_slug = format!("{destination_category}:_template");
+    let component_slug = format!("component:page-move-rollback-{run_id}");
+    let include_line = format!("[[include {component_slug}]]\n");
+    let source_wikitext = include_line.repeat(200);
+    let destination_template_wikitext =
+        format!("{}%%content%%", include_line.repeat(100));
+
+    let state = build_server_state_without_workers(
+        Config::integration_testing(),
+        Secrets::load(),
+    )
+    .await
+    .expect("page move RPC state should build");
+    let (address, handle) = build_server_at(
+        state.clone(),
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 0),
+    )
+    .await
+    .expect("page move RPC server should start");
+    let client = reqwest::Client::new();
+    let mut cleanup = PageMoveRpcCleanup::new();
+
+    let verification = AssertUnwindSafe(async {
+        let site = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                None,
+                None,
+                None,
+                "site_get",
+                json!({"site": "scpaiueouiuiuiui"}),
+            )
+            .await,
+            "site_get",
+        );
+        let site_id = site["site_id"]
+            .as_i64()
+            .expect("seeded editable site ID should be present");
+        cleanup.site_id = Some(site_id);
+        let user = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                None,
+                None,
+                None,
+                "user_get",
+                json!({"user": "guest"}),
+            )
+            .await,
+            "user_get",
+        );
+        let user_id = user["user_id"]
+            .as_i64()
+            .expect("seeded guest user ID should be present");
+        cleanup.user_id = Some(user_id);
+        let login = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                None,
+                None,
+                None,
+                "login",
+                json!({
+                    "name_or_email": "guest",
+                    "password": "guestuser123456",
+                    "ip_address": common::IP_ADDRESS,
+                    "user_agent": "page move transaction rollback test",
+                }),
+            )
+            .await,
+            "login",
+        );
+        let session_token = login["session_token"]
+            .as_str()
+            .expect("registered login should return a session token")
+            .to_owned();
+        cleanup.session_token = Some(session_token.clone());
+
+        let membership = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                None,
+                Some(site_id),
+                None,
+                "member_get",
+                json!({"site_id": site_id, "user_id": user_id}),
+            )
+            .await,
+            "member_get",
+        );
+        assert_eq!(
+            membership,
+            JsonValue::Null,
+            "seeded guest must begin outside the editable site",
+        );
+        let join_view = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                Some(&session_token),
+                Some(site_id),
+                Some("system:join"),
+                "page_view",
+                json!({
+                    "site_id": site_id,
+                    "session_token": session_token,
+                    "route": {"slug": "system:join", "extra": ""},
+                    "locales": ["en-US", "en"],
+                }),
+            )
+            .await,
+            "page_view system:join",
+        );
+        let join_action = join_view["data"]["membership_actions"]
+            .as_array()
+            .and_then(|actions| actions.first())
+            .unwrap_or_else(|| {
+                panic!(
+                    "seeded editable site join page should expose one public action: {join_view}"
+                )
+            });
+        let joined = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                Some(&session_token),
+                Some(site_id),
+                Some("system:join"),
+                "membership_join",
+                json!({
+                    "page_id": join_action["page_id"],
+                    "last_revision_id": join_action["revision_id"],
+                    "action_index": join_action["index"],
+                    "action_fingerprint": join_action["fingerprint"],
+                }),
+            )
+            .await,
+            "membership_join",
+        );
+        assert_eq!(joined, "joined");
+        let membership = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                None,
+                Some(site_id),
+                None,
+                "member_get",
+                json!({"site_id": site_id, "user_id": user_id}),
+            )
+            .await,
+            "member_get after join",
+        );
+        if let Some(relation_id) = membership["relation_id"].as_i64() {
+            cleanup.relation_ids.push(relation_id);
+        }
+        assert_eq!(membership["dest_id"], site_id);
+        assert_eq!(membership["from_id"], user_id);
+
+        for category in [&source_category, &destination_category] {
+            let existing = page_move_rpc_result(
+                page_move_rpc_request(
+                    &client,
+                    address,
+                    None,
+                    Some(site_id),
+                    None,
+                    "category_get",
+                    json!({"site": site_id, "category": category}),
+                )
+                .await,
+                "category_get before rollback fixture create",
+            );
+            assert_eq!(
+                existing,
+                JsonValue::Null,
+                "UUID-owned rollback fixture category must not pre-exist",
+            );
+        }
+
+        page_move_rpc_create_page(
+            &client,
+            address,
+            &session_token,
+            user_id,
+            site_id,
+            PageMoveRpcCreatePage {
+                slug: &component_slug,
+                title: "Page Move Rollback Include Source",
+                wikitext: format!("Page move rollback include source {run_id}."),
+                owns_category: false,
+            },
+            &mut cleanup,
+        )
+        .await;
+        page_move_rpc_create_page(
+            &client,
+            address,
+            &session_token,
+            user_id,
+            site_id,
+            PageMoveRpcCreatePage {
+                slug: &destination_template_slug,
+                title: "Page Move Rollback Destination Template",
+                wikitext: destination_template_wikitext,
+                owns_category: true,
+            },
+            &mut cleanup,
+        )
+        .await;
+        let created = page_move_rpc_create_page(
+            &client,
+            address,
+            &session_token,
+            user_id,
+            site_id,
+            PageMoveRpcCreatePage {
+                slug: &source_slug,
+                title: "Page Move Rollback Source",
+                wikitext: source_wikitext,
+                owns_category: true,
+            },
+            &mut cleanup,
+        )
+        .await;
+        let page_id = created["page_id"]
+            .as_i64()
+            .expect("page move rollback source page ID should be present");
+        let revision_id = created["revision_id"]
+            .as_i64()
+            .expect("page move rollback source revision ID should be present");
+        let page_id_header = page_id.to_string();
+        let attributions = page_move_rpc_result(
+            page_move_rpc_request(
+                &client,
+                address,
+                Some(&session_token),
+                Some(site_id),
+                Some(&page_id_header),
+                "page_attribution_update",
+                json!({
+                    "site_id": site_id,
+                    "page": page_id,
+                    "updated_by": user_id,
+                    "attributions": [{
+                        "user_id": user_id,
+                        "metadata": {
+                            "attribution_type": "author",
+                            "attribution_date": "2026-08-13",
+                        },
+                    }],
+                }),
+            )
+            .await,
+            "page_attribution_update",
+        );
+        if let Some(attributions) = attributions.as_array() {
+            cleanup.relation_ids.extend(
+                attributions
+                    .iter()
+                    .filter_map(|attribution| attribution["relation_id"].as_i64()),
+            );
+        }
+        let before =
+            page_move_rpc_get_page(&client, address, site_id, &source_slug).await;
+
+        // Each fixture renders below the repository's 256-include ceiling. Applying the
+        // destination template to the source revision crosses that ceiling inside
+        // PageRevisionService::create, after PageService::move's early identity update.
+        let failure = page_move_rpc_request(
+            &client,
+            address,
+            Some(&session_token),
+            Some(site_id),
+            Some(&page_id_header),
+            "page_move",
+            json!({
+                "site_id": site_id,
+                "page": page_id,
+                "new_slug": destination_slug,
+                "last_revision_id": revision_id,
+                "revision_comments": "force rollback after destination identity update",
+                "user_id": user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        )
+        .await;
+        assert!(failure.get("result").is_none());
+        assert!(
+            failure.get("error").is_some(),
+            "registered page_move should return a public RPC error: {failure}",
+        );
+        assert_eq!(
+            failure["error"]["data"]["code_trace"]
+                .as_array()
+                .and_then(|trace| trace.last())
+                .and_then(JsonValue::as_i64),
+            Some(i64::from(ErrorType::Render.code())),
+            "page_move should fail with the public render classification: {failure}",
+        );
+
+        let after = page_move_rpc_get_page(&client, address, site_id, &source_slug).await;
+        assert_eq!(after["page_id"], before["page_id"]);
+        assert_eq!(after["slug"], before["slug"]);
+        assert_eq!(after["page_category_id"], before["page_category_id"]);
+        assert_eq!(after["revision_id"], before["revision_id"]);
+
+        let destination =
+            page_move_rpc_get_page(&client, address, site_id, &destination_slug).await;
+        assert_eq!(destination, JsonValue::Null);
+    })
+    .catch_unwind()
+    .await;
+
+    let cleanup_result = cleanup_page_move_rpc_fixture(&state, &cleanup).await;
+    let shutdown = AssertUnwindSafe(async {
+        handle.stop().expect("page move RPC server should stop");
+        handle.stopped().await;
+    })
+    .catch_unwind()
+    .await;
+    if let Err(payload) = verification {
+        if let Err(error) = &cleanup_result {
+            eprintln!("page move RPC fixture cleanup after panic failed: {error}");
+        }
+        if shutdown.is_err() {
+            eprintln!("page move RPC server shutdown after panic failed");
+        }
+        resume_unwind(payload);
+    }
+    if let Err(payload) = shutdown {
+        if let Err(error) = &cleanup_result {
+            eprintln!(
+                "page move RPC fixture cleanup after shutdown panic failed: {error}"
+            );
+        }
+        resume_unwind(payload);
+    }
+    cleanup_result.expect("page move RPC fixture cleanup should succeed");
 }
 
 #[tokio::test]

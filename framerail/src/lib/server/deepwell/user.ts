@@ -2,26 +2,35 @@ import { limitLocalePreferences } from "$lib/locales"
 import { client } from "$lib/server/deepwell"
 import { startBlobUpload, uploadToPresignUrl } from "./file"
 
-import type { Nullable, Optional, UserModel, UserType } from "$lib/types"
+import type {
+  Nullable,
+  Optional,
+  UserModel,
+  UserType,
+  WikidotUserModel
+} from "$lib/types"
 import type { RequestContext } from "../request-context"
 
 /* ----- User View ----- */
-interface UserViewFound {
+export type UserViewUser = UserModel | WikidotUserModel
+
+export interface UserViewFound {
   type: "user_found"
   data: {
-    user: UserModel
+    user: UserViewUser
   }
 }
-interface UserViewMissing {
+export interface UserViewMissing {
   type: "user_missing"
-  data: undefined
+  data?: never
 }
+export type UserViewResult = UserViewFound | UserViewMissing
 export async function userView(
   siteId: number,
   locales: string[],
   sessionToken: Optional<string>,
   username?: string
-): Promise<UserViewFound | UserViewMissing> {
+): Promise<UserViewResult> {
   return client.request("user_view", {
     site_id: siteId,
     session_token: sessionToken,
@@ -38,6 +47,7 @@ interface UserEditParams {
   password?: Optional<string>
   locales?: Optional<string[]>
   avatar?: Optional<File>
+  forumSignature?: Optional<Nullable<string>>
   realName?: Optional<Nullable<string>>
   gender?: Optional<Nullable<string>>
   birthday?: Optional<Nullable<string>>
@@ -56,6 +66,7 @@ const directUserEditFields = [
 ] as const
 
 const nullableUserEditFields = [
+  ["forumSignature", "forum_signature"],
   ["realName", "real_name"],
   ["gender", "gender"],
   ["location", "location"],

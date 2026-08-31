@@ -53,7 +53,9 @@ function fixtureIdentity(value) {
     return { category_id: row.category_id, slug: row.slug, page_id: row.page_id, page_slug: row.page_slug };
   };
   if (!Number.isSafeInteger(input.site_id) || !Number.isSafeInteger(input.cross_site_sentinel_id) || input.cross_site_sentinel_id <= 0 || input.cross_site_sentinel_id === input.site_id) throw new Error("private input fixture site identity is invalid");
-  const result = { site_id: input.site_id, cross_site_sentinel_id: input.cross_site_sentinel_id, default_category: category("default_category"), transition_category: category("transition_category") };
+  const viewRestrictedCategories = input.view_restricted_categories ?? [];
+  if (!Array.isArray(viewRestrictedCategories) || viewRestrictedCategories.some((slug) => typeof slug !== "string" || slug.length === 0) || new Set(viewRestrictedCategories).size !== viewRestrictedCategories.length) throw new Error("private input fixture view-restricted categories are invalid");
+  const result = { site_id: input.site_id, cross_site_sentinel_id: input.cross_site_sentinel_id, default_category: category("default_category"), transition_category: category("transition_category"), view_restricted_categories: [...viewRestrictedCategories].sort() };
   if (result.default_category.category_id === result.transition_category.category_id || result.default_category.slug === result.transition_category.slug || result.default_category.page_slug === result.transition_category.page_slug) throw new Error("private input fixture categories must be distinct");
   return Object.freeze(result);
 }

@@ -18,6 +18,7 @@ export function createCandidateBrowserContexts({
   outputDir,
   signal = null,
   credentialPolicy = "none",
+  publicOrigins = [],
 }) {
   let controls = null;
   let controlsPromise = null;
@@ -37,6 +38,7 @@ export function createCandidateBrowserContexts({
       policy: { value: POLICY, sha256: sha256Value(POLICY) },
       candidate: candidateIdentity,
       credentialPolicy,
+      publicOrigins,
     });
     controls = await controlsPromise;
     if (activeFixture !== null) controls.setActiveFixture(activeFixture);

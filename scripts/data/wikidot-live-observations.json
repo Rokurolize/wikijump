@@ -1,8 +1,83 @@
 {
   "schema": "wikijump.wikidot_live_observations.v1",
-  "generated_date": "2026-08-10",
+  "generated_date": "2026-08-16",
   "authority": "Reproducible live Wikidot behavior is canonical and overrides conflicting or incomplete documentation-derived claims.",
   "observations": [
+    {
+      "id": "found-page-tag-wrapper-dom-20260727",
+      "title": "Found-page tag anchors are direct page-tags children",
+      "feature_ids": [
+        "page-tags"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-07-27",
+      "analysis": "Four retained anonymous raw page captures in install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json (artifact SHA-256 9494777d18face903fa6b8c48444f4c3aa687fae6175156977700fa8476559ea) isolate the found-page tag wrapper shape. The tagged tag-holder and range-m responses have raw_page_html_sha256 dced1fc3015f2ecdb7fc981d9a6d0bf791fab9c7b70b98eeb343a3c71b77d3e3 and 49ac5e961627e84462d13fc88d6594a71cd17b182444cefa12f81f337f261e0a; each contains one .page-tags element whose tag anchors are direct children. The tagless parent-holder and metric-holder responses have raw_page_html_sha256 246ac8385251557163536aef081026d3751425c13e85d49e74ff56b527354290 and 896ec9e3e7edc1cc2257acad38604f4069fa8229dbe828aac48b6a8acd3e2c88; neither contains .page-tags. This observation establishes only the wrapper, direct-child relationship, retained order, and tagless omission in these found-page responses. It does not establish tag mutation, revision-selection lifecycle, styling, interaction, permissions, escaping, URL encoding, or browser transitions.",
+      "normative_behavior": [
+        "For the captured tagged found pages, .page-tags contains the observed tag anchor elements directly and in retained tag order, without an intervening span element.",
+        "For the captured tagless found pages, the response omits .page-tags instead of rendering an empty wrapper.",
+        "The evidence is limited to this found-page wrapper shape and does not define unobserved page-tag behavior."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixtures.json",
+          "sha256": "9494777d18face903fa6b8c48444f4c3aa687fae6175156977700fa8476559ea",
+          "format": "jsonl",
+          "case_ids": [
+            "lp-live-tag-selectors",
+            "lp-live-range-selectors",
+            "lp-live-parent-selectors",
+            "lp-live-metric-selectors"
+          ]
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-campaign-live-fixture-classification.json",
+          "sha256": "8864c8c37d8e9cb12eca1c1a76fe413b9e14a328368e6087a9a71a478ca20499",
+          "case_ids": [
+            "lp-live-tag-selectors",
+            "lp-live-range-selectors",
+            "lp-live-parent-selectors",
+            "lp-live-metric-selectors"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "wikidot-document-shell-stored-locale-20260722",
+      "title": "Wikidot document shells propagate the stored locale verbatim",
+      "feature_ids": [
+        "layout-page"
+      ],
+      "classification": "documentation-omission",
+      "observed_at": "2026-07-22",
+      "analysis": "Raw HTTP responses for the same run-owned sandbox article, captured immediately before and after the stored site locale changed from en to ja-corrections, isolate the document-shell language fields. This observation is intentionally limited to those two stored-locale values on a Wikidot article document shell; it does not establish native Japanese-site behavior, locale negotiation, translation behavior, error shells, or non-Wikidot routes.",
+      "normative_behavior": [
+        "For each captured stored locale, the raw Wikidot article response starts with an html element whose attributes are exactly xmlns=\"http://www.w3.org/1999/xhtml\", xml:lang=\"LOCALE\", and lang=\"LOCALE\" in that order.",
+        "Each captured raw response contains exactly one <meta http-equiv=\"content-language\" content=\"LOCALE\"/> element using the same stored locale.",
+        "The captured ja-corrections value is propagated verbatim in the root attributes and content-language metadata; the en capture is the before-mutation control.",
+        "The evidence establishes only exact stored-locale propagation on the captured Wikidot article document shell. It makes no claim about native Japanese sites, other language effects, error shells, special routes, API responses, or Wikijump-layout documents."
+      ],
+      "raw_captures": [
+        {
+          "phase": "before",
+          "stored_locale": "en",
+          "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/before.http.html",
+          "sha256": "6861d8b772e6585475ab13c078fd7d9aaf53af5a4ee2f4ec17afc233bcad572b"
+        },
+        {
+          "phase": "after",
+          "stored_locale": "ja-corrections",
+          "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/after.http.html",
+          "sha256": "0641a8b445541eb39ffec2304dc5d8acac6b331ab26befecee016b60ed31c292"
+        }
+      ],
+      "evidence": [
+        {
+          "path": "/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/verdict.json",
+          "sha256": "45d07066f84d8990b768817a522a53c3b2d260f9baac8bc040527c6c70462275",
+          "case_ids": []
+        }
+      ]
+    },
     {
       "id": "image-head-ascii-whitespace-boundary-20260810",
       "title": "Image heads accept ASCII horizontal whitespace but not NBSP or lookalike names",
@@ -117,7 +192,7 @@
       ],
       "classification": "documentation-omission",
       "observed_at": "2026-08-09",
-      "analysis": "Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, or browser transitions.",
+      "analysis": "Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category order control and pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, order-link navigation or sorted behavior, or browser transitions.",
       "normative_behavior": [
         "FrontForum with a double-quoted positive category ID and an observed positive limit renders newest threads from that category in a front-forum-box. Each item uses the first post as content and reports comments as the active post count minus one. A nonexistent category renders Requested forum category does not exist.",
         "forum/ForumCommentsListModule accepts the observed pageId request and the same request with order=reverse. It maps the page to threadId and returns the first comments page with the observed thread script, comments options, hidden thread-container-posts, duplicate pager, ten root comment trees and their descendants, new-comment control, and post-options template. Forward selects the oldest ten roots and orders their trees forward; reverse selects the newest ten roots and reverses root order while retaining descendants under their parent. The pager counts root comments. The forward jsInclude order is ForumViewThreadModule.js, ForumViewThreadPostsModule.js, ForumNewPostFormModule.js; reverse places ForumNewPostFormModule.js before ForumViewThreadPostsModule.js. These remote URLs are observed response metadata and do not establish loader or mutation authority. A nonexistent page returns no_page.",
@@ -127,8 +202,35 @@
         "The thread response jsInclude order is ForumViewThreadPostsModule.js then ForumViewThreadModule.js; the posts response lists only ForumViewThreadPostsModule.js. These remote URLs are observed response metadata and do not establish loader authority.",
         "forum/ForumRecentPostsListModule uses page and categoryId. The empty category selects all visible categories, an existing category narrows the result, and a nonexistent numeric category returns status ok with an empty post container.",
         "The observed public GET routes are /forum/start, /forum/start/hidden/show, /forum/c-<id>/<name>, /forum/c-<id>/p/<page>, and /forum/t-<id>/<name>. Missing category and thread routes remain successful page responses with the observed error text; other suffixes are not established.",
+        "Immediately after the category description and before the new-thread control, pager, and thread table, every observed category page renders the exact default order projection <div class=\"options\">Order by: <div class=\"btn btn-primary disabled btn-small btn-sm\"><strong>Last post date</strong></div> <a href=\"/forum/c-<category-id>/sort/start\" class=\"btn btn-primary btn-small btn-sm\">Thread starting date</a></div>. This establishes the retained DOM and dynamic category ID only; it does not establish /sort/start navigation, sorted behavior, or the new-thread control.",
         "The category response has duplicate top and bottom pagers on full pages and one top pager on final partial and out-of-range pages. Page 1 links 1, 2, 3, ..., 10, 11 and next 2; page 2 links previous 1, 1, 2, 3, 4, ..., 10, 11 and next 3; page 11 links previous 10, 1, 2, ..., 9, 10, 11; page 12 deliberately says page 12 of 11 and links previous 11, 1, 2, ..., 10, 11, 12, and next 13. Pager hrefs use /forum/c-<id>/p/<page>.",
         "All captured requests are anonymous and read-only. Observed controls and templates do not establish Comments, new-thread, post, edit, delete, lock, move, or other mutation authority."
+      ],
+      "raw_captures": [
+        {
+          "phase": "scp-category-1113520-page-1 body",
+          "stored_locale": "en",
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-1.html",
+          "sha256": "5910330cc219f216925076a661019a8f624aada45629606c9f3b4bdde579a247"
+        },
+        {
+          "phase": "scp-category-1113520-page-2 body",
+          "stored_locale": "en",
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-2.html",
+          "sha256": "d43aa71385e23b7670ff9aba13afda2fa2d58e5ae93b647bb32cbb62bd37ef50"
+        },
+        {
+          "phase": "scp-category-1113520-page-11 body",
+          "stored_locale": "en",
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-11.html",
+          "sha256": "e97127cf83883f3938cafa65182549174762b0a470d6ae4f875eda902a198d7c"
+        },
+        {
+          "phase": "scp-category-1113520-page-12 body",
+          "stored_locale": "en",
+          "path": "/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-12.html",
+          "sha256": "4a7207b4d90c8009570ee284fd9fd8f77a6193b26f0b85d7df22d5ee46a0134a"
+        }
       ],
       "evidence": [
         {
@@ -717,6 +819,7 @@
         "The endpoint accepts title t, description d, and home h metadata; repeated metadata path pairs use the last value.",
         "In controlled live captures, limit, offset, and order path pairs do not affect the selected items, even though ListPages generates those pairs.",
         "Unknown path arguments are ignored.",
+        "Every successful feed document begins with the exact prefix `<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\\n<rss version=\"2.0\" xmlns:content=\"http://purl.org/rss/1.0/modules/content/\" xmlns:wikidot=\"http://www.wikidot.com/rss-namespace\">\\n\\n\\t<channel>\\n`; all 10 successful sealed cases share it.",
         "An invalid range, rating, or pagetype value produces an HTTP 200 generic feed error document rather than an HTTP error status.",
         "A request ending at /feed/pages without a trailing argument path returns 404; malformed percent encoding returns 400."
       ],
@@ -731,9 +834,12 @@
             "lpfeed-0004-offset-ignored",
             "lpfeed-0005-order-ignored",
             "lpfeed-0006-duplicate-metadata-last-wins",
+            "lpfeed-0007-encoded-dot-range",
             "lpfeed-0008-invalid-range",
             "lpfeed-0009-invalid-rating",
             "lpfeed-0010-invalid-pagetype-alias",
+            "lpfeed-0011-only-negative-category",
+            "lpfeed-0012-star-with-negative-category",
             "lpfeed-0013-unknown-argument-ignored",
             "lpfeed-0014-missing-trailing-path",
             "lpfeed-0015-malformed-percent-escape"
@@ -1510,7 +1616,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -1556,7 +1662,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -1594,7 +1700,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -1663,7 +1769,7 @@
       "feature_ids": [
         "module-newpage",
         "data-forms-creating-new-page",
-        "platform-page-templates"
+        "page-templates"
       ],
       "classification": "documentation-correction",
       "observed_at": "2026-07-29",
@@ -2789,13 +2895,24 @@
         "PagePreview keeps HTML-block-shaped authored or ListPages-generated source literal and escaped; it does not create an iframe, frame request, or intermediate executable preview state.",
         "The rule is actor-independent for the anonymous, administrator, ordinary-member, and non-member roles observed on the controlled sandbox.",
         "Saved-page rendering retains the executable html-block-iframe behavior for a complete HTML block.",
-        "Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML."
+        "Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML.",
+        "For a ListPages row opener composed from a selected page section, empty section zero and an out-of-range section complete [[html]], while a nonempty section or a different opener suffix does not; preview keeps every completed block literal and a saved view executes only the completed HTML blocks."
       ],
       "evidence": [
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
           "sha256": "3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad",
           "case_ids": []
+        },
+        {
+          "path": "install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
+          "sha256": "c1494f51b8445948a22321b70a671c475387415d1478e308feb0dce7b7e783f0",
+          "case_ids": [
+            "issue-1383-preview-section-zero-positive",
+            "issue-1383-preview-out-of-range-positive",
+            "issue-1383-preview-section-one-negative",
+            "issue-1383-preview-invalid-opener-negative"
+          ]
         }
       ]
     },
@@ -2869,6 +2986,228 @@
         {
           "path": "install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json",
           "sha256": "3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad",
+          "case_ids": []
+        }
+      ]
+    },
+    {
+      "id": "forum-q1034-frontforum-custom-body-rendering-20260810",
+      "title": "FrontForum custom bodies evaluate documented variables at the typed module boundary",
+      "feature_ids": [
+        "module-frontforum"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-10",
+      "analysis": "Four anonymous, no-mutation PagePreviewModule captures establish the body-bearing FrontForum owner's exact closer consumption and variable evaluation for two one-row selections, with one unknown-variable control and one malformed-selector control. They do not establish raw or other-module closer ownership, multi-row or empty selection cardinality, custom-body nesting or composition, date formats beyond the captured %Y-%m-%d, feed or document-head behavior, fixRelativeLinks, private or deleted visibility, mutation authority, or browser transitions.",
+      "normative_behavior": [
+        "A recognized body-bearing FrontForum invocation consumes its exact [[/module]] closer and renders the evaluated body inside front-forum-box for each captured one-row selection.",
+        "The captured canonical variables render title as text; linked_title as a thread anchor; author as printuser markup; a custom-formatted date as odate markup; comments and category as anchors; description as the thread summary; and content as the first post body.",
+        "The observed aliases title_linked, short, summary, text, long, and body render the same value families as their documented canonical variables, while link renders the thread route as text.",
+        "An unknown custom-body variable remains literal without preventing the surrounding body from rendering.",
+        "A category list containing a malformed element renders the category parsing error and suppresses the custom body instead of leaking or evaluating it.",
+        "All four captures are anonymous and read-only; they do not establish the remaining FrontForum surfaces named in the analysis."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/frontforum-custom-body-live-20260810.json",
+          "sha256": "1cfdeed366ced060d051a64e58ad25bcd98a0b3ce6bdd6af5419c736396ebc48",
+          "case_ids": [
+            "frontforum-custom-body-canonical",
+            "frontforum-custom-body-alias-offset-multi",
+            "frontforum-custom-body-unknown",
+            "frontforum-custom-body-malformed-owner-control"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "data-form-hidden-field-lifecycle-20260810",
+      "title": "A captured plain hidden value persists without an editor control",
+      "feature_ids": [
+        "data-forms-hidden-field"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-10",
+      "analysis": "One authenticated generated create, save, edit, and reload lifecycle with anonymous saved-page display establishes the exact captured nonempty plain-scalar, single-field hidden contract. The generated editor exposes no hidden-field control or field fragment and declares empty form-fields; deliberately injected save payloads do not replace the captured configured value; and the default saved-page table displays that value. The documented numeric-looking value: 1.0 example, empty, quoted, escaped, mixed-field, extra-property, direct-variable, ListPages selection and ordering, exact browser DOM/CSS beyond the absent control, and browser-transition shapes remain unobserved.",
+      "normative_behavior": [
+        "The captured hidden field configured with the nonempty plain scalar HIDDEN_CONFIGURED_ALPHA stores that configured scalar when the generated page is created, regardless of the deliberately injected create payload value.",
+        "The generated create and edit responses expose no control or field fragment for the hidden field and declare an empty form-fields value.",
+        "An injected edit submission does not replace the configured value; edit and reload retain the same canonical stored scalar.",
+        "The generated default saved-page table displays the hidden field's label and configured value even though the value has no editor control.",
+        "The observation supplies no live correction for the documented value: 1.0 example or the other excluded shapes. Documentation remains authoritative for its explicit example; shapes unspecified by the documentation must fail closed or remain unimplemented until separately observed."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/data-form-hidden-password-static-url-live-20260810.json",
+          "sha256": "a17c01429b6a26fe405b9a36b63ec0e64211b67d60930629b6e846f9952b2bd5",
+          "case_ids": [
+            "hidden-configured-value-create",
+            "hidden-configured-value-edit-reload",
+            "hidden-create-has-no-user-control",
+            "hidden-injected-submissions-cannot-override-value"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "listpages-amc-form-last-value-20260816",
+      "title": "The public ListPages AMC form decoder selects the last duplicate value",
+      "feature_ids": [
+        "module-listpages"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-08-16",
+      "analysis": "Anonymous read-only requests preserved exact URL-encoded duplicate-field order at the public scp-wiki Ajax Module Connector. Reversing duplicate module_body and selector values reversed ListPages output. Reversing duplicate moduleName values selected the later valid or unknown module, and reversing a valid and invalid public wikidot_token7 selected the later success or wrong_token7 result. The two transport controls establish ordered last-value decoding outside the ListPages argument family. Missing module_body is accepted with the default row template and an unknown ListPages selector is ignored. The evidence does not define malformed percent encoding, invalid UTF-8, authenticated duplicate-cookie semantics, or non-form parsing stages.",
+      "normative_behavior": [
+        "For an otherwise valid public Ajax Module Connector URL-encoded form, repeated field names select the last occurrence at the evidenced decoder boundary.",
+        "This last-value rule applies to evidenced ListPages arguments, module identity, and the public wikidot_token7 field; it is not a page-specific content rule.",
+        "ListPages accepts an omitted module_body by rendering its default row template, and ignores an unknown non-data-form selector in the observed request.",
+        "Malformed percent encoding and invalid UTF-8 remain outside this observation and must continue to fail closed until separately established."
+      ],
+      "evidence": [
+        {
+          "path": "/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest.json",
+          "sha256": "bb95244df5a2cdadbed860705199f2de4776970982b4bee8034a82cb88a06771",
+          "case_ids": []
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest-v2.json",
+          "sha256": "33d3b1361064da1bb200202bf2783ecb88ad2e695bf54d9cbfa4a0150f866e4b",
+          "case_ids": []
+        }
+      ]
+    },
+    {
+      "id": "expressions-size-boundary-unenforced-20260817",
+      "title": "Live Wikidot does not enforce the documented 256-character expression bound",
+      "feature_ids": [
+        "expressions"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-08-17",
+      "analysis": "Anonymous edit/PagePreviewModule probes isolate the expression-size boundary on sandbox-for-codex. Repeated-addition chains of exactly 255, 256, and 257 bytes all evaluate. One-operation expressions padded with ASCII spaces to 257, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, and 131072 bytes all evaluate to <p>1</p>; a 4-byte control evaluates identically. Current live Wikidot therefore does not enforce the frozen documentation's 256-character expression maximum within the bounded probe envelope. The local FTML runtime deliberately keeps its deterministic 256-byte fail-closed budget as a documented resource/security divergence: over-budget expressions remain literal instead of evaluating. No raised replacement boundary is inferred from these observations.",
+      "normative_behavior": [
+        "Anonymous live Wikidot evaluates #expr expressions of at least 131072 bytes; the documented 256-character maximum is not enforced at the observed live boundary.",
+        "The local runtime keeps a deterministic 256-byte expression budget. An over-budget #expr invocation renders as literal source (fails closed) rather than evaluating.",
+        "The divergence is a deliberate stricter local resource/security bound, not exact live parity; it must not be silently widened without new bounded live evidence.",
+        "Operation, parenthesis, document-candidate, and non-ASCII budgets remain unchanged and independent of the byte-size bound."
+      ],
+      "evidence": [
+        {
+          "path": "/home/roku/wjlab/evidence/expressions-live-20260817/references.jsonl",
+          "sha256": "a9aff67a1006405632116d6a8836dc208d9222ae864b41df0f0f3f8e08908f78",
+          "case_ids": [
+            "expressions-expr-255",
+            "expressions-expr-256",
+            "expressions-expr-257"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/expressions-length-live-20260817/references.jsonl",
+          "sha256": "658b72927061b9db96728fe9b09e491cdc82a5885d5dcbabeb404afe075d324b",
+          "case_ids": [
+            "expressions-space-padded-257",
+            "expressions-space-padded-512",
+            "expressions-space-padded-1024",
+            "expressions-space-padded-2048",
+            "expressions-space-padded-4096",
+            "expressions-space-padded-8192"
+          ]
+        },
+        {
+          "path": "/home/roku/wjlab/evidence/expressions-length-boundary-live-20260817/references.jsonl",
+          "sha256": "e06e13e9742b7874f23b185fc78cb79c4eff120c7a2d7170ffc31731d480d405",
+          "case_ids": [
+            "expressions-space-padded-16384",
+            "expressions-space-padded-32768",
+            "expressions-space-padded-65536",
+            "expressions-space-padded-131072",
+            "expressions-small-control"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "syntax-links-noopener-security-divergence-20260817",
+      "title": "Wikidot new-window links carry no rel; the local runtime adds an accepted noopener hardening",
+      "feature_ids": [
+        "syntax-links"
+      ],
+      "classification": "documentation-correction",
+      "observed_at": "2026-08-17",
+      "analysis": "Frozen anonymous Wikidot PagePreview evidence for the single-bracket external new-window form [*https://example.com/ Example] renders <a href=\"https://example.com/\" target=\"_blank\">Example</a> with no rel attribute. The local runtime renders the identical anchor with an additional rel=\"noopener noreferrer\" hardening. This is a deliberate security divergence: removing the hardening to byte-match live Wikidot would weaken reverse-tabnabbing protection for byte-equivalence, which the compatibility charter does not permit. The divergence is classified as an accepted security divergence and is not exact Wikidot parity.",
+      "normative_behavior": [
+        "Live Wikidot renders new-window external links as target=\"_blank\" anchors without a rel attribute.",
+        "The local runtime preserves the rel=\"noopener noreferrer\" hardening on the same anchors as an accepted security divergence.",
+        "The divergence is a deliberate security hardening, not exact DOM parity; it must not be silently removed, and it must not be silently presented as Wikidot-identical."
+      ],
+      "evidence": [
+        {
+          "path": "/home/roku/wjlab/evidence/spec-hardening-20260816/syntax-preview-references.jsonl",
+          "sha256": "6633d6e691ff0952309e50fdc9a72dd5bcba5df07035b89bc140e23e1dd9519a",
+          "case_ids": [
+            "spec-syntax-link-external-new-window"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gravatar-guest-identity-20260818",
+      "title": "Anonymous forum guests use a required private email to derive the public Gravatar identity",
+      "feature_ids": [
+        "gravatar"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-18",
+      "analysis": "Run-owned anonymous forum replies on sandbox-for-codex establish the guest Gravatar wire, persistence boundary, and exact author DOM. Anonymous savePost exposes guestName and guestEmail fields. Both are required; an empty guest name, an empty email, a non-email control, an address without a dotted domain, and a 51-character email are rejected without creating a post. The live guestEmail control declares maxlength=50, and a 50-character address reached the normal CAPTCHA boundary. Accepted email input is trimmed at its outer ASCII whitespace while case is preserved before MD5 hashing. The raw email never appears in the public post DOM. The author avatar uses Wikidot's Gravatar proxy URL with the derived MD5 and a Wikidot default-avatar URL, so missing external Gravatar content degrades through that default rather than removing or duplicating the identity block. All run-owned posts were deleted and the temporarily widened forum permission was restored and re-read.",
+      "normative_behavior": [
+        "Anonymous ForumAction savePost requires nonempty guestName and a syntactically email-shaped guestEmail no longer than 50 characters; the captured empty-name, empty-email, malformed-email, no-dot-domain, and 51-character controls create no post.",
+        "Before Gravatar hashing, Wikidot trims outer whitespace from guestEmail but preserves letter case. The MD5 is computed from that trimmed, case-preserved string.",
+        "The raw guest email is private input and is not rendered into the public author DOM. The public derived identity is the MD5 value used in the Gravatar URL.",
+        "The observed avatar URL is http://www.gravatar.com/avatar.php?gravatar_id={md5}&default=http://www.wikidot.com/common--images/avatars/default/a16.png&size=16.",
+        "The observed author DOM is a single printuser avatarhover span containing a javascript: image link, one small Gravatar image with empty alt text, and the escaped guest name followed by ' (guest)'.",
+        "A valid email whose Gravatar image is unavailable still renders the same identity block because the URL delegates fallback to Wikidot's default a16.png image.",
+        "Authenticated ForumAction savePost remains account-authored; guest fields do not replace the authenticated account identity.",
+        "The live probes changed only a run-owned forum permission and run-owned posts. Cleanup deleted every probe post and restored the original inherited category permission."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/gravatar-guest-live-20260818.json",
+          "sha256": "fff9e3134ab96523206b9d15471e9b9b640debc95c0326bfde2a43aa47ffcf01",
+          "case_ids": [
+            "gravatar-guest-lowercase-public-control",
+            "gravatar-guest-uppercase-space-control",
+            "gravatar-guest-missing-image-fallback-control",
+            "gravatar-guest-empty-email",
+            "gravatar-guest-malformed-email",
+            "gravatar-guest-no-dot-email",
+            "gravatar-guest-overlong-email",
+            "gravatar-guest-empty-name",
+            "gravatar-authenticated-guest-fields-ignored"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "educational-site-upgrade-application-20260818",
+      "title": "Master Administrators receive a free educational-site application through the Site Manager",
+      "feature_ids": [
+        "educational-site-status"
+      ],
+      "classification": "documentation-clarification",
+      "observed_at": "2026-08-18",
+      "analysis": "A read-only Master Administrator observation on sandbox-for-codex establishes the current educational-upgrade entry point and application wire without performing the persistent grant. The Site Manager dashboard exposes the Educational upgrade control as sm-edu, backed by managesite/ManageSiteUpgradeEduModule. The module presents the documented educational/research benefits and an sm-eduupgrade-form with organization and purpose fields. Its browser script serializes that form and submits UpgradesAction / upgradeEdu, then reloads sm-welcome on success. Because the grant is persistent and no cleanup-safe revocation path was established, the live mutation and post-upgrade module body were not inferred.",
+      "normative_behavior": [
+        "The current Basic Free Site Manager exposes Educational upgrade to the Master Administrator through sm-edu and managesite/ManageSiteUpgradeEduModule.",
+        "The observed application requires organization and purpose fields and submits UpgradesAction / upgradeEdu through the Ajax Module Connector.",
+        "The application advertises unlimited private-site members, 25 GB upload storage, 100 MB files with more storage available on request, SSL, unlimited page revisions, other small improvements, and no charge for educational/research use.",
+        "The browser success path reloads sm-welcome after the upgrade action completes.",
+        "The live grant, post-upgrade module body, and staff monitoring/revocation workflow remain unobserved; local behavior must fail closed rather than inventing those presentation or revocation details."
+      ],
+      "evidence": [
+        {
+          "path": "install/local/wikidot-verification/artifacts/educational-site-status-live-20260818.json",
+          "sha256": "d349454353717e5101430e2a77f28a8754108a076b75045b41ec4756cf812b46",
           "case_ids": []
         }
       ]

@@ -20,8 +20,8 @@
 
 use super::structs::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageBody,
-    EditPageOutput, MovePage, MovePageOutput, RestorePage, RestorePageOutput,
-    RollbackPage, SetPageLayout,
+    EditPageOutput, MovePage, MovePageOutput, PageLifecycleIdentity, RestorePage,
+    RestorePageOutput, RollbackPage, SetPageLayout,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::{self, Entity as Page, Model as PageModel};
@@ -33,14 +33,15 @@ use crate::services::filter::{FilterClass, FilterType};
 use crate::services::page_revision::{
     CreateFirstPageRevision, CreateFirstPageRevisionOutput, CreatePageRevision,
     CreatePageRevisionBody, CreatePageRevisionOutput, CreateResurrectionPageRevision,
-    CreateTombstonePageRevision, GetPageRevision,
+    CreateTombstonePageRevision, GetPageRevision, RerenderType,
 };
 use crate::services::{
     CategoryService, FilterService, PageRevisionService, TextBlockService, TextService,
 };
 use crate::types::Maybe;
 use crate::types::{
-    Action, PageId, PageOrder, PageRevisionType, Permission, Reference, Resource,
+    Action, PageId, PageOrder, PageRevisionType, Permission, Reference, RerenderDepth,
+    Resource,
 };
 use crate::utils::now;
 use crate::utils::{get_category_name, trim_default};
@@ -48,8 +49,9 @@ use paste::paste;
 use ref_map::OptionRefMap;
 use sea_orm::ActiveValue;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
-    QueryOrder, QuerySelect, Set,
+    ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, EntityTrait,
+    FromQueryResult, IntoActiveModel, QueryFilter, QueryOrder, QuerySelect, Set,
+    Statement, Value,
 };
 use std::net::IpAddr;
 use wikidot_normalize::normalize;
@@ -58,6 +60,105 @@ use wikidot_normalize::normalize;
 pub struct PageService;
 
 impl PageService {
+    /// Resolve display-name-only page lifecycle identities.
+    ///
+    /// Imported revisions use the authoritative names retained by the corpus
+    /// snapshot. Native revisions use the current public display name of their
+    /// revision actor. Each lifecycle endpoint follows its own provenance, so
+    /// a locally edited imported page keeps its snapshot creator while naming
+    /// the local updater.
+    pub async fn get_lifecycle_identity(
+        ctx: &ServiceContext<'_>,
+        page: &PageModel,
+    ) -> Result<PageLifecycleIdentity> {
+        #[derive(FromQueryResult)]
+        struct LifecycleIdentityRow {
+            created_by: Option<String>,
+            updated_by: Option<String>,
+        }
+
+        let make_error =
+            || Error::new("failed to resolve page lifecycle identity", ErrorType::Page);
+        let txn = ctx.transaction();
+        let statement = Statement::from_sql_and_values(
+            txn.get_database_backend(),
+            r#"
+SELECT
+    CASE
+        WHEN creator_revision.from_wikidot THEN
+            NULLIF(BTRIM(snapshot.created_by_name), '')
+        WHEN creator_user.user_id IS NOT NULL THEN
+            CASE WHEN creator_user.deleted_at IS NULL
+                 THEN NULLIF(BTRIM(creator_user.name), '')
+                 ELSE NULL
+            END
+        WHEN creator_wikidot_user.user_id IS NOT NULL THEN
+            CASE WHEN creator_wikidot_user.is_deleted = FALSE
+                 THEN NULLIF(BTRIM(creator_wikidot_user.name), '')
+                 ELSE NULL
+            END
+        ELSE NULL
+    END AS created_by,
+    CASE
+        WHEN current_revision.from_wikidot THEN
+            NULLIF(BTRIM(snapshot.updated_by_name), '')
+        WHEN updater_user.user_id IS NOT NULL THEN
+            CASE WHEN updater_user.deleted_at IS NULL
+                 THEN NULLIF(BTRIM(updater_user.name), '')
+                 ELSE NULL
+            END
+        WHEN updater_wikidot_user.user_id IS NOT NULL THEN
+            CASE WHEN updater_wikidot_user.is_deleted = FALSE
+                 THEN NULLIF(BTRIM(updater_wikidot_user.name), '')
+                 ELSE NULL
+            END
+        ELSE NULL
+    END AS updated_by
+FROM page
+LEFT JOIN LATERAL (
+    SELECT revision.from_wikidot, revision.user_id
+    FROM page_revision revision
+    WHERE revision.site_id = page.site_id
+      AND revision.page_id = page.page_id
+    ORDER BY revision.revision_number ASC, revision.revision_id ASC
+    LIMIT 1
+) creator_revision ON TRUE
+LEFT JOIN page_revision current_revision
+  ON current_revision.revision_id = page.latest_revision_id
+ AND current_revision.site_id = page.site_id
+ AND current_revision.page_id = page.page_id
+LEFT JOIN wikidot_page_snapshot snapshot ON snapshot.page_id = page.page_id
+LEFT JOIN "user" creator_user
+  ON creator_user.user_id = creator_revision.user_id
+LEFT JOIN wikidot_user creator_wikidot_user
+  ON creator_wikidot_user.user_id::bigint = creator_revision.user_id
+LEFT JOIN "user" updater_user
+  ON updater_user.user_id = current_revision.user_id
+LEFT JOIN wikidot_user updater_wikidot_user
+  ON updater_wikidot_user.user_id::bigint = current_revision.user_id
+WHERE page.site_id = $1
+  AND page.page_id = $2
+  AND page.deleted_at IS NULL
+"#,
+            [Value::from(page.site_id), Value::from(page.page_id)],
+        );
+
+        let row = LifecycleIdentityRow::find_by_statement(statement)
+            .one(txn)
+            .await
+            .or_raise(make_error)?;
+        Ok(match row {
+            Some(row) => PageLifecycleIdentity {
+                created_by: row.created_by,
+                updated_by: row.updated_by,
+            },
+            None => PageLifecycleIdentity {
+                created_by: None,
+                updated_by: None,
+            },
+        })
+    }
+
     pub async fn create(
         ctx: &ServiceContext<'_>,
         CreatePage {
@@ -217,6 +318,7 @@ impl PageService {
 
         // Build and return
         Ok(CreatePageOutput {
+            site_id,
             page_id,
             slug,
             revision_id,
@@ -383,7 +485,6 @@ impl PageService {
 
         let PageModel {
             page_id,
-            page_category_id: category_id,
             slug: old_slug,
             latest_revision_id,
             ..
@@ -399,12 +500,6 @@ impl PageService {
                 ),
                 ErrorType::Page,
             )
-        };
-
-        let id = PageId {
-            site_id,
-            category_id,
-            page_id,
         };
 
         // Check last revision ID argument
@@ -432,11 +527,27 @@ impl PageService {
             CategoryService::get_or_create(ctx, site_id, get_category_name(&new_slug))
                 .await
                 .or_raise(make_error)?;
+        let id = PageId {
+            site_id,
+            category_id,
+            page_id,
+        };
 
         // Get latest revision
         let last_revision = PageRevisionService::get_latest(ctx, site_id, page_id)
             .await
             .or_raise(make_error)?;
+
+        // The move revision must render against the destination page identity. Keep
+        // the existing latest revision in place until the new revision is persisted;
+        // the surrounding transaction rolls this identity change back on failure.
+        let model = page::ActiveModel {
+            page_id: Set(page_id),
+            slug: Set(new_slug.clone()),
+            page_category_id: Set(category_id),
+            ..Default::default()
+        };
+        model.update(txn).await.or_raise(make_error)?;
 
         // Create revision for move
         let revision_input = CreatePageRevision {
@@ -459,15 +570,9 @@ impl PageService {
             None => ActiveValue::NotSet,
         };
 
-        // Update page after move. This changes:
-        // * slug               -- New slug for the page
-        // * page_category_id   -- In case the category also changed
-        // * latest_revision_id -- In case a new revision was created
-        // * updated_at         -- This is updated every time a page is changed
+        // Finish updating the page after the move revision has been persisted.
         let model = page::ActiveModel {
             page_id: Set(page_id),
-            slug: Set(new_slug.clone()),
-            page_category_id: Set(category_id),
             latest_revision_id,
             updated_at: Set(Some(now())),
             ..Default::default()
@@ -698,7 +803,7 @@ impl PageService {
 
         // Create resurrection revision
         // This also updates backlinks, includes, etc.
-        let output = PageRevisionService::create_resurrection(
+        let revision = PageRevisionService::create_resurrection(
             ctx,
             CreateResurrectionPageRevision {
                 id,
@@ -711,17 +816,37 @@ impl PageService {
         .await
         .or_raise(make_error)?;
 
-        // Set deletion flag
+        // Publish the restored identity and its resurrection revision together.
         let model = page::ActiveModel {
             page_id: Set(page_id),
             page_category_id: Set(category.category_id),
-            latest_revision_id: Set(Some(output.revision_id)),
+            latest_revision_id: Set(Some(revision.output.revision_id)),
+            slug: Set(slug.clone()),
             deleted_at: Set(None),
             ..Default::default()
         };
 
         let page = model.update(txn).await.or_raise(make_error)?;
         assert_latest_revision(&page);
+
+        // Resurrection rendering happens while the page is still deleted so
+        // generic body queries do not observe a half-restored aggregate. Runtime
+        // content that depends on the live latest revision needs one full pass
+        // after both halves of the aggregate are published in this transaction.
+        let output = PageRevisionService::apply_resurrection_followups(ctx, id, revision)
+            .await
+            .or_raise(make_error)?;
+
+        // Preserve the established navigation-only followup after the restored
+        // identity and latest revision are visible.
+        PageRevisionService::rerender(
+            ctx,
+            id,
+            RerenderDepth::default(),
+            RerenderType::NavigationOnly,
+        )
+        .await
+        .or_raise(make_error)?;
 
         // Audit log
         AuditService::log(

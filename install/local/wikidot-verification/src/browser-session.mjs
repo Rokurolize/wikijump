@@ -139,6 +139,9 @@ export async function openBrowser({
   chromium,
   cdpEndpoint,
   browserExecutable,
+  headless,
+  browserEnvironment = null,
+  browserArgs = [],
   ignoreHttpsErrors,
   storageState = null,
   sourceStorageState = null,
@@ -155,9 +158,11 @@ export async function openBrowser({
     if (sourceProxyServer || localProxyServer) throw new Error("CDP capture cannot enforce the owned egress proxy");
     browser = await chromium.connectOverCDP(cdpEndpoint);
   } else {
-    browser = await chromium.launch({
-      executablePath: browserExecutable,
-    });
+    const launchOptions = {executablePath: browserExecutable};
+    if (headless !== undefined) launchOptions.headless = headless;
+    if (browserEnvironment !== null) launchOptions.env = browserEnvironment;
+    if (browserArgs.length > 0) launchOptions.args = browserArgs;
+    browser = await chromium.launch(launchOptions);
   }
 
   try {

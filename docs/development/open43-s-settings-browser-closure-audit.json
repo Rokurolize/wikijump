@@ -1,6 +1,6 @@
 {
   "schema": "wikijump.open43.s_settings_browser_closure_audit.v1",
-  "generated_on": "2026-08-11",
+  "generated_on": "2026-08-13",
   "scope": {
     "issues": [610, 689, 690, 754, 755, 757, 758, 822, 1046],
     "issue_count": 9,
@@ -22,9 +22,9 @@
     "selected_content_include_commit": "2edfc82b19d6198b0a3173985bf0f315df863134",
     "selected_content_include_commit_tree": "69a9267adb4cd0109c8e3d0d99141a1d56f2fc92",
     "selected_content_include_is_ancestor": true,
-    "observed_integration_head": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
-    "observed_integration_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
-    "final_source_freeze_reconciliation_required": false,
+    "observed_integration_head": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+    "observed_integration_tree": "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
+    "final_source_freeze_reconciliation_required": true,
     "standing_is_acceptance_evidence": false
   },
   "source_residual_lane": {
@@ -57,8 +57,8 @@
     },
     {
       "path": "docs/wikidot-specifications/live-observations.json",
-      "sha256": "58cd39e295426d6c40e1d74af28d178bd68119a90d435994851e35112874f65a",
-      "feature_specific_rows_for_scope": 0
+      "sha256": "9f805b4eae468371a63bc41165adb139bd8526ddb1b25e3fe6349aff08f95712",
+      "feature_specific_rows_for_scope": 1
     }
   ],
   "specification_inputs": [
@@ -84,7 +84,7 @@
     },
     {
       "path": "docs/wikidot-specifications/specifications/site-structure/page-tags.md",
-      "sha256": "842aa8e86805fcc42b235f145985689eded5ffde1e5dca805ea47bcd78a75ac5",
+      "sha256": "3dee487b1509e41aed6770eefca2615dc35b269b1f22bfe5448b8ab032911b74",
       "issues": [822]
     },
     {
@@ -214,7 +214,7 @@
   },
   "classification_contract": {
     "referent_table_path": "docs/development/referent-table-open43-s-settings-browser-closure-audit.md",
-    "referent_table_sha256": "fe6206a3c7b3d3daf11eb570ebc29a1d7fb241cbcfd697ffedd7b78f419c0c04",
+    "referent_table_sha256": "93b6f784adc2190e6664fd75be00980a4e944ba7de803db572dcffd56bb7ff00",
     "allowed": ["source_ready", "needs_source", "candidate_required", "blocked_evidence"],
     "source_ready_is_not_pass": true,
     "candidate_required_is_not_pass": true,
@@ -1152,18 +1152,25 @@
   },
   "renderer_epoch_finalization": {
     "classification": "source_ready",
-    "current_epoch": 8,
+    "current_epoch": 10,
     "epoch_source": "deepwell/src/services/render/generator.rs",
     "owner": "root integration after all render-affecting lanes are source-frozen",
-    "required_bump_count": 1,
-    "completed_bump_count": 1,
+    "required_bump_count": 2,
+    "completed_bump_count": 2,
     "lane_must_not_bump": true,
-    "finalized_by": {
-      "source_commit": "cea9076fdfe49d697716a3e0acb5ccb0c21025b5",
-      "source_tree": "8fc8e768c906b9b306e46442bb580d24b686e8a1",
-      "subject": "fix(compat): close reviewed public surface gaps",
+    "current_epoch_introduced_by": {
+      "source_commit": "f9e092610e542ad645c0eec3e8c0ef0c4e7e7a6a",
+      "source_tree": "4d3b1c633df8b2f07a0aa017b65058e1defcd3cb",
+      "subject": "render: advance cache identity for Basalt boundary fix",
       "integration_commit_reconciliation_required": false,
       "public_regression": "deepwell/tests/page.rs::renderer_epoch_invalidates_pre_freeze_compiled_artifacts"
+    },
+    "post_epoch_source": {
+      "observed_integration_head": "a1dee171237de66bbf1b6e45ec55b5f6584cf34a",
+      "observed_integration_tree": "69cd2a08ab345dd58571f0f6f594d0e45f57b367",
+      "last_observed_render_commit": "e48ed01780ec0a67b503ffcdf957566e607c9767",
+      "last_observed_render_tree": "fc1209e6eeb5798eb2f52f1b47af2b7d02c6ef54",
+      "source_freeze_bump_required": false
     }
   },
   "reconciliation": {

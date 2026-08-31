@@ -1,0 +1,24 @@
+{
+  "schema": "wikijump_syntax_differential.runtime_state_fixture.v1",
+  "captured_at": "2026-07-15T06:18:01.000Z",
+  "capture_source": {
+    "kind": "frozen-live-reference",
+    "report": "/home/roku/wjlab/evidence/standing-browser-20260715/scp8980-local-live-structural-diff-20260715T061801Z/capture.json",
+    "report_sha256": "420a132795f52adb3ccae66b1e2fdaf80e099628d46e0a97263274751edebc7b",
+    "raw_live_dom": {
+      "path": "/home/roku/wjlab/evidence/standing-browser-20260715/scp8980-local-live-structural-diff-20260715T061801Z/live.page-content.html",
+      "sha256": "ac3a0822356a9da017bbe1b269387aac6a1922afbc8aa7390bb870ea65102df5"
+    }
+  },
+  "wikidot_users": [
+    {
+      "user_id": 2199269,
+      "name": "Yossipossi",
+      "slug": "yossipossi",
+      "provenance": {
+        "source": "capture.json#live.page-content.html",
+        "captured_at": "2026-07-15T06:18:01.000Z"
+      }
+    }
+  ]
+}

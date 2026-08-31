@@ -86,6 +86,7 @@ enum ForumModuleKind {
 struct CommentsArguments<'a> {
     title: Option<&'a str>,
     hide: bool,
+    hide_form: bool,
     order: ForumCommentsOrder,
     query_safe: bool,
 }
@@ -95,6 +96,7 @@ impl Default for CommentsArguments<'_> {
         Self {
             title: None,
             hide: false,
+            hide_form: false,
             order: ForumCommentsOrder::Forward,
             query_safe: true,
         }
@@ -114,6 +116,7 @@ fn comments_arguments(head: &str) -> CommentsArguments<'_> {
     let mut output = CommentsArguments::default();
     let mut title_seen = false;
     let mut hide_seen = false;
+    let mut hide_form_seen = false;
     let mut order_seen = false;
     for argument in arguments {
         if argument.op != "="
@@ -130,6 +133,13 @@ fn comments_arguments(head: &str) -> CommentsArguments<'_> {
             "hide" if !hide_seen && matches!(argument.value, "true" | "false") => {
                 hide_seen = true;
                 output.hide = argument.value == "true";
+            }
+            "hideForm"
+                if !hide_form_seen
+                    && matches!(argument.value, "false" | "true" | "yes") =>
+            {
+                hide_form_seen = true;
+                output.hide_form = matches!(argument.value, "true" | "yes");
             }
             "order"
                 if !order_seen && matches!(argument.value, "forwards" | "reverse") =>
@@ -159,6 +169,7 @@ pub(super) struct ForumUserDisplay {
     name: String,
     slug: Option<String>,
     wikidot_profile: bool,
+    guest_gravatar_md5: Option<String>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -203,6 +214,8 @@ struct ForumStartThreadCandidate {
     wikidot_user_slug: Option<String>,
     local_user_name: Option<String>,
     local_user_slug: Option<String>,
+    guest_name: Option<String>,
+    guest_email_md5: Option<String>,
 }
 
 #[derive(Debug, FromQueryResult)]
@@ -223,6 +236,9 @@ struct RecentPostCandidate {
     wikidot_user_slug: Option<String>,
     local_user_name: Option<String>,
     local_user_slug: Option<String>,
+    forum_signature: Option<String>,
+    guest_name: Option<String>,
+    guest_email_md5: Option<String>,
 }
 
 #[derive(Debug)]
@@ -239,6 +255,21 @@ struct RecentPost {
     created_at: time::OffsetDateTime,
     title: String,
     compiled_html: String,
+    signature_html: Option<String>,
+}
+
+pub(super) async fn render_forum_signature_html(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    source: Option<&str>,
+) -> Result<Option<String>> {
+    let Some(source) = source.filter(|source| !source.is_empty()) else {
+        return Ok(None);
+    };
+    let output =
+        RenderService::render_wikidot_syntax_preview(ctx, site_id, "", source.to_owned())
+            .await?;
+    Ok(Some(output.html_output.body))
 }
 
 #[derive(Debug)]
@@ -345,6 +376,7 @@ pub(super) fn forum_user(
             name,
             slug: wikidot_user_slug,
             wikidot_profile: true,
+            guest_gravatar_md5: None,
         }
     } else if let Some(name) = local_user_name.or_else(|| local_user_slug.clone()) {
         ForumUserDisplay {
@@ -352,6 +384,7 @@ pub(super) fn forum_user(
             name,
             slug: local_user_slug,
             wikidot_profile: false,
+            guest_gravatar_md5: None,
         }
     } else {
         ForumUserDisplay {
@@ -359,7 +392,18 @@ pub(super) fn forum_user(
             name: user_id.to_string(),
             slug: None,
             wikidot_profile: false,
+            guest_gravatar_md5: None,
         }
+    }
+}
+
+pub(super) fn forum_guest_user(name: String, gravatar_md5: String) -> ForumUserDisplay {
+    ForumUserDisplay {
+        user_id: crate::constants::ANONYMOUS_USER_ID,
+        name,
+        slug: None,
+        wikidot_profile: false,
+        guest_gravatar_md5: Some(gravatar_md5),
     }
 }
 
@@ -376,6 +420,16 @@ pub(super) fn render_forum_user_with_scheme(
     resource_scheme: ForumUserResourceScheme,
 ) -> String {
     let name = escape_list_pages_html_text(&user.name);
+    if let Some(gravatar_md5) = &user.guest_gravatar_md5 {
+        let gravatar_md5 = escape_list_pages_html_attr(gravatar_md5);
+        return format!(
+            concat!(
+                r#"<span class="printuser avatarhover"><a href="javascript:;"><img alt="" class="small" "#,
+                r#"src="http://www.gravatar.com/avatar.php?gravatar_id={}&amp;default=http://www.wikidot.com/common--images/avatars/default/a16.png&amp;size=16"/></a>{} (guest)</span>"#,
+            ),
+            gravatar_md5, name,
+        );
+    }
     let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
         return format!(r#"<span class="printuser">{name}</span>"#);
     };
@@ -401,6 +455,9 @@ pub(super) fn render_forum_user_with_scheme(
 
 pub(super) fn render_forum_user_without_avatar(user: &ForumUserDisplay) -> String {
     let name = escape_list_pages_html_text(&user.name);
+    if user.guest_gravatar_md5.is_some() {
+        return format!(r#"<span class="printuser">{name} (guest)</span>"#);
+    }
     let Some(slug) = user.slug.as_deref().filter(|_| user.wikidot_profile) else {
         return format!(r#"<span class="printuser">{name}</span>"#);
     };
@@ -463,7 +520,8 @@ pub(super) async fn load_forum_start_activity(
                 "last_post.user_id AS last_user_id, ",
                 "last_post.created_at AS last_created_at, ",
                 "wu.name AS wikidot_user_name, wu.slug AS wikidot_user_slug, ",
-                "local_user.name AS local_user_name, local_user.slug AS local_user_slug ",
+                "local_user.name AS local_user_name, local_user.slug AS local_user_slug, ",
+                "last_post.guest_name, last_post.guest_email_md5 ",
                 "FROM forum_thread t ",
                 "JOIN forum_group g ON g.forum_group_id = t.forum_group_id ",
                 " AND g.site_id = t.site_id AND g.deleted_at IS NULL ",
@@ -474,7 +532,8 @@ pub(super) async fn load_forum_start_activity(
                 "JOIN LATERAL (SELECT COUNT(fp0.forum_post_id) AS post_count ",
                 " FROM forum_post fp0 WHERE fp0.forum_thread_id = t.forum_thread_id ",
                 " AND fp0.site_id = t.site_id AND fp0.deleted_at IS NULL) counts ON TRUE ",
-                "LEFT JOIN LATERAL (SELECT fp1.forum_post_id, fp1.user_id, fp1.created_at ",
+                "LEFT JOIN LATERAL (SELECT fp1.forum_post_id, fp1.user_id, fp1.created_at, ",
+                " fp1.guest_name, fp1.guest_email_md5 ",
                 " FROM forum_post fp1 WHERE fp1.forum_thread_id = t.forum_thread_id ",
                 " AND fp1.site_id = t.site_id AND fp1.deleted_at IS NULL ",
                 " ORDER BY fp1.created_at DESC, fp1.forum_post_id DESC LIMIT 1) last_post ON TRUE ",
@@ -522,13 +581,16 @@ pub(super) async fn load_forum_start_activity(
         category.last_post = Some(ForumLastPost {
             forum_post_id,
             forum_thread_id: candidate.forum_thread_id,
-            user: forum_user(
-                user_id,
-                candidate.wikidot_user_name,
-                candidate.wikidot_user_slug,
-                candidate.local_user_name,
-                candidate.local_user_slug,
-            ),
+            user: match (candidate.guest_name, candidate.guest_email_md5) {
+                (Some(name), Some(md5)) => forum_guest_user(name, md5),
+                _ => forum_user(
+                    user_id,
+                    candidate.wikidot_user_name,
+                    candidate.wikidot_user_slug,
+                    candidate.local_user_name,
+                    candidate.local_user_slug,
+                ),
+            },
             created_at,
         });
     }
@@ -642,7 +704,8 @@ pub(super) async fn load_recent_posts_page(
                 pr.title AS page_title, fp.user_id, fp.created_at, fpr.title, \
                 fpr.compiled_html_hash, wu.name AS wikidot_user_name, \
                 wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, \
-                local_user.slug AS local_user_slug \
+                local_user.slug AS local_user_slug, local_user.forum_signature, \
+                fp.guest_name, fp.guest_email_md5 \
          FROM forum_post fp \
          JOIN forum_thread t ON t.forum_thread_id = fp.forum_thread_id \
                             AND t.site_id = fp.site_id AND t.deleted_at IS NULL \
@@ -695,6 +758,7 @@ pub(super) async fn load_recent_posts_page(
         .div_ceil(RECENT_POSTS_PER_PAGE)
         .max(page as usize) as u32;
     let mut posts = Vec::with_capacity(end.saturating_sub(start));
+    let mut signature_cache = BTreeMap::<String, String>::new();
     let drain_start = start.min(visible.len());
     for candidate in visible.drain(drain_start..end) {
         let compiled_html = TextService::get(ctx, &candidate.compiled_html_hash)
@@ -709,16 +773,34 @@ pub(super) async fn load_recent_posts_page(
             thread_title: candidate.thread_title,
             page_slug: candidate.page_slug,
             page_title: candidate.page_title,
-            user: forum_user(
-                candidate.user_id,
-                candidate.wikidot_user_name,
-                candidate.wikidot_user_slug,
-                candidate.local_user_name,
-                candidate.local_user_slug,
-            ),
+            user: match (candidate.guest_name, candidate.guest_email_md5) {
+                (Some(name), Some(md5)) => forum_guest_user(name, md5),
+                _ => forum_user(
+                    candidate.user_id,
+                    candidate.wikidot_user_name,
+                    candidate.wikidot_user_slug,
+                    candidate.local_user_name,
+                    candidate.local_user_slug,
+                ),
+            },
             created_at: candidate.created_at,
             title: candidate.title,
             compiled_html,
+            signature_html: match candidate.forum_signature.as_deref() {
+                Some(source) if !source.is_empty() => {
+                    if let Some(rendered) = signature_cache.get(source) {
+                        Some(rendered.clone())
+                    } else {
+                        let rendered =
+                            render_forum_signature_html(ctx, site_id, Some(source))
+                                .await?
+                                .expect("non-empty signature source renders a signature");
+                        signature_cache.insert(source.to_owned(), rendered.clone());
+                        Some(rendered)
+                    }
+                }
+                _ => None,
+            },
         });
     }
     Ok(Some(RecentPostsPage {
@@ -824,7 +906,7 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
         );
         write!(
             &mut output,
-            "<div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"title\" id=\"post-title-{}\"><a href=\"{}\">{}</a></div><div class=\"info\">{} {}<br/>in discussion <a href=\"/forum/c-{}/{}\">{} / {}</a> &raquo; <a href=\"{}\">{}</a></div></div><div class=\"content\" id=\"post-content-{}\">{}</div><div class=\"options\"></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"title\" href=\"javascript:;\" >{}</a> by {}, {}</div></div>",
+            "<div class=\"post\" id=\"post-{}\"><div class=\"long\"><div class=\"head\"><div class=\"title\" id=\"post-title-{}\"><a href=\"{}\">{}</a></div><div class=\"info\">{} {}<br/>in discussion <a href=\"/forum/c-{}/{}\">{} / {}</a> &raquo; <a href=\"{}\">{}</a></div></div><div class=\"content\" id=\"post-content-{}\">{}</div>{}<div class=\"options\"></div><div id=\"post-options-{}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"title\" href=\"javascript:;\" >{}</a> by {}, {}</div></div>",
             post.forum_post_id,
             post.forum_post_id,
             escape_list_pages_html_attr(&post_path),
@@ -839,6 +921,11 @@ pub(super) fn render_recent_posts_list(page: &RecentPostsPage) -> String {
             escape_list_pages_html_text(discussion_title),
             post.forum_post_id,
             post.compiled_html,
+            post.signature_html.as_ref().map_or_else(String::new, |signature| {
+                format!(
+                    r#"<div class="signature"><hr class="signature-separator"/>{signature}</div>"#,
+                )
+            }),
             post.forum_post_id,
             escape_list_pages_html_text(&post.title),
             user,
@@ -981,6 +1068,7 @@ impl RenderService {
                                     &mut visibility,
                                     page_id,
                                     arguments.order,
+                                    arguments.hide_form,
                                 )
                                 .await?
                                 {

@@ -55,8 +55,8 @@ test("standing admission CLI binds all evidence paths before sealing", async () 
 });
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
-const git = (character) => character.repeat(40);
-const image = (character) => `sha256:${character.repeat(64)}`;
+const git = (character) => hash(character).slice(0, 40);
+const image = (character) => `sha256:${hash(character)}`;
 const viewport = { width: 1366, height: 900 };
 const PROMOTION_ROLES = Object.freeze([
   "cache",
@@ -89,17 +89,17 @@ function runtimeServiceConfigurations(images) {
 function candidateIdentity({
   images = { caddy: image("e") },
   build = {
-    seal_sha256: "b".repeat(64),
-    verdict_sha256: "c".repeat(64),
-    final_images_sha256: "d".repeat(64),
+    seal_sha256: hash("b"),
+    verdict_sha256: hash("c"),
+    final_images_sha256: hash("d"),
   },
-  promotionBaseManifestSha256 = "0".repeat(64),
+  promotionBaseManifestSha256 = hash("0"),
 } = {}) {
   const runtimeConfigurations = runtimeServiceConfigurations(images);
   return {
     schema: "wikijump.standing_candidate_parity_identity.v1",
     status: "sealed",
-    artifact_key: "a".repeat(64),
+    artifact_key: hash("a"),
     build,
     candidate: {
       owner: "standing-parity-fixture",
@@ -113,7 +113,7 @@ function candidateIdentity({
       source_clean: true,
       images,
       config: {
-        isolated_overlay_sha256: "f".repeat(64),
+        isolated_overlay_sha256: hash("f"),
         promotion_base_manifest_sha256: promotionBaseManifestSha256,
         effective_runtime_services_sha256: sha256Value(runtimeConfigurations),
       },
@@ -131,8 +131,8 @@ function candidateIdentity({
     },
     evidence: {
       status: "sealed",
-      manifest_sha256: "1".repeat(64),
-      seal_sha256: "2".repeat(64),
+      manifest_sha256: hash("1"),
+      seal_sha256: hash("2"),
     },
   };
 }
@@ -352,6 +352,113 @@ function executionIdentity(identity) {
   };
 }
 
+async function createFinalFrozenReceiptFixture(root, identity) {
+  const directory = path.join(root, "final-frozen");
+  await fs.mkdir(path.join(directory, "deepwell"), { recursive: true });
+  const paths = {
+    lockfile: path.join(directory, "deepwell", "Cargo.lock"),
+    verifier: path.join(directory, "verifier.mjs"),
+    fixture: path.join(directory, "fixture.json"),
+    tool: path.join(directory, "tool.mjs"),
+    denominator: path.join(directory, "denominator.json"),
+    images: path.join(directory, "images.json"),
+    standardsReview: path.join(directory, "standards-review.json"),
+    specReview: path.join(directory, "spec-review.json"),
+    manifest: path.join(directory, "inputs.json"),
+    writers: path.join(directory, "writers.json"),
+    receipt: path.join(directory, "receipt.json"),
+  };
+  await fs.writeFile(paths.lockfile, "lock\n");
+  await fs.writeFile(paths.verifier, "verifier\n");
+  await fs.writeFile(paths.fixture, "fixture\n");
+  await fs.writeFile(paths.tool, "tool\n");
+  await fs.writeFile(paths.denominator, "denominator\n");
+  for (const [axis, reviewPath] of [["standards", paths.standardsReview], ["spec", paths.specReview]]) {
+    await fs.writeFile(
+      reviewPath,
+      canonicalJson({
+        schema: "wikijump.compatibility_review.v1",
+        axis,
+        status: "pass",
+        wikijump_commit: identity.candidate.wikijump_commit,
+        wikijump_tree: identity.candidate.wikijump_tree,
+        findings: [],
+      }),
+    );
+  }
+  await fs.writeFile(
+    paths.images,
+    canonicalJson({
+      status: "pass",
+      wikijump_sha: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      ftml_sha: identity.candidate.ftml_sha,
+      images: { deepwell: { id: image("f") } },
+    }),
+  );
+  await fs.writeFile(
+    paths.manifest,
+    canonicalJson({
+      lockfiles: [paths.lockfile],
+      verifier: [paths.verifier],
+      fixtures: [paths.fixture],
+      tools: [paths.tool],
+      denominator: [paths.denominator],
+      reviews: {standards: paths.standardsReview, spec: paths.specReview},
+      images: paths.images,
+    }),
+  );
+  await fs.writeFile(
+    paths.writers,
+    canonicalJson({
+      schema: "wikijump.phase4.source_writer_roster.v1",
+      status: "pass",
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      lanes: [{ name: "candidate", state: "stopped" }],
+    }),
+  );
+  const ref = async (filePath) => ({
+    path: filePath,
+    sha256: await sha256File(filePath),
+  });
+  await fs.writeFile(
+    paths.receipt,
+    canonicalJson({
+      schema: "wikijump.phase4.final_frozen_receipt.v1",
+      status: "FINAL_FROZEN",
+      source: {
+        wikijump_commit: identity.candidate.wikijump_commit,
+        wikijump_tree: identity.candidate.wikijump_tree,
+        ftml_sha: identity.candidate.ftml_sha,
+        lockfiles: [await ref(paths.lockfile)],
+      },
+      verifier: {
+        wikijump_commit: identity.candidate.wikijump_commit,
+        wikijump_tree: identity.candidate.wikijump_tree,
+        files: [await ref(paths.verifier)],
+      },
+      fixtures: [await ref(paths.fixture)],
+      tools: [await ref(paths.tool)],
+      denominator: [await ref(paths.denominator)],
+      reviews: {
+        standards: await ref(paths.standardsReview),
+        spec: await ref(paths.specReview),
+      },
+      images: {
+        producer: await ref(paths.images),
+        identities: { deepwell: image("f") },
+      },
+      inputs: {
+        manifest: await ref(paths.manifest),
+        source_writers: await ref(paths.writers),
+      },
+      source_writers: [],
+    }),
+  );
+  return paths.receipt;
+}
+
 async function fixture(root, identity = candidateIdentity()) {
   const policyPath = path.join(root, "policy.json");
   const identityPath = path.join(root, "candidate-identity.json");
@@ -392,6 +499,7 @@ async function fixture(root, identity = candidateIdentity()) {
     },
     requestGate: {
       schema: "wikijump_full_parity.browser_request_gate.v1",
+      execution_mode: "live",
       interval_ms: 4_000,
       enforcement_failed: false,
       public_requests: pairs.length,
@@ -440,7 +548,8 @@ async function fixture(root, identity = candidateIdentity()) {
     local_capture_config_sha256: "5".repeat(64),
     request_gate: {
       schema: "wikijump_full_parity.browser_request_gate.v1",
-      interval_ms: 4_000,
+      execution_mode: "candidate",
+      interval_ms: 0,
       next_admissible_at_epoch_ms: 0,
       retry_after_until_epoch_ms: 0,
       enforcement_failed: false,
@@ -489,7 +598,13 @@ async function fixture(root, identity = candidateIdentity()) {
   }).receipt;
   const receiptPath = path.join(root, "candidate-receipt.json");
   await fs.writeFile(receiptPath, canonicalJson(receipt), { mode: 0o600 });
-  return { receiptPath, identityPath, referencePath, policyPath };
+  return {
+    receiptPath,
+    finalFrozenReceiptPath: await createFinalFrozenReceiptFixture(root, identity),
+    identityPath,
+    referencePath,
+    policyPath,
+  };
 }
 
 async function createPromotionBuildFixture(root) {
@@ -596,6 +711,27 @@ test("source-owned receipt verifier verifies a complete candidate receipt and it
   assert.equal(admission.parity.pairs_total, STANDING_BROWSER_CANARIES.length);
 });
 
+test("candidate parity admission keeps development profiles out of promotion", async (context) => {
+  const root = await fs.mkdtemp(
+    path.join(os.tmpdir(), "standing-browser-admission-development-"),
+  );
+  context.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  identity.candidate.profile = "development-build";
+  const paths = await fixture(root, identity);
+  await assert.rejects(
+    verifyStandingCandidateParityAdmission({
+      receiptPath: paths.receiptPath,
+      candidateIdentityPath: paths.identityPath,
+      liveReferencePath: paths.referencePath,
+      liveCompletionPolicyPath: paths.policyPath,
+      now: new Date("2026-07-20T00:00:00.000Z"),
+      collectExecutionIdentity: async (candidate) => executionIdentity(candidate),
+    }),
+    /requires production-build/u,
+  );
+});
+
 test("source-owned receipt verifier rejects an identity file that differs from the receipt", async (context) => {
   const root = await fs.mkdtemp(
     path.join(os.tmpdir(), "standing-browser-admission-"),
@@ -688,6 +824,7 @@ test("promotion precondition accepts a complete source-admission fixture", async
   const paths = await fixture(root, identity);
   const result = await verifyStandingPromotionPrecondition({
     receiptPath: paths.receiptPath,
+    finalFrozenReceiptPath: paths.finalFrozenReceiptPath,
     candidateIdentityPath: paths.identityPath,
     liveReferencePath: paths.referencePath,
     liveCompletionPolicyPath: paths.policyPath,

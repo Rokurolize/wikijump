@@ -24,6 +24,7 @@ mod categories;
 mod child_pages;
 mod compat;
 mod corpus;
+mod count_pages_recognition;
 mod diagnostics;
 mod file_modules;
 mod forum_comments;
@@ -61,7 +62,7 @@ mod percent_encoding;
 mod rate_actions;
 mod rate_module;
 mod render_budget;
-mod render_dependency;
+pub(crate) mod render_dependency;
 mod render_options;
 mod replay;
 mod runtime;
@@ -89,7 +90,9 @@ pub(crate) use self::diagnostics::{
 pub use self::forum_read_routes::{
     WikidotForumModuleRequest, WikidotForumModuleResponse,
 };
-pub(crate) use self::generator::DEEPWELL_RENDERER_EPOCH;
+pub(crate) use self::generator::{
+    DEEPWELL_RENDERER_EPOCH, compiled_generator_is_current,
+};
 pub use self::legacy_actions::{
     LegacyActionDescriptor, LegacyActionRegistry, LegacyBrowserAction,
 };

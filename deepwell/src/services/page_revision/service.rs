@@ -34,11 +34,17 @@ use crate::models::page_revision::{
 };
 use crate::models::text::{self, Entity as Text};
 use crate::services::ServiceContext;
+use crate::services::audit::{AuditEvent, AuditService};
+use crate::services::data_form::{
+    parse_observed_wikidot_data_form_values, parse_wikidot_data_form_definition,
+};
 use crate::services::page_query::parse_static_wikidot_data_form_values;
+use crate::services::render::render_dependency::wikitext_needs_latest_revision_for_render;
 use crate::services::render::{
     CorpusRenderScope, CorpusRenderStage, CorpusRenderTrace, RenderPageOutput, StageGuard,
 };
 use crate::services::score::ScoreValue;
+use crate::services::settings::NavigationPageWikitext;
 use crate::services::{
     BlueprintPageService, LinkService, OutdateService, ParentService, RenderService,
     ScoreService, SettingsService, SiteService, TextService,
@@ -49,7 +55,7 @@ use crate::types::{
 use crate::types::{Maybe, Reference};
 use crate::utils::{ConvertToI32, now};
 use crate::utils::{locale_for_ftml, split_category, split_category_name, trim_default};
-use ftml::data::PageInfo;
+use ftml::data::{PageInfo, PageRef};
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
 use paste::paste;
@@ -89,10 +95,57 @@ macro_rules! conditional_future {
 #[derive(Debug)]
 pub struct PageRevisionService;
 
+#[derive(Debug, Default)]
+pub(crate) struct ParsedPageRevisionHiddenFields {
+    pub(crate) wikitext: bool,
+    pub(crate) compiled: bool,
+    pub(crate) comments: bool,
+    pub(crate) title: bool,
+    pub(crate) alt_title: bool,
+    pub(crate) slug: bool,
+    pub(crate) tags: bool,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum PageRevisionHiddenField {
+    Wikitext,
+    Compiled,
+    Comments,
+    Title,
+    AltTitle,
+    Slug,
+    Tags,
+}
+
+impl PageRevisionHiddenField {
+    fn parse(field: &str) -> Result<Self> {
+        match field {
+            "wikitext" => Ok(Self::Wikitext),
+            "compiled" => Ok(Self::Compiled),
+            "comments" => Ok(Self::Comments),
+            "title" => Ok(Self::Title),
+            "alt_title" => Ok(Self::AltTitle),
+            "slug" => Ok(Self::Slug),
+            "tags" => Ok(Self::Tags),
+            _ => Err(Error::new(
+                format!("unknown hidden page revision field: {field}"),
+                ErrorType::PageRevision,
+            )
+            .into()),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct PersistedPageRevision {
     pub(crate) output: CreatePageRevisionOutput,
     followups: PageRevisionFollowups,
+}
+
+#[derive(Debug)]
+pub(crate) struct PersistedResurrectionPageRevision {
+    pub(crate) output: CreatePageRevisionOutput,
+    rerender_after_latest_revision: bool,
 }
 
 #[derive(Debug)]
@@ -294,24 +347,23 @@ impl PageRevisionDraft {
     }
 }
 
-fn needs_latest_revision_for_render(wikitext: &str) -> bool {
-    let lower = wikitext.to_ascii_lowercase();
-    lower.contains("[[module countpages")
-        || lower.contains("[[module listpages")
-        || lower.contains("[[module pages")
-        || lower.contains("[[module tagcloud")
-        || lower.contains("[[include")
-}
-
 fn first_revision_followups(
     slug: String,
     wikitext: &str,
     template_wikitext: Option<&str>,
+    top_bar_page_wikitext: Option<&str>,
+    side_bar_page_wikitext: Option<&str>,
 ) -> FirstRevisionFollowups {
     FirstRevisionFollowups {
         slug,
-        rerender_after_latest_revision: needs_latest_revision_for_render(wikitext)
-            || template_wikitext.is_some_and(needs_latest_revision_for_render),
+        rerender_after_latest_revision: wikitext_needs_latest_revision_for_render(
+            wikitext,
+        ) || template_wikitext
+            .is_some_and(wikitext_needs_latest_revision_for_render)
+            || top_bar_page_wikitext
+                .is_some_and(wikitext_needs_latest_revision_for_render)
+            || side_bar_page_wikitext
+                .is_some_and(wikitext_needs_latest_revision_for_render),
     }
 }
 
@@ -385,6 +437,26 @@ async fn apply_revision_outdating(
 }
 
 impl PageRevisionService {
+    pub(crate) fn parse_hidden_fields(
+        hidden: &[String],
+    ) -> Result<ParsedPageRevisionHiddenFields> {
+        let mut parsed = ParsedPageRevisionHiddenFields::default();
+
+        for field in hidden {
+            match PageRevisionHiddenField::parse(field)? {
+                PageRevisionHiddenField::Wikitext => parsed.wikitext = true,
+                PageRevisionHiddenField::Compiled => parsed.compiled = true,
+                PageRevisionHiddenField::Comments => parsed.comments = true,
+                PageRevisionHiddenField::Title => parsed.title = true,
+                PageRevisionHiddenField::AltTitle => parsed.alt_title = true,
+                PageRevisionHiddenField::Slug => parsed.slug = true,
+                PageRevisionHiddenField::Tags => parsed.tags = true,
+            }
+        }
+
+        Ok(parsed)
+    }
+
     /// Creates a new revision on an existing page.
     ///
     /// For the given page, look at the changes to make. If there are none,
@@ -571,17 +643,25 @@ impl PageRevisionService {
         )
         .await
         .or_raise(make_error)?;
+        let NavigationPageWikitext {
+            top_bar_page_wikitext,
+            side_bar_page_wikitext,
+        } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
+            .await
+            .or_raise(make_error)?;
         let followups = first_revision_followups(
             slug.clone(),
             &wikitext,
             template_wikitext.as_deref(),
+            top_bar_page_wikitext.as_deref(),
+            side_bar_page_wikitext.as_deref(),
         );
 
         // If the page creation doesn't specify a preferred layout,
-        // use the default for the site.
+        // use the effective layout for the inserted destination page.
         let layout = match layout {
             Some(layout) => layout,
-            None => SettingsService::get_layout(ctx, site_id, None)
+            None => SettingsService::get_layout(ctx, site_id, Some(page_id))
                 .await
                 .or_raise(make_error)?,
         };
@@ -788,7 +868,7 @@ impl PageRevisionService {
     ///
     /// # Panics
     /// If the given previous revision is for a different page or site, this method will panic.
-    pub async fn create_resurrection(
+    pub(crate) async fn create_resurrection(
         ctx: &ServiceContext<'_>,
         CreateResurrectionPageRevision {
             id,
@@ -797,7 +877,7 @@ impl PageRevisionService {
             new_slug,
         }: CreateResurrectionPageRevision,
         previous: PageRevisionModel,
-    ) -> Result<CreatePageRevisionOutput> {
+    ) -> Result<PersistedResurrectionPageRevision> {
         let txn = ctx.transaction();
         let PageId {
             site_id,
@@ -860,6 +940,29 @@ impl PageRevisionService {
         let wikitext = TextService::get(ctx, &wikitext_hash)
             .await
             .or_raise(make_error)?;
+        let (category_slug, page_slug) = split_category(&new_slug);
+        let template_wikitext = BlueprintPageService::get_page_template(
+            ctx,
+            site_id,
+            category_slug,
+            page_slug,
+        )
+        .await
+        .or_raise(make_error)?;
+        let NavigationPageWikitext {
+            top_bar_page_wikitext,
+            side_bar_page_wikitext,
+        } = SettingsService::get_nav_page_wikitext(ctx, site_id, Some(category_id))
+            .await
+            .or_raise(make_error)?;
+        let rerender_after_latest_revision = first_revision_followups(
+            new_slug.clone(),
+            &wikitext,
+            template_wikitext.as_deref(),
+            top_bar_page_wikitext.as_deref(),
+            side_bar_page_wikitext.as_deref(),
+        )
+        .rerender_after_latest_revision;
         let RenderPageOutput {
             // TODO: use html_output
             html_output: _,
@@ -928,11 +1031,25 @@ impl PageRevisionService {
         let PageRevisionModel { revision_id, .. } =
             model.insert(txn).await.or_raise(make_error)?;
 
-        Ok(CreatePageRevisionOutput {
-            revision_id,
-            revision_number,
-            parser_errors: Some(errors),
+        Ok(PersistedResurrectionPageRevision {
+            output: CreatePageRevisionOutput {
+                revision_id,
+                revision_number,
+                parser_errors: Some(errors),
+            },
+            rerender_after_latest_revision,
         })
+    }
+
+    pub(crate) async fn apply_resurrection_followups(
+        ctx: &ServiceContext<'_>,
+        id: PageId,
+        revision: PersistedResurrectionPageRevision,
+    ) -> Result<CreatePageRevisionOutput> {
+        if revision.rerender_after_latest_revision {
+            Self::rerender(ctx, id, RerenderDepth::default(), RerenderType::Full).await?;
+        }
+        Ok(revision.output)
     }
 
     /// Helper method for performing rendering for a revision.
@@ -980,6 +1097,34 @@ impl PageRevisionService {
         let (category_slug, page_slug) = split_category(slug);
         let current_page_data_form_values =
             parse_static_wikidot_data_form_values(&wikitext);
+        let pagepath_backlinks = match BlueprintPageService::get_page_template(
+            ctx,
+            site_id,
+            category_slug,
+            page_slug,
+        )
+        .await
+        .or_raise(make_error)?
+        {
+            Some(template) => parse_wikidot_data_form_definition(&template)
+                .filter(|definition| definition.supports_observed_create_edit())
+                .and_then(|definition| {
+                    parse_observed_wikidot_data_form_values(&definition, &wikitext)
+                        .map(|values| (definition, values))
+                })
+                .map(|(definition, values)| {
+                    definition
+                        .fields
+                        .iter()
+                        .filter(|field| field.field_type.as_deref() == Some("pagepath"))
+                        .filter_map(|field| values.get(&field.name))
+                        .filter(|value| !value.is_empty())
+                        .cloned()
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default(),
+            None => Vec::new(),
+        };
         let wikitext = BlueprintPageService::apply_page_template(
             ctx,
             site_id,
@@ -1001,7 +1146,7 @@ impl PageRevisionService {
         };
 
         // Parse and render
-        let output = if let Some(trace) = trace {
+        let mut output = if let Some(trace) = trace {
             debug_assert!(allow_corpus_dense_includes);
             RenderService::render_corpus_page_traced(
                 ctx, wikitext, &page_info, layout, id, trace,
@@ -1023,6 +1168,12 @@ impl PageRevisionService {
             .await
         }
         .or_raise(make_error)?;
+
+        output
+            .html_output
+            .backlinks
+            .internal_links
+            .extend(pagepath_backlinks.into_iter().map(PageRef::page_only));
 
         // Update backlinks
         {
@@ -1297,23 +1448,11 @@ impl PageRevisionService {
             page_id,
             revision_id,
             user_id,
+            ip_address,
             hidden,
         }: UpdatePageRevision,
     ) -> Result<()> {
         let txn = ctx.transaction();
-
-        // Unfortunately, we cannot do .contains() on Vec<String> because
-        // it wans to compare with &String, not &str.
-        #[inline]
-        fn contains(items: &[String], query: &str) -> bool {
-            for item in items {
-                if item == query {
-                    return true;
-                }
-            }
-
-            false
-        }
 
         let make_error = || {
             Error::new(
@@ -1348,15 +1487,18 @@ impl PageRevisionService {
             bail!(make_error());
         };
 
-        if revision_id == latest.revision_id && contains(&hidden, "wikitext") {
+        let parsed_hidden = Self::parse_hidden_fields(&hidden)?;
+
+        if revision_id == latest.revision_id && parsed_hidden.wikitext {
             bail!(Error::new(
                 "cannot hide latest page revision",
                 ErrorType::CannotHideLatestRevision
             ));
         }
 
-        // TODO: record revision edit in audit log
-        let _ = user_id;
+        if revision.hidden.as_slice() == hidden.as_slice() {
+            return Ok(());
+        }
 
         // Update the revision
 
@@ -1366,6 +1508,19 @@ impl PageRevisionService {
 
         // Update and return
         model.update(txn).await.or_raise(make_error)?;
+
+        AuditService::log(
+            ctx,
+            ip_address,
+            AuditEvent::PageRevisionVisibilityUpdate {
+                user_id,
+                site_id,
+                page_id,
+                revision_id,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
         Ok(())
     }
 
@@ -2128,7 +2283,8 @@ fn test_replace_hash_opt() {
 
 #[test]
 fn first_revision_followups_keep_static_pages_single_pass() {
-    let followups = first_revision_followups(str!("guide"), "ordinary page text", None);
+    let followups =
+        first_revision_followups(str!("guide"), "ordinary page text", None, None, None);
 
     assert_eq!(followups.slug, "guide");
     assert!(!followups.rerender_after_latest_revision);
@@ -2136,17 +2292,48 @@ fn first_revision_followups_keep_static_pages_single_pass() {
 
 #[test]
 fn first_revision_followups_detect_runtime_content_in_page_or_template() {
-    let page_followups =
-        first_revision_followups(str!("guide"), "[[module ListPages]]", None);
+    let page_followups = first_revision_followups(
+        str!("guide"),
+        "[[module\tListPages \t tags=\"+fresh\"]]",
+        None,
+        None,
+        None,
+    );
     let template_followups = first_revision_followups(
         str!("guide"),
         "ordinary page text",
-        Some("[[include component:license]]"),
+        Some("[[ \t include component:license]]"),
+        None,
+        None,
     );
     let pages_followups =
-        first_revision_followups(str!("guide"), "[[module Pages]]", None);
+        first_revision_followups(str!("guide"), "[[module Pages]]", None, None, None);
 
     assert!(page_followups.rerender_after_latest_revision);
     assert!(template_followups.rerender_after_latest_revision);
     assert!(pages_followups.rerender_after_latest_revision);
+}
+
+#[test]
+fn first_revision_followups_ignore_literal_and_invalid_runtime_markers() {
+    for source in [
+        "[[code]]\n[[module ListPages tags=\"+fresh\"]]%%fullname%%[[/module]]\n[[/code]]",
+        "@@[[module ListPages tags=\"+fresh\"]]%%fullname%%[[/module]]@@",
+        "[[module ListPagesExtra tags=\"+fresh\"]]%%fullname%%[[/module]]",
+        "[[code]]\n[[module CountPages tags=\"+fresh\"]]%%total%%[[/module]]\n[[/code]]",
+        "[[code]]\n[[module Pages]]\n[[/code]]",
+        "[[module TagCloud mode=\"2d\" mode=\"3d\"]]",
+        "[[code]]\n[[include component:license]]\n[[/code]]",
+        "[[include]]",
+        "[[include component:license",
+        ">[[include component:license]]",
+        "[[\rinclude component:license]]",
+        "[[[!-- parser-space --]include component:license]]",
+    ] {
+        let followups = first_revision_followups(str!("guide"), source, None, None, None);
+        assert!(
+            !followups.rerender_after_latest_revision,
+            "inert source must not schedule a second first-revision render: {source}",
+        );
+    }
 }

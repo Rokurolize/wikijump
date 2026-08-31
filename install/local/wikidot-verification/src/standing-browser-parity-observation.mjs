@@ -435,6 +435,17 @@ async function capturedScreenshot(filePath, fullPage) {
   };
 }
 
+export async function prewarmBrowserParityLazyImages(page) {
+  await page.evaluate(async () => {
+    const initialScrollY = window.scrollY;
+    for (const image of [...document.images]) {
+      image.scrollIntoView({ block: "center", inline: "nearest" });
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    window.scrollTo({ left: 0, top: initialScrollY, behavior: "instant" });
+  });
+}
+
 export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   const remaining = (label) => {
@@ -521,6 +532,15 @@ export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   }, remaining("font and image completion"));
 }
 
+export function isExpectedExternalAssetFailure(event) {
+  if (event?.error !== "net::ERR_BLOCKED_BY_ORB" && event?.error !== "net::ERR_TIMED_OUT") return false;
+  try {
+    const url = new URL(event.url);
+    return (event.resource_type === "stylesheet" && url.hostname.endsWith(".wdfiles.com")) ||
+      (event.resource_type === "other" && url.hostname.endsWith(".wikidot.com") && url.pathname.startsWith("/local--favicon/"));
+  } catch { return false; }
+}
+
 export async function captureBrowserParityObservation({
   context,
   page: suppliedPage = null,
@@ -551,6 +571,7 @@ export async function captureBrowserParityObservation({
   const page = suppliedPage ?? (await context.newPage());
   const ownsPage = suppliedPage === null;
   const failures = [];
+  const expectedFailures = [];
   const requestGateAborts = [];
   const onRequestFailed = (request) => {
     const attribution =
@@ -562,7 +583,8 @@ export async function captureBrowserParityObservation({
       error: request.failure()?.errorText ?? "request failed",
       ...(attribution ?? {}),
     };
-    (attribution === null ? failures : requestGateAborts).push(event);
+    if (attribution === null && isExpectedExternalAssetFailure(event)) expectedFailures.push(event);
+    else (attribution === null ? failures : requestGateAborts).push(event);
   };
   const onResponse = (response) => {
     if (response.status() >= 400) {
@@ -613,8 +635,11 @@ export async function captureBrowserParityObservation({
     });
     await capturePng(page, firstPath);
     await onPhase?.("settled");
-    const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     if (settleMs > 0) await page.waitForTimeout(settleMs);
+    // Visit every viewport before waiting so lazy images can enter the
+    // browser-visible settled state without an expensive full-page capture.
+    await prewarmBrowserParityLazyImages(page);
+    const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     document = await captureDocumentObservation(page, {
       contract,
       phase: "settled",
@@ -639,6 +664,7 @@ export async function captureBrowserParityObservation({
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
       failures,
+      expected_failures: expectedFailures,
       request_gate_aborts: requestGateAborts,
       first_paint: {
         document: firstDocument,
@@ -686,6 +712,7 @@ export async function captureBrowserParityObservation({
         ? { slug: contract.slug, theme_family: contract.theme_family }
         : null,
       failures,
+      expected_failures: expectedFailures,
       request_gate_aborts: requestGateAborts,
       first_paint:
         firstDocument || (await capturedScreenshot(firstPath, false))

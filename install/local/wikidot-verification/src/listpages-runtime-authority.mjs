@@ -3,11 +3,13 @@ import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const BUILD_MANIFEST_VERIFIER =
-  "/home/roku/wjlab/scripts/candidate-artifact-manifest.py";
+const BUILD_MANIFEST_VERIFIER = fileURLToPath(
+  new URL("../scripts/candidate-artifact-manifest.py", import.meta.url),
+);
 const TRUSTED_TOOLS = Object.freeze({
   docker: "/usr/bin/docker",
   git: "/usr/bin/git",

@@ -15,14 +15,17 @@ import {
   expectDeepwellCategories,
   expectDeepwellFiles,
   expectDeepwellForumPosts,
-  expectDeepwellParentRelationships,
+  expectDeepwellPageCreateOutput,
+  expectDeepwellPageMoveOutput,
   expectDeepwellStringArray,
   isDeepwellBlobUpload,
+  isDeepwellDirectParentMetadata,
   isDeepwellFile,
   isDeepwellForumPostSummary,
   isDeepwellPage,
-  isDeepwellPageRevision,
+  isDeepwellPageLifecycleIdentity,
   isDeepwellPageView,
+  type DeepwellDirectParentMetadata,
   type DeepwellFile,
   type DeepwellForumPostSummary,
   type DeepwellPage
@@ -34,12 +37,12 @@ import {
 } from "$lib/server/xmlrpc/protocol"
 import { commitPendingBlobUpload } from "$lib/server/deepwell/pending-blob-upload"
 import {
+  getOptionalStructBoolean,
   getOptionalStructString,
   getOptionalStructStringArray,
   getOptionalStructStringOrInt,
   getRequiredStructString,
   getRequiredStructStringArray,
-  getRequiredStructStringOrIntArray,
   getStructParam,
   isXmlRpcStruct
 } from "$lib/server/xmlrpc/parameters"
@@ -47,6 +50,8 @@ import {
 type DeepwellStringParams = Record<string, string | string[] | undefined>
 const MAX_XML_RPC_FILTER_VALUES = 100
 const MAX_XML_RPC_TAG_PAGE_FILTER_VALUES = 10
+const MAX_XML_RPC_FILE_READ_BYTES = 6_000_000
+export const MAX_XML_RPC_FILE_BYTES = 50_000_000
 const PAGE_SELECT_DECIMAL_RATING_PATTERN =
   /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/
 export async function selectCategories(call: XmlRpcCall): Promise<string[]> {
@@ -68,6 +73,9 @@ export async function selectTags(call: XmlRpcCall, requestIp: string): Promise<s
   const categories = getOptionalStructStringArray(params, "categories")
   const pages = getOptionalStructStringArray(params, "pages")
 
+  if (categories !== null && pages !== null) {
+    throw new XmlRpcFault(-32602, "tags.select accepts categories or pages, not both")
+  }
   if (categories && categories.length > MAX_XML_RPC_FILTER_VALUES) {
     throw new XmlRpcFault(
       -32602,
@@ -168,21 +176,21 @@ export async function getPagesMeta(
     return {}
   }
 
+  const principal = await getXmlRpcWritePrincipal(requestIp)
   const entries: [string, XmlRpcValue][] = []
   for (const pageReference of pages) {
     const page = await getDeepwellPage(siteId, pageReference, false)
-    if (!page || !(await canXmlRpcViewPage(siteId, page.slug, requestIp))) {
+    if (!page || !(await canXmlRpcViewPage(siteId, page.slug, requestIp, principal))) {
       continue
     }
 
-    const [parentPage, creatorUserId, postSummary] = await Promise.all([
-      getDeepwellDirectParentPage(siteId, page.slug),
-      getDeepwellPageCreatorUserId(siteId, page),
-      getDeepwellForumPostSummary(siteId, page.slug)
+    const [parentPage, lifecycleIdentity] = await Promise.all([
+      getDeepwellDirectParentMetadata(siteId, page.slug, principal),
+      getDeepwellPageLifecycleIdentity(siteId, page.slug, principal)
     ])
     entries.push([
       page.slug,
-      buildXmlRpcPageMeta(page, parentPage?.slug ?? null, creatorUserId, postSummary)
+      buildXmlRpcPageMeta(page, parentPage?.slug ?? null, lifecycleIdentity)
     ])
   }
 
@@ -220,6 +228,10 @@ export async function savePageOne(
   if (!["create", "update", "create_or_update"].includes(saveMode)) {
     throw new XmlRpcFault(-32602, `Unsupported pages.save_one save_mode: ${saveMode}`)
   }
+  const notifyWatchers = getOptionalStructBoolean(params, "notify_watchers") ?? false
+  if (notifyWatchers) {
+    throw new XmlRpcFault(-32602, "pages.save_one notify_watchers is not implemented")
+  }
 
   const siteId = await getDeepwellSiteId(site)
   let page = await getDeepwellPage(siteId, pageReference, true)
@@ -254,24 +266,57 @@ export async function savePageOne(
     requestIp
   )
 
-  const createdPage = !page
-  if (!page) {
-    await requestDeepwell(
-      "page_create",
-      {
-        site_id: siteId,
-        wikitext: content ?? "",
-        title: title ?? pageReference,
-        alt_title: null,
-        slug: pageReference,
-        layout: "wikidot",
-        revision_comments: revisionComment,
-        user_id: writeContext.userId,
-        ip_address: writeContext.ipAddress
-      },
+  const willCreateRevision =
+    !page ||
+    content !== null ||
+    title !== null ||
+    tags !== null ||
+    (renameAs !== null && renameAs !== currentPageReference)
+  let responseLifecycleIdentity: ResolvedPageLifecycleIdentity
+  if (page) {
+    const existingLifecycleIdentity = await preflightExistingPageLifecycleIdentity(
+      siteId,
+      page.slug,
+      requestIp,
       writeContext
     )
-    page = await requireDeepwellPage(siteId, pageReference, true)
+    responseLifecycleIdentity = willCreateRevision
+      ? {
+          created_by: existingLifecycleIdentity.created_by,
+          updated_by: await getDeepwellUserDisplayName(writeContext.userId, writeContext)
+        }
+      : existingLifecycleIdentity
+  } else {
+    const actorDisplayName = await getDeepwellUserDisplayName(
+      writeContext.userId,
+      writeContext
+    )
+    responseLifecycleIdentity = {
+      created_by: actorDisplayName,
+      updated_by: actorDisplayName
+    }
+  }
+
+  const createdPage = !page
+  if (!page) {
+    const createOutput = expectDeepwellPageCreateOutput(
+      await requestDeepwell(
+        "page_create",
+        {
+          site_id: siteId,
+          wikitext: content ?? "",
+          title: title ?? pageReference,
+          alt_title: null,
+          slug: pageReference,
+          layout: "wikidot",
+          revision_comments: revisionComment,
+          user_id: writeContext.userId,
+          ip_address: writeContext.ipAddress
+        },
+        writeContext
+      )
+    )
+    page = await requireDeepwellPage(siteId, createOutput.slug, true)
   }
 
   const editBody: { wikitext?: string; title?: string; tags?: string[] } = {}
@@ -308,23 +353,32 @@ export async function savePageOne(
 
   let finalPageReference = page.slug
   if (renameAs !== null && renameAs !== page.slug) {
-    await requestDeepwell(
-      "page_move",
-      {
-        site_id: siteId,
-        page: page.slug,
-        last_revision_id: page.revision_id,
-        new_slug: renameAs,
-        revision_comments: revisionComment,
-        user_id: writeContext.userId,
-        ip_address: writeContext.ipAddress
-      },
-      { ...writeContext, page: page.slug }
+    const moveOutput = expectDeepwellPageMoveOutput(
+      await requestDeepwell(
+        "page_move",
+        {
+          site_id: siteId,
+          page: page.slug,
+          last_revision_id: page.revision_id,
+          new_slug: renameAs,
+          revision_comments: revisionComment,
+          user_id: writeContext.userId,
+          ip_address: writeContext.ipAddress
+        },
+        { ...writeContext, page: page.slug }
+      )
     )
-    finalPageReference = renameAs
+    finalPageReference = moveOutput.new_slug
   }
 
-  return buildXmlRpcPage(site, siteId, finalPageReference, requestIp, writeContext)
+  return buildXmlRpcPage(
+    site,
+    siteId,
+    finalPageReference,
+    requestIp,
+    writeContext,
+    responseLifecycleIdentity
+  )
 }
 
 export async function selectFiles(call: XmlRpcCall): Promise<string[]> {
@@ -350,13 +404,14 @@ export async function getFilesMeta(
   if (files.length > 10) {
     throw new XmlRpcFault(-32602, "files.get_meta files is limited to 10 entries")
   }
-  if (files.length === 0) {
-    return {}
-  }
 
   const siteId = await getDeepwellSiteId(site)
   const page = await requireDeepwellPage(siteId, pageReference, false)
   const pageId = requireDeepwellPageId(page)
+  if (files.length === 0) {
+    return {}
+  }
+
   const entries = await Promise.all(
     files.map(async (fileName): Promise<[string, XmlRpcValue] | null> => {
       const file = await getDeepwellFile(siteId, pageId, fileName, false)
@@ -377,14 +432,27 @@ export async function getFileOne(call: XmlRpcCall): Promise<Record<string, XmlRp
   const siteId = await getDeepwellSiteId(site)
   const page = await requireDeepwellPage(siteId, pageReference, false)
   const pageId = requireDeepwellPageId(page)
+  const metadata = await getDeepwellFile(siteId, pageId, fileName, false)
+  if (!metadata) {
+    throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
+  }
+  enforceXmlRpcFileReadLimit(metadata)
+
   const file = await getDeepwellFile(siteId, pageId, fileName, true)
   if (!file) {
     throw new XmlRpcFault(406, "Argument file invalid: file does not exist")
   }
+  enforceXmlRpcFileReadLimit(file)
 
   return {
     ...buildXmlRpcFileMeta(site, page.slug, file),
     content: deepwellFileContentBase64(file)
+  }
+}
+
+function enforceXmlRpcFileReadLimit(file: DeepwellFile): void {
+  if (file.size > MAX_XML_RPC_FILE_READ_BYTES) {
+    throw new XmlRpcFault(413, "files.get_one file exceeds local 6 MB read limit", 413)
   }
 }
 
@@ -463,6 +531,9 @@ export async function saveFileOne(
 export async function selectPosts(call: XmlRpcCall): Promise<number[]> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
+  if (params.thread !== undefined && params.thread !== null) {
+    throw new XmlRpcFault(-32602, "posts.select thread is not implemented")
+  }
   const page = getOptionalStructString(params, "page")
   const replyTo = getOptionalStructStringOrInt(params, "reply_to")
   const createdBy = getOptionalStructString(params, "created_by")
@@ -487,17 +558,31 @@ export async function selectPosts(call: XmlRpcCall): Promise<number[]> {
 export async function getPosts(call: XmlRpcCall): Promise<Record<string, XmlRpcValue>> {
   const params = getStructParam(call, 0, "params")
   const site = getRequiredStructString(params, "site")
-  const posts = getRequiredStructStringOrIntArray(params, "posts")
+  const posts = params.posts
+
+  if (
+    !Array.isArray(posts) ||
+    posts.some(
+      (post) =>
+        typeof post !== "string" && (typeof post !== "number" || !Number.isInteger(post))
+    )
+  ) {
+    throw new XmlRpcFault(
+      -32602,
+      "Argument posts should be a list of strings or integers"
+    )
+  }
 
   if (posts.length > 10) {
     throw new XmlRpcFault(-32602, "posts.get posts is limited to 10 entries")
   }
 
   const siteId = await getDeepwellSiteId(site)
+  const postIds = posts.map(String)
   const result = expectDeepwellForumPosts(
     await requestDeepwell("forum_post_get", {
       site_id: siteId,
-      posts
+      posts: postIds
     }),
     "forum_post_get"
   )
@@ -519,7 +604,10 @@ export async function getPosts(call: XmlRpcCall): Promise<Record<string, XmlRpcV
   )
 }
 
-function decodeXmlRpcBase64(content: string): Buffer {
+export function decodeXmlRpcBase64(
+  content: string,
+  maximumBytes = MAX_XML_RPC_FILE_BYTES
+): Buffer {
   const normalized = content.replace(/\s+/g, "")
   if (
     normalized.length % 4 !== 0 ||
@@ -527,7 +615,11 @@ function decodeXmlRpcBase64(content: string): Buffer {
   ) {
     throw new XmlRpcFault(-32602, "Argument content invalid: malformed base64")
   }
-  return Buffer.from(normalized, "base64")
+  const decoded = Buffer.from(normalized, "base64")
+  if (decoded.length > maximumBytes) {
+    throw new XmlRpcFault(413, "files.save_one content is too large", 413)
+  }
+  return decoded
 }
 
 async function commitXmlRpcFileContent(
@@ -651,7 +743,8 @@ async function buildXmlRpcPage(
   siteId: number,
   pageReference: string,
   requestIp: string,
-  principal?: Pick<XmlRpcWriteContext, "sessionToken" | "userId">
+  principal?: Pick<XmlRpcWriteContext, "sessionToken" | "userId">,
+  lifecycleIdentity?: ResolvedPageLifecycleIdentity
 ): Promise<Record<string, XmlRpcValue>> {
   const pageMetadata = await getDeepwellPage(siteId, pageReference, false)
   if (!pageMetadata) {
@@ -665,9 +758,10 @@ async function buildXmlRpcPage(
   }
 
   const page = await requireDeepwellPage(siteId, pageMetadata.slug, true)
-  const [parentPage, creatorUserId, postSummary] = await Promise.all([
-    getDeepwellDirectParentPage(siteId, page.slug),
-    getDeepwellPageCreatorUserId(siteId, page),
+  const [parentPage, resolvedLifecycleIdentity, postSummary] = await Promise.all([
+    getDeepwellDirectParentMetadata(siteId, page.slug, resolvedPrincipal),
+    lifecycleIdentity ??
+      getDeepwellPageLifecycleIdentity(siteId, page.slug, resolvedPrincipal),
     getDeepwellForumPostSummary(siteId, page.slug)
   ])
   const parentFullname = parentPage?.slug ?? null
@@ -685,7 +779,12 @@ async function buildXmlRpcPage(
   )
 
   return {
-    ...buildXmlRpcPageMeta(page, parentFullname, creatorUserId, postSummary),
+    ...buildXmlRpcPageDetails(
+      page,
+      parentFullname,
+      resolvedLifecycleIdentity,
+      postSummary
+    ),
     parent_title: parentTitle,
     children: children.length,
     content: page.wikitext ?? "",
@@ -817,40 +916,29 @@ async function getDeepwellFile(
   return deepwellFile
 }
 
-async function getDeepwellDirectParentPage(
+async function getDeepwellDirectParentMetadata(
   siteId: number,
-  page: string
-): Promise<DeepwellPage | null> {
-  const relationships = expectDeepwellParentRelationships(
-    await requestDeepwell("parent_relationships_get", {
+  page: string,
+  principal: Pick<XmlRpcWriteContext, "sessionToken">
+): Promise<DeepwellDirectParentMetadata | null> {
+  const metadata = await requestDeepwell(
+    "parent_get_direct_metadata",
+    {
       site_id: siteId,
-      page,
-      relationship_type: "parents"
-    }),
-    "parent_relationships_get"
+      page
+    },
+    { sessionToken: principal.sessionToken }
   )
-  const parentPageId = relationships[0]?.parent_page_id
-  if (parentPageId === undefined) {
+  if (metadata === null) {
     return null
   }
-
-  const parentPage = await requestDeepwell("page_get_direct", {
-    site_id: siteId,
-    page_id: parentPageId,
-    allow_deleted: false,
-    details: {
-      wikitext: false,
-      compiled_html: false
-    }
-  })
-  if (parentPage === null) {
-    return null
+  if (!isDeepwellDirectParentMetadata(metadata)) {
+    throw new XmlRpcFault(
+      -32603,
+      "Malformed Deepwell response: parent_get_direct_metadata"
+    )
   }
-  if (!isDeepwellPage(parentPage, false)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_get_direct")
-  }
-
-  return parentPage
+  return metadata
 }
 
 async function getDeepwellForumPostSummary(
@@ -916,50 +1004,117 @@ async function replaceDeepwellParents(
   )
 }
 
-async function getDeepwellPageCreatorUserId(
+type ResolvedPageLifecycleIdentity = {
+  created_by: string
+  updated_by: string
+}
+
+async function getDeepwellPageLifecycleIdentity(
   siteId: number,
-  page: DeepwellPage
-): Promise<number> {
-  if (typeof page.page_id !== "number" || !Number.isInteger(page.page_id)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_get")
+  page: string,
+  principal: Pick<XmlRpcWriteContext, "sessionToken">
+): Promise<ResolvedPageLifecycleIdentity> {
+  let identity: unknown
+  try {
+    identity = await requestDeepwell(
+      "page_lifecycle_identity",
+      { site_id: siteId, page },
+      { sessionToken: principal.sessionToken, siteId, page }
+    )
+  } catch {
+    throw pageLifecycleIdentityUnavailable()
+  }
+  if (
+    !isDeepwellPageLifecycleIdentity(identity) ||
+    identity.created_by === null ||
+    identity.updated_by === null
+  ) {
+    throw pageLifecycleIdentityUnavailable()
   }
 
-  const firstRevision = await requestDeepwell("page_revision_get", {
-    site_id: siteId,
-    page_id: page.page_id,
-    revision_number: 0,
-    details: {
-      wikitext: false,
-      compiled_html: false
-    }
-  })
-  if (!isDeepwellPageRevision(firstRevision)) {
-    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_revision_get")
+  return identity
+}
+
+async function preflightExistingPageLifecycleIdentity(
+  siteId: number,
+  page: string,
+  requestIp: string,
+  principal: Pick<XmlRpcWriteContext, "sessionToken" | "userId">
+): Promise<ResolvedPageLifecycleIdentity> {
+  const editPermission = await requestDeepwell(
+    "page_edit_permission",
+    {},
+    { sessionToken: principal.sessionToken, siteId, page }
+  )
+  if (!isXmlRpcStruct(editPermission) || typeof editPermission.can_edit !== "boolean") {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_edit_permission")
+  }
+  if (!editPermission.can_edit) {
+    throw new XmlRpcFault(403, "XML-RPC user is not allowed to edit this page", 403)
+  }
+  if (!(await canXmlRpcViewPage(siteId, page, requestIp, principal))) {
+    throw new XmlRpcFault(403, "XML-RPC user is not allowed to view this page", 403)
+  }
+  return getDeepwellPageLifecycleIdentity(siteId, page, principal)
+}
+
+async function getDeepwellUserDisplayName(
+  userId: number,
+  principal: Pick<XmlRpcWriteContext, "sessionToken">
+): Promise<string> {
+  let user: unknown
+  try {
+    user = await requestDeepwell(
+      "user_get",
+      { user: userId },
+      { sessionToken: principal.sessionToken }
+    )
+  } catch {
+    throw pageLifecycleIdentityUnavailable()
+  }
+  if (
+    !isXmlRpcStruct(user) ||
+    user.user_id !== userId ||
+    typeof user.name !== "string" ||
+    user.name.trim().length === 0
+  ) {
+    throw pageLifecycleIdentityUnavailable()
   }
 
-  return firstRevision.user_id
+  return user.name.trim()
+}
+
+function pageLifecycleIdentityUnavailable(): XmlRpcFault {
+  return new XmlRpcFault(-32603, "Page lifecycle identity unavailable")
 }
 
 function buildXmlRpcPageMeta(
   page: DeepwellPage,
   parentFullname: string | null,
-  creatorUserId: number,
-  postSummary: DeepwellForumPostSummary
+  lifecycleIdentity: ResolvedPageLifecycleIdentity
 ): Record<string, XmlRpcValue> {
-  const creatorId = String(creatorUserId)
-  const updaterId = String(page.revision_user_id)
-
   return {
     fullname: page.slug,
     title: page.title,
     created_at: page.page_created_at,
-    created_by: creatorId,
+    created_by: lifecycleIdentity.created_by,
     updated_at: page.page_updated_at ?? page.revision_created_at ?? page.page_created_at,
-    updated_by: updaterId,
+    updated_by: lifecycleIdentity.updated_by,
     parent_fullname: parentFullname,
     tags: page.tags,
     rating: Math.round(page.rating),
-    revisions: page.page_revision_count,
+    revisions: page.page_revision_count
+  }
+}
+
+function buildXmlRpcPageDetails(
+  page: DeepwellPage,
+  parentFullname: string | null,
+  lifecycleIdentity: ResolvedPageLifecycleIdentity,
+  postSummary: DeepwellForumPostSummary
+): Record<string, XmlRpcValue> {
+  return {
+    ...buildXmlRpcPageMeta(page, parentFullname, lifecycleIdentity),
     comments: postSummary.comments,
     commented_at: postSummary.commented_at,
     commented_by: postSummary.commented_by
@@ -972,6 +1127,7 @@ function buildXmlRpcFileMeta(
   file: DeepwellFile
 ): Record<string, XmlRpcValue> {
   return {
+    filename: file.name,
     size: file.size,
     comment: file.revision_comments,
     mime_type: file.mime,

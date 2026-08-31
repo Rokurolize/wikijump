@@ -308,6 +308,7 @@ impl RenderService {
                             expanded_include_count,
                         },
                     pending_delayed,
+                    runtime_css_insertions: _,
                 }) => {
                     include_budget.consume(expanded_include_count);
                     let replacement = if let Some(pending_delayed) = pending_delayed {

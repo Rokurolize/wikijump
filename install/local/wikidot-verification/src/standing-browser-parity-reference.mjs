@@ -115,6 +115,9 @@ function validateRequestGate(value, { minimumPublicRequests = 0 } = {}) {
       "live reference request gate must preserve the initial 0.25 req/s throttle",
     );
   }
+  if (gate.execution_mode !== undefined && gate.execution_mode !== "live") {
+    throw new Error("live reference request gate must use live execution mode");
+  }
   if (gate.enforcement_failed !== false) {
     throw new Error("live reference request gate enforcement was not clean");
   }

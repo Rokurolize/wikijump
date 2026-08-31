@@ -5,9 +5,11 @@ import {
   getPreloadRequestLocales
 } from "$lib/server/load/preload"
 import { siteIconRedirectLocation, type SiteIconSourceKind } from "$lib/site-icon-source"
+import { SITE_ICON_CACHE_CONTROL } from "$lib/site-icons"
 import type { SiteModel } from "$lib/types"
 
 const NOT_CONFIGURED_HEADERS = {
+  "cache-control": SITE_ICON_CACHE_CONTROL,
   "content-type": "text/plain; charset=utf-8"
 }
 
@@ -40,6 +42,6 @@ export async function siteIconResponse(
 
   return new Response(null, {
     status: 302,
-    headers: { location: source }
+    headers: { "cache-control": SITE_ICON_CACHE_CONTROL, location: source }
   })
 }

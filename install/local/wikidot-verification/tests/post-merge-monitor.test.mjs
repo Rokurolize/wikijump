@@ -91,6 +91,46 @@ test("rejects a malformed merge timestamp", async () => {
   );
 });
 
+test("rejects a malformed post-merge event timestamp", async () => {
+  await assert.rejects(
+    collectPostMergeFindings({
+      pr: pr36,
+      comments: [{id: 203, created_at: "not-a-date", body: "follow-up"}],
+    }),
+    /post-merge event timestamp must be a valid ISO-8601 timestamp/,
+  );
+});
+
+test("rejects a numeric post-merge event timestamp", async () => {
+  await assert.rejects(
+    collectPostMergeFindings({
+      pr: pr36,
+      comments: [{id: 206, created_at: 1782270360, body: "follow-up"}],
+    }),
+    /post-merge event timestamp must be a valid ISO-8601 timestamp/,
+  );
+});
+
+test("rejects an invalid calendar date in a post-merge event timestamp", async () => {
+  await assert.rejects(
+    collectPostMergeFindings({
+      pr: pr36,
+      comments: [{id: 204, created_at: "2026-02-30T03:06:00Z", body: "follow-up"}],
+    }),
+    /post-merge event timestamp must be a valid ISO-8601 timestamp/,
+  );
+});
+
+test("rejects noncanonical post-merge event timestamp grammar", async () => {
+  await assert.rejects(
+    collectPostMergeFindings({
+      pr: pr36,
+      comments: [{id: 205, created_at: "2026-06-24 03:06:00Z", body: "follow-up"}],
+    }),
+    /post-merge event timestamp must be a valid ISO-8601 timestamp/,
+  );
+});
+
 test("deduplicates findings already seen by an immediate watch", async () => {
   const first = await collectPostMergeFindings({
     pr: pr36,

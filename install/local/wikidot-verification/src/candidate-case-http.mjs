@@ -98,6 +98,7 @@ function publicResponse(response) {
   return {
     status: response.status,
     content_type: response.headers["content-type"] ?? null,
+    location: response.headers.location ?? null,
     etag: response.headers.etag ?? null,
     content_length: response.headers["content-length"] ?? null,
     body_size: response.body.length,
@@ -122,6 +123,7 @@ export class CandidateHttpSession {
   }
 
   get editorUserId() { return this.#input.actor.userId; }
+  get editorSessionToken() { return this.#input.actor.sessionToken; }
   get pageOrigin() { return candidatePageOrigin(this.#candidate); }
   get privateInputIdentity() {
     return {
@@ -174,14 +176,76 @@ export class CandidateHttpSession {
     }, cleanup);
     let payload;
     try { payload = JSON.parse(response.body); } catch { throw new Error(`${method} returned non-JSON at the public Deepwell seam`); }
-    if (response.status !== 200 || payload?.error !== undefined) throw new Error(`${method} failed at the public Deepwell seam`);
+    if (response.status !== 200) throw new Error(`${method} failed at the public Deepwell seam`);
+    if (payload?.error !== undefined) {
+      const error = new Error(`${method} failed at the public Deepwell seam`);
+      error.rpc = {
+        code: Number.isSafeInteger(payload.error?.code) ? payload.error.code : null,
+        message_sha256: typeof payload.error?.message === "string" ? sha256(payload.error.message) : null,
+      };
+      throw error;
+    }
     return payload.result;
+  }
+
+  async ajaxModuleConnector(fields, { actor = "editor", cleanup = false } = {}) {
+    if (!["editor", "anonymous"].includes(actor)) throw new Error("candidate AMC actor is invalid");
+    const body = Buffer.from(new URLSearchParams(fields).toString());
+    const response = await this.#send("framerail", "ajax-module-connector", {
+      url: new URL("/ajax-module-connector.php", this.pageOrigin),
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+        origin: this.pageOrigin,
+        ...(actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {}),
+      },
+      body,
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup);
+    let json;
+    try {
+      json = JSON.parse(response.body.toString("utf8"));
+    } catch {
+      throw new Error("ajax-module-connector.php returned non-JSON at the public seam");
+    }
+    return {
+      http_status: response.status,
+      content_type: response.headers["content-type"] ?? null,
+      response_body_sha256: sha256(response.body),
+      json,
+    };
   }
 
   async filesRequest(pathname, { method = "GET", actor = "editor", cleanup = false, operation = pathname } = {}) {
     const url = new URL(pathname, this.filesOrigin);
     if (url.origin !== this.filesOrigin) throw new Error("file request escaped the sealed origin");
     return publicResponse(await this.#send("wws", operation, {
+      url,
+      method,
+      headers: actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {},
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup));
+  }
+
+  async pageRequest(pageSlug, { method = "GET", actor = "anonymous", cleanup = false, operation = `page-${method.toLowerCase()}` } = {}) {
+    const url = new URL(`/${encodeURIComponent(pageSlug)}`, this.pageOrigin);
+    return publicResponse(await this.#send("framerail", operation, {
+      url,
+      method,
+      headers: actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {},
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup));
+  }
+
+  async pageRouteRequest(pathname, { method = "GET", actor = "anonymous", cleanup = false, operation = `route-${method.toLowerCase()}` } = {}) {
+    if (typeof pathname !== "string" || !pathname.startsWith("/")) throw new Error("candidate page route must be an absolute path");
+    const url = new URL(pathname, this.pageOrigin);
+    if (url.origin !== this.pageOrigin || url.pathname !== pathname || url.search || url.hash) throw new Error("candidate page route escaped the sealed origin or included a query or fragment");
+    return publicResponse(await this.#send("framerail", operation, {
       url,
       method,
       headers: actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {},
@@ -208,6 +272,37 @@ export class CandidateHttpSession {
       tlsCa: this.#input.tlsCa,
     }, cleanup);
     return { http_status: response.status, content_type: response.headers["content-type"] ?? null, response_body: response.body.toString("utf8"), response_body_sha256: sha256(response.body) };
+  }
+
+  async ajaxModuleRequest(fields, { actor = "anonymous", page, cleanup = false } = {}) {
+    const body = Buffer.from(new URLSearchParams(fields).toString());
+    const response = await this.#send("framerail", "ajax-module-connector", {
+      url: new URL("/ajax-module-connector.php", this.pageOrigin),
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/x-www-form-urlencoded",
+        origin: this.pageOrigin,
+        ...(page === undefined ? {} : { referer: new URL(`/${encodeURIComponent(page)}`, this.pageOrigin).href }),
+        ...(actor === "editor" ? { cookie: `wikijump_token=${this.#input.actor.sessionToken}` } : {}),
+      },
+      body,
+      connectAddress: this.#candidate.candidate.endpoint.local_connect_address,
+      tlsCa: this.#input.tlsCa,
+    }, cleanup);
+    const responseBody = response.body.toString("utf8");
+    let payload;
+    try {
+      payload = JSON.parse(responseBody);
+    } catch {
+      throw new Error("AJAX Module Connector returned non-JSON at the public Framerail seam");
+    }
+    return {
+      http_status: response.status,
+      response_body_size: response.body.length,
+      response_body_sha256: sha256(response.body),
+      payload,
+    };
   }
 
   async presignedPut(value, bytes, { cleanup = false } = {}) {

@@ -1186,6 +1186,7 @@ dependencies = [
  "self_cell",
  "serde",
  "serde_json",
+ "sha1 0.10.7",
  "sha2 0.11.0",
  "static_assertions",
  "str-macro",
@@ -1568,7 +1569,7 @@ dependencies = [
 [[package]]
 name = "ftml"
 version = "1.42.0+roku.20260630.1"
-source = "git+https://github.com/Rokurolize/ftml?rev=818098e02cb321b7fe1ea3206a2ce9b4700658bc#818098e02cb321b7fe1ea3206a2ce9b4700658bc"
+source = "git+https://github.com/Rokurolize/ftml?rev=7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5#7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5"
 dependencies = [
  "built",
  "cfg-if",
@@ -4774,7 +4775,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "psm",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

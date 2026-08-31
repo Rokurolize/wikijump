@@ -26,7 +26,7 @@ jobs:
     name: Framerail browser tests
     if: ${{ github.event_name != 'pull_request' || (github.event.pull_request.draft == false && contains(github.event.pull_request.labels.*.name, 'full-ci') && github.event.action != 'closed' && github.event.action != 'converted_to_draft' && ((github.event.action != 'labeled' && github.event.action != 'unlabeled' && github.event.action != 'edited') || (github.event.action == 'labeled' && github.event.label.name == 'full-ci') || (github.event.action == 'edited' && github.event.changes.base != null))) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -48,9 +48,12 @@ jobs:
       - name: Install dependencies
         run: pnpm --dir framerail install --frozen-lockfile
 
-      - name: Install browser
-        run: pnpm --dir framerail exec playwright install --with-deps chromium
+      - name: Install browsers
+        run: pnpm --dir framerail exec playwright install --with-deps chromium firefox webkit
 
-      - name: Test
+      - name: Test Chromium suite
         run: pnpm --dir framerail test
+
+      - name: Test supported browser families
+        run: pnpm --dir framerail test:browser-support
 

@@ -1114,6 +1114,10 @@ sup {
     text-align: center;
 }
 
+:where(#page-content) table:not(.form), table.wiki-content-table {
+    margin: 0rem auto;
+}
+
 #page-content .quadrants > div {
     top: 2.25%;
     left: 18.5%;

@@ -40,9 +40,6 @@ macro_rules! redis_key {
     (site_domain => $site_id:expr $(,)?) => {
         format!("site_domain:{}", $site_id)
     };
-    (page_slug => $site_id:expr, $page_slug:expr $(,)?) => {
-        format!("page_slug:{}:{}", $site_id, $page_slug)
-    };
 }
 
 macro_rules! set {
@@ -81,26 +78,6 @@ impl Cache {
         set!(conn, key, preferred_domain);
         Ok(())
     }
-
-    /// Gets the page ID for a site ID and page slug pair.
-    pub async fn get_page(&self, site_id: i64, page_slug: &str) -> Result<Option<i64>> {
-        let mut conn = get_connection!(self.client);
-        let key = redis_key!(page_slug => site_id, page_slug);
-        let value = conn.get(key).await?;
-        Ok(value)
-    }
-
-    pub async fn set_page(
-        &self,
-        site_id: i64,
-        page_slug: &str,
-        page_id: i64,
-    ) -> Result<()> {
-        let mut conn = get_connection!(self.client);
-        let key = redis_key!(page_slug => site_id, page_slug);
-        set!(conn, key, page_id);
-        Ok(())
-    }
 }
 
 #[cfg(test)]
@@ -110,10 +87,6 @@ mod tests {
     #[test]
     fn redis_keys_include_all_identifying_parts() {
         assert_eq!(redis_key!(site_domain => 42), "site_domain:42");
-        assert_eq!(
-            redis_key!(page_slug => 42, "scp-173"),
-            "page_slug:42:scp-173",
-        );
     }
 
     #[test]

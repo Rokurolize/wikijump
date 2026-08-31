@@ -25,6 +25,7 @@ use self::common::TestRunner;
 use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::ErrorType;
 use deepwell::models::page_parent::ActiveModel as PageParentActiveModel;
+use deepwell::models::page_parent::Entity as PageParentTable;
 use deepwell::services::category::CategoryService;
 use deepwell::services::job::JOB_QUEUE_NAME;
 use deepwell::services::permission::PermissionService;
@@ -34,7 +35,7 @@ use deepwell::services::role::{
 use deepwell::services::{RequestContext, ServiceContext};
 use deepwell::types::{Action, Permission, Reference, Resource};
 use rsmq_async::RsmqConnection;
-use sea_orm::{ActiveModelTrait, Set};
+use sea_orm::{ActiveModelTrait, EntityTrait, Set};
 use serde_json::json;
 use std::borrow::Cow;
 
@@ -411,5 +412,185 @@ async fn parent_get_all_enforces_child_and_parent_view_permissions() {
             PRIVATE_PARENT_SLUG.to_owned(),
             PUBLIC_PARENT_SLUG.to_owned(),
         ],
+    );
+}
+
+#[tokio::test]
+async fn direct_parent_metadata_tracks_one_current_relationship_and_rejects_ambiguity() {
+    const CHILD_SLUG: &str = "fixture-parent-metadata-child";
+    const FIRST_PARENT_SLUG: &str = "fixture-parent-metadata-first";
+    const SECOND_PARENT_SLUG: &str = "fixture-parent-metadata-second";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let child_id = create_parent_auth_page(&mut runner, site_id, CHILD_SLUG).await;
+    let first_parent_id =
+        create_parent_auth_page(&mut runner, site_id, FIRST_PARENT_SLUG).await;
+    let second_parent_id =
+        create_parent_auth_page(&mut runner, site_id, SECOND_PARENT_SLUG).await;
+
+    insert_parent_relationship(&runner, first_parent_id, child_id).await;
+    runner.set_request_context(RequestContext::default());
+    let first = run_endpoint!(
+        runner,
+        parent_get_direct_metadata,
+        json!({"site_id": site_id, "page": CHILD_SLUG}),
+    )
+    .expect("one viewable direct parent should be projected");
+    assert_eq!(first.slug, FIRST_PARENT_SLUG);
+    assert_eq!(first.title, FIRST_PARENT_SLUG);
+
+    PageParentTable::delete_by_id((first_parent_id, child_id))
+        .exec(runner.context().transaction())
+        .await
+        .expect("first parent relationship should be replaced");
+    insert_parent_relationship(&runner, second_parent_id, child_id).await;
+    let second = run_endpoint!(
+        runner,
+        parent_get_direct_metadata,
+        json!({"site_id": site_id, "page": child_id}),
+    )
+    .expect("the endpoint should resolve the current relationship");
+    assert_eq!(second.slug, SECOND_PARENT_SLUG);
+    assert_eq!(second.title, SECOND_PARENT_SLUG);
+
+    insert_parent_relationship(&runner, first_parent_id, child_id).await;
+    assert!(
+        run_endpoint!(
+            runner,
+            parent_get_direct_metadata,
+            json!({"site_id": site_id, "page": CHILD_SLUG}),
+        )
+        .is_none(),
+        "ambiguous direct parents must fail closed",
+    );
+}
+
+#[tokio::test]
+async fn direct_parent_metadata_hides_an_unviewable_child_or_parent() {
+    const PUBLIC_CHILD_SLUG: &str = "fixture-parent-metadata-public-child";
+    const PRIVATE_PARENT_SLUG: &str = "fixture-parent-read-private:metadata-parent";
+    const PRIVATE_CHILD_SLUG: &str = "fixture-parent-read-private:metadata-child";
+    const PUBLIC_PARENT_SLUG: &str = "fixture-parent-metadata-public-parent";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    grant_private_parent_view_role(runner.context(), site_id).await;
+    let public_child_id =
+        create_parent_auth_page(&mut runner, site_id, PUBLIC_CHILD_SLUG).await;
+    let private_parent_id =
+        create_parent_auth_page(&mut runner, site_id, PRIVATE_PARENT_SLUG).await;
+    let private_child_id =
+        create_parent_auth_page(&mut runner, site_id, PRIVATE_CHILD_SLUG).await;
+    let public_parent_id =
+        create_parent_auth_page(&mut runner, site_id, PUBLIC_PARENT_SLUG).await;
+    insert_parent_relationship(&runner, private_parent_id, public_child_id).await;
+    insert_parent_relationship(&runner, public_parent_id, private_child_id).await;
+
+    runner.set_request_context(RequestContext::default());
+    assert!(
+        run_endpoint!(
+            runner,
+            parent_get_direct_metadata,
+            json!({"site_id": site_id, "page": PUBLIC_CHILD_SLUG}),
+        )
+        .is_none(),
+        "a caller without Page:View must learn no parent metadata",
+    );
+    assert!(
+        run_endpoint!(
+            runner,
+            parent_get_direct_metadata,
+            json!({"site_id": site_id, "page": PRIVATE_CHILD_SLUG}),
+        )
+        .is_none(),
+        "a caller without child Page:View must learn no relationship metadata",
+    );
+}
+
+#[tokio::test]
+async fn direct_parent_metadata_rejects_missing_deleted_and_cross_site_parents() {
+    const MISSING_CHILD_SLUG: &str = "fixture-parent-metadata-missing-child";
+    const DELETED_CHILD_SLUG: &str = "fixture-parent-metadata-deleted-child";
+    const DELETED_PARENT_SLUG: &str = "fixture-parent-metadata-deleted-parent";
+    const CROSS_SITE_CHILD_SLUG: &str = "fixture-parent-metadata-cross-site-child";
+    const CROSS_SITE_PARENT_SLUG: &str = "fixture-parent-metadata-cross-site-parent";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let other_site = run_endpoint!(runner, site_get, json!({"site": "scp-jp"}))
+        .expect("seeded SCP-JP site should exist");
+    let site_id = site.site.site_id;
+    let other_site_id = other_site.site.site_id;
+
+    runner.set_request_context(RequestContext::default());
+    assert!(
+        run_endpoint!(
+            runner,
+            parent_get_direct_metadata,
+            json!({"site_id": site_id, "page": MISSING_CHILD_SLUG}),
+        )
+        .is_none(),
+    );
+
+    let deleted_child_id =
+        create_parent_auth_page(&mut runner, site_id, DELETED_CHILD_SLUG).await;
+    let deleted_parent_id =
+        create_parent_auth_page(&mut runner, site_id, DELETED_PARENT_SLUG).await;
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Id(deleted_parent_id)),
+    });
+    let deleted_parent = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": deleted_parent_id}),
+    )
+    .expect("parent should exist before deletion");
+    run_endpoint!(
+        runner,
+        page_delete,
+        json!({
+            "site_id": site_id,
+            "page": deleted_parent_id,
+            "last_revision_id": deleted_parent.revision_id,
+            "revision_comments": "delete parent metadata fixture",
+            "user_id": ADMIN_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    insert_parent_relationship(&runner, deleted_parent_id, deleted_child_id).await;
+    runner.set_request_context(RequestContext::default());
+    assert!(
+        run_endpoint!(
+            runner,
+            parent_get_direct_metadata,
+            json!({"site_id": site_id, "page": DELETED_CHILD_SLUG}),
+        )
+        .is_none(),
+        "a deleted parent must not be projected",
+    );
+
+    let cross_site_child_id =
+        create_parent_auth_page(&mut runner, site_id, CROSS_SITE_CHILD_SLUG).await;
+    let cross_site_parent_id =
+        create_parent_auth_page(&mut runner, other_site_id, CROSS_SITE_PARENT_SLUG).await;
+    insert_parent_relationship(&runner, cross_site_parent_id, cross_site_child_id).await;
+    runner.set_request_context(RequestContext::default());
+    assert!(
+        run_endpoint!(
+            runner,
+            parent_get_direct_metadata,
+            json!({"site_id": site_id, "page": CROSS_SITE_CHILD_SLUG}),
+        )
+        .is_none(),
+        "a parent from another site must not be projected",
     );
 }

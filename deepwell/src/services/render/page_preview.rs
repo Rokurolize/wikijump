@@ -16,7 +16,7 @@ use super::render_options::{RenderContext, RenderInnerOptions};
 use super::service::{MAX_INCLUDE_EXPANSION_TOTAL, RenderInnerOutput, RenderService};
 use super::{RenderOutput, UrlArguments};
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
-use crate::services::{ServiceContext, SiteService};
+use crate::services::{PageService, ServiceContext, SiteService};
 use crate::types::Reference;
 use crate::utils::{locale_for_ftml, now};
 use ftml::prelude::{Layout, PageInfo, ScoreValue, WikitextMode, WikitextSettings};
@@ -60,6 +60,15 @@ impl RenderService {
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(make_error)?;
+        let current_page_id =
+            if !syntax_only && let Ok(page_reference) = ctx.request().page_reference() {
+                PageService::get_optional(ctx, site_id, page_reference.clone())
+                    .await
+                    .or_raise(make_error)?
+                    .map(|page| page.page_id)
+            } else {
+                None
+            };
         let page_info = PageInfo {
             page: Cow::Borrowed(""),
             category: None,
@@ -94,7 +103,10 @@ impl RenderService {
                 &page_info,
                 &settings,
                 RenderInnerOptions {
-                    render_context: RenderContext::page_preview(site_id),
+                    render_context: RenderContext::page_preview_with_page(
+                        site_id,
+                        current_page_id,
+                    ),
                     viewer_user_id: ctx.request().user_id().ok(),
                     current_page_data_form_values: None,
                     max_include_expansions: MAX_INCLUDE_EXPANSION_TOTAL,

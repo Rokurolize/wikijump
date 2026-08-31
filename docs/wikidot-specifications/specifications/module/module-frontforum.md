@@ -30,7 +30,7 @@ incomplete documentation-derived evidence below.
 - Observation ID: `forum-q1034-readonly-route-core-20260809`
 - Classification: `documentation-omission`
 - Observed at: `2026-08-09`
-- Analysis: Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, or browser transitions.
+- Analysis: Anonymous PagePreviewModule, served GET, and Ajax Module Connector observations establish one read-only baseline over existing forum data. They define the default FrontForum item shape, public forum routes, exact module names and scalar parameters for page comments, forum start, category, thread, thread posts, and recent posts, the complete first-page thread envelope, and the exact category order control and pager on pages 1, 2, 11, and 12. They do not establish mutation authority, non-anonymous actor behavior, FrontForum custom formats, later Comments or RecentPosts pages, order-link navigation or sorted behavior, or browser transitions.
 
 Normative behavior:
 
@@ -42,8 +42,16 @@ Normative behavior:
 - The thread response jsInclude order is ForumViewThreadPostsModule.js then ForumViewThreadModule.js; the posts response lists only ForumViewThreadPostsModule.js. These remote URLs are observed response metadata and do not establish loader authority.
 - forum/ForumRecentPostsListModule uses page and categoryId. The empty category selects all visible categories, an existing category narrows the result, and a nonexistent numeric category returns status ok with an empty post container.
 - The observed public GET routes are /forum/start, /forum/start/hidden/show, /forum/c-<id>/<name>, /forum/c-<id>/p/<page>, and /forum/t-<id>/<name>. Missing category and thread routes remain successful page responses with the observed error text; other suffixes are not established.
+- Immediately after the category description and before the new-thread control, pager, and thread table, every observed category page renders the exact default order projection <div class="options">Order by: <div class="btn btn-primary disabled btn-small btn-sm"><strong>Last post date</strong></div> <a href="/forum/c-<category-id>/sort/start" class="btn btn-primary btn-small btn-sm">Thread starting date</a></div>. This establishes the retained DOM and dynamic category ID only; it does not establish /sort/start navigation, sorted behavior, or the new-thread control.
 - The category response has duplicate top and bottom pagers on full pages and one top pager on final partial and out-of-range pages. Page 1 links 1, 2, 3, ..., 10, 11 and next 2; page 2 links previous 1, 1, 2, 3, 4, ..., 10, 11 and next 3; page 11 links previous 10, 1, 2, ..., 9, 10, 11; page 12 deliberately says page 12 of 11 and links previous 11, 1, 2, ..., 10, 11, 12, and next 13. Pager hrefs use /forum/c-<id>/p/<page>.
 - All captured requests are anonymous and read-only. Observed controls and templates do not establish Comments, new-thread, post, edit, delete, lock, move, or other mutation authority.
+
+Raw HTTP captures:
+
+- scp-category-1113520-page-1 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-1.html` (SHA-256 `5910330cc219f216925076a661019a8f624aada45629606c9f3b4bdde579a247`)
+- scp-category-1113520-page-2 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-2.html` (SHA-256 `d43aa71385e23b7670ff9aba13afda2fa2d58e5ae93b647bb32cbb62bd37ef50`)
+- scp-category-1113520-page-11 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-11.html` (SHA-256 `e97127cf83883f3938cafa65182549174762b0a470d6ae4f875eda902a198d7c`)
+- scp-category-1113520-page-12 body stored locale `en`: `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-b21a91941/forum-g9-pagination/raw/category-page-12.html` (SHA-256 `4a7207b4d90c8009570ee284fd9fd8f77a6193b26f0b85d7df22d5ee46a0134a`)
 
 Evidence:
 
@@ -71,6 +79,26 @@ Evidence:
 - `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-one.json` (SHA-256 `b9910ec2ec7ba5a0fce786b2e4f895dc6fb2411f77f37412dc37282f12afedc4`), cases: `q1034-frontforum-offset-one`
 - `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-large.json` (SHA-256 `f6acea4c49603e657d174e0cf1aa24758198fc84158954ff1383d1b5580ef845`), cases: `q1034-frontforum-offset-large`
 - `/home/roku/wjlab/evidence/20260808-open87-execution/pr2-open43-readonly-live-20260809/raw/q1034-frontforum-offset-invalid.json` (SHA-256 `174e0987cc2b54927704ee03253d8fa31295007ee4d67fa13609f1024b3959fb`), cases: `q1034-frontforum-offset-invalid`
+
+### FrontForum custom bodies evaluate documented variables at the typed module boundary
+
+- Observation ID: `forum-q1034-frontforum-custom-body-rendering-20260810`
+- Classification: `documentation-clarification`
+- Observed at: `2026-08-10`
+- Analysis: Four anonymous, no-mutation PagePreviewModule captures establish the body-bearing FrontForum owner's exact closer consumption and variable evaluation for two one-row selections, with one unknown-variable control and one malformed-selector control. They do not establish raw or other-module closer ownership, multi-row or empty selection cardinality, custom-body nesting or composition, date formats beyond the captured %Y-%m-%d, feed or document-head behavior, fixRelativeLinks, private or deleted visibility, mutation authority, or browser transitions.
+
+Normative behavior:
+
+- A recognized body-bearing FrontForum invocation consumes its exact [[/module]] closer and renders the evaluated body inside front-forum-box for each captured one-row selection.
+- The captured canonical variables render title as text; linked_title as a thread anchor; author as printuser markup; a custom-formatted date as odate markup; comments and category as anchors; description as the thread summary; and content as the first post body.
+- The observed aliases title_linked, short, summary, text, long, and body render the same value families as their documented canonical variables, while link renders the thread route as text.
+- An unknown custom-body variable remains literal without preventing the surrounding body from rendering.
+- A category list containing a malformed element renders the category parsing error and suppresses the custom body instead of leaking or evaluating it.
+- All four captures are anonymous and read-only; they do not establish the remaining FrontForum surfaces named in the analysis.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/frontforum-custom-body-live-20260810.json` (SHA-256 `1cfdeed366ced060d051a64e58ad25bcd98a0b3ce6bdd6af5419c736396ebc48`), cases: `frontforum-custom-body-canonical`, `frontforum-custom-body-alias-offset-multi`, `frontforum-custom-body-unknown`, `frontforum-custom-body-malformed-owner-control`
 
 
 

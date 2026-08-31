@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 
@@ -7,6 +6,7 @@ import { assertCandidateIdentityFresh, validateCandidateParityIdentity } from ".
 import { assertStableCandidateRuntimeIdentity, observeCandidateRuntimeIdentity } from "./standing-browser-runtime-identity.mjs";
 import {
   createPrivateEmptyDirectory,
+  requireExactHttpsOrigins,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -15,9 +15,10 @@ import {
 
 export const CANDIDATE_CASE_RECEIPT_SCHEMA = "wikijump.candidate_case_receipt.v1";
 export const CANDIDATE_CASE_AGGREGATE_SCHEMA = "wikijump.candidate_case_aggregate.v1";
+export const CANDIDATE_CASE_TERMINAL_SCHEMA = "wikijump.candidate_case_terminal_receipt.v1";
 
 const CASE_ID = /^[A-Z][A-Z0-9_]+$/u;
-const RUN_ID = /^candidate-case-[0-9a-f]{12}$/u;
+const RUN_ID = /^candidate-run-[0-9a-f]{12}$/u;
 
 function validateCaseSet(value) {
   const caseSet = requirePlainObject(value, "CandidateCaseSet");
@@ -34,7 +35,6 @@ function validatePreparedRun(value) {
   if (run.browserCredentialPolicy !== undefined && run.browserCredentialPolicy !== "none") {
     requirePlainObject(run.browserCredentialPolicy, "prepared run browserCredentialPolicy");
   }
-  requirePlainObject(run.plan, "prepared run plan");
   for (const method of ["execute", "cleanup", "verifyCase", "verifyCleanup"]) if (typeof run[method] !== "function") throw new Error(`prepared run ${method} must be a function`);
   return run;
 }
@@ -81,6 +81,29 @@ function reconcile(caseIds, rows) {
   return result;
 }
 
+const FAILED_REQUEST_KEYS = new Set(["failures", "failed_requests", "request_gate_aborts", "capture_failures"]);
+
+function failedRequestEvidence(value, path = []) {
+  if (Array.isArray(value)) return value.flatMap((entry, index) => failedRequestEvidence(entry, [...path, index]));
+  if (value === null || typeof value !== "object") return [];
+  return Object.entries(value).flatMap(([key, child]) => {
+    if (FAILED_REQUEST_KEYS.has(key) && Array.isArray(child)) return [{ path: [...path, key], values: structuredClone(child) }];
+    return failedRequestEvidence(child, [...path, key]);
+  });
+}
+
+function caseEvidenceIdentity({ executionIdentity, privateInputIdentity, browserCleanup, runtimeBefore, runtimeAfter, cleanup, resources, observations }) {
+  return {
+    source_sha256: sha256Value(executionIdentity),
+    fixture_sha256: privateInputIdentity.fixture_identity_sha256 ?? sha256Value(privateInputIdentity),
+    browser_sha256: sha256Value(browserCleanup),
+    runtime_before_sha256: sha256Value(runtimeBefore),
+    runtime_after_sha256: sha256Value(runtimeAfter),
+    cleanup_sha256: sha256Value({ proof: cleanup, resources }),
+    failed_requests_sha256: sha256Value(failedRequestEvidence(observations)),
+  };
+}
+
 function verifiedCase(value, caseId) {
   const verification = requirePlainObject(value, `${caseId} verification`);
   if (verification.verified !== true) throw new Error(`${caseId} verification must explicitly set verified true`);
@@ -96,21 +119,22 @@ function defaultDependencies() {
       const { createCandidateBrowserContexts } = await import("./candidate-browser-contexts.mjs");
       return createCandidateBrowserContexts(options);
     },
-    runId: () => `candidate-case-${randomUUID().replaceAll("-", "").slice(0, 12)}`,
     now: () => new Date().toISOString(),
   };
 }
 
-export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir, caseSet: rawCaseSet, signal = null, dependencies: overrides = {} }) {
+export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir, caseSet: rawCaseSet, runId, signal = null, dependencies: overrides = {} }) {
   const identity = assertCandidateIdentityFresh(validateCandidateParityIdentity(rawIdentity));
   requireSha256(candidateIdentitySha256, "candidate identity SHA-256");
   requireSha256(privateInputSha256, "private input SHA-256");
   const caseSet = validateCaseSet(rawCaseSet);
   const dependencies = { ...defaultDependencies(), ...overrides };
-  const runId = dependencies.runId();
   if (!RUN_ID.test(runId)) throw new Error("candidate case run ID is invalid");
 
   const output = path.resolve(outputDir);
+  const evidenceRoot = path.dirname(output);
+  const terminalFailurePath = path.join(evidenceRoot, `${path.basename(output)}.terminal-failure.json`);
+  try {
   await createPrivateEmptyDirectory(output);
   const caseDirectory = path.join(output, "cases");
   await fs.mkdir(caseDirectory, { mode: 0o700 });
@@ -138,28 +162,21 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
       return browserOwner().then((owner) => owner.captureCandidateObservation(options));
     },
   });
-  const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, signal, resources, candidateBrowserContexts }));
+  const run = validatePreparedRun(await caseSet.prepareRun({ runId, candidateIdentity: identity, candidateIdentitySha256, privateInput, privateInputSha256, outputDir: output, signal, resources, candidateBrowserContexts }));
+  const browserPublicOrigins = requireExactHttpsOrigins(
+    run.browserPublicOrigins ?? [],
+    "prepared run browserPublicOrigins",
+  );
   if (resources.snapshot().length !== 0) throw new Error("CandidateCaseSet prepareRun must be side-effect-free");
   browserOwnerOptions = {
     candidateIdentity: identity,
     outputDir: output,
     signal,
     credentialPolicy: run.browserCredentialPolicy ?? "none",
+    publicOrigins: browserPublicOrigins,
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };
-  const plan = {
-    schema: "wikijump.candidate_case_run_plan.v1",
-    run_id: runId,
-    candidate_case_set: caseSet.id,
-    denominator,
-    candidate_identity_sha256: candidateIdentitySha256,
-    private_input_sha256: privateInputSha256,
-    private_input_identity: run.privateInputIdentity,
-    execution_identity_sha256: sha256Value(executionIdentity),
-    case_set_plan: run.plan,
-  };
-  const planSeal = await seal(path.join(output, "run-plan.json"), plan);
   const runtimeOptions = { identity, identitySha256: candidateIdentitySha256, requiredServiceBindings: run.runtimeBindings };
   const runtimeBefore = await dependencies.observeRuntimeIdentity(runtimeOptions);
 
@@ -186,7 +203,6 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   }
 
   const resourceSnapshot = resources.snapshot();
-  if (cleanupProof !== null) await seal(path.join(output, "cleanup.json"), { schema: "wikijump.candidate_case_cleanup.v1", run_id: runId, proof: cleanupProof, resources: resourceSnapshot });
   let verifiedCleanup = null;
   let cleanupVerificationError = null;
   try {
@@ -196,6 +212,19 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   } catch (error) {
     cleanupVerificationError = error;
   }
+  const cleanupReceipt = {
+    schema: "wikijump.candidate_case_cleanup.v1",
+    status: cleanupError === null && cleanupVerificationError === null && browserCleanupError === null && cleanupProof !== null ? "pass" : "fail",
+    run_id: runId,
+    proof: cleanupProof,
+    resources: resourceSnapshot,
+    public_absence_verified: verifiedCleanup?.public_absence_verified === true,
+    resources_released: resourceSnapshot.every((resource) => resource.released),
+    vacant: resourceSnapshot.every((resource) => resource.released) && browserCleanupError === null,
+    browser_closed: browserCleanupError === null,
+    reason: cleanupError?.message ?? cleanupVerificationError?.message ?? null,
+  };
+  await seal(path.join(output, "cleanup.json"), cleanupReceipt);
 
   let runtimeAfter = null;
   let runtimeError = null;
@@ -223,11 +252,20 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
       case_id: caseId,
       candidate_identity_sha256: candidateIdentitySha256,
       private_input_sha256: privateInputSha256,
-      run_plan_sha256: planSeal.sha256,
       execution_identity_sha256: sha256Value(executionIdentity),
       runtime_before_sha256: sha256Value(runtimeBefore),
       runtime_after_sha256: sha256Value(runtimeAfter),
       cleanup: verifiedCleanup,
+      evidence_identity: caseEvidenceIdentity({
+        executionIdentity,
+        privateInputIdentity: run.privateInputIdentity,
+        browserCleanup,
+        runtimeBefore,
+        runtimeAfter,
+        cleanup: verifiedCleanup,
+        resources: resourceSnapshot,
+        observations: caseObservations,
+      }),
       observations: caseObservations,
       verification,
     };
@@ -242,14 +280,28 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     candidate_identity_sha256: candidateIdentitySha256,
     private_input_sha256: privateInputSha256,
     denominator,
-    run_plan: planSeal,
     execution_identity: executionIdentity,
     runtime_identity: { before: runtimeBefore, after: runtimeAfter, stable: true },
     cleanup: verifiedCleanup,
+    cleanup_receipt: "cleanup.json",
     browser_cleanup: browserCleanup,
     resources: resourceSnapshot,
     cases,
   };
   await seal(path.join(output, "candidate-case-receipt.json"), aggregate);
   return aggregate;
+  } catch (error) {
+    await sealFailure(terminalFailurePath, runId, output, error);
+    throw error;
+  }
+}
+
+async function sealFailure(destination, runId, output, error) {
+  await seal(destination, {
+    schema: CANDIDATE_CASE_TERMINAL_SCHEMA,
+    status: "fail",
+    run_id: runId,
+    output_dir: output,
+    error: error?.message ?? String(error),
+  });
 }

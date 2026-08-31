@@ -29,7 +29,7 @@ use crate::state::ServerState;
 use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::header::{self, HeaderMap};
-use axum::http::{Method, StatusCode};
+use axum::http::{Method, StatusCode, Uri};
 use axum::response::{IntoResponse, Response};
 use rand::distr::{Alphanumeric, SampleString};
 use std::fmt::Write;
@@ -45,6 +45,57 @@ const MULTIPART_BOUNDARY_RANDOM_LENGTH: usize = 16;
 /// Beyond this, the multipart request is rejected with 416 (Range Not Satisfiable)
 const MAX_MULTIPART_BYTES: u64 = 8 * 1024 * 1024; // 8 MiB
 
+/// Wikidot's terminal response for a missing file URL.
+const WIKIDOT_MISSING_FILE_HTML: &str = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n";
+
+fn wikidot_missing_file_response() -> Response {
+    build_or_500(
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+            .header(header::CONTENT_LENGTH, WIKIDOT_MISSING_FILE_HTML.len())
+            .body(Body::from(WIKIDOT_MISSING_FILE_HTML)),
+    )
+}
+
+fn local_lab_wikidot_file_fallback(headers: &HeaderMap, uri: &Uri) -> Option<String> {
+    let site_slug = headers
+        .get(super::HEADER_SITE_SLUG)?
+        .to_str()
+        .ok()?
+        .to_ascii_lowercase();
+    if !matches!(site_slug.as_str(), "scp-wiki" | "scp-jp") {
+        return None;
+    }
+
+    let request_host = headers
+        .get(header::HOST)?
+        .to_str()
+        .ok()?
+        .split(':')
+        .next()?
+        .trim_end_matches('.')
+        .to_ascii_lowercase();
+    if request_host != format!("{site_slug}.wjfiles.localhost") {
+        return None;
+    }
+
+    if !uri.path().starts_with("/local--files/") {
+        return None;
+    }
+    let path_and_query = uri.path_and_query()?.as_str();
+    Some(format!("https://{site_slug}.wdfiles.com{path_and_query}"))
+}
+
+fn wikidot_source_file_redirect(location: &str) -> Response {
+    build_or_500(
+        Response::builder()
+            .status(StatusCode::FOUND)
+            .header(header::LOCATION, location)
+            .body(Body::empty()),
+    )
+}
+
 fn range_not_satisfiable(file_size: u64) -> Response {
     build_or_500(
         Response::builder()
@@ -57,10 +108,12 @@ fn range_not_satisfiable(file_size: u64) -> Response {
 
 struct ServeParams<'a> {
     etag: &'a str,
+    last_modified: &'a str,
     as_attachment: bool,
     filename: &'a str,
     file_size: u64,
     is_head: bool,
+    content_type: &'a str,
 }
 
 async fn serve_file(
@@ -74,14 +127,32 @@ async fn serve_file(
 ) -> Response {
     let file_size = file_info.size as u64;
     let etag = format!("\"{}\"", file_info.s3_hash);
+    let last_modified = httpdate::fmt_http_date(file_info.revision_created_at.into());
     let is_head = *method == Method::HEAD;
+    let content_type = response_content_type(filename, &file_info.mime);
     let params = ServeParams {
         etag: &etag,
+        last_modified: &last_modified,
         as_attachment,
         filename,
         file_size,
         is_head,
+        content_type,
     };
+
+    if headers
+        .get(header::IF_NONE_MATCH)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.trim() == etag)
+    {
+        return build_or_500(
+            Response::builder()
+                .status(StatusCode::NOT_MODIFIED)
+                .header(header::ETAG, &etag)
+                .header(header::LAST_MODIFIED, &last_modified)
+                .body(Body::empty()),
+        );
+    }
 
     match evaluate_range(headers, &etag, file_size) {
         ParsedRange::None => {
@@ -131,10 +202,11 @@ async fn serve_full(
         base_headers(
             StatusCode::OK,
             params.etag,
+            params.last_modified,
             params.as_attachment,
             params.filename,
         )
-        .header(header::CONTENT_TYPE, &file_info.mime)
+        .header(header::CONTENT_TYPE, params.content_type)
         .header(header::CONTENT_LENGTH, params.file_size)
         .body(body),
     )
@@ -170,10 +242,11 @@ async fn serve_single_range(
         base_headers(
             StatusCode::PARTIAL_CONTENT,
             params.etag,
+            params.last_modified,
             params.as_attachment,
             params.filename,
         )
-        .header(header::CONTENT_TYPE, &file_info.mime)
+        .header(header::CONTENT_TYPE, params.content_type)
         .header(header::CONTENT_RANGE, content_range)
         .header(header::CONTENT_LENGTH, range.len())
         .body(body),
@@ -192,7 +265,7 @@ async fn serve_multi_range(
     if params.is_head {
         let len = multipart_content_length(
             &boundary,
-            &file_info.mime,
+            params.content_type,
             ranges,
             params.file_size,
         );
@@ -200,6 +273,7 @@ async fn serve_multi_range(
             base_headers(
                 StatusCode::PARTIAL_CONTENT,
                 params.etag,
+                params.last_modified,
                 params.as_attachment,
                 params.filename,
             )
@@ -232,7 +306,7 @@ async fn serve_multi_range(
              Content-Type: {}\r\n\
              Content-Range: bytes {}-{}/{}\r\n\
              \r\n",
-            file_info.mime, range.start, range.end, params.file_size,
+            params.content_type, range.start, range.end, params.file_size,
         );
         body.extend_from_slice(part_header.as_bytes());
         body.extend_from_slice(&data);
@@ -245,6 +319,7 @@ async fn serve_multi_range(
         base_headers(
             StatusCode::PARTIAL_CONTENT,
             params.etag,
+            params.last_modified,
             params.as_attachment,
             params.filename,
         )
@@ -255,6 +330,61 @@ async fn serve_multi_range(
 }
 
 // ------------ Public handlers ------------
+
+pub async fn handle_local_file(
+    state: State<ServerState>,
+    method: Method,
+    path: Path<(String, String)>,
+    original_uri: Uri,
+    headers: HeaderMap,
+) -> Response {
+    if method == Method::GET || method == Method::HEAD {
+        let fallback = local_lab_wikidot_file_fallback(&headers, &original_uri);
+        handle_local_file_fetch(state, method, path, headers, fallback.as_deref()).await
+    } else {
+        super::handle_file_redirect(path).await.into_response()
+    }
+}
+
+async fn handle_local_file_fetch(
+    State(state): State<ServerState>,
+    method: Method,
+    Path((mut page_slug, filename)): Path<(String, String)>,
+    headers: HeaderMap,
+    source_fallback: Option<&str>,
+) -> Response {
+    info!(
+        page_slug = page_slug,
+        filename = filename,
+        "Returning local file data",
+    );
+
+    let site_id = get_site_id(&headers);
+    let file_info =
+        match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
+        {
+            Ok(info) => info,
+            Err(response)
+                if (method == Method::GET || method == Method::HEAD)
+                    && response.status() == StatusCode::NOT_FOUND
+                    && source_fallback.is_some() =>
+            {
+                return wikidot_source_file_redirect(source_fallback.unwrap());
+            }
+            Err(response)
+                if method == Method::GET
+                    && response.status() == StatusCode::NOT_FOUND =>
+            {
+                return wikidot_missing_file_response();
+            }
+            Err(response) => return response,
+        };
+
+    serve_file(
+        &state, &method, &headers, &file_info, false, &page_slug, &filename,
+    )
+    .await
+}
 
 pub async fn handle_file_fetch(
     State(state): State<ServerState>,
@@ -273,6 +403,12 @@ pub async fn handle_file_fetch(
         match fetch_file_info(&state, &headers, site_id, &mut page_slug, &filename).await
         {
             Ok(info) => info,
+            Err(response)
+                if method == Method::GET
+                    && response.status() == StatusCode::NOT_FOUND =>
+            {
+                return wikidot_missing_file_response();
+            }
             Err(response) => return response,
         };
 
@@ -310,15 +446,28 @@ pub async fn handle_file_download(
 
 // ------------ Response builders ------------
 
+fn response_content_type<'a>(filename: &str, mime: &'a str) -> &'a str {
+    if filename
+        .rsplit_once('.')
+        .is_some_and(|(_, extension)| extension.eq_ignore_ascii_case("css"))
+    {
+        "text/css"
+    } else {
+        mime
+    }
+}
+
 fn base_headers(
     status: StatusCode,
     etag: &str,
+    last_modified: &str,
     as_attachment: bool,
     filename: &str,
 ) -> axum::http::response::Builder {
     let mut builder = Response::builder()
         .status(status)
         .header(header::ETAG, etag)
+        .header(header::LAST_MODIFIED, last_modified)
         .header(header::ACCEPT_RANGES, "bytes");
 
     if as_attachment {
@@ -389,19 +538,172 @@ mod tests {
     use super::*;
     use crate::config::Secrets;
     use crate::state::build_server_state;
+    use axum::Router;
     use axum::body;
+    use axum::body::Bytes;
     use axum::http::StatusCode;
     use axum::http::header::{
-        ACCEPT_RANGES, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE, CONTENT_TYPE,
-        ETAG, RANGE,
+        ACCEPT_RANGES, CACHE_CONTROL, CONTENT_DISPOSITION, CONTENT_LENGTH, CONTENT_RANGE,
+        CONTENT_TYPE, ETAG, IF_NONE_MATCH, IF_RANGE, LAST_MODIFIED, LOCATION, RANGE,
     };
     use s3::creds::Credentials;
     use s3::region::Region;
+    use serde_json::{Value, json};
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::sync::{Arc, Mutex};
     use std::thread::{self, JoinHandle};
     use std::time::Duration;
+    use tokio::net::TcpListener as TokioTcpListener;
+
+    const WIKIDOT_MISSING_FILE_HTML: &[u8] = b"<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n";
+
+    #[test]
+    fn css_files_use_stylesheet_content_type() {
+        assert_eq!(
+            response_content_type("departuremono.css", "text/plain"),
+            "text/css"
+        );
+        assert_eq!(
+            response_content_type("DEPARTUREMONO.CSS", "text/plain"),
+            "text/css"
+        );
+        assert_eq!(
+            response_content_type("plain.txt", "text/plain"),
+            "text/plain"
+        );
+    }
+
+    async fn file_handler_rpc(body: Bytes) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let method = request["method"].as_str().unwrap();
+        let id = request["id"].clone();
+        let result = match method {
+            "page_get" if request["params"]["page"] == "absent-page" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
+            "page_get" if request["params"]["page"] == "backend-error" => json!({
+                "jsonrpc": "2.0",
+                "error": {"code": -32603, "message": "backend failure"},
+                "id": id
+            }),
+            "page_get" if request["params"]["page"] == "fragment:2117-1" => json!({
+                "jsonrpc": "2.0",
+                "result": {"page_id": 2117},
+                "id": id
+            }),
+            "page_get" => json!({
+                "jsonrpc": "2.0",
+                "result": {"page_id": 123},
+                "id": id
+            }),
+            "file_get" if request["params"]["file"] == "missing.txt" => {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
+            "file_get" if request["params"]["file"] == "denied.txt" => json!({
+                "jsonrpc": "2.0",
+                "error": {"code": 3106, "message": "permission denied"},
+                "id": id
+            }),
+            "file_get"
+                if matches!(
+                    request["params"]["file"].as_str(),
+                    Some("nested/present.txt" | "bad%ZZ.txt" | "control\0.txt")
+                ) =>
+            {
+                json!({"jsonrpc": "2.0", "result": null, "id": id})
+            }
+            "file_get" if request["params"]["file"] == "present.txt" => json!({
+                "jsonrpc": "2.0",
+                "result": {
+                    "file_id": 7,
+                    "revision_id": 17,
+                    "revision_created_at": "2020-07-23T06:38:39Z",
+                    "mime": "application/x-test",
+                    "size": 6,
+                    "s3_hash": "public-hash"
+                },
+                "id": id
+            }),
+            "file_get"
+                if request["params"]["page_id"] == 2117
+                    && request["params"]["file"] == "present file.txt" =>
+            {
+                json!({
+                    "jsonrpc": "2.0",
+                    "result": {
+                        "file_id": 8,
+                        "revision_id": 18,
+                        "revision_created_at": "2020-07-23T06:38:39Z",
+                        "mime": "application/x-test",
+                        "size": 6,
+                        "s3_hash": "public-hash"
+                    },
+                    "id": id
+                })
+            }
+            "basic_error_missing_page_slug" | "basic_error_missing_file_name" => {
+                json!({
+                    "jsonrpc": "2.0",
+                    "result": {"title": "not found", "body": "not found"},
+                    "id": id
+                })
+            }
+            "basic_error_page_fetch" => json!({
+                "jsonrpc": "2.0",
+                "result": {"title": "fetch", "body": "backend failure"},
+                "id": id
+            }),
+            other => panic!("unexpected JSON-RPC method: {other}"),
+        };
+
+        ([("content-type", "application/json")], result.to_string()).into_response()
+    }
+
+    async fn spawn_file_handler_rpc() -> (String, tokio::task::JoinHandle<()>) {
+        let app = Router::new().route("/", axum::routing::post(file_handler_rpc));
+        let listener = TokioTcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (format!("http://{address}"), task)
+    }
+
+    async fn router_request(
+        state: ServerState,
+        method: Method,
+        path: &str,
+        range: Option<&str>,
+    ) -> reqwest::Response {
+        let headers: Vec<_> = range.into_iter().map(|value| (RANGE, value)).collect();
+        router_request_with_headers(state, method, path, &headers).await
+    }
+
+    async fn router_request_with_headers(
+        state: ServerState,
+        method: Method,
+        path: &str,
+        headers: &[(axum::http::HeaderName, &str)],
+    ) -> reqwest::Response {
+        let app = crate::route::build_router(state);
+        let listener = TokioTcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let _server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let mut request = client
+            .request(method, format!("http://{address}{path}"))
+            .header(crate::handler::HEADER_SITE_ID, "10");
+        for (name, value) in headers {
+            request = request.header(name, *value);
+        }
+        request.send().await.unwrap()
+    }
 
     struct S3Server {
         endpoint: String,
@@ -478,6 +780,8 @@ mod tests {
         FileData {
             file_id: 1,
             revision_id: 17,
+            revision_created_at: time::OffsetDateTime::from_unix_timestamp(1_595_486_319)
+                .unwrap(),
             mime: str!("text/plain"),
             size,
             s3_hash: str!("sha512-hash"),
@@ -489,10 +793,17 @@ mod tests {
     }
 
     async fn test_state_with_endpoint(endpoint: &str) -> ServerState {
+        test_state_with_endpoints("http://127.0.0.1:2747", endpoint).await
+    }
+
+    async fn test_state_with_endpoints(
+        deepwell_endpoint: &str,
+        s3_endpoint: &str,
+    ) -> ServerState {
         let mut state = build_server_state(
             false,
             Secrets {
-                deepwell_url: str!("http://127.0.0.1:2747"),
+                deepwell_url: deepwell_endpoint.to_owned(),
                 deepwell_rpc_token: crate::config::RpcToken::parse("0".repeat(64))
                     .unwrap(),
                 redis_url: str!("redis://127.0.0.1/"),
@@ -500,7 +811,7 @@ mod tests {
                 s3_tblocks_bucket: str!("text-blocks"),
                 s3_region: Region::Custom {
                     region: str!("test"),
-                    endpoint: endpoint.to_string(),
+                    endpoint: s3_endpoint.to_string(),
                 },
                 s3_credentials: Credentials::new(
                     Some("access-key"),
@@ -531,6 +842,542 @@ mod tests {
             .unwrap();
         *state.s3_files_bucket = files_bucket;
         *state.s3_tblocks_bucket = tblocks_bucket;
+    }
+
+    #[tokio::test]
+    async fn file_get_hides_missing_and_inaccessible_resources_with_wikidot_shell() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, "http://127.0.0.1:9000").await;
+
+        for (page_slug, filename) in [
+            ("existing-page", "missing.txt"),
+            ("absent-page", "missing.txt"),
+            ("existing-page", "denied.txt"),
+        ] {
+            let mut headers = HeaderMap::new();
+            headers.insert(crate::handler::HEADER_SITE_ID, "10".parse().unwrap());
+            let response = handle_file_fetch(
+                State(Arc::clone(&state)),
+                Method::GET,
+                Path((page_slug.to_owned(), filename.to_owned())),
+                headers,
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(
+                response.headers().get(CONTENT_TYPE).unwrap(),
+                "text/html; charset=utf-8",
+            );
+            assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "404");
+            let response_body = body::to_bytes(response.into_body(), usize::MAX)
+                .await
+                .unwrap();
+            assert_eq!(&response_body[..], WIKIDOT_MISSING_FILE_HTML);
+        }
+
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_get_preserves_public_file_bytes_mime_and_etag() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+        let mut headers = HeaderMap::new();
+        headers.insert(crate::handler::HEADER_SITE_ID, "10".parse().unwrap());
+
+        let response = handle_file_fetch(
+            State(state),
+            Method::GET,
+            Path(("existing-page".to_owned(), "present.txt".to_owned())),
+            headers,
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(CONTENT_TYPE).unwrap(),
+            "application/x-test",
+        );
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert_eq!(
+            response.headers().get(LAST_MODIFIED).unwrap(),
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+        );
+        assert!(!response.headers().contains_key(CACHE_CONTROL));
+        let response_body = body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        assert_eq!(&response_body[..], b"abcdef");
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_decodes_page_and_filename_and_returns_file_without_redirect()
+    {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request(
+            state,
+            Method::GET,
+            "/local--files/fragment%3A2117-1/present%20file.txt",
+            None,
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(CONTENT_TYPE).unwrap(),
+            "application/x-test",
+        );
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert!(!response.headers().contains_key(LOCATION));
+        assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_matches_internal_file_response() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let local = router_request(
+            Arc::clone(&state),
+            Method::GET,
+            "/local--files/existing-page/present.txt",
+            None,
+        )
+        .await;
+        let internal = router_request(
+            state,
+            Method::GET,
+            "/-/file/existing-page/present.txt",
+            None,
+        )
+        .await;
+
+        assert_eq!(local.status(), internal.status());
+        for header in [CONTENT_TYPE, CONTENT_LENGTH, ETAG, ACCEPT_RANGES] {
+            assert_eq!(
+                local.headers().get(&header),
+                internal.headers().get(&header)
+            );
+        }
+        assert!(!local.headers().contains_key(LOCATION));
+        assert_eq!(
+            local.bytes().await.unwrap(),
+            internal.bytes().await.unwrap()
+        );
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_exact_if_none_match_returns_not_modified_without_reading_blob() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for path in [
+            "/-/file/existing-page/present.txt",
+            "/-/download/existing-page/present.txt",
+        ] {
+            let response = router_request_with_headers(
+                Arc::clone(&state),
+                Method::GET,
+                path,
+                &[(header::IF_NONE_MATCH, "\"public-hash\"")],
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
+            assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+            assert_eq!(
+                response.headers().get(LAST_MODIFIED).unwrap(),
+                "Thu, 23 Jul 2020 06:38:39 GMT",
+            );
+            assert!(!response.headers().contains_key(ACCEPT_RANGES));
+            assert!(!response.headers().contains_key(CONTENT_DISPOSITION));
+            assert!(!response.headers().contains_key(CACHE_CONTROL));
+            assert!(response.bytes().await.unwrap().is_empty());
+        }
+        assert!(s3_server.requests().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_wrong_if_none_match_returns_full_response() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/-/file/existing-page/present.txt",
+            &[(IF_NONE_MATCH, "\"wrong\"")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.bytes().await.unwrap(), &b"abcdef"[..]);
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_if_none_match_is_evaluated_before_range() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/-/file/existing-page/present.txt",
+            &[(IF_NONE_MATCH, "\"public-hash\""), (RANGE, "bytes=0-1")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
+        assert!(!response.headers().contains_key(CONTENT_RANGE));
+        assert!(response.bytes().await.unwrap().is_empty());
+        assert!(s3_server.requests().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_if_range_match_selects_partial_and_mismatch_selects_full() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(206, b"ab"), (200, b"abcdef")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let partial = router_request_with_headers(
+            Arc::clone(&state),
+            Method::GET,
+            "/-/file/existing-page/present.txt",
+            &[(RANGE, "bytes=0-1"), (IF_RANGE, "\"public-hash\"")],
+        )
+        .await;
+        assert_eq!(partial.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(partial.headers().get(CONTENT_RANGE).unwrap(), "bytes 0-1/6");
+        assert_eq!(
+            partial.headers().get(LAST_MODIFIED).unwrap(),
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+        );
+        assert_eq!(partial.bytes().await.unwrap(), &b"ab"[..]);
+
+        let full = router_request_with_headers(
+            state,
+            Method::GET,
+            "/-/file/existing-page/present.txt",
+            &[(RANGE, "bytes=0-1"), (IF_RANGE, "\"wrong\"")],
+        )
+        .await;
+        assert_eq!(full.status(), StatusCode::OK);
+        assert!(!full.headers().contains_key(CONTENT_RANGE));
+        assert_eq!(full.bytes().await.unwrap(), &b"abcdef"[..]);
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_head_returns_selected_metadata_without_a_body() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::HEAD,
+            "/-/file/existing-page/present.txt",
+            &[(RANGE, "bytes=0-1")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(
+            response.headers().get(CONTENT_RANGE).unwrap(),
+            "bytes 0-1/6"
+        );
+        assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "2");
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert!(!response.headers().contains_key(CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+        assert!(s3_server.requests().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_preserves_satisfiable_and_unsatisfiable_ranges() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![(206, b"bcd")]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let partial = router_request(
+            Arc::clone(&state),
+            Method::GET,
+            "/local--files/existing-page/present.txt",
+            Some("bytes=1-3"),
+        )
+        .await;
+        assert_eq!(partial.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(partial.headers().get(CONTENT_RANGE).unwrap(), "bytes 1-3/6");
+        assert!(!partial.headers().contains_key(LOCATION));
+        assert_eq!(partial.bytes().await.unwrap(), &b"bcd"[..]);
+
+        let unsatisfiable = router_request(
+            state,
+            Method::GET,
+            "/local--files/existing-page/present.txt",
+            Some("bytes=9-12"),
+        )
+        .await;
+        assert_eq!(unsatisfiable.status(), StatusCode::RANGE_NOT_SATISFIABLE,);
+        assert_eq!(
+            unsatisfiable.headers().get(CONTENT_RANGE).unwrap(),
+            "bytes */6",
+        );
+        assert!(!unsatisfiable.headers().contains_key(LOCATION));
+        assert!(unsatisfiable.bytes().await.unwrap().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_hides_missing_and_denied_files_without_reading_blobs() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for filename in ["missing.txt", "denied.txt"] {
+            let response = router_request(
+                Arc::clone(&state),
+                Method::GET,
+                &format!("/local--files/existing-page/{filename}"),
+                None,
+            )
+            .await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(
+                response.headers().get(CONTENT_TYPE).unwrap(),
+                "text/html; charset=utf-8",
+            );
+            assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "404");
+            assert!(!response.headers().contains_key(LOCATION));
+            assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
+        }
+
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_lab_scp_mirror_redirects_missing_files_to_wdfiles() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/local--files/theme%3Abasalt/missing.txt",
+            &[
+                (crate::handler::HEADER_SITE_SLUG, "scp-wiki"),
+                (header::HOST, "scp-wiki.wjfiles.localhost:18443"),
+            ],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::FOUND);
+        assert_eq!(
+            response.headers().get(LOCATION).unwrap(),
+            "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/missing.txt",
+        );
+        assert!(response.bytes().await.unwrap().is_empty());
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn production_scp_file_host_keeps_local_missing_file_response() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::GET,
+            "/local--files/theme%3Abasalt/missing.txt",
+            &[
+                (crate::handler::HEADER_SITE_SLUG, "scp-wiki"),
+                (header::HOST, "scp-wiki.wjfiles.com"),
+            ],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(!response.headers().contains_key(LOCATION));
+        assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_post_keeps_permanent_redirect_fallback() {
+        let state = test_state().await;
+
+        let response =
+            router_request(state, Method::POST, "/local--files/scp-173/image.png", None)
+                .await;
+
+        assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(
+            response.headers().get(LOCATION).unwrap(),
+            "/-/file/scp-173/image.png",
+        );
+    }
+
+    #[tokio::test]
+    async fn local_files_head_returns_selected_range_metadata_without_a_body() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        let response = router_request_with_headers(
+            state,
+            Method::HEAD,
+            "/local--files/existing-page/present.txt",
+            &[(RANGE, "bytes=0-1")],
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+        assert_eq!(
+            response.headers().get(CONTENT_RANGE).unwrap(),
+            "bytes 0-1/6"
+        );
+        assert_eq!(response.headers().get(CONTENT_LENGTH).unwrap(), "2");
+        assert_eq!(response.headers().get(ETAG).unwrap(), "\"public-hash\"");
+        assert!(!response.headers().contains_key(CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+        assert!(s3_server.requests().is_empty());
+
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn local_files_get_does_not_widen_encoded_slashes_or_controls() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let s3_server = spawn_s3_server(vec![]);
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, &s3_server.endpoint).await;
+
+        for path in [
+            "/local--files/existing-page/nested%2Fpresent.txt",
+            "/local--files/existing-page/bad%ZZ.txt",
+            "/local--files/existing-page/control%00.txt",
+        ] {
+            let response =
+                router_request(Arc::clone(&state), Method::GET, path, None).await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(!response.headers().contains_key(LOCATION));
+            assert_eq!(response.bytes().await.unwrap(), WIKIDOT_MISSING_FILE_HTML,);
+        }
+
+        assert!(s3_server.requests().is_empty());
+        s3_server.join();
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn missing_file_soft_response_is_limited_to_get_file_fetch() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, "http://127.0.0.1:9000").await;
+
+        for response in [
+            handle_file_fetch(
+                State(Arc::clone(&state)),
+                Method::HEAD,
+                Path(("existing-page".to_owned(), "missing.txt".to_owned())),
+                site_headers(),
+            )
+            .await,
+            handle_file_download(
+                State(Arc::clone(&state)),
+                Method::GET,
+                Path(("existing-page".to_owned(), "missing.txt".to_owned())),
+                site_headers(),
+            )
+            .await,
+        ] {
+            assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        }
+
+        deepwell_server.abort();
+    }
+
+    #[tokio::test]
+    async fn file_get_preserves_deepwell_failure_status() {
+        let (deepwell_endpoint, deepwell_server) = spawn_file_handler_rpc().await;
+        let state =
+            test_state_with_endpoints(&deepwell_endpoint, "http://127.0.0.1:9000").await;
+
+        let response = handle_file_fetch(
+            State(state),
+            Method::GET,
+            Path(("backend-error".to_owned(), "missing.txt".to_owned())),
+            site_headers(),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+        deepwell_server.abort();
+    }
+
+    fn site_headers() -> HeaderMap {
+        let mut headers = HeaderMap::new();
+        headers.insert(crate::handler::HEADER_SITE_ID, "10".parse().unwrap());
+        headers
     }
 
     #[tokio::test]
@@ -713,9 +1560,15 @@ mod tests {
 
     #[test]
     fn base_headers_sets_etag_and_accept_ranges() {
-        let response = base_headers(StatusCode::OK, "\"etag\"", false, "file.txt")
-            .body(Body::empty())
-            .unwrap();
+        let response = base_headers(
+            StatusCode::OK,
+            "\"etag\"",
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+            false,
+            "file.txt",
+        )
+        .body(Body::empty())
+        .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         assert_eq!(response.headers().get(ETAG).unwrap(), "\"etag\"");
@@ -725,9 +1578,15 @@ mod tests {
 
     #[test]
     fn base_headers_sets_attachment_disposition_when_requested() {
-        let response = base_headers(StatusCode::OK, "\"etag\"", true, "report 1.txt")
-            .body(Body::empty())
-            .unwrap();
+        let response = base_headers(
+            StatusCode::OK,
+            "\"etag\"",
+            "Thu, 23 Jul 2020 06:38:39 GMT",
+            true,
+            "report 1.txt",
+        )
+        .body(Body::empty())
+        .unwrap();
 
         let disposition = response.headers().get(CONTENT_DISPOSITION).unwrap();
         assert_eq!(disposition, "attachment; filename=\"report 1.txt\"");

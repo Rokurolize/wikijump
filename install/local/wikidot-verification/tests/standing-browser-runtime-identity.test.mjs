@@ -210,6 +210,23 @@ test("effective runtime identity ignores Compose's derived hash and lifecycle la
   assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
 });
 
+test("effective runtime identity ignores Docker-assigned network lifecycle values", () => {
+  const { inspect } = preparedFixture();
+  inspect.NetworkSettings.Networks = {
+    fixture_default: {
+      Aliases: ["fixture-caddy", "caddy"],
+      Gateway: "",
+      IPv6Gateway: "",
+      NetworkID: "",
+    },
+  };
+  const before = effectiveRuntimeServicesSha256([inspect]);
+  inspect.NetworkSettings.Networks.fixture_default.Gateway = "192.0.2.1";
+  inspect.NetworkSettings.Networks.fixture_default.IPv6Gateway = "2001:db8::1";
+  inspect.NetworkSettings.Networks.fixture_default.NetworkID = hash("2");
+  assert.equal(effectiveRuntimeServicesSha256([inspect]), before);
+});
+
 test("effective runtime identity normalizes Docker-reordered environment and mounts", () => {
   const cases = [
     [

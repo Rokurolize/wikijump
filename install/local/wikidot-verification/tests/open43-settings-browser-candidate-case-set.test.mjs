@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import {
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
   verifyOpen43SettingsBrowserCleanup,
   verifyOpen43SettingsBrowserCase,
 } from "../src/open43-settings-browser-candidate-contract.mjs";
+import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const hash = (character) => character.repeat(64);
 
@@ -37,6 +39,8 @@ test("settings browser contract fixes the exact denominator and initial observat
     "S1046_ADMIN_SETTLED",
     "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
   ]);
+  assert.equal(OPEN43_SETTINGS_BROWSER_CASE_IDS.length, 9);
+  assert.equal(new Set(OPEN43_SETTINGS_BROWSER_CASE_IDS).size, 9);
 
   const plan = { analytics_profile: "UA-754-1" };
   const enabled = {
@@ -94,6 +98,13 @@ test("settings browser contract fixes the exact denominator and initial observat
     () => verifyOpen43SettingsBrowserCase("S754_ANALYTICS_INITIAL", { ...observations, enabled: { ...enabled, initial_navigation_csp_header_sha256: null, csp_nonce_matches_initial_navigation_header: false } }, plan),
     /initial navigation CSP/u,
   );
+});
+
+test("the candidate command reaches only the authoritative nine-case settings denominator", async () => {
+  const selected = await candidateCaseSet("open43-settings-browser");
+  assert.deepEqual(selected.caseIds, OPEN43_SETTINGS_BROWSER_CASE_IDS);
+  assert.equal(selected.caseIds.length, 9);
+  assert.equal(new Set(selected.caseIds).size, 9);
 });
 
 test("analytics settled observation rejects duplicate order and stale queues", () => {
@@ -703,25 +714,49 @@ test("permission matrix rejects actor mutation, expired-session 500, and CSRF wi
 test("settings cleanup requires exact public restoration without page cleanup authority", () => {
   const settings = {
     site: {
+      site_id: 17,
+      slug: "scpaiueouiuiuiui",
       name: "Before",
       tagline: "Before tagline",
+      description: "Before description",
+      locale: "en",
+      default_page: "home",
+      welcome_page: "welcome",
       google_analytics_enabled: false,
       google_analytics_profile: null,
       show_top_toolbar: true,
       show_bottom_toolbar: false,
     },
-    category: {
-      theme_kind: "built_in",
-      theme_builtin_id: 1,
-      theme_external_url: null,
-      theme_custom_css: null,
-    },
+    categories: [
+      {
+        category_id: 11,
+        slug: "_default",
+        theme_kind: "built_in",
+        theme_builtin_id: 1,
+        theme_external_url: null,
+        theme_custom_css: null,
+      },
+      {
+        category_id: 12,
+        slug: "article",
+        theme_kind: "built_in",
+        theme_builtin_id: 1,
+        theme_external_url: null,
+        theme_custom_css: null,
+      },
+    ],
   };
   const proof = {
     before: settings,
     after: structuredClone(settings),
   };
-  const resources = [{ kind: "settings", released: true }];
+  const beforeSha256 = sha256Value(settings);
+  const resources = [{
+    kind: "settings",
+    identity: { site_id: 17, category_ids: [11, 12], before_sha256: beforeSha256 },
+    released: true,
+    release_proof: { before_sha256: beforeSha256, after_sha256: beforeSha256 },
+  }];
   assert.equal(
     verifyOpen43SettingsBrowserCleanup(proof, resources).public_restoration_verified,
     true,
@@ -743,5 +778,16 @@ test("settings cleanup requires exact public restoration without page cleanup au
   assert.throws(
     () => verifyOpen43SettingsBrowserCleanup({ ...proof, pages: [] }, resources),
     /page cleanup proof/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCleanup({ before: {}, after: {} }, resources),
+    /pre-run public settings\.site/u,
+  );
+  assert.throws(
+    () => verifyOpen43SettingsBrowserCleanup(proof, [{
+      ...resources[0],
+      identity: { ...resources[0].identity, site_id: 18 },
+    }]),
+    /resource identity/u,
   );
 });

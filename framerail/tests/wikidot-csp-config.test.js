@@ -24,11 +24,17 @@ test("allows captured Wikidot legacy asset origins in local CSP", () => {
   )
   for (const origin of [
     "https://scp-wiki.wikidot.com",
+    "https://www.wikidot.com",
     "https://scp-jp-storage.wikidot.com",
     "https://scpsandboxcn.wikidot.com"
   ]) {
     assert(directives["img-src"]?.some((source) => source === origin))
   }
+  assert(
+    directives["img-src"]?.some(
+      (source) => source === "https://d2qhngyckgiutd.cloudfront.net"
+    )
+  )
   for (const origin of [
     "https://scp-wiki.wjfiles.localhost",
     "https://scp-jp.wjfiles.localhost"

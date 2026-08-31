@@ -22,18 +22,318 @@
 mod common;
 
 use self::common::TestRunner;
+use cuid2::cuid;
+use deepwell::config::Config;
 use deepwell::constants::{ADMIN_USER_ID, SAMPLE_USER_ID};
 use deepwell::error::prelude::*;
+use deepwell::hash::{blob_hash_to_hex, sha512_hash};
+use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
+use deepwell::models::blob_pending::{self, Entity as BlobPending};
 use deepwell::models::wikidot_user::{Entity as WikidotUser, Model as WikidotUserModel};
 use deepwell::models::{known_user, wikidot_user};
-use deepwell::services::RequestContext;
 use deepwell::services::import::ImportUserOutput;
 use deepwell::services::user::UserService;
+use deepwell::services::view::GetUserViewOutput;
+use deepwell::services::{BlobService, RequestContext};
 use deepwell::types::Reference;
-use sea_orm::{ActiveModelTrait, EntityTrait, Set};
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, EntityTrait, PaginatorTrait, QueryFilter, Set,
+};
 use serde_json::json;
 use time::macros::{date, datetime};
 use time::{Date, Month, OffsetDateTime};
+
+async fn insert_wikidot_user(
+    runner: &TestRunner,
+    user_id: i32,
+    name: &str,
+    slug: &str,
+    is_deleted: bool,
+    karma: i16,
+    is_pro: bool,
+) {
+    known_user::ActiveModel {
+        user_id: Set(i64::from(user_id)),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("known_user fixture should insert");
+
+    wikidot_user::ActiveModel {
+        user_id: Set(user_id),
+        created_at: Set(datetime!(2008-07-19 21:26:10 UTC)),
+        fetched_at: Set(datetime!(2026-08-13 00:00:00 UTC)),
+        is_deleted: Set(is_deleted),
+        name: Set(Some(name.to_owned())),
+        slug: Set(Some(slug.to_owned())),
+        avatar_s3_hash: Set(None),
+        real_name: Set(None),
+        gender: Set(None),
+        birthday: Set(None),
+        location: Set(None),
+        biography: Set(None),
+        website: Set(None),
+        karma: Set(karma),
+        is_pro: Set(is_pro),
+    }
+    .insert(runner.context().transaction())
+    .await
+    .expect("wikidot_user fixture should insert");
+}
+
+#[tokio::test]
+async fn user_view_resolves_only_active_imported_slugs_without_changing_local_lookup() {
+    let runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("test site should exist")
+        .site
+        .site_id;
+
+    insert_wikidot_user(
+        &runner,
+        700_011,
+        "Imported Profile",
+        "imported-profile",
+        false,
+        3,
+        false,
+    )
+    .await;
+    insert_wikidot_user(
+        &runner,
+        700_012,
+        "Deleted Imported Profile",
+        "deleted-imported-profile",
+        true,
+        0,
+        false,
+    )
+    .await;
+
+    let imported = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": "imported-profile",
+            "locales": ["en"],
+        }),
+    );
+    let imported = serde_json::to_value(imported)
+        .expect("imported user view response should serialize");
+    assert_eq!(
+        imported,
+        json!({
+            "type": "user_found",
+            "data": {
+                "user": {
+                    "user_id": 700_011,
+                    "user_type": "wikidot",
+                    "created_at": "2008-07-19T21:26:10Z",
+                    "fetched_at": "2026-08-13T00:00:00Z",
+                    "is_deleted": false,
+                    "name": "Imported Profile",
+                    "slug": "imported-profile",
+                    "avatar_s3_hash": null,
+                    "real_name": null,
+                    "gender": null,
+                    "birthday": null,
+                    "location": null,
+                    "biography": null,
+                    "website": null,
+                    "karma": 3,
+                    "is_pro": false,
+                }
+            }
+        })
+    );
+
+    let imported_by_id = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": 700_011,
+            "locales": ["en"],
+        }),
+    );
+    let GetUserViewOutput::UserFound { user } = imported_by_id else {
+        panic!("active imported numeric ID should remain found");
+    };
+    assert!(user.is_wikidot());
+    assert_eq!(user.user_id(), 700_011);
+
+    for target in ["deleted-imported-profile", "missing-imported-profile"] {
+        let output = run_endpoint!(
+            runner,
+            user_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "user": target,
+                "locales": ["en"],
+            }),
+        );
+        assert!(
+            matches!(output, GetUserViewOutput::UserMissing),
+            "{target} must stay missing"
+        );
+    }
+
+    let deleted_imported_id = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": 700_012,
+            "locales": ["en"],
+        }),
+    );
+    assert!(
+        matches!(deleted_imported_id, GetUserViewOutput::UserMissing),
+        "deleted imported numeric ID must stay missing"
+    );
+
+    let local = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": "user",
+            "locales": ["en"],
+        }),
+    );
+    let GetUserViewOutput::UserFound { user } = local else {
+        panic!("seeded local user should remain found");
+    };
+    assert!(user.is_wikijump());
+    assert_eq!(user.user_id(), SAMPLE_USER_ID);
+
+    let local_by_id = run_endpoint!(
+        runner,
+        user_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "user": SAMPLE_USER_ID,
+            "locales": ["en"],
+        }),
+    );
+    let GetUserViewOutput::UserFound { user } = local_by_id else {
+        panic!("seeded local numeric ID should remain found");
+    };
+    assert!(user.is_wikijump());
+    assert_eq!(user.user_id(), SAMPLE_USER_ID);
+}
+
+#[tokio::test]
+async fn oversized_avatar_rejection_does_not_promote_blob_or_change_target() {
+    const AVATAR_DATA: &[u8] = b"\xf0\x0d";
+
+    let mut config = Config::integration_testing();
+    config.maximum_avatar_size = 1;
+    config.maximum_blob_size = 2;
+    let mut runner = TestRunner::setup_with_config(config).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+
+    let target_before =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should exist")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should be a Wikijump user");
+
+    let pending_blob_id = cuid();
+    let s3_path = format!("uploads/{pending_blob_id}");
+    let avatar_hash = sha512_hash(AVATAR_DATA);
+    assert!(
+        BlobService::get_optional(runner.context(), &avatar_hash)
+            .await
+            .expect("avatar fixture permanent lookup should succeed")
+            .is_none(),
+        "avatar fixture hash must not already exist"
+    );
+    let upload = runner
+        .state()
+        .s3_files_bucket
+        .put_object(&s3_path, AVATAR_DATA)
+        .await
+        .expect("avatar fixture upload should succeed");
+    assert_eq!(upload.status_code(), 200);
+    let created_at = OffsetDateTime::now_utc();
+    blob_pending::ActiveModel {
+        external_id: Set(pending_blob_id.clone()),
+        created_by: Set(SAMPLE_USER_ID),
+        created_at: Set(created_at),
+        expires_at: Set(created_at + time::Duration::minutes(5)),
+        expected_length: Set(2),
+        s3_path: Set(s3_path.clone()),
+        s3_hash: Set(None),
+        presign_url: Set("not-used-in-test".to_owned()),
+        site_id: Set(None),
+        page_id: Set(None),
+        content_type_label: Set(None),
+        content_type_description: Set(None),
+    }
+    .insert(&runner.state().database)
+    .await
+    .expect("avatar pending blob fixture should be inserted");
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": SAMPLE_USER_ID,
+            "avatar_uploaded_blob_id": pending_blob_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let target_after =
+        run_endpoint!(runner, user_get, json!({ "user": SAMPLE_USER_ID }),)
+            .expect("sample user should remain readable")
+            .user
+            .unwrap_wikijump()
+            .expect("sample user should remain a Wikijump user");
+    let permanent_after_rejection =
+        BlobService::get_optional(runner.context(), &avatar_hash)
+            .await
+            .expect("rejected avatar permanent lookup should succeed");
+
+    BlobPending::delete_by_id(&pending_blob_id)
+        .exec(&runner.state().database)
+        .await
+        .expect("avatar pending blob fixture cleanup should succeed");
+    runner
+        .state()
+        .s3_files_bucket
+        .delete_object(&s3_path)
+        .await
+        .expect("avatar temporary fixture cleanup should succeed");
+    if permanent_after_rejection.is_some() {
+        // The hash was absent before this fixture ran, so an unexpected object here
+        // was created by this request and is safe for the RED-run cleanup to remove.
+        runner
+            .state()
+            .s3_files_bucket
+            .delete_object(blob_hash_to_hex(&avatar_hash))
+            .await
+            .expect("unexpected promoted avatar fixture cleanup should succeed");
+    }
+
+    assert_contains_error!(error, ErrorType::BlobTooBig);
+    assert_eq!(target_after.avatar_s3_hash, target_before.avatar_s3_hash);
+    assert!(
+        permanent_after_rejection.is_none(),
+        "rejected avatar bytes must not reach permanent content-addressed storage"
+    );
+}
 
 #[tokio::test]
 async fn regular_account_password_policy_rejects_short_create_passwords() {
@@ -756,7 +1056,14 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
         user_id: Some(other.user_id),
         ..Default::default()
     });
-    let error = run_endpoint_err!(runner, user_delete, json!({"user": target.user_id}),);
+    let error = run_endpoint_err!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
     assert_contains_error!(error, ErrorType::PermissionDenied);
 
     runner.set_request_context(RequestContext {
@@ -773,6 +1080,53 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
         }),
     );
     assert_str_eq!(updated.biography, Some("self-service edit"));
+
+    let updated = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "forum_signature": "**Forum signature**\nSecond line",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_str_eq!(
+        updated.forum_signature,
+        Some("**Forum signature**\nSecond line"),
+    );
+
+    for invalid_signature in ["x".repeat(401), "one\ntwo\nthree\nfour\nfive".to_owned()] {
+        let error = run_endpoint_err!(
+            runner,
+            user_edit,
+            json!({
+                "user": target.user_id,
+                "forum_signature": invalid_signature,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::BadRequest);
+    }
+    let unchanged = run_endpoint!(runner, user_get, json!({"user": target.user_id}))
+        .expect("signature target should still exist")
+        .user
+        .unwrap_wikijump()
+        .expect("signature target should remain a Wikijump user");
+    assert_str_eq!(
+        unchanged.forum_signature,
+        Some("**Forum signature**\nSecond line"),
+    );
+
+    let cleared = run_endpoint!(
+        runner,
+        user_edit,
+        json!({
+            "user": target.user_id,
+            "forum_signature": "",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(cleared.forum_signature.is_none());
 
     let error = run_endpoint_err!(
         runner,
@@ -807,9 +1161,191 @@ async fn user_mutations_enforce_request_actor_and_staff_only_fields() {
         user_id: Some(target.user_id),
         ..Default::default()
     });
-    let deleted = run_endpoint!(runner, user_delete, json!({"user": target.user_id}),);
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
     assert_eq!(deleted.user_id, target.user_id);
     assert!(deleted.deleted_at.is_some());
+}
+
+#[tokio::test]
+async fn user_delete_audits_the_authenticated_actor_target_and_request_ip_once() {
+    let mut runner = TestRunner::setup().await;
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Delete Audit Target",
+            "email": "delete-audit-target@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(deleted.deleted_at.is_some());
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(target.user_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("user deletion audit lookup should succeed");
+    assert_eq!(events.len(), 1);
+    let event = &events[0];
+    assert_eq!(event.user_id, Some(ADMIN_USER_ID));
+    assert_eq!(event.extra_id_1, Some(target.user_id));
+    assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+    assert_eq!(event.site_id, None);
+    assert_eq!(event.page_id, None);
+    assert_eq!(event.extra_id_2, None);
+    assert_eq!(event.extra_string_1, None);
+    assert_eq!(event.extra_string_2, None);
+    assert_eq!(event.extra_number, None);
+
+    run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let event_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(target.user_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("user deletion audit count should succeed");
+    assert_eq!(
+        event_count, 1,
+        "an already-deleted user must not be audited"
+    );
+}
+
+#[tokio::test]
+async fn user_delete_denial_and_missing_target_do_not_emit_audit_events() {
+    let mut runner = TestRunner::setup().await;
+    let target = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": "Denied Delete Audit Target",
+            "email": "denied-delete-audit-target@example.invalid",
+            "locales": ["en"],
+            "password": "password-fixture",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    runner.set_request_context(RequestContext {
+        user_id: Some(SAMPLE_USER_ID),
+        ..Default::default()
+    });
+
+    let error = run_endpoint_err!(
+        runner,
+        user_delete,
+        json!({
+            "user": target.user_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+    let denied_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(target.user_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("denied user deletion audit count should succeed");
+    assert_eq!(denied_count, 0);
+
+    const MISSING_USER_ID: i64 = 8_765_432_109;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let error = run_endpoint_err!(
+        runner,
+        user_delete,
+        json!({
+            "user": MISSING_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::User);
+    let missing_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(MISSING_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("failed user deletion audit count should succeed");
+    assert_eq!(missing_count, 0);
+}
+
+#[tokio::test]
+async fn user_delete_and_its_audit_event_roll_back_together() {
+    let mut runner = TestRunner::setup().await;
+    let baseline_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(SAMPLE_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("baseline user deletion audit count should succeed");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let deleted = run_endpoint!(
+        runner,
+        user_delete,
+        json!({
+            "user": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(deleted.deleted_at.is_some());
+    let in_transaction_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(SAMPLE_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("in-transaction user deletion audit count should succeed");
+    assert_eq!(in_transaction_count, baseline_count + 1);
+    runner.teardown().await;
+
+    let runner = TestRunner::setup().await;
+    let user = run_endpoint!(runner, user_get, json!({"user": SAMPLE_USER_ID}),)
+        .expect("rolled-back user should remain present")
+        .user
+        .unwrap_wikijump()
+        .expect("sample user should remain a Wikijump user");
+    assert!(user.deleted_at.is_none());
+    let rolled_back_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("user.delete"))
+        .filter(AuditLogColumn::ExtraId1.eq(SAMPLE_USER_ID))
+        .count(runner.context().transaction())
+        .await
+        .expect("rolled-back user deletion audit count should succeed");
+    assert_eq!(rolled_back_count, baseline_count);
 }
 
 #[tokio::test]

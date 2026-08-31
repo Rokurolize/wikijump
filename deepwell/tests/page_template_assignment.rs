@@ -751,6 +751,246 @@ async fn page_view_exposes_category_data_form_definition_in_template_order() {
 }
 
 #[tokio::test]
+async fn page_view_and_edit_round_trip_date_field_scalars_and_options() {
+    const CATEGORY: &str = "data-form-date-field-public";
+    const TEMPLATE_SLUG: &str = "data-form-date-field-public:_template";
+    const PAGE_SLUG: &str = "data-form-date-field-public:date";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  date:\n",
+        "    label: Date value\n",
+        "    width: 24\n",
+        "    type: date\n",
+        "    options:\n",
+        "      dateFormat: 'mm/dd/yy'\n",
+        "      showOn: button\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form date-field test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("date-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-date-field-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => {
+            panic!("date field must be exposed by the public create view: {other:?}")
+        }
+    };
+    let date = definition.field("date").expect("date field definition");
+    assert!(definition.supports_observed_create_edit());
+    assert_eq!(date.width, 24);
+    assert_eq!(date.options["dateFormat"], json!("mm/dd/yy"));
+    assert_eq!(date.options["showOn"], json!("button"));
+
+    let page = create_page(&mut runner, site_id, PAGE_SLUG, "date: 02/29/2023").await;
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => {
+            assert_eq!(data_form.values["date"], "02/29/2023");
+        }
+        other => {
+            panic!("date field must round-trip through the public edit view: {other:?}")
+        }
+    }
+
+    set_page_actor(&mut runner, site_id, PAGE_SLUG);
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": PAGE_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "round trip leap date",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "date: 02/29/2024",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("date field edit should save through the public page seam");
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, "date: 02/29/2024");
+            assert_eq!(data_form.values["date"], "02/29/2024");
+        }
+        other => {
+            panic!("saved date field must reload through the public edit view: {other:?}")
+        }
+    }
+}
+
+#[tokio::test]
+async fn page_view_exposes_file_data_form_create_control_without_write_lifecycle() {
+    const CATEGORY: &str = "data-form-file-field-public";
+    const TEMPLATE_SLUG: &str = "data-form-file-field-public:_template";
+    const PAGE_SLUG: &str = "data-form-file-field-public:target";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  document:\n",
+        "    type: file\n",
+        "    label: Upload document\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form file-field test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("file-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-file-field-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => {
+            assert!(data_form.definition.supports_observed_editor());
+            assert!(!data_form.definition.supports_observed_create_edit());
+            assert_eq!(
+                data_form
+                    .definition
+                    .field("document")
+                    .and_then(|field| field.field_type.as_deref()),
+                Some("file"),
+            );
+            assert!(data_form.values.is_empty());
+        }
+        other => {
+            panic!("file field must expose the observed create-form boundary: {other:?}")
+        }
+    }
+}
+
+#[tokio::test]
 async fn assigned_data_form_template_edit_invalidates_warm_imported_article_cache() {
     const CATEGORY: &str = "data-form-template-cache-lifecycle";
     const TEMPLATE_SLUG: &str = "data-form-template-cache-lifecycle:_template";
@@ -841,6 +1081,193 @@ async fn assigned_data_form_template_edit_invalidates_warm_imported_article_cach
         edited_cache_key, cold_cache_key,
         "assigned template revisions must participate in the Deepwell article cache identity",
     );
+}
+
+#[tokio::test]
+async fn data_form_template_deletion_requires_actual_form_removal() {
+    const CATEGORY: &str = "data-form-template-deletion";
+    const TEMPLATE_SLUG: &str = "data-form-template-deletion:_template";
+    const PAGE_SLUG: &str = "data-form-template-deletion:saved";
+    const SAVED_SOURCE: &str = "name: 'Retained value'";
+    const ACTIVE_TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Retained label\n",
+        "    type: text\n",
+        "[[/form]]",
+    );
+    const COMMENTED_TEMPLATE_SOURCE: &str = concat!(
+        "[!--\n",
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Retained label\n",
+        "    type: text\n",
+        "[[/form]]\n",
+        "--]",
+    );
+    const RENAMED_TEMPLATE_SOURCE: &str = concat!(
+        "[[x-form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Retained label\n",
+        "    type: text\n",
+        "[[/x-form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form template deletion test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, ACTIVE_TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form deletion category should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_page(&mut runner, site_id, PAGE_SLUG, SAVED_SOURCE).await;
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, SAVED_SOURCE);
+            assert_eq!(data_form.values["name"], "Retained value");
+        }
+        other => {
+            panic!("active category template must expose the data-form editor: {other:?}")
+        }
+    }
+
+    set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
+    let commented = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TEMPLATE_SLUG,
+            "last_revision_id": template.revision_id,
+            "revision_comments": "comment data-form template without deleting it",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": COMMENTED_TEMPLATE_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("commented template edit should create a revision");
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, SAVED_SOURCE);
+            assert_eq!(data_form.values["name"], "Retained value");
+        }
+        other => panic!(
+            "commenting out [[form]] must not delete the category data form: {other:?}"
+        ),
+    }
+
+    set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TEMPLATE_SLUG,
+            "last_revision_id": commented.revision_id,
+            "revision_comments": "rename data-form construct to delete it",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": RENAMED_TEMPLATE_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("renamed template edit should create a revision");
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            wikitext,
+            ..
+        } => assert_eq!(wikitext, SAVED_SOURCE),
+        other => {
+            panic!("renaming [[form]] must restore the ordinary page editor: {other:?}")
+        }
+    }
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-template-deletion:new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: None, ..
+        } => {}
+        other => {
+            panic!("renamed [[form]] must disable the generated create editor: {other:?}")
+        }
+    }
 }
 
 #[tokio::test]
@@ -1114,6 +1541,42 @@ quoted: false_value"#;
         ]),
     );
 
+    let rendered_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-control-contract:saved",
+                "extra": ""
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            compiled_body_html,
+            ..
+        } => compiled_body_html,
+        other => panic!("expected saved data-form public rendering, got {other:?}"),
+    };
+    for expected in [
+        r#"<table class="form-table">"#,
+        r#"<tr class="form-row">"#,
+        r#"<td class="form-labels"><span class="form-label">Plain text</span></td>"#,
+        r#"<td class="form-values"><span>"#,
+    ] {
+        assert!(
+            rendered_html.contains(expected),
+            "saved data-form HTML must retain the live-observed CSS hook {expected:?}: {rendered_html}",
+        );
+    }
+    assert!(
+        !rendered_html.contains("row-1") && !rendered_html.contains("field-plain"),
+        "default text/select saved output must not invent documentation-only row/value hooks absent from the live capture: {rendered_html}",
+    );
+
     for (slug, source) in [
         (
             "data-form-control-contract:unquoted-number",
@@ -1314,6 +1777,253 @@ quoted: false_value"#;
 }
 
 #[tokio::test]
+async fn empty_text_values_survive_public_create_edit_view_and_listpages_lifecycle() {
+    const CATEGORY: &str = "data-form-empty-text-lifecycle";
+    const TEMPLATE_SLUG: &str = "data-form-empty-text-lifecycle:_template";
+    const TARGET_SLUG: &str = "data-form-empty-text-lifecycle:saved";
+    const EMPTY_SOURCE: &str = "explicit: ''\nimplicit: ''\nchoice: null";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  explicit:\n",
+        "    label: Explicit text\n",
+        "    type: text\n",
+        "  implicit:\n",
+        "    label: Implicit text\n",
+        "  choice:\n",
+        "    label: Choice\n",
+        "    type: select\n",
+        "    values:\n",
+        "      a: Alpha\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell empty text data-form lifecycle test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form target category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-empty-text-lifecycle-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let page = create_page(&mut runner, site_id, TARGET_SLUG, EMPTY_SOURCE).await;
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            wikitext,
+            ..
+        } => {
+            assert_eq!(wikitext, EMPTY_SOURCE);
+            assert_eq!(
+                data_form.values,
+                BTreeMap::from([
+                    ("choice".to_owned(), String::new()),
+                    ("explicit".to_owned(), String::new()),
+                    ("implicit".to_owned(), String::new()),
+                ]),
+            );
+        }
+        other => {
+            panic!("expected canonical empty values immediately after create: {other:?}")
+        }
+    }
+
+    set_page_actor(&mut runner, site_id, TARGET_SLUG);
+    let populated = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TARGET_SLUG,
+            "last_revision_id": page.revision_id,
+            "revision_comments": "populate data-form fields",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "explicit: alpha\nimplicit: beta\nchoice: a",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("populated data-form edit should create a revision");
+    let emptied = run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TARGET_SLUG,
+            "last_revision_id": populated.revision_id,
+            "revision_comments": "empty data-form text fields",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": EMPTY_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert!(
+        emptied.is_some(),
+        "empty data-form edit should create a revision"
+    );
+
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => {
+            panic!("expected empty text values in the data-form editor, got {other:?}")
+        }
+    };
+    assert_eq!(
+        editor.values,
+        BTreeMap::from([
+            ("choice".to_owned(), String::new()),
+            ("explicit".to_owned(), String::new()),
+            ("implicit".to_owned(), String::new()),
+        ]),
+    );
+
+    let rendered_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": TARGET_SLUG, "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            compiled_body_html,
+            ..
+        } => compiled_body_html,
+        other => panic!("expected rendered empty data-form page, got {other:?}"),
+    };
+    assert!(rendered_html.contains("Explicit text"), "{rendered_html}");
+    assert!(rendered_html.contains("Implicit text"), "{rendered_html}");
+    assert!(!rendered_html.contains("alpha"), "{rendered_html}");
+    assert!(!rendered_html.contains("beta"), "{rendered_html}");
+
+    let index_source = concat!(
+        "[[module ListPages category=\"data-form-empty-text-lifecycle\" name=\"saved\" separate=\"no\" wrapper=\"no\"]]\n",
+        "EMPTY-TEXT-BEGIN|%%form_data{explicit}%%|%%form_raw{implicit}%%|EMPTY-TEXT-END\n",
+        "[[/module]]",
+    );
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-empty-text-lifecycle-index",
+        index_source,
+    )
+    .await;
+    let listpages_html = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": {
+                "slug": "data-form-empty-text-lifecycle-index",
+                "extra": ""
+            },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected rendered ListPages page, got {other:?}"),
+    };
+    assert!(
+        listpages_html.contains("EMPTY-TEXT-BEGIN|||EMPTY-TEXT-END"),
+        "ListPages must resolve canonical empty text values:\n{listpages_html}",
+    );
+
+    for (slug, source) in [
+        (
+            "data-form-empty-text-lifecycle:text-null",
+            "explicit: null\nimplicit: ''\nchoice: null",
+        ),
+        (
+            "data-form-empty-text-lifecycle:select-empty-string",
+            "explicit: ''\nimplicit: ''\nchoice: ''",
+        ),
+    ] {
+        create_page(&mut runner, site_id, slug, source).await;
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": slug, "extra": "/edit" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: None,
+                wikitext,
+                ..
+            } => assert_eq!(wikitext, source),
+            other => panic!("noncanonical empty scalar must fail closed: {other:?}"),
+        }
+    }
+}
+
+#[tokio::test]
 async fn page_view_exposes_live_checkbox_and_wiki_contract() {
     const CATEGORY: &str = "data-form-checkbox-wiki-contract";
     const TEMPLATE_SOURCE: &str = concat!(
@@ -1489,6 +2199,730 @@ async fn page_view_exposes_live_checkbox_and_wiki_contract() {
             ),
         "wiki affixes must stay literal while the stored value is parsed:\n{rendered_html}",
     );
+}
+
+#[tokio::test]
+async fn pagepath_round_trips_fullnames_and_projects_only_resolved_visible_nodes() {
+    const FORM_CATEGORY: &str = "data-form-pagepath-contract";
+    const TREE_CATEGORY: &str = "data-form-pagepath-tree";
+    const TEMPLATE_SLUG: &str = "data-form-pagepath-contract:_template";
+    const ROOT_SLUG: &str = "data-form-pagepath-tree:_root";
+    const ALPHA_SLUG: &str = "data-form-pagepath-tree:alpha";
+    const BETA_SLUG: &str = "data-form-pagepath-tree:beta";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  origin:\n",
+        "    label: Origin\n",
+        "    type: pagepath\n",
+        "    category: data-form-pagepath-tree\n",
+        "    max-level: 3\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell pagepath contract test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let form_category =
+        CategoryService::get_or_create(runner.context(), site_id, FORM_CATEGORY)
+            .await
+            .expect("data-form pagepath category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        form_category.category_id,
+        "data-form-pagepath-contract-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": form_category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    for (slug, body) in [
+        (ROOT_SLUG, "root"),
+        (ALPHA_SLUG, "[[module Backlinks]]"),
+        (BETA_SLUG, "beta"),
+    ] {
+        create_page(&mut runner, site_id, slug, body).await;
+    }
+    for (parent, child) in [(ROOT_SLUG, ALPHA_SLUG), (ALPHA_SLUG, BETA_SLUG)] {
+        set_page_actor(&mut runner, site_id, child);
+        run_endpoint!(
+            runner,
+            parent_set,
+            json!({
+                "site_id": site_id,
+                "parent": parent,
+                "child": child,
+            }),
+        )
+        .expect("pagepath tree relationship should be created");
+    }
+
+    let create_editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-pagepath-contract:new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => {
+            panic!("pagepath create view must expose the generated editor: {other:?}")
+        }
+    };
+    let origin = create_editor
+        .definition
+        .field("origin")
+        .expect("pagepath field");
+    assert_eq!(origin.field_type.as_deref(), Some("pagepath"));
+    assert_eq!(origin.pagepath_category.as_deref(), Some(TREE_CATEGORY));
+    assert_eq!(origin.pagepath_max_level, Some(3));
+    assert_eq!(
+        create_editor.pagepaths["origin"],
+        vec![
+            deepwell::services::DataFormPagepathNode {
+                fullname: ROOT_SLUG.to_owned(),
+                name: "_root".to_owned(),
+                parent: None,
+            },
+            deepwell::services::DataFormPagepathNode {
+                fullname: ALPHA_SLUG.to_owned(),
+                name: "alpha".to_owned(),
+                parent: Some(ROOT_SLUG.to_owned()),
+            },
+            deepwell::services::DataFormPagepathNode {
+                fullname: BETA_SLUG.to_owned(),
+                name: "beta".to_owned(),
+                parent: Some(ALPHA_SLUG.to_owned()),
+            },
+        ],
+    );
+
+    for (case, stored, expected_visible) in [
+        ("existing", ALPHA_SLUG, Some("alpha")),
+        ("missing", "data-form-pagepath-tree:missing", None),
+        ("cross-category", "data-form-pagepath-outside:alpha", None),
+    ] {
+        let slug = format!("{FORM_CATEGORY}:{case}");
+        let source = format!("origin: '{stored}'");
+        create_page(&mut runner, site_id, &slug, &source).await;
+
+        let editor = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": slug, "extra": "/edit" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: Some(data_form),
+                wikitext,
+                ..
+            } => {
+                assert_eq!(wikitext, source);
+                data_form
+            }
+            other => panic!("pagepath edit view must preserve {case} storage: {other:?}"),
+        };
+        assert_eq!(editor.values["origin"], stored);
+        assert_eq!(
+            editor.pagepaths["origin"],
+            create_editor.pagepaths["origin"]
+        );
+
+        let rendered = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": { "slug": slug, "extra": "" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("pagepath saved view must render {case}: {other:?}"),
+        };
+        assert!(rendered.contains("Origin"), "{rendered}");
+        assert!(
+            !rendered.contains(stored),
+            "raw pagepath fullname leaked: {rendered}"
+        );
+        match expected_visible {
+            Some(value) => assert!(
+                rendered.contains(&format!("<span>{value}</span>")),
+                "{rendered}"
+            ),
+            None => assert!(rendered.contains("<span></span>"), "{rendered}"),
+        }
+        if case == "existing" {
+            let backlinks = match run_endpoint!(
+                runner,
+                page_view,
+                json!({
+                    "site_id": site_id,
+                    "session_token": null,
+                    "route": { "slug": ALPHA_SLUG, "extra": "" },
+                    "locales": ["en-US", "en"],
+                }),
+            ) {
+                GetPageViewOutput::Found {
+                    compiled_body_html, ..
+                } => compiled_body_html,
+                other => panic!("pagepath target backlinks must render: {other:?}"),
+            };
+            assert!(
+                backlinks.contains("/data-form-pagepath-contract:existing"),
+                "pagepath storage must create the Wikidot backlink relation: {backlinks}",
+            );
+        }
+    }
+}
+
+#[tokio::test]
+async fn custom_data_form_layout_resolves_pagepath_data_but_preserves_form_raw() {
+    const FORM_CATEGORY: &str = "data-form-pagepath-layout";
+    const TEMPLATE_SLUG: &str = "data-form-pagepath-layout:_template";
+    const TARGET_SLUG: &str = "data-form-pagepath-layout-tree:alpha";
+    const TEMPLATE_SOURCE: &str = concat!(
+        "DISPLAY=%%form_data{origin}%% RAW=%%form_raw{origin}%%\n",
+        "====\n",
+        "[[form]]\n",
+        "fields:\n",
+        "  origin:\n",
+        "    label: Origin\n",
+        "    type: pagepath\n",
+        "    category: data-form-pagepath-layout-tree\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category =
+        CategoryService::get_or_create(runner.context(), site_id, FORM_CATEGORY)
+            .await
+            .expect("custom pagepath layout category should exist");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    create_page(&mut runner, site_id, TARGET_SLUG, "alpha").await;
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-pagepath-layout:saved",
+        &format!("origin: '{TARGET_SLUG}'"),
+    )
+    .await;
+
+    let rendered = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": "data-form-pagepath-layout:saved", "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("custom pagepath layout must render: {other:?}"),
+    };
+    assert!(
+        rendered.contains(&format!("DISPLAY=alpha RAW={TARGET_SLUG}")),
+        "{rendered}",
+    );
+}
+
+#[tokio::test]
+async fn custom_data_form_layout_remains_editable_and_renders_form_variables() {
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell custom data-form layout test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+
+    const CATEGORY: &str = "data-form-custom-layout";
+    let template = create_page(
+        &mut runner,
+        site_id,
+        "data-form-custom-layout:_template",
+        concat!(
+            "[[module css]]\n",
+            ".urgent { color: red; font-weight: bold; }\n",
+            "[[/module]]\n",
+            "[[span class=\"%%form_raw{priority}%%\"]]%%form_data{priority}%%[[/span]]\n",
+            "External: *%%form_data{website}%%\n",
+            "Internal: [[[%%form_data{target}%%]]]\n",
+            "====\n",
+            "[[form]]\n",
+            "fields:\n",
+            "  priority:\n",
+            "    label: Priority\n",
+            "    type: select\n",
+            "    values:\n",
+            "      normal: Normal\n",
+            "      urgent: Urgent\n",
+            "  website:\n",
+            "    label: Website\n",
+            "    type: url\n",
+            "  target:\n",
+            "    label: Target\n",
+            "    type: text\n",
+            "[[/form]]",
+        ),
+    )
+    .await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "custom-data-form-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let create_definition = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-custom-layout:new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => data_form.definition,
+        other => panic!("expected custom-layout create form, got {other:?}"),
+    };
+    assert!(!create_definition.default_layout);
+
+    create_page(
+        &mut runner,
+        site_id,
+        "data-form-custom-layout:saved",
+        "priority: urgent\nwebsite: example.com/alpha\ntarget: missing-target",
+    )
+    .await;
+
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-custom-layout:saved", "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected custom-layout edit form, got {other:?}"),
+    };
+    assert_eq!(
+        editor.values,
+        BTreeMap::from([
+            ("priority".to_owned(), "urgent".to_owned()),
+            ("target".to_owned(), "missing-target".to_owned()),
+            ("website".to_owned(), "example.com/alpha".to_owned()),
+        ]),
+    );
+
+    let (rendered_html, rendered_styles) = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": "data-form-custom-layout:saved", "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html,
+            compiled_body_styles,
+            ..
+        } => (compiled_body_html, compiled_body_styles),
+        other => panic!("expected custom-layout saved page, got {other:?}"),
+    };
+    assert!(
+        rendered_html.contains(r#"<span class="urgent">Urgent</span>"#),
+        "form_raw must retain the stored select key while form_data emits its label: {rendered_html}",
+    );
+    assert!(
+        rendered_html.contains(
+            r#"href="http://example.com/alpha" target="_blank" rel="noopener noreferrer""#,
+        ),
+        "url form_data must use the documented default http scheme and leading-star new-window link semantics: {rendered_html}",
+    );
+    assert!(
+        rendered_html.contains(r#"class="newpage" href="/missing-target""#),
+        "text form_data inside ordinary internal-link syntax must use normal link resolution: {rendered_html}",
+    );
+    assert!(
+        rendered_styles
+            .iter()
+            .any(|css| css.contains(".urgent { color: red; font-weight: bold; }")),
+        "custom-layout CSS must flow through the ordinary page/site style channel: {rendered_styles:?}",
+    );
+    assert!(!rendered_html.contains("[[form]]"));
+    assert!(!rendered_html.contains("%%form_data"));
+    assert!(!rendered_html.contains("%%form_raw"));
+}
+
+#[tokio::test]
+async fn data_form_youtube_raw_wiki_executes_only_inside_html_block() {
+    const CATEGORY: &str = "data-form-youtube-contract";
+    const TEMPLATE_SLUG: &str = "data-form-youtube-contract:_template";
+    const TARGET_SLUG: &str = "data-form-youtube-contract:saved";
+    const RAW: &str = r#"<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>"#;
+    const HTML_BLOCK_BOUNDARY_CASES: &[(&str, bool)] = &[
+        (
+            r#"<iframe width="320" height="180" src="https://example.invalid/reordered"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/extra" width="320" height="180" allowfullscreen="allowfullscreen"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="http://example.invalid/http" width="320" height="180"></iframe>"#,
+            true,
+        ),
+        (RAW, true),
+        (
+            r#"<iframe src='https://example.invalid/single-quotes' width='321' height='181'></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/class" width="320" height="180" class="probe-frame"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/style" width="320" height="180" style="border:0"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/scrolling" width="320" height="180" scrolling="no"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/align" width="320" height="180" align="left"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/sandbox" width="320" height="180" sandbox="allow-scripts"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/loading" width="320" height="180" loading="lazy"></iframe>"#,
+            true,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/src-only"></iframe>"#,
+            true,
+        ),
+        (r#"<iframe title="probe"></iframe>"#, true),
+        ("<iframe></iframe>", false),
+        (r#"<iframe data-wj-probe="x"></iframe>"#, false),
+        (
+            r#"<iframe src="https://example.invalid/data" width="320" height="180" data-wj-probe="kept-or-dropped"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/onload" width="320" height="180" onload="return false"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/title" width="320" height="180" title="1 > 0"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/title-lt" width="320" height="180" title="1 < 2"></iframe>"#,
+            false,
+        ),
+        (
+            r#"before <iframe src="https://example.invalid/adjacent" width="320" height="180"></iframe> after"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/one" width="320" height="180"></iframe><iframe src="https://example.invalid/two" width="320" height="180"></iframe>"#,
+            false,
+        ),
+        (
+            r#"<iframe src="https://example.invalid/fallback" width="320" height="180">fallback</iframe>"#,
+            false,
+        ),
+        (
+            r#"<!--before--><iframe src="https://example.invalid/comment" width="320" height="180"></iframe><!--after-->"#,
+            false,
+        ),
+    ];
+    const TEMPLATE_SOURCE: &str = concat!(
+        "[[html]]\n",
+        "%%form_raw{video}%%\n",
+        "[[/html]]\n",
+        "[[div class=\"form-data-control\"]]\n",
+        "%%form_data{video}%%\n",
+        "[[/div]]\n",
+        "[[div class=\"form-raw-outside\"]]\n",
+        "%%form_raw{video}%%\n",
+        "[[/div]]\n",
+        "====\n",
+        "[[form]]\n",
+        "fields:\n",
+        "  video:\n",
+        "    label: Video\n",
+        "    type: wiki\n",
+        "[[/form]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site_id = run_endpoint!(runner, site_get, json!({ "site": "test" }))
+        .expect("seeded test site should exist")
+        .site
+        .site_id;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell data-form YouTube contract test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("admin session should be created");
+    let template =
+        create_page(&mut runner, site_id, TEMPLATE_SLUG, TEMPLATE_SOURCE).await;
+    let category = CategoryService::get_or_create(runner.context(), site_id, CATEGORY)
+        .await
+        .expect("data-form YouTube category should be created");
+    grant_category_permission(
+        &runner,
+        site_id,
+        category.category_id,
+        "data-form-youtube-contract-creators",
+        Action::Create,
+        &[ADMIN_USER_ID],
+    )
+    .await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    run_endpoint!(
+        runner,
+        category_update,
+        json!({
+            "site": site_id,
+            "category": category.category_id,
+            "user_id": ADMIN_USER_ID,
+            "template_page_id": template.page_id,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    create_page(
+        &mut runner,
+        site_id,
+        TARGET_SLUG,
+        &format!("video: '{RAW}'"),
+    )
+    .await;
+    let editor = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": TARGET_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: Some(data_form),
+            ..
+        } => data_form,
+        other => panic!("expected data-form YouTube edit view, got {other:?}"),
+    };
+    assert_eq!(editor.values.get("video").map(String::as_str), Some(RAW));
+
+    let rendered = match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": null,
+            "route": { "slug": TARGET_SLUG, "extra": "" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected data-form YouTube saved view, got {other:?}"),
+    };
+    assert_eq!(
+        rendered.matches("<iframe").count(),
+        1,
+        "only form_raw inside the authored HTML block may execute an iframe: {rendered}",
+    );
+    assert!(
+        rendered.contains(r#"src="https://www.youtube.com/embed/dQw4w9WgXcQ""#)
+            && rendered.contains(r#"width="560""#)
+            && rendered.contains(r#"height="315""#)
+            && rendered.contains(r#"title="YouTube video player""#)
+            && rendered.contains(r#"referrerpolicy="strict-origin-when-cross-origin""#)
+            && rendered.contains("allowfullscreen"),
+        "the live-observed iframe attributes must survive the saved data-form render: {rendered}",
+    );
+    for class_name in ["form-data-control", "form-raw-outside"] {
+        let marker = format!(r#"<div class="{class_name}">"#);
+        let start = rendered
+            .find(&marker)
+            .unwrap_or_else(|| panic!("missing {class_name} wrapper: {rendered}"));
+        let tail = &rendered[start + marker.len()..];
+        let end = tail
+            .find("</div>")
+            .unwrap_or_else(|| panic!("unterminated {class_name} wrapper: {rendered}"));
+        let body = &tail[..end];
+        assert!(
+            body.contains("&lt;iframe") && !body.contains("<iframe"),
+            "{class_name} must render the raw source as inert wiki text: {body}",
+        );
+    }
+
+    for (index, &(value, direct)) in HTML_BLOCK_BOUNDARY_CASES.iter().enumerate() {
+        let slug = format!("data-form-youtube-html-boundary-{}", index + 1);
+        create_page(
+            &mut runner,
+            site_id,
+            &slug,
+            &format!("[[html]]\n{value}\n[[/html]]"),
+        )
+        .await;
+        let rendered = match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": null,
+                "route": { "slug": &slug, "extra": "" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                compiled_body_html, ..
+            } => compiled_body_html,
+            other => panic!("expected data-form YouTube boundary view, got {other:?}"),
+        };
+        assert_eq!(
+            rendered.matches("<iframe").count(),
+            1,
+            "each observed HTML-block boundary case must emit one direct iframe or one hosted wrapper: {rendered}",
+        );
+        assert_eq!(
+            !rendered.contains(r#"class="html-block-iframe""#),
+            direct,
+            "saved [[html]] direct-iframe boundary mismatch for {value}: {rendered}",
+        );
+    }
 }
 
 #[tokio::test]

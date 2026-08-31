@@ -431,6 +431,8 @@ pub(in crate::services::render) struct ListPagesRenderedBlock {
     pub(in crate::services::render) expansion: IncludeExpansion,
     pub(in crate::services::render) pending_delayed:
         Option<super::PendingDelayedListPagesOutput>,
+    pub(in crate::services::render) runtime_css_insertions:
+        Vec<super::super::compat::preparation::RuntimeCssInsertion>,
 }
 
 pub(in crate::services::render) fn list_pages_feed_only_render_result(
@@ -449,6 +451,7 @@ pub(in crate::services::render) fn list_pages_feed_only_render_result(
             expanded_include_count: 0,
         },
         pending_delayed: None,
+        runtime_css_insertions: Vec::new(),
     })
 }
 
@@ -459,6 +462,9 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
     compat_html: &mut CompatHtmlFragments,
     compat_text: &mut CompatTextFragments,
     pending_delayed_outputs: &mut Vec<PendingDelayedListPagesOutput>,
+    runtime_css_insertions: &mut Vec<
+        super::super::compat::preparation::RuntimeCssInsertion,
+    >,
 ) -> Option<IncludeExpansion> {
     let ListPagesRenderedBlock {
         expansion:
@@ -468,6 +474,7 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
                 expanded_include_count,
             },
         pending_delayed,
+        runtime_css_insertions: rendered_runtime_css_insertions,
     } = rendered;
     let generated_bytes_before_boundary_repair = wikitext.len();
     repair_list_pages_block_boundaries(&mut wikitext, boundaries);
@@ -476,6 +483,20 @@ pub(in crate::services::render) fn prepare_list_pages_rendered_block(
         .saturating_sub(generated_bytes_before_boundary_repair);
     if !expansion_budget.try_consume_generated_output_bytes(boundary_repair_bytes) {
         return None;
+    }
+    let mut runtime_css_prefix = String::new();
+    for insertion in rendered_runtime_css_insertions {
+        if wikitext.matches(&insertion.marker).count() == 1 {
+            wikitext = wikitext.replacen(&insertion.marker, "", 1);
+            runtime_css_prefix.push_str("[[module CSS]]\n");
+            runtime_css_prefix.push_str(&insertion.marker);
+            runtime_css_prefix.push_str("\n[[/module]]\n");
+        }
+        runtime_css_insertions.push(insertion);
+    }
+    if !runtime_css_prefix.is_empty() {
+        runtime_css_prefix.push_str(&wikitext);
+        wikitext = runtime_css_prefix;
     }
     if let Some(mut pending_delayed) = pending_delayed {
         wrap_pending_list_pages_delayed_output(
@@ -500,6 +521,8 @@ pub(in crate::services::render) struct ListPagesExpansion {
     pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
     pub(in crate::services::render) expanded_include_count: usize,
     pub(in crate::services::render) url_offset_content_bytes: usize,
+    pub(in crate::services::render) runtime_css_insertions:
+        Vec<super::super::compat::preparation::RuntimeCssInsertion>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -610,13 +633,9 @@ pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
 }
 
 /// The request a CountPages expansion is answering.
-pub(in crate::services::render) struct CountPagesExpansionOptions<'a> {
+pub(in crate::services::render) struct CountPagesExpansionOptions {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
-
-    /// The Wikidot URL path arguments this request carried; a `tags` selector
-    /// can name the tag as `@URL`, and `/p/<n>` picks the rendered page.
-    pub(in crate::services::render) url: UrlArguments<'a>,
 }
 
 impl RenderService {

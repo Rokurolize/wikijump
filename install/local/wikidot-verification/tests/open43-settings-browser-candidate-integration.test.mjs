@@ -4,16 +4,22 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { candidateCaseSet } from "../src/candidate-case-command.mjs";
 import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
+  OPEN43_SETTINGS_ANALYTICS_CASE_IDS,
   OPEN43_SETTINGS_BROWSER_CASE_IDS,
+  OPEN43_SETTINGS_THEME_CASE_IDS,
+  OPEN43_SETTINGS_TOOLBAR_CASE_IDS,
   createOpen43SettingsBrowserCandidateCaseSet,
+  createOpen43SettingsGroupCandidateCaseSet,
 } from "../src/open43-settings-browser-candidate-case-set.mjs";
 import { parityBrowserThrottleConfig } from "../src/standing-browser-parity-browser-session.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
 const ADMIN_TOKEN = "private-administrator-token";
 const NON_ADMIN_TOKEN = "private-non-admin-token";
@@ -328,7 +334,6 @@ function dependencies(events, sourceFilesSeen) {
     },
     observeRuntimeIdentity: async () => ({ schema: "fixture.runtime.v1", identity: "stable" }),
     assertStableRuntimeIdentity(before, after) { assert.equal(before.identity, after.identity); },
-    runId: () => "candidate-case-0123456789ab",
     now: () => "2026-08-10T00:00:00.000Z",
     createBrowserContexts(options) {
       assert.equal(options.credentialPolicy.mode, "private-actor-storage-states");
@@ -359,7 +364,73 @@ function dependencies(events, sourceFilesSeen) {
   };
 }
 
-test("the real Settings CandidateCaseSet runs all nine reversible public cases exactly once through the shared runner", async (t) => {
+test("the #754 analytics group executes its cases through the shared runner", async (t) => {
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "analytics",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const sourceFiles = [];
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-analytics-group-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  const result = await runCandidateCaseSet({
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
+    privateInputSha256: sha256Value("private-input"),
+    outputDir: path.join(root, "evidence"),
+    caseSet,
+    runId: "candidate-run-0123456789ab",
+    dependencies: dependencies(events, sourceFiles),
+  });
+
+  assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_ANALYTICS_CASE_IDS);
+  assert.deepEqual(result.cases.map(({ case_id }) => case_id), OPEN43_SETTINGS_ANALYTICS_CASE_IDS);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(events.some(({ seam, label }) => seam === "browser-adapter" && label === "S754_ANALYTICS"), true);
+  assert.equal(events.some(({ seam, operation }) => seam === "browser-adapter" && operation === "analytics-save"), true);
+  assert.equal(events.some(({ seam, label }) => seam === "browser-adapter" && label === "S755_THEME"), false);
+});
+
+test("the #755 theme group changes only category themes", async (t) => {
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "theme",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-theme-group-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  const result = await runCandidateCaseSet({
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: {},
+    privateInputSha256: sha256Value("private-input"),
+    outputDir: path.join(root, "evidence"),
+    caseSet,
+    runId: "candidate-run-0123456789ab",
+    dependencies: dependencies(events, []),
+  });
+
+  assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_THEME_CASE_IDS);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(state.site.google_analytics_enabled, false);
+  assert.equal(state.site.show_top_toolbar, false);
+  assert.equal(state.categories.get("_default").theme_kind, "built_in");
+  assert.equal(state.categories.get("corpus").theme_kind, "built_in");
+  const actions = events.filter(({ seam }) => seam === "action").map(({ name }) => name);
+  assert.equal(actions.includes("analytics"), false);
+  assert.equal(actions.includes("toolbar"), false);
+  assert.equal(actions.every((name) => name === "theme"), true);
+  assert.equal(events.filter(({ seam, label }) => seam === "browser-adapter" && label === "S755_THEME").length, 2);
+});
+
+test("the real Settings CandidateCaseSet runs all nine configured cases exactly once through the shared runner", async (t) => {
   const events = [];
   const { state, session } = fakePublicBoundary(events);
   const caseSet = createOpen43SettingsBrowserCandidateCaseSet({
@@ -377,6 +448,7 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
     privateInputSha256: sha256Value("private-input"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     dependencies: dependencies(events, sourceFiles),
   });
 
@@ -482,6 +554,106 @@ test("the real Settings CandidateCaseSet runs all nine reversible public cases e
   assert.notEqual(toolbarSettled.observations.setting_transition.initial_temporal.artifact.path, toolbarSettled.observations.setting_transition.settled_temporal.artifact.path);
 });
 
+test("the real toolbar candidate group runs through the canonical runner with an identity-bound no-replace receipt", async (t) => {
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "toolbar",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-toolbar-candidate-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const outputDir = path.join(root, "evidence");
+  const identity = candidateIdentity();
+  const options = {
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: { administrator_token: ADMIN_TOKEN, deepwell_rpc_token: RPC_TOKEN, tls_ca_pem: TLS_CA },
+    privateInputSha256: sha256Value("private-input"),
+    outputDir,
+    caseSet,
+    runId: "candidate-run-0123456789ab",
+    dependencies: dependencies(events, []),
+  };
+  const result = await runCandidateCaseSet(options);
+
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.denominator.case_ids, OPEN43_SETTINGS_TOOLBAR_CASE_IDS);
+  assert.deepEqual(result.cases.map(({ case_id }) => case_id), OPEN43_SETTINGS_TOOLBAR_CASE_IDS);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(state.site.show_top_toolbar, false);
+  assert.equal(state.site.show_bottom_toolbar, true);
+  assert.equal(events.filter(({ seam, label }) => seam === "browser-adapter" && label === "S757_TOOLBAR").length, 6);
+  assert.equal(events.some(({ seam, name, cleanup }) => seam === "action" && name === "toolbar" && cleanup === true), true);
+
+  const initial = JSON.parse(await fs.readFile(path.join(outputDir, "cases", "S757_TOOLBAR_INITIAL.json"), "utf8"));
+  const settled = JSON.parse(await fs.readFile(path.join(outputDir, "cases", "S757_TOOLBAR_SETTLED.json"), "utf8"));
+  assert.deepEqual(initial.observations.disabled_captures.map(({ top_toolbar_count }) => top_toolbar_count), [0, 0, 0]);
+  assert.deepEqual(initial.observations.captures.map(({ top_toolbar_count }) => top_toolbar_count), [1, 1, 1]);
+  assert.deepEqual(settled.observations.captures.map(({ geometry }) => geometry), [{ width: 500, height: 42 }, { width: 0, height: 0 }, { width: 0, height: 0 }]);
+  assert.equal(settled.observations.setting_transition.before_top_toolbar_count, 0);
+  assert.equal(settled.observations.setting_transition.client_immediate_top_toolbar_count, 1);
+  assert.equal(settled.observations.setting_transition.client_settled_top_toolbar_count, 1);
+  const failedRequestIdentity = sha256Value({ failures: [], request_gate_aborts: [], client_failures: [], client_request_gate_aborts: [] });
+  for (const row of [...initial.observations.disabled_captures, ...initial.observations.captures]) assert.equal(row.failed_request_identity_sha256, failedRequestIdentity);
+  assert.equal(settled.observations.setting_transition.failed_request_identity_sha256, failedRequestIdentity);
+  for (const receipt of [initial, settled]) {
+    assert.equal(receipt.status, "pass");
+    assert.equal(receipt.candidate_identity_sha256, sha256Value(identity));
+    assert.equal(receipt.private_input_sha256, sha256Value("private-input"));
+    assert.equal(receipt.evidence_identity.fixture_sha256, sha256Value(FIXTURE));
+    assert.match(receipt.evidence_identity.source_sha256, /^[0-9a-f]{64}$/u);
+    assert.match(receipt.evidence_identity.cleanup_sha256, /^[0-9a-f]{64}$/u);
+  }
+  await assert.rejects(runCandidateCaseSet(options), /output directory already exists/u);
+  assert.deepEqual((await fs.readdir(path.join(outputDir, "cases"))).sort(), ["S757_TOOLBAR_INITIAL.json", "S757_TOOLBAR_SETTLED.json"]);
+});
+
+test("#1046 runs its three public cases without changing unrelated settings", async (t) => {
+  const expectedCaseIds = [
+    "S1046_ADMIN_INITIAL",
+    "S1046_ADMIN_SETTLED",
+    "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
+  ];
+  assert.deepEqual((await candidateCaseSet("open43-settings-admin")).caseIds, expectedCaseIds);
+
+  const events = [];
+  const { state, session } = fakePublicBoundary(events);
+  const caseSet = createOpen43SettingsGroupCandidateCaseSet({
+    group: "admin",
+    sessionFactory: () => session,
+    browserAdapterFactory: (options) => fakeBrowserAdapter(options, state, events),
+  });
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "open43-settings-admin-candidate-"));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const identity = candidateIdentity();
+  const result = await runCandidateCaseSet({
+    candidateIdentity: identity,
+    candidateIdentitySha256: sha256Value(identity),
+    privateInput: {},
+    privateInputSha256: sha256Value("private-input"),
+    outputDir: path.join(root, "evidence"),
+    caseSet,
+    runId: "candidate-run-0123456789ab",
+    dependencies: dependencies(events, []),
+  });
+
+  assert.deepEqual(result.denominator.case_ids, expectedCaseIds);
+  assert.deepEqual(result.cases.map(({ case_id: caseId }) => caseId), expectedCaseIds);
+  assert.equal(result.cleanup.public_restoration_verified, true);
+  assert.equal(state.site.description, "Before description");
+  assert.equal(state.site.google_analytics_enabled, false);
+  assert.equal(state.site.show_top_toolbar, false);
+  assert.equal(state.categories.get("_default").theme_kind, "built_in");
+  assert.equal(state.categories.get("corpus").theme_kind, "built_in");
+  const actions = events.filter(({ seam }) => seam === "action").map(({ name }) => name);
+  assert.equal(actions.includes("theme"), false);
+  assert.equal(actions.includes("toolbar"), false);
+  assert.equal(actions.filter((name) => name === "analytics").length, 1);
+  assert.deepEqual(events.filter(({ seam, label }) => seam === "browser-adapter" && label !== undefined).map(({ label }) => label), ["S1046_ADMIN", "S1046_ADMIN"]);
+});
+
 test("the real Settings CaseSet verifies direct and client theme evidence independently", async (t) => {
   for (const [fault, pattern] of [
     [{ directThemeFailure: true }, /direct target theme capture/u],
@@ -498,7 +670,7 @@ test("the real Settings CaseSet verifies direct and client theme evidence indepe
     t.after(() => fs.rm(root, { recursive: true, force: true }));
     const identity = candidateIdentity();
     await assert.rejects(
-      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, dependencies: dependencies(events, []) }),
+      runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies(events, []) }),
       pattern,
     );
   }
@@ -510,7 +682,7 @@ test("Settings rejects any sealed candidate identity outside the exact editable 
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wrong-open43-settings-"));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await assert.rejects(
-    runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, dependencies: dependencies([], []) }),
+    runCandidateCaseSet({ candidateIdentity: identity, candidateIdentitySha256: sha256Value(identity), privateInput: {}, privateInputSha256: hash("b"), outputDir: path.join(root, "evidence"), caseSet, runId: "candidate-run-0123456789ab", dependencies: dependencies([], []) }),
     /exact non-standing scpaiueouiuiuiui\.wikijump\.localhost/u,
   );
 });

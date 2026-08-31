@@ -50,6 +50,7 @@ pub struct CreatePage {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct CreatePageOutput {
+    pub site_id: i64,
     pub page_id: i64,
     pub slug: String,
     pub revision_id: i64,
@@ -128,6 +129,16 @@ pub struct GetPageOutput {
     pub tags: Vec<String>,
     pub rating: ScoreValue,
     pub layout: Layout,
+}
+
+/// Public display names for the people at the two page lifecycle endpoints.
+///
+/// An unavailable identity remains null. In particular, this projection never
+/// substitutes an internal user ID or account slug for a display name.
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageLifecycleIdentity {
+    pub created_by: Option<String>,
+    pub updated_by: Option<String>,
 }
 
 #[derive(Serialize, Debug, Clone)]

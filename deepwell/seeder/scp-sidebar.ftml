@@ -1,0 +1,191 @@
+[[div class="side-block media" style="padding: 10px 0;"]]
+[[=]]
+[[image https://scp-wiki.wdfiles.com/local--files/nav:side/social-facebook.png link="https://www.facebook.com/scpfoundation" alt="Facebook"]][[image https://scp-wiki.wdfiles.com/local--files/nav:side/social-twitter.png link="https://twitter.com/scpwiki" alt="Twitter"]][[image https://scp-wiki.wdfiles.com/local--files/nav:side/social-reddit.png link="https://www.reddit.com/r/SCP" alt="Reddit"]][[image https://scp-wiki.wdfiles.com/local--files/nav:side/social-instagram.png link="https://www.instagram.com/scpfoundationwiki" alt="Instagram"]][[image https://scp-wiki.wdfiles.com/local--files/nav:side/social-bluesky.png link="https://bsky.app/profile/scpwiki.com" alt="Bluesky"]][[image https://scp-wiki.wdfiles.com/local--files/nav%3Aside/social-tiktok.png link="https://www.tiktok.com/@scpwikiofficial?" alt="TikTok"]][[image https://scp-wiki.wikidot.com/local--files/nav:side/icon-Discord-2023.png link="https://discord.com/invite/scp" alt="Discord"]]
+[[/=]]
+[[/div]]
+
+~~~~
+
+[[div class="side-block resources"]]
+
+[[div class="heading"]]
+Getting Started
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[guide-for-newcomers|Guide for Newcomers]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[system:join|Join the Site]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[Contribute]]] | [[[FAQ]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[universe-hub|Universe Hub]]]
+[[/div]]
+
+[[/div]]
+
+~~~~
+
+[[div class="side-block"]]
+
+[[div_ class="menu-item"]]
+[/ Main] | [[[forum:start|Forum]]]
+[[/div]]
+
+[[div class="heading"]]
+SCP by Series
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[scp-series|I]]] | [[[scp-series-2|II]]] | [[[scp-series-3|III]]] | [[[scp-series-4|IV]]] | [[[scp-series-5|V]]]
+[[/div]]
+[[div_ class="menu-item"]]
+ [[[scp-series-6|VI]]] | [[[scp-series-7|VII]]] | [[[scp-series-8|VIII]]] | [[[scp-series-9|IX]]] | [[[scp-series-10|X]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[lost-scp-series|Lost Series]]]
+[[/div]]
+
+[[div class="heading"]]
+Other SCP
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[scp-ex|Explained]]] | [[[joke-scps|Joke]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[scp-international|International]]]
+[[/div]]
+
+[[div class="heading"]]
+Feed
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[new-pages-feed|New Pages]]]
+[[/div]]
+
+[[div_ class="menu-item small"]]
+[[[shortest-pages-this-month|Shortest]]] | [[[top-rated-pages-this-month|Top Rated]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[system:recent-changes|Recent Changes]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[forum:recent-posts|New Forum Posts]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[lowest-rated-pages|Lowest Rated Pages]]]
+[[/div]]
+
+[[div class="heading"]]
+Stories
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[foundation-tales|Tales Hub]]] | [[[series-archive|Series]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[groups-of-interest|Groups of Interest]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[goi-formats|GoI Formats]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[canon-hub|Canon Hub]]]
+[[/div]]
+
+[[div class="heading"]]
+Discovery
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[artwork-hub|Artwork Hub]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[curated-lists|Curated Lists]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[curated-tale-series|Curated Tale Series]]]
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[tag-search|Tag Search]]]
+[[/div]]
+
+[[div class="heading"]]
+Random
+[[/div]]
+
+[[div_ class="menu-item"]]
+[[[random:random-scp|SCP]]] | [[[random:random-tale|Tale]]] | [[[random:random-goi-format|GOI]]] | [[[random:random-art|Art]]]
+[[/div]]
+[[div_ class="menu-item"]]
+[[[random:random-page|Random Page]]]
+[[/div]]
+[[div_ class="menu-item"]]
+[[[random-search|Advanced Random Search]]]
+[[/div]]
+
+[[/div]]
+
+[[a href="##" class="close-menu"]]
+[[image https://scp-wiki.wdfiles.com/local--files/nav:side/black.png style="z-index:-1; opacity: 0.3;"]]
+[[/a]]
+
+[[module CSS]]
+iframe.scpnet-interwiki-frame { height: 0; }
+
+/* Forcibly change name of AHT banned user. */
+a[href*="user:info/adminbright"] {
+  font-size: 0;
+}
+ 
+a[href*="user:info/adminbright"]::before {
+    content: 'TheDuckMan';
+    font-size: .95rem;
+}
+ 
+a[href*="user:info/adminbright"]:nth-child(1) img {
+  display: none
+}
+ 
+a[href*="user:info/adminbright"]:nth-child(1)::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background-image: url(https://05command.wdfiles.com/local--files/theme%3Asite/default_avatar.png), url(https://05command.wdfiles.com/local--files/theme%3Asite/karmabar.png);
+  display: inline-block;
+  background-size: contain;
+  vertical-align: -0.3em;
+  padding: 1px 9px 1px 8px;
+  background-repeat: no-repeat;
+  background-position-x: 8px, 0;
+}
+[[/module]]
+
+[[include :scp-wiki:nav:interwiki
+| lang=en
+| community=scp
+]]
+
+[[include :scp-wiki:component:interwiki-style
+| priority=0
+| theme=https://cdn.scpwiki.com/theme/en/sigma/css/sigma.min.css
+]]

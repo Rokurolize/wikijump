@@ -122,6 +122,14 @@ def check_system_methods(
                 f"{method_name} signature is {actual_signature!r}, expected {expected_signature!r}"
             )
 
+    multicall_signature = proxy.system.methodSignature("system.multicall")
+    expected_multicall_signature = [{"returnType": "void", "parameters": ["array"]}]
+    if multicall_signature != expected_multicall_signature:
+        raise ConformanceError(
+            f"system.multicall signature is {multicall_signature!r}, "
+            f"expected {expected_multicall_signature!r}"
+        )
+
     multicall = xmlrpc.client.MultiCall(proxy)
     multicall.system.methodHelp("pages.select")
     multicall.system.methodSignature("pages.select")
@@ -145,6 +153,20 @@ def check_documented_methods(
     for method_name in documented_methods:
         params = {"unexpected": True} if method_name == "users.get_me" else {}
         expect_fault(proxy, method_name, -32602, params)
+
+    posts_get_fault = expect_fault(
+        proxy,
+        "posts.get",
+        -32602,
+        {"site": "url-swap-fixture", "posts": [True]},
+    )
+    if (
+        posts_get_fault.faultString
+        != "Argument posts should be a list of strings or integers"
+    ):
+        raise ConformanceError(
+            "posts.get returned the wrong fault text for a Boolean post ID"
+        )
 
     expect_fault(
         proxy,

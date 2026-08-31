@@ -1,3 +1,5 @@
+import {assertTimestamp} from "./reference-acquisition-inventory-source.mjs";
+
 function keyForFinding(finding) {
   return [
     finding.source,
@@ -15,14 +17,18 @@ async function sha256Hex(text) {
 }
 
 function assertValidTimestamp(value, name) {
-  if (typeof value !== "string" || Number.isNaN(Date.parse(value))) {
-    throw new Error(`${name} must be a valid ISO-8601 timestamp`);
+  try {
+    assertTimestamp(value, name);
+  } catch (error) {
+    throw new Error(`${name} must be a valid ISO-8601 timestamp`, {cause: error});
   }
 }
 
 function isAfterMerge(item, mergeAt) {
   const timestamp = item.submitted_at ?? item.created_at ?? item.updated_at;
-  return typeof timestamp === "string" && new Date(timestamp) > new Date(mergeAt);
+  if (timestamp === undefined || timestamp === null) return false;
+  assertValidTimestamp(timestamp, "post-merge event timestamp");
+  return new Date(timestamp) > new Date(mergeAt);
 }
 
 function nextHourlyWatchAfter(mergeAt) {

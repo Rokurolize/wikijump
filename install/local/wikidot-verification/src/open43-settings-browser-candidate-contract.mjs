@@ -16,6 +16,67 @@ export const OPEN43_SETTINGS_BROWSER_CASE_IDS = Object.freeze([
   "S1046_PUBLIC_PERMISSION_CSRF_REVISION_MATRIX",
 ]);
 
+export const OPEN43_SETTINGS_ANALYTICS_CASE_IDS = Object.freeze([
+  "S754_ANALYTICS_INITIAL",
+  "S754_ANALYTICS_SETTLED",
+]);
+
+export const OPEN43_SETTINGS_THEME_CASE_IDS = Object.freeze([
+  "S755_THEME_INITIAL",
+  "S755_THEME_SETTLED",
+]);
+
+export const OPEN43_SETTINGS_TOOLBAR_CASE_IDS = Object.freeze([
+  "S757_TOOLBAR_INITIAL",
+  "S757_TOOLBAR_SETTLED",
+]);
+
+export const OPEN43_SETTINGS_UNAVAILABLE_CASE_IDS = Object.freeze([
+  "S754_IMPORT_EXPORT_REPRESENTATION",
+  "S754_LIVE_BEACON_PAYLOAD_AND_TIMING",
+  "S755_BUILT_IN_ASSET_MAPPING",
+  "S755_LEGACY_GALLERY_AND_CUSTOM_LIFECYCLE",
+  "S755_EXTERNAL_RESOURCE_FAILURE_POLICY",
+  "S757_BOTTOM_TOOLBAR_DOM",
+  "S757_PROMOTION_FLAG_EFFECT",
+]);
+
+const SETTINGS_SITE_FIELDS = Object.freeze([
+  "site_id",
+  "slug",
+  "name",
+  "tagline",
+  "description",
+  "locale",
+  "default_page",
+  "welcome_page",
+  "google_analytics_enabled",
+  "google_analytics_profile",
+  "show_top_toolbar",
+  "show_bottom_toolbar",
+]);
+
+const SETTINGS_CATEGORY_FIELDS = Object.freeze([
+  "category_id",
+  "slug",
+  "theme_kind",
+  "theme_builtin_id",
+  "theme_external_url",
+  "theme_custom_css",
+]);
+
+function requireSettingsSnapshot(value, label) {
+  const settings = requirePlainObject(value, label);
+  const site = requirePlainObject(settings.site, `${label}.site`);
+  for (const field of SETTINGS_SITE_FIELDS) if (!Object.hasOwn(site, field)) throw new Error(`${label}.site is missing ${field}`);
+  if (!Array.isArray(settings.categories) || settings.categories.length !== 2) throw new Error(`${label}.categories must contain the two fixed candidate categories`);
+  for (const [index, categoryValue] of settings.categories.entries()) {
+    const category = requirePlainObject(categoryValue, `${label}.categories[${index}]`);
+    for (const field of SETTINGS_CATEGORY_FIELDS) if (!Object.hasOwn(category, field)) throw new Error(`${label}.categories[${index}] is missing ${field}`);
+  }
+  return settings;
+}
+
 function requireTemporal(value, phase, sequence, label) {
   const temporal = requirePlainObject(value, `${label} temporal observation`);
   if (temporal.phase !== phase || temporal.sequence !== sequence) {
@@ -46,11 +107,19 @@ function requireTemporal(value, phase, sequence, label) {
   return temporal;
 }
 
+function requireGroupFailedRequestIdentity(value, label, plan) {
+  if (plan.group === "analytics" || plan.group === "theme" || plan.group === "toolbar") {
+    requireSha256(value?.failed_request_identity_sha256, `${label} failed-request identity SHA-256`);
+  }
+}
+
 function verifyAnalyticsInitial(observations, plan) {
   requireTemporal(observations.disabled_temporal, "domcontentloaded_immediate_observation", 1, "disabled analytics initial");
   requireTemporal(observations.enabled_temporal, "domcontentloaded_immediate_observation", 1, "enabled analytics initial");
   const disabled = requirePlainObject(observations.disabled, "disabled analytics initial state");
   const analytics = requirePlainObject(observations.enabled, "enabled analytics initial state");
+  requireGroupFailedRequestIdentity(disabled, "disabled analytics initial", plan);
+  requireGroupFailedRequestIdentity(analytics, "enabled analytics initial", plan);
   const expectedQueue = [["_setAccount", plan.analytics_profile], ["_trackPageview"]];
   requireSha256(disabled.initial_navigation_csp_header_sha256, "disabled initial navigation CSP header SHA-256");
   requireSha256(analytics.initial_navigation_csp_header_sha256, "enabled initial navigation CSP header SHA-256");
@@ -90,6 +159,7 @@ function verifyAnalyticsSettled(observations, plan) {
   }
   const analytics = requirePlainObject(observations.analytics, "analytics settled state");
   const lifecycle = requirePlainObject(observations.admin_lifecycle, "analytics admin lifecycle");
+  requireGroupFailedRequestIdentity(analytics, "analytics settled", plan);
   const queue = [["_setAccount", plan.analytics_profile], ["_trackPageview"]];
   requireSha256(analytics.initial_navigation_csp_header_sha256, "analytics initial navigation CSP header SHA-256");
   if (
@@ -130,6 +200,9 @@ function verifyTheme(observations, plan, settled) {
   const defaultTheme = requirePlainObject(observations.default_theme, "default theme observation");
   const transitionTheme = requirePlainObject(observations.transition_theme, "direct target theme observation");
   const categoryTransitionTheme = requirePlainObject(observations.category_transition_theme, "client transition theme observation");
+  requireGroupFailedRequestIdentity(defaultTheme, "default theme", plan);
+  requireGroupFailedRequestIdentity(transitionTheme, "direct target theme", plan);
+  requireGroupFailedRequestIdentity(categoryTransitionTheme, "client transition theme", plan);
   if (
     defaultTemporal.input_url !== plan.default_page_url ||
     transitionTemporal.input_url !== plan.transition_page_url ||
@@ -211,6 +284,7 @@ function verifyToolbar(observations, plan, settled) {
     ) {
       throw new Error("toolbar observation is stale or has the wrong viewport state");
     }
+    requireGroupFailedRequestIdentity(capture, `toolbar ${widths[index]}`, plan);
     requireTemporal(
       capture.temporal,
       settled ? "settled" : "domcontentloaded_immediate_observation",
@@ -245,6 +319,7 @@ function verifyToolbar(observations, plan, settled) {
       transition.client_navigation_preserved_document !== true || transition.client_resource_completion !== "complete" ||
       [...captures, ...disabledCaptures].some(({ temporal }) => [transitionInitial.artifact.path, transitionSettled.artifact.path].includes(temporal.artifact.path))
     ) throw new Error("toolbar observation is stale across the public setting transition");
+    if (plan.group === "toolbar") requireSha256(transition.failed_request_identity_sha256, "toolbar setting transition failed-request identity SHA-256");
     const interactions = requirePlainObject(observations.interactions, "toolbar interactions");
     if (
       JSON.stringify(Object.keys(interactions).sort()) !==
@@ -447,8 +522,8 @@ export function verifyOpen43SettingsBrowserCase(caseId, rawObservations, rawPlan
 
 export function verifyOpen43SettingsBrowserCleanup(rawProof, resources) {
   const proof = requirePlainObject(rawProof, "settings cleanup proof");
-  const before = requirePlainObject(proof.before, "pre-run public settings");
-  const after = requirePlainObject(proof.after, "restored public settings");
+  const before = requireSettingsSnapshot(proof.before, "pre-run public settings");
+  const after = requireSettingsSnapshot(proof.after, "restored public settings");
   if (sha256Value(before) !== sha256Value(after)) {
     throw new Error("public settings were not restored to their exact pre-run values");
   }
@@ -462,10 +537,24 @@ export function verifyOpen43SettingsBrowserCleanup(rawProof, resources) {
   ) {
     throw new Error("settings cleanup left a run resource unreleased");
   }
+  const resource = resources[0];
+  const identity = requirePlainObject(resource.identity, "settings cleanup resource identity");
+  const releaseProof = requirePlainObject(resource.release_proof, "settings cleanup resource release proof");
+  const beforeSha256 = sha256Value(before);
+  const afterSha256 = sha256Value(after);
+  if (
+    identity.site_id !== before.site.site_id ||
+    JSON.stringify(identity.category_ids) !== JSON.stringify(before.categories.map(({ category_id }) => category_id)) ||
+    identity.before_sha256 !== beforeSha256 ||
+    releaseProof.before_sha256 !== beforeSha256 ||
+    releaseProof.after_sha256 !== afterSha256
+  ) {
+    throw new Error("settings cleanup resource identity does not match the restored settings");
+  }
   return {
     public_absence_verified: true,
     public_restoration_verified: true,
-    settings_restored_sha256: sha256Value(after),
+    settings_restored_sha256: afterSha256,
     resources_released: resources.length,
   };
 }

@@ -168,7 +168,7 @@ def main() -> None:
     if missing_env := [name for name in required_env if not os.environ.get(name)]:
         raise SystemExit(f"credential environment incomplete: {len(missing_env)} required values absent")
 
-    namespace = fixture["run_namespace_prefix"] + args.run_id
+    namespace = fixture["run_namespace_prefix"] + sha256_bytes(args.run_id.encode())[:12]
     if not namespace.startswith("codex-pr1334-b-pagequery-"):
         raise SystemExit("run namespace escaped its ownership prefix")
     category = namespace

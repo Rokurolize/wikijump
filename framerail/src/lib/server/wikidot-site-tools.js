@@ -18,6 +18,10 @@ export const renderWikidotSiteTools = () => `
   </div>
 </div>`
 
+export const renderWikidotListDrafts = () =>
+  `<div class="list-drafts-box">
+            </div>`
+
 export const renderWikidotOrphanedPages = (pages) => {
   let body = "\n<h1>List of orphaned pages</h1>\n\n"
   for (const page of pages) {

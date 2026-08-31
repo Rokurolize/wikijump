@@ -53,6 +53,7 @@
     </div>
   </div>
 </div>
+<div id="dummy-ondomready-block" style="display: none;"></div>
 
 <!-- Ignoring the styling as being a theme it will inevitably style other elements in the entire layout -->
 <!-- svelte-ignore css_unused_selector -->
@@ -89,6 +90,14 @@
   // server-rendered equation body visible instead of losing it to the base
   // stylesheet's display rule.
   #page-content .math-equation {
+    display: block;
+  }
+
+  // Wikidot's base stylesheet expects legacy JavaScript to open this menu.
+  // Imported themes such as Basalt already implement the hover/focus state in
+  // CSS; this fallback keeps the same account menu usable on ordinary themes.
+  #login-status:hover > #account-options,
+  #login-status:focus-within > #account-options {
     display: block;
   }
 

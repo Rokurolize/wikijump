@@ -47,8 +47,14 @@ function geometryDelta(local, live) {
   return Object.fromEntries(
     ["x", "y", "width", "height"].map((key) => [
       key,
-      rounded((local?.rect?.[key] ?? 0) - (live?.rect?.[key] ?? 0)),
+      (local?.rect?.[key] ?? 0) - (live?.rect?.[key] ?? 0),
     ]),
+  );
+}
+
+function roundedGeometryDelta(delta) {
+  return Object.fromEntries(
+    Object.entries(delta).map(([key, value]) => [key, rounded(value)]),
   );
 }
 
@@ -68,6 +74,7 @@ export function compareFirstDivergenceTraces(
     alignment_window = DEFAULT_ALIGNMENT_WINDOW,
     geometry_position_px = 8,
     geometry_size_px = 12,
+    ignored_classes = [],
   } = {},
 ) {
   if (!local || !live) {
@@ -99,8 +106,20 @@ export function compareFirstDivergenceTraces(
     };
   }
 
-  const localElements = local.elements ?? [];
-  const liveElements = live.elements ?? [];
+  const filterIgnored = (elements) => {
+    const ignoredPaths = [];
+    return elements.filter((element) => {
+      const path = element?.path ?? "";
+      if (ignoredPaths.some((prefix) => path === prefix || path.startsWith(`${prefix}/`))) return false;
+      if ((element?.classes ?? []).some((className) => ignored_classes.includes(className))) {
+        ignoredPaths.push(path);
+        return false;
+      }
+      return true;
+    });
+  };
+  const localElements = filterIgnored(local.elements ?? []);
+  const liveElements = filterIgnored(live.elements ?? []);
   const limit = Math.min(localElements.length, liveElements.length);
   let previousStableAnchor = null;
 
@@ -188,7 +207,7 @@ export function compareFirstDivergenceTraces(
         live_index: index,
         local: localElement,
         live: liveElement,
-        geometry_delta: geometry,
+        geometry_delta: roundedGeometryDelta(geometry),
         previous_stable_anchor: previousStableAnchor,
       };
     }

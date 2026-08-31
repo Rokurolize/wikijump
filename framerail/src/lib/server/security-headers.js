@@ -93,12 +93,21 @@ const materializeExactCspSource = (policy, source, replacement) => {
 export const materializeSiteCsp = (
   response,
   siteSlug,
-  deploymentEnvironment = parseDeploymentEnvironment()
+  deploymentEnvironment = parseDeploymentEnvironment(),
+  requestOrigin = undefined
 ) => {
   const policy = response.headers.get("content-security-policy")
   const slug = trustedSiteSlug(siteSlug)
   if (!policy || !slug) return
-  const origin = `https://${slug}.wjfiles.${DEPLOYMENT_FILE_SUFFIX[deploymentEnvironment]}`
+  let port = ""
+  if (deploymentEnvironment === "local" && requestOrigin) {
+    try {
+      port = new URL(requestOrigin).port
+    } catch {
+      port = ""
+    }
+  }
+  const origin = `https://${slug}.wjfiles.${DEPLOYMENT_FILE_SUFFIX[deploymentEnvironment]}${port ? `:${port}` : ""}`
   const materialized = materializeExactCspSource(policy, CURRENT_SITE_FILE_ORIGIN, origin)
   if (materialized) response.headers.set("content-security-policy", materialized)
 }
@@ -124,7 +133,8 @@ export const applyStaticSecurityHeaders = (
   response,
   pathname,
   siteSlug = undefined,
-  deploymentEnvironment = parseDeploymentEnvironment()
+  deploymentEnvironment = parseDeploymentEnvironment(),
+  requestOrigin = undefined
 ) => {
   for (const [header, value] of staticSecurityHeaderEntries(deploymentEnvironment)) {
     response.headers.set(header, value)
@@ -135,7 +145,7 @@ export const applyStaticSecurityHeaders = (
     response.headers.set("content-security-policy", framePolicy)
     response.headers.set("x-frame-options", "SAMEORIGIN")
   }
-  materializeSiteCsp(response, siteSlug, deploymentEnvironment)
+  materializeSiteCsp(response, siteSlug, deploymentEnvironment, requestOrigin)
 }
 
 /**

@@ -6,9 +6,11 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
+use std::sync::LazyLock;
 
 use ftml::data::UserInfo;
 use rand::RngExt;
+use regex::Regex;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter,
     Statement, Value,
@@ -16,6 +18,7 @@ use sea_orm::{
 use serde::Serialize;
 
 use super::ftml_user_info::load_wikidot_user_info_by_ids;
+use super::literal_regions::LiteralRegionIndex;
 use super::module_arguments::{WikidotModuleArgumentValueKind, wikidot_module_arguments};
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
@@ -32,8 +35,12 @@ use crate::services::relation::relation_type_condition;
 use crate::types::{Action, Permission, RelationObjectType, RelationType, Resource};
 use crate::utils::now;
 
-pub(super) const MEMBERS_PAGE_SIZE: usize = 50;
-const MEMBERS_AJAX_PAGE_SIZE: usize = 100;
+pub(super) const MEMBERS_PAGE_SIZE: usize = 100;
+
+pub(super) static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
+        .expect("Members module expression is valid")
+});
 
 #[derive(Clone, Debug, Serialize)]
 pub struct WikidotMembersListModuleResponse {
@@ -156,6 +163,23 @@ impl MembersArguments {
             show_since: show_since.unwrap_or(group == MembersGroup::Members),
         })
     }
+}
+
+pub(super) fn wikitext_has_executable_members_module(wikitext: &str) -> bool {
+    if !MEMBERS_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    MEMBERS_MODULE_REGEX
+        .captures_iter(wikitext)
+        .any(|captures| {
+            let module = captures
+                .get(0)
+                .expect("a Members capture always has a complete match");
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            !literal_regions.contains(module.start())
+                && MembersArguments::parse(head).is_some()
+        })
 }
 
 #[derive(Clone, Debug)]
@@ -303,10 +327,13 @@ async fn load_directory_rows(
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
-    let mut joined_at = memberships
-        .into_iter()
-        .map(|membership| (membership.from_id, membership.created_at))
-        .collect::<BTreeMap<_, _>>();
+    let mut joined_at = BTreeMap::<i64, time::OffsetDateTime>::new();
+    for membership in memberships {
+        joined_at
+            .entry(membership.from_id)
+            .and_modify(|earliest| *earliest = (*earliest).min(membership.created_at))
+            .or_insert(membership.created_at);
+    }
 
     if let Some(role_name) = group.role_name() {
         let role_ids = Role::find()
@@ -369,7 +396,7 @@ async fn load_members_ajax_page(
     site_id: i64,
     page: u32,
 ) -> Result<(Vec<DirectoryRow>, usize)> {
-    let offset = i64::from(page - 1) * MEMBERS_AJAX_PAGE_SIZE as i64;
+    let offset = i64::from(page - 1) * MEMBERS_PAGE_SIZE as i64;
     let candidates =
         MembersAjaxCandidate::find_by_statement(Statement::from_sql_and_values(
             ctx.transaction().get_database_backend(),
@@ -402,7 +429,7 @@ async fn load_members_ajax_page(
             ),
             [
                 Value::from(site_id),
-                Value::from(MEMBERS_AJAX_PAGE_SIZE as i64),
+                Value::from(MEMBERS_PAGE_SIZE as i64),
                 Value::from(offset),
             ],
         ))
@@ -448,7 +475,7 @@ async fn load_members_ajax_page(
         )
         .into());
     }
-    Ok((rows, total_count.div_ceil(MEMBERS_AJAX_PAGE_SIZE)))
+    Ok((rows, total_count.div_ceil(MEMBERS_PAGE_SIZE)))
 }
 
 async fn load_directory_identities(
@@ -528,6 +555,12 @@ fn render_directory(
 ) -> String {
     let container_id = format!("ml-{module_index}");
     let function_name = format!("updateMemberList{module_index}");
+    let supports_continuation = arguments
+        == (MembersArguments {
+            group: MembersGroup::Members,
+            order: MembersOrder::Joined,
+            show_since: true,
+        });
     let avatar_timestamp = now().unix_timestamp();
     let mut output = format!("<div id=\"{container_id}\">\n\t\t<table>");
     for row in rows {
@@ -552,10 +585,12 @@ fn render_directory(
         }
         output.push_str("\n\t\t\t</tr>");
     }
-    write!(
-        output,
-        concat!(
-            "\n\t\t</table>\n\t<script type=\"text/javascript\">\n",
+    output.push_str("\n\t\t</table>");
+    if supports_continuation {
+        write!(
+            output,
+            concat!(
+                "\n\t<script type=\"text/javascript\">\n",
             "\t\tfunction {function_name}(pageNo) {{\n",
             "\t\t\tvar p = {{}};\n",
             "\t\t\tp.group     = '{group}';\n",
@@ -566,16 +601,17 @@ fn render_directory(
             "\t\t\t\tif (!WIKIDOT.utils.handleError(r)) {{return;}}\n",
             "\t\t\t\tjQuery('#'+containerElId).replaceWith(r.body);\n",
             "\t\t\t}});\n",
-            "\t\t}}\n\t</script>",
-        ),
-        function_name = function_name,
-        container_id = container_id,
-        group = arguments.group.wikidot_value(),
-        order = arguments.order.wikidot_value(),
-    )
-    .expect("writing the member directory script to a String cannot fail");
-    if total_pages > 1 {
-        render_pager(&mut output, &function_name, total_pages);
+                "\t\t}}\n\t</script>",
+            ),
+            function_name = function_name,
+            container_id = container_id,
+            group = arguments.group.wikidot_value(),
+            order = arguments.order.wikidot_value(),
+        )
+        .expect("writing the member directory script to a String cannot fail");
+        if total_pages > 1 {
+            render_pager(&mut output, &function_name, total_pages);
+        }
     }
     output.push_str("\n</div>");
     output

@@ -29,8 +29,8 @@ use crate::services::page::{
     CreatePage, CreatePageOutput, DeletePage, DeletePageOutput, EditPage, EditPageOutput,
     GetDeletedPageOutput, GetPageAnyDetails, GetPageOutput, GetPageReference,
     GetPageReferenceDetails, GetPageScoreOutput, GetPageSlug, MovePage, MovePageOutput,
-    PageEditPermissionOutput, RestorePage, RestorePageOutput, RollbackPage,
-    SetPageLayout,
+    PageEditPermissionOutput, PageLifecycleIdentity, RestorePage, RestorePageOutput,
+    RollbackPage, SetPageLayout,
 };
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
@@ -704,6 +704,54 @@ pub async fn page_view_permission(
     })
 }
 
+/// Return display-name-only lifecycle identities for a viewable page.
+///
+/// Missing and hidden pages share the same null result. Identity resolution
+/// happens only after the normal page-view permission check, and unavailable
+/// identities remain null inside the projection rather than falling back to
+/// internal IDs or slugs.
+pub async fn page_lifecycle_identity(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageLifecycleIdentity>> {
+    let GetPageReference {
+        site_id,
+        page: reference,
+    } = parse!(params, Page);
+    let make_error =
+        || Error::new("failed to resolve page lifecycle identity", ErrorType::Page);
+
+    let Some(page) = PageService::get_optional(ctx, site_id, reference)
+        .await
+        .or_raise(make_error)?
+    else {
+        return Ok(None);
+    };
+    let can_view = PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: ctx.request().user_id,
+            site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+    .or_raise(make_error)?;
+    if !can_view {
+        return Ok(None);
+    }
+
+    PageService::get_lifecycle_identity(ctx, &page)
+        .await
+        .map(Some)
+        .or_raise(make_error)
+}
+
 pub async fn page_watchers(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -899,7 +947,7 @@ pub async fn page_get_deleted(
 
     let mut result = Vec::new();
     for page in deleted_pages {
-        let can_edit = PermissionService::check_user_can(
+        let can_delete = PermissionService::check_user_can(
             ctx,
             &CheckPermissionContext {
                 user_id: Some(user_id),
@@ -909,13 +957,13 @@ pub async fn page_get_deleted(
             Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(page.page_category_id)),
-                action: Action::Edit,
+                action: Action::Delete,
             },
         )
         .await
         .or_raise(make_error)?;
 
-        if can_edit
+        if can_delete
             && let Some(page) = build_page_deleted_output(ctx, page)
                 .await
                 .or_raise(make_error)?
@@ -1095,11 +1143,16 @@ pub async fn page_delete(
         .or_raise(|| {
             Error::new("failed to authenticate page delete actor", ErrorType::Page)
         })?;
-    ensure_page_edit_permission(ctx, input.site_id, input.page.clone(), actor_user_id)
-        .await
-        .or_raise(|| {
-            Error::new("failed to check page delete permission", ErrorType::Page)
-        })?;
+    ensure_page_action_permission(
+        ctx,
+        input.site_id,
+        input.page.clone(),
+        actor_user_id,
+        Action::Delete,
+        "delete",
+    )
+    .await
+    .or_raise(|| Error::new("failed to check page delete permission", ErrorType::Page))?;
 
     PageService::delete(ctx, input)
         .await
@@ -1120,11 +1173,16 @@ pub async fn page_move(
         .or_raise(|| {
             Error::new("failed to authenticate page move actor", ErrorType::Page)
         })?;
-    ensure_page_edit_permission(ctx, input.site_id, input.page.clone(), actor_user_id)
-        .await
-        .or_raise(|| {
-            Error::new("failed to check page move permission", ErrorType::Page)
-        })?;
+    ensure_page_action_permission(
+        ctx,
+        input.site_id,
+        input.page.clone(),
+        actor_user_id,
+        Action::Rename,
+        "rename",
+    )
+    .await
+    .or_raise(|| Error::new("failed to check page move permission", ErrorType::Page))?;
     ensure_page_create_permission(ctx, input.site_id, &input.new_slug, actor_user_id)
         .await
         .or_raise(|| {
@@ -1185,7 +1243,7 @@ pub async fn page_restore(
         .or_raise(|| {
             Error::new("failed to authenticate page restore actor", ErrorType::Page)
         })?;
-    let original_category_id = ensure_deleted_page_edit_permission(
+    let original_category_id = ensure_deleted_page_delete_permission(
         ctx,
         input.site_id,
         input.page_id,
@@ -1353,11 +1411,30 @@ pub(super) async fn ensure_page_edit_permission<'a>(
     page_reference: Reference<'a>,
     user_id: i64,
 ) -> Result<()> {
+    ensure_page_action_permission(
+        ctx,
+        site_id,
+        page_reference,
+        user_id,
+        Action::Edit,
+        "edit",
+    )
+    .await
+}
+
+async fn ensure_page_action_permission<'a>(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page_reference: Reference<'a>,
+    user_id: i64,
+    action: Action,
+    action_name: &str,
+) -> Result<()> {
     let page = PageService::get(ctx, site_id, page_reference.clone())
         .await
         .or_raise(|| {
             Error::new(
-                "failed to load page for edit permission check",
+                format!("failed to load page for {action_name} permission check"),
                 ErrorType::Permission,
             )
         })?;
@@ -1368,13 +1445,13 @@ pub(super) async fn ensure_page_edit_permission<'a>(
         Some(Reference::Id(page.page_id)),
         Some(Reference::Id(page.page_category_id)),
         user_id,
-        Action::Edit,
-        "edit",
+        action,
+        action_name,
     )
     .await
 }
 
-async fn ensure_deleted_page_edit_permission(
+async fn ensure_deleted_page_delete_permission(
     ctx: &ServiceContext<'_>,
     site_id: i64,
     page_id: i64,
@@ -1384,7 +1461,7 @@ async fn ensure_deleted_page_edit_permission(
         .await
         .or_raise(|| {
             Error::new(
-                "failed to load deleted page for edit permission check",
+                "failed to load deleted page for delete permission check",
                 ErrorType::Permission,
             )
         })?;
@@ -1403,8 +1480,8 @@ async fn ensure_deleted_page_edit_permission(
         Some(Reference::Id(page.page_id)),
         Some(Reference::Id(page.page_category_id)),
         user_id,
-        Action::Edit,
-        "edit",
+        Action::Delete,
+        "delete",
     )
     .await?;
 

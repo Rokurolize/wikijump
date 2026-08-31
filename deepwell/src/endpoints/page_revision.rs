@@ -335,18 +335,27 @@ async fn filter_and_populate_revision(
     let mut slug = Some(slug);
     let mut tags = Some(tags);
 
-    for field in &hidden {
-        // TODO hidden fields aren't standardized yet
-        match field.as_str() {
-            "wikitext" => details.wikitext = false,
-            "compiled" => details.compiled_html = false,
-            "comments" => comments = None,
-            "title" => title = None,
-            "alt_title" => alt_title = None,
-            "slug" => slug = None,
-            "tags" => tags = None,
-            _ => panic!("Unknown field name in hidden: {field}"),
-        }
+    let parsed_hidden = PageRevisionService::parse_hidden_fields(&hidden)?;
+    if parsed_hidden.wikitext {
+        details.wikitext = false;
+    }
+    if parsed_hidden.compiled {
+        details.compiled_html = false;
+    }
+    if parsed_hidden.comments {
+        comments = None;
+    }
+    if parsed_hidden.title {
+        title = None;
+    }
+    if parsed_hidden.alt_title {
+        alt_title = None;
+    }
+    if parsed_hidden.slug {
+        slug = None;
+    }
+    if parsed_hidden.tags {
+        tags = None;
     }
 
     // Get text data, if requested

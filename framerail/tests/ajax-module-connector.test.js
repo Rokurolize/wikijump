@@ -55,6 +55,193 @@ test("dispatches ListPages forms and returns the Wikidot JSON envelope", async (
   assert.equal(response.headers.get("cache-control"), "no-store")
 })
 
+test("ListPages omits module_body for Deepwell's default row template", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=list%2FListPagesModule"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        received = input
+        return { body: "default-row" }
+      }
+    }
+  )
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    body: "default-row"
+  })
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    moduleBody: "",
+    parameters: {}
+  })
+})
+
+test("ListPages ignores unknown non-data-form selectors while recognized selectors apply", async () => {
+  const calls = []
+  const forms = [
+    "moduleName=list%2FListPagesModule&module_body=body&category=one&unsupported_future_selector=ignored",
+    "moduleName=list%2FListPagesModule&module_body=body&unsupported_future_selector=ignored&category=one"
+  ]
+
+  for (const form of forms) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: form
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "rows" }
+        }
+      }
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { status: "ok", body: "rows" })
+  }
+
+  assert.deepEqual(calls, [
+    { siteId: 6000006, moduleBody: "body", parameters: { category: "one" } },
+    { siteId: 6000006, moduleBody: "body", parameters: { category: "one" } }
+  ])
+})
+
+test("ListPages keeps the later URL-form value for duplicate scalar fields", async () => {
+  const calls = []
+  const renderListPages = async (input) => {
+    calls.push(input)
+    return { body: input.moduleBody }
+  }
+  const forms = [
+    "moduleName=list%2FListPagesModule&module_body=first&module_body=second&category=one&category=two&wikidot_token7=first-token&wikidot_token7=second-token",
+    "moduleName=list%2FListPagesModule&module_body=second&module_body=first&category=two&category=one&wikidot_token7=second-token&wikidot_token7=first-token"
+  ]
+
+  for (const form of forms) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: form
+      }),
+      { siteId: 6000006, renderListPages }
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), {
+      status: "ok",
+      body: calls.at(-1).moduleBody
+    })
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleBody: "second",
+      parameters: { category: "two" }
+    },
+    {
+      siteId: 6000006,
+      moduleBody: "first",
+      parameters: { category: "one" }
+    }
+  ])
+})
+
+test("ListPages ignores callback and token controls regardless of form order", async () => {
+  const calls = []
+  for (const body of [
+    "callbackIndex=17&wikidot_token7=client-token&name=scp-173&moduleName=list%2FListPagesModule&module_body=%%fullname%%",
+    "module_body=%%fullname%%&moduleName=list%2FListPagesModule&name=scp-173&wikidot_token7=other-token&callbackIndex=91"
+  ]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "scp-173" }
+        }
+      }
+    )
+    assert.deepEqual(await response.json(), { status: "ok", body: "scp-173" })
+  }
+
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      moduleBody: "%%fullname%%",
+      parameters: { name: "scp-173" }
+    },
+    {
+      siteId: 6000006,
+      moduleBody: "%%fullname%%",
+      parameters: { name: "scp-173" }
+    }
+  ])
+})
+
+test("ListPages retains fail-closed boundaries for dynamic selectors and invalid UTF-8", async () => {
+  const dynamic = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=list%2FListPagesModule&module_body=ok&_field=1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render dynamic selector shape")
+    }
+  )
+  assert.equal(dynamic.status, 200)
+  assert.deepEqual(await dynamic.json(), {
+    status: "not_ok",
+    message: "Unsupported AJAX module shape: list/ListPagesModule"
+  })
+
+  const malformed = await handleAjaxModuleConnectorRequest(
+    {
+      method: "POST",
+      headers: new Headers({ "content-type": "application/x-www-form-urlencoded" }),
+      body: new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            new Uint8Array([
+              ...new TextEncoder().encode(
+                "moduleName=list%2FListPagesModule&module_body="
+              ),
+              0xff
+            ])
+          )
+          controller.close()
+        }
+      })
+    },
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render malformed UTF-8")
+    }
+  )
+  assert.equal(malformed.status, 400)
+  assert.deepEqual(await malformed.json(), {
+    status: "not_ok",
+    message: "The encoded data was not valid for encoding utf-8"
+  })
+})
+
 test("dispatches only the observed MembersListModule read shape", async () => {
   let received
   const response = await handleAjaxModuleConnectorRequest(
@@ -107,6 +294,40 @@ test("dispatches only the observed MembersListModule read shape", async () => {
   assert.equal(Number.isInteger(failedBody.CURRENT_TIMESTAMP), true)
   assert.deepEqual(failedBody.cssInclude, [])
   assert.deepEqual(failedBody.jsInclude, [])
+})
+
+test("returns the frozen UserInfo no-target error for the observed empty identity shape", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "profile/UserInfoModule",
+      user_id: "",
+      callbackIndex: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages")
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.body, '<div class="error-block">No user specified.</div>')
+  assert.equal(body.callbackIndex, null)
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(body.cssInclude, [])
+  assert.deepEqual(body.jsInclude, [])
+
+  for (const form of [
+    { moduleName: "profile/UserInfoModule", user_id: "1", callbackIndex: "1" },
+    { moduleName: "profile/UserInfoModule", user_id: "", callbackIndex: "1", extra: "1" }
+  ]) {
+    const unsupported = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages")
+    })
+    assert.equal((await unsupported.json()).status, "not_ok")
+  }
 })
 
 test("accepts the wikidot.py MembersList default and applies Wikidot joined order", async () => {
@@ -169,17 +390,20 @@ test("fails closed before Deepwell for unobserved MembersListModule shapes", asy
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=membership%2FMembersListModule&group=&group=&order=joined&page=1"
+      body: "moduleName=membership%2FMembersListModule&group=&group=members&order=joined&page=1"
     }),
     {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
       renderMembersList: async () =>
-        assert.fail("duplicate fields must fail before Deepwell")
+        assert.fail("the later duplicate value must fail shape validation")
     }
   )
   assert.equal(duplicate.status, 400)
-  assert.equal((await duplicate.json()).status, "not_ok")
+  assert.deepEqual(await duplicate.json(), {
+    status: "not_ok",
+    message: "AJAX Module Connector field is duplicated: group"
+  })
 })
 
 test("dispatches the sealed read-only forum modules with Wikidot metadata", async () => {
@@ -395,6 +619,45 @@ test("passes read-only forum missing states through and rejects unsealed shapes"
     assert.equal((await response.json()).status, "not_ok")
   }
   assert.equal(calls, 1)
+})
+
+const forumResponseBody = async (output) => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "forum/ForumViewCategoryModule",
+      c: "8503559",
+      p: "1"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderForumModule: async () => output
+    }
+  )
+  return response.json()
+}
+
+test("fails closed when an AMC renderer returns a malformed status", async () => {
+  assert.equal((await forumResponseBody({ status: {}, body: "" })).status, "not_ok")
+})
+
+test("fails closed when an AMC renderer returns an empty status", async () => {
+  assert.equal((await forumResponseBody({ status: "", body: "" })).status, "not_ok")
+})
+
+test("fails closed when an AMC renderer omits status", async () => {
+  assert.equal((await forumResponseBody({ body: "" })).status, "not_ok")
+})
+
+test("fails closed when an AMC renderer returns a non-string status", async () => {
+  assert.equal((await forumResponseBody({ status: 503, body: "" })).status, "not_ok")
+})
+
+test("passes through a non-empty AMC try_again status", async () => {
+  assert.equal(
+    (await forumResponseBody({ status: "try_again", body: "" })).status,
+    "try_again"
+  )
 })
 
 test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikidot metadata", async () => {
@@ -713,7 +976,6 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     { unknown: "value" },
     { module_body: "" }
   ]
-  let calls = 0
   const valid = {
     moduleName: "changes/SiteChangesListModule",
     page: "1",
@@ -729,10 +991,8 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     const response = await handleAjaxModuleConnectorRequest(request(form), {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
-      renderSiteChangesModule: async () => {
-        calls += 1
+      renderSiteChangesModule: async () =>
         assert.fail("unobserved SiteChanges shape must fail before Deepwell")
-      }
     })
     assert.equal((await response.json()).status, "not_ok")
   }
@@ -746,18 +1006,18 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     {
       siteId: 6000006,
       renderListPages: async () => assert.fail("must not render ListPages"),
-      renderSiteChangesModule: async () => {
-        calls += 1
-        assert.fail("duplicate SiteChanges field must fail before Deepwell")
-      }
+      renderSiteChangesModule: async () =>
+        assert.fail("duplicate SiteChanges fields must fail before Deepwell")
     }
   )
   assert.equal(duplicate.status, 400)
-  assert.equal((await duplicate.json()).status, "not_ok")
-  assert.equal(calls, 0)
+  assert.deepEqual(await duplicate.json(), {
+    status: "not_ok",
+    message: "AJAX Module Connector field is duplicated: page"
+  })
 })
 
-test("fails closed for unsupported modules and duplicate fields", async () => {
+test("ListPages keeps later module names while other modules reject duplicates", async () => {
   const unsupported = await handleAjaxModuleConnectorRequest(
     request({ moduleName: "forum/ForumStartModule", module_body: "" }),
     { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
@@ -767,16 +1027,41 @@ test("fails closed for unsupported modules and duplicate fields", async () => {
     message: "Unsupported AJAX module: forum/ForumStartModule"
   })
 
-  const duplicate = await handleAjaxModuleConnectorRequest(
+  let listPagesReceived
+  const unknownThenListPages = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
       headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=list%2FListPagesModule&moduleName=list%2FListPagesModule&module_body=x"
+      body: "moduleName=not-a-real-module&moduleName=list%2FListPagesModule&module_body=x"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        listPagesReceived = input
+        return { body: "list-pages" }
+      }
+    }
+  )
+  assert.equal(unknownThenListPages.status, 200)
+  assert.deepEqual(await unknownThenListPages.json(), {
+    status: "ok",
+    body: "list-pages"
+  })
+  assert.equal(listPagesReceived.moduleBody, "x")
+
+  const listPagesThenUnknown = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=list%2FListPagesModule&moduleName=not-a-real-module&module_body=x"
     }),
     { siteId: 6000006, renderListPages: async () => assert.fail("must not render") }
   )
-  assert.equal(duplicate.status, 400)
-  assert.equal((await duplicate.json()).status, "not_ok")
+  assert.equal(listPagesThenUnknown.status, 400)
+  assert.deepEqual(await listPagesThenUnknown.json(), {
+    status: "not_ok",
+    message: "AJAX Module Connector field is duplicated: moduleName"
+  })
 })
 
 test("dispatches wikidot.py page reads without rewriting their request fields", async () => {
@@ -815,6 +1100,34 @@ test("dispatches wikidot.py page reads without rewriting their request fields", 
       moduleName: "files/PageFilesModule",
       parameters: { page_id: "1469071756" }
     }
+  ])
+})
+
+test("returns the observed no_page envelope for a missing ViewSource page", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "viewsource/ViewSourceModule",
+      page_id: "0",
+      callbackIndex: "client-missing-page"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async () => assert.fail("must not render a missing page")
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "no_page")
+  assert.equal(body.callbackIndex, "client-missing-page")
+  assert.equal(typeof body.message, "string")
+  assert.equal(Number.isInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(Object.keys(body).sort(), [
+    "CURRENT_TIMESTAMP",
+    "callbackIndex",
+    "message",
+    "status"
   ])
 })
 
@@ -865,15 +1178,10 @@ test("WhoRated pageId zero follows the observed HTTP failure boundary", async ()
   assert.equal((await response.json()).status, "not_ok")
 })
 
-test("WhoRated rejects unknown, duplicate, and malformed request fields", async () => {
+test("WhoRated rejects unknown and malformed request fields", async () => {
   const malformedShapes = [
     request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "+1" }),
-    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "1", extra: "1" }),
-    new Request("http://scp-wiki.local/ajax-module-connector.php", {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=pagerate%2FWhoRatedPageModule&pageId=1&pageId=2"
-    })
+    request({ moduleName: "pagerate/WhoRatedPageModule", pageId: "1", extra: "1" })
   ]
   let renders = 0
   for (const malformed of malformedShapes) {
@@ -888,6 +1196,25 @@ test("WhoRated rejects unknown, duplicate, and malformed request fields", async 
     assert.equal((await response.json()).status, "not_ok")
   }
   assert.equal(renders, 0)
+
+  const duplicate = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: "moduleName=pagerate%2FWhoRatedPageModule&pageId=1&pageId=2"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderPageReadModule: async () =>
+        assert.fail("duplicate WhoRated fields must fail before Deepwell")
+    }
+  )
+  assert.equal(duplicate.status, 400)
+  assert.deepEqual(await duplicate.json(), {
+    status: "not_ok",
+    message: "AJAX Module Connector field is duplicated: pageId"
+  })
 })
 
 test("dispatches the exact wikidot.py page revision list shape", async () => {
@@ -1167,6 +1494,275 @@ test("page discussion creation uses Wikidot no_page and stable failure boundarie
     assert.equal(Number.isInteger(failedBody.CURRENT_TIMESTAMP), true)
   } finally {
     console.error = originalConsoleError
+  }
+})
+
+test("anonymous ForumAction savePost hashes the private guest email before Deepwell", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "ForumAction",
+      event: "savePost",
+      moduleName: "Empty",
+      threadId: "18029831",
+      parentId: "",
+      guestName: "Guest Name",
+      guestEmail: "  SUPPORT@GRAVATAR.COM  ",
+      source: "Guest body",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      createForumPost: async (input) => {
+        calls.push(input)
+        return { forum_post_id: 9036580 }
+      }
+    }
+  )
+
+  assert.deepEqual(await response.json(), {
+    status: "ok",
+    postId: 9036580
+  })
+  assert.deepEqual(calls, [
+    {
+      siteId: 6000006,
+      threadId: 18029831,
+      parentPostId: null,
+      title: "",
+      source: "Guest body",
+      guestName: "Guest Name",
+      guestEmailMd5: "367c4ed53ac64deb1b7753b1556236c2"
+    }
+  ])
+  assert.equal(JSON.stringify(calls).includes("SUPPORT@GRAVATAR.COM"), false)
+})
+
+test("ForumAction savePost rejects incomplete or malformed guest identity before Deepwell", async () => {
+  const canonical = {
+    action: "ForumAction",
+    event: "savePost",
+    moduleName: "Empty",
+    threadId: "18029831",
+    parentId: "",
+    guestName: "Guest Name",
+    guestEmail: "support@gravatar.com",
+    source: "Guest body"
+  }
+  const invalid = [
+    { ...canonical, guestName: "" },
+    { ...canonical, guestEmail: "" },
+    { ...canonical, guestEmail: "not-an-email" },
+    { ...canonical, guestEmail: "a@b" },
+    { ...canonical, guestEmail: `${"a".repeat(39)}@example.com` },
+    { ...canonical, threadId: "0" },
+    { ...canonical, parentId: "-1" },
+    { ...canonical, extra: "unsupported" }
+  ]
+
+  let calls = 0
+  for (const form of invalid) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      createForumPost: async () => {
+        calls += 1
+        assert.fail("invalid savePost controls must fail before Deepwell")
+      }
+    })
+    assert.notEqual((await response.json()).status, "ok")
+  }
+  assert.equal(calls, 0)
+})
+
+test("dispatches the observed WikiPageAction deletePage request", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "WikiPageAction",
+      event: "deletePage",
+      page_id: "1469167148",
+      moduleName: "Empty",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      deletePage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.deepEqual(await response.json(), { status: "ok" })
+  assert.deepEqual(calls, [{ siteId: 6000006, pageId: 1469167148 }])
+})
+
+test("deletePage fails closed for invalid controls and Deepwell failures", async () => {
+  const canonical = {
+    action: "WikiPageAction",
+    event: "deletePage",
+    page_id: "1469167148",
+    moduleName: "Empty",
+    wikidot_token7: "client-token"
+  }
+  const invalidForms = [
+    { ...canonical, extra: "unexpected" },
+    ...["action", "event", "page_id", "moduleName"].map((field) => {
+      const form = { ...canonical }
+      delete form[field]
+      return form
+    }),
+    ...["", "0", "-1", "1.5", "9007199254740993"].map((page_id) => ({
+      ...canonical,
+      page_id
+    }))
+  ]
+
+  let calls = 0
+  for (const form of invalidForms) {
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      deletePage: async () => {
+        calls += 1
+        assert.fail("invalid deletePage controls must fail before Deepwell")
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+  }
+  assert.equal(calls, 0)
+
+  const missingDependency = await handleAjaxModuleConnectorRequest(request(canonical), {
+    siteId: 6000006,
+    renderListPages: async () => assert.fail("must not render ListPages")
+  })
+  assert.equal((await missingDependency.json()).status, "not_ok")
+
+  const originalConsoleError = console.error
+  console.error = () => {}
+  try {
+    const failed = await handleAjaxModuleConnectorRequest(request(canonical), {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      deletePage: async () => {
+        throw new Error("Deepwell unavailable")
+      }
+    })
+    assert.equal((await failed.json()).status, "not_ok")
+  } finally {
+    console.error = originalConsoleError
+  }
+})
+
+test("dispatches pagepath Create new as the observed immediate DataFormAction mutation", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "DataFormAction",
+      event: "newPage",
+      category: "tree",
+      parent: "tree:alpha",
+      title: "gamma",
+      moduleName: "Empty",
+      callbackIndex: "2",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      canCreateNewPage: true,
+      pageExists: async () => false,
+      createNewPage: async (input) => calls.push(input)
+    }
+  )
+
+  assert.equal(response.status, 200)
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.fullname, "tree:gamma")
+  assert.equal(body.callbackIndex, "2")
+  assert.equal(Number.isSafeInteger(body.CURRENT_TIMESTAMP), true)
+  assert.deepEqual(calls, [
+    {
+      slug: "tree:gamma",
+      title: "gamma",
+      wikitext: "",
+      tags: [],
+      parentPage: "tree:alpha"
+    }
+  ])
+})
+
+test("pagepath first root child bootstraps the empty _root before creating the child", async () => {
+  const calls = []
+  const existing = new Set()
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      action: "DataFormAction",
+      event: "newPage",
+      category: "tree-name",
+      parent: "",
+      title: "alpha",
+      moduleName: "Empty",
+      callbackIndex: "2"
+    }),
+    {
+      siteId: 6000006,
+      canCreateNewPage: true,
+      pageExists: async (slug) => existing.has(slug),
+      createNewPage: async (input) => {
+        calls.push(input)
+        existing.add(input.slug)
+      }
+    }
+  )
+
+  const body = await response.json()
+  assert.equal(body.status, "ok")
+  assert.equal(body.fullname, "tree-name:alpha")
+  assert.deepEqual(calls, [
+    {
+      slug: "tree-name:_root",
+      title: "Tree-name",
+      wikitext: "",
+      tags: [],
+      parentPage: null
+    },
+    {
+      slug: "tree-name:alpha",
+      title: "alpha",
+      wikitext: "",
+      tags: [],
+      parentPage: "tree-name:_root"
+    }
+  ])
+})
+
+test("pagepath Create new fails before mutation for unsupported shape, collision, or denied actor", async () => {
+  const base = {
+    action: "DataFormAction",
+    event: "newPage",
+    category: "tree",
+    parent: "tree:alpha",
+    title: "gamma",
+    moduleName: "Empty",
+    callbackIndex: "2"
+  }
+  for (const [form, options] of [
+    [
+      { ...base, extra: "unsupported" },
+      { canCreateNewPage: true, pageExists: async () => false }
+    ],
+    [base, { canCreateNewPage: true, pageExists: async () => true }],
+    [base, { canCreateNewPage: false, pageExists: async () => false }]
+  ]) {
+    let mutated = false
+    const response = await handleAjaxModuleConnectorRequest(request(form), {
+      siteId: 6000006,
+      ...options,
+      createNewPage: async () => {
+        mutated = true
+      }
+    })
+    assert.equal((await response.json()).status, "not_ok")
+    assert.equal(mutated, false)
   }
 })
 

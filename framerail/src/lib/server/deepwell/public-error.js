@@ -1,4 +1,15 @@
+export const DEEPWELL_SESSION_INVALID = 3001
 export const DEEPWELL_PERMISSION_DENIED = 3106
+
+/**
+ * @param {unknown} error
+ * @returns {boolean}
+ */
+export const isInvalidSessionTokenError = (error) =>
+  error !== null &&
+  typeof error === "object" &&
+  "code" in error &&
+  error.code === DEEPWELL_SESSION_INVALID
 
 /**
  * Remove structured Deepwell diagnostics before a JSON-RPC error crosses

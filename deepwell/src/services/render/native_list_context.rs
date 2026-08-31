@@ -11,7 +11,9 @@ use std::ops::Range;
 
 mod source_scopes;
 
-pub(super) use source_scopes::collect_unproven_scope_ranges;
+pub(super) use source_scopes::{
+    collect_unproven_scope_ranges, matching_source_scope_close,
+};
 
 use super::literal_regions::{
     LiteralRegionIndex, TextTokenCursor, WikidotTagScan, scan_wikidot_tag,

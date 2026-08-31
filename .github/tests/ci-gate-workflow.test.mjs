@@ -332,7 +332,7 @@ test("optional Browser CI contains only browser validation", () => {
   ]) assert.equal(source.split(condition).length - 1, 1, condition)
   assert.ok(source.split("github.event.action == 'edited' && github.event.changes.base != null").length - 1 >= 1)
   assert.match(source, /pnpm --dir framerail test/)
-  assert.match(source, /timeout-minutes: 5/)
+  assert.match(source, /timeout-minutes: 10/)
 })
 
 test("Full CI cancellation and execution policy handles label lifecycle cheaply", () => {

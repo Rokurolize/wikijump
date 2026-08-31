@@ -51,7 +51,7 @@
     use:enhance
   >
     <div class="control-group">
-      <label class="control-label" for="sm-ganalytics-key">Google Analytics key</label>
+      <label class="control-label" for="sm-ganalytics-key">Profile key</label>
       <div class="controls">
         <input
           id="sm-ganalytics-key"
@@ -64,7 +64,7 @@
       </div>
     </div>
     <div class="control-group">
-      <label class="control-label" for="sm-ganalytics-use">Enable Google Analytics</label>
+      <label class="control-label" for="sm-ganalytics-use">Use Google Analytics</label>
       <div class="controls">
         <input
           id="sm-ganalytics-use"

@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 
-import { resolvePinnedFtmlCheckout } from '../src/pinned-ftml-checkout.mjs';
+import { pinnedFtmlBytes } from '../src/pinned-ftml-checkout.mjs';
+import { historicalBytes, historicalText } from './historical-git.mjs';
 
 const artifactRelative = 'install/local/wikidot-verification/artifacts/pr1334-ftml-reference-control-source-attribution-20260810.json';
 const artifactPath = new URL('../artifacts/pr1334-ftml-reference-control-source-attribution-20260810.json', import.meta.url);
@@ -17,15 +16,14 @@ try {
   throw error;
 }
 
-const fixturePath = new URL('../fixtures/pr1334-ftml-reference-control-source-attribution.json', import.meta.url);
-const fixture = JSON.parse(await readFile(fixturePath, 'utf8'));
-const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
-const ftml = resolvePinnedFtmlCheckout({ revision: fixture.ftml_revision, tree: fixture.ftml_git_tree });
+const captureCommit = 'fa8e3f381e290caeff9e78bd8ab4468075e61469';
+const fixture = JSON.parse(historicalText(captureCommit, 'install/local/wikidot-verification/fixtures/pr1334-ftml-reference-control-source-attribution.json'));
 const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
-async function verifyWitness(root, witness) {
-  assert.equal(path.isAbsolute(witness.path), false);
-  const bytes = await readFile(path.join(root, witness.path));
+async function verifyWitness(repository, witness) {
+  const bytes = repository === 'ftml'
+    ? pinnedFtmlBytes({ revision: fixture.ftml_revision, tree: fixture.ftml_git_tree, sourcePath: witness.path })
+    : historicalBytes(captureCommit, witness.path);
   assert.equal(witness.sha256, sha256(bytes));
   assert.match(witness.sha256, /^[0-9a-f]{64}$/);
   const lines = bytes.toString('utf8').split(/\r?\n/);
@@ -40,17 +38,8 @@ test('exact base, dependency identities, and deterministic provenance identities
   assert.equal(artifact.pinned_ftml_revision, fixture.ftml_revision);
   assert.equal(artifact.pinned_ftml_git_tree, fixture.ftml_git_tree);
   assert.equal(artifact.pinned_ftml_package_version, fixture.ftml_package_version);
-  for (const witness of [artifact.inventory_identity, artifact.fixture_identity, artifact.script_identity]) {
-    await verifyWitness(repo, witness);
-  }
-  for (const witness of [artifact.cargo_manifest_pin_witness, artifact.cargo_lock_pin_witness]) {
-    assert.equal(path.isAbsolute(witness.path), false);
-    assert.match(witness.sha256, /^[0-9a-f]{64}$/);
-    assert.ok(Number.isInteger(witness.line_range.start));
-    assert.deepEqual(witness.line_range, {
-      start: witness.line_range.start,
-      end: witness.line_range.start,
-    });
+  for (const witness of [artifact.inventory_identity, artifact.fixture_identity, artifact.script_identity, artifact.cargo_manifest_pin_witness, artifact.cargo_lock_pin_witness]) {
+    await verifyWitness('wikijump', witness);
   }
   assert.equal(artifact.inventory_identity.schema, 'wikijump.compatibility_surface_inventory.v1');
   assert.equal(artifact.cargo_manifest_pin_witness.anchor_text.includes(fixture.ftml_revision), true);
@@ -84,19 +73,19 @@ test('every surface has complete-file source, public-test, fixture, and specific
     assert.ok(record.source_owner_witnesses.length >= 1);
     assert.ok(record.public_integration_test_witnesses.length >= 1);
     assert.ok(record.fixture_witnesses.length >= 1);
-    await verifyWitness(repo, record.catalog_specification);
+    await verifyWitness('wikijump', record.catalog_specification);
     for (const witness of record.source_owner_witnesses) {
       assert.match(witness.path, /^(?:src\/parsing\/rule\/impls\/(?:block\/blocks\/(?:button|date|file|user)|anchor|email|link_single|link_triple|url)\.rs|src\/render\/html\/element\/(?:button|date|file|link|user)\.rs|src\/tree\/button\.rs)$/);
-      await verifyWitness(ftml, witness);
+      await verifyWitness('ftml', witness);
     }
     for (const witness of record.public_integration_test_witnesses) {
       assert.match(witness.path, /^tests\/.*\.rs$/);
       assert.equal(witness.anchor_text, `fn ${witness.test_name}()`);
-      await verifyWitness(ftml, witness);
+      await verifyWitness('ftml', witness);
     }
     for (const witness of record.fixture_witnesses) {
       assert.match(witness.path, /^(?:test\/(?:file|date|link|user)\/|tests\/fixtures\/)/);
-      await verifyWitness(ftml, witness);
+      await verifyWitness('ftml', witness);
     }
   }
 });

@@ -4,7 +4,7 @@ Shim: `SEARCH_FEED_MODULE_REGEX`, `SEARCH_ALL_MODULE_REGEX`, and the raw-source 
 
 Reason it lives in Wikijump: SearchAll needs request URL state, and the observed Search and Feed results depend on services outside FTML. Deepwell excludes literal owners and preserves only the evidenced form, missing-source result, or unavailable result. It does not invent a search or feed backend.
 
-Why FTML is not yet sufficient: pinned FTML revision `62ebba4efda1f10e82363c23c925061fbe939e49` exposes an unknown module as `Module::Runtime` only when the source has a body and a later `[[/module]]`. The evidenced Search, SearchAll, and Feed forms are closer-free, so FTML converts them to its generic unknown-module result before Deepwell can inspect the authored head or request URL.
+Why FTML is not yet sufficient: pinned FTML revision `324ac373ed0a3ee8dc46dbad5aa1d91688be95d6` exposes an unknown module as `Module::Runtime` only when the source has a body and a later `[[/module]]`. The evidenced Search, SearchAll, and Feed forms are closer-free, so FTML converts them to its generic unknown-module result before Deepwell can inspect the authored head or request URL.
 
 Evidence: `deepwell/tests/page.rs::search_and_feed_modules_match_live_preview_and_page_view_boundaries` is the public regression. The sealed unavailable states and missing successful-backend evidence are recorded under issues 748, 807, and 1036 in `docs/development/open43-q-search-users-closure-audit.json`.
 

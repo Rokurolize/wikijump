@@ -21,11 +21,8 @@ test("Wikidot-compatible tabviews are complete at the initial no-script paint", 
 
     const tabview = page.locator("#page-content > .yui-navset")
     await expect(tabview).toHaveAttribute("id", /^wiki-tabview-[0-9a-f]{32}$/u)
-    await expect(tabview).toHaveClass(/\byui-navset-top\b/u)
-    await expect(tabview.locator(".yui-nav > li").nth(0)).toHaveAttribute(
-      "title",
-      "active"
-    )
+    await expect(tabview).toHaveClass(/^yui-navset$/u)
+    await expect(tabview.locator(".yui-nav > li").nth(0)).not.toHaveAttribute("title")
     await expect(tabview.locator(".yui-nav a em")).toHaveText(["First", "Second"])
     const panels = tabview.locator(".yui-content > div")
     await expect(panels.nth(0)).toHaveAttribute("id", "wiki-tab-0-0")
@@ -42,11 +39,57 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
 }) => {
   const consoleErrors: string[] = []
   await page.setExtraHTTPHeaders(headers)
+  await page.addInitScript(() => {
+    window.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        const tabview = document.querySelector("#page-content > .yui-navset")
+        const selected = tabview?.querySelector(":scope > .yui-nav > li.selected")
+        ;(
+          window as Window & {
+            wikidotTabviewDomReadyProbe?: {
+              className: string | null
+              selectedTitle: string | null
+            }
+          }
+        ).wikidotTabviewDomReadyProbe = {
+          className: tabview?.className ?? null,
+          selectedTitle: selected?.getAttribute("title") ?? null
+        }
+      },
+      { once: true, capture: true }
+    )
+  })
   page.on("console", (message) => {
     if (message.type() === "error") consoleErrors.push(message.text())
   })
 
-  await page.goto("/wikidot-tabview")
+  await page.goto("/wikidot-tabview", { waitUntil: "domcontentloaded" })
+
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as Window & {
+            wikidotTabviewDomReadyProbe?: {
+              className: string | null
+              selectedTitle: string | null
+            }
+          }
+        ).wikidotTabviewDomReadyProbe
+    )
+  ).toEqual({ className: "yui-navset", selectedTitle: null })
+
+  await expect
+    .poll(() =>
+      page.locator("#page-content > .yui-navset").evaluate((tabview) => ({
+        className: tabview.className,
+        selectedTitle: tabview
+          .querySelector(":scope > .yui-nav > li.selected")
+          ?.getAttribute("title")
+      }))
+    )
+    .toEqual({ className: "yui-navset yui-navset-top", selectedTitle: "active" })
 
   await expect
     .poll(() =>

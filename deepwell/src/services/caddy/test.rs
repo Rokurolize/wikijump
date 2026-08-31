@@ -229,6 +229,47 @@ fn single_upstream_proxies_do_not_eject_their_only_backend() {
 }
 
 #[test]
+fn generated_caddyfile_routes_exact_default_code_path_to_files_domain() {
+    let config = build_config("wikijump.test", "wjfiles.test");
+    let (sites, _) = build_site_data();
+    let caddyfile = CaddyService::generate_with_data(
+        &config,
+        &CaddyfileOptions {
+            debug: false,
+            local: false,
+            http_port: None,
+            https_port: None,
+            wildcard_cert: None,
+            deploy_host: None,
+            framerail_host: cow!("framerail:3393"),
+            wws_host: cow!("wws:3466"),
+        },
+        &sites,
+    )
+    .expect("failed to generate Caddyfile");
+    let serve_main = snippet_body(&caddyfile, "serve_main");
+    let redirect_matcher = serve_main
+        .split_once("@redirect {")
+        .expect("serve_main has no redirect matcher")
+        .1
+        .split_once('}')
+        .expect("redirect matcher was not closed")
+        .0;
+    let code_paths = redirect_matcher
+        .lines()
+        .map(str::trim)
+        .filter_map(|line| line.strip_prefix("path "))
+        .filter(|path| path.starts_with("/*/code"))
+        .collect::<Vec<_>>();
+
+    assert_eq!(code_paths, ["/*/code", "/*/code/*"]);
+    assert!(
+        serve_main.contains("redir @redirect https://{vars.site_slug}.wjfiles.test{uri}"),
+        "exact code path must use the files-domain redirect",
+    );
+}
+
+#[test]
 fn generated_caddyfiles_do_not_use_unsupported_push_directive() {
     let config = build_config("wikijump.test", "wjfiles.test");
     let (sites, _) = build_site_data();

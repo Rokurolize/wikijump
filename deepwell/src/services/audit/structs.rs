@@ -52,8 +52,13 @@ pub enum AuditEvent<'a> {
         user_id: i64,
         operation: UpdateMfaOperation,
     },
+    UserDelete {
+        user_id: i64,
+        deleting_user_id: i64,
+    },
     SiteCreate {
         site_id: i64,
+        user_id: Option<i64>,
     },
     SiteUpdate {
         site_id: i64,
@@ -95,6 +100,12 @@ pub enum AuditEvent<'a> {
         page_id: i64,
         revision_id: Option<i64>,
     },
+    PageRevisionVisibilityUpdate {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        revision_id: i64,
+    },
     PageMove {
         user_id: i64,
         site_id: i64,
@@ -130,6 +141,35 @@ pub enum AuditEvent<'a> {
         site_id: i64,
         page_id: i64,
         layout: Option<Layout>,
+    },
+    FileCreate {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+    },
+    FileEdit {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+    },
+    FileUndelete {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+    },
+    FileRollback {
+        user_id: i64,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+        revision_id: i64,
+        revision_number: i32,
     },
     FilterViolation {
         object: ObjectScope,
@@ -184,6 +224,7 @@ pub enum AuditEvent<'a> {
     },
     PageLockRemove {
         user_id: i64,
+        site_id: i64,
         page_id: i64,
         page_lock_id: i64,
         lock_type: PageLockType,
@@ -284,10 +325,25 @@ impl<'a> AuditEvent<'a> {
                 extra_string_2: None,
                 extra_number: None,
             },
-            AuditEvent::SiteCreate { site_id } => RawAuditEvent {
+            AuditEvent::UserDelete {
+                user_id,
+                deleting_user_id,
+            } => RawAuditEvent {
+                event_type: "user.delete",
+                ip_address,
+                user_id: Some(deleting_user_id),
+                site_id: None,
+                page_id: None,
+                extra_id_1: Some(user_id),
+                extra_id_2: None,
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::SiteCreate { site_id, user_id } => RawAuditEvent {
                 event_type: "site.create",
                 ip_address,
-                user_id: None,
+                user_id,
                 site_id: Some(site_id),
                 page_id: None,
                 extra_id_1: None,
@@ -417,6 +473,23 @@ impl<'a> AuditEvent<'a> {
                 extra_string_2: None,
                 extra_number: None,
             },
+            AuditEvent::PageRevisionVisibilityUpdate {
+                user_id,
+                site_id,
+                page_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "page_revision.update_visibility",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(revision_id),
+                extra_id_2: None,
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
             AuditEvent::PageMove {
                 user_id,
                 site_id,
@@ -507,6 +580,79 @@ impl<'a> AuditEvent<'a> {
                 extra_string_1: layout.map(|l| cow!(l.value())),
                 extra_string_2: None,
                 extra_number: None,
+            },
+            AuditEvent::FileCreate {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "file.create",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::FileEdit {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "file.edit",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::FileUndelete {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+            } => RawAuditEvent {
+                event_type: "file.undelete",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::FileRollback {
+                user_id,
+                site_id,
+                page_id,
+                file_id,
+                revision_id,
+                revision_number,
+            } => RawAuditEvent {
+                event_type: "file.rollback",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: Some(site_id),
+                page_id: Some(page_id),
+                extra_id_1: Some(file_id),
+                extra_id_2: Some(revision_id),
+                extra_string_1: None,
+                extra_string_2: None,
+                extra_number: Some(revision_number),
             },
             AuditEvent::FilterViolation {
                 object,
@@ -693,6 +839,7 @@ impl<'a> AuditEvent<'a> {
             },
             AuditEvent::PageLockRemove {
                 user_id,
+                site_id,
                 page_id,
                 page_lock_id,
                 lock_type,
@@ -700,7 +847,7 @@ impl<'a> AuditEvent<'a> {
                 event_type: "page_lock.remove",
                 ip_address,
                 user_id: Some(user_id),
-                site_id: None,
+                site_id: Some(site_id),
                 page_id: Some(page_id),
                 extra_id_1: Some(page_lock_id),
                 extra_id_2: None,
@@ -848,6 +995,10 @@ pub struct UserFields<'a> {
     // NOTE: This is simply whether an avatar is set or not, not its value.
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub avatar: Maybe<bool>,
+    // NOTE: Forum signature source is user-authored content. Audit only the
+    // presence transition so private account history does not duplicate it.
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub forum_signature: Maybe<bool>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub real_name: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
@@ -890,6 +1041,12 @@ pub struct SiteFields<'a> {
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub preferred_domain: Maybe<Option<&'a str>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub favicon_source: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub ios_icon_source: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub windows_tile_source: Maybe<Option<&'a str>>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub layout: Maybe<Option<Layout>>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub forum_max_nest_level: Maybe<i16>,
@@ -901,6 +1058,8 @@ pub struct SiteFields<'a> {
     pub show_top_toolbar: Maybe<bool>,
     #[serde(skip_serializing_if = "Maybe::is_unset")]
     pub show_bottom_toolbar: Maybe<bool>,
+    #[serde(skip_serializing_if = "Maybe::is_unset")]
+    pub educational: Maybe<bool>,
 }
 
 #[derive(Serialize, Debug, Clone, Default)]
@@ -1008,6 +1167,14 @@ mod tests {
         assert_eq!(changed["email"], "new@example.com");
         assert_eq!(changed["password"], true);
 
+        let raw = extract(AuditEvent::UserDelete {
+            user_id: 12,
+            deleting_user_id: 13,
+        });
+        assert_event_type(&raw, "user.delete");
+        assert_eq!(raw.user_id, Some(13));
+        assert_eq!(raw.extra_id_1, Some(12));
+
         for (operation, expected) in [
             (UpdateMfaOperation::Setup, "setup"),
             (
@@ -1024,9 +1191,21 @@ mod tests {
             assert_eq!(raw.extra_string_1.as_deref(), Some(expected));
         }
 
-        let raw = extract(AuditEvent::SiteCreate { site_id: 20 });
+        let raw = extract(AuditEvent::SiteCreate {
+            site_id: 20,
+            user_id: Some(21),
+        });
         assert_event_type(&raw, "site.create");
         assert_eq!(raw.site_id, Some(20));
+        assert_eq!(raw.user_id, Some(21));
+
+        let raw = extract(AuditEvent::SiteCreate {
+            site_id: 22,
+            user_id: None,
+        });
+        assert_event_type(&raw, "site.create");
+        assert_eq!(raw.site_id, Some(22));
+        assert_eq!(raw.user_id, None);
 
         let previous_fields = SiteFields {
             name: Maybe::Set("Old Site"),
@@ -1088,6 +1267,46 @@ mod tests {
     }
 
     #[test]
+    fn site_update_icon_fields_serialize_set_clear_and_unset_states() {
+        let raw = extract(AuditEvent::SiteUpdate {
+            site_id: 21,
+            user_id: 22,
+            previous_fields: SiteFields {
+                favicon_source: Maybe::Set(Some("/local--files/site/favicon.png")),
+                ios_icon_source: Maybe::Set(None),
+                ..Default::default()
+            },
+            changed_fields: SiteFields {
+                favicon_source: Maybe::Set(None),
+                windows_tile_source: Maybe::Set(Some(
+                    "/local--files/site/windows-tile.png",
+                )),
+                ..Default::default()
+            },
+        });
+
+        let previous: serde_json::Value =
+            serde_json::from_str(raw.extra_string_1.as_deref().unwrap()).unwrap();
+        let changed: serde_json::Value =
+            serde_json::from_str(raw.extra_string_2.as_deref().unwrap()).unwrap();
+
+        assert_eq!(
+            previous,
+            serde_json::json!({
+                "favicon_source": "/local--files/site/favicon.png",
+                "ios_icon_source": null,
+            }),
+        );
+        assert_eq!(
+            changed,
+            serde_json::json!({
+                "favicon_source": null,
+                "windows_tile_source": "/local--files/site/windows-tile.png",
+            }),
+        );
+    }
+
+    #[test]
     fn extracts_page_events() {
         let raw = extract(AuditEvent::PageCreate {
             user_id: 1,
@@ -1111,6 +1330,18 @@ mod tests {
         });
         assert_event_type(&raw, "page.edit");
         assert_eq!(raw.extra_id_1, None);
+
+        let raw = extract(AuditEvent::PageRevisionVisibilityUpdate {
+            user_id: 31,
+            site_id: 32,
+            page_id: 33,
+            revision_id: 34,
+        });
+        assert_event_type(&raw, "page_revision.update_visibility");
+        assert_eq!(raw.user_id, Some(31));
+        assert_eq!(raw.site_id, Some(32));
+        assert_eq!(raw.page_id, Some(33));
+        assert_eq!(raw.extra_id_1, Some(34));
 
         let raw = extract(AuditEvent::PageMove {
             user_id: 9,
@@ -1168,6 +1399,87 @@ mod tests {
         });
         assert_event_type(&raw, "page_layout.update");
         assert_eq!(raw.extra_string_1.as_deref(), Some("wikidot"));
+    }
+
+    #[test]
+    fn extracts_file_create_event() {
+        let raw = extract(AuditEvent::FileCreate {
+            user_id: 31,
+            site_id: 32,
+            page_id: 33,
+            file_id: 34,
+            revision_id: 35,
+        });
+        assert_event_type(&raw, "file.create");
+        assert_eq!(raw.user_id, Some(31));
+        assert_eq!(raw.site_id, Some(32));
+        assert_eq!(raw.page_id, Some(33));
+        assert_eq!(raw.extra_id_1, Some(34));
+        assert_eq!(raw.extra_id_2, Some(35));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
+    fn extracts_file_edit_event() {
+        let raw = extract(AuditEvent::FileEdit {
+            user_id: 36,
+            site_id: 37,
+            page_id: 38,
+            file_id: 39,
+            revision_id: 40,
+        });
+        assert_event_type(&raw, "file.edit");
+        assert_eq!(raw.user_id, Some(36));
+        assert_eq!(raw.site_id, Some(37));
+        assert_eq!(raw.page_id, Some(38));
+        assert_eq!(raw.extra_id_1, Some(39));
+        assert_eq!(raw.extra_id_2, Some(40));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
+    fn extracts_file_undelete_event() {
+        let raw = extract(AuditEvent::FileUndelete {
+            user_id: 41,
+            site_id: 42,
+            page_id: 43,
+            file_id: 44,
+            revision_id: 45,
+        });
+        assert_event_type(&raw, "file.undelete");
+        assert_eq!(raw.user_id, Some(41));
+        assert_eq!(raw.site_id, Some(42));
+        assert_eq!(raw.page_id, Some(43));
+        assert_eq!(raw.extra_id_1, Some(44));
+        assert_eq!(raw.extra_id_2, Some(45));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, None);
+    }
+
+    #[test]
+    fn extracts_file_rollback_event() {
+        let raw = extract(AuditEvent::FileRollback {
+            user_id: 46,
+            site_id: 47,
+            page_id: 48,
+            file_id: 49,
+            revision_id: 50,
+            revision_number: 3,
+        });
+        assert_event_type(&raw, "file.rollback");
+        assert_eq!(raw.user_id, Some(46));
+        assert_eq!(raw.site_id, Some(47));
+        assert_eq!(raw.page_id, Some(48));
+        assert_eq!(raw.extra_id_1, Some(49));
+        assert_eq!(raw.extra_id_2, Some(50));
+        assert_eq!(raw.extra_string_1, None);
+        assert_eq!(raw.extra_string_2, None);
+        assert_eq!(raw.extra_number, Some(3));
     }
 
     #[test]
@@ -1301,11 +1613,13 @@ mod tests {
 
         let raw = extract(AuditEvent::PageLockRemove {
             user_id: 62,
+            site_id: 59,
             page_id: 63,
             page_lock_id: 64,
             lock_type: PageLockType::Wikidot,
         });
         assert_event_type(&raw, "page_lock.remove");
+        assert_eq!(raw.site_id, Some(59));
         assert_eq!(raw.page_id, Some(63));
         assert_eq!(raw.extra_id_1, Some(64));
         assert_eq!(raw.extra_string_1.as_deref(), Some("wikidot"));

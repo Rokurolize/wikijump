@@ -161,7 +161,13 @@ function feedItemXml(origin: string, item: WikidotListPagesFeedItem): string {
     `\t\t\t<link>${escapeXml(pageUrl)}</link>`,
     `\t\t\t<description>${escapeXml(content)}</description>`,
     `\t\t\t<pubDate>${formatWikidotFeedDate(new Date(item.created_at))}</pubDate>`,
-    `\t\t\t<content:encoded><![CDATA[${cdata(content)}]]></content:encoded>`,
+    [
+      "\t\t\t\t\t\t\t\t\t\t\t\t<content:encoded>",
+      "\t\t\t\t\t<![CDATA[",
+      `\t\t\t\t\t\t ${cdata(content)} `,
+      "\t\t\t\t \t]]>",
+      "\t\t\t\t</content:encoded>"
+    ].join("\n"),
     "\t\t</item>"
   ].join("\n")
 }
@@ -184,12 +190,10 @@ export function buildWikidotListPagesFeedXml(
     `\t\t<description>${escapeXml(path.description)}</description>`,
     "\t\t<copyright></copyright>",
     `\t\t<lastBuildDate>${formatWikidotFeedDate(now)}</lastBuildDate>`,
-    items,
+    ...(items ? [items] : []),
     "\t</channel>",
     "</rss>"
-  ]
-    .filter((line) => line !== "")
-    .join("\n")
+  ].join("\n")
 }
 
 export function wikidotListPagesFeedErrorBody(message: string): string {

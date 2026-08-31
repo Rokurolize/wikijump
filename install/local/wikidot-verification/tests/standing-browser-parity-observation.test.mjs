@@ -3,8 +3,35 @@ import test from "node:test";
 
 import {
   captureDocumentObservation,
+  isExpectedExternalAssetFailure,
   observationArtifactName,
+  prewarmBrowserParityLazyImages,
 } from "../src/standing-browser-parity-observation.mjs";
+
+test("lazy-image prewarming restores scroll synchronously on smooth pages", async () => {
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  const calls = [];
+  globalThis.window = {
+    scrollY: 646,
+    scrollTo: (options) => calls.push(options),
+  };
+  globalThis.document = { images: [] };
+  try {
+    await prewarmBrowserParityLazyImages({ evaluate: async (callback) => callback() });
+  } finally {
+    globalThis.window = previousWindow;
+    globalThis.document = previousDocument;
+  }
+  assert.deepEqual(calls, [{ left: 0, top: 646, behavior: "instant" }]);
+});
+
+test("external wdfiles stylesheet ORB failures remain separately attributable", () => {
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" }), true);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_TIMED_OUT" }), true);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif", resource_type: "other", error: "net::ERR_BLOCKED_BY_ORB" }), true);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://example.test/app.js", resource_type: "script", error: "net::ERR_FAILED" }), false);
+});
 
 test("immediate and settled browser artifacts have deterministic, distinct safe names", () => {
   const input = {

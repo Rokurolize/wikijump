@@ -55,6 +55,7 @@ pub(in crate::services::render) struct BacklinksModulePage {
     pub(in crate::services::render) page_category_id: i64,
     pub(in crate::services::render) slug: String,
     pub(in crate::services::render) title: String,
+    pub(in crate::services::render) hidden: Vec<String>,
 }
 
 pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> String {
@@ -62,22 +63,22 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
         return "\n<div class=\"backlinks-module-box\">\n</div>\n".to_owned();
     }
 
-    let mut output = String::from("\n<div class=\"backlinks-module-box\"><ul>");
+    let mut output = String::from("\n<div class=\"backlinks-module-box\">\n\t\t\t<ul>");
 
     for page in pages {
-        output.push_str(r#"<li><a href="/"#);
+        output.push_str("\n\t\t\t\t\t\t\t<li>\n\t\t\t\t\t\t<a href=\"/");
         output.push_str(&escape_list_pages_html_attr(&page.slug));
-        output.push_str(r#"">"#);
+        output.push_str("\">");
         output.push_str(&escape_list_pages_html_text(&page.title));
-        output.push_str("</a></li>");
+        output.push_str("</a>\n\t\t\t\t\t</li>");
     }
 
-    output.push_str("</ul></div>\n");
+    output.push_str("\n\t\t\t\t\t</ul>\n\t</div>\n");
     output
 }
 
-fn backlinks_scan_exceeded(row_count: usize) -> bool {
-    row_count > MAX_BACKLINKS_MODULE_ROWS
+fn backlinks_scan_is_incomplete(row_count: usize) -> bool {
+    row_count >= MAX_BACKLINKS_MODULE_ROWS
 }
 
 impl RenderService {
@@ -93,9 +94,7 @@ impl RenderService {
             return Ok(wikitext);
         }
 
-        let (Some(current_site_id), Some(current_page_id)) =
-            (current_site_id, current_page_id)
-        else {
+        let Some(current_site_id) = current_site_id else {
             return Ok(wikitext);
         };
 
@@ -115,13 +114,22 @@ impl RenderService {
                 continue;
             }
 
-            let Some(pages) =
-                Self::load_backlinks_module_pages(ctx, current_site_id, current_page_id)
+            let pages = match current_page_id {
+                Some(current_page_id) => {
+                    let Some(pages) = Self::load_backlinks_module_pages(
+                        ctx,
+                        current_site_id,
+                        current_page_id,
+                    )
                     .await?
-            else {
-                expanded.push_str(mtch.as_str());
-                cursor = mtch.end();
-                continue;
+                    else {
+                        expanded.push_str(mtch.as_str());
+                        cursor = mtch.end();
+                        continue;
+                    };
+                    pages
+                }
+                None => Vec::new(),
             };
             expanded.push_str(
                 &compat_html.push_block_html(render_backlinks_module_box(&pages)),
@@ -151,7 +159,7 @@ impl RenderService {
         let statement = Statement::from_string(
             txn.get_database_backend(),
             format!(
-                "SELECT p.page_id, p.page_category_id, p.slug, pr.title \
+                "SELECT p.page_id, p.page_category_id, p.slug, pr.title, pr.hidden \
                  FROM page_connection pc \
                  JOIN page p ON p.page_id = pc.from_page_id \
                  JOIN page_revision pr ON pr.revision_id = p.latest_revision_id \
@@ -168,7 +176,7 @@ impl RenderService {
             .all(txn)
             .await
             .or_raise(make_error)?;
-        if backlinks_scan_exceeded(rows.len()) {
+        if backlinks_scan_is_incomplete(rows.len()) {
             return Ok(None);
         }
 
@@ -190,7 +198,12 @@ impl RenderService {
             .await
             .or_raise(make_error)?;
 
-            if anonymously_viewable {
+            if anonymously_viewable
+                && !row
+                    .hidden
+                    .iter()
+                    .any(|field| field == "title" || field == "slug")
+            {
                 viewable.push(row);
             }
         }
@@ -202,7 +215,7 @@ impl RenderService {
 #[cfg(test)]
 mod tests {
     use super::{
-        BACKLINKS_MODULE_REGEX, MAX_BACKLINKS_MODULE_ROWS, backlinks_scan_exceeded,
+        BACKLINKS_MODULE_REGEX, MAX_BACKLINKS_MODULE_ROWS, backlinks_scan_is_incomplete,
         render_backlinks_module_box,
     };
 
@@ -225,7 +238,7 @@ mod tests {
 
     #[test]
     fn backlinks_requires_a_complete_bounded_scan_before_acl_filtering() {
-        assert!(!backlinks_scan_exceeded(MAX_BACKLINKS_MODULE_ROWS));
-        assert!(backlinks_scan_exceeded(MAX_BACKLINKS_MODULE_ROWS + 1));
+        assert!(!backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS - 1));
+        assert!(backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS));
     }
 }

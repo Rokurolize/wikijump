@@ -3,6 +3,7 @@
 - Feature ID: `site-lifecycle-limits`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,53 @@ Implement the documented site ownership limits, storage/page limits, backup beha
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Current documentation covers external-account absence, platform ads, file-storage limits, unlimited pages/members, per-user site-count limits, backups, anti-vandal controls, founder-only site deletion, and deletion undo. Numeric storage/site limits are plan-era values and must be reconciled with the current plan matrix before enforcement.
+
+### P2 - parser stage, nesting, and composition
+
+- Site lifecycle/limits are platform state, not wiki syntax.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Site deletion is reversible/undoable according to documentation and can be initiated only by the founder. Plan-limit changes may lock new writes or recent sites without deleting existing content.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Founder-only deletion, administrator controls, permissions, blocks, and private visibility must be enforced before destructive site mutation or protected content disclosure.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Unlimited page/member claims mean no ordinary count cap beyond plan-specific/private-member rules; storage/site-slot ceilings are resource counts, not page query pagination.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Site Manager exposes extreme deletion/undo and relevant limit/configuration actions; backup and RSS monitoring use their separate public routes.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- When a plan/site limit blocks an operation, the public UI must show the corresponding unavailable/read-only state rather than silently dropping the mutation.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Deletion/restore and downgrade locking must be failure-atomic. The older 100 MB statement conflicts with newer 300 MB/current plan documentation, so it MUST NOT be used as a hard current limit without a current plan observation.
 
 
 ## Suggested public TDD seams

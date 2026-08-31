@@ -315,17 +315,20 @@ export function compareGeometry(
       anomalies.push({ code: `${prefix}selector_count_divergence`, detail });
       continue;
     }
-    const delta = Object.fromEntries(
+    const rawDelta = Object.fromEntries(
       ["x", "y", "width", "height"].map((key) => [
         key,
-        rounded(localGeometry.rect[key] - liveGeometry.rect[key]),
+        localGeometry.rect[key] - liveGeometry.rect[key],
       ]),
     );
+    const delta = Object.fromEntries(
+      Object.entries(rawDelta).map(([key, value]) => [key, rounded(value)]),
+    );
     const status =
-      Math.abs(delta.x) <= thresholds.geometry_position_px &&
-      Math.abs(delta.y) <= thresholds.geometry_position_px &&
-      Math.abs(delta.width) <= thresholds.geometry_size_px &&
-      Math.abs(delta.height) <= thresholds.geometry_size_px
+      Math.abs(rawDelta.x) <= thresholds.geometry_position_px &&
+      Math.abs(rawDelta.y) <= thresholds.geometry_position_px &&
+      Math.abs(rawDelta.width) <= thresholds.geometry_size_px &&
+      Math.abs(rawDelta.height) <= thresholds.geometry_size_px
         ? "pass"
         : "fail";
     const row = {
@@ -900,6 +903,7 @@ export function compareCaptures(
   const firstDivergenceOptions = {
     geometry_position_px: checkedThresholds.geometry_position_px,
     geometry_size_px: checkedThresholds.geometry_size_px,
+    ignored_classes: contract?.ignored_first_divergence_classes ?? [],
   };
   const immediateFirstDivergentElement = contract?.first_divergence_trace
     ? compareFirstDivergenceTraces(

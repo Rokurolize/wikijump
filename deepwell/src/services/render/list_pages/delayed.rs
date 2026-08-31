@@ -34,7 +34,7 @@ use crate::services::render::iftags::resolve_outermost_wikidot_iftags;
 use crate::services::render::literal_regions::LiteralRegionIndex;
 use crate::services::render::render_budget::SharedRenderCostBudget;
 use crate::services::render::service::{
-    RenderService, render_list_pages_numbered_rows_with_titles,
+    COUNTPAGES_MODULE_REGEX, RenderService, render_list_pages_numbered_rows_with_titles,
     render_list_pages_table_rows,
 };
 use ftml::data::PageInfo;
@@ -873,20 +873,41 @@ pub(in crate::services::render) fn resolve_wikidot_parser_functions_outside_list
     }
 
     let modules = find_list_pages_module_matches_with_delayed_links(source);
-    if modules.is_empty() {
+    let mut deferred_bodies = modules
+        .iter()
+        .filter_map(|module| {
+            let range = module.body_start..module.body_start + module.body.len();
+            source[range.clone()].contains("[[#").then_some(range)
+        })
+        .collect::<Vec<_>>();
+    deferred_bodies.extend(COUNTPAGES_MODULE_REGEX.captures_iter(source).filter_map(
+        |captures| {
+            let body = captures.name("body")?;
+            body.as_str()
+                .contains("[[#")
+                .then_some(body.start()..body.end())
+        },
+    ));
+    if deferred_bodies.is_empty() {
         return ftml::preproc::resolve_wikidot_parser_functions(source);
     }
 
-    let delayed_functions = linked_parser_function_ranges(source);
+    deferred_bodies.sort_by_key(|range| range.start);
+    let mut merged_bodies: Vec<Range<usize>> = Vec::with_capacity(deferred_bodies.len());
+    for range in deferred_bodies {
+        if let Some(previous) = merged_bodies.last_mut()
+            && range.start <= previous.end
+        {
+            previous.end = previous.end.max(range.end);
+        } else {
+            merged_bodies.push(range);
+        }
+    }
+
     let mut fragments = CompatTextFragments::new(source);
     let mut protected = String::with_capacity(source.len());
     let mut cursor = 0;
-    for range in delayed_functions.into_iter().filter(|range| {
-        modules.iter().any(|module| {
-            let body_end = module.body_start + module.body.len();
-            range.start >= module.body_start && range.end <= body_end
-        })
-    }) {
+    for range in merged_bodies {
         protected.push_str(&source[cursor..range.start]);
         protected.push_str(&fragments.push(&source[range.clone()]));
         cursor = range.end;
@@ -1073,6 +1094,7 @@ fn seal_list_pages_delayed_output_with_modes(
     })?;
     let mut list_settings =
         WikitextSettings::from_mode(WikitextMode::List, settings.layout);
+    list_settings.enable_html_blocks = settings.enable_html_blocks;
     list_settings.list_pages_inline = list_pages_inline;
     let delayed_tree = parse_delayed_list(&delayed_input, page_info, &list_settings)
         .map_err(|error| {
@@ -1944,6 +1966,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2042,6 +2065,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2142,6 +2166,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2252,6 +2277,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2341,6 +2367,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2417,6 +2444,7 @@ mod tests {
             updated_at: None,
             updated_by: None,
             score: None,
+            revision_count: None,
         };
         let user_displays = BTreeMap::new();
         let snapshot_displays = BTreeMap::new();
@@ -2461,8 +2489,11 @@ mod tests {
         let source = concat!(
             "[[#if true | OUTER | NO]]\n",
             "[[module ListPages category=\"*\"]]\n",
-            "[[#if true | %%title_linked%% | NO]]\n",
+            "[[#if true | %%title_linked%% | NO]] ",
+            "[[#ifexpr %%rating%% < 20 | LOW | HIGH]] ",
+            "[[#ifexpr %%rating_votes%%-%%rating%%>0 | [[a href=\"/%%name%%\"]]Y[[/a]] | N ]]\n",
             "[[/module]]\n",
+            "[[module CountPages category=\"*\"]][[#ifexpr %%total%% >= 60 | MANY | FEW]][[/module]]\n",
             "[[#if false | NO | AFTER]]",
         );
         assert_eq!(
@@ -2470,8 +2501,11 @@ mod tests {
             concat!(
                 "OUTER\n",
                 "[[module ListPages category=\"*\"]]\n",
-                "[[#if true | %%title_linked%% | NO]]\n",
+                "[[#if true | %%title_linked%% | NO]] ",
+                "[[#ifexpr %%rating%% < 20 | LOW | HIGH]] ",
+                "[[#ifexpr %%rating_votes%%-%%rating%%>0 | [[a href=\"/%%name%%\"]]Y[[/a]] | N ]]\n",
                 "[[/module]]\n",
+                "[[module CountPages category=\"*\"]][[#ifexpr %%total%% >= 60 | MANY | FEW]][[/module]]\n",
                 "AFTER",
             ),
         );

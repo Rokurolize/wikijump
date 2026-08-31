@@ -110,6 +110,81 @@ pub(in crate::services::render) fn collect_unproven_scope_ranges(
     ranges
 }
 
+/// Find the closer paired with the source scope that starts at `scope_start`.
+///
+/// This uses the same Wikidot tag scanner and scope identities as the native
+/// list guard, so a closer owned by a nested module cannot be mistaken for the
+/// outer scope's closer. An unclosed or malformed target returns `None`.
+pub(in crate::services::render) fn matching_source_scope_close(
+    source: &str,
+    literals: &LiteralRegionIndex,
+    scope_start: usize,
+) -> Option<Range<usize>> {
+    let bytes = source.as_bytes();
+    if bytes.get(scope_start..scope_start + 2) != Some(&b"[["[..]) {
+        return None;
+    }
+    let mut literal_cursor = literals.monotone_cursor();
+    let mut text_tokens = TextTokenCursor::new(source);
+    let mut open_scopes = Vec::new();
+    let mut cursor = scope_start;
+
+    while cursor < bytes.len() {
+        if let Some(end) = literal_cursor.containing_end(cursor) {
+            cursor = end;
+            continue;
+        }
+        if bytes.get(cursor..cursor + 2) != Some(&b"[["[..]) {
+            cursor += 1;
+            continue;
+        }
+
+        let mut scanned_tokens = text_tokens.clone();
+        match scan_wikidot_tag(
+            bytes,
+            cursor,
+            bytes.len(),
+            true,
+            true,
+            &mut scanned_tokens,
+        ) {
+            WikidotTagScan::Complete(end) => {
+                match source_scope_tag(bytes, cursor, end) {
+                    Some(SourceScopeTag::Open(head)) => {
+                        if open_scopes.len() >= MAX_SOURCE_SCOPE_DEPTH {
+                            return None;
+                        }
+                        let identity = source_scope_rule(&head.name)
+                            .map(SourceScopeIdentity::Known)
+                            .unwrap_or(SourceScopeIdentity::Unknown(head.name));
+                        open_scopes.push(OpenSourceScope {
+                            identity,
+                            start: cursor,
+                        });
+                    }
+                    Some(SourceScopeTag::Close(name)) => {
+                        if let Some(index) = open_scopes
+                            .iter()
+                            .rposition(|open| open.accepts_close(&name))
+                        {
+                            let open = open_scopes.remove(index);
+                            if open.start == scope_start {
+                                return Some(cursor..end);
+                            }
+                        }
+                    }
+                    None => {}
+                }
+                text_tokens = scanned_tokens;
+                cursor = end;
+            }
+            WikidotTagScan::Malformed { resume } => cursor = resume.max(cursor + 1),
+            WikidotTagScan::Unclosed => return None,
+        }
+    }
+    None
+}
+
 enum SourceScopeTag {
     Open(SourceScopeOpenHead),
     Close(String),

@@ -87,6 +87,15 @@ pub(super) use self::delayed::{
     seal_protected_list_pages_delayed_output, seal_zero_row_list_pages_wrapper,
     wrap_pending_list_pages_delayed_output,
 };
+
+pub(super) fn wikitext_has_executable_list_pages_module(wikitext: &str) -> bool {
+    scanner::find_list_pages_module_matches(wikitext)
+        .iter()
+        .any(|module| {
+            !module.preserve_original
+                && scanner::list_pages_runtime_head_can_execute(module.head)
+        })
+}
 pub(super) use self::first_image::{
     list_pages_body_uses_first_image, load_list_pages_first_images,
     resolve_list_pages_first_image,
@@ -107,8 +116,7 @@ pub(super) use self::presentation::{
 };
 pub(super) use self::presentation::{
     is_list_pages_visible_tag, list_pages_created_by_unix, list_pages_parent_fullname,
-    list_pages_revision_count, render_list_pages_wikidot_user,
-    substitute_count_pages_variables,
+    render_list_pages_wikidot_user, substitute_count_pages_variables,
 };
 pub(super) use self::random_cache::seed_random_list_pages_order;
 pub(super) use self::rendering::render_wikidot_social_module;
@@ -133,10 +141,12 @@ pub(super) use self::substitution::{
     exact_name_list_pages_batch_key, list_pages_author_cache_key,
     list_pages_body_is_no_visible_tracking_markup, list_pages_first_paragraph,
     list_pages_has_unsupported_page_type_selector,
-    list_pages_has_unsupported_parent_selector, list_pages_static_category_preflight,
-    list_pages_static_parent_fullname_with_url, list_pages_unknown_link_target_slugs,
-    parse_list_pages_arguments, parse_list_pages_arguments_with_url,
-    union_found_page_fields, unsupported_list_pages_replacement,
+    list_pages_has_unsupported_parent_selector,
+    list_pages_recognized_static_url_fallback_ranges,
+    list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
+    list_pages_unknown_link_target_slugs, parse_list_pages_arguments,
+    parse_list_pages_arguments_with_url, union_found_page_fields,
+    unsupported_list_pages_replacement,
 };
 #[cfg(test)]
 pub(super) use self::substitution::{

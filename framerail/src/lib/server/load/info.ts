@@ -20,7 +20,18 @@ export async function loadInfo(preloadData: PreloadDataAsync) {
   }
 
   const viewData = {
-    backend: response,
+    backend: {
+      package: {
+        name: response.package.name,
+        description: response.package.description,
+        license: response.package.license,
+        repository: response.package.repository,
+        version: response.package.version
+      },
+      compile_info: {
+        rustc_version: response.compile_info.rustc_version
+      }
+    },
     frontend: {
       name: serverInfo.frontendName,
       description: serverInfo.frontendDescription,

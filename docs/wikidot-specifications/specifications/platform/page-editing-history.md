@@ -3,6 +3,7 @@
 - Feature ID: `page-editing-history`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Provide Wikidot page editing modes, publishing behavior, source syntax workflow,
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `canonical-live-observations` -> `scripts/data/wikidot-live-observations.json` (SHA-256 `5284438814c7d7bc833b5fee720b4c1c14ba8ee1560f02662438d163b4481262`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- Pages support whole-page edit, section edit, and append modes. Every successful title/content/rename-related page change produces a revision; page history can browse previous revisions.
+
+### P2 - parser stage, nesting, and composition
+
+- Editing exposes raw Wikidot source with aided-editor controls; no WYSIWYG transformation is part of the source grammar. Section editing must map a rendered section to the corresponding source range without widening it.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Page revisions retain recoverable historical content; the documentation's 'no content is lost' guarantee applies to pages, not uploaded-file replacement/deletion. Edit/append/section changes create revision history.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Only actors with page edit authority may mutate source. History/source visibility follows page permissions. Edit locks must not grant authority to an otherwise unauthorized actor.
+
+### P5 - selection, ordering, counting, and pagination
+
+- History is ordered by revision sequence/time and may be paginated by the history feature. Section/append modes select source ranges, not result sets.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Edit, append, section, history, source, and version views are distinct public routes/Ajax boundaries and must preserve page/revision identity across navigation.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The editor is a raw-source textarea with helper controls; history exposes revision list/diff/source actions. Existing live browser evidence for append/history/section workflows outranks historical wording where they differ.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- The historical documentation claims non-conflicting concurrent section/append locks; current implementation must not claim that behavior until exact live lock-conflict semantics are observed. Revision-bound saves MUST fail rather than overwrite a conflicting newer revision.
 
 
 ## Suggested public TDD seams

@@ -13,9 +13,9 @@ use serde::Serialize;
 use super::forum_comments::{self, ForumCommentsLoad, ForumCommentsOrder};
 use super::forum_modules::{
     ForumLastPost, ForumUserResourceScheme, forum_user, load_forum_start_activity,
-    load_recent_posts_page, render_forum_date, render_forum_start, render_forum_user,
-    render_forum_user_with_scheme, render_forum_user_without_avatar,
-    render_recent_posts_list,
+    load_recent_posts_page, render_forum_date, render_forum_signature_html,
+    render_forum_start, render_forum_user, render_forum_user_with_scheme,
+    render_forum_user_without_avatar, render_recent_posts_list,
 };
 use super::forum_visibility::ForumPageVisibility;
 use super::service::{
@@ -102,6 +102,9 @@ pub(super) struct ForumThreadPostCandidate {
     pub(super) wikidot_user_slug: Option<String>,
     pub(super) local_user_name: Option<String>,
     pub(super) local_user_slug: Option<String>,
+    pub(super) forum_signature: Option<String>,
+    pub(super) guest_name: Option<String>,
+    pub(super) guest_email_md5: Option<String>,
     pub(super) revision_wikidot_user_name: Option<String>,
     pub(super) revision_wikidot_user_slug: Option<String>,
     pub(super) revision_local_user_name: Option<String>,
@@ -122,6 +125,7 @@ pub(super) struct ForumThreadPostView {
     pub(super) created_at: time::OffsetDateTime,
     title: String,
     compiled_html: String,
+    signature_html: Option<String>,
     edit: Option<ForumPostEditView>,
 }
 
@@ -282,6 +286,11 @@ fn render_forum_category(
         &mut output,
         "</div><div class=\"description-block well\"><div class=\"statistics\">Number of threads: {thread_count}<br/>Number of posts: {post_count}<br/><span class=\"rss-icon\"><img src=\"http://www.wikidot.com/common--theme/base/images/feed/feed-icon-14x14.png\" alt=\"rss icon\"/></span> RSS: <a href=\"/feed/forum/ct-{category_id}.xml\">New threads</a> | <a href=\"/feed/forum/cp-{category_id}.xml\">New posts</a></div>{}</div>",
         escape_list_pages_html_text(category_description),
+    )
+    .expect("writing to a String cannot fail");
+    write!(
+        &mut output,
+        "<div class=\"options\">Order by: <div class=\"btn btn-primary disabled btn-small btn-sm\"><strong>Last post date</strong></div> <a href=\"/forum/c-{category_id}/sort/start\" class=\"btn btn-primary btn-small btn-sm\">Thread starting date</a></div>",
     )
     .expect("writing to a String cannot fail");
     push_forum_category_pager(&mut output, category_id, page, page_count);
@@ -467,7 +476,8 @@ async fn load_forum_thread_posts(
                 "revision.user_id AS revision_user_id, revision.title, ",
                 "revision.compiled_html_hash, wu.name AS wikidot_user_name, ",
                 "wu.slug AS wikidot_user_slug, local_user.name AS local_user_name, ",
-                "local_user.slug AS local_user_slug, ",
+                "local_user.slug AS local_user_slug, local_user.forum_signature, ",
+                "fp.guest_name, fp.guest_email_md5, ",
                 "revision_wu.name AS revision_wikidot_user_name, ",
                 "revision_wu.slug AS revision_wikidot_user_slug, ",
                 "revision_local.name AS revision_local_user_name, ",
@@ -493,11 +503,12 @@ async fn load_forum_thread_posts(
     .await
     .or_raise(make_error)?;
 
-    hydrate_forum_posts(ctx, candidates).await
+    hydrate_forum_posts(ctx, site_id, candidates).await
 }
 
 pub(super) async fn hydrate_forum_posts(
     ctx: &ServiceContext<'_>,
+    site_id: i64,
     candidates: Vec<ForumThreadPostCandidate>,
 ) -> Result<Vec<ForumThreadPostView>> {
     let make_error =
@@ -523,6 +534,7 @@ pub(super) async fn hydrate_forum_posts(
     }
 
     let mut posts = Vec::with_capacity(candidates.len());
+    let mut signature_cache = BTreeMap::<String, String>::new();
     for candidate in candidates {
         let Some(compiled_html) = compiled_html_by_hash
             .get(&candidate.compiled_html_hash)
@@ -533,16 +545,39 @@ pub(super) async fn hydrate_forum_posts(
         posts.push(ForumThreadPostView {
             forum_post_id: candidate.forum_post_id,
             parent_post_id: candidate.parent_post_id,
-            user: forum_user(
-                candidate.user_id,
-                candidate.wikidot_user_name,
-                candidate.wikidot_user_slug,
-                candidate.local_user_name,
-                candidate.local_user_slug,
-            ),
+            user: match (
+                candidate.guest_name.clone(),
+                candidate.guest_email_md5.clone(),
+            ) {
+                (Some(name), Some(md5)) => {
+                    super::forum_modules::forum_guest_user(name, md5)
+                }
+                _ => forum_user(
+                    candidate.user_id,
+                    candidate.wikidot_user_name,
+                    candidate.wikidot_user_slug,
+                    candidate.local_user_name,
+                    candidate.local_user_slug,
+                ),
+            },
             created_at: candidate.created_at,
             title: candidate.title,
             compiled_html,
+            signature_html: match candidate.forum_signature.as_deref() {
+                Some(source) if !source.is_empty() => {
+                    if let Some(rendered) = signature_cache.get(source) {
+                        Some(rendered.clone())
+                    } else {
+                        let rendered =
+                            render_forum_signature_html(ctx, site_id, Some(source))
+                                .await?
+                                .expect("non-empty signature source renders a signature");
+                        signature_cache.insert(source.to_owned(), rendered.clone());
+                        Some(rendered)
+                    }
+                }
+                _ => None,
+            },
             edit: (candidate.revision_number > 0).then(|| ForumPostEditView {
                 user: forum_user(
                     candidate.revision_user_id,
@@ -610,10 +645,15 @@ pub(super) fn render_forum_thread_post(
         )
     });
     format!(
-        "<div class=\"post-container\" id=\"fpc-{post_id}\"><div class=\"post\" id=\"post-{post_id}\"><div class=\"long\"><div class=\"head\"><div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\" class=\"btn btn-default btn-small btn-sm\">Fold</a></div><div class=\"title\" id=\"post-title-{post_id}\">{title}</div><div class=\"info\">{user} {date}</div></div><div class=\"content\" id=\"post-content-{post_id}\">{compiled_html}</div>{changes}<div class=\"options\">{reply}<a href=\"javascript:;\" onclick=\"togglePostOptions(event,{post_id})\" class=\"btn btn-default btn-small btn-sm\">Options</a></div><div id=\"post-options-{post_id}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"options btn btn-default btn-mini btn-xs\" href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\">Unfold</a><a class=\"title\" href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\">{title}</a> by {user}, {date}</div></div>{replies}</div>",
+        "<div class=\"post-container\" id=\"fpc-{post_id}\"><div class=\"post\" id=\"post-{post_id}\"><div class=\"long\"><div class=\"head\"><div class=\"options\"><a href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\" class=\"btn btn-default btn-small btn-sm\">Fold</a></div><div class=\"title\" id=\"post-title-{post_id}\">{title}</div><div class=\"info\">{user} {date}</div></div><div class=\"content\" id=\"post-content-{post_id}\">{compiled_html}</div>{signature}{changes}<div class=\"options\">{reply}<a href=\"javascript:;\" onclick=\"togglePostOptions(event,{post_id})\" class=\"btn btn-default btn-small btn-sm\">Options</a></div><div id=\"post-options-{post_id}\" class=\"options\" style=\"display: none\"></div></div><div class=\"short\"><a class=\"options btn btn-default btn-mini btn-xs\" href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\">Unfold</a><a class=\"title\" href=\"javascript:;\" onclick=\"togglePostFold(event,{post_id})\">{title}</a> by {user}, {date}</div></div>{replies}</div>",
         post_id = post.forum_post_id,
         title = escape_list_pages_html_text(&post.title),
         compiled_html = post.compiled_html.as_str(),
+        signature = post.signature_html.as_ref().map_or_else(String::new, |signature| {
+            format!(
+                r#"<div class="signature"><hr class="signature-separator"/>{signature}</div>"#,
+            )
+        }),
         reply = reply.as_deref().unwrap_or_default(),
     )
 }
@@ -773,8 +813,15 @@ impl RenderService {
                     Some("reverse") => ForumCommentsOrder::Reverse,
                     Some(_) => return Ok(response("not_ok", String::new())),
                 };
-                match forum_comments::load(ctx, site_id, &mut visibility, page_id, order)
-                    .await?
+                match forum_comments::load(
+                    ctx,
+                    site_id,
+                    &mut visibility,
+                    page_id,
+                    order,
+                    false,
+                )
+                .await?
                 {
                     ForumCommentsLoad::Found(output) => Ok(comments_response(
                         output.thread_id,

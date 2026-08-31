@@ -33,11 +33,16 @@ use super::compat::color_and_inline_protection::{
     substitute_wikidot_protected_inline_dashes_with_scan_count,
     wikidot_compat_html_marker,
 };
+#[cfg(test)]
+use super::compat::preparation::extract_css_modules;
 use super::compat::preparation::{
-    extract_css_modules, neutralize_authored_markers,
-    protect_css_modules_before_first_list_pages,
+    RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
+    neutralize_authored_markers, protect_css_modules_before_first_list_pages,
 };
 use super::compat::text_fragments::CompatTextFragments;
+use super::compat::wikidot_iframe::{
+    expand_wikidot_iframe_syntax, has_wikidot_iframe_syntax,
+};
 use super::compat::wikidot_link_protection::{
     WikidotWikipediaLink, build_wikidot_wikipedia_link,
 };
@@ -66,7 +71,9 @@ use super::include_attachment_owners::{
     split_wikidot_include_argument_segments, wikidot_include_directive_ranges,
     wikidot_include_segment_is_space,
 };
-use super::include_comment_branches::remove_unresolved_include_comment_branches;
+use super::include_comment_branches::{
+    remove_nested_include_boundaries, remove_unresolved_include_comment_branches,
+};
 use super::include_missing::{
     PreparedIncluder, collect_include_display_pages,
     collect_missing_include_replacements, expand_malformed_include_targets,
@@ -262,6 +269,7 @@ struct ExpandedRenderWikitext {
     url_offset_list_pages_content_bytes: usize,
     wikidot_compat_html: CompatHtmlFragments,
     wikidot_compat_text: CompatTextFragments,
+    runtime_css_insertions: Vec<RuntimeCssInsertion>,
 }
 
 /// Owns the protection registries created during render preparation.
@@ -441,8 +449,7 @@ const WIKIDOT_COLOR_SPAN_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOLORSPAN";
 pub(super) const WIKIDOT_INLINE_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTINLINEHTML";
 pub(super) const WIKIDOT_RATE_ANCHOR_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTRATEANCHOR";
 pub(super) const WIKIDOT_TABVIEW_SCRIPT: &str = "";
-pub(super) const WIKIDOT_TABVIEW_INIT_SCRIPT: &str =
-    r#"<script type="text/javascript"></script>"#;
+pub(super) const WIKIDOT_TABVIEW_INIT_SCRIPT: &str = r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script>"#;
 pub(super) const WIKIDOT_TABVIEW_SCRIPT_URL: &str = "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js";
 const MAX_WIKIDOT_COMPAT_FALLBACK_TITLE_LINKS: usize = 128;
 
@@ -487,6 +494,18 @@ pub(super) static GENERATED_LISTPAGES_HTML_REGEX: LazyLock<Regex> = LazyLock::ne
     )
     .unwrap()
 });
+static WIKIDOT_DIRECT_HTML_IFRAME_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?is)^\s*(?P<iframe><iframe\b(?P<attrs>[^<>]*)>\s*</iframe\s*>)\s*$"#)
+        .expect("direct Wikidot HTML iframe expression is valid")
+});
+static WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX: LazyLock<Regex> = LazyLock::new(
+    || {
+        Regex::new(
+            r#"(?is)\s+(?P<name>[a-z][a-z0-9:-]*)(?:\s*=\s*(?:"[^"<>]*"|'[^'<>]*'|[^\s"'=<>`]+))?"#,
+        )
+        .expect("direct Wikidot HTML iframe attribute expression is valid")
+    },
+);
 
 #[cfg(test)]
 static GENERATED_COMPAT_TABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
@@ -525,7 +544,16 @@ pub(super) static WIKIJUMP_FOOTNOTE_DATA_ID_REGEX: LazyLock<Regex> =
 static WIKIDOT_USER_INLINE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\[\[\*user\s+(?P<name>[^\]]+)\]\]").unwrap());
 pub(super) static WIKIDOT_CURRENT_PAGE_LINK_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"\[#\s+(?P<label>[^\]\n]+)\]").unwrap());
+    LazyLock::new(|| {
+        Regex::new(r"\[#(?:(?P<fragment>[^\s\]\n]+))?\s+(?P<label>[^\]\n]+)\]").unwrap()
+    });
+pub(super) static WIKIDOT_LABELED_EMAIL_LINK_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| {
+        Regex::new(
+            r"\[(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)\s+(?P<label>[^\]\n]+)\]",
+        )
+        .unwrap()
+    });
 pub(super) static WIKIDOT_STAR_LOCAL_LINK_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\*/(?P<target>[^\s\]\n]+)\s+(?P<label>[^\]\n]+)\]").unwrap()
 });
@@ -632,8 +660,7 @@ static WIKIDOT_EMAIL_CLASS_SPAN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"<span class="wiki-email">(?P<body>[^<]*)</span>"#).unwrap()
 });
 static WIKIDOT_OBFUSCATED_EMAIL_BODY_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"^[A-Za-z0-9.-]+\|[A-Za-z0-9._%+-]+#[A-Za-z0-9.-]+\|[A-Za-z0-9._%+-]+$"#)
-        .unwrap()
+    Regex::new(r#"^[A-Za-z0-9.-]+\|[A-Za-z0-9._%+-]+#[^<\r\n]+$"#).unwrap()
 });
 static WIKIDOT_RECOVERABLE_REVERSED_EMAIL_BODY_REGEX: LazyLock<Regex> = LazyLock::new(
     || {
@@ -648,13 +675,13 @@ pub(super) static WIKIDOT_EMBED_PARAGRAPH_REGEX: LazyLock<Regex> = LazyLock::new
 });
 static WIKIDOT_LOCAL_FILE_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code)/[^"'<>\s]+)"#,
+        r#"(?P<quote>["'])(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code|resized-images)/[^"'<>\s]+)"#,
     )
     .unwrap()
 });
 static WIKIDOT_LOCAL_FILE_CSS_URL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code)/[^"')<>\s]+)"#,
+        r#"(?i)(?P<prefix>url\(\s*["']?)(?:https?:)?//(?P<host>[A-Za-z0-9.-]+)(?::[0-9]+)?(?P<path>/local--(?:files|code|resized-images)/[^"')<>\s]+)"#,
     )
     .unwrap()
 });
@@ -1254,6 +1281,7 @@ impl RenderService {
             url_offset_list_pages_content_bytes: 0,
             wikidot_compat_html,
             wikidot_compat_text,
+            runtime_css_insertions: Vec::new(),
         };
         let outer = Self::prepare_outer_render_wikitext_observed(
             expanded,
@@ -1336,6 +1364,8 @@ impl RenderService {
             page_preview,
             suppress_nested_list_pages,
         } = options;
+        let backlinks_page_id = current_page_id;
+        let current_page_id = (!page_preview).then_some(current_page_id).flatten();
         let make_error =
             || Error::new("failed to perform render operation", ErrorType::Render);
         let mut include_budget = IncludeExpansionBudget::new(max_include_expansions);
@@ -1352,7 +1382,6 @@ impl RenderService {
         };
         select_metacomponent_documentation(&mut wikitext, metacomponent_context);
         let mut wikidot_compat_text = CompatTextFragments::new(&wikitext);
-        Self::remove_preview_component_separator_markers(&mut wikitext);
         let mut included_pages = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ImagePrelude);
             if settings.enable_page_syntax {
@@ -1427,6 +1456,7 @@ impl RenderService {
             included_pages: list_pages_included_pages,
             expanded_include_count: list_pages_expanded_include_count,
             url_offset_content_bytes,
+            runtime_css_insertions,
         } = {
             let _stage = StageGuard::new(trace, CorpusRenderStage::ListPages);
             let protected_css =
@@ -1485,7 +1515,7 @@ impl RenderService {
                 wikitext,
                 settings,
                 current_site_id,
-                current_page_id,
+                backlinks_page_id,
                 &mut wikidot_compat_html,
             )
             .await
@@ -1616,6 +1646,9 @@ impl RenderService {
                 &mut wikidot_compat_text,
             );
         }
+        if settings.enable_page_syntax && has_wikidot_iframe_syntax(&wikitext) {
+            wikitext = expand_wikidot_iframe_syntax(wikitext, &mut wikidot_compat_html);
+        }
         wikitext = Self::finalize_runtime_module_residuals(
             wikitext,
             settings,
@@ -1639,6 +1672,7 @@ impl RenderService {
             url_offset_list_pages_content_bytes: url_offset_content_bytes,
             wikidot_compat_html,
             wikidot_compat_text,
+            runtime_css_insertions,
         })
     }
 
@@ -1702,11 +1736,12 @@ impl RenderService {
                 &mut expanded.wikidot_compat_html,
             );
         expanded.wikitext = rendered;
-        let wikidot_css_modules = extract_css_modules(
+        let wikidot_css_modules = extract_css_modules_with_runtime_insertions(
             &mut expanded.wikitext,
             page_info,
             settings,
             &mut expanded.wikidot_compat_html,
+            std::mem::take(&mut expanded.runtime_css_insertions),
         );
         timings.outer_protection_us = elapsed_micros(started);
 
@@ -1806,18 +1841,73 @@ impl RenderService {
             };
             let start = search_start + relative_start;
             let end = start + PLACEHOLDER.len();
-            let iframe = format!(
-                concat!(
-                    r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
-                    r#"frameborder="0" class="html-block-iframe"></iframe>"#,
-                ),
-                escape_list_pages_html_attr(&full_slug),
-                index,
-            );
+            let iframe = Self::wikidot_direct_html_iframe(&html_blocks[index - 1])
+                .map(str::to_owned)
+                .unwrap_or_else(|| {
+                    format!(
+                        concat!(
+                            r#"<iframe src="/{}/html/{}" allowtransparency="true" "#,
+                            r#"frameborder="0" class="html-block-iframe"></iframe>"#,
+                        ),
+                        escape_list_pages_html_attr(&full_slug),
+                        index,
+                    )
+                });
             body.replace_range(start..end, &iframe);
             search_start = start + iframe.len();
         }
         body
+    }
+
+    fn wikidot_direct_html_iframe(html_block: &str) -> Option<&str> {
+        const ALLOWED_ATTRIBUTES: &[&str] = &[
+            "align",
+            "allow",
+            "allowfullscreen",
+            "class",
+            "frameborder",
+            "height",
+            "loading",
+            "referrerpolicy",
+            "sandbox",
+            "scrolling",
+            "src",
+            "style",
+            "title",
+            "width",
+        ];
+
+        let captures = WIKIDOT_DIRECT_HTML_IFRAME_REGEX.captures(html_block)?;
+        let attributes = captures
+            .name("attrs")
+            .expect("direct iframe capture has attributes")
+            .as_str();
+        let mut cursor = 0;
+        let mut has_attribute = false;
+        for attribute in
+            WIKIDOT_DIRECT_HTML_IFRAME_ATTRIBUTE_REGEX.captures_iter(attributes)
+        {
+            let whole = attribute
+                .get(0)
+                .expect("direct iframe attribute capture has whole match");
+            if !attributes[cursor..whole.start()].trim().is_empty() {
+                return None;
+            }
+            let name = attribute
+                .name("name")
+                .expect("direct iframe attribute capture has name")
+                .as_str()
+                .to_ascii_lowercase();
+            if !ALLOWED_ATTRIBUTES.contains(&name.as_str()) {
+                return None;
+            }
+            has_attribute = true;
+            cursor = whole.end();
+        }
+        if !attributes[cursor..].trim().is_empty() || !has_attribute {
+            return None;
+        }
+        captures.name("iframe").map(|iframe| iframe.as_str())
     }
 
     pub(super) async fn render_inner(
@@ -1895,13 +1985,16 @@ impl RenderService {
             },
         )
         .await?;
+        let render_current_page_id = (lifecycle != RenderLifecycle::PagePreview)
+            .then_some(current_page_id)
+            .flatten();
         Box::pin(Self::render_inner_expanded(
             ctx,
             expanded,
             page_info,
             settings,
             current_site_id,
-            current_page_id,
+            render_current_page_id,
             viewer_user_id,
             text_block_page_id,
             allow_wikidot_styleframe,
@@ -1931,6 +2024,7 @@ impl RenderService {
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
                 url_offset_list_pages_content_bytes: 0,
+                runtime_css_insertions: Vec::new(),
             },
             page_info,
             settings,
@@ -2392,6 +2486,7 @@ impl RenderService {
                             allow_wikidot_styleframe,
                             &wikidot_tabview_ids,
                         );
+                    html_output.body = Self::restore_wikidot_include_block_break(&html_output.body);
                     html_output.body =
                         protection.compat_text().restore(&html_output.body);
                     if render_settings.layout == Layout::Wikidot {
@@ -3227,6 +3322,41 @@ impl RenderService {
         }
     }
 
+    fn normalize_wikidot_alignment_markers(wikitext: &mut String) {
+        let source = wikitext.clone();
+        let mut output = String::with_capacity(source.len());
+        let mut offset = 0;
+        for line in source.split_inclusive('\n') {
+            let line_body = line.strip_suffix('\n').unwrap_or(line);
+            let trimmed = line_body.trim();
+            let replacement = match trimmed {
+                "[[=]]" => Some("[[div style=\"text-align: center;\"]]"),
+                "[[<]]" | "[[&lt;]]" => Some("[[div style=\"text-align: left;\"]]"),
+                "[[>]]" | "[[&gt;]]" => Some("[[div style=\"text-align: right;\"]]"),
+                "[[/=]]" | "[[/<]]" | "[[/&lt;]]" | "[[/>]]" | "[[/&gt;]]" => {
+                    Some("[[/div]]")
+                }
+                _ => None,
+            };
+            if let Some(replacement) = replacement {
+                let marker_start = offset + line_body.find(trimmed).unwrap_or(0);
+                if !Self::is_inside_wikidot_literal_region(&source, marker_start) {
+                    let prefix_len = line_body.len() - line_body.trim_start().len();
+                    let suffix_len = line_body.len() - line_body.trim_end().len();
+                    output.push_str(&line_body[..prefix_len]);
+                    output.push_str(replacement);
+                    output.push_str(&line_body[line_body.len() - suffix_len..]);
+                    output.push('\n');
+                    offset += line.len();
+                    continue;
+                }
+            }
+            output.push_str(line);
+            offset += line.len();
+        }
+        *wikitext = output;
+    }
+
     fn is_wikidot_multiline_include_head(line: &str) -> bool {
         let Some(rest) = line.strip_prefix("[[include") else {
             return false;
@@ -3246,20 +3376,6 @@ impl RenderService {
             .find(|character: char| character.is_ascii_whitespace() || character == '|')
             .unwrap_or(rest.len());
         target_end > 0
-    }
-
-    fn remove_preview_component_separator_markers(wikitext: &mut String) {
-        while let Some((before_start, before_end, after_start, after_end)) =
-            Self::find_preview_component_separator_markers(wikitext)
-        {
-            let mut cleaned = String::with_capacity(
-                wikitext.len() - (before_end - before_start) - (after_end - after_start),
-            );
-            cleaned.push_str(&wikitext[..before_start]);
-            cleaned.push_str(&wikitext[before_end..after_start]);
-            cleaned.push_str(&wikitext[after_end..]);
-            *wikitext = cleaned;
-        }
     }
 
     fn expand_wikidot_image_block_includes(
@@ -3560,6 +3676,18 @@ impl RenderService {
             return name.to_owned();
         }
 
+        // Wikidot keeps extensionless root-page attachments on its implicit
+        // attachment path, which supplies the medium resize and original-file
+        // link. Qualified include owners still use the direct URL path below.
+        if attachment_owner.is_none()
+            && !name
+                .rsplit('/')
+                .next()
+                .is_some_and(|file| file.contains('.'))
+        {
+            return name.to_owned();
+        }
+
         let owner =
             Self::wikidot_image_block_attachment_owner(page_info, attachment_owner);
 
@@ -3627,6 +3755,7 @@ impl RenderService {
         Some(arguments)
     }
 
+    #[allow(dead_code)]
     fn find_preview_component_separator_markers(
         wikitext: &str,
     ) -> Option<(usize, usize, usize, usize)> {
@@ -3885,6 +4014,7 @@ impl RenderService {
         Box::pin(async move {
             let mut wikitext = wikitext;
             Self::normalize_wikidot_multiline_includes(&mut wikitext);
+            Self::normalize_wikidot_alignment_markers(&mut wikitext);
             if expansion_context.settings.layout.legacy() {
                 expand_malformed_include_targets(&mut wikitext);
             }
@@ -4074,7 +4204,14 @@ impl RenderService {
                 remaining_includes -= expansion.expanded_include_count;
                 nested_include_counts.push(expansion.expanded_include_count);
 
-                fetched_pages.push(Some(expansion.wikitext));
+                let mut nested_wikitext = expansion.wikitext;
+                Self::prepare_wikidot_conditionals_for_include_expansion(
+                    &mut nested_wikitext,
+                    expansion_context.page_info,
+                    compat_text,
+                );
+                remove_nested_include_boundaries(&mut nested_wikitext);
+                fetched_pages.push(Some(nested_wikitext));
                 nested_included_pages.push(expansion.included_pages);
             }
 

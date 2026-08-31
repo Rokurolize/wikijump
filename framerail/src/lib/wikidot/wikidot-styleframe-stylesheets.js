@@ -7,38 +7,6 @@ import {
 
 const styleFrameSource =
   /<iframe\b[^>]*\bsrc=(['"])([^'"]*\/-\/wikidot-interwiki\/styleFrame\.html\?[^'"]*)\1[^>]*>/giu
-const styleElementSource = /<style\b[^>]*>([\s\S]*?)<\/style>/giu
-const cssImportSource =
-  /@import\s+(?:url\(\s*(['"]?)([^'"\s;)]+)\1\s*\)|(['"])([^'"]+)\3)\s*;/giu
-
-const themeIdentity = (value, origin) => {
-  try {
-    const localized = new URL(localizeWikidotThemeUrl(value, origin), origin)
-    localized.pathname = localized.pathname.replaceAll(/%3a/giu, ":")
-    return localized.href
-  } catch {
-    return null
-  }
-}
-
-const importedThemeIdentities = (renderedHtml, generatedStyles, origin) => {
-  const identities = new Set()
-  const cssSources = [...generatedStyles]
-  for (const html of renderedHtml) {
-    if (!html) continue
-    for (const styleMatch of html.matchAll(styleElementSource)) {
-      cssSources.push(styleMatch[1])
-    }
-  }
-  for (const css of cssSources) {
-    for (const importMatch of css.matchAll(cssImportSource)) {
-      const identity = themeIdentity(importMatch[2] ?? importMatch[4], origin)
-      if (identity) identities.add(identity)
-    }
-  }
-  return identities
-}
-
 /**
  * Extract the complete CSS contract declared by rendered styleFrame
  * iframes. Rendering these declarations in the document head makes their
@@ -64,13 +32,8 @@ const importedThemeIdentities = (renderedHtml, generatedStyles, origin) => {
  *     }
  * )[]}
  */
-export const extractWikidotStyleFrameDeclarations = (
-  renderedHtml,
-  origin,
-  generatedStyles = []
-) => {
+export const extractWikidotStyleFrameDeclarations = (renderedHtml, origin) => {
   const declarations = []
-  const importedThemes = importedThemeIdentities(renderedHtml, generatedStyles, origin)
   let order = 0
   for (const html of renderedHtml) {
     if (!html) continue
@@ -89,7 +52,6 @@ export const extractWikidotStyleFrameDeclarations = (
       for (const theme of parsed.searchParams.getAll("theme")) {
         if (!theme.trim()) continue
         const href = localizeWikidotThemeUrl(theme, origin)
-        if (importedThemes.has(themeIdentity(href, origin))) continue
         declarations.push({
           kind: "theme",
           href,

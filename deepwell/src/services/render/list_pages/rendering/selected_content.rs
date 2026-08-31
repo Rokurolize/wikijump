@@ -12,7 +12,9 @@
 
 #![allow(clippy::wildcard_imports)]
 
+use super::super::super::module_arguments::wikidot_module_argument;
 use super::*;
+use crate::services::render::service::wikidot_inline_span_marker_open;
 use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
 pub(super) fn select_list_pages_rows(
@@ -67,7 +69,7 @@ pub(super) fn select_list_pages_rows(
 
 static LISTPAGES_CONTENT_CONTEXT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
-            r#"(?is)\[\[module\s+(?P<name>Clone|Backlinks|PreviousPage|NextPage|PetitionAdmin|SiteGrid)\b(?:[^\]"]+|"[^"]*")*\]\]|\[\[social(?P<social_head>\s+[^\]]*)?\]\]"#,
+            r#"(?is)\[\[module\s+(?P<name>Clone|Backlinks|PreviousPage|NextPage|PetitionAdmin|SiteGrid|ThemePreviewer)\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]|\[\[social(?P<social_head>\s+[^\]]*)?\]\]"#,
         )
         .expect("ListPages selected-content module expression is valid")
 });
@@ -81,6 +83,7 @@ pub(super) enum SelectedContentIncludeMode {
 #[derive(Debug)]
 pub(super) struct RenderedListPagesSource {
     pub(super) body: String,
+    pub(super) styles: Vec<String>,
     pub(super) included_pages: Vec<PageRef>,
     pub(super) expanded_include_count: usize,
 }
@@ -353,6 +356,16 @@ fn prepare_list_pages_selected_content_runtime(
                         .to_owned(),
                 )
             }
+            Some(name) if name.eq_ignore_ascii_case("ThemePreviewer") => {
+                let head = captures.name("head").map_or("", |head| head.as_str());
+                if wikidot_module_argument(head, "noUi")
+                    .is_some_and(|value| value.eq_ignore_ascii_case("true"))
+                {
+                    String::new()
+                } else {
+                    matched.as_str().to_owned()
+                }
+            }
             Some(_) => unreachable!("the selected-content regex names every module"),
         };
         output.push_str(&replacement);
@@ -362,6 +375,71 @@ fn prepare_list_pages_selected_content_runtime(
         return wikitext;
     }
     output.push_str(&wikitext[cursor..]);
+    output
+}
+
+fn protect_selected_content_spans(
+    source: &str,
+    fragments: &mut CompatHtmlFragments,
+) -> String {
+    let literal_regions = LiteralRegionIndex::new_wikidot_syntax(source);
+    let mut output = String::with_capacity(source.len());
+    let mut cursor = 0usize;
+    let mut open_spans = 0usize;
+    while cursor < source.len() {
+        let open = source[cursor..].find("[[span");
+        let close = source[cursor..].find("[[/span]]");
+        let Some((relative, closing)) = (match (open, close) {
+            (Some(open), Some(close)) if close < open => Some((close, true)),
+            (Some(open), _) => Some((open, false)),
+            (None, Some(close)) => Some((close, true)),
+            (None, None) => None,
+        }) else {
+            break;
+        };
+        let start = cursor + relative;
+        if literal_regions.contains(start) {
+            let end = start
+                + if closing {
+                    "[[/span]]".len()
+                } else {
+                    "[[span".len()
+                };
+            output.push_str(&source[cursor..end]);
+            cursor = end;
+            continue;
+        }
+        if closing {
+            let end = start + "[[/span]]".len();
+            if open_spans > 0 {
+                output.push_str(&source[cursor..start]);
+                output.push_str(&fragments.push_html("</span>".to_owned()));
+                open_spans -= 1;
+                cursor = end;
+            } else {
+                output.push_str(&source[cursor..end]);
+                cursor = end;
+            }
+            continue;
+        }
+        let marker_start = &source[start..];
+        let Some(relative_end) = marker_start.find("]]") else {
+            output.push_str(&source[cursor..]);
+            return output;
+        };
+        let end = start + relative_end + 2;
+        let marker = &source[start..end];
+        let Some(open_tag) = wikidot_inline_span_marker_open(marker) else {
+            output.push_str(&source[cursor..end]);
+            cursor = end;
+            continue;
+        };
+        output.push_str(&source[cursor..start]);
+        output.push_str(&fragments.push_html(open_tag));
+        open_spans += 1;
+        cursor = end;
+    }
+    output.push_str(&source[cursor..]);
     output
 }
 
@@ -473,6 +551,7 @@ pub(super) async fn render_list_pages_default_summary_source(
     let mut html_output = rendered.html_output;
     Ok(RenderedListPagesSource {
         body: html_output.body,
+        styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
     })
@@ -485,6 +564,8 @@ pub(super) async fn render_list_pages_selected_content_source(
     page_info: &PageInfo<'_>,
     settings: &WikitextSettings,
     current_site_id: i64,
+    current_category_id: i64,
+    current_page_id: i64,
     viewer_user_id: Option<i64>,
     include_mode: SelectedContentIncludeMode,
     max_include_expansions: usize,
@@ -514,6 +595,8 @@ pub(super) async fn render_list_pages_selected_content_source(
             .as_ref()
             .map_or("", |site| site.name.as_str()),
     );
+    let wikitext =
+        protect_selected_content_spans(&wikitext, &mut selected_content_fragments);
     let mut selected_content_text = CompatTextFragments::new(&wikitext);
     let wikitext = match include_mode {
         SelectedContentIncludeMode::Execute => wikitext,
@@ -521,9 +604,12 @@ pub(super) async fn render_list_pages_selected_content_source(
             protect_selected_content_includes(&wikitext, &mut selected_content_text)
         }
     };
-    let wikitext =
-        RenderService::suppress_rate_modules_in_list_pages_content(wikitext, settings);
     let mut selected_content_settings = settings.clone();
+    selected_content_settings.enable_page_syntax = true;
+    let wikitext = RenderService::suppress_rate_modules_in_list_pages_content(
+        wikitext,
+        &selected_content_settings,
+    );
     selected_content_settings.enable_html_blocks = true;
     let rendered = Box::pin(RenderService::render_inner(
         ctx,
@@ -531,7 +617,12 @@ pub(super) async fn render_list_pages_selected_content_source(
         page_info,
         &selected_content_settings,
         RenderInnerOptions {
-            render_context: RenderContext::page_preview(current_site_id),
+            render_context: RenderContext::list_pages_default_summary(
+                current_site_id,
+                current_category_id,
+                current_page_id,
+                false,
+            ),
             viewer_user_id,
             current_page_data_form_values: None,
             max_include_expansions,
@@ -546,7 +637,25 @@ pub(super) async fn render_list_pages_selected_content_source(
     let rendered_body = selected_content_text.restore(&html_output.body);
     Ok(RenderedListPagesSource {
         body: selected_content_fragments.restore(&rendered_body),
+        styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn protects_authored_spans_without_touching_unmatched_closers() {
+        let source = r#"before [[span class="bi-y"]]body[[/span]] after [[/span]]"#;
+        let mut fragments = CompatHtmlFragments::new(source);
+        let protected = protect_selected_content_spans(source, &mut fragments);
+
+        assert_eq!(
+            fragments.restore(&format!("<p>{protected}</p>")),
+            r#"<p>before <span class="bi-y">body</span> after [[/span]]</p>"#,
+        );
+    }
 }

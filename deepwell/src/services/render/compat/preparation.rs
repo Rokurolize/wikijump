@@ -28,6 +28,7 @@ use ftml::settings::WikitextSettings;
 use ftml::tree::{CodeBlock, Element, SyntaxTree};
 use regex::Regex;
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ops::Range;
 use std::sync::LazyLock;
 
@@ -157,6 +158,60 @@ pub(in crate::services::render) fn extract_css_modules(
     }
     output.push_str(&source[cursor..]);
     *wikitext = output;
+    styles
+}
+
+#[derive(Debug)]
+pub(in crate::services::render) struct RuntimeCssInsertion {
+    pub(in crate::services::render) marker: String,
+    pub(in crate::services::render) styles: Vec<String>,
+}
+
+pub(in crate::services::render) fn extract_css_modules_with_runtime_insertions(
+    wikitext: &mut String,
+    page_info: &PageInfo<'_>,
+    settings: &WikitextSettings,
+    compat_html: &mut CompatHtmlFragments,
+    insertions: Vec<RuntimeCssInsertion>,
+) -> Vec<String> {
+    if insertions.is_empty() {
+        return extract_css_modules(wikitext, page_info, settings, compat_html);
+    }
+
+    // ListPages renders selected %%content%% through a nested page render. Its
+    // CSS modules belong in the parent document head at the exact ListPages
+    // source position, not at the end of the page. Keep the generated CSS
+    // bytes out of wikitext and temporarily project only the trusted marker as
+    // a CSS-module body. The ordinary extractor then establishes one total
+    // order with authored parent modules; afterwards the marker is expanded
+    // back to the already-rendered style vector.
+    for insertion in &insertions {
+        if wikitext.matches(&insertion.marker).count() != 1 {
+            continue;
+        }
+        let projected = format!("[[module CSS]]\n{}\n[[/module]]", insertion.marker,);
+        *wikitext = wikitext.replacen(&insertion.marker, &projected, 1);
+    }
+
+    let extracted = extract_css_modules(wikitext, page_info, settings, compat_html);
+    let mut styles = Vec::new();
+    let mut matched = HashSet::<String>::new();
+    for style in extracted {
+        if let Some(insertion) = insertions
+            .iter()
+            .find(|insertion| insertion.marker == style)
+        {
+            matched.insert(insertion.marker.clone());
+            styles.extend(insertion.styles.iter().cloned());
+        } else {
+            styles.push(style);
+        }
+    }
+    for insertion in insertions {
+        if !matched.contains(&insertion.marker) {
+            styles.extend(insertion.styles);
+        }
+    }
     styles
 }
 
@@ -301,7 +356,11 @@ pub(in crate::services::render) fn neutralize_authored_markers(wikitext: &mut St
 
 #[cfg(test)]
 mod tests {
-    use super::{neutralize_authored_markers, render_css_module_code_block};
+    use super::{
+        RuntimeCssInsertion, extract_css_modules_with_runtime_insertions,
+        neutralize_authored_markers, render_css_module_code_block,
+    };
+    use crate::services::render::compat::CompatHtmlFragments;
     use ftml::data::{PageInfo, ScoreValue};
     use ftml::layout::Layout;
     use ftml::settings::{WikitextMode, WikitextSettings};
@@ -318,6 +377,55 @@ mod tests {
             source,
             r#"<ol data-wikijump-authored-compat-listpages="1"><li>authored</li></ol>"#,
         );
+    }
+
+    #[test]
+    fn runtime_css_insertions_keep_their_listpages_cascade_position() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test"),
+            category: None,
+            site: Cow::Borrowed("test"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut source = concat!(
+            "[[module CSS]]\n.parent-before { color: red; }\n[[/module]]\n",
+            "BODY\n",
+            "[[module CSS]]\n.parent-after { color: blue; }\n[[/module]]",
+        )
+        .to_owned();
+        let mut compat_html = CompatHtmlFragments::new(&source);
+        let marker = compat_html.push_html(String::new());
+        source = source.replace("BODY", &marker);
+
+        let styles = extract_css_modules_with_runtime_insertions(
+            &mut source,
+            &page_info,
+            &settings,
+            &mut compat_html,
+            vec![RuntimeCssInsertion {
+                marker,
+                styles: vec![
+                    ".child-one { color: green; }".to_owned(),
+                    ".child-two { color: purple; }".to_owned(),
+                ],
+            }],
+        );
+
+        assert_eq!(
+            styles,
+            [
+                ".parent-before { color: red; }",
+                ".child-one { color: green; }",
+                ".child-two { color: purple; }",
+                ".parent-after { color: blue; }",
+            ],
+        );
+        assert!(!source.contains("[[module CSS]]"));
     }
 
     #[test]

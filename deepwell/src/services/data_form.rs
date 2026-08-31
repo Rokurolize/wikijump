@@ -13,9 +13,17 @@
 //! Wikidot category-template data-form definitions.
 
 use crate::error::prelude::Result;
+use crate::models::page::Model as PageModel;
 use crate::models::page_category;
 use crate::services::ServiceContext;
+use crate::services::category::CategoryService;
+use crate::services::page::PageService;
 use crate::services::page_revision::PageRevisionService;
+use crate::services::parent::ParentService;
+use crate::services::permission::{CheckPermissionContext, PermissionService};
+use crate::types::{Action, PageOrder, Permission, Reference, Resource};
+use crate::utils::split_category;
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq, Eq)]
@@ -32,6 +40,15 @@ pub struct DataFormEditor {
     pub definition: DataFormDefinition,
     #[serde(default)]
     pub values: BTreeMap<String, String>,
+    #[serde(default)]
+    pub pagepaths: BTreeMap<String, Vec<DataFormPagepathNode>>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+pub struct DataFormPagepathNode {
+    pub fullname: String,
+    pub name: String,
+    pub parent: Option<String>,
 }
 
 impl DataFormDefinition {
@@ -48,14 +65,13 @@ impl DataFormDefinition {
             && self.fields.iter().any(|field| {
                 matches!(
                     field.field_type.as_deref(),
-                    Some("hidden" | "password" | "static" | "url")
+                    Some("hidden" | "password" | "static")
                 )
             })
         {
             return false;
         }
         self.observed_create_edit_compatible
-            && self.default_layout
             && !self.fields.is_empty()
             && self
                 .fields
@@ -127,8 +143,98 @@ impl DataFormDefinition {
                                 .as_ref()
                                 .is_none_or(|value| field.value_label(value).is_some())
                     }
+                    Some("date") => {
+                        field.configured_value.is_none()
+                            && field.default_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && field.options_valid
+                            && valid_wikidot_date_options(&field.options)
+                            && field.has_only_properties(&[
+                                "label", "type", "width", "options",
+                            ])
+                    }
+                    Some("pagepath") => {
+                        field.configured_value.is_none()
+                            && !field.has_values_property
+                            && field.values.is_empty()
+                            && !field.has_text_specific_properties
+                            && field.hint.is_empty()
+                            && field.before.is_empty()
+                            && field.after.is_empty()
+                            && !field.join
+                            && field.pagepath_options_valid
+                            && field
+                                .pagepath_category
+                                .as_ref()
+                                .is_some_and(|category| !category.is_empty())
+                            && field.has_only_properties(&[
+                                "label",
+                                "type",
+                                "category",
+                                "default",
+                                "max-level",
+                            ])
+                    }
                     _ => false,
                 })
+    }
+
+    /// Returns whether the generated editor shape is live-observed even when
+    /// its mutation lifecycle is not.
+    ///
+    /// Wikidot's file field is currently evidenced only as a hidden
+    /// `dataform-file-value` control. Upload, storage-page, replacement, and
+    /// cleanup semantics remain deliberately unsupported. This separate gate
+    /// lets the public create view reproduce that observed control without
+    /// treating a file value as an ordinary writable text scalar.
+    pub fn supports_observed_editor(&self) -> bool {
+        if self.supports_observed_create_edit() {
+            return true;
+        }
+        if !self.observed_create_edit_compatible
+            || self.fields.is_empty()
+            || !self
+                .fields
+                .iter()
+                .any(|field| field.field_type.as_deref() == Some("file"))
+            || (self.fields.len() != 1
+                && self.fields.iter().any(|field| {
+                    matches!(
+                        field.field_type.as_deref(),
+                        Some("hidden" | "password" | "static")
+                    )
+                }))
+        {
+            return false;
+        }
+
+        self.fields.iter().all(|field| {
+            if field.field_type.as_deref() == Some("file") {
+                return field.configured_value.is_none()
+                    && field.default_value.is_none()
+                    && !field.has_values_property
+                    && field.values.is_empty()
+                    && !field.has_text_specific_properties
+                    && field.hint.is_empty()
+                    && field.before.is_empty()
+                    && field.after.is_empty()
+                    && !field.join
+                    && field.pagepath_max_level.is_none()
+                    && field
+                        .pagepath_category
+                        .as_ref()
+                        .is_none_or(|category| !category.is_empty())
+                    && field.has_only_properties(&["label", "type", "category"]);
+            }
+
+            let single_field_definition = Self {
+                fields: vec![field.clone()],
+                default_layout: self.default_layout,
+                observed_create_edit_compatible: true,
+            };
+            single_field_definition.supports_observed_create_edit()
+        })
     }
 }
 
@@ -142,6 +248,8 @@ pub struct DataFormFieldDefinition {
     pub default_value: Option<String>,
     #[serde(default)]
     pub configured_value: Option<String>,
+    #[serde(default)]
+    pub options: BTreeMap<String, serde_json::Value>,
     pub width: usize,
     pub height: usize,
     pub match_pattern: Option<String>,
@@ -152,10 +260,18 @@ pub struct DataFormFieldDefinition {
     pub after: String,
     #[serde(default)]
     pub join: bool,
+    #[serde(default)]
+    pub pagepath_category: Option<String>,
+    #[serde(default)]
+    pub pagepath_max_level: Option<usize>,
     #[serde(skip)]
     has_text_specific_properties: bool,
     #[serde(skip)]
     has_values_property: bool,
+    #[serde(skip)]
+    options_valid: bool,
+    #[serde(skip)]
+    pagepath_options_valid: bool,
     #[serde(skip)]
     authored_width: Option<String>,
     #[serde(skip)]
@@ -174,6 +290,7 @@ impl Default for DataFormFieldDefinition {
             values: Vec::new(),
             default_value: None,
             configured_value: None,
+            options: BTreeMap::new(),
             width: 40,
             height: 1,
             match_pattern: None,
@@ -181,8 +298,12 @@ impl Default for DataFormFieldDefinition {
             before: String::new(),
             after: String::new(),
             join: false,
+            pagepath_category: None,
+            pagepath_max_level: None,
             has_text_specific_properties: false,
             has_values_property: false,
+            options_valid: true,
+            pagepath_options_valid: true,
             authored_width: None,
             authored_height: None,
             authored_properties: BTreeSet::new(),
@@ -259,16 +380,151 @@ pub async fn load_data_form_definitions(
     Ok(definitions)
 }
 
+async fn wikidot_data_form_page_is_viewable(
+    ctx: &ServiceContext<'_>,
+    viewer_user_id: Option<i64>,
+    page: &PageModel,
+) -> Result<bool> {
+    PermissionService::check_user_can(
+        ctx,
+        &CheckPermissionContext {
+            user_id: viewer_user_id,
+            site_id: page.site_id,
+            page_reference: Some(Reference::Id(page.page_id)),
+        },
+        Permission {
+            resource_type: Resource::Page,
+            resource_category: Some(Reference::Id(page.page_category_id)),
+            action: Action::View,
+        },
+    )
+    .await
+}
+
+pub async fn resolve_wikidot_data_form_pagepath_display_values(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    viewer_user_id: Option<i64>,
+) -> Result<BTreeMap<String, String>> {
+    let mut display_values = BTreeMap::new();
+    for field in definition
+        .fields
+        .iter()
+        .filter(|field| field.field_type.as_deref() == Some("pagepath"))
+    {
+        let raw_value = values.get(&field.name).map(String::as_str).unwrap_or("");
+        if raw_value.is_empty() {
+            display_values.insert(field.name.clone(), String::new());
+            continue;
+        }
+        let expected_category_id = match field.pagepath_category.as_deref() {
+            Some(category) => CategoryService::get_optional(
+                ctx,
+                site_id,
+                Reference::Slug(Cow::Borrowed(category)),
+            )
+            .await?
+            .map(|category| category.category_id),
+            None => None,
+        };
+        let page = PageService::get_optional(
+            ctx,
+            site_id,
+            Reference::Slug(Cow::Borrowed(raw_value)),
+        )
+        .await?;
+        let display = match page {
+            Some(page)
+                if expected_category_id == Some(page.page_category_id)
+                    && wikidot_data_form_page_is_viewable(ctx, viewer_user_id, &page)
+                        .await? =>
+            {
+                split_category(&page.slug).1.to_owned()
+            }
+            _ => String::new(),
+        };
+        display_values.insert(field.name.clone(), display);
+    }
+    Ok(display_values)
+}
+
+pub async fn load_wikidot_data_form_pagepaths(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    definition: &DataFormDefinition,
+    viewer_user_id: Option<i64>,
+) -> Result<BTreeMap<String, Vec<DataFormPagepathNode>>> {
+    let mut pagepaths = BTreeMap::new();
+    for field in definition
+        .fields
+        .iter()
+        .filter(|field| field.field_type.as_deref() == Some("pagepath"))
+    {
+        let Some(category_name) = field.pagepath_category.as_deref() else {
+            continue;
+        };
+        let Some(category) = CategoryService::get_optional(
+            ctx,
+            site_id,
+            Reference::Slug(Cow::Borrowed(category_name)),
+        )
+        .await?
+        else {
+            pagepaths.insert(field.name.clone(), Vec::new());
+            continue;
+        };
+        let pages = PageService::get_all(
+            ctx,
+            site_id,
+            Some(Reference::Id(category.category_id)),
+            Some(false),
+            PageOrder::default(),
+        )
+        .await?;
+        let mut visible_pages = Vec::new();
+        for page in pages {
+            if wikidot_data_form_page_is_viewable(ctx, viewer_user_id, &page).await? {
+                visible_pages.push(page);
+            }
+        }
+        let slug_by_id = visible_pages
+            .iter()
+            .map(|page| (page.page_id, page.slug.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let mut nodes = Vec::with_capacity(visible_pages.len());
+        for page in visible_pages {
+            let relationships =
+                ParentService::get_parents(ctx, site_id, Reference::Id(page.page_id))
+                    .await?;
+            let parent = match relationships.as_slice() {
+                [relationship] => slug_by_id.get(&relationship.parent_page_id).cloned(),
+                _ => None,
+            };
+            nodes.push(DataFormPagepathNode {
+                fullname: page.slug.clone(),
+                name: split_category(&page.slug).1.to_owned(),
+                parent,
+            });
+        }
+        pagepaths.insert(field.name.clone(), nodes);
+    }
+    Ok(pagepaths)
+}
+
 pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefinition> {
     let form_start = wikitext.find("[[form]]")?;
     let start = form_start + "[[form]]".len();
     let end = wikitext[start..].find("[[/form]]")? + start;
     let form_close_end = end + "[[/form]]".len();
     let body = &wikitext[start..end];
+    let prefix = &wikitext[..form_start];
+    let suffix = &wikitext[form_close_end..];
+    let custom_layout = wikidot_data_form_custom_layout_source_from_prefix(prefix);
+    let comment_wrapped = wikidot_data_form_comment_wrapper(prefix, suffix);
     let mut definition = DataFormDefinition {
-        default_layout: !wikitext[..form_start]
-            .lines()
-            .any(|line| line.trim() == "===="),
+        default_layout: !prefix.lines().any(|line| line.trim() == "===="),
         observed_create_edit_compatible: wikitext
             .lines()
             .filter(|line| line.trim() == "[[form]]")
@@ -279,18 +535,17 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                 .filter(|line| line.trim() == "[[/form]]")
                 .count()
                 == 1
-            && wikitext[..form_start]
-                .lines()
-                .all(|line| line.trim().is_empty())
-            && wikitext[form_close_end..]
-                .lines()
-                .all(|line| line.trim().is_empty()),
+            && (((prefix.lines().all(|line| line.trim().is_empty())
+                || custom_layout.is_some())
+                && suffix.lines().all(|line| line.trim().is_empty()))
+                || comment_wrapped),
         ..Default::default()
     };
     let mut in_fields = false;
     let mut saw_fields = false;
     let mut current_field: Option<String> = None;
     let mut current_values_field: Option<String> = None;
+    let mut current_options_field: Option<String> = None;
     let mut current_properties = BTreeSet::<String>::new();
 
     for line in body.lines() {
@@ -312,6 +567,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             in_fields = true;
             current_field = None;
             current_values_field = None;
+            current_options_field = None;
             current_properties.clear();
             continue;
         }
@@ -333,6 +589,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             }
             current_field = Some(field.to_owned());
             current_values_field = None;
+            current_options_field = None;
             current_properties.clear();
             continue;
         }
@@ -340,6 +597,7 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             definition.observed_create_edit_compatible = false;
             current_field = None;
             current_values_field = None;
+            current_options_field = None;
             current_properties.clear();
             continue;
         }
@@ -360,6 +618,9 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
             }
             if let Some(field) = definition.field_mut(field_name) {
                 field.authored_properties.insert(key.to_owned());
+            }
+            if key != "options" {
+                current_options_field = None;
             }
             match key {
                 "label" => {
@@ -484,6 +745,40 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                     }
                     current_values_field = None;
                 }
+                "category" => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.pagepath_category.is_some())
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        let category = unquote_wikidot_data_form_scalar(value).to_owned();
+                        if category.is_empty() {
+                            field.pagepath_options_valid = false;
+                        }
+                        field.pagepath_category = Some(category);
+                    }
+                    current_values_field = None;
+                }
+                "max-level" => {
+                    if definition
+                        .field(field_name)
+                        .is_some_and(|field| field.pagepath_max_level.is_some())
+                    {
+                        definition.observed_create_edit_compatible = false;
+                    }
+                    if let Some(field) = definition.field_mut(field_name) {
+                        let raw = unquote_wikidot_data_form_scalar(value);
+                        match raw.parse::<usize>() {
+                            Ok(level) if level > 0 => {
+                                field.pagepath_max_level = Some(level)
+                            }
+                            _ => field.pagepath_options_valid = false,
+                        }
+                    }
+                    current_values_field = None;
+                }
                 "values" if value.is_empty() => {
                     if definition
                         .field(field_name)
@@ -499,11 +794,37 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
                         current_values_field = None;
                     }
                 }
+                "options" if value.is_empty() => {
+                    current_values_field = None;
+                    current_options_field = Some(field_name.to_owned());
+                }
                 _ => {
                     definition.observed_create_edit_compatible = false;
                     current_values_field = None;
                 }
             }
+            continue;
+        }
+        if indent == 6
+            && current_options_field.as_deref() == Some(field_name)
+            && let Some((key, value)) = trimmed.split_once(':')
+        {
+            let key = key.trim();
+            if key.is_empty() {
+                definition.observed_create_edit_compatible = false;
+                continue;
+            }
+            let Some(field) = definition.field_mut(field_name) else {
+                definition.observed_create_edit_compatible = false;
+                continue;
+            };
+            let value = value.trim();
+            if value.is_empty() || field.options.contains_key(key) {
+                field.options_valid = false;
+            }
+            field
+                .options
+                .insert(key.to_owned(), parse_wikidot_data_form_option(value));
             continue;
         }
         if indent == 6
@@ -596,6 +917,149 @@ pub fn parse_wikidot_data_form_definition(wikitext: &str) -> Option<DataFormDefi
     Some(definition)
 }
 
+fn wikidot_data_form_comment_wrapper(prefix: &str, suffix: &str) -> bool {
+    prefix.trim() == "[!--" && suffix.trim() == "--]"
+}
+
+/// Returns the authored presentation portion of a documented custom data-form
+/// category template.
+///
+/// Wikidot uses one standalone `====` line immediately before the `[[form]]`
+/// block as the boundary between the page layout and the form definition. We
+/// deliberately reject ambiguous multiple separators and non-whitespace
+/// material between the separator and the form block.
+pub fn wikidot_data_form_custom_layout_source(wikitext: &str) -> Option<&str> {
+    let form_start = wikitext.find("[[form]]")?;
+    wikidot_data_form_custom_layout_source_from_prefix(&wikitext[..form_start])
+}
+
+fn wikidot_data_form_custom_layout_source_from_prefix(prefix: &str) -> Option<&str> {
+    let mut offset = 0usize;
+    let mut separator_start = None;
+    for segment in prefix.split_inclusive('\n') {
+        let line = segment.strip_suffix('\n').unwrap_or(segment);
+        let line = line.strip_suffix('\r').unwrap_or(line);
+        if line.trim() == "====" {
+            if separator_start.is_some() {
+                return None;
+            }
+            separator_start = Some(offset);
+        } else if separator_start.is_some() && !line.trim().is_empty() {
+            return None;
+        }
+        offset += segment.len();
+    }
+
+    separator_start.map(|start| &prefix[..start])
+}
+
+/// Expands the documented direct-page `form_data` and `form_raw` variables in
+/// a custom data-form layout before normal Wikidot parsing.
+///
+/// Only field types whose current create/edit scalar contract is established
+/// are expanded here. Unsupported field types remain literal rather than
+/// acquiring guessed display semantics.
+pub fn substitute_wikidot_data_form_layout_variables(
+    layout: &str,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+) -> String {
+    substitute_wikidot_data_form_layout_variables_with_display(
+        layout,
+        definition,
+        values,
+        &BTreeMap::new(),
+    )
+}
+
+pub fn substitute_wikidot_data_form_layout_variables_with_display(
+    layout: &str,
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    display_values: &BTreeMap<String, String>,
+) -> String {
+    let mut output = String::with_capacity(layout.len());
+    let mut rest = layout;
+
+    while let Some(relative_start) = rest.find("%%form_") {
+        output.push_str(&rest[..relative_start]);
+        let candidate = &rest[relative_start..];
+        let (prefix, raw) = if candidate.starts_with("%%form_data{") {
+            ("%%form_data{", false)
+        } else if candidate.starts_with("%%form_raw{") {
+            ("%%form_raw{", true)
+        } else {
+            output.push_str("%%form_");
+            rest = &candidate["%%form_".len()..];
+            continue;
+        };
+        let Some(relative_end) = candidate[prefix.len()..].find("}%%") else {
+            output.push_str(prefix);
+            rest = &candidate[prefix.len()..];
+            continue;
+        };
+        let field_end = prefix.len() + relative_end;
+        let field_name = &candidate[prefix.len()..field_end];
+        let token_end = field_end + "}%%".len();
+        let replacement = definition
+            .field(field_name)
+            .filter(|field| {
+                matches!(
+                    field.field_type.as_deref(),
+                    Some(
+                        "text"
+                            | "select"
+                            | "checkbox"
+                            | "wiki"
+                            | "url"
+                            | "date"
+                            | "pagepath"
+                    )
+                )
+            })
+            .map(|field| {
+                let value = values.get(field_name).map(String::as_str).unwrap_or("");
+                if raw {
+                    return (value.to_owned(), false);
+                }
+                let replacement = match field.field_type.as_deref() {
+                    Some("select") => field
+                        .value_label(value)
+                        .map(str::to_owned)
+                        .unwrap_or_else(|| value.to_owned()),
+                    Some("url") if valid_wikidot_bare_url_scalar(value) => {
+                        format!("http://{value}")
+                    }
+                    Some("url") if valid_wikidot_ftp_url(value) => value.to_owned(),
+                    Some("pagepath") => {
+                        display_values.get(field_name).cloned().unwrap_or_default()
+                    }
+                    _ => value.to_owned(),
+                };
+                let new_window_url = field.field_type.as_deref() == Some("url")
+                    && output.ends_with('*')
+                    && (valid_wikidot_bare_url_scalar(value)
+                        || valid_wikidot_ftp_url(value));
+                if new_window_url {
+                    (format!("[*{replacement} {replacement}]"), true)
+                } else {
+                    (replacement, false)
+                }
+            });
+        if let Some((replacement, strip_new_window_marker)) = replacement {
+            if strip_new_window_marker {
+                output.pop();
+            }
+            output.push_str(&replacement);
+        } else {
+            output.push_str(&candidate[..token_end]);
+        }
+        rest = &candidate[token_end..];
+    }
+    output.push_str(rest);
+    output
+}
+
 pub fn parse_observed_wikidot_data_form_values(
     definition: &DataFormDefinition,
     wikitext: &str,
@@ -653,10 +1117,12 @@ pub fn parse_observed_wikidot_data_form_values(
                     value
                 }
             }
+            Some("date") => parse_wikidot_stored_date_scalar(raw_value)?,
+            Some("pagepath") => parse_wikidot_stored_text_scalar(raw_value)?,
             _ => return None,
         };
         let canonical = match field.field_type.as_deref() {
-            Some("text") => serialize_wikidot_stored_text_scalar(&value),
+            Some("text") => serialize_wikidot_stored_text_field_scalar(&value),
             Some("wiki") => serialize_wikidot_stored_wiki_scalar(&value),
             Some("checkbox") => serialize_wikidot_stored_checkbox_scalar(&value),
             Some("hidden") => serialize_wikidot_stored_text_scalar(&value),
@@ -664,6 +1130,10 @@ pub fn parse_observed_wikidot_data_form_values(
             Some("static") => "null".to_owned(),
             Some("url") => serialize_wikidot_stored_url_scalar(&value),
             Some("select") => serialize_wikidot_stored_select_scalar(&value),
+            // Wikidot stores date submissions verbatim, including malformed
+            // values observed at the authenticated save boundary.
+            Some("date") => raw_value.to_owned(),
+            Some("pagepath") => serialize_wikidot_stored_text_scalar(&value),
             _ => return None,
         };
         if canonical != raw_value {
@@ -686,6 +1156,20 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
     definition: &DataFormDefinition,
     values: &BTreeMap<String, String>,
     rendered_wiki_values: &BTreeMap<String, String>,
+) -> String {
+    render_wikidot_data_form_table_with_runtime_html(
+        definition,
+        values,
+        rendered_wiki_values,
+        &BTreeMap::new(),
+    )
+}
+
+pub fn render_wikidot_data_form_table_with_runtime_html(
+    definition: &DataFormDefinition,
+    values: &BTreeMap<String, String>,
+    rendered_wiki_values: &BTreeMap<String, String>,
+    display_values: &BTreeMap<String, String>,
 ) -> String {
     let mut html = String::from(r#"<table class="form-table"><tbody>"#);
     for (index, field) in definition.fields.iter().enumerate() {
@@ -710,10 +1194,13 @@ pub fn render_wikidot_data_form_table_with_wiki_html(
             }
         }
         let raw_value = values.get(&field.name).map(String::as_str).unwrap_or("");
-        let display_value = if field.field_type.as_deref() == Some("select") {
-            field.value_label(raw_value).unwrap_or(raw_value)
-        } else {
-            raw_value
+        let display_value = match field.field_type.as_deref() {
+            Some("select") => field.value_label(raw_value).unwrap_or(raw_value),
+            Some("pagepath") => display_values
+                .get(&field.name)
+                .map(String::as_str)
+                .unwrap_or(""),
+            _ => raw_value,
         };
         if matches!(field.field_type.as_deref(), Some("wiki" | "static")) {
             html.push_str(r#"<div class="form-value field-"#);
@@ -814,6 +1301,106 @@ fn parse_wikidot_text_width(value: &str) -> usize {
         .unwrap_or(40)
 }
 
+fn parse_wikidot_data_form_option(value: &str) -> serde_json::Value {
+    let value = value.trim();
+    if quoted_wikidot_data_form_scalar(value) {
+        return serde_json::Value::String(
+            unquote_wikidot_data_form_scalar(value).to_owned(),
+        );
+    }
+    if value.starts_with('[') || value.ends_with(']') {
+        let Some(items) = value
+            .strip_prefix('[')
+            .and_then(|value| value.strip_suffix(']'))
+        else {
+            return serde_json::Value::Object(serde_json::Map::new());
+        };
+        return serde_json::Value::Array(
+            items
+                .split(',')
+                .map(|item| parse_wikidot_data_form_option(item.trim()))
+                .collect(),
+        );
+    }
+    if value.starts_with('{') || value.ends_with('}') {
+        return serde_json::Value::Object(serde_json::Map::new());
+    }
+    match value.to_ascii_lowercase().as_str() {
+        "true" => return serde_json::Value::Bool(true),
+        "false" => return serde_json::Value::Bool(false),
+        "null" | "~" => return serde_json::Value::Null,
+        _ => {}
+    }
+    if let Ok(number) = value.parse::<i64>() {
+        return serde_json::Value::Number(number.into());
+    }
+    serde_json::Value::String(value.to_owned())
+}
+
+fn valid_wikidot_date_options(options: &BTreeMap<String, serde_json::Value>) -> bool {
+    options.iter().all(|(name, value)| match name.as_str() {
+        "altField" | "altFormat" | "appendText" | "buttonImage" | "buttonText"
+        | "closeText" | "currentText" | "dateFormat" | "nextText" | "prevText"
+        | "weekHeader" | "yearRange" | "yearSuffix" => value.is_string(),
+        "dayNames" | "dayNamesMin" | "dayNamesShort" => {
+            valid_wikidot_date_string_array(value, 7)
+        }
+        "monthNames" | "monthNamesShort" => valid_wikidot_date_string_array(value, 12),
+        "autoSize" | "buttonImageOnly" | "changeMonth" | "changeYear"
+        | "hideIfNoPrevNext" | "isRTL" | "showButtonPanel" | "showMonthAfterYear"
+        | "showWeek" => value.is_boolean(),
+        "firstDay" | "showCurrentAtPos" | "stepMonths" => value.as_i64().is_some(),
+        "defaultDate" | "maxDate" | "minDate" => {
+            value.is_null() || value.is_string() || value.as_i64().is_some()
+        }
+        "duration" => {
+            value.as_i64().is_some()
+                || matches!(value, serde_json::Value::String(value) if matches!(
+                    value.as_str(),
+                    "slow" | "normal" | "fast"
+                ))
+        }
+        "numberOfMonths" => {
+            value.as_i64().is_some() || valid_wikidot_date_integer_array(value, 2)
+        }
+        "shortYearCutoff" => value.as_i64().is_some() || value.is_string(),
+        "showAnim" => matches!(
+            value,
+            serde_json::Value::String(value)
+                if matches!(value.as_str(), "show" | "slideDown" | "fadeIn")
+        ),
+        "showOn" => matches!(
+            value,
+            serde_json::Value::String(value)
+                if matches!(value.as_str(), "focus" | "button" | "both")
+        ),
+        _ => false,
+    })
+}
+
+fn valid_wikidot_date_string_array(
+    value: &serde_json::Value,
+    expected_len: usize,
+) -> bool {
+    let serde_json::Value::Array(items) = value else {
+        return false;
+    };
+    items.len() == expected_len
+        && items
+            .iter()
+            .all(|item| item.as_str().is_some_and(|item| !item.is_empty()))
+}
+
+fn valid_wikidot_date_integer_array(
+    value: &serde_json::Value,
+    expected_len: usize,
+) -> bool {
+    let serde_json::Value::Array(items) = value else {
+        return false;
+    };
+    items.len() == expected_len && items.iter().all(|item| item.as_i64().is_some())
+}
+
 fn parse_wikidot_text_height(value: &str) -> usize {
     value
         .parse::<i64>()
@@ -891,6 +1478,19 @@ fn parse_wikidot_stored_url_scalar(value: &str) -> Option<String> {
     (serialize_wikidot_stored_url_scalar(&parsed) == value).then_some(parsed)
 }
 
+fn parse_wikidot_stored_date_scalar(value: &str) -> Option<String> {
+    if value.contains(['\n', '\r']) {
+        return None;
+    }
+    if value.starts_with('\'') {
+        parse_wikidot_single_quoted_scalar(value)
+    } else if value.starts_with('"') {
+        parse_wikidot_double_quoted_scalar(value)
+    } else {
+        Some(value.to_owned())
+    }
+}
+
 fn valid_wikidot_bare_url_scalar(value: &str) -> bool {
     let (host, path) = value.split_once('/').unwrap_or((value, ""));
     host.split('.').count() >= 2
@@ -937,6 +1537,13 @@ fn valid_wikidot_stored_plain_scalar(value: &str) -> bool {
             value.to_ascii_lowercase().as_str(),
             "false" | "no" | "null" | "off" | "on" | "true" | "yes"
         )
+}
+
+fn serialize_wikidot_stored_text_field_scalar(value: &str) -> String {
+    if value.is_empty() {
+        return "''".to_owned();
+    }
+    serialize_wikidot_stored_text_scalar(value)
 }
 
 fn serialize_wikidot_stored_text_scalar(value: &str) -> String {
@@ -1179,17 +1786,173 @@ fields:
         .expect("data form");
 
         assert!(!definition.default_layout);
-        assert!(!definition.supports_observed_create_edit());
+        assert!(definition.supports_observed_create_edit());
+    }
+
+    #[test]
+    fn custom_layout_separator_must_be_unique_and_immediately_precede_form() {
+        assert_eq!(
+            wikidot_data_form_custom_layout_source(
+                "before\r\n====\r\n\r\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]",
+            ),
+            Some("before\r\n"),
+        );
+        assert!(
+            wikidot_data_form_custom_layout_source(
+                "before\n====\nafter\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]",
+            )
+            .is_none(),
+        );
+        assert!(
+            wikidot_data_form_custom_layout_source(
+                "before\n====\n====\n[[form]]\nfields:\n  name:\n    type: text\n[[/form]]",
+            )
+            .is_none(),
+        );
+    }
+
+    #[test]
+    fn custom_layout_variables_expand_only_established_field_contracts() {
+        let definition = parse_wikidot_data_form_definition(
+            r#"[[form]]
+fields:
+  priority:
+    type: select
+    values:
+      normal: Normal
+      urgent: Urgent
+  website:
+    type: url
+  target:
+    type: text
+[[/form]]"#,
+        )
+        .expect("data form");
+        let values = BTreeMap::from([
+            ("priority".to_owned(), "urgent".to_owned()),
+            ("target".to_owned(), "missing-target".to_owned()),
+            ("website".to_owned(), "example.com/alpha".to_owned()),
+        ]);
+
+        assert_eq!(
+            substitute_wikidot_data_form_layout_variables(
+                concat!(
+                    "%%form_raw{priority}%%|%%form_data{priority}%%|",
+                    "%%form_data{website}%%|*%%form_data{website}%%|%%form_data{target}%%|",
+                    "%%form_data{unknown}%%|%%form_bad{target}%%",
+                ),
+                &definition,
+                &values,
+            ),
+            concat!(
+                "urgent|Urgent|http://example.com/alpha|",
+                "[*http://example.com/alpha http://example.com/alpha]|missing-target|",
+                "%%form_data{unknown}%%|%%form_bad{target}%%",
+            ),
+        );
     }
 
     #[test]
     fn unsupported_field_types_fail_closed_for_create_edit() {
         let definition = parse_wikidot_data_form_definition(
-            "[[form]]\nfields:\n  date:\n    type: date\n[[/form]]",
+            "[[form]]\nfields:\n  scalar:\n    type: number\n[[/form]]",
         )
         .expect("data form");
 
         assert!(!definition.supports_observed_create_edit());
+    }
+
+    #[test]
+    fn file_field_exposes_only_the_observed_editor_boundary() {
+        let definition = parse_wikidot_data_form_definition(concat!(
+            "[[form]]\n",
+            "fields:\n",
+            "  document:\n",
+            "    type: file\n",
+            "    label: Upload document\n",
+            "    category: file-storage\n",
+            "[[/form]]",
+        ))
+        .expect("data form");
+
+        assert!(definition.supports_observed_editor());
+        assert!(!definition.supports_observed_create_edit());
+        let field = definition.field("document").expect("file field");
+        assert_eq!(field.field_type.as_deref(), Some("file"));
+        assert_eq!(field.pagepath_category.as_deref(), Some("file-storage"));
+    }
+
+    #[test]
+    fn date_field_public_definition_and_values_preserve_documented_scalars() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  date:\n    label: Date\n    width: 24\n    type: date\n    options:\n      dateFormat: 'mm/dd/yy'\n      showOn: button\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        let date = definition.field("date").expect("date field");
+        assert_eq!(date.field_type.as_deref(), Some("date"));
+        assert_eq!(date.width, 24);
+        assert_eq!(date.options["dateFormat"], serde_json::json!("mm/dd/yy"));
+        assert_eq!(date.options["showOn"], serde_json::json!("button"));
+        for scalar in ["02/29/2024", "02/29/2023", "not-a-date"] {
+            let values = parse_observed_wikidot_data_form_values(
+                &definition,
+                &format!("date: {scalar}"),
+            )
+            .expect("date values round-trip at the public view seam");
+            assert_eq!(values.get("date").map(String::as_str), Some(scalar));
+        }
+    }
+
+    #[test]
+    fn date_field_accepts_the_documented_option_shapes() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  date:\n    type: date\n    options:\n      altField: 'input[name=field-alt-date]'\n      altFormat: 'm/d/yy'\n      appendText: ' Pick a date'\n      autoSize: true\n      buttonImage: '/files/calendar.png'\n      buttonImageOnly: false\n      buttonText: 'Pick!'\n      changeMonth: true\n      changeYear: false\n      closeText: 'Done'\n      currentText: 'Today'\n      dateFormat: 'DD, d MM yy'\n      dayNames: [Sonntag, Montag, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag]\n      dayNamesMin: [So, Mo, Di, Mi, Do, Fr, Sa]\n      dayNamesShort: [Son, Mon, Die, Mit, Don, Fre, Sam]\n      defaultDate: null\n      duration: 0\n      firstDay: 0\n      hideIfNoPrevNext: true\n      isRTL: false\n      maxDate: 1700000000\n      minDate: '+2y -1m'\n      monthNames: [Jänner, Februar, März, April, Mai, Juni, Juli, August, September, Oktober, November, Dezember]\n      monthNamesShort: [Jän, Feb, Mär, Apr, Mai, Jun, Jul, Aug, Sep, Okt, Nov, Dez]\n      nextText: 'Forward'\n      numberOfMonths: [2, 3]\n      prevText: 'Back'\n      shortYearCutoff: '+20'\n      showAnim: fadeIn\n      showButtonPanel: true\n      showCurrentAtPos: 0\n      showMonthAfterYear: false\n      showOn: both\n      showWeek: true\n      stepMonths: 0\n      weekHeader: 'wk#'\n      yearRange: '2014:2025'\n      yearSuffix: ' CE'\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert!(definition.supports_observed_create_edit());
+        let date = definition.field("date").expect("date field");
+        assert_eq!(date.options["defaultDate"], serde_json::Value::Null);
+        assert_eq!(date.options["duration"], serde_json::json!(0));
+        assert_eq!(date.options["minDate"], serde_json::json!("+2y -1m"));
+        assert_eq!(date.options["numberOfMonths"], serde_json::json!([2, 3]));
+        assert_eq!(date.options["monthNames"][2], serde_json::json!("März"));
+    }
+
+    #[test]
+    fn date_field_rejects_unknown_duplicate_and_wrong_option_shapes() {
+        for options in [
+            "unknownOption: true",
+            "autoSize: 1",
+            "showOn: 1",
+            "numberOfMonths: [2, 3, 4]",
+            "numberOfMonths: [2, [3]]",
+            "dayNames: [Sonntag, 1, Dienstag, Mittwoch, Donnerstag, Freitag, Samstag]",
+            "dayNames: [Sonntag, Montag",
+            "monthNames: [Januar]",
+            "dateFormat: {nested: true}",
+            "dateFormat:",
+        ] {
+            let form = format!(
+                "[[form]]\nfields:\n  date:\n    type: date\n    options:\n      {options}\n[[/form]]",
+            );
+            let definition =
+                parse_wikidot_data_form_definition(&form).expect("data form");
+            assert!(definition.field("date").is_some(), "definition is retained");
+            assert!(
+                !definition.supports_observed_create_edit(),
+                "shape must fail closed:\n{form}",
+            );
+        }
+
+        let duplicate = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  date:\n    type: date\n    options:\n      showOn: button\n      showOn: focus\n[[/form]]",
+        )
+        .expect("data form");
+        assert!(duplicate.field("date").is_some(), "definition is retained");
+        assert!(!duplicate.supports_observed_create_edit());
     }
 
     #[test]
@@ -1247,6 +2010,37 @@ fields:
                 parse_observed_wikidot_data_form_values(&definition, source),
                 None,
                 "source must fail closed:\n{source}",
+            );
+        }
+    }
+
+    #[test]
+    fn explicit_and_implicit_empty_text_scalars_round_trip_as_quoted_empty_strings() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  explicit:\n    type: text\n  implicit:\n    label: Implicit\n  choice:\n    type: select\n    values:\n      a: Alpha\n[[/form]]",
+        )
+        .expect("data form");
+
+        assert_eq!(
+            parse_observed_wikidot_data_form_values(
+                &definition,
+                "explicit: ''\nimplicit: ''\nchoice: null",
+            ),
+            Some(BTreeMap::from([
+                ("choice".to_owned(), String::new()),
+                ("explicit".to_owned(), String::new()),
+                ("implicit".to_owned(), String::new()),
+            ])),
+        );
+        for source in [
+            "explicit: null\nimplicit: ''\nchoice: null",
+            "explicit: ''\nimplicit: null\nchoice: null",
+            "explicit: ''\nimplicit: ''\nchoice: ''",
+        ] {
+            assert_eq!(
+                parse_observed_wikidot_data_form_values(&definition, source),
+                None,
+                "noncanonical empty scalar must fail closed:\n{source}",
             );
         }
     }
@@ -1713,6 +2507,6 @@ fields:
             "[[form]]\nfields:\n  scalar:\n    type: url\n  other:\n    type: text\n[[/form]]",
         )
         .expect("mixed definition");
-        assert!(!mixed.supports_observed_create_edit());
+        assert!(mixed.supports_observed_create_edit());
     }
 }

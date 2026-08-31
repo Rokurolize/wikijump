@@ -3,6 +3,7 @@
 - Feature ID: `karma`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,54 @@ Represent and display Wikidot user karma according to the documented visibility,
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `userinfo-targets` -> `install/local/wikidot-verification/artifacts/userinfo-target-routes-live-20260810.json` (SHA-256 `692f40efc26f114877edb8200403137864e9cc3ce709a9f93131b22cfdbe84c4`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- Karma is a platform-calculated user activity level with six documented display states: 0 none, 1 low, 2 medium, 3 high, 4 very high, 5 guru. Inputs include page activity, forums, community participation, site roles, invitations, and contacts; exact private scoring weights are not exposed.
+
+### P2 - parser stage, nesting, and composition
+
+- Karma is user metadata rendered by identity components, not page syntax.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Karma is recalculated every few days and may rise or fall; once guru is achieved the documentation says it does not drop. Page edits do not synchronously write a visible karma level.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Users/sites may disable the karma indicator where the documented settings allow. Hidden karma display MUST not reveal the numeric/private score through another UI field.
+
+### P5 - selection, ordering, counting, and pagination
+
+- The displayed level is a six-state classification, not a sortable public point total. Exact underlying points are intentionally not shown.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Live UserInfo output includes a textual level and userkarma.php image URL. No public API for setting karma is permitted.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Karma is shown as a bar/image next to avatar/profile identity and in UserInfo with textual description; current live observations include none and high states. The image/cache URL may vary without changing the level.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Delayed recalculation is normative; UI must tolerate stale-to-new level transitions without exposing partial scoring internals. Guru non-decrease follows documentation unless current live evidence contradicts it.
 
 
 ## Suggested public TDD seams

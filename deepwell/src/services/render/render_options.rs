@@ -154,10 +154,17 @@ impl RenderContext {
     }
 
     pub(super) fn page_preview(site_id: i64) -> Self {
+        Self::page_preview_with_page(site_id, None)
+    }
+
+    pub(super) fn page_preview_with_page(
+        site_id: i64,
+        current_page_id: Option<i64>,
+    ) -> Self {
         Self {
             current_site_id: Some(site_id),
             current_category_id: None,
-            current_page_id: None,
+            current_page_id,
             text_block_page_id: None,
             lifecycle: RenderLifecycle::PagePreview,
             suppress_nested_list_pages: false,

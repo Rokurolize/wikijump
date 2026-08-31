@@ -30,6 +30,18 @@ export const WIKIDOT_LOGIN_LABELS_JA = Object.freeze({
   signIn: "サインイン"
 })
 
+export const WIKIDOT_ACCOUNT_LABELS = Object.freeze({
+  myAccount: "My account",
+  settings: "Settings",
+  signOut: "Sign out"
+})
+
+export const WIKIDOT_ACCOUNT_LABELS_JA = Object.freeze({
+  myAccount: "マイアカウント",
+  settings: "設定",
+  signOut: "サインアウト"
+})
+
 /** @param {string | null | undefined} locale */
 export const buildWikidotFooterLinks = (locale) => {
   return isJapaneseWikidotLocale(locale) ? WIKIDOT_FOOTER_LINKS_JA : WIKIDOT_FOOTER_LINKS
@@ -38,6 +50,13 @@ export const buildWikidotFooterLinks = (locale) => {
 /** @param {string | null | undefined} locale */
 export const buildWikidotLoginLabels = (locale) => {
   return isJapaneseWikidotLocale(locale) ? WIKIDOT_LOGIN_LABELS_JA : WIKIDOT_LOGIN_LABELS
+}
+
+/** @param {string | null | undefined} locale */
+export const buildWikidotAccountLabels = (locale) => {
+  return isJapaneseWikidotLocale(locale)
+    ? WIKIDOT_ACCOUNT_LABELS_JA
+    : WIKIDOT_ACCOUNT_LABELS
 }
 
 /**

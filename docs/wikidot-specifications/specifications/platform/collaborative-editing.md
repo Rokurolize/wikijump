@@ -3,6 +3,7 @@
 - Feature ID: `collaborative-editing`
 - Category: `platform`
 - Documentation status: `high-level-documentation`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,53 @@ Allow authorized users to create and edit shared pages, publish changes, collabo
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Authorized users can create/edit shared pages, work on common documents, inspect revision history/diffs, and share files. This feature composes existing page, history, permission, and file operations rather than introducing a new source syntax.
+
+### P2 - parser stage, nesting, and composition
+
+- Page source continues to use ordinary Wikidot syntax; collaboration does not add a second parser.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Each successful edit produces a revision and history remains recoverable. File sharing persists through the file subsystem. The documentation does not establish a real-time co-edit/OT/CRDT model, so none may be invented.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Only actors with the relevant page/file permissions may collaborate on that object. Private-site/category restrictions apply before content, history, or files are disclosed.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Revision history order and file listings are owned by their respective features; collaborative editing adds no new pagination contract.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Create/edit/history/diff/file actions use their normal public routes. A collaboration feature MUST NOT require a hidden peer-to-peer or websocket protocol absent from live Wikidot evidence.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Users observe the ordinary editor, revision history/diff, and file UI; no special collaborative cursor/presence UI is documented or authorized.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Concurrent-edit conflict semantics are not specified by the high-level documentation. Until directly observed, implementation MUST use the existing revision/lock fail-closed boundaries rather than claim simultaneous merge behavior.
 
 
 ## Suggested public TDD seams

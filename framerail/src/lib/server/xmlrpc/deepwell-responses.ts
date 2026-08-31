@@ -56,11 +56,29 @@ export interface DeepwellForumPostSummary {
   commented_by: string | null
 }
 
+export interface DeepwellDirectParentMetadata {
+  slug: string
+  title: string
+}
+
 export interface DeepwellPageView {
   type: string
   data?: {
     page?: { slug?: string }
   }
+}
+
+export interface DeepwellPageLifecycleIdentity {
+  created_by: string | null
+  updated_by: string | null
+}
+
+export interface DeepwellPageCreateOutput {
+  slug: string
+}
+
+export interface DeepwellPageMoveOutput {
+  new_slug: string
 }
 
 export interface DeepwellForumPost {
@@ -72,10 +90,6 @@ export interface DeepwellForumPost {
   html: string
   created_by: string
   created_at: string
-}
-
-export interface DeepwellParentRelationship {
-  parent_page_id: number
 }
 
 export function expectDeepwellCategories(
@@ -133,6 +147,40 @@ export function isDeepwellPageView(value: unknown): value is DeepwellPageView {
   )
 }
 
+export function isDeepwellPageLifecycleIdentity(
+  value: unknown
+): value is DeepwellPageLifecycleIdentity {
+  return (
+    isXmlRpcStruct(value) &&
+    (value.created_by === null ||
+      (typeof value.created_by === "string" && value.created_by.trim().length > 0)) &&
+    (value.updated_by === null ||
+      (typeof value.updated_by === "string" && value.updated_by.trim().length > 0))
+  )
+}
+
+export function expectDeepwellPageCreateOutput(value: unknown): DeepwellPageCreateOutput {
+  if (
+    !isXmlRpcStruct(value) ||
+    typeof value.slug !== "string" ||
+    value.slug.length === 0
+  ) {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_create")
+  }
+  return value
+}
+
+export function expectDeepwellPageMoveOutput(value: unknown): DeepwellPageMoveOutput {
+  if (
+    !isXmlRpcStruct(value) ||
+    typeof value.new_slug !== "string" ||
+    value.new_slug.length === 0
+  ) {
+    throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_move")
+  }
+  return value
+}
+
 export function isDeepwellBlobUpload(
   value: unknown
 ): value is { pending_blob_id: string; presign_url: string } {
@@ -184,6 +232,16 @@ export function isDeepwellForumPostSummary(
   )
 }
 
+export function isDeepwellDirectParentMetadata(
+  value: unknown
+): value is DeepwellDirectParentMetadata {
+  return (
+    isXmlRpcStruct(value) &&
+    typeof value.slug === "string" &&
+    typeof value.title === "string"
+  )
+}
+
 export function isDeepwellForumPost(value: unknown): value is DeepwellForumPost {
   return (
     isXmlRpcStruct(value) &&
@@ -224,16 +282,4 @@ export function expectDeepwellForumPosts(
   method: string
 ): DeepwellForumPost[] {
   return expectArray(value, method, isDeepwellForumPost)
-}
-
-export function expectDeepwellParentRelationships(
-  value: unknown,
-  method: string
-): DeepwellParentRelationship[] {
-  return expectArray(
-    value,
-    method,
-    (relationship): relationship is DeepwellParentRelationship =>
-      isXmlRpcStruct(relationship) && isInteger(relationship.parent_page_id)
-  )
 }

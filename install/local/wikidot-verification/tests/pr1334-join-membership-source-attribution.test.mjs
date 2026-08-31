@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { historicalSha256, historicalText } from './historical-git.mjs';
 
 process.chdir(fileURLToPath(new URL('../../../../', import.meta.url)));
 
@@ -11,6 +11,8 @@ const fixturePath = 'install/local/wikidot-verification/fixtures/pr1334-join-mem
 const scriptPath = 'install/local/wikidot-verification/scripts/capture_pr1334_join_membership_source_attribution.py';
 const inventoryPath = 'docs/development/compatibility-surface-inventory.json';
 const auditPath = 'docs/development/open43-a-actions-membership-closure-audit.json';
+const baseCommit = '955fcb7a2d7aad16e8cb2204637e77cabfaaa3a7';
+const captureCommit = '71f2e9057c47bf08e359fcdd4468d7e4f29ebf88';
 const expectedIds = [
   'catalog-feature:module-join',
   'catalog-feature:site-membership',
@@ -44,11 +46,12 @@ if (!existsSync(artifactPath)) {
 
 const artifactText = readFileSync(artifactPath, 'utf8');
 const artifact = JSON.parse(artifactText);
-const fixture = JSON.parse(readFileSync(fixturePath, 'utf8'));
-const inventory = JSON.parse(readFileSync(inventoryPath, 'utf8'));
-const audit = JSON.parse(readFileSync(auditPath, 'utf8'));
-const read = (path) => readFileSync(path, 'utf8');
-const sha256 = (path) => createHash('sha256').update(readFileSync(path)).digest('hex');
+const fixture = JSON.parse(historicalText(captureCommit, fixturePath));
+const inventory = JSON.parse(historicalText(captureCommit, inventoryPath));
+const audit = JSON.parse(historicalText(captureCommit, auditPath));
+const read = (path) => historicalText(baseCommit, path);
+const identityPaths = new Set([fixturePath, scriptPath, inventoryPath, auditPath]);
+const sha256 = (path) => historicalSha256(identityPaths.has(path) ? captureCommit : baseCommit, path);
 const count = (text, literal) => text.split(literal).length - 1;
 const objectsWithKey = (value, key, output = []) => {
   if (Array.isArray(value)) value.forEach((child) => objectsWithKey(child, key, output));
@@ -61,8 +64,8 @@ const objectsWithKey = (value, key, output = []) => {
 
 test('pinned identities, exact denominator, and privacy contract', () => {
   assert.equal(artifact.schema, 'wikijump.pr1334.join_membership_source_attribution.v1');
-  assert.equal(artifact.base_commit, 'c78561b3f6dc35198658f618fc01d10e4bcad6d0');
-  assert.equal(artifact.base_tree, '9f236023be41fd9c807272bbb16dd060b500b140');
+  assert.equal(artifact.base_commit, baseCommit);
+  assert.equal(artifact.base_tree, 'e7c4c9e806d298af162b2809d1878452e56255c8');
   assert.deepEqual(artifact.surface_ids, expectedIds);
   assert.deepEqual(fixture.surfaces.map(({ surface_id }) => surface_id), expectedIds);
   assert.equal(new Set(artifact.surface_ids).size, 10);

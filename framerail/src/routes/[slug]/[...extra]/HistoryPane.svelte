@@ -5,6 +5,7 @@
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
 
   import { Layout } from "$lib/types"
+  import { onDestroy, tick } from "svelte"
   import { SvelteMap } from "svelte/reactivity"
 
   import type { PageProps } from "./$types"
@@ -32,10 +33,25 @@
   let toRevisionNumber = $state<Optional<number>>(undefined)
   let revisionDiff = $state<Optional<PageRevisionDiffOutput>>(undefined)
   let revisionDiffLoading = $state(false)
+  let revisionDiffCompareButton = $state<HTMLButtonElement | undefined>(undefined)
+  let revisionDiffRequestId = 0
+  let active = true
+
+  onDestroy(() => {
+    active = false
+    revisionDiffRequestId += 1
+  })
+
+  const SVELTEKIT_ACTION_HEADERS = {
+    accept: "application/json",
+    "content-type": "text/plain;charset=UTF-8",
+    "x-sveltekit-action": "true"
+  }
 
   async function fetchHistory() {
     const res = await fetch("?/history", {
       method: "POST",
+      headers: SVELTEKIT_ACTION_HEADERS,
       body: JSON.stringify({
         siteId: data.site.site_id,
         pageId: data.page?.page_id
@@ -46,6 +62,8 @@
       { res: PageRevisionModelFiltered[] },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
+
+    if (!active) return
 
     if (result.type === "failure" && result.data?.message) {
       errorPopupState.current = {
@@ -73,15 +91,20 @@
   async function fetchRevisionDiff() {
     if (fromRevisionNumber === undefined || toRevisionNumber === undefined) return
 
+    const restoreCompareFocus = document.activeElement === revisionDiffCompareButton
+    const requestedFromRevisionNumber = fromRevisionNumber
+    const requestedToRevisionNumber = toRevisionNumber
+    const requestId = ++revisionDiffRequestId
     revisionDiffLoading = true
     try {
       const res = await fetch("?/revisionDiff", {
         method: "POST",
+        headers: SVELTEKIT_ACTION_HEADERS,
         body: JSON.stringify({
           siteId: data.site.site_id,
           pageId: data.page?.page_id,
-          fromRevisionNumber,
-          toRevisionNumber
+          fromRevisionNumber: requestedFromRevisionNumber,
+          toRevisionNumber: requestedToRevisionNumber
         })
       }).then((response) => response.text())
 
@@ -89,6 +112,15 @@
         { res: Optional<PageRevisionDiffOutput> },
         { message: string; code: string; data: Record<string, unknown> }
       >(res)
+
+      if (
+        !active ||
+        requestId !== revisionDiffRequestId ||
+        requestedFromRevisionNumber !== fromRevisionNumber ||
+        requestedToRevisionNumber !== toRevisionNumber
+      ) {
+        return
+      }
 
       if (result.type === "failure" && result.data?.message) {
         errorPopupState.current = {
@@ -100,15 +132,27 @@
         revisionDiff = result.data?.res
       }
     } finally {
-      revisionDiffLoading = false
+      if (requestId === revisionDiffRequestId) {
+        revisionDiffLoading = false
+        if (restoreCompareFocus) {
+          await tick()
+          revisionDiffCompareButton?.focus()
+        }
+      }
     }
+  }
+
+  function clearRevisionDiff() {
+    revisionDiffRequestId += 1
+    revisionDiff = undefined
+    revisionDiffLoading = false
   }
 
   function swapRevisionDiff() {
     const previousFrom = fromRevisionNumber
     fromRevisionNumber = toRevisionNumber
     toRevisionNumber = previousFrom
-    revisionDiff = undefined
+    clearRevisionDiff()
   }
 
   async function getRevision(
@@ -131,6 +175,7 @@
     } else {
       const res = await fetch("?/revision", {
         method: "POST",
+        headers: SVELTEKIT_ACTION_HEADERS,
         body: JSON.stringify({
           siteId: data.site.site_id,
           pageId: data.page?.page_id,
@@ -144,6 +189,8 @@
         { res: Optional<PageRevisionModelFiltered> },
         { message: string; code: string; data: Record<string, unknown> }
       >(res)
+
+      if (!active) return
 
       if (result.type === "failure" && result.data?.message) {
         errorPopupState.current = {
@@ -173,6 +220,7 @@
   async function rollbackRevision(revisionNumber: number, comments?: string) {
     const res = await fetch("?/rollback", {
       method: "POST",
+      headers: SVELTEKIT_ACTION_HEADERS,
       body: JSON.stringify({
         siteId: data.site.site_id,
         pageId: data.page?.page_id,
@@ -186,6 +234,8 @@
       { res: Optional<CreatePageRevisionOutput> },
       { message: string; code: string; data: Record<string, unknown> }
     >(res)
+
+    if (!active) return
 
     if (result.type === "failure" && result.data?.message) {
       errorPopupState.current = {
@@ -247,6 +297,7 @@
                   onclick={(event) => {
                     event.stopPropagation()
                     getRevision(revisionItem.revision_number, true, false).then(() => {
+                      if (!active) return
                       setShowRevision(true)
                       showRevisionSource = false
                     })
@@ -262,6 +313,7 @@
                   onclick={(event) => {
                     event.stopPropagation()
                     getRevision(revisionItem.revision_number, false, true).then(() => {
+                      if (!active) return
                       setShowRevision(false)
                       showRevisionSource = true
                     })
@@ -342,6 +394,7 @@
               onclick={(event) => {
                 event.stopPropagation()
                 getRevision(revisionItem.revision_number, true, false).then(() => {
+                  if (!active) return
                   setShowRevision(true)
                   showRevisionSource = false
                 })
@@ -355,6 +408,7 @@
               onclick={(event) => {
                 event.stopPropagation()
                 getRevision(revisionItem.revision_number, false, true).then(() => {
+                  if (!active) return
                   setShowRevision(false)
                   showRevisionSource = true
                 })
@@ -411,7 +465,11 @@
       <label for="revision-diff-from">
         {data.internationalization?.["wiki-page-revision-diff.from"]}
       </label>
-      <select id="revision-diff-from" bind:value={fromRevisionNumber}>
+      <select
+        id="revision-diff-from"
+        onchange={clearRevisionDiff}
+        bind:value={fromRevisionNumber}
+      >
         {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber (revisionNumber)}
           <option value={revisionNumber}>{revisionNumber}</option>
         {/each}
@@ -419,7 +477,11 @@
       <label for="revision-diff-to">
         {data.internationalization?.["wiki-page-revision-diff.to"]}
       </label>
-      <select id="revision-diff-to" bind:value={toRevisionNumber}>
+      <select
+        id="revision-diff-to"
+        onchange={clearRevisionDiff}
+        bind:value={toRevisionNumber}
+      >
         {#each [...revisionMap.keys()].sort((a, b) => a - b) as revisionNumber (revisionNumber)}
           <option value={revisionNumber}>{revisionNumber}</option>
         {/each}
@@ -429,6 +491,7 @@
       </button>
       <button
         class="action-button clickable"
+        bind:this={revisionDiffCompareButton}
         disabled={revisionDiffLoading}
         onclick={fetchRevisionDiff}
         type="button"

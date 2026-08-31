@@ -40,6 +40,7 @@ use strum_macros::{Display, EnumString};
 #[serde(rename_all = "kebab-case")]
 pub enum Resource {
     Page,
+    ForumCategory,
     Role,
     Site,
 }

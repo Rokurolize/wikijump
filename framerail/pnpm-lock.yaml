@@ -28,6 +28,12 @@ importers:
       include-media:
         specifier: ^2.0.0
         version: 2.0.0
+      jquery:
+        specifier: 4.0.0
+        version: 4.0.0
+      jquery-ui:
+        specifier: 1.14.2
+        version: 1.14.2
       json-rpc-2.0:
         specifier: ^1.7.1
         version: 1.7.1
@@ -1575,6 +1581,12 @@ packages:
 
   joi@17.13.4:
     resolution: {integrity: sha512-1RuuER6kmt8K8I3nIWvPZKi5RQCb568ZPyY4Pwjlua+yo+63ZTmIwxLZH0heBmiKN4uxjvCiarDrjaeH84xicQ==}
+
+  jquery-ui@1.14.2:
+    resolution: {integrity: sha512-1gSl7PUjyipa2adSr780Ujk16faicrV7PjPPzPtvWk7tTqBnsqp67NNV9jZK2+BIxUPXWSnIUU/LBCgwgGZE+Q==}
+
+  jquery@4.0.0:
+    resolution: {integrity: sha512-TXCHVR3Lb6TZdtw1l3RTLf8RBWVGexdxL6AC8/e0xZKEpBflBsjh9/8LXw+dkNFuOyW9B7iB3O1sP7hS0Kiacg==}
 
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
@@ -3670,6 +3682,12 @@ snapshots:
       '@sideway/formula': 3.0.1
       '@sideway/pinpoint': 2.0.0
     optional: true
+
+  jquery-ui@1.14.2:
+    dependencies:
+      jquery: 4.0.0
+
+  jquery@4.0.0: {}
 
   js-tokens@4.0.0: {}
 

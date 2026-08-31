@@ -23,6 +23,10 @@ pub struct Model {
     pub deleted_at: Option<TimeDateTimeWithTimeZone>,
     pub from_wikidot: bool,
     pub latest_revision_id: Option<i64>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub guest_name: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub guest_email_md5: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

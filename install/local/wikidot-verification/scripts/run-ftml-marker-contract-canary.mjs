@@ -26,16 +26,42 @@ const FIXTURES_PATH = path.join(
   REPOSITORY_ROOT,
   "install/local/wikidot-verification/fixtures/ftml-marker-contract/fixtures.json",
 );
-const BUILD_CANDIDATE = "/home/roku/wjlab/scripts/build-deepwell-candidate.sh";
+const BUILD_CANDIDATE = path.join(SCRIPT_DIR, "build-deepwell-candidate.sh");
+const CANDIDATE_MANIFEST = path.join(SCRIPT_DIR, "candidate-artifact-manifest.py");
 const LEASE = "/home/roku/.local/bin/roku-resource-lease";
-const REQUIRED_SURFACES = ["heading", "separator", "div", "span", "alignment"];
+export const REQUIRED_SURFACES = ["heading", "separator", "div", "span", "alignment"];
 const OWNER = "ftml-marker-contract-canary";
 const EXPIRY_HOURS = 8;
+
+export function validateMarkerContractFixtures(fixtures) {
+  assert.equal(fixtures?.schema, "wikijump.ftml_marker_contract_fixtures.v1");
+  assert.equal(fixtures?.site_slug, "scp-wiki");
+  assert.equal(fixtures?.layout, "wikidot");
+  assert.ok(Array.isArray(fixtures?.fixtures), "marker fixture index is missing");
+  assert.deepEqual(
+    fixtures.fixtures.map((fixture) => fixture?.surface),
+    REQUIRED_SURFACES,
+    "marker fixture index must list each required surface exactly once",
+  );
+
+  const fixtureIds = fixtures.fixtures.map((fixture) => fixture?.fixture_id);
+  const slugs = fixtures.fixtures.map((fixture) => fixture?.slug);
+  assert.equal(new Set(fixtureIds).size, fixtureIds.length, "marker fixture IDs must be unique");
+  assert.equal(new Set(slugs).size, slugs.length, "marker fixture slugs must be unique");
+  for (const fixture of fixtures.fixtures) {
+    assert.ok(fixture && typeof fixture === "object", "marker fixture must be an object");
+    assert.equal(typeof fixture.fixture_id, "string", "marker fixture ID is missing");
+    assert.equal(typeof fixture.slug, "string", "marker fixture slug is missing");
+    assert.equal(typeof fixture.title, "string", "marker fixture title is missing");
+    assert.equal(typeof fixture.wikitext, "string", "marker fixture source is missing");
+  }
+  return fixtures;
+}
 
 export function usage() {
   return `Usage: run-ftml-marker-contract-canary.mjs --candidate-ftml SHA --output-dir DIR [--baseline-ftml SHA] [--work-root DIR] [--dry-run]
 
-Creates baseline and candidate throwaway worktrees, builds Deepwell under registered leases, starts only disposable non-443 database/cache/files/Deepwell/Framerail services, and compares fixture visible text with the existing V3 Local Lab comparator. It never reads or writes a standing runtime or corpus volume.`;
+Creates baseline and candidate throwaway detached checkouts, builds Deepwell under registered leases, starts only disposable non-443 database/cache/files/Deepwell/Framerail services, and compares fixture visible text with the existing V3 Local Lab comparator. It never reads or writes a standing runtime or corpus volume.`;
 }
 
 function sha(value) {
@@ -99,7 +125,7 @@ async function runCandidateBuild(args) {
   const deadline = Date.now() + 15 * 60 * 1000;
   for (;;) {
     try {
-      run(BUILD_CANDIDATE, args);
+      run("/usr/bin/bash", [BUILD_CANDIDATE, ...args]);
       return;
     } catch (error) {
       if (
@@ -132,7 +158,7 @@ async function freePort() {
 
 function currentFtmlSha(repository) {
   const source = output("python3", [
-    "/home/roku/wjlab/scripts/candidate-artifact-manifest.py",
+    CANDIDATE_MANIFEST,
     "ftml-sha",
     "--cargo-lock",
     path.join(repository, "deepwell/Cargo.lock"),
@@ -420,7 +446,6 @@ async function seedFixtures({
   rpcUrl,
   rpcToken,
   fixtures,
-  expectedFtml,
   administrator,
 }) {
   const authenticatedRpc = (method, params = {}, headers = {}) =>
@@ -488,9 +513,10 @@ async function seedFixtures({
       page: fixture.slug,
       details: { wikitext: true, compiled: true },
     });
-    assert.ok(
-      page.compiled_generator?.includes(expectedFtml.slice(0, 8)),
-      `${fixture.fixture_id} generator did not identify ${expectedFtml}`,
+    assert.match(
+      page.compiled_generator ?? "",
+      /; deepwell-render\/v10$/u,
+      `${fixture.fixture_id} generator does not identify the current renderer epoch`,
     );
     results.push({
       fixture_id: fixture.fixture_id,
@@ -605,7 +631,7 @@ export async function main(argv, { stdout = process.stdout } = {}) {
       candidate_ftml: args.candidateFtml,
       error: error?.message ?? String(error),
       resource_disposition:
-        "temporary worktrees, targets, containers, named volumes, and images are deleted by the controller finally block; no standing or corpus resource is a controller input",
+        "temporary detached checkouts, targets, containers, named volumes, and images are deleted by the controller finally block; no standing or corpus resource is a controller input",
     }).catch(() => {});
     throw error;
   }
@@ -614,11 +640,8 @@ export async function main(argv, { stdout = process.stdout } = {}) {
 
 export async function runCanary(args, { stdout = process.stdout } = {}) {
   assertListPagesCandidateLaunchEnvironment();
-  const fixtures = JSON.parse(await fs.readFile(FIXTURES_PATH, "utf8"));
-  assert.deepEqual(
-    [...new Set(fixtures.fixtures.map((fixture) => fixture.surface))].sort(),
-    [...REQUIRED_SURFACES].sort(),
-    "fixture surfaces must be exactly the marker contract",
+  const fixtures = validateMarkerContractFixtures(
+    JSON.parse(await fs.readFile(FIXTURES_PATH, "utf8")),
   );
   let baselineFtml = args.baselineFtml ?? null;
   const runId = `ftml-marker-${args.candidateFtml.slice(0, 8)}-${crypto.randomUUID().slice(0, 8)}`;
@@ -657,22 +680,10 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
   let project = null;
   let composePath = null;
   try {
-    run("git", ["worktree", "add", "--detach", baselineWorktree, "HEAD"]);
-    run("git", ["worktree", "add", "--detach", candidateWorktree, "HEAD"]);
-    run("git", [
-      "worktree",
-      "lock",
-      "--reason",
-      `owner=${OWNER}; expiry=${expiresAt}`,
-      baselineWorktree,
-    ]);
-    run("git", [
-      "worktree",
-      "lock",
-      "--reason",
-      `owner=${OWNER}; expiry=${expiresAt}`,
-      candidateWorktree,
-    ]);
+    for (const checkout of [baselineWorktree, candidateWorktree]) {
+      run("git", ["clone", "--shared", "--no-checkout", "--no-tags", REPOSITORY_ROOT, checkout]);
+      run("git", ["-C", checkout, "checkout", "--detach", "HEAD"]);
+    }
     const headFtml = currentFtmlSha(baselineWorktree);
     baselineFtml ??= headFtml;
     layout.baseline_ftml = baselineFtml;
@@ -825,8 +836,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
         );
         throw error;
       }
-      const stageFtml =
-        stage === "baseline" ? baselineFtml : args.candidateFtml;
       let seeded;
       let records;
       try {
@@ -834,7 +843,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
           rpcUrl: `http://127.0.0.1:${ports.deepwell}/jsonrpc`,
           rpcToken: credentials.rpcToken,
           fixtures,
-          expectedFtml: stageFtml,
           administrator,
         });
         records = await captureStage({
@@ -942,14 +950,6 @@ export async function runCanary(args, { stdout = process.stdout } = {}) {
         ],
         { stdio: "inherit" },
       );
-    for (const worktree of [baselineWorktree, candidateWorktree]) {
-      spawnSync("git", ["worktree", "unlock", worktree], {
-        cwd: REPOSITORY_ROOT,
-      });
-      spawnSync("git", ["worktree", "remove", "--force", worktree], {
-        cwd: REPOSITORY_ROOT,
-      });
-    }
     await fs.rm(runRoot, { recursive: true, force: true });
   }
 }

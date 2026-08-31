@@ -42,7 +42,7 @@ use super::super::list_pages::{
     list_pages_content_query_target, list_pages_feed_info_html,
     list_pages_has_unsupported_page_type_selector,
     list_pages_has_unsupported_parent_selector, list_pages_parent_fullname,
-    list_pages_revision_count, list_pages_row_scan_target, list_pages_tag_link_href,
+    list_pages_row_scan_target, list_pages_tag_link_href,
     page_query_cap_requires_original_module, parse_list_pages_arguments,
     parse_list_pages_arguments_with_url, parse_list_pages_date_selector,
     push_list_pages_pager, register_generated_list_pages_html, render_list_pages_tags,
@@ -122,6 +122,7 @@ fn dropping_prepared_wikitext_without_restoration_is_rejected() {
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
             wikidot_compat_html: CompatHtmlFragments::new(source),
             wikidot_compat_text: CompatTextFragments::new(source),
         },
@@ -417,6 +418,7 @@ fn render_wikidot_conditionals_with_tags(wikitext: &str, tags: &[&str]) -> Strin
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
         },
         &page_info,
         &settings,
@@ -2779,6 +2781,7 @@ fn neutralizes_compat_markers_composed_by_list_pages_substitution() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let mut substituted = substitute_list_pages_variables(
         r#"<div id="ml-1" data-wikijump-%%title%%"#,
@@ -3238,6 +3241,7 @@ fn accepts_corpus_list_pages_comments_placeholder() {
             updated_at: None,
             updated_by: None,
             score: Some(12.0),
+            revision_count: None,
         },
         1,
         1,
@@ -3270,6 +3274,7 @@ fn substitutes_wikidot_list_pages_size_from_saved_source_scalar_values() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -3319,6 +3324,7 @@ fn substitutes_wikidot_list_pages_content_sections() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let wikitext = concat!(
         "=====\n",
@@ -3394,6 +3400,7 @@ fn substitutes_static_wikidot_data_form_variables() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let values = parse_static_wikidot_data_form_values(
         "codexkind: alpha\ncodexflag: 'df-red'\ncodex-hyphen: ok\n",
@@ -4044,6 +4051,7 @@ fn protects_css_before_list_pages_and_rejoins_the_outer_pipeline() {
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
         },
         &page_info,
         &settings,
@@ -4660,6 +4668,7 @@ fn render_list_pages_title_variables_through_outer_pipeline(
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let template = concat!(
         "TITLE=%%title%%\n",
@@ -4694,6 +4703,7 @@ fn render_list_pages_title_variables_through_outer_pipeline(
             wikidot_compat_html: compat_html,
             wikidot_compat_text: compat_text,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
         },
         &page_info,
         &settings,
@@ -4737,6 +4747,7 @@ fn list_pages_plain_tag_variables_keep_visible_and_hidden_tags_disjoint() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -4877,6 +4888,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let mut users = BTreeMap::new();
     users.insert(
@@ -4905,7 +4917,7 @@ fn substitutes_wikidot_list_pages_author_and_created_at_variables() {
             .contains("avatar.php?userid=8955132&amp;amp;size=small&amp;amp;timestamp=")
     );
     assert!(rendered.contains(
-        r#"style="background-image:url(https://www.wikidot.com/userkarma.php?u=8955132)""#
+        r#"style="background-image:url(http://www.wikidot.com/userkarma.php?u=8955132)""#
     ));
     assert!(rendered.contains(
         r#"<span class="odate time_1782003564 format_%25d%20%25b%20%25Y" data-wikijump-compat-date="1">21 Jun 2026 00:59</span>"#
@@ -5023,6 +5035,7 @@ fn substitutes_wikidot_list_pages_site_domain_and_parent_fullname() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5064,6 +5077,7 @@ fn substitutes_wikidot_list_pages_child_count_and_leaves_rating_percent_literal(
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5096,70 +5110,6 @@ fn substitutes_wikidot_list_pages_child_count_and_leaves_rating_percent_literal(
 }
 
 #[test]
-fn resolves_wikidot_list_pages_revision_count_from_import_before_local_history() {
-    let page = FoundPageRow {
-        page_id: 101,
-        site_id: 1,
-        title: Some("Devereaux".to_owned()),
-        alt_title: None,
-        slug: Some("devereaux".to_owned()),
-        page_category_id: None,
-        page_revision_id: None,
-        tags: None,
-        created_at: None,
-        created_by: None,
-        updated_at: None,
-        updated_by: None,
-        score: None,
-    };
-    let snapshot = ListPagesSnapshotDisplay {
-        title_shown: None,
-        created_at: time::OffsetDateTime::UNIX_EPOCH,
-        updated_at: time::OffsetDateTime::UNIX_EPOCH,
-        created_by_user_id: None,
-        created_by_name: None,
-        created_by_slug: None,
-        updated_by_user_id: None,
-        updated_by_name: None,
-        updated_by_slug: None,
-        comments: 0,
-        commented_at: None,
-        commented_by_name: None,
-        rating_votes: None,
-        parent_fullname: None,
-        source_revision_count: 37,
-    };
-    let imported = BTreeMap::from([(101, snapshot.clone())]);
-    let local_history = BTreeMap::from([(101, 1)]);
-    let empty_snapshots = BTreeMap::new();
-
-    assert_eq!(
-        list_pages_revision_count(&page, &imported, &local_history),
-        Some(37),
-    );
-    assert_eq!(
-        list_pages_revision_count(&page, &empty_snapshots, &local_history),
-        Some(1),
-    );
-    assert_eq!(
-        list_pages_revision_count(&page, &empty_snapshots, &BTreeMap::new()),
-        None,
-    );
-
-    let negative = BTreeMap::from([(
-        101,
-        ListPagesSnapshotDisplay {
-            source_revision_count: -1,
-            ..snapshot
-        },
-    )]);
-    assert_eq!(
-        list_pages_revision_count(&page, &negative, &local_history),
-        None,
-    );
-}
-
-#[test]
 fn substitutes_wikidot_list_pages_revision_count() {
     let page = FoundPageRow {
         page_id: 1,
@@ -5175,6 +5125,7 @@ fn substitutes_wikidot_list_pages_revision_count() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let user_displays = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5210,6 +5161,7 @@ fn resolves_wikidot_list_pages_parent_fullname_from_import_before_relations() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let source_created_at = time::OffsetDateTime::UNIX_EPOCH;
     let snapshot = ListPagesSnapshotDisplay {
@@ -5284,6 +5236,7 @@ fn substitutes_wikidot_list_pages_created_by_unix_from_account_unix_name() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let data_form_values = BTreeMap::new();
     let user_displays = BTreeMap::from([(
@@ -5401,6 +5354,7 @@ fn substitutes_wikidot_list_pages_limit_variable() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
 
     assert!(list_pages_body_variables_supported(body));
@@ -5447,6 +5401,7 @@ fn distinguishes_wikidot_list_pages_link_and_fullname() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let users = BTreeMap::new();
     let data_form_values = BTreeMap::new();
@@ -5499,6 +5454,7 @@ fn substitutes_wikidot_list_pages_author_tool_variables() {
         updated_at: Some(updated_at),
         updated_by: Some(954_000_337),
         score: Some(42.0),
+        revision_count: None,
     };
     let mut users = BTreeMap::new();
     users.insert(
@@ -5569,6 +5525,7 @@ fn substitutes_wikidot_list_pages_hidden_tags_as_links() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
 
     let rendered = substitute_list_pages_variables(
@@ -5686,6 +5643,7 @@ fn substitutes_imported_wikidot_snapshot_metadata_for_list_pages_rows() {
         updated_at: Some(local_created_at),
         updated_by: Some(ADMIN_USER_ID),
         score: Some(28.0),
+        revision_count: None,
     };
     let mut users = BTreeMap::new();
     users.insert(
@@ -5767,6 +5725,7 @@ fn missing_snapshot_vote_count_uses_zero_vote_ratio_state() {
         updated_at: None,
         updated_by: None,
         score: Some(49.0),
+        revision_count: None,
     };
     let body = concat!(
         "[[#ifexpr %%rating_votes%% == 0 | zero-vote | has-votes]] ",
@@ -5811,6 +5770,7 @@ fn substitutes_wikidot_list_pages_table_body_generated_variables_as_html() {
         updated_at: None,
         updated_by: None,
         score: None,
+        revision_count: None,
     };
     let body = concat!(
         "||~ Published on %%created_at|%d %b %Y%% ||\n",
@@ -5878,6 +5838,7 @@ fn substitutes_artwork_hub_listpages_body_without_visible_html_or_parser_functio
         updated_at: None,
         updated_by: None,
         score: Some(28.0),
+        revision_count: None,
     };
     let body = concat!(
         "[[div class=\"tale-block %%tags%%\"]]\n",
@@ -6021,6 +5982,7 @@ fn localizes_matching_wikidot_local_file_urls() {
         r#"<a href='https://scp-wiki.wdfiles.com:443/local--files/scp-9506/NAME%20HERE.png'>"#,
         r#"file</a>"#,
         r#"<img class="image crom-thumbnail" src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.com/local--files/scp-9506/NFSI.png">"#,
+        r#"<img src="https://scp-wiki.wjfiles.com/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
         r#"<style>:root{--logo:url(http://scp-wiki.wikidot.com/local--files/scp-9506/NFSI.png)}</style>"#,
         r#"<style>.quoted{background:url('http://scp-wiki.wikidot.com/local--files/scp-9506/BG.png')}</style>"#,
         r#"<style>@import "https://scp-wiki.wdfiles.com/local--code/theme%3Abasalt/1";</style>"#,
@@ -6035,6 +5997,7 @@ fn localizes_matching_wikidot_local_file_urls() {
             r#"<a href='https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NAME%20HERE.png'>"#,
             r#"file</a>"#,
             r#"<img class="image crom-thumbnail" src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png">"#,
+            r#"<img src="https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--resized-images/scp-9506/NFSI.png/medium.jpg">"#,
             r#"<style>:root{--logo:url(https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/NFSI.png)}</style>"#,
             r#"<style>.quoted{background:url('https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--files/scp-9506/BG.png')}</style>"#,
             r#"<style>@import "https://scp-wiki-en-corpus-scp9506-slice-v2.wjfiles.localhost/local--code/theme%3Abasalt/1";</style>"#,
@@ -6810,7 +6773,7 @@ fn rate_module_plusminus_body_is_consumed_like_live_wikidot() {
 }
 
 #[test]
-fn rate_module_body_does_not_revisit_nested_rate_heads() {
+fn rate_module_balanced_scope_does_not_bind_nested_closer_to_outer_rate() {
     let source = concat!(
         "[[module Rate]]\n",
         "body before a later rate head\n",
@@ -6837,9 +6800,13 @@ fn rate_module_body_does_not_revisit_nested_rate_heads() {
         &mut compat_text,
     );
 
-    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 1,);
+    assert_eq!(protected.matches("WIKIJUMPWIKIDOTCOMPATHTML").count(), 2,);
     assert!(protected.ends_with("\nvisible tail\n"), "{protected}");
     assert!(!protected.contains("[[module Rate]]"), "{protected}");
+    assert!(
+        protected.contains("body before a later rate head"),
+        "{protected}"
+    );
 }
 
 #[test]
@@ -7325,14 +7292,10 @@ fn wikidot_compatibility_fallback_renders_tabs_size_and_page_images() {
             Some("scp-wiki"),
         );
 
-    assert!(
-        html.contains(
-            r#"<div class="yui-navset yui-navset-top wikidot-compat-tabview">"#
-        )
-    );
+    assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
     assert!(html.contains(r#"<ul class="yui-nav">"#));
     assert!(html.contains(
-        r#"<li class="selected" title="active"><a href="javascript:;"><em>SCPs</em></a></li>"#
+        r#"<li class="selected"><a href="javascript:;"><em>SCPs</em></a></li>"#
     ));
     assert!(html.contains(r#"<div style="display: block;">"#));
     assert!(html.contains(r#"<span style="font-size: 75%;">"#));
@@ -7382,15 +7345,13 @@ fn wikidot_compatibility_fallback_preserves_tabview_bodies_in_hidden_panels() {
         RenderService::render_wikidot_compatibility_fallback_with_code_blocks(source);
 
     assert!(html.contains(r#"<div class="closable-tab">"#));
+    assert!(html.contains(r#"<div class="yui-navset wikidot-compat-tabview">"#));
+    assert!(html.contains(r#"<ul class="yui-nav">"#));
     assert!(
         html.contains(
-            r#"<div class="yui-navset yui-navset-top wikidot-compat-tabview">"#
+            r#"<li class="selected"><a href="javascript:;"><em>X</em></a></li>"#
         )
     );
-    assert!(html.contains(r#"<ul class="yui-nav">"#));
-    assert!(html.contains(
-        r#"<li class="selected" title="active"><a href="javascript:;"><em>X</em></a></li>"#
-    ));
     assert!(html.contains(r#"<li><a href="javascript:;"><em>One</em></a></li>"#));
     assert!(html.contains(r#"<li><a href="javascript:;"><em>Two</em></a></li>"#));
     assert!(html.contains(r#"<div style="display: block;"></div>"#));
@@ -7939,113 +7900,6 @@ fn leaves_unsupported_embed_literal_in_compat_fallback() {
     assert!(!rendered.contains(r#"<iframe src="//example.com/widget""#));
 }
 
-#[test]
-fn removes_preview_component_separator_markers() {
-    let mut wikitext = concat!(
-        "[[image NFSI.png class=\"crom-thumbnail\" style=\"display: none\"]]\n",
-        "=====\n",
-        "[[include component:preview text=Official fog safety hub.]]\n",
-        "=====\n",
-        "after\n",
-    )
-    .to_owned();
-
-    RenderService::remove_preview_component_separator_markers(&mut wikitext);
-
-    assert_eq!(
-        wikitext,
-        concat!(
-            "[[image NFSI.png class=\"crom-thumbnail\" style=\"display: none\"]]\n",
-            "[[include component:preview text=Official fog safety hub.]]\n",
-            "after\n",
-        ),
-    );
-}
-
-#[test]
-fn removes_site_qualified_preview_component_separator_markers() {
-    let mut wikitext = concat!(
-        "before\n",
-        "=====\n",
-        "[[include :scp-wiki:component:preview text=Official fog safety hub.]]\n",
-        "=====\n",
-        "after\n",
-    )
-    .to_owned();
-
-    RenderService::remove_preview_component_separator_markers(&mut wikitext);
-
-    assert_eq!(
-        wikitext,
-        concat!(
-            "before\n",
-            "[[include :scp-wiki:component:preview text=Official fog safety hub.]]\n",
-            "after\n",
-        ),
-    );
-}
-
-#[test]
-fn removes_multiline_preview_component_separator_markers() {
-    let mut wikitext = concat!(
-        "before\n",
-        "=====\n",
-        "[[include component:preview\n",
-        "| text=Official fog safety hub.\n",
-        "]]\n",
-        "=====\n",
-        "after\n",
-    )
-    .to_owned();
-
-    RenderService::remove_preview_component_separator_markers(&mut wikitext);
-
-    assert_eq!(
-        wikitext,
-        concat!(
-            "before\n",
-            "[[include component:preview\n",
-            "| text=Official fog safety hub.\n",
-            "]]\n",
-            "after\n",
-        ),
-    );
-}
-
-#[test]
-fn leaves_plain_content_separators() {
-    let mut wikitext = "Before\n=====\nAfter\n".to_owned();
-
-    RenderService::remove_preview_component_separator_markers(&mut wikitext);
-
-    assert_eq!(wikitext, "Before\n=====\nAfter\n");
-}
-
-#[test]
-fn leaves_non_preview_include_separator_markers() {
-    let mut wikitext = concat!(
-        "before\n",
-        "=====\n",
-        "[[include component:license-box]]\n",
-        "=====\n",
-        "after\n",
-    )
-    .to_owned();
-
-    RenderService::remove_preview_component_separator_markers(&mut wikitext);
-
-    assert_eq!(
-        wikitext,
-        concat!(
-            "before\n",
-            "=====\n",
-            "[[include component:license-box]]\n",
-            "=====\n",
-            "after\n",
-        ),
-    );
-}
-
 #[tokio::test]
 async fn include_source_cache_loads_each_canonical_page_once() {
     let first_ref = PageRef::page_only("Component:Sybadge#first");
@@ -8280,6 +8134,22 @@ fn expands_wikidot_image_block_includes_with_nested_caption_markup() {
             PageRef::page_and_site("scp-wiki", "component:image-block"),
             PageRef::page_and_site("scp-wiki", "component:image-block-base"),
         ],
+    );
+}
+
+#[test]
+fn image_block_prepass_keeps_extensionless_root_attachments_implicit() {
+    let mut wikitext =
+        "[[include component:image-block name=Lobster|caption=An attachment.]]"
+            .to_owned();
+    let page_info = fallback_test_page_info("scp-5516", "SCP-5516");
+
+    RenderService::expand_wikidot_image_block_includes(&mut wikitext, &page_info, None);
+
+    assert!(wikitext.contains("[[image Lobster]]"), "{wikitext}");
+    assert!(
+        !wikitext.contains("local--files/scp-5516/Lobster"),
+        "{wikitext}"
     );
 }
 
@@ -10200,6 +10070,7 @@ fn render_native_list_page_for_regression(
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
         },
         &page_info,
         &settings,
@@ -10691,7 +10562,8 @@ fn restores_wikidot_tabview_dom_classes() {
 
     let restored = RenderService::restore_wikidot_tabview_dom_compatibility(html);
 
-    assert!(!restored.contains("tabview-min.js"));
+    assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
+    assert!(!restored.contains("tabview-compat.js"));
     assert!(restored.contains(r#"<div class="yui-navset">"#));
     assert!(restored.contains(r#"<ul class="yui-nav">"#));
     assert!(restored.contains(r#"<div class="yui-content">"#));
@@ -10759,9 +10631,9 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
 
     assert!(restored.starts_with(
         r#"<p>Before</p><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
-<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset yui-navset-top">"#
+<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset">"#
     ));
-    assert!(restored.contains(r#"<li class="selected" title="active">"#));
+    assert!(restored.contains(r#"<li class="selected">"#));
     assert!(restored.contains(
         r#"<div id="wiki-tab-0-0" style="display: block;"><p>First</p></div>"#
     ));
@@ -10771,10 +10643,47 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
         )
     );
     assert!(restored.contains(
-        r#"var tabView0123456789abcdef0123456789abcdef = new YAHOO.widget.TabView('wiki-tabview-0123456789abcdef0123456789abcdef');"#
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script>"#
     ));
-    assert!(restored.ends_with("</script><p>After</p>"));
+    assert!(restored.ends_with(
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><p>After</p>"#
+    ));
     assert_eq!(restored.matches("tabview-min.js").count(), 1, "{restored}");
+}
+
+#[test]
+fn initializes_resource_tabviews_during_parse_but_leaves_direct_tabviews_for_hydration() {
+    let id = "wiki-tabview-0123456789abcdef0123456789abcdef".to_owned();
+    let html = format!(
+        concat!(
+            r#"<div id="{id}" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>Resource</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0"><p>Resource body</p></div></div></div>"#,
+            r#"<wj-tabs class="wj-tabs"><div class="wj-tabs-button-list"><wj-tabs-button class="wj-tabs-button" aria-selected="true">Direct</wj-tabs-button></div><div class="wj-tabs-panel-list"><div class="wj-tabs-panel">Direct body</div></div></wj-tabs>"#,
+        ),
+        id = id,
+    );
+
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &html,
+            None,
+            &Config::integration_testing(),
+            true,
+            std::slice::from_ref(&id),
+        );
+
+    assert_eq!(restored.matches("tabview-min.js").count(), 2, "{restored}");
+    assert_eq!(
+        restored.matches("tabview-compat.js").count(),
+        1,
+        "{restored}"
+    );
+    assert!(
+        restored.contains(&format!(r#"<div id="{id}" class="yui-navset">"#, id = id,))
+    );
+    assert!(restored.contains(
+        r#"<script type="text/javascript" src="/wikidot/scripts/tabview-compat.js"></script><script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>
+<div class="yui-navset">"#
+    ));
 }
 
 #[test]
@@ -11177,19 +11086,92 @@ fn leaves_standalone_residual_wikidot_alignment_closer_without_opener() {
 
 #[test]
 fn restores_standalone_residual_wikidot_separator_lines() {
-    let html = concat!("Before\n", "------\n", "@@ @@\n", "~~~~\n", "After\n",);
+    let html = concat!(
+        "Before\n",
+        "------\n",
+        "@@ @@\n",
+        "<ul><li>item</li></ul><br>\n",
+        "~~~~\n",
+        "After\n",
+    );
 
     let restored = RenderService::restore_residual_wikidot_separator_markers(html);
 
     assert!(restored.contains("Before\n<hr>\n"));
-    assert!(restored.contains(r#"<p><span style="white-space: pre-wrap;"> </span></p>"#));
+    assert!(
+        restored.contains(r#"<p><span style="white-space: pre-wrap;"> </span><br></p>"#)
+    );
     assert!(
         restored
             .contains(r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#)
     );
+    assert!(!restored.contains("</ul><br>"));
     assert!(!restored.contains("------"));
     assert!(!restored.contains("@@ @@"));
     assert!(!restored.contains("~~~~"));
+}
+
+#[test]
+fn preserves_non_list_break_before_residual_separator() {
+    let html = "<div>before</div><br>\n~~~~\n";
+
+    let restored = RenderService::restore_residual_wikidot_separator_markers(html);
+
+    assert!(restored.contains("</div><br>\n"));
+    assert!(
+        restored
+            .contains(r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#)
+    );
+}
+
+#[test]
+fn removes_list_break_before_nested_restored_separator() {
+    let html = concat!(
+        "<ul><li>item</li></ul><br>\n",
+        r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#,
+        "\n",
+    );
+
+    let restored = RenderService::restore_residual_wikidot_separator_markers(html);
+
+    assert!(!restored.contains("</ul><br>"));
+}
+
+#[test]
+fn removes_list_break_before_same_line_restored_separator_content() {
+    let html = concat!(
+        "<ul><li>item</li></ul><br>\n",
+        r#"<div style="clear:both; height: 0px; font-size: 1px"></div><div>content</div>"#,
+        "\n",
+    );
+
+    let restored = RenderService::restore_residual_wikidot_separator_markers(html);
+
+    assert!(!restored.contains("</ul><br>"));
+    assert!(restored.contains("</ul>\n"));
+    assert!(restored.contains("<div>content</div>"));
+}
+
+#[test]
+fn normalizes_alignment_markers_before_include_expansion() {
+    let mut source = concat!(
+        "[[=]]\n",
+        "[[<]]\n",
+        "body\n",
+        "[[/<]]\n",
+        "[[/=]]\n",
+        "[[code]]\n",
+        "[[=]]\n",
+        "[[/code]]\n",
+    )
+    .to_owned();
+
+    RenderService::normalize_wikidot_alignment_markers(&mut source);
+
+    assert!(source.contains("[[div style=\"text-align: center;\"]]\n"));
+    assert!(source.contains("[[div style=\"text-align: left;\"]]\n"));
+    assert!(source.contains("[[/div]]\n[[/div]]\n"));
+    assert!(source.contains("[[code]]\n[[=]]\n[[/code]]"));
 }
 
 #[test]
@@ -11518,6 +11500,7 @@ fn render_preparation_resolves_generated_simple_if_with_link_branch() {
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text: CompatTextFragments::new(""),
         },
@@ -12102,6 +12085,7 @@ fn prepares_wikidot_unicode_iftags_component_with_cross_closed_collapsible() {
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
         },
         &page_info,
         &settings,
@@ -12298,6 +12282,7 @@ fn repeated_render_preparation_preserves_nested_iftags_for_ftml() {
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text,
         },
@@ -12350,6 +12335,7 @@ fn malformed_iftags_remain_literal_after_ftml_recovery() {
             included_pages: Vec::new(),
             expanded_include_count: 0,
             url_offset_list_pages_content_bytes: 0,
+            runtime_css_insertions: Vec::new(),
             wikidot_compat_html: CompatHtmlFragments::new(""),
             wikidot_compat_text,
         },
@@ -12398,6 +12384,10 @@ fn wikidot_site(slug: &str, preferred_domain: Option<&str>) -> SiteModel {
         google_analytics_profile: None,
         show_top_toolbar: false,
         show_bottom_toolbar: false,
+        master_admin_user_id: None,
+        educational: false,
+        educational_organization: None,
+        educational_purpose: None,
         layout: None,
         license: License::CcBySa30,
         forum_max_nest_level: 10,

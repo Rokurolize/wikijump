@@ -215,6 +215,7 @@ export function buildCorpusSnapshot({
   corpusRoot,
   branches = null,
   repositories = [],
+  sourceFiles = [],
   fileIntegrityCache = new Map(),
 }) {
   const resolvedCorpusRoot = path.resolve(corpusRoot);
@@ -286,6 +287,7 @@ export function buildCorpusSnapshot({
     schema: 'wikijump_full_parity.corpus_inventory_lock.v1',
     corpus_root: resolvedCorpusRoot,
     repositories,
+    ...(sourceFiles.length > 0 ? {source_files: sourceFiles} : {}),
     branches: branchRecords,
     rows,
     totals: {

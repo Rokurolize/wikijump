@@ -23,11 +23,12 @@ use crate::futures::StreamExt;
 use crate::models::page::{self, Entity as Page};
 use crate::models::page_category::{self, Entity as PageCategory};
 use crate::services::ServiceContext;
-use crate::services::{JobService, LinkService, PageService, SiteService};
+use crate::services::{LinkService, PageService, SiteService};
 use crate::types::{ConnectionType, PageId, PageOrder, Reference, RerenderDepth};
 use crate::utils::split_category_name;
 use sea_orm::{
-    ColumnTrait, Condition, EntityTrait, FromQueryResult, QueryFilter, QuerySelect,
+    ColumnTrait, Condition, EntityTrait, FromQueryResult, JoinType, QueryFilter,
+    QuerySelect, RelationTrait,
 };
 
 #[derive(Debug)]
@@ -176,6 +177,35 @@ impl OutdateService {
         Ok(())
     }
 
+    async fn outdate_immediate(
+        ctx: &ServiceContext<'_>,
+        page_id: i64,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to run immediate outdater on page ID {} (depth {})",
+                    page_id, depth
+                ),
+                ErrorType::PageOutdater,
+            )
+        };
+
+        let Some(page) = PageService::get_direct_optional(ctx, page_id, false)
+            .await
+            .or_raise(make_error)?
+        else {
+            return Ok(());
+        };
+
+        ctx.defer_rerender_page_immediate(
+            PageId::from_page_model(&page),
+            depth.plus_one(),
+        )
+        .or_raise(make_error)
+    }
+
     pub async fn outdate_incoming_links(
         ctx: &ServiceContext<'_>,
         page_id: i64,
@@ -236,7 +266,13 @@ impl OutdateService {
             .map(|connection| connection.from_page_id)
             .filter(|id| *id != page_id)
         {
-            Self::outdate(ctx, id, depth).await.or_raise(make_error)?;
+            if depth == RerenderDepth::default() {
+                Self::outdate_immediate(ctx, id, depth)
+                    .await
+                    .or_raise(make_error)?;
+            } else {
+                Self::outdate(ctx, id, depth).await.or_raise(make_error)?;
+            }
         }
         Ok(())
     }
@@ -401,8 +437,7 @@ impl OutdateService {
                 page_id,
             } = row.or_raise(make_error)?;
 
-            JobService::queue_rerender_nav_page(
-                ctx,
+            ctx.defer_rerender_navigation_page(
                 PageId {
                     site_id,
                     category_id,
@@ -410,7 +445,6 @@ impl OutdateService {
                 },
                 depth.plus_one(),
             )
-            .await
             .or_raise(make_error)?;
         }
 
@@ -452,8 +486,7 @@ impl OutdateService {
         while let Some(row) = rows.next().await {
             let page_id = row.or_raise(make_error)?;
 
-            JobService::queue_rerender_nav_page(
-                ctx,
+            ctx.defer_rerender_navigation_page(
                 PageId {
                     site_id,
                     category_id,
@@ -461,7 +494,83 @@ impl OutdateService {
                 },
                 depth.plus_one(),
             )
+            .or_raise(make_error)?;
+        }
+
+        Ok(())
+    }
+
+    /// Defers navigation-only rerenders for active pages whose effective
+    /// navigation inherits a changed site-level setting.
+    pub async fn outdate_changed_site_navigation(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        top_bar_changed: bool,
+        side_bar_changed: bool,
+        depth: RerenderDepth,
+    ) -> Result<()> {
+        if !top_bar_changed && !side_bar_changed {
+            return Ok(());
+        }
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to run nav-only outdater for changed site navigation on site ID {} (depth {})",
+                    site_id, depth,
+                ),
+                ErrorType::PageOutdater,
+            )
+        };
+
+        #[derive(FromQueryResult)]
+        struct Row {
+            site_id: i64,
+            page_category_id: i64,
+            page_id: i64,
+        }
+
+        let mut inherited_changed_navigation = Condition::any();
+        if top_bar_changed {
+            inherited_changed_navigation = inherited_changed_navigation
+                .add(page_category::Column::TopBarPage.is_null());
+        }
+        if side_bar_changed {
+            inherited_changed_navigation = inherited_changed_navigation
+                .add(page_category::Column::SideBarPage.is_null());
+        }
+
+        let mut rows = Page::find()
+            .select_only()
+            .column(page::Column::SiteId)
+            .column(page::Column::PageCategoryId)
+            .column(page::Column::PageId)
+            .join(JoinType::InnerJoin, page::Relation::PageCategory.def())
+            .filter(
+                Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::DeletedAt.is_null())
+                    .add(inherited_changed_navigation),
+            )
+            .into_model::<Row>()
+            .stream(ctx.transaction())
             .await
+            .or_raise(make_error)?;
+
+        while let Some(row) = rows.next().await {
+            let Row {
+                site_id,
+                page_category_id: category_id,
+                page_id,
+            } = row.or_raise(make_error)?;
+            ctx.defer_rerender_navigation_page(
+                PageId {
+                    site_id,
+                    category_id,
+                    page_id,
+                },
+                depth.plus_one(),
+            )
             .or_raise(make_error)?;
         }
 

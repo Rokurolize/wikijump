@@ -1,8 +1,10 @@
 <script lang="ts">
+  import { wikidotCollapsibles } from "$lib/wikidot/wikidot-collapsibles"
+
   let { header, topBar, content, footer } = $props()
 </script>
 
-<div class="sigma-esque-container">
+<div class="sigma-esque-container" use:wikidotCollapsibles>
   <header class="header">
     {@render header?.()}
   </header>

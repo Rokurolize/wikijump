@@ -354,12 +354,20 @@ export const buildWikidotInterwikiFrameHtml = ({ community, lang, pagename, page
     })
     .join(" ")
   const display = links.length > 0 ? "" : ' style="display: none"'
+  const localBaseStylesheet =
+    '<link rel="stylesheet" href="/wikidot/styles/wikidot-base-165bc434fd1d.css">'
+  const localThemeStylesheet =
+    community === "scp"
+      ? '<link rel="stylesheet" href="/wikidot/styles/sigma-fe5388a32e12.css">'
+      : ""
 
   return `<!DOCTYPE html>
 <html id="interwiki" style="min-width: max-content">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    ${localBaseStylesheet}
+    ${localThemeStylesheet}
     <title>Local Wikidot interwiki frame</title>
     <script>
       const resizeLocalInterwikiFrame = () => {

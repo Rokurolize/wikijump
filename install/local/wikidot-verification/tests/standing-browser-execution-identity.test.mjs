@@ -47,6 +47,14 @@ test("execution identity binds the execution identity module itself", () => {
   );
 });
 
+test("execution identity binds the first-divergence comparator", () => {
+  assert.ok(
+    STANDING_BROWSER_EXECUTION_MODULES.includes(
+      "install/local/wikidot-verification/src/first-divergent-element.mjs",
+    ),
+  );
+});
+
 test("execution identity binds a clean exact source tree and every loaded parity module", () => {
   assert.equal(
     validateCandidateExecutionIdentity(executionIdentity(), candidateIdentity())

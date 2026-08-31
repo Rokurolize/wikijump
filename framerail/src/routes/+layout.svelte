@@ -9,6 +9,7 @@
   import { Layout } from "$lib/types"
   import {
     WIKIDOT_POWERED_BY,
+    buildWikidotAccountLabels,
     buildWikidotFooterLinks,
     buildWikidotLicenseHtml,
     buildWikidotLoginLabels,
@@ -31,6 +32,7 @@
     resolveWikidotSiteTitle,
     shouldUseSandboxWikidotChrome
   } from "$lib/wikidot/wikidot-chrome"
+  import { buildGeneratedPageStylesHead } from "$lib/generated-page-styles"
   import {
     buildWikidotInlineStyleFrameHead,
     extractWikidotStyleFrameDeclarations
@@ -44,7 +46,7 @@
   import { installWikidotNewPageHelper } from "$lib/wikidot/wikidot-new-page-helper"
   import {
     installWikidotSearchAll,
-    wikidotSearchPath
+    submitWikidotTopSearch
   } from "$lib/wikidot/wikidot-search.js"
   import {
     customThemeHeadHtml,
@@ -71,12 +73,7 @@
   }
 
   function submitWikidotSearch(event: SubmitEvent) {
-    event.preventDefault()
-    const form = event.currentTarget
-    if (!(form instanceof HTMLFormElement)) return
-    const input = form.elements.namedItem("query")
-    if (!(input instanceof HTMLInputElement)) return
-    window.location.href = wikidotSearchPath(input.value)
+    submitWikidotTopSearch(event, window)
   }
 
   function resolveCurrentLayout() {
@@ -94,6 +91,7 @@
   const wikidotLocale = $derived(canonicalView.locale)
   const wikidotFooterLinks = $derived(buildWikidotFooterLinks(wikidotLocale))
   const wikidotLoginLabels = $derived(buildWikidotLoginLabels(wikidotLocale))
+  const wikidotAccountLabels = $derived(buildWikidotAccountLabels(wikidotLocale))
   const wikidotLicenseHtml = $derived(
     buildWikidotLicenseHtml({
       licenseName: canonicalView.licenseName,
@@ -174,7 +172,11 @@
 <svelte:head>
   <title>{viewData?.site?.name}</title>
   {#if analyticsProfile}
-    <meta name="wikidot-site-analytics-profile" content={analyticsProfile} />
+    <meta
+      name="wikidot-site-analytics-profile"
+      content={analyticsProfile}
+      data-wikidot-site-analytics-valid="true"
+    />
   {/if}
   {#if siteFavicon}
     <link href={siteFavicon.href} rel="shortcut icon" />
@@ -212,6 +214,7 @@
         {@html buildWikidotInlineStyleFrameHead(declaration)}
       {/if}
     {/each}
+    {@html buildGeneratedPageStylesHead(viewData?.compiled_body_styles ?? [])}
   {/if}
 </svelte:head>
 
@@ -249,17 +252,22 @@
           <span>{wikidotSiteTagline}</span>
         </h2>
       {/if}
-      <div id="search-top-box">
-        <form id="search-top-box-form" action="dummy" onsubmit={submitWikidotSearch}>
+      <div id="search-top-box" class="form-search">
+        <form
+          id="search-top-box-form"
+          class="input-append"
+          action="dummy"
+          onsubmit={submitWikidotSearch}
+        >
           <input
             id="search-top-box-input"
             name="query"
-            class="text empty"
+            class="text empty search-query"
             onfocus={clearWikidotSearchPrompt}
             size="15"
             type="text"
             value="Search this site"
-          /><input name="search" class="button" type="submit" value="Search" />
+          /><input name="search" class="button btn" type="submit" value="Search" />
         </form>
       </div>
       {#if useSandboxWikidotChrome && wikidotSessionUserName}
@@ -285,12 +293,23 @@
     {/snippet}
 
     {#snippet loginStatus()}
-      {#if isImportedWikidotLayout && !useSandboxWikidotChrome && wikidotSessionUserName}
+      {#if !useSandboxWikidotChrome && wikidotSessionUserName}
         <div id="login-status">
+          <a id="my-account" href={resolve("/-/user", {})}>{wikidotSessionUserName}</a>
           <span class="printuser">{wikidotSessionUserName}</span>
-          <span> | </span>
-          <span>My account</span>
-          <span> ▼</span>
+          <div id="account-options">
+            <ul>
+              <li>
+                <a href={resolve("/-/user", {})}>{wikidotAccountLabels.myAccount}</a>
+              </li>
+              <li>
+                <a href={resolve("/-/settings", {})}>{wikidotAccountLabels.settings}</a>
+              </li>
+              <li>
+                <a href={resolve("/-/logout", {})}>{wikidotAccountLabels.signOut}</a>
+              </li>
+            </ul>
+          </div>
         </div>
       {:else if !useSandboxWikidotChrome && !viewData?.user_session}
         <div id="login-status">

@@ -177,6 +177,11 @@ fn rating_value_is_valid(rating_type: PageRatingType, value: i16) -> bool {
     }
 }
 
+fn defer_vote_page_refresh(ctx: &ServiceContext<'_>, page: &PageModel) -> Result<()> {
+    ctx.defer_public_content_cache_invalidate_site(page.site_id)?;
+    ctx.defer_rerender_page(PageId::from_page_model(page), RerenderDepth::default())
+}
+
 fn user_history_is_authorized(
     actor_user_id: Option<i64>,
     kind: crate::services::vote::VoteHistoryKind,
@@ -226,12 +231,13 @@ pub async fn vote_set(
     params: Params<'static>,
 ) -> Result<Option<PageVoteModel>> {
     let SetVoteInput { page_id, value } = parse!(params, PageVote);
-    let (_, input, settings) = ensure_actor_can_rate(ctx, page_id, Some(value)).await?;
+    let (page, input, settings) =
+        ensure_actor_can_rate(ctx, page_id, Some(value)).await?;
     let GetVote { page_id, user_id } = input;
 
     info!("Casting vote cast by {} on page {}", user_id, page_id,);
 
-    VoteService::add(
+    let vote = VoteService::add(
         ctx,
         CreateVote {
             page_id,
@@ -249,7 +255,11 @@ pub async fn vote_set(
             ),
             ErrorType::PageVote,
         )
-    })
+    })?;
+    if vote.is_some() {
+        defer_vote_page_refresh(ctx, &page)?;
+    }
+    Ok(vote)
 }
 
 pub async fn vote_remove(
@@ -257,12 +267,12 @@ pub async fn vote_remove(
     params: Params<'static>,
 ) -> Result<PageVoteModel> {
     let RemoveVoteInput { page_id } = parse!(params, PageVote);
-    let (_, input, settings) = ensure_actor_can_rate(ctx, page_id, None).await?;
+    let (page, input, settings) = ensure_actor_can_rate(ctx, page_id, None).await?;
     let GetVote { page_id, user_id } = input;
 
     info!("Removing vote cast by {} on page {}", user_id, page_id,);
 
-    VoteService::remove(ctx, input, settings.rating_type.vote_store_key())
+    let vote = VoteService::remove(ctx, input, settings.rating_type.vote_store_key())
         .await
         .or_raise(|| {
             Error::new(
@@ -272,7 +282,9 @@ pub async fn vote_remove(
                 ),
                 ErrorType::PageVote,
             )
-        })
+        })?;
+    defer_vote_page_refresh(ctx, &page)?;
+    Ok(vote)
 }
 
 /// Execute one renderer-issued Rate descriptor against the exact current
@@ -352,11 +364,7 @@ pub async fn wikidot_legacy_rate(
         }
     };
     if changed {
-        ctx.defer_public_content_cache_invalidate_site(page.site_id)?;
-        ctx.defer_rerender_page(
-            PageId::from_page_model(&page),
-            RerenderDepth::default(),
-        )?;
+        defer_vote_page_refresh(ctx, &page)?;
     }
     let score = ScoreService::score(ctx, page.page_id).await?;
     Ok(GetPageScoreOutput {
@@ -387,11 +395,21 @@ pub async fn vote_action(
 
     // e.g. enable or disable a vote
     let key = GetVote { page_id, user_id };
-    let (_, settings) = page_rating_settings(ctx, page_id).await?;
-    VoteService::action(
+    let (page, settings) = page_rating_settings(ctx, page_id).await?;
+    let rating_system = settings.rating_type.vote_store_key();
+    let current = VoteService::get(ctx, key, rating_system).await?;
+    let changed = if enable {
+        current.disabled_at.is_some()
+    } else {
+        current.disabled_at.is_none()
+    };
+    if !changed {
+        return Ok(current);
+    }
+    let vote = VoteService::action(
         ctx,
         key,
-        settings.rating_type.vote_store_key(),
+        rating_system,
         enable,
         acting_user_id,
     )
@@ -406,7 +424,9 @@ pub async fn vote_action(
             ),
             ErrorType::PageVote,
         )
-    )
+    )?;
+    defer_vote_page_refresh(ctx, &page)?;
+    Ok(vote)
 }
 
 pub async fn vote_list_get(

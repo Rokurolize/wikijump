@@ -25,8 +25,17 @@
           <dt>Wikidot user since:</dt>
           <dd><span class="odate">{data.user.createdAt}</span></dd>
 
-          <dt>Account type:</dt>
-          <dd>{data.user.accountType}</dd>
+          {#if data.user.accountType}
+            <dt>Account type:</dt>
+            <dd>
+              {data.user.accountType === "regular" ? "free" : data.user.accountType}
+            </dd>
+          {/if}
+
+          {#if data.user.karmaLevel}
+            <dt>Karma level:</dt>
+            <dd>{data.user.karmaLevel}</dd>
+          {/if}
         </dl>
       </div>
     </div>

@@ -48,8 +48,10 @@ use crate::models::page_revision::Model as PageRevisionModel;
 use crate::services::ServiceContext;
 use crate::services::blueprint::{BlueprintPageType, GetBlueprintPageOutput};
 use crate::services::data_form::{
-    load_data_form_definitions, parse_observed_wikidot_data_form_values,
-    render_wikidot_data_form_table_with_wiki_html,
+    load_data_form_definitions, load_wikidot_data_form_pagepaths,
+    parse_observed_wikidot_data_form_values,
+    render_wikidot_data_form_table_with_runtime_html,
+    resolve_wikidot_data_form_pagepath_display_values,
 };
 use crate::services::membership::{
     JoinActorState, MembershipBrowserAction, MembershipPolicy, MembershipService,
@@ -61,6 +63,7 @@ use crate::services::relation::{
 };
 use crate::services::render::{
     LegacyActionRegistry, MembershipActionRegistry, RenderOutput, RenderService,
+    compiled_generator_is_current,
 };
 use crate::services::settings::{
     NavigationPageHtml, PageRatingPermission, PageRatingSettings, SettingsService,
@@ -258,6 +261,7 @@ impl ViewService {
             && let Some(mut page) = ArticlePageCache::get(ctx, cache_key).await?
             && Self::cached_article_page_visible_to_viewer(ctx, &preload.viewer, &input)
                 .await?
+            && Self::cached_article_page_is_current(&page)
         {
             if let GetPageViewOutput::Found {
                 page: page_model,
@@ -314,6 +318,17 @@ impl ViewService {
                 .as_ref()
                 .map(|metadata| metadata.anonymous_permission_cache_fence.clone()),
         })
+    }
+
+    fn cached_article_page_is_current(page: &GetPageViewOutput) -> bool {
+        match page {
+            GetPageViewOutput::Found { page_revision, .. } => {
+                compiled_generator_is_current(&page_revision.compiled_generator)
+            }
+            GetPageViewOutput::Missing { .. } | GetPageViewOutput::Permissions { .. } => {
+                true
+            }
+        }
     }
 
     async fn apply_article_category_license(
@@ -588,7 +603,7 @@ impl ViewService {
             // This page exists, return its data directly.
             Some(page) => {
                 // Get associated revision
-                let page_revision =
+                let mut page_revision =
                     PageRevisionService::get_latest(ctx, site.site_id, page.page_id)
                         .await
                         .or_raise(make_error)?;
@@ -626,7 +641,16 @@ impl ViewService {
                 if user_can_access_page {
                     debug!("User has page access, return text data");
 
-                    if options.rerender && user_can_edit_page {
+                    let compiled_artifact_is_stale =
+                        !compiled_generator_is_current(&page_revision.compiled_generator);
+                    if compiled_artifact_is_stale
+                        && (user_session.is_none() || !user_can_edit_page)
+                    {
+                        bail!(make_error());
+                    }
+                    if compiled_artifact_is_stale
+                        || options.rerender && user_can_edit_page
+                    {
                         let depth = RerenderDepth::default();
                         info!(
                             "Re-rendering revision: site ID {} page ID {} revision ID {} (depth {})",
@@ -640,7 +664,19 @@ impl ViewService {
                         )
                         .await
                         .or_raise(make_error)?;
-                    };
+                        page_revision = PageRevisionService::get_latest(
+                            ctx,
+                            site.site_id,
+                            page.page_id,
+                        )
+                        .await
+                        .or_raise(make_error)?;
+                        if !compiled_generator_is_current(
+                            &page_revision.compiled_generator,
+                        ) {
+                            bail!(make_error());
+                        }
+                    }
 
                     let (
                         wikitext_result,
@@ -717,6 +753,8 @@ impl ViewService {
                     )
                     .await
                     .or_raise(make_error)?;
+                    let viewer_user_id =
+                        user_session.as_ref().map(|session| session.user.user_id);
                     let data_form = {
                         let category = CategoryService::get_optional(
                             ctx,
@@ -725,7 +763,7 @@ impl ViewService {
                         )
                         .await
                         .or_raise(make_error)?;
-                        match category {
+                        let definition_and_values = match category {
                             Some(category)
                                 if category.template_page_id != Some(page.page_id) =>
                             {
@@ -744,16 +782,35 @@ impl ViewService {
                                         &definition,
                                         &wikitext,
                                     )
-                                    .map(|values| DataFormEditor { definition, values })
+                                    .map(|values| (definition, values))
                                 })
                             }
                             None => None,
                             Some(_) => None,
+                        };
+                        match definition_and_values {
+                            Some((definition, values)) => {
+                                let pagepaths = load_wikidot_data_form_pagepaths(
+                                    ctx,
+                                    site_id,
+                                    &definition,
+                                    viewer_user_id,
+                                )
+                                .await
+                                .or_raise(make_error)?;
+                                Some(DataFormEditor {
+                                    definition,
+                                    values,
+                                    pagepaths,
+                                })
+                            }
+                            None => None,
                         }
                     };
                     let compiled_body_html = if let Some(data_form) =
-                        data_form.as_ref().filter(|_| page_extra.is_empty())
-                    {
+                        data_form.as_ref().filter(|data_form| {
+                            page_extra.is_empty() && data_form.definition.default_layout
+                        }) {
                         let rendered_wiki_values = render_wikidot_data_form_wiki_values(
                             ctx,
                             data_form,
@@ -766,10 +823,21 @@ impl ViewService {
                         )
                         .await
                         .or_raise(make_error)?;
-                        render_wikidot_data_form_table_with_wiki_html(
+                        let pagepath_display_values =
+                            resolve_wikidot_data_form_pagepath_display_values(
+                                ctx,
+                                site_id,
+                                &data_form.definition,
+                                &data_form.values,
+                                viewer_user_id,
+                            )
+                            .await
+                            .or_raise(make_error)?;
+                        render_wikidot_data_form_table_with_runtime_html(
                             &data_form.definition,
                             &data_form.values,
                             &rendered_wiki_values,
+                            &pagepath_display_values,
                         )
                     } else {
                         compiled_body_html
@@ -875,135 +943,243 @@ impl ViewService {
             }
             // The page is missing, fetch the "missing page" data (_404).
             None => {
-                let GetBlueprintPageOutput {
-                    wikitext,
-                    render_output,
-                } = BlueprintPageService::get(
+                let user_can_access_page = PermissionService::check_user_can(
                     ctx,
-                    &site,
-                    BlueprintPageType::Missing,
-                    &locales,
-                    config.default_page_layout,
-                    page_info,
+                    &CheckPermissionContext {
+                        user_id: user_session
+                            .as_ref()
+                            .map(|session| session.user.user_id),
+                        site_id,
+                        page_reference: None,
+                    },
+                    Permission {
+                        resource_type: Resource::Page,
+                        resource_category: category_id.map(Reference::Id),
+                        action: Action::View,
+                    },
                 )
                 .await
                 .or_raise(make_error)?;
 
-                let RenderOutput {
-                    html_output:
-                        HtmlOutput {
-                            body: compiled_body_html,
-                            styles: compiled_body_styles,
-                            ..
-                        },
-                    ..
-                } = render_output;
+                if !user_can_access_page {
+                    warn!(
+                        "User doesn't have missing-page category access, returning permission page"
+                    );
 
-                let NavigationPageHtml {
-                    compiled_top_bar_html,
-                    compiled_side_bar_html,
-                } = SettingsService::get_nav_page_html(ctx, site_id, category_id)
-                    .await
-                    .or_raise(make_error)?;
-                let (page_templates, category_template_page_id, data_form) = if options
-                    .edit
-                {
-                    let create_category = CategoryService::get_optional(
-                        ctx,
-                        site_id,
-                        Reference::Slug(cow!(get_category_name(page_full_slug))),
-                    )
-                    .await
-                    .or_raise(make_error)?;
-                    let user_can_create_page = match user_session.as_ref() {
-                        Some(session) => PermissionService::check_user_can(
+                    let user_is_banned = match user_session {
+                        Some(ref session) => RelationService::active_site_ban_exists(
                             ctx,
-                            &CheckPermissionContext {
-                                user_id: Some(session.user.user_id),
+                            GetSiteBan {
                                 site_id,
-                                page_reference: None,
-                            },
-                            Permission {
-                                resource_type: Resource::Page,
-                                resource_category: create_category
-                                    .as_ref()
-                                    .map(|category| Reference::Id(category.category_id)),
-                                action: Action::Create,
+                                user_id: session.user.user_id,
                             },
                         )
                         .await
                         .or_raise(make_error)?,
                         None => false,
                     };
-
-                    if user_can_create_page {
-                        let data_form = match create_category.as_ref() {
-                            Some(category) => load_data_form_definitions(
-                                ctx,
-                                std::slice::from_ref(category),
-                            )
-                            .await
-                            .or_raise(make_error)?
-                            .remove(&category.category_id)
-                            .filter(|definition| {
-                                definition.supports_observed_create_edit()
-                            })
-                            .map(|definition| DataFormEditor {
-                                definition,
-                                values: Default::default(),
-                            }),
-                            None => None,
-                        };
-                        (
-                            Self::get_page_templates(
-                                ctx,
-                                site_id,
-                                user_session.as_ref().map(|session| session.user.user_id),
-                            )
-                            .await
-                            .or_raise(make_error)?,
-                            create_category
-                                .and_then(|category| category.template_page_id),
-                            data_form,
-                        )
+                    let (page_status, page_type) = if user_is_banned {
+                        (PageStatus::Banned, BlueprintPageType::Banned)
                     } else {
-                        (Vec::new(), None, None)
+                        (PageStatus::Private, BlueprintPageType::Private)
+                    };
+                    let GetBlueprintPageOutput {
+                        wikitext,
+                        render_output,
+                    } = BlueprintPageService::get(
+                        ctx,
+                        &site,
+                        page_type,
+                        &locales,
+                        config.default_page_layout,
+                        page_info,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+                    let RenderOutput {
+                        html_output:
+                            HtmlOutput {
+                                body: compiled_body_html,
+                                styles: compiled_body_styles,
+                                ..
+                            },
+                        ..
+                    } = render_output;
+                    let NavigationPageHtml {
+                        compiled_top_bar_html,
+                        compiled_side_bar_html,
+                    } = SettingsService::get_nav_page_html(ctx, site_id, category_id)
+                        .await
+                        .or_raise(make_error)?;
+
+                    PageReturn {
+                        page_status,
+                        wikitext,
+                        new_page_wikitext: None,
+                        page_templates: Vec::new(),
+                        selected_template_page_id: None,
+                        data_form: None,
+                        compiled_body_html,
+                        compiled_body_styles,
+                        compiled_top_bar_html,
+                        compiled_side_bar_html,
                     }
                 } else {
-                    (Vec::new(), None, None)
-                };
-                let selected_template_page_id = options
-                    .template
-                    .filter(|page_id| {
-                        page_templates
-                            .iter()
-                            .any(|template| template.page_id == *page_id)
-                    })
-                    .or_else(|| {
-                        category_template_page_id.filter(|page_id| {
+                    let GetBlueprintPageOutput {
+                        wikitext,
+                        render_output,
+                    } = BlueprintPageService::get(
+                        ctx,
+                        &site,
+                        BlueprintPageType::Missing,
+                        &locales,
+                        config.default_page_layout,
+                        page_info,
+                    )
+                    .await
+                    .or_raise(make_error)?;
+
+                    let RenderOutput {
+                        html_output:
+                            HtmlOutput {
+                                body: compiled_body_html,
+                                styles: compiled_body_styles,
+                                ..
+                            },
+                        ..
+                    } = render_output;
+
+                    let NavigationPageHtml {
+                        compiled_top_bar_html,
+                        compiled_side_bar_html,
+                    } = SettingsService::get_nav_page_html(ctx, site_id, category_id)
+                        .await
+                        .or_raise(make_error)?;
+                    let (page_templates, category_template_page_id, data_form) =
+                        if options.edit {
+                            let create_category = CategoryService::get_optional(
+                                ctx,
+                                site_id,
+                                Reference::Slug(cow!(get_category_name(page_full_slug))),
+                            )
+                            .await
+                            .or_raise(make_error)?;
+                            let user_can_create_page = match user_session.as_ref() {
+                                Some(session) => PermissionService::check_user_can(
+                                    ctx,
+                                    &CheckPermissionContext {
+                                        user_id: Some(session.user.user_id),
+                                        site_id,
+                                        page_reference: None,
+                                    },
+                                    Permission {
+                                        resource_type: Resource::Page,
+                                        resource_category: create_category.as_ref().map(
+                                            |category| {
+                                                Reference::Id(category.category_id)
+                                            },
+                                        ),
+                                        action: Action::Create,
+                                    },
+                                )
+                                .await
+                                .or_raise(make_error)?,
+                                None => false,
+                            };
+
+                            if user_can_create_page {
+                                let data_form = match create_category.as_ref() {
+                                    Some(category) => {
+                                        let definition = load_data_form_definitions(
+                                            ctx,
+                                            std::slice::from_ref(category),
+                                        )
+                                        .await
+                                        .or_raise(make_error)?
+                                        .remove(&category.category_id)
+                                        .filter(|definition| {
+                                            definition.supports_observed_editor()
+                                        });
+                                        match definition {
+                                            Some(definition) => {
+                                                let pagepaths =
+                                                    load_wikidot_data_form_pagepaths(
+                                                        ctx,
+                                                        site_id,
+                                                        &definition,
+                                                        user_session.as_ref().map(
+                                                            |session| {
+                                                                session.user.user_id
+                                                            },
+                                                        ),
+                                                    )
+                                                    .await
+                                                    .or_raise(make_error)?;
+                                                Some(DataFormEditor {
+                                                    definition,
+                                                    values: Default::default(),
+                                                    pagepaths,
+                                                })
+                                            }
+                                            None => None,
+                                        }
+                                    }
+                                    None => None,
+                                };
+                                (
+                                    Self::get_page_templates(
+                                        ctx,
+                                        site_id,
+                                        user_session
+                                            .as_ref()
+                                            .map(|session| session.user.user_id),
+                                    )
+                                    .await
+                                    .or_raise(make_error)?,
+                                    create_category
+                                        .and_then(|category| category.template_page_id),
+                                    data_form,
+                                )
+                            } else {
+                                (Vec::new(), None, None)
+                            }
+                        } else {
+                            (Vec::new(), None, None)
+                        };
+                    let selected_template_page_id = options
+                        .template
+                        .filter(|page_id| {
                             page_templates
                                 .iter()
                                 .any(|template| template.page_id == *page_id)
                         })
-                    });
-                let new_page_wikitext = selected_template_page_id.and_then(|page_id| {
-                    page_templates
-                        .iter()
-                        .find(|template| template.page_id == page_id)
-                        .map(|template| template.wikitext.clone())
-                });
+                        .or_else(|| {
+                            category_template_page_id.filter(|page_id| {
+                                page_templates
+                                    .iter()
+                                    .any(|template| template.page_id == *page_id)
+                            })
+                        });
+                    let new_page_wikitext =
+                        selected_template_page_id.and_then(|page_id| {
+                            page_templates
+                                .iter()
+                                .find(|template| template.page_id == page_id)
+                                .map(|template| template.wikitext.clone())
+                        });
 
-                PageReturn {
-                    page_status: PageStatus::Missing,
-                    wikitext,
-                    new_page_wikitext,
-                    page_templates,
-                    selected_template_page_id,
-                    data_form,
-                    compiled_body_html,
-                    compiled_body_styles,
-                    compiled_top_bar_html,
-                    compiled_side_bar_html,
+                    PageReturn {
+                        page_status: PageStatus::Missing,
+                        wikitext,
+                        new_page_wikitext,
+                        page_templates,
+                        selected_template_page_id,
+                        data_form,
+                        compiled_body_html,
+                        compiled_body_styles,
+                        compiled_top_bar_html,
+                        compiled_side_bar_html,
+                    }
                 }
             }
         };
@@ -1548,6 +1724,7 @@ ORDER BY breadcrumb_chain.depth ASC
             GetAdminViewOutput::SiteFound {
                 categories,
                 page_templates,
+                is_master_admin: site.master_admin_user_id == user_id,
             }
         } else {
             warn!("User doesn't have admin access, returning permission page");

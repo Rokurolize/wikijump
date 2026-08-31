@@ -82,6 +82,7 @@ async fn payload_actor_cannot_spoof_vote_or_message_attribution() {
             "page_id": 1,
             "revision_id": 1,
             "user_id": SAMPLE_USER_ID,
+            "ip_address": common::IP_ADDRESS,
             "hidden": [],
         }),
     );

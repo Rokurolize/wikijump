@@ -161,12 +161,13 @@ Normative behavior:
 - The endpoint accepts title t, description d, and home h metadata; repeated metadata path pairs use the last value.
 - In controlled live captures, limit, offset, and order path pairs do not affect the selected items, even though ListPages generates those pairs.
 - Unknown path arguments are ignored.
+- Every successful feed document begins with the exact prefix `<?xml version="1.0" encoding="UTF-8" ?>\n<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wikidot="http://www.wikidot.com/rss-namespace">\n\n\t<channel>\n`; all 10 successful sealed cases share it.
 - An invalid range, rating, or pagetype value produces an HTTP 200 generic feed error document rather than an HTTP error status.
 - A request ending at /feed/pages without a trailing argument path returns 404; malformed percent encoding returns 400.
 
 Evidence:
 
-- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`, `lpfeed-0002-metadata`, `lpfeed-0003-limit-ignored`, `lpfeed-0004-offset-ignored`, `lpfeed-0005-order-ignored`, `lpfeed-0006-duplicate-metadata-last-wins`, `lpfeed-0008-invalid-range`, `lpfeed-0009-invalid-rating`, `lpfeed-0010-invalid-pagetype-alias`, `lpfeed-0013-unknown-argument-ignored`, `lpfeed-0014-missing-trailing-path`, `lpfeed-0015-malformed-percent-escape`
+- `install/local/wikidot-verification/artifacts/listpages-campaign-feed-endpoint-live.jsonl` (SHA-256 `37e6a52c88f48bc7eadfeacb7218ce270e615f0916e4a8810bfed2f01bb0afa9`), cases: `lpfeed-0001-baseline`, `lpfeed-0002-metadata`, `lpfeed-0003-limit-ignored`, `lpfeed-0004-offset-ignored`, `lpfeed-0005-order-ignored`, `lpfeed-0006-duplicate-metadata-last-wins`, `lpfeed-0007-encoded-dot-range`, `lpfeed-0008-invalid-range`, `lpfeed-0009-invalid-rating`, `lpfeed-0010-invalid-pagetype-alias`, `lpfeed-0011-only-negative-category`, `lpfeed-0012-star-with-negative-category`, `lpfeed-0013-unknown-argument-ignored`, `lpfeed-0014-missing-trailing-path`, `lpfeed-0015-malformed-percent-escape`
 
 ### Template variables preserve legacy identity and missing-data behavior
 
@@ -546,10 +547,12 @@ Normative behavior:
 - The rule is actor-independent for the anonymous, administrator, ordinary-member, and non-member roles observed on the controlled sandbox.
 - Saved-page rendering retains the executable html-block-iframe behavior for a complete HTML block.
 - Preview and saved-page behavior must be selected by an explicit render context rather than by rewriting settled HTML.
+- For a ListPages row opener composed from a selected page section, empty section zero and an out-of-range section complete [[html]], while a nonempty section or a different opener suffix does not; preview keeps every completed block literal and a saved view executes only the completed HTML blocks.
 
 Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+- `install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json` (SHA-256 `c1494f51b8445948a22321b70a671c475387415d1478e308feb0dce7b7e783f0`), cases: `issue-1383-preview-section-zero-positive`, `issue-1383-preview-out-of-range-positive`, `issue-1383-preview-section-one-negative`, `issue-1383-preview-invalid-opener-negative`
 
 ### ListPages keys, quoting, operators, and duplicate state use per-argument source grammar
 
@@ -608,6 +611,25 @@ Normative behavior:
 Evidence:
 
 - `install/local/wikidot-verification/artifacts/listpages-late-evidence-manifest.json` (SHA-256 `3963b348678958017a1fe567bc3aaea3da3e05eab082813f21c6de4831ed60ad`), cases: none
+
+### The public ListPages AMC form decoder selects the last duplicate value
+
+- Observation ID: `listpages-amc-form-last-value-20260816`
+- Classification: `documentation-correction`
+- Observed at: `2026-08-16`
+- Analysis: Anonymous read-only requests preserved exact URL-encoded duplicate-field order at the public scp-wiki Ajax Module Connector. Reversing duplicate module_body and selector values reversed ListPages output. Reversing duplicate moduleName values selected the later valid or unknown module, and reversing a valid and invalid public wikidot_token7 selected the later success or wrong_token7 result. The two transport controls establish ordered last-value decoding outside the ListPages argument family. Missing module_body is accepted with the default row template and an unknown ListPages selector is ignored. The evidence does not define malformed percent encoding, invalid UTF-8, authenticated duplicate-cookie semantics, or non-form parsing stages.
+
+Normative behavior:
+
+- For an otherwise valid public Ajax Module Connector URL-encoded form, repeated field names select the last occurrence at the evidenced decoder boundary.
+- This last-value rule applies to evidenced ListPages arguments, module identity, and the public wikidot_token7 field; it is not a page-specific content rule.
+- ListPages accepts an omitted module_body by rendering its default row template, and ignores an unknown non-data-form selector in the observed request.
+- Malformed percent encoding and invalid UTF-8 remain outside this observation and must continue to fail closed until separately established.
+
+Evidence:
+
+- `/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest.json` (SHA-256 `bb95244df5a2cdadbed860705199f2de4776970982b4bee8034a82cb88a06771`), cases: none
+- `/home/roku/wjlab/evidence/issue1374-listpages-anonymous-20260816/manifest-v2.json` (SHA-256 `33d3b1361064da1bb200202bf2783ecb88ad2e695bf54d9cbfa4a0150f866e4b`), cases: none
 
 
 

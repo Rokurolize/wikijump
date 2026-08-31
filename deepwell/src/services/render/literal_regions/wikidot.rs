@@ -409,10 +409,10 @@ fn wikidot_literal_block(
         *text_tokens = lookahead_tokens;
         return Some(("[[/raw]]", content_start));
     }
-    let is_module = own_module_bodies && name.eq_ignore_ascii_case("module");
+    let module_candidate = own_module_bodies && name.eq_ignore_ascii_case("module");
     let (opener_end, head_end) = if name.eq_ignore_ascii_case("code")
         || name.eq_ignore_ascii_case("html")
-        || is_module
+        || module_candidate
         || (runtime_extended && name.eq_ignore_ascii_case("math"))
     {
         let end =
@@ -422,6 +422,16 @@ fn wikidot_literal_block(
         let end = first_wikidot_tag_end(source.as_bytes(), start, line_end)?;
         (end, end - 2)
     };
+    let is_rate = source[name_end..head_end]
+        .split_whitespace()
+        .next()
+        .is_some_and(|name| name.eq_ignore_ascii_case("Rate"));
+    // An absent closer after a complete Rate head must not mask later
+    // conditional boundaries through EOF. Paired Rate still owns its body.
+    let is_module = module_candidate
+        && (!is_rate
+            || find_block_close(source, opener_end, source.len(), "[[/module]]")
+                .is_some());
     let close = if name.eq_ignore_ascii_case("code") {
         "[[/code]]"
     } else if name.eq_ignore_ascii_case("html") {

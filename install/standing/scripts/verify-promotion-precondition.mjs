@@ -1,14 +1,15 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { constants as fsConstants } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 
 import { verifyStandingCandidateParityAdmission } from "../../local/wikidot-verification/src/standing-browser-promotion-admission.mjs";
+import { verifyFinalFrozenReceipt } from "../../local/wikidot-verification/src/final-frozen-receipt-contract.mjs";
 import { validateCandidateParityIdentity } from "../../local/wikidot-verification/src/standing-browser-parity-receipt.mjs";
 import {
+  readStableRegularFile,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -19,6 +20,7 @@ export const STANDING_PROMOTION_PRECONDITION_SCHEMA =
 
 const REQUIRED_ARGUMENTS = Object.freeze([
   "receipt",
+  "final-frozen-receipt",
   "candidate-identity",
   "live-reference",
   "live-completion-policy",
@@ -45,67 +47,6 @@ const BUILD_MANIFEST_EXCLUSIONS = Object.freeze([
 function requireEqual(actual, expected, name) {
   if (actual !== expected) throw new Error(`${name} does not match`);
   return actual;
-}
-
-function requireRegularFile(stat, name) {
-  if (
-    !stat?.isFile() ||
-    stat.isSymbolicLink() ||
-    (stat.nlink !== 1 && stat.nlink !== 1n)
-  ) {
-    throw new Error(`${name} must be a regular file`);
-  }
-}
-
-function statFingerprint(stat) {
-  return Object.freeze({
-    dev: String(stat.dev),
-    ino: String(stat.ino),
-    nlink: String(stat.nlink),
-    mode: String(stat.mode),
-    size: String(stat.size),
-    mtimeNs: String(stat.mtimeNs),
-    ctimeNs: String(stat.ctimeNs),
-  });
-}
-
-function requireSameFingerprint(before, after, name) {
-  if (JSON.stringify(before) !== JSON.stringify(after)) {
-    throw new Error(`${name} changed while it was being read`);
-  }
-}
-
-async function readStableRegularFile(filePath, name) {
-  const beforeStat = await fs
-    .lstat(filePath, { bigint: true })
-    .catch(() => null);
-  requireRegularFile(beforeStat, name);
-  const before = statFingerprint(beforeStat);
-  if (!fsConstants.O_NOFOLLOW) {
-    throw new Error("stable file verification requires O_NOFOLLOW support");
-  }
-  const handle = await fs.open(
-    filePath,
-    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
-  );
-  let bytes;
-  try {
-    const openedStat = await handle.stat({ bigint: true });
-    requireRegularFile(openedStat, name);
-    requireSameFingerprint(before, statFingerprint(openedStat), name);
-    bytes = await handle.readFile();
-  } finally {
-    await handle.close();
-  }
-  const afterStat = await fs
-    .lstat(filePath, { bigint: true })
-    .catch(() => null);
-  requireRegularFile(afterStat, name);
-  requireSameFingerprint(before, statFingerprint(afterStat), name);
-  return Object.freeze({
-    bytes,
-    sha256: createHash("sha256").update(bytes).digest("hex"),
-  });
 }
 
 function jsonValueFromStableFile(file, name) {
@@ -225,6 +166,141 @@ function sameImageMap(left, right) {
     JSON.stringify(Object.entries(left).sort()) ===
     JSON.stringify(Object.entries(right).sort())
   );
+}
+
+function exactObjectKeys(value, expected, name) {
+  requirePlainObject(value, name);
+  if (
+    JSON.stringify(Object.keys(value).sort()) !==
+    JSON.stringify([...expected].sort())
+  ) {
+    throw new Error(`${name} has missing or unknown fields`);
+  }
+}
+
+function requireGitObject(value, name) {
+  if (!/^[0-9a-f]{40}$/u.test(value ?? "")) {
+    throw new Error(`${name} must be a Git object id`);
+  }
+  return value;
+}
+
+function requireImageIds(value, name) {
+  exactObjectKeys(value, REQUIRED_IMAGE_ROLES, name);
+  const ids = REQUIRED_IMAGE_ROLES.map((role) => {
+    const imageId = value[role];
+    if (!/^sha256:[0-9a-f]{64}$/u.test(imageId ?? "")) {
+      throw new Error(`${name}.${role} must be an immutable image id`);
+    }
+    return imageId;
+  });
+  if (new Set(ids).size !== ids.length) {
+    throw new Error(`${name} reuses an image id`);
+  }
+}
+
+export function validateStandingPromotionPrecondition(value) {
+  exactObjectKeys(
+    value,
+    [
+      "schema",
+      "status",
+      "run_id",
+      "verified_at",
+      "admission",
+      "candidate",
+      "build",
+      "staging_home",
+    ],
+    "promotion precondition",
+  );
+  if (
+    value.schema !== STANDING_PROMOTION_PRECONDITION_SCHEMA ||
+    value.status !== "pass"
+  ) {
+    throw new Error("promotion precondition is not a passing canonical receipt");
+  }
+  requireNonEmptyString(value.run_id, "promotion precondition.run_id");
+  requireNonEmptyString(value.verified_at, "promotion precondition.verified_at");
+  exactObjectKeys(
+    value.admission,
+    [
+      "candidate_parity_receipt_sha256",
+      "candidate_identity_sha256",
+      "live_reference_sha256",
+      "live_completion_policy_sha256",
+      "source_runner_sha256",
+      "source_observation_sha256",
+      "source_execution_identity_sha256",
+    ],
+    "promotion precondition.admission",
+  );
+  for (const field of Object.keys(value.admission)) {
+    requireSha256(value.admission[field], `promotion precondition.admission.${field}`);
+  }
+  exactObjectKeys(
+    value.candidate,
+    [
+      "artifact_key",
+      "wikijump_commit",
+      "wikijump_tree",
+      "ftml_sha",
+      "compose_project",
+      "expires_at",
+    ],
+    "promotion precondition.candidate",
+  );
+  requireSha256(value.candidate.artifact_key, "promotion precondition candidate artifact_key");
+  requireGitObject(value.candidate.wikijump_commit, "promotion precondition candidate Wikijump commit");
+  requireGitObject(value.candidate.wikijump_tree, "promotion precondition candidate Wikijump tree");
+  requireGitObject(value.candidate.ftml_sha, "promotion precondition candidate FTML SHA");
+  requireNonEmptyString(value.candidate.compose_project, "promotion precondition candidate compose project");
+  requireNonEmptyString(value.candidate.expires_at, "promotion precondition candidate expiry");
+  exactObjectKeys(
+    value.build,
+    [
+      "seal_sha256",
+      "evidence_manifest_sha256",
+      "verdict_sha256",
+      "final_images_sha256",
+      "run_id",
+      "wikijump_commit",
+      "wikijump_tree",
+      "ftml_sha",
+      "images",
+    ],
+    "promotion precondition.build",
+  );
+  for (const field of [
+    "seal_sha256",
+    "evidence_manifest_sha256",
+    "verdict_sha256",
+    "final_images_sha256",
+  ]) {
+    requireSha256(value.build[field], `promotion precondition.build.${field}`);
+  }
+  requireEqual(value.build.run_id, value.run_id, "promotion precondition build run id");
+  requireGitObject(value.build.wikijump_commit, "promotion precondition build Wikijump commit");
+  requireGitObject(value.build.wikijump_tree, "promotion precondition build Wikijump tree");
+  requireGitObject(value.build.ftml_sha, "promotion precondition build FTML SHA");
+  requireImageIds(value.build.images, "promotion precondition.build.images");
+  for (const field of ["wikijump_commit", "wikijump_tree", "ftml_sha"]) {
+    requireEqual(
+      value.candidate[field],
+      value.build[field],
+      `promotion precondition candidate/build ${field}`,
+    );
+  }
+  exactObjectKeys(
+    value.staging_home,
+    ["manifest_sha256"],
+    "promotion precondition.staging_home",
+  );
+  requireSha256(
+    value.staging_home.manifest_sha256,
+    "promotion precondition staging home manifest",
+  );
+  return value;
 }
 
 function assertSafeRelativePath(relative, name) {
@@ -458,6 +534,7 @@ async function readBuildBinding(buildEvidenceRoot) {
     evidence_manifest_sha256: manifestFile.sha256,
     verdict_sha256: verdictFile.sha256,
     final_images_sha256: imagesFile.sha256,
+    run_id: seal.run_id,
     wikijump_commit: verdict.wikijump_commit,
     wikijump_tree: verdict.wikijump_tree,
     ftml_sha: verdict.ftml_sha,
@@ -579,6 +656,7 @@ function requireStablePromotionBinding(before, after) {
 
 export async function verifyStandingPromotionPrecondition({
   receiptPath,
+  finalFrozenReceiptPath,
   candidateIdentityPath,
   liveReferencePath,
   liveCompletionPolicyPath,
@@ -598,6 +676,7 @@ export async function verifyStandingPromotionPrecondition({
     stagingHomeRoot,
     inputPaths: [
       { name: "candidate parity receipt", value: receiptPath },
+      { name: "final frozen receipt", value: finalFrozenReceiptPath },
       { name: "candidate parity identity", value: candidateIdentityPath },
       { name: "live reference", value: liveReferencePath },
       { name: "live completion policy", value: liveCompletionPolicyPath },
@@ -615,6 +694,15 @@ export async function verifyStandingPromotionPrecondition({
     buildEvidenceRoot,
     stagingHomeRoot,
   });
+  const finalFrozenSource = {
+    wikijump_commit: binding.identity.candidate.wikijump_commit,
+    wikijump_tree: binding.identity.candidate.wikijump_tree,
+    ftml_sha: binding.identity.candidate.ftml_sha,
+  };
+  const finalFrozen = await verifyFinalFrozenReceipt({
+    receiptPath: finalFrozenReceiptPath,
+    source: finalFrozenSource,
+  });
   bindAdmissionToPromotion({
     admission,
     identity: binding.identity,
@@ -630,9 +718,20 @@ export async function verifyStandingPromotionPrecondition({
       stagingHomeRoot,
     }),
   );
+  const finalFrozenAgain = await verifyFinalFrozenReceipt({
+    receiptPath: finalFrozenReceiptPath,
+    source: finalFrozenSource,
+  });
+  requireEqual(finalFrozenAgain.path, finalFrozen.path, "final frozen receipt path");
+  requireEqual(
+    finalFrozenAgain.sha256,
+    finalFrozen.sha256,
+    "final frozen receipt SHA-256",
+  );
   const result = Object.freeze({
     schema: STANDING_PROMOTION_PRECONDITION_SCHEMA,
     status: "pass",
+    run_id: binding.build.run_id,
     verified_at: new Date().toISOString(),
     admission: {
       candidate_parity_receipt_sha256:
@@ -652,6 +751,10 @@ export async function verifyStandingPromotionPrecondition({
       ftml_sha: binding.identity.candidate.ftml_sha,
       compose_project: binding.identity.candidate.compose_project,
       expires_at: binding.identity.candidate.expires_at,
+    },
+    final_frozen_receipt: {
+      path: finalFrozen.path,
+      sha256: finalFrozen.sha256,
     },
     build: binding.build,
     staging_home: { manifest_sha256: binding.staging_home.manifest_sha256 },
@@ -683,7 +786,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log(`Usage: verify-promotion-precondition.mjs --receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIRECTORY --staging-home DIRECTORY --output FILE
+  console.log(`Usage: verify-promotion-precondition.mjs --receipt FILE --final-frozen-receipt FILE --candidate-identity FILE --live-reference FILE --live-completion-policy FILE --build-evidence DIRECTORY --staging-home DIRECTORY --output FILE
 
 Verifies the reviewed source browser-parity admission and binds it to the exact sealed build and rendered standing topology. It has no Docker, maintenance, canonical-home, or network side effects.`);
 }
@@ -696,6 +799,7 @@ async function main() {
   const args = parseArgs(process.argv);
   const result = await verifyStandingPromotionPrecondition({
     receiptPath: args.receipt,
+    finalFrozenReceiptPath: args["final-frozen-receipt"],
     candidateIdentityPath: args["candidate-identity"],
     liveReferencePath: args["live-reference"],
     liveCompletionPolicyPath: args["live-completion-policy"],

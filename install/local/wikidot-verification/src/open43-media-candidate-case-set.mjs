@@ -5,6 +5,7 @@ import { verifyOpen43MediaCase } from "./open43-media-candidate-contract.mjs";
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
 export const OPEN43_MEDIA_CASE_IDS = Object.freeze([
+  "M756_LOCAL_ROUTE_BYTES",
   "M1039_MUTATION_TO_NEXT_READ",
   "M1043_RESIZED_BLOB_IDENTITY",
   "M1062_SERIALIZABLE_ACTION_RESPONSE",
@@ -27,7 +28,6 @@ const REVISION_BYTES = Buffer.from(
   "base64",
 );
 const RESIZED_VARIANT = "medium";
-
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
 }
@@ -38,7 +38,7 @@ const INPUTS = Object.freeze({
 });
 
 function runPageSlug(runId) {
-  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-case-".length)}`;
+  return `${PAGE_SLUG_PREFIX}-${runId.slice("candidate-run-".length)}`;
 }
 
 function requireCandidateSite(candidateIdentity) {
@@ -75,6 +75,13 @@ function resizedPath(pageSlug, fileName) {
   )}`;
 }
 
+function invalidPresignedUrl(value) {
+  const url = new URL(value);
+  url.pathname = `${url.pathname.replace(/\/+$/u, "")}/candidate-put-failure`;
+  url.searchParams.set("candidate_put_failure", "1");
+  return url.href;
+}
+
 function matchingRows(inventory, name) {
   return inventory.filter((row) => row.name === name);
 }
@@ -95,6 +102,7 @@ class Open43MediaRun {
   #ownedPage = null;
   #pageResource = null;
   #pending = new Map();
+  #siteIconsBefore = null;
 
   constructor({ session, resources, pageSlug }) {
     this.#session = session;
@@ -189,6 +197,32 @@ class Open43MediaRun {
     };
   }
 
+  async #observeLocalFavicon(fileName) {
+    const source = `/local--files/${encodePath(this.#pageSlug, fileName)}`;
+    const favicon = await this.#session.pageRouteRequest("/local--favicon/favicon.gif", { method: "GET", actor: "anonymous", operation: "favicon-route-get" });
+    const sourceOnPageHost = await this.#session.pageRouteRequest(source, { method: "GET", actor: "anonymous", operation: "favicon-source-page-host-get" });
+    const legacyOnFilesHost = await this.#session.filesRequest(source, { method: "GET", actor: "anonymous", operation: "favicon-source-files-host-get" });
+    const legacyOnFilesHostHead = await this.#session.filesRequest(source, { method: "HEAD", actor: "anonymous", operation: "favicon-source-files-host-head" });
+    const original = await this.#session.filesRequest(originalPath(this.#pageSlug, fileName), { method: "GET", actor: "anonymous", operation: "favicon-original-get" });
+    const originalHead = await this.#session.filesRequest(originalPath(this.#pageSlug, fileName), { method: "HEAD", actor: "anonymous", operation: "favicon-original-head" });
+    return { source, favicon, source_on_page_host: sourceOnPageHost, legacy_on_files_host: { ...legacyOnFilesHost, head: legacyOnFilesHostHead }, original: { ...original, head: originalHead } };
+  }
+
+  async #setFaviconSource(source) {
+    const before = await this.#session.rpc("site_get", { site: SITE_SLUG });
+    if (!Number.isSafeInteger(before?.settings_revision)) throw new Error("media candidate site settings revision is missing");
+    if (this.#siteIconsBefore === null) this.#siteIconsBefore = { favicon_source: before.favicon_source ?? null, ios_icon_source: before.ios_icon_source ?? null, windows_tile_source: before.windows_tile_source ?? null };
+    return await this.#session.rpc("site_update", {
+      site: this.#siteId,
+      expected_settings_revision: before.settings_revision,
+      user_id: this.#session.editorUserId,
+      favicon_source: source,
+      ios_icon_source: before.ios_icon_source ?? null,
+      windows_tile_source: before.windows_tile_source ?? null,
+      ip_address: "127.0.0.1",
+    }, { siteId: this.#siteId });
+  }
+
   async #deleteFile(pageId, row, { cleanup = false } = {}) {
     await this.#rpc(
       "file_delete",
@@ -204,7 +238,7 @@ class Open43MediaRun {
     );
   }
 
-  async #beginPendingBlob(bytes) {
+  async #beginPendingBlob(bytes, { presignedUrlTransform = null, retainUploadFailure = false } = {}) {
     const permission = await this.#rpc("page_edit_permission");
     if (permission?.can_edit !== true) {
       throw new Error("editor cannot edit the run-owned media page");
@@ -229,8 +263,49 @@ class Open43MediaRun {
       page_slug: this.#pageSlug,
       byte_sha256: sha256(bytes),
     });
-    await this.#session.presignedPut(pending.presign_url, bytes);
+    try {
+      const uploadUrl = presignedUrlTransform === null
+        ? pending.presign_url
+        : presignedUrlTransform(pending.presign_url);
+      await this.#session.presignedPut(uploadUrl, bytes);
+    } catch (error) {
+      if (!retainUploadFailure) throw error;
+      state.upload_error = error instanceof Error ? error.message : String(error);
+    }
     return state;
+  }
+
+  async #cancelPendingBlob(state, proof) {
+    await this.#rpc("blob_cancel", {
+      user_id: this.#session.editorUserId,
+      pending_blob_id: state.pending.pending_blob_id,
+    });
+    this.#resources.release(state.token, proof);
+    this.#pending.delete(state.pending.pending_blob_id);
+  }
+
+  async #exerciseFailedPut(bytes) {
+    const eventStart = this.#session.events.length;
+    const pending = await this.#beginPendingBlob(bytes, {
+      presignedUrlTransform: invalidPresignedUrl,
+      retainUploadFailure: true,
+    });
+    if (pending.upload_error === undefined) {
+      await this.#cancelPendingBlob(pending, {
+        state: "unexpected-put-success",
+        pending_blob_id: pending.pending.pending_blob_id,
+      });
+      throw new Error("candidate failure PUT was accepted");
+    }
+    await this.#cancelPendingBlob(pending, {
+      state: "cancelled-after-put-failure",
+      pending_blob_id: pending.pending.pending_blob_id,
+      upload_error: pending.upload_error,
+    });
+    return {
+      upload_error: pending.upload_error,
+      adapter_events: localEvents(this.#session.events, eventStart),
+    };
   }
 
   async #consumePendingBlob(state, publicProof) {
@@ -301,6 +376,10 @@ class Open43MediaRun {
     if (initialRows.length !== 1) {
       throw new Error("multipart action did not create exactly one public file row");
     }
+    const faviconSource = `/local--files/${encodePath(this.#pageSlug, FILE_NAMES.action_upload)}`;
+    const siteAfterFavicon = await this.#setFaviconSource(faviconSource);
+    if (siteAfterFavicon?.favicon_source !== faviconSource) throw new Error("candidate favicon source was not committed");
+    const localFavicon = await this.#observeLocalFavicon(FILE_NAMES.action_upload);
 
     const inventoryBeforeFailedAction = await this.#getInventory(page.page_id);
     const failedAction = await this.#session.multipartFileAction(
@@ -324,6 +403,7 @@ class Open43MediaRun {
       FILE_NAMES.rejected_upload,
       "rejected-original",
     );
+    const failedPut = await this.#exerciseFailedPut(INPUTS.revision.bytes);
 
     const first = initialRows[0];
     const renameResult = await this.#rpc("file_edit", {
@@ -382,6 +462,15 @@ class Open43MediaRun {
 
     return [
       {
+        case_id: "M756_LOCAL_ROUTE_BYTES",
+        observations: {
+          configured_source: faviconSource,
+          site: { site_id: this.#siteId, favicon_source: siteAfterFavicon.favicon_source },
+          route: localFavicon,
+          file: first,
+        },
+      },
+      {
         case_id: "M1039_MUTATION_TO_NEXT_READ",
         observations: {
           after_upload: {
@@ -438,6 +527,7 @@ class Open43MediaRun {
           inventory_before_failed_action: inventoryBeforeFailedAction,
           inventory_after_failed_action: inventoryAfterFailedAction,
           failed_route: failedRoute,
+          failed_put: failedPut,
         },
       },
       {
@@ -481,6 +571,18 @@ class Open43MediaRun {
 
     let page = null;
     try {
+      if (this.#siteId !== null && this.#siteIconsBefore !== null) {
+        const currentSite = await this.#session.rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
+        await this.#session.rpc("site_update", {
+          site: this.#siteId,
+          expected_settings_revision: currentSite.settings_revision,
+          user_id: this.#session.editorUserId,
+          ...this.#siteIconsBefore,
+          ip_address: "127.0.0.1",
+        }, { siteId: this.#siteId, cleanup: true });
+        const restored = await this.#session.rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
+        if (restored.favicon_source !== this.#siteIconsBefore.favicon_source || restored.ios_icon_source !== this.#siteIconsBefore.ios_icon_source || restored.windows_tile_source !== this.#siteIconsBefore.windows_tile_source) throw new Error("media cleanup did not restore site icon settings");
+      }
       if (this.#siteId !== null) page = await this.#getPage({ cleanup: true, wikitext: true });
       if (this.#matchesOwnedPage(page)) {
         const inventory = await this.#getInventory(page.page_id, { cleanup: true });
@@ -545,16 +647,18 @@ function verifyCleanup(proof, resources) {
   ) {
     throw new Error("media cleanup left an outstanding pending blob");
   }
-  const routes = Object.values(proof.public_routes ?? {});
+  const routes = Object.entries(proof.public_routes ?? {});
   if (routes.length !== Object.keys(FILE_NAMES).length * 2) {
     throw new Error("media cleanup route denominator is incomplete");
   }
-  for (const route of routes) {
-    if (
-      route?.status !== 404 ||
-      route?.head?.status !== 404 ||
-      route?.head?.body_size !== 0
-    ) {
+  for (const [name, route] of routes) {
+    const original = name.endsWith("_original");
+    const getAbsent = original
+      ? route?.status === 200
+        && route?.content_type === "text/html; charset=utf-8"
+        && route?.body_sha256 === "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab"
+      : route?.status === 404;
+    if (!getAbsent || route?.head?.status !== 404 || route?.head?.body_size !== 0) {
       throw new Error("media cleanup did not prove public file route absence");
     }
   }
@@ -577,12 +681,18 @@ export function createOpen43MediaCandidateCaseSet({
 } = {}) {
   const plan = Object.freeze({
     site_slug: SITE_SLUG,
+    page_slug: null,
     file_names: FILE_NAMES,
     inputs: INPUTS,
     resized_variant: RESIZED_VARIANT,
     editor_user_id: -1,
   });
   const sourceFiles = Object.freeze([
+    "framerail/src/lib/server/deepwell/file.ts",
+    "framerail/src/lib/server/deepwell/page-file.ts",
+    "framerail/src/lib/server/deepwell/pending-blob-upload.ts",
+    "framerail/src/lib/server/deepwell/presigned-upload.ts",
+    "framerail/src/lib/server/load/page/page-file-actions.ts",
     "install/local/wikidot-verification/scripts/run-candidate-cases.mjs",
     "install/local/wikidot-verification/src/atomic-no-replace.mjs",
     "install/local/wikidot-verification/src/candidate-source-execution-identity.mjs",
@@ -605,7 +715,9 @@ export function createOpen43MediaCandidateCaseSet({
       requireCandidateSite(candidateIdentity);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       if (session?.editorUserId !== plan.editor_user_id) throw new Error("candidate session does not bind the fixed media editor");
-      const execution = new Open43MediaRun({ session, resources, pageSlug: runPageSlug(runId) });
+      const pageSlug = runPageSlug(runId);
+      const runPlan = Object.freeze({ ...plan, page_slug: pageSlug });
+      const execution = new Open43MediaRun({ session, resources, pageSlug });
       return Object.freeze({
         sourceFiles,
         runtimeBindings: session.requiredServiceBindings,
@@ -613,16 +725,18 @@ export function createOpen43MediaCandidateCaseSet({
         plan: {
           schema: "wikijump.open43_media_candidate_plan.v1",
           site_slug: SITE_SLUG,
-          page_slug: runPageSlug(runId),
+          page_slug: pageSlug,
           file_names: FILE_NAMES,
           fixed_inputs: { initial: publicInput(INPUTS.initial), revision: publicInput(INPUTS.revision) },
           resized_variant: RESIZED_VARIANT,
           source_owned_internal_upload_order: ["page_edit_permission", "blob_upload", "presigned_put", "file_create"],
+          candidate_failure_cleanup_order: ["page_edit_permission", "blob_upload", "presigned_put(non-2xx)", "blob_cancel"],
+          candidate_failure_forbids: ["file_create", "public_file_relation"],
           candidate_observation_scope: "adapter-issued-external-requests-only",
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
-        verifyCase: (caseId, observations) => verifyOpen43MediaCase(caseId, observations, plan),
+        verifyCase: (caseId, observations) => verifyOpen43MediaCase(caseId, observations, runPlan),
         verifyCleanup,
       });
     },

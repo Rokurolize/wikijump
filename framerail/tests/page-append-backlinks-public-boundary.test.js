@@ -172,6 +172,20 @@ test("saved Wikidot options expose Append and Backlinks in captured relative ord
   assert.match(source, /backlinks-button[\s\S]*PagePane\.Backlinks/u)
 })
 
+test("saved Wikidot options expose More Options and View Source controls", async () => {
+  const source = await readFile(
+    new URL("../src/routes/[slug]/[...extra]/page.svelte", import.meta.url),
+    "utf8"
+  )
+  const moreOptionsIndex = source.indexOf('id="more-options-button"')
+  const viewSourceIndex = source.indexOf('id="view-source-button"')
+
+  assert.ok(moreOptionsIndex >= 0)
+  assert.ok(viewSourceIndex > moreOptionsIndex)
+  assert.match(source, /more-options-button[\s\S]*toggleShowPageOptions/u)
+  assert.match(source, /view-source-button[\s\S]*showSource\s*=\s*true/u)
+})
+
 test("Backlinks SSR exposes a lazy read pane without page identifiers", () => {
   const body = render(backlinksPane, {
     props: {
@@ -187,6 +201,14 @@ test("Backlinks SSR exposes a lazy read pane without page identifiers", () => {
   assert.match(body, /id="page-backlinks-list"/u)
   assert.match(body, /aria-live="polite"/u)
   assert.doesNotMatch(body, /page[_-]id/u)
+})
+
+test("Backlinks lazy read submits a form-compatible empty POST body", async () => {
+  const source = await readFile(
+    new URL("../src/routes/[slug]/[...extra]/BacklinksPane.svelte", import.meta.url),
+    "utf8"
+  )
+  assert.match(source, /fetch\("\?\/backlinks", \{ method: "POST", body: "" \}\)/u)
 })
 
 test("Backlinks handler delegates the current route to the typed public Deepwell view", async () => {

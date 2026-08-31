@@ -15,6 +15,10 @@ import { fileURLToPath } from "node:url";
 import {
   validateWikidotImplementationLedger,
 } from "./lib/wikidot-implementation-ledger.mjs";
+import {
+  parseWikidotLiveEvidenceRows,
+  resolveWikidotLiveEvidenceFormat,
+} from "./lib/wikidot-live-evidence.mjs";
 import { escapeMarkdownTableCell } from "./lib/markdown.mjs";
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +35,21 @@ const implementationLedgerSourcePath = join(
   "data",
   "wikidot-implementation-ledger.json",
 );
+const detailedContractsSourcePath = join(
+  scriptDirectory,
+  "data",
+  "wikidot-detailed-feature-contracts.json",
+);
+const detailedSpecEvidenceSourcePath = join(
+  scriptDirectory,
+  "data",
+  "wikidot-detailed-spec-evidence-20260816.json",
+);
+const detailedContractsReferentSourcePath = join(
+  scriptDirectory,
+  "data",
+  "referent-table-detailed-feature-contracts.md",
+);
 const corpusRoot = resolve(
   process.env.WIKIDOT_DOCUMENTATION_CORPUS ??
     "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages",
@@ -41,6 +60,16 @@ const displayedCorpusRoot =
 const checkOnly = process.argv.includes("--check");
 const schemaVersion = 1;
 const generatedDate = "2026-07-28";
+const detailedContractAxes = Object.freeze({
+  P1: "invocation grammar and scalar interpretation",
+  P2: "parser stage, nesting, and composition",
+  P3: "lifecycle, persistence, import, and round trips",
+  P4: "actors, permissions, visibility, and privacy",
+  P5: "selection, ordering, counting, and pagination",
+  P6: "HTTP, API, URL, Ajax, feed, and navigation contracts",
+  P7: "DOM, CSS, resources, interaction, and geometry",
+  P8: "temporal behavior, failure atomicity, limits, and resource bounds",
+});
 
 function invariant(condition, message) {
   if (!condition) {
@@ -146,6 +175,16 @@ for (const observation of liveObservations.observations) {
     Array.isArray(observation.evidence) && observation.evidence.length > 0,
     `Live observation has no evidence: ${observation.id}`,
   );
+  for (const rawCapture of observation.raw_captures ?? []) {
+    invariant(
+      typeof rawCapture.path === "string" && rawCapture.path.startsWith("/"),
+      `Live raw capture must use an absolute path for ${observation.id}`,
+    );
+    invariant(
+      sha256(readFileSync(rawCapture.path)) === rawCapture.sha256,
+      `Live raw capture hash drifted for ${observation.id}: ${rawCapture.path}`,
+    );
+  }
   for (const evidence of observation.evidence) {
     const evidencePath = resolve(repositoryRoot, evidence.path);
     const rawEvidence = readFileSync(evidencePath, "utf8");
@@ -153,12 +192,10 @@ for (const observation of liveObservations.observations) {
       sha256(rawEvidence) === evidence.sha256,
       `Live evidence hash drifted for ${observation.id}: ${evidence.path}`,
     );
-    const evidenceRows = evidence.path.endsWith(".jsonl")
-      ? rawEvidence
-          .split(/\r?\n/)
-          .filter(Boolean)
-          .map((line) => JSON.parse(line))
-      : [JSON.parse(rawEvidence)];
+    const evidenceRows = parseWikidotLiveEvidenceRows(
+      rawEvidence,
+      resolveWikidotLiveEvidenceFormat(evidence),
+    );
     const capturedCaseIds = new Set();
     for (const row of evidenceRows) {
       if (
@@ -191,6 +228,13 @@ for (const observation of liveObservations.observations) {
           capturedCaseIds.add(observation.case_id);
         }
       }
+      for (const fieldRun of row.field_runs ?? []) {
+        for (const control of fieldRun.controls ?? []) {
+          if (control.case_id) {
+            capturedCaseIds.add(control.case_id);
+          }
+        }
+      }
       for (const rule of row.general_rules ?? []) {
         for (const caseId of rule.case_ids ?? []) {
           capturedCaseIds.add(caseId);
@@ -205,6 +249,64 @@ for (const observation of liveObservations.observations) {
     }
   }
 }
+
+const detailedContracts = JSON.parse(
+  readFileSync(detailedContractsSourcePath, "utf8"),
+);
+const detailedSpecEvidence = JSON.parse(
+  readFileSync(detailedSpecEvidenceSourcePath, "utf8"),
+);
+const detailedContractsReferent = readFileSync(
+  detailedContractsReferentSourcePath,
+  "utf8",
+);
+
+const detailedEvidenceAliases = Object.freeze({
+  "current-www-source": detailedSpecEvidence.captures?.current_www_sources,
+  "invocation-only-module-pagepreview":
+    detailedSpecEvidence.captures?.invocation_only_module_pagepreview,
+  "special-page-module-summary":
+    detailedSpecEvidence.captures?.special_page_module_summary,
+  "syntax-pagepreview": detailedSpecEvidence.captures?.syntax_pagepreview,
+  "authenticated-structure":
+    detailedSpecEvidence.captures?.authenticated_structure,
+  "account-upgrade-nonpro":
+    detailedSpecEvidence.captures?.account_upgrade_nonpro,
+  "data-form-public-demos":
+    detailedSpecEvidence.captures?.data_form_public_demos,
+  "expressions-live-probes":
+    detailedSpecEvidence.captures?.expressions_live_probes,
+  "expressions-length-probes":
+    detailedSpecEvidence.captures?.expressions_length_probes,
+  "expressions-length-boundary-probes":
+    detailedSpecEvidence.captures?.expressions_length_boundary_probes,
+  "data-form-create-edit":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_create_edit,
+  "data-form-date-pagepath":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_date_pagepath,
+  "data-form-pagepath-control":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_control,
+  "data-form-pagepath-create-new":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_create_new,
+  "data-form-pagepath-root-bootstrap":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_root_bootstrap,
+  "data-form-pagepath-backlinks":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_pagepath_backlinks,
+  "data-form-file-field":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_file_field,
+  "data-form-images-links-youtube":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_images_links_youtube,
+  "data-form-youtube":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_youtube,
+  "data-form-output-css":
+    detailedSpecEvidence.retained_repository_evidence?.data_form_output_css,
+  "userinfo-targets":
+    detailedSpecEvidence.retained_repository_evidence?.userinfo_targets,
+  "category-template-lifecycle":
+    detailedSpecEvidence.retained_repository_evidence?.category_template_lifecycle,
+  "canonical-live-observations":
+    detailedSpecEvidence.retained_repository_evidence?.canonical_live_observations,
+});
 
 function page(fullname) {
   const value = pages.get(fullname);
@@ -1217,6 +1319,160 @@ function renderImplementationContract(feature) {
   return categoryContracts[feature.category] ?? platformSeams;
 }
 
+function validateDetailedContracts() {
+  invariant(
+    detailedContracts.schema === "wikijump.wikidot_detailed_feature_contracts.v1",
+    "Unexpected detailed feature contract schema",
+  );
+  invariant(
+    detailedContracts.evidence_manifest ===
+      "docs/wikidot-specifications/detailed-spec-evidence-20260816.json",
+    "Detailed feature contracts point at an unexpected evidence manifest",
+  );
+  invariant(
+    detailedSpecEvidence.schema === "wikijump.wikidot_detailed_spec_evidence.v1",
+    "Unexpected detailed specification evidence schema",
+  );
+  invariant(
+    /^[0-9a-f]{40}$/.test(
+      detailedContracts.source_gap_snapshot?.wikijump_commit ?? "",
+    ),
+    "Detailed feature contracts have no exact source-gap Wikijump commit",
+  );
+  invariant(
+    detailedContracts.source_gap_snapshot?.canonical_surface_count === 870,
+    "Detailed feature contracts have an unexpected canonical surface count",
+  );
+  invariant(
+    detailedContracts.source_gap_snapshot?.feature_count === 57,
+    "Detailed feature contracts must describe exactly 57 source-gap features",
+  );
+  invariant(
+    detailedContracts.features &&
+      !Array.isArray(detailedContracts.features) &&
+      typeof detailedContracts.features === "object",
+    "Detailed feature contracts features must be an object",
+  );
+  const contractIds = Object.keys(detailedContracts.features).sort();
+  invariant(
+    contractIds.length === detailedContracts.source_gap_snapshot.feature_count,
+    "Detailed feature contract feature count does not match the source-gap snapshot",
+  );
+  const catalogIds = new Set(features.map(({ id }) => id));
+  const axisIds = Object.keys(detailedContractAxes);
+  let axisCount = 0;
+  for (const featureId of contractIds) {
+    invariant(
+      catalogIds.has(featureId),
+      `Detailed feature contract refers to unknown catalog feature ${featureId}`,
+    );
+    const contract = detailedContracts.features[featureId];
+    invariant(
+      contract && typeof contract === "object" && !Array.isArray(contract),
+      `Detailed feature contract ${featureId} must be an object`,
+    );
+    invariant(
+      JSON.stringify(Object.keys(contract).sort()) ===
+        JSON.stringify(["axes", "evidence"]),
+      `Detailed feature contract ${featureId} has unknown fields`,
+    );
+    invariant(
+      Array.isArray(contract.evidence) &&
+        contract.evidence.length > 0 &&
+        new Set(contract.evidence).size === contract.evidence.length,
+      `Detailed feature contract ${featureId} has invalid evidence aliases`,
+    );
+    for (const alias of contract.evidence) {
+      const evidence = detailedEvidenceAliases[alias];
+      invariant(
+        evidence && typeof evidence === "object" && !Array.isArray(evidence),
+        `Detailed feature contract ${featureId} uses unknown evidence alias ${alias}`,
+      );
+      invariant(
+        typeof evidence.path === "string" && evidence.path.length > 0,
+        `Detailed evidence ${alias} has no path`,
+      );
+      invariant(
+        /^[0-9a-f]{64}$/.test(evidence.sha256 ?? ""),
+        `Detailed evidence ${alias} has no SHA-256`,
+      );
+      const evidencePath = evidence.path.startsWith("/")
+        ? evidence.path
+        : join(repositoryRoot, evidence.path);
+      const actual = readFileSync(evidencePath);
+      invariant(
+        sha256(actual) === evidence.sha256,
+        `Detailed evidence ${alias} hash drifted: ${evidence.path}`,
+      );
+    }
+    invariant(
+      contract.axes &&
+        !Array.isArray(contract.axes) &&
+        JSON.stringify(Object.keys(contract.axes)) === JSON.stringify(axisIds),
+      `Detailed feature contract ${featureId} must define P1-P8 in order`,
+    );
+    for (const axisId of axisIds) {
+      const requirements = contract.axes[axisId];
+      invariant(
+        Array.isArray(requirements) &&
+          requirements.length > 0 &&
+          new Set(requirements).size === requirements.length &&
+          requirements.every(
+            (value) =>
+              typeof value === "string" &&
+              value.trim() === value &&
+              value.length >= 40,
+          ),
+        `Detailed feature contract ${featureId} ${axisId} has invalid requirements`,
+      );
+      axisCount += 1;
+    }
+  }
+  invariant(
+    axisCount === 57 * Object.keys(detailedContractAxes).length,
+    "Detailed feature contract axis denominator is not exactly 456",
+  );
+  invariant(
+    detailedContractsReferent.endsWith("\n"),
+    "Detailed feature contract referent table must end with a newline",
+  );
+}
+
+function renderDetailedContract(feature) {
+  const contract = detailedContracts.features[feature.id];
+  if (!contract) return "";
+  const evidence = contract.evidence
+    .map((alias) => {
+      const item = detailedEvidenceAliases[alias];
+      const claim = typeof item.claim === "string" ? `: ${item.claim}` : "";
+      return `- \`${alias}\` -> \`${item.path}\` (SHA-256 \`${item.sha256}\`)${claim}`;
+    })
+    .join("\n");
+  const axes = Object.entries(detailedContractAxes)
+    .map(([axisId, title]) => `### ${axisId} - ${title}
+
+${contract.axes[axisId].map((requirement) => `- ${requirement}`).join("\n")}`)
+    .join("\n\n");
+  return `
+## Detailed conformance contract
+
+- Status: \`detailed-p1-p8\`
+- Source-gap snapshot: Wikijump \`${detailedContracts.source_gap_snapshot.wikijump_commit}\`
+- Evidence manifest: \`${detailedContracts.evidence_manifest}\`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+${evidence}
+
+${axes}
+`;
+}
+
 function specificationPath(feature) {
   return join("specifications", feature.category, `${feature.id}.md`);
 }
@@ -1253,6 +1509,9 @@ ${sourceRangeText(source)}
   const featureLiveObservations = liveObservations.observations.filter(
     (observation) => observation.feature_ids.includes(feature.id),
   );
+  const detailedStatus = detailedContracts.features[feature.id]
+    ? "- Detailed conformance status: `detailed-p1-p8`\n"
+    : "";
   const liveEvidence =
     featureLiveObservations.length === 0
       ? ""
@@ -1275,7 +1534,20 @@ Normative behavior:
 
 ${observation.normative_behavior.map((claim) => `- ${claim}`).join("\n")}
 
-Evidence:
+${
+  observation.raw_captures?.length > 0
+    ? `Raw HTTP captures:
+
+${observation.raw_captures
+  .map(
+    (capture) =>
+      `- ${capture.phase} stored locale \`${capture.stored_locale}\`: \`${capture.path}\` (SHA-256 \`${capture.sha256}\`)`,
+  )
+  .join("\n")}
+
+`
+    : ""
+}Evidence:
 
 ${observation.evidence
   .map(
@@ -1300,7 +1572,7 @@ ${observation.evidence
 - Feature ID: \`${feature.id}\`
 - Category: \`${feature.category}\`
 - Documentation status: \`${feature.documentation_status}\`
-- Specification source: frozen local Wikidot documentation corpus
+${detailedStatus}- Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
 ## Purpose
@@ -1314,7 +1586,7 @@ ${requirements}
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
-${liveEvidence}
+${renderDetailedContract(feature)}${liveEvidence}
 
 ## Suggested public TDD seams
 
@@ -1335,6 +1607,8 @@ ${sourceList}
 ${evidence}
 `;
 }
+
+validateDetailedContracts();
 
 features.sort(
   (left, right) =>
@@ -1488,9 +1762,11 @@ const catalog = {
   })),
 };
 const serializedCatalog = `${JSON.stringify(catalog, null, 2)}\n`;
-const implementationLedger = JSON.parse(
-  readFileSync(implementationLedgerSourcePath, "utf8"),
+const rawImplementationLedger = readFileSync(
+  implementationLedgerSourcePath,
+  "utf8",
 );
+const implementationLedger = JSON.parse(rawImplementationLedger);
 validateWikidotImplementationLedger({
   ledger: implementationLedger,
   rawCatalog: serializedCatalog,
@@ -1527,6 +1803,34 @@ const catalogRows = features
 const categorySummary = Object.entries(catalog.categories)
   .map(([category, count]) => `- \`${category}\`: ${count}`)
   .join("\n");
+const detailedSourceGapFeatures = features.filter(
+  (feature) => detailedContracts.features[feature.id],
+);
+const detailedSourceGapSections = [...new Set(
+  detailedSourceGapFeatures.map((feature) => feature.category),
+)]
+  .sort()
+  .map((category) => {
+    const rows = detailedSourceGapFeatures
+      .filter((feature) => feature.category === category)
+      .map(
+        (feature) =>
+          `- [${feature.title}](${specificationPath(feature)}) (\`${feature.id}\`, \`${feature.documentation_status}\`)`,
+      )
+      .join("\n");
+    return `## ${category}\n\n${rows}`;
+  })
+  .join("\n\n");
+const detailedSourceGapIndex = `# Detailed P1-P8 compatibility contract library
+
+This is the human-readable table of contents for the 57 features hardened in the 2026-08-16 source-gap snapshot whose generated specifications contain a normative \`detailed-p1-p8\` conformance contract. It is a stable contract library, not the live implementation queue: select current work from the canonical compatibility ledger, then use this index when the selected feature has a hardened contract.
+
+- Machine-readable contract set: [detailed-feature-contracts.json](detailed-feature-contracts.json)
+- Evidence manifest: [detailed-spec-evidence-20260816.json](detailed-spec-evidence-20260816.json)
+- Complete 210-feature catalog: [CATALOG.md](CATALOG.md)
+
+${detailedSourceGapSections}
+`;
 const catalogMarkdown = `# Wikidot feature catalog
 
 This is the human-readable index of every feature extracted from the frozen local Wikidot documentation corpus. The authoritative machine-readable form is [catalog.json](catalog.json); source-page disposition is recorded in [source-coverage.json](source-coverage.json).
@@ -1540,6 +1844,8 @@ This is the human-readable index of every feature extracted from the frozen loca
 - Corpus pages connected to one or more feature IDs: ${sourcePagesWithFeatures}
 - Corpus pages classified without a feature ID: ${sourcePagesWithoutFeatures}
 - Unclassified corpus pages: 0
+- Hardened P1-P8 snapshot contracts: ${Object.keys(detailedContracts.features).length}
+- Hardened contract navigation: [P1-P8 contract library](DETAILED_SOURCE_GAP_SPECIFICATIONS.md)
 
 Features by category:
 
@@ -1568,11 +1874,14 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 
 - \`catalog.json\` is the authoritative machine-readable feature index.
 - \`CATALOG.md\` is the human-readable index.
+- \`DETAILED_SOURCE_GAP_SPECIFICATIONS.md\` is the human-readable library of the 57 features hardened in the 2026-08-16 source-gap snapshot, linking directly to each normative P1-P8 specification. It is not the live work queue.
 - \`source-coverage.json\` proves that all ${pages.size.toLocaleString("en-US")} corpus pages were enumerated and classified, while listing only non-user pages individually.
 - \`live-observations.json\` records reproducible live-Wikidot corrections that override conflicting or incomplete corpus claims.
 - \`implementation-ledger.json\` tracks status, seams, tests, implementation files, evidence, blockers, and the campaign's P1-P8 feature-property matrix.
+- \`detailed-feature-contracts.json\` is the machine-readable P1-P8 contract set for the 57 features hardened in that snapshot against current Wikidot evidence.
+- \`detailed-spec-evidence-20260816.json\` seals the documentation, live Wikidot, and retained evidence used by those detailed contracts without storing credentials or private message content.
 - \`specifications/\` contains exactly one English Markdown specification for every catalog item.
-- \`IMPLEMENTATION_PROMPT.md\` instructs a coding agent to implement the complete catalog using vertical-slice TDD.
+- \`IMPLEMENTATION_PROMPT.md\` gives a coding agent the vertical-slice TDD mechanics for current ledger-selected compatibility work.
 
 ## Interpretation rules
 
@@ -1581,6 +1890,7 @@ This directory is an exhaustive, documentation-derived implementation inventory 
 3. Every normative source extract retains its exact corpus page, original line numbers, and complete-file SHA-256.
 4. Documentation status matters. \`invocation-only\`, \`high-level-documentation\`, and \`partially-documented\` specs identify real features but do not authorize invented behavior.
 5. This snapshot is a specification-discovery input. When a reproducible live Wikidot observation conflicts with it, record both and implement live behavior.
+6. A specification marked \`detailed-p1-p8\` has explicit normative coverage for all P1-P8 axes. A fail-closed statement in that section is an intentional compatibility boundary, not permission to infer the missing behavior from local output.
 
 ## Regeneration
 
@@ -1592,16 +1902,16 @@ node scripts/generate-wikidot-specifications.mjs --check
 Set \`WIKIDOT_DOCUMENTATION_CORPUS\` only when regenerating from a different checkout of the same corpus layout.
 `;
 
-const implementationPrompt = `# Prompt: implement the complete Wikidot feature catalog with TDD
+const implementationPrompt = `# Prompt: implement current Wikidot compatibility work with TDD
 
-Here is the specification set. Implement every feature listed in \`docs/wikidot-specifications/catalog.json\` using test-driven development. Treat the catalog as one coherent compatibility campaign rather than creating one pull request per feature.
+This directory is the complete feature specification set. Select implementation work from the current canonical compatibility ledger and current blocker/issue authority, then use the matching catalog specification with test-driven development. Do not treat the catalog size or the hardened-contract snapshot as a mutable progress queue, and do not create one pull request per feature.
 
 ## Inputs
 
 1. Read the repository's \`AGENTS.md\` completely.
-2. Read \`docs/wikidot-specifications/catalog.json\`. It is the complete work queue; do not substitute a hand-selected subset.
-3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`.
-4. For each catalog item, read the exact Markdown file named by its \`specification\` field before designing or changing code.
+2. Read the current canonical compatibility ledger to select the current row/dimension. Then resolve that row in \`docs/wikidot-specifications/catalog.json\`, which is the complete feature index rather than the live queue.
+3. Read \`docs/wikidot-specifications/CATALOG.md\` and \`docs/wikidot-specifications/README.md\`. \`DETAILED_SOURCE_GAP_SPECIFICATIONS.md\` is the hardened P1-P8 contract library from its frozen snapshot; use it when the selected current feature is present there.
+4. For the selected catalog item, read the exact Markdown file named by its \`specification\` field before designing or changing code.
 5. Use \`docs/wikidot-specifications/source-coverage.json\` to inspect corroborating, redirect, runtime-composition, and non-feature source classifications when provenance is relevant. User-submitted data-record groups are aggregate-only and are never behavioral evidence.
 6. Follow the repository architecture boundaries: FTML owns syntax parsing and rendering primitives; Wikijump/Deepwell owns site, page, query, import, file, permission, actor, module evaluation, and URL state; Framerail owns HTTP and browser runtime behavior.
 
@@ -1612,12 +1922,13 @@ Here is the specification set. Implement every feature listed in \`docs/wikidot-
 - Live Wikidot is the behavioral oracle when the snapshot is ambiguous, incomplete, contradictory, or wrong.
 - For an \`invocation-only\`, \`high-level-documentation\`, or \`partially-documented\` item, do not invent missing semantics. Design a minimal live-oracle experiment, preserve the evidence and exact fixture, update the specification, and then implement the observed behavior.
 - Unsupported or unverified input must fail closed, remain literal, or use an evidenced fallback. It must not silently broaden queries or permissions.
+- Once live evidence establishes a behavior, reproduce that boundary even when it is less defensive than a modern implementation would normally choose. Do not keep a stricter security or resource behavior merely as hardening. Record concerning oracle behavior in \`docs/wikidot-compatibility-security.md\`; any stricter intentional divergence requires an explicit product decision and is not exact parity.
 
 ## Mandatory TDD process
 
-Before writing any test, produce a seam map for the current vertical slice and obtain confirmation. State the public interface being tested and why it is the appropriate observable boundary. Suggested seams in each spec are recommendations, not pre-approval.
+Before writing a test, state the seam map for the current vertical slice: the public interface being tested, the authority for the expected behavior, and why that seam is the appropriate observable boundary. Proceed when current authority is sufficient. Seek external/human authority only when the behavior or product/security decision is genuinely underdetermined; ordinary implementation must not stop for ceremonial confirmation. Suggested seams in each spec are recommendations, not pre-approval.
 
-Then repeat this loop for every behavior in every catalog item:
+Then repeat this loop for each selected current behavior:
 
 1. Select one small, user-observable vertical slice.
 2. Write one behavior-focused test through the confirmed public seam.
@@ -1649,7 +1960,7 @@ Add regression tests for every discovered defect. Preserve the original failing 
 
 ## Work tracking
 
-Create a machine-readable implementation ledger keyed by every \`catalog.json\` feature ID. Each entry must record:
+Maintain the existing machine-readable implementation ledger keyed by \`catalog.json\` feature ID; do not create a second progress ledger. Each entry records:
 
 - status: \`pending\`, \`in_progress\`, \`implemented\`, or \`blocked\`;
 - confirmed public seams;
@@ -1677,14 +1988,7 @@ Keep the work in one focused campaign and normal review sequence unless reposito
 
 Run focused tests during each slice, then run formatting, linting, clippy/build checks, relevant integration suites, verifier suites, and browser tests in proportion to the changed surfaces. For browser-visible behavior, capture fresh evidence against exact source, dependency, fixture, and runtime identities and check visible intermediate states as well as settled DOM.
 
-Do not declare completion until:
-
-- every catalog item has a terminal ledger status;
-- every documented behavior has regression coverage;
-- every differential or fuzz result is classified;
-- no known reproducible compatibility gap lacks a fix or concrete blocker;
-- generated catalog/specification validation passes;
-- the normal project review and merge process has completed without force or admin merge.
+Do not declare campaign completion from this feature prompt. Feature work is complete only when its current ledger dimensions satisfy the compatibility charter, and campaign completion remains the authoritative final-zero condition in \`/home/roku/wjlab/plan.md\`. In particular, keep generated specification validation green, classify every discovered differential or fuzz result, leave no known reproducible gap without a fix or concrete blocker, and use the normal review/merge/standing process without force or admin merge.
 
 A merge is not a deployment. After browser-visible changes, refresh the standing runtime and verify the served URL before reporting the behavior fixed.
 `;
@@ -1692,12 +1996,26 @@ A merge is not a deployment. After browser-visible changes, refresh the standing
 const expectedFiles = new Map([
   ["README.md", readme],
   ["CATALOG.md", catalogMarkdown],
+  ["DETAILED_SOURCE_GAP_SPECIFICATIONS.md", detailedSourceGapIndex],
   ["catalog.json", serializedCatalog],
+  [
+    "detailed-feature-contracts.json",
+    `${JSON.stringify(detailedContracts, null, 2)}\n`,
+  ],
+  [
+    "detailed-spec-evidence-20260816.json",
+    `${JSON.stringify(detailedSpecEvidence, null, 2)}\n`,
+  ],
+  ["referent-table-detailed-feature-contracts.md", detailedContractsReferent],
+  [
+    "referent-table-detailed-feature-contracts.sha256",
+    `${sha256(detailedContractsReferent)}  referent-table-detailed-feature-contracts.md\n`,
+  ],
   ["source-coverage.json", `${JSON.stringify(coverage, null, 2)}\n`],
   ["live-observations.json", `${JSON.stringify(liveObservations, null, 2)}\n`],
   [
     "implementation-ledger.json",
-    `${JSON.stringify(implementationLedger, null, 2)}\n`,
+    rawImplementationLedger,
   ],
   ["IMPLEMENTATION_PROMPT.md", implementationPrompt],
   ...specificationFiles,

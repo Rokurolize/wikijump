@@ -11,6 +11,8 @@ This is the human-readable index of every feature extracted from the frozen loca
 - Corpus pages connected to one or more feature IDs: 241
 - Corpus pages classified without a feature ID: 1565
 - Unclassified corpus pages: 0
+- Hardened P1-P8 snapshot contracts: 57
+- Hardened contract navigation: [P1-P8 contract library](DETAILED_SOURCE_GAP_SPECIFICATIONS.md)
 
 Features by category:
 

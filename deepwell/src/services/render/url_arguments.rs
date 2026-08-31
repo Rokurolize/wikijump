@@ -26,17 +26,22 @@
 
 use super::backlinks::BACKLINKS_MODULE_REGEX;
 use super::child_pages::CHILD_PAGES_MODULE_REGEX;
+use super::count_pages_recognition::wikitext_has_executable_count_pages_module;
 use super::link_modules::{ORPHANED_PAGES_MODULE_REGEX, WANTED_PAGES_MODULE_REGEX};
 use super::list_pages::{
-    parse_list_pages_arguments,
-    scanner::{find_list_pages_module_matches, list_pages_runtime_head_can_execute},
+    parse_list_pages_arguments, scanner::find_list_pages_module_matches,
+    wikitext_has_executable_list_pages_module,
 };
+use super::literal_regions::LiteralRegionIndex;
+use super::new_page_module::wikitext_has_runtime_dependent_new_page_module;
 use super::next_previous_page::NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX;
 use super::page_tree::PAGE_TREE_MODULE_REGEX;
 use super::pages::PAGES_MODULE_REGEX;
-use super::pages_by_tag::PAGES_BY_TAG_MODULE_REGEX;
+use super::pages_by_tag::{PAGES_BY_TAG_MODULE_REGEX, parse_pages_by_tag_arguments};
+use super::runtime_modules::wikitext_has_executable_tag_cloud_module;
 use super::service::RATEDPAGES_MODULE_REGEX;
 use super::site_utility_modules::wikitext_requires_site_utility_runtime_render;
+use super::user_directory::wikitext_has_executable_members_module;
 use crate::services::page_query::OrderProperty;
 use regex::Regex;
 use std::borrow::Cow;
@@ -189,6 +194,22 @@ fn list_pages_argument_key<'a>(
 /// not required for a request path to affect the rendered result.
 static LIST_PAGES_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listpages\b").unwrap());
+static WWW_SPECIAL_RUNTIME_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"(?is)\[\[\s*module\s+(?:createaccount|deleteaccount|frontspecialmini|newsite|sitestagcloud)\b",
+    )
+    .expect("www special runtime-module expression should compile")
+});
+
+fn wikitext_has_www_special_runtime_module(wikitext: &str) -> bool {
+    if !WWW_SPECIAL_RUNTIME_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literals = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    WWW_SPECIAL_RUNTIME_MODULE_REGEX
+        .find_iter(wikitext)
+        .any(|module| !literals.contains(module.start()))
+}
 
 /// Whether this wikitext holds a module whose output depends on the request's
 /// URL path arguments.
@@ -200,7 +221,7 @@ static LIST_PAGES_MODULE_REGEX: LazyLock<Regex> =
 /// produced before arguments were routed at all.
 pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
-        || PAGES_BY_TAG_MODULE_REGEX.is_match(wikitext)
+        || wikitext_has_supported_pages_by_tag_module(wikitext)
         || PAGE_CALENDAR_MODULE_REGEX.is_match(wikitext)
         || LIST_PAGES_URL_SELECTOR_REGEX.is_match(wikitext)
         || NEXT_PREVIOUS_PAGE_MODULE_OPEN_REGEX.is_match(wikitext)
@@ -211,12 +232,18 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
 
 /// Whether a page view must render from source even without URL arguments.
 ///
-/// `Pages` is a live site index. Its first page changes when pages are created,
-/// renamed, deleted, or become visible, so stored revision HTML cannot answer
+/// `Pages` is a live site index, `PagesByTag` is a live tag/category query, and
+/// `Members` is a live site-membership query. Their results change when the
+/// corresponding runtime state changes, so stored revision HTML cannot answer
 /// even the bare request.
 pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
+        || wikitext_has_supported_pages_by_tag_module(wikitext)
         || wikitext_has_executable_list_pages_module(wikitext)
+        || wikitext_has_executable_count_pages_module(wikitext)
+        || wikitext_has_executable_tag_cloud_module(wikitext)
+        || wikitext_has_runtime_dependent_new_page_module(wikitext)
+        || wikitext_has_www_special_runtime_module(wikitext)
         || CHILD_PAGES_MODULE_REGEX.is_match(wikitext)
         || BACKLINKS_MODULE_REGEX.is_match(wikitext)
         || PAGE_TREE_MODULE_REGEX.is_match(wikitext)
@@ -229,6 +256,7 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_BY_PASSWORD_MODULE_REGEX.is_match(wikitext)
         || MEMBERSHIP_MODULE_REGEX.is_match(wikitext)
+        || wikitext_has_executable_members_module(wikitext)
         || FORUM_MINI_MODULE_REGEX.is_match(wikitext)
         || FORUM_MODULE_REGEX.is_match(wikitext)
         || SEARCH_ALL_MODULE_REGEX.is_match(wikitext)
@@ -238,11 +266,20 @@ pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
         || wikitext_has_random_list_pages_module(wikitext)
 }
 
-fn wikitext_has_executable_list_pages_module(wikitext: &str) -> bool {
-    find_list_pages_module_matches(wikitext)
-        .iter()
-        .any(|module| {
-            !module.preserve_original && list_pages_runtime_head_can_execute(module.head)
+fn wikitext_has_supported_pages_by_tag_module(wikitext: &str) -> bool {
+    if !PAGES_BY_TAG_MODULE_REGEX.is_match(wikitext) {
+        return false;
+    }
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    PAGES_BY_TAG_MODULE_REGEX
+        .captures_iter(wikitext)
+        .any(|captures| {
+            let module = captures
+                .get(0)
+                .expect("a PagesByTag capture always has a complete match");
+            let head = captures.name("head").map_or("", |head| head.as_str());
+            !literal_regions.contains(module.start())
+                && parse_pages_by_tag_arguments(head).is_some()
         })
 }
 
@@ -271,8 +308,91 @@ mod tests {
     };
 
     #[test]
+    fn executable_tag_cloud_requires_runtime_rendering() {
+        assert!(wikitext_requires_runtime_render("[[module TagCloud]]"));
+        assert!(!wikitext_requires_runtime_render(
+            "[[module TagCloud mode=\"3d\"]]"
+        ));
+        assert!(!wikitext_requires_runtime_render(
+            "[[code]]\n[[module TagCloud]]\n[[/code]]"
+        ));
+    }
+
+    #[test]
+    fn only_executable_template_backed_newpage_modules_require_runtime_rendering() {
+        assert!(!wikitext_reads_url_arguments(
+            r#"[[module NewPage template="template:alpha"]]"#,
+        ));
+        for source in [
+            r#"[[module NewPage template="template:alpha"]]"#,
+            r#"[[module NEWPAGE template="template:alpha"]]"#,
+            r#"[[module NewPage template="" template="template:alpha"]]"#,
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+        }
+
+        for source in [
+            "[[module NewPage]]",
+            r#"[[module NewPage template=""]]"#,
+            r#"[[module NewPage template="template:alpha" template=""]]"#,
+            r#"[[module NewPage template='template:alpha']]"#,
+            r#"[[module NewPage template="ordinary-page,template:alpha"]]"#,
+            "[[code]]\n[[module NewPage template=\"template:alpha\"]]\n[[/code]]",
+            "<pre>[[module NewPage template=\"template:alpha\"]]</pre>",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source), "{source}");
+        }
+        assert!(wikitext_requires_runtime_render(
+            r#"[[module NewPage template="template:alpha,ordinary-page"]]"#,
+        ));
+
+        let at_template_budget = (0..32)
+            .map(|index| format!("template:fixture-{index}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        assert!(wikitext_requires_runtime_render(&format!(
+            r#"[[module NewPage template="{at_template_budget}"]]"#,
+        )));
+        let over_template_budget = format!("{at_template_budget},template:fixture-32");
+        assert!(!wikitext_requires_runtime_render(&format!(
+            r#"[[module NewPage template="{over_template_budget}"]]"#,
+        )));
+
+        let module_at_budget = format!(
+            "{}\n[[module NewPage template=\"template:within-budget\"]]",
+            "[[module NewPage]]\n".repeat(63),
+        );
+        assert!(wikitext_requires_runtime_render(&module_at_budget));
+        let module_after_budget = format!(
+            "{}[[module NewPage template=\"template:after-budget\"]]",
+            "[[module NewPage]]\n".repeat(64),
+        );
+        assert!(!wikitext_requires_runtime_render(&module_after_budget));
+    }
+
+    #[test]
     fn a_pages_by_tag_module_reads_url_arguments() {
         assert!(wikitext_reads_url_arguments("[[module PagesByTag]]"));
+        assert!(!wikitext_reads_url_arguments(
+            r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
+        ));
+        assert!(!wikitext_reads_url_arguments(
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
+        ));
+    }
+
+    #[test]
+    fn a_pages_by_tag_module_always_requires_runtime_rendering() {
+        assert!(wikitext_requires_runtime_render(
+            r#"[[module PagesByTag tag="alpha" category="news"]]"#,
+        ));
+        assert!(wikitext_requires_runtime_render("[[module PagesByTag]]"));
+        assert!(!wikitext_requires_runtime_render(
+            r#"[[module PagesByTag tag="alpha" limit="5"]]"#,
+        ));
+        assert!(!wikitext_requires_runtime_render(
+            "[[code]]\n[[module PagesByTag tag=\"alpha\"]]\n[[/code]]",
+        ));
     }
 
     #[test]
@@ -313,6 +433,64 @@ mod tests {
         ));
         assert!(wikitext_requires_runtime_render(
             r#"[[module MembershipByPassword]]"#
+        ));
+    }
+
+    #[test]
+    fn executable_count_pages_requires_runtime_render_without_reading_url_arguments() {
+        for source in [
+            "[[module CountPages category=\"news\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"news\" tags=\"@URL|+fresh\"]]%%total%%[[/module]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+
+        for source in [
+            "[[module CountPages tags=\"@URL\"]]%%total%%[[/module]]",
+            "[[module CountPages category=\"*\"]]%%total%%[[/module]]",
+            "[[code]]\n[[module CountPages category=\"news\"]]%%total%%[[/module]]\n[[/code]]",
+            "[[module CountPages]][[/module]]",
+        ] {
+            assert!(!wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+    }
+
+    #[test]
+    fn executable_members_requires_runtime_render_without_reading_url_arguments() {
+        for source in [
+            "[[module Members]]",
+            r#"[[module Members group="admins" order="name"]]"#,
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+
+        for source in [
+            "[[code]]\n[[module Members]]\n[[/code]]",
+            "<pre>[[module Members]]</pre>",
+            r#"[[module Members group="owners"]]"#,
+        ] {
+            assert!(!wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+    }
+
+    #[test]
+    fn hardened_www_system_modules_require_view_time_rendering() {
+        for source in [
+            "[[module CreateAccount]]",
+            "[[module DeleteAccount]]",
+            "[[module FrontSpecialMini]]",
+            "[[module NewSite]]",
+            "[[module SitesTagCloud limit=\"200\"]]",
+        ] {
+            assert!(wikitext_requires_runtime_render(source), "{source}");
+            assert!(!wikitext_reads_url_arguments(source), "{source}");
+        }
+        assert!(!wikitext_requires_runtime_render(
+            "[[code]]\n[[module CreateAccount]]\n[[/code]]"
         ));
     }
 

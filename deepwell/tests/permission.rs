@@ -107,6 +107,7 @@ impl PermissionFixture {
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
             },
+            None,
         )
         .await
         .expect("Failed to create test site");
@@ -1473,10 +1474,52 @@ async fn page_revision_visibility_requires_actual_page_category_edit_permission(
             "page_id": page.page_id,
             "revision_id": page.revision_id,
             "user_id": f.user_a,
-            "hidden": ["comments"],
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["unknown"],
         }),
     );
     assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    let spoofed = run_endpoint_err!(
+        runner,
+        page_revision_edit,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page.page_id,
+            "revision_id": page.revision_id,
+            "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
+            "hidden": ["unknown"],
+        }),
+    );
+    assert_contains_error!(spoofed, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(page.page_id)),
+        ..Default::default()
+    });
+    let unchanged = run_endpoint!(
+        runner,
+        page_revision_get,
+        json!({
+            "site_id": f.site_id,
+            "page_id": page.page_id,
+            "revision_number": 0,
+        }),
+    )
+    .expect("the denied revision should remain readable");
+    assert!(
+        unchanged.hidden.is_empty(),
+        "denied and spoofed callers must not update revision visibility",
+    );
 
     runner.set_request_context(RequestContext {
         user_id: Some(f.user_b),
@@ -1492,6 +1535,7 @@ async fn page_revision_visibility_requires_actual_page_category_edit_permission(
             "page_id": page.page_id,
             "revision_id": page.revision_id,
             "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["comments"],
         }),
     );
@@ -1564,6 +1608,7 @@ async fn page_revision_visibility_rejects_a_revision_from_another_page() {
             "page_id": page_a.page_id,
             "revision_id": page_b.revision_id,
             "user_id": f.user_b,
+            "ip_address": common::IP_ADDRESS,
             "hidden": ["comments"],
         }),
     );
@@ -1802,6 +1847,7 @@ async fn get_permissions_for_role_rejects_cross_site_numeric_role_id() {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("Failed to create other test site");

@@ -20,6 +20,35 @@ Every explicit default, accepted value, rejected value, alias, limit, interactio
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
 
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Wikidot document shells propagate the stored locale verbatim
+
+- Observation ID: `wikidot-document-shell-stored-locale-20260722`
+- Classification: `documentation-omission`
+- Observed at: `2026-07-22`
+- Analysis: Raw HTTP responses for the same run-owned sandbox article, captured immediately before and after the stored site locale changed from en to ja-corrections, isolate the document-shell language fields. This observation is intentionally limited to those two stored-locale values on a Wikidot article document shell; it does not establish native Japanese-site behavior, locale negotiation, translation behavior, error shells, or non-Wikidot routes.
+
+Normative behavior:
+
+- For each captured stored locale, the raw Wikidot article response starts with an html element whose attributes are exactly xmlns="http://www.w3.org/1999/xhtml", xml:lang="LOCALE", and lang="LOCALE" in that order.
+- Each captured raw response contains exactly one <meta http-equiv="content-language" content="LOCALE"/> element using the same stored locale.
+- The captured ja-corrections value is propagated verbatim in the root attributes and content-language metadata; the en capture is the before-mutation control.
+- The evidence establishes only exact stored-locale propagation on the captured Wikidot article document shell. It makes no claim about native Japanese sites, other language effects, error shells, special routes, API responses, or Wikijump-layout documents.
+
+Raw HTTP captures:
+
+- before stored locale `en`: `/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/before.http.html` (SHA-256 `6861d8b772e6585475ab13c078fd7d9aaf53af5a4ee2f4ec17afc233bcad572b`)
+- after stored locale `ja-corrections`: `/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/after.http.html` (SHA-256 `0641a8b445541eb39ffec2304dc5d8acac6b331ab26befecee016b60ed31c292`)
+
+Evidence:
+
+- `/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/verdict.json` (SHA-256 `45d07066f84d8990b768817a522a53c3b2d260f9baac8bc040527c6c70462275`), cases: none
+
+
 
 ## Suggested public TDD seams
 

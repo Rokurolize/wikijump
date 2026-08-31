@@ -341,6 +341,19 @@ pub(super) fn render_pages_module(
     output
 }
 
+pub(super) fn wikitext_has_executable_pages_module(wikitext: &str) -> bool {
+    PAGES_MODULE_REGEX.captures_iter(wikitext).any(|captures| {
+        let module = captures
+            .get(0)
+            .expect("a Pages capture always has a complete match");
+        !RenderService::is_inside_wikidot_literal_region(wikitext, module.start())
+            && parse_pages_module_arguments(
+                captures.name("head").map_or("", |head| head.as_str()),
+            )
+            .is_some()
+    })
+}
+
 fn parse_pages_module_arguments(head: &str) -> Option<PagesModuleArguments> {
     let mut arguments = PagesModuleArguments::default();
     for argument in wikidot_module_arguments(head)? {

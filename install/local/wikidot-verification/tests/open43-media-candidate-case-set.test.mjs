@@ -17,12 +17,14 @@ import {
 } from "../src/open43-media-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
-const hash = (character) => character.repeat(64);
-const git = (character) => character.repeat(40);
+const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
+const hash = (character) => mixedHex(character, 64);
+const git = (character) => mixedHex(character, 40);
 const INITIAL_BYTES = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAQAAAACAQMAAABFZu8gAAAAA1BMVEX/AAAZ4gk3AAAADElEQVQI12NgYGAAAAAEAAEnNCcKAAAAAElFTkSuQmCC",
   "base64",
 );
+const WIKIDOT_MISSING_FILE_HTML = Buffer.from("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n     \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"en\">\n    <head>\n        <title>The file does not exist</title>\n    </head>\n    <body>\n        <p>The file does not exist.</p>\n        <p><a href=\"/\">Go to the site the file comes from</a>.</p>\n    </body>\n</html>\n\n");
 function candidateIdentity() {
   return {
     schema: "wikijump.standing_candidate_parity_identity.v1",
@@ -100,12 +102,20 @@ async function createFakeCandidate({
 } = {}) {
   const state = {
     page: null,
+    site: {
+      site_id: 7,
+      settings_revision: 1,
+      favicon_source: null,
+      ios_icon_source: null,
+      windows_tile_source: null,
+    },
     pending: new Map(),
     files: new Map(),
     nextFileId: 40,
     nextRevisionId: 50,
     cancelled: [],
     presignedPutFailed: false,
+    fileCreateCalls: 0,
   };
 
   function row(file) {
@@ -155,7 +165,16 @@ async function createFakeCandidate({
     for await (const chunk of request) chunks.push(chunk);
     const payload = JSON.parse(Buffer.concat(chunks));
     const { id, method, params = {} } = payload;
-    if (method === "site_get") return jsonRpc(response, id, { site_id: 7 });
+    if (method === "site_get") return jsonRpc(response, id, { ...state.site });
+    if (method === "site_update") {
+      if (!isEditor(request)) return rpcError(response, id, "denied");
+      if (params.expected_settings_revision !== state.site.settings_revision) return rpcError(response, id, "stale site settings revision");
+      for (const field of ["favicon_source", "ios_icon_source", "windows_tile_source"]) {
+        if (Object.hasOwn(params, field)) state.site[field] = params[field];
+      }
+      state.site.settings_revision += 1;
+      return jsonRpc(response, id, { ...state.site });
+    }
     if (method === "page_get") {
       return jsonRpc(
         response,
@@ -273,6 +292,7 @@ async function createFakeCandidate({
       deleted: false,
     };
     state.files.set(file.file_id, file);
+    state.fileCreateCalls += 1;
     response.writeHead(200, { "content-type": "application/json" });
     response.end(actionResult("success", 200));
   }
@@ -292,8 +312,13 @@ async function createFakeCandidate({
       decodeURIComponent(match[2]),
     );
     if (file === null) {
-      response.writeHead(404, { "content-type": "text/html" });
-      response.end("missing");
+      if (!resized && request.method === "GET") {
+        response.writeHead(200, { "content-type": "text/html; charset=utf-8", "content-length": String(WIKIDOT_MISSING_FILE_HTML.length) });
+        response.end(WIKIDOT_MISSING_FILE_HTML);
+      } else {
+        response.writeHead(404, { "content-type": "text/html" });
+        response.end(request.method === "HEAD" ? undefined : "missing");
+      }
       return;
     }
     const servedOriginal =
@@ -349,6 +374,26 @@ async function createFakeCandidate({
       }
       if (request.url?.includes("?/fileUpload") && request.method === "POST") {
         await handleAction(request, response);
+        return;
+      }
+      if (request.url === "/local--favicon/favicon.gif") {
+        if (state.site.favicon_source === null) {
+          response.writeHead(404).end();
+        } else {
+          response.writeHead(302, { location: state.site.favicon_source }).end();
+        }
+        return;
+      }
+      const legacy = request.url?.match(/^\/local--files\/([^/]+)\/([^/?]+)$/u);
+      if (legacy) {
+        const originalHost = String(request.headers["x-fixture-original-host"] ?? "");
+        if (originalHost.endsWith(".wikijump.localhost")) {
+          response.writeHead(302, {
+            location: `https://scpaiueouiuiuiui.wjfiles.localhost:18443${request.url}`,
+          }).end();
+        } else {
+          serveFile(request, response, legacy, false);
+        }
         return;
       }
       const original = request.url?.match(/^\/-\/file\/([^/]+)\/([^/?]+)$/u);
@@ -422,6 +467,10 @@ function caseSetFor(candidate, sessionOptions = {}) {
     return await requestCandidateCaseHttp({
       ...options,
       url,
+      headers: {
+        ...(options.headers ?? {}),
+        "x-fixture-original-host": original.hostname,
+      },
       connectAddress: null,
       tlsCa: null,
     });
@@ -451,6 +500,7 @@ async function runFixture(
     privateInputSha256: hash("e"),
     outputDir: path.join(root, "evidence"),
     caseSet,
+    runId: "candidate-run-0123456789ab",
     signal,
     dependencies: {
       collectExecutionIdentity: async () => ({
@@ -466,16 +516,16 @@ async function runFixture(
       assertStableRuntimeIdentity(before, after) {
         assert.deepEqual(after, before);
       },
-      runId: () => "candidate-case-0123456789ab",
       now: () => "2026-08-10T00:00:00.000Z",
     },
   });
 }
 
-test("the source-owned media CandidateCaseSet fixes the final four-case denominator", () => {
+test("the source-owned media CandidateCaseSet fixes the runtime media denominator", () => {
   const caseSet = createOpen43MediaCandidateCaseSet();
   assert.deepEqual(caseSet.caseIds, OPEN43_MEDIA_CASE_IDS);
   assert.deepEqual(OPEN43_MEDIA_CASE_IDS, [
+    "M756_LOCAL_ROUTE_BYTES",
     "M1039_MUTATION_TO_NEXT_READ",
     "M1043_RESIZED_BLOB_IDENTITY",
     "M1062_SERIALIZABLE_ACTION_RESPONSE",
@@ -483,7 +533,7 @@ test("the source-owned media CandidateCaseSet fixes the final four-case denomina
   ]);
 });
 
-test("shared runner proves all four media cases through public HTTP and cleans the namespace", async (t) => {
+test("shared runner proves all runtime media cases through public HTTP and cleans the namespace", async (t) => {
   const candidate = await createFakeCandidate();
   t.after(() => candidate.close());
   const receipt = await runFixture(t, candidate);
@@ -496,6 +546,19 @@ test("shared runner proves all four media cases through public HTTP and cleans t
   assert.equal(candidate.state.page, null);
   assert.equal(candidate.state.pending.size, 0);
   assert.ok([...candidate.state.files.values()].every((file) => file.deleted));
+  assert.equal(candidate.state.fileCreateCalls, 1);
+  const actionCase = receipt.cases.find((entry) => entry.case_id === "M1062_SERIALIZABLE_ACTION_RESPONSE");
+  const actionReceipt = JSON.parse(await fs.readFile(actionCase.path, "utf8"));
+  assert.deepEqual(
+    actionReceipt.observations.failed_put.adapter_events.map(({ service, operation, method }) => [service, operation, method]),
+    [
+      ["deepwell", "page_edit_permission", "POST"],
+      ["deepwell", "blob_upload", "POST"],
+      ["object-store", "presigned_put", "PUT"],
+      ["deepwell", "blob_cancel", "POST"],
+    ],
+  );
+  assert.equal(actionReceipt.observations.failed_put.adapter_events.some(({ operation }) => operation === "file_create"), false);
   assert.equal(
     JSON.stringify(receipt).includes("editor-session"),
     false,
@@ -511,7 +574,7 @@ test("pending release proof binds the replacement result rather than the earlier
   const candidate = await createFakeCandidate();
   t.after(() => candidate.close());
   const receipt = await runFixture(t, candidate);
-  const pending = receipt.resources.find((resource) => resource.kind === "pending-blob");
+  const pending = receipt.resources.find((resource) => resource.release_proof?.state === "consumed-by-file-revision");
   const revisedFile = [...candidate.state.files.values()].find((file) => file.name === "renamed.png");
   assert.equal(pending.release_proof.file_revision_id, revisedFile.revision_id);
   assert.equal(pending.release_proof.state, "consumed-by-file-revision");
@@ -561,7 +624,7 @@ test("execution error cancels a recorded pending blob and removes public state",
   await assert.rejects(runFixture(t, candidate), /candidate case execution failed/u);
   assert.equal(candidate.state.page, null);
   assert.equal(candidate.state.pending.size, 0);
-  assert.equal(candidate.state.cancelled.length, 1);
+  assert.equal(candidate.state.cancelled.length, 2);
   assert.ok([...candidate.state.files.values()].every((file) => file.deleted));
 });
 

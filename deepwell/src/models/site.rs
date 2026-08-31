@@ -52,6 +52,15 @@ pub struct Model {
     pub google_analytics_profile: Option<String>,
     pub show_top_toolbar: bool,
     pub show_bottom_toolbar: bool,
+    #[serde(skip_serializing)]
+    pub master_admin_user_id: Option<i64>,
+    pub educational: bool,
+    #[sea_orm(column_type = "Text", nullable)]
+    #[serde(skip_serializing)]
+    pub educational_organization: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    #[serde(skip_serializing)]
+    pub educational_purpose: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

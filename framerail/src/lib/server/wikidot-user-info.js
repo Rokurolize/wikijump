@@ -1,19 +1,11 @@
 export const WIKIDOT_USER_INFO_MISSING = "User does not exist."
 
 /**
- * @typedef {{
- *   user_id: number
- *   user_type: "regular" | "system" | "site" | "bot"
- *   created_at: string
- *   name: string
- *   slug: string
- *   avatar_s3_hash: number[] | null
- * }} UserViewUser
+ * @typedef {import("./deepwell/user").UserViewResult} UserViewResult
  *
+ * @typedef {import("./deepwell/user").UserViewUser} UserViewUser
  *
- * @typedef {{ type: "user_found"; data: { user: UserViewUser } }
- *   | { type: "user_missing"; data: undefined }} UserViewResult
- *
+ * @typedef {import("$lib/types").UserType} UserType
  *
  * @typedef {(
  *   siteId: number,
@@ -29,7 +21,8 @@ export const WIKIDOT_USER_INFO_MISSING = "User does not exist."
  *   userId: number
  *   name: string
  *   slug: string
- *   accountType: UserViewUser["user_type"]
+ *   accountType?: UserType | "free"
+ *   karmaLevel?: "none" | "high"
  *   createdAt: string
  *   avatar?: string
  * }} PublicUser
@@ -60,16 +53,34 @@ const PRIVATE_MESSAGE_CONTROL = Object.freeze({
  * @returns {Promise<PublicUser>}
  */
 const projectPublicUser = async (user, loadAvatar) => {
+  if (user.name === null || user.slug === null) {
+    throw new Error("Found user view response has no public identity")
+  }
+
   const avatar =
     user.avatar_s3_hash !== null && loadAvatar
       ? await loadAvatar(user.avatar_s3_hash)
       : undefined
 
+  const imported = user.user_type === "wikidot"
+  const karmaLevel = imported
+    ? user.karma === 0
+      ? "none"
+      : user.karma === 3
+        ? "high"
+        : undefined
+    : undefined
+
   return {
     userId: user.user_id,
     name: user.name,
     slug: user.slug,
-    accountType: user.user_type,
+    ...(imported
+      ? user.is_pro
+        ? {}
+        : { accountType: "free" }
+      : { accountType: user.user_type }),
+    ...(karmaLevel === undefined ? {} : { karmaLevel }),
     createdAt: user.created_at,
     ...(avatar === undefined ? {} : { avatar })
   }

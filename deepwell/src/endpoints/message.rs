@@ -31,13 +31,21 @@ async fn require_draft_owner(
     message_draft_id: &str,
     action: &str,
 ) -> Result<()> {
-    let draft = MessageService::get_draft(ctx, message_draft_id)
+    let actor_user_id = MutationAuthorization::require_authenticated(ctx, action)?;
+    let draft = MessageService::get_draft_optional(ctx, message_draft_id)
         .await
         .or_raise(|| {
             Error::new("failed to authorize message draft", ErrorType::MessageDraft)
         })?;
-    MutationAuthorization::require_matching_actor(ctx, draft.user_id, action)?;
-    Ok(())
+
+    match draft {
+        Some(draft) if draft.user_id == actor_user_id => Ok(()),
+        _ => Err(Error::new(
+            "message draft is unavailable to the request actor",
+            ErrorType::MessageDraftNotFound,
+        )
+        .into()),
+    }
 }
 
 pub async fn message_draft_create(

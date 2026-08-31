@@ -19,6 +19,7 @@
  */
 
 use crate::error::Result;
+use crate::services::forum::{ForumService, GetForumCategory};
 use crate::services::{CategoryService, ServiceContext};
 use crate::types::{Reference, Resource};
 use std::borrow::Cow;
@@ -63,6 +64,10 @@ pub async fn resolve_category_reference(
 ) -> Result<Option<i64>> {
     match resource_type {
         Resource::Page => resolve_page_category_reference(ctx, site_id, reference).await,
+        Resource::ForumCategory => match reference {
+            Reference::Id(id) => Ok(Some(*id)),
+            Reference::Slug(_) => Ok(None),
+        },
         _ => Ok(None),
     }
 }
@@ -75,6 +80,21 @@ pub async fn resolve_category_slug<'slug>(
 ) -> Result<Option<Cow<'slug, str>>> {
     match resource_type {
         Resource::Page => resolve_page_category_slug(ctx, site_id, reference).await,
+        Resource::ForumCategory => {
+            let Reference::Id(id) = reference else {
+                return Ok(None);
+            };
+            Ok(ForumService::get_category_optional(
+                ctx,
+                GetForumCategory {
+                    site_id,
+                    forum_category_id: *id,
+                    include_deleted: false,
+                },
+            )
+            .await?
+            .map(|category| Cow::Owned(category.name)))
+        }
         _ => Ok(None),
     }
 }

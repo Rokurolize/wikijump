@@ -22,7 +22,7 @@ use crate::handler::*;
 use crate::state::ServerState;
 use axum::Router;
 use axum::http::header::{ACCESS_CONTROL_ALLOW_ORIGIN, HeaderValue};
-use axum::routing::{any, get};
+use axum::routing::{MethodFilter, any, get, on};
 use tower_http::compression::CompressionLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::set_header::SetResponseHeaderLayer;
@@ -41,15 +41,28 @@ pub fn build_router(state: ServerState) -> Router {
         // Wikidot redirects
         .route(
             "/local--files/{page_slug}/{filename}",
-            any(handle_file_redirect),
+            any(handle_local_file),
         )
         .route(
             "/local--code/{page_slug}/{index}",
             any(handle_code_redirect),
         )
+        .route(
+            "/local--html/{page_slug}/{id}/{domain}",
+            get(handle_html_terminal),
+        )
+        .route(
+            "/local--html/{page_slug}/{id}/{domain}",
+            any(handle_invalid_method),
+        )
         .route("/local--html/{page_slug}/{id}", any(handle_html_redirect))
         // Wikijump redirects
         .route("/-/files/{page_slug}/{filename}", any(handle_file_redirect))
+        .route(
+            "/{page_slug}/code",
+            on(MethodFilter::GET, handle_default_code_redirect)
+                .fallback(redirect_to_main),
+        )
         .route("/{page_slug}/code/{filename}", any(handle_code_redirect))
         .route("/{page_slug}/html/{filename}", any(handle_html_redirect))
         .route("/{page_slug}/file/{filename}", any(handle_file_redirect))
@@ -132,8 +145,11 @@ mod tests {
     use super::*;
     use crate::config::Secrets;
     use crate::state::build_server_state;
+    use axum::http::StatusCode;
+    use axum::http::header::LOCATION;
     use s3::creds::Credentials;
     use s3::region::Region;
+    use tokio::net::TcpListener;
 
     fn test_secrets() -> Secrets {
         Secrets {
@@ -162,5 +178,64 @@ mod tests {
     async fn build_router_accepts_initialized_state() {
         let state = build_server_state(false, test_secrets()).await.unwrap();
         let _router = build_router(state);
+    }
+
+    #[tokio::test]
+    async fn public_code_routes_default_to_first_block_without_changing_indexed_route() {
+        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+
+        for (path, location) in [
+            ("/category%3Apage/code", "/-/code/category:page/1"),
+            ("/category%3Apage/code/2", "/-/code/category:page/2"),
+        ] {
+            let response = client
+                .get(format!("http://{address}{path}"))
+                .header(crate::handler::HEADER_SITE_ID, "1")
+                .send()
+                .await
+                .unwrap();
+
+            assert_eq!(response.status(), StatusCode::PERMANENT_REDIRECT);
+            assert_eq!(response.headers().get(LOCATION).unwrap(), location);
+        }
+
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn public_basic_error_route_rejects_external_get_head_and_post() {
+        let state = build_server_state(false, test_secrets()).await.unwrap();
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, build_router(state)).await.unwrap();
+        });
+        let client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let url = format!("http://{address}/-/basic-error/file-root");
+
+        let get = client.get(&url).send().await.unwrap();
+        assert_eq!(get.status(), StatusCode::FORBIDDEN);
+        assert_eq!(get.text().await.unwrap(), "ERROR XF-1002");
+
+        let head = client.head(&url).send().await.unwrap();
+        assert_eq!(head.status(), StatusCode::FORBIDDEN);
+        assert!(head.bytes().await.unwrap().is_empty());
+
+        let post = client.post(&url).send().await.unwrap();
+        assert_eq!(post.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        server.abort();
     }
 }

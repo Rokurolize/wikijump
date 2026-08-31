@@ -14,6 +14,7 @@ import { pages } from "./data.js"
  *   revision_id: number
  *   revision_user_id: number
  *   size: number
+ *   size_with_data?: number
  * }} FixtureFile
  */
 /**
@@ -30,16 +31,24 @@ export const fixtureState = {
   lastPageSelectParams: null,
   /** @type {Record<string, unknown[]>} */
   pageReadRequests: {
+    forumPostSelect: [],
     forumPostPageSummary: [],
+    forumPostGet: [],
     pageGet: [],
     pageGetDirect: [],
+    pageLifecycleIdentity: [],
+    pageRevisionDiff: [],
     pageRevisionGet: [],
     pageView: [],
+    pageViewPermission: [],
     pageSelect: [],
+    parentDirectMetadata: [],
     parentRelationshipsGet: [],
     siteGet: [],
     voteList: []
   },
+  /** @type {null | ((outcome?: "success" | "failure") => void)} */
+  pendingPageRevisionDiffResponse: null,
   /** @type {Record<string, unknown[]>} */
   articleReadRequests: {
     articleView: [],
@@ -124,7 +133,8 @@ export const toFileResult = (file, includeData) => {
     revision_user_id: file.revision_user_id,
     name: file.name,
     mime: file.mime,
-    size: file.size,
+    size:
+      includeData && file.size_with_data !== undefined ? file.size_with_data : file.size,
     revision_comments: file.revision_comments
   }
   if (includeData) result.data = Array.from(file.content)
@@ -167,6 +177,49 @@ export const updateFixtureFile = (file, content, revisionComments, userId) => {
   file.revision_user_id = userId
   file.size = content.length
   file.revision_comments = revisionComments
+}
+
+fixtureState.filesByPageId[3000173] = {
+  "xmlrpc-read-limit-at-cap.txt": {
+    file_id: 5_600_000,
+    file_created_at: "2026-08-13T00:00:00Z",
+    file_updated_at: null,
+    revision_id: 9_600_000,
+    revision_created_at: "2026-08-13T00:00:00Z",
+    revision_user_id: 123,
+    name: "xmlrpc-read-limit-at-cap.txt",
+    content: Buffer.from("at cap"),
+    mime: "text/plain",
+    size: 6_000_000,
+    revision_comments: "synthetic read-limit boundary metadata"
+  },
+  "xmlrpc-read-limit-over-cap.txt": {
+    file_id: 5_600_001,
+    file_created_at: "2026-08-13T00:00:00Z",
+    file_updated_at: null,
+    revision_id: 9_600_001,
+    revision_created_at: "2026-08-13T00:00:00Z",
+    revision_user_id: 123,
+    name: "xmlrpc-read-limit-over-cap.txt",
+    content: Buffer.from("over cap"),
+    mime: "text/plain",
+    size: 6_000_001,
+    revision_comments: "synthetic read-limit boundary metadata"
+  },
+  "xmlrpc-read-limit-race.txt": {
+    file_id: 5_600_002,
+    file_created_at: "2026-08-13T00:00:00Z",
+    file_updated_at: null,
+    revision_id: 9_600_002,
+    revision_created_at: "2026-08-13T00:00:00Z",
+    revision_user_id: 123,
+    name: "xmlrpc-read-limit-race.txt",
+    content: Buffer.from("changed after metadata read"),
+    mime: "text/plain",
+    size: 6_000_000,
+    size_with_data: 6_000_001,
+    revision_comments: "synthetic read-limit race metadata"
+  }
 }
 
 /** @param {import("node:http").IncomingMessage} request */

@@ -52,6 +52,73 @@
 const boundActions = new WeakMap()
 /** @type {WeakSet<object>} */
 const busyActions = new WeakSet()
+/** @type {WeakMap<HTMLElement, ((event: MouseEvent) => false) | null>} */
+const originalUserInfoHandlers = new WeakMap()
+
+const USER_INFO_ONCLICK =
+  /^WIKIDOT\.page\.listeners\.userInfo\((-?[0-9]+)\); return false;$/u
+const WIKIDOT_USER_INFO_HREF = /^http:\/\/www\.wikidot\.com\/user:info\/([a-z0-9-]+)$/u
+
+const installDefaultWikidotUserInfoListener = () => {
+  const wikidot = globalThis.WIKIDOT ?? (globalThis.WIKIDOT = {})
+  const page = wikidot.page ?? (wikidot.page = {})
+  const listeners = page.listeners ?? (page.listeners = {})
+  if (typeof listeners.userInfo === "function") return
+  listeners.userInfo = (userId) => {
+    if (!Number.isSafeInteger(userId)) return false
+    const documentObject = globalThis.document
+    if (!documentObject?.querySelectorAll) return false
+    const expected = `WIKIDOT.page.listeners.userInfo(${userId}); return false;`
+    const anchor = [
+      ...documentObject.querySelectorAll(
+        '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]'
+      )
+    ].find((element) => element.getAttribute("onclick") === expected)
+    const match = WIKIDOT_USER_INFO_HREF.exec(anchor?.getAttribute("href") ?? "")
+    if (match) globalThis.location?.assign?.(`/user:info/${match[1]}`)
+    return false
+  }
+}
+
+/**
+ * Rebind only the exact renderer-owned Wikidot printuser handler shape.
+ * The legacy onclick attribute stays in served DOM for parity, while
+ * CSP-safe trusted client code supplies the executable property without
+ * eval.
+ *
+ * @param {HTMLElement} root
+ */
+const bindWikidotUserInfoHandlers = (root) => {
+  installDefaultWikidotUserInfoListener()
+  /** @type {HTMLElement[]} */
+  const elements = []
+  for (const element of /** @type {NodeListOf<HTMLElement>} */ (
+    root.querySelectorAll(
+      '.printuser > a[href^="http://www.wikidot.com/user:info/"][onclick]'
+    )
+  )) {
+    const match = USER_INFO_ONCLICK.exec(element.getAttribute("onclick") ?? "")
+    if (!match) continue
+    const userId = Number(match[1])
+    if (!Number.isSafeInteger(userId)) continue
+    originalUserInfoHandlers.set(
+      element,
+      /** @type {((event: MouseEvent) => false) | null} */ (element.onclick)
+    )
+    element.onclick = () => {
+      const listener = globalThis.WIKIDOT?.page?.listeners?.userInfo
+      if (typeof listener === "function") listener(userId)
+      return false
+    }
+    elements.push(element)
+  }
+  return () => {
+    for (const element of elements) {
+      element.onclick = originalUserInfoHandlers.get(element) ?? null
+      originalUserInfoHandlers.delete(element)
+    }
+  }
+}
 
 /**
  * @param {ActionControl} element
@@ -187,9 +254,7 @@ const bind = (elements, element, action) => {
  * @param {Set<ActionControl>} elements
  */
 const bindStandaloneActions = (root, actions, elements) => {
-  const candidates = [
-    ...root.querySelectorAll('a.wiki-standalone-button[href="javascript:;"]')
-  ]
+  const candidates = [...root.querySelectorAll('a[href="javascript:;"]')]
   for (const [element, action] of planWikidotStandaloneActionBindings(
     /** @type {ActionControl[]} */ (candidates),
     actions
@@ -211,6 +276,7 @@ export const planWikidotStandaloneActionBindings = (candidates, actions) => {
   if (
     actions.some(
       (action) =>
+        !action ||
         !["edit", "history", "source", "print", "set-tags"].includes(action.type) ||
         (action.type === "set-tags" &&
           (!Number.isSafeInteger(action.index) ||
@@ -266,6 +332,7 @@ const initializeWikidotRateWidgets = (root, elements) => {
     const score = widget.ownerDocument.createElement("input")
     score.name = "score"
     score.type = "hidden"
+    score.value = `${rating}`
     widget.append(score)
     groups.push(images)
   }
@@ -331,6 +398,8 @@ export const updateWikidotRateWidget = (element, score) => {
   )
   if (!stars) return
   stars.dataset.rating = `${numericScore}`
+  const hiddenScore = stars.querySelector('input[name="score"]')
+  if (hiddenScore) hiddenScore.value = `${numericScore}`
   for (const [index, image] of [
     .../** @type {NodeListOf<HTMLImageElement>} */ (stars.querySelectorAll("img"))
   ].entries()) {
@@ -350,9 +419,11 @@ export const wikidotLegacyActions = (root, parameters) => {
   /** @type {Set<ActionControl>} */
   const elements = new Set()
   let runtime = parameters.runtime
+  let releaseUserInfoHandlers = () => {}
 
   /** @param {LegacyBrowserAction[]} actions */
   const refresh = (actions) => {
+    releaseUserInfoHandlers()
     for (const element of elements) boundActions.delete(element)
     elements.clear()
     bindStandaloneActions(root, actions, elements)
@@ -368,6 +439,7 @@ export const wikidotLegacyActions = (root, parameters) => {
     )) {
       bind(elements, element, action)
     }
+    releaseUserInfoHandlers = bindWikidotUserInfoHandlers(root)
   }
   refresh(parameters.actions)
 
@@ -400,6 +472,7 @@ export const wikidotLegacyActions = (root, parameters) => {
   root.addEventListener("keydown", keydown, true)
   return {
     destroy() {
+      releaseUserInfoHandlers()
       for (const element of elements) boundActions.delete(element)
       root.removeEventListener("click", activate, true)
       root.removeEventListener("keydown", keydown, true)

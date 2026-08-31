@@ -219,3 +219,120 @@ test("autonumbered page creation follows the assigned slug", async ({ page }) =>
   await expect(page).toHaveURL(/\/104$/u)
   await expect(page.locator("#page-content")).toContainText("Assigned page body")
 })
+
+test("history ignores a stale revision diff response", async ({ page, request }) => {
+  await request.get(`${FIXTURE_URL}/last-page-read-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/authoring-history-probe")
+  await page.getByRole("link", { name: "history", exact: true }).click()
+  await expect(page.locator(".revision-diff-controls")).toBeVisible()
+
+  const fromRevision = page.locator("#revision-diff-from")
+  const toRevision = page.locator("#revision-diff-to")
+  await page.locator(".revision-diff-controls button").nth(1).click()
+  await expect
+    .poll(async () => {
+      const response = await request.get(`${FIXTURE_URL}/page-revision-diff-requests`)
+      return (await response.json()).length
+    })
+    .toBe(1)
+
+  await fromRevision.selectOption("2")
+  await toRevision.selectOption("1")
+  await page.locator(".revision-diff-controls button").nth(1).click()
+
+  await expect
+    .poll(async () => {
+      const response = await request.get(`${FIXTURE_URL}/page-revision-diff-requests`)
+      return (await response.json()).length
+    })
+    .toBe(2)
+  const requests = await request
+    .get(`${FIXTURE_URL}/page-revision-diff-requests`)
+    .then((response) => response.json())
+  expect(requests).toEqual([
+    {
+      site_id: 6000005,
+      page_id: 3000345,
+      from_revision_number: 1,
+      to_revision_number: 2
+    },
+    {
+      site_id: 6000005,
+      page_id: 3000345,
+      from_revision_number: 2,
+      to_revision_number: 1
+    }
+  ])
+
+  const diff = page.locator(".revision-diff")
+  await expect(diff).toContainText("NEW CURRENT DIFF")
+
+  const release = await request.get(
+    `${FIXTURE_URL}/release-page-revision-diff?outcome=success`
+  )
+  expect(await release.json()).toEqual({ released: true })
+  await expect(page.locator("#odialog-container")).toHaveCount(0)
+  await expect(diff).toContainText("NEW CURRENT DIFF")
+  await expect(diff).not.toContainText("OLD STALE DIFF")
+})
+
+test("history ignores a stale successful diff after page navigation", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-read-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/authoring-history-probe")
+  await page.getByRole("link", { name: "history", exact: true }).click()
+  await expect(page.locator(".revision-diff-controls")).toBeVisible()
+  await page.locator(".revision-diff-controls button").nth(1).click()
+  await expect
+    .poll(async () => {
+      const response = await request.get(`${FIXTURE_URL}/page-revision-diff-requests`)
+      return (await response.json()).length
+    })
+    .toBe(1)
+
+  await page.locator("#navigate-history-target").click()
+  await expect(page).toHaveURL(/\/scp-173$/u)
+  await expect(page.locator("#page-title")).toHaveText("SCP-173")
+  await expect(page.locator(".revision-diff-controls")).toBeVisible()
+
+  const release = await request.get(
+    `${FIXTURE_URL}/release-page-revision-diff?outcome=success`
+  )
+  expect(await release.json()).toEqual({ released: true })
+  await expect(page.locator(".revision-diff")).toHaveCount(0)
+  await expect(page.locator("#odialog-container")).toHaveCount(0)
+})
+
+test("history ignores a stale failure after page navigation", async ({
+  page,
+  request
+}) => {
+  await request.get(`${FIXTURE_URL}/last-page-read-requests`)
+  await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
+  await page.goto("/authoring-history-probe")
+  await page.getByRole("link", { name: "history", exact: true }).click()
+  await expect(page.locator(".revision-diff-controls")).toBeVisible()
+  await page.locator(".revision-diff-controls button").nth(1).click()
+  await expect
+    .poll(async () => {
+      const response = await request.get(`${FIXTURE_URL}/page-revision-diff-requests`)
+      return (await response.json()).length
+    })
+    .toBe(1)
+
+  await page.locator("#navigate-history-target").click()
+  await expect(page).toHaveURL(/\/scp-173$/u)
+  await expect(page.locator("#page-title")).toHaveText("SCP-173")
+  await expect(page.locator(".revision-diff-controls")).toBeVisible()
+
+  const release = await request.get(
+    `${FIXTURE_URL}/release-page-revision-diff?outcome=failure`
+  )
+  expect(await release.json()).toEqual({ released: true })
+  await expect(page.locator(".revision-diff")).toHaveCount(0)
+  await expect(page.locator("#odialog-container")).toHaveCount(0)
+})

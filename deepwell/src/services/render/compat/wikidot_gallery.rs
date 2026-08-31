@@ -87,7 +87,7 @@ struct VisiblePageFiles {
 struct ResolvedGalleryImage {
     alt: String,
     original_url: String,
-    resized_url_prefix: String,
+    image_url: String,
 }
 
 enum GalleryResolution {
@@ -306,7 +306,15 @@ async fn render_gallery_requirement(
             resolve_current_page_gallery(current_page_id, options, loader).await?
         }
         GallerySelection::Explicit(entries) => {
-            resolve_explicit_gallery(entries, current_page_id, site, ctx, loader).await?
+            resolve_explicit_gallery(
+                entries,
+                current_page_id,
+                options.size,
+                site,
+                ctx,
+                loader,
+            )
+            .await?
         }
     };
     Ok(match resolution {
@@ -337,8 +345,12 @@ async fn resolve_current_page_gallery(
             .into_iter()
             .map(|file| ResolvedGalleryImage {
                 alt: String::new(),
+                image_url: format!(
+                    "{}{}.jpg",
+                    file.resized_url_prefix,
+                    options.size.css_value(),
+                ),
                 original_url: file.original_url,
-                resized_url_prefix: file.resized_url_prefix,
             })
             .collect(),
     ))
@@ -347,6 +359,7 @@ async fn resolve_current_page_gallery(
 async fn resolve_explicit_gallery(
     entries: &[GalleryEntry<'_>],
     current_page_id: Option<i64>,
+    size: GallerySize,
     site: &SiteModel,
     ctx: &ServiceContext<'_>,
     loader: &mut VisibleFileLoader<'_, '_>,
@@ -388,12 +401,19 @@ async fn resolve_explicit_gallery(
         let Some(file) = file else {
             continue;
         };
+        let image_url = match entry.image() {
+            GalleryEntrySource::HttpUrl(_) => file.original_url.clone(),
+            GalleryEntrySource::File(_) => {
+                format!("{}{}.jpg", file.resized_url_prefix, size.css_value(),)
+            }
+            GalleryEntrySource::Inert(_) => continue,
+        };
         images.push(ResolvedGalleryImage {
             alt: gallery_argument(entry.arguments(), "alt")
                 .unwrap_or_default()
                 .to_owned(),
+            image_url,
             original_url: file.original_url,
-            resized_url_prefix: file.resized_url_prefix,
         });
     }
     Ok(if images.is_empty() {
@@ -541,29 +561,26 @@ fn render_gallery_dom(
     let mut output = format!(r#"<div class="gallery-box" id="gallery-box-{box_id}">"#,);
     for image in images {
         let original_url = escape_list_pages_html_attr(&image.original_url);
-        let resized_url = escape_list_pages_html_attr(&format!(
-            "{}{size}.jpg",
-            image.resized_url_prefix,
-        ));
+        let image_url = escape_list_pages_html_attr(&image.image_url);
         let alt = escape_list_pages_html_attr(&image.alt);
         output.push_str("\n<div class=\"gallery-item ");
         output.push_str(size);
         output.push_str("\">\n<table>\n<tr>\n<td>");
-        if options.viewer {
-            output.push_str("<a href=\"");
-            output.push_str(&original_url);
-            output.push_str("\" class=\"with-lb\">");
-        }
+        // Wikidot keeps the static `with-lb` anchor even when `viewer="no"`
+        // or `viewer="false"`; only the client-side LightBox initializer is
+        // omitted. Framerail therefore decides whether to activate the
+        // interaction from the page source while this DOM stays exact.
+        output.push_str("<a href=\"");
+        output.push_str(&original_url);
+        output.push_str("\" class=\"with-lb\">");
         output.push_str("<img src=\"");
-        output.push_str(&resized_url);
+        output.push_str(&image_url);
         output.push_str("\" alt=\"");
         output.push_str(&alt);
         output.push_str("\" class=\"gallery-image-size-");
         output.push_str(size);
         output.push_str("\" />");
-        if options.viewer {
-            output.push_str("</a>");
-        }
+        output.push_str("</a>");
         output.push_str("</td>\n</tr>\n</table>\n</div>");
     }
     output.push_str("\n</div>");
@@ -581,8 +598,8 @@ mod tests {
                 alt: "A <caption>".to_owned(),
                 original_url: "https://site.wjfiles.test/local--files/page/image.png"
                     .to_owned(),
-                resized_url_prefix:
-                    "https://site.wjfiles.test/local--resized-images/page/image.png/"
+                image_url:
+                    "https://site.wjfiles.test/local--resized-images/page/image.png/thumbnail.jpg"
                         .to_owned(),
             }],
             GalleryOptions {
@@ -606,6 +623,28 @@ mod tests {
         );
         assert!(!html.contains("<script"));
         assert!(!html.contains("data-wikijump"));
+
+        let viewer_disabled = render_gallery_dom(
+            &[ResolvedGalleryImage {
+                alt: String::new(),
+                original_url: "https://site.wjfiles.test/local--files/page/image.png"
+                    .to_owned(),
+                image_url:
+                    "https://site.wjfiles.test/local--resized-images/page/image.png/thumbnail.jpg"
+                        .to_owned(),
+            }],
+            GalleryOptions {
+                size: GallerySize::Thumbnail,
+                order: GalleryOrder::NameAsc,
+                viewer: false,
+            },
+            2,
+        );
+        assert!(viewer_disabled.contains(
+            r#"<a href="https://site.wjfiles.test/local--files/page/image.png" class="with-lb">"#
+        ));
+        assert!(!viewer_disabled.contains("<script"));
+        assert!(!viewer_disabled.contains("data-wikijump"));
     }
 
     #[test]

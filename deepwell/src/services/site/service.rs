@@ -29,9 +29,9 @@ use crate::services::audit::{AuditEvent, AuditService, SiteFields};
 use crate::services::domain::{DEFAULT_SITE_SLUG, DomainService};
 use crate::services::relation::CreateSiteUser;
 use crate::services::user::{CreateUser, UpdateUserBody};
-use crate::services::{AliasService, RelationService, UserService};
+use crate::services::{AliasService, OutdateService, RelationService, UserService};
 use crate::types::{AliasType, UserType};
-use crate::types::{Maybe, Reference};
+use crate::types::{Maybe, Reference, RerenderDepth};
 use crate::utils::now;
 use crate::utils::{validate_locale, validate_wikidot_site_language};
 use ftml::layout::Layout;
@@ -95,9 +95,18 @@ fn path_has_content(path: &str, prefix: &str) -> bool {
 }
 
 fn is_safe_local_file_source(source: &str) -> bool {
-    path_has_content(source, LOCAL_FILE_SOURCE_PREFIX)
-        && !source.contains('?')
-        && !source.contains('#')
+    if !source.starts_with(LOCAL_FILE_SOURCE_PREFIX) {
+        return false;
+    }
+    let Ok(base) = reqwest::Url::parse("https://wikijump.invalid") else {
+        return false;
+    };
+    let Ok(url) = base.join(source) else {
+        return false;
+    };
+    path_has_content(url.path(), LOCAL_FILE_SOURCE_PREFIX)
+        && url.query().is_none()
+        && url.fragment().is_none()
 }
 
 fn is_site_owned_icon_source(
@@ -187,6 +196,7 @@ impl SiteService {
             locale,
             ip_address,
         }: CreateSite,
+        actor_user_id: Option<i64>,
     ) -> Result<CreateSiteOutput> {
         let txn = ctx.transaction();
 
@@ -217,6 +227,7 @@ impl SiteService {
             layout: Set(layout.map(|l| str!(l.value()))),
             license: Set(license),
             locale: Set(locale.clone()),
+            master_admin_user_id: Set(actor_user_id),
             ..Default::default()
         };
         let site = model.insert(txn).await.or_raise(make_error)?;
@@ -270,6 +281,7 @@ impl SiteService {
             ip_address,
             AuditEvent::SiteCreate {
                 site_id: site.site_id,
+                user_id: actor_user_id,
             },
         )
         .await
@@ -314,6 +326,28 @@ impl SiteService {
                 ),
                 ErrorType::BadRequest,
             ));
+        }
+
+        if let Maybe::Set(upgrade) = &input.educational_upgrade {
+            if site.master_admin_user_id != Some(updating_user_id) {
+                bail!(Error::new(
+                    "only the site's Master Administrator can apply the educational upgrade",
+                    ErrorType::PermissionDenied,
+                ));
+            }
+            if site.educational {
+                bail!(Error::new(
+                    "site already has educational status",
+                    ErrorType::BadRequest,
+                ));
+            }
+            if upgrade.organization.trim().is_empty() || upgrade.purpose.trim().is_empty()
+            {
+                bail!(Error::new(
+                    "educational upgrade requires organization and purpose",
+                    ErrorType::BadRequest,
+                ));
+            }
         }
 
         if let Maybe::Set(analytics) = &input.google_analytics {
@@ -370,6 +404,15 @@ impl SiteService {
             ));
         }
 
+        let top_bar_changed = input
+            .top_bar_page
+            .to_option()
+            .is_some_and(|value| value != &site.top_bar_page);
+        let side_bar_changed = input
+            .side_bar_page
+            .to_option()
+            .is_some_and(|value| value != &site.side_bar_page);
+
         let mut model = site::ActiveModel {
             site_id: Set(site.site_id),
             ..Default::default()
@@ -422,6 +465,9 @@ impl SiteService {
             add_changed_field!(top_bar_page);
             add_changed_field!(side_bar_page);
             add_changed_field!(ref preferred_domain);
+            add_changed_field!(ref favicon_source);
+            add_changed_field!(ref ios_icon_source);
+            add_changed_field!(ref windows_tile_source);
 
             if let Maybe::Set(analytics) = &input.google_analytics {
                 previous_fields.google_analytics_enabled =
@@ -444,6 +490,11 @@ impl SiteService {
                 previous_fields.forum_max_nest_level =
                     Maybe::Set(site.forum_max_nest_level);
                 changed_fields.forum_max_nest_level = Maybe::Set(value);
+            }
+
+            if matches!(&input.educational_upgrade, Maybe::Set(_)) {
+                previous_fields.educational = Maybe::Set(site.educational);
+                changed_fields.educational = Maybe::Set(true);
             }
 
             if let Maybe::Set(layout) = input.layout {
@@ -510,6 +561,14 @@ impl SiteService {
 
         if let Maybe::Set(welcome_page) = input.welcome_page {
             model.welcome_page = Set(welcome_page);
+        }
+
+        if let Maybe::Set(top_bar_page) = input.top_bar_page {
+            model.top_bar_page = Set(top_bar_page);
+        }
+
+        if let Maybe::Set(side_bar_page) = input.side_bar_page {
+            model.side_bar_page = Set(side_bar_page);
         }
 
         if let Maybe::Set(analytics) = input.google_analytics {
@@ -605,6 +664,12 @@ impl SiteService {
             model.windows_tile_source = Set(windows_tile_source);
         }
 
+        if let Maybe::Set(upgrade) = input.educational_upgrade {
+            model.educational = Set(true);
+            model.educational_organization = Set(Some(upgrade.organization));
+            model.educational_purpose = Set(Some(upgrade.purpose));
+        }
+
         ctx.defer_public_content_cache_invalidate_site(site.site_id)
             .or_raise(make_error)?;
 
@@ -612,6 +677,16 @@ impl SiteService {
         model.updated_at = Set(Some(now()));
         model.settings_revision = Set(site.settings_revision + 1);
         let new_site = model.update(txn).await.or_raise(make_error)?;
+
+        OutdateService::outdate_changed_site_navigation(
+            ctx,
+            site.site_id,
+            top_bar_changed,
+            side_bar_changed,
+            RerenderDepth::default(),
+        )
+        .await
+        .or_raise(make_error)?;
 
         // Update site user
         UserService::update(ctx, Reference::Id(site_user_id), ip_address, site_user_body)

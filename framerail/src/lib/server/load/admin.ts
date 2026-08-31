@@ -3,6 +3,7 @@ import { discussionUpdateValue } from "$lib/admin-forum.js"
 import { licenseUpdateValue } from "$lib/admin/admin-license.js"
 import { navigationUpdateValues } from "$lib/admin/admin-navigation.js"
 import { isWikidotSiteLanguage } from "$lib/admin/wikidot-site-languages.js"
+import { isGoogleAnalyticsProfile } from "$lib/site-settings.js"
 
 import { authGetSession } from "$lib/server/auth/get-session"
 import {
@@ -176,6 +177,13 @@ export async function siteIconsAction({
   const form = await superValidate(request, valibot(siteIconsSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -187,7 +195,7 @@ export async function siteIconsAction({
 
   try {
     const res = await siteIconsUpdate(
-      form.data.siteId,
+      siteId,
       form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
@@ -196,7 +204,7 @@ export async function siteIconsAction({
         iosIconSource: emptyToNull(form.data.iosIconSource),
         windowsTileSource: emptyToNull(form.data.windowsTileSource)
       },
-      { sessionToken, siteId: form.data.siteId }
+      { sessionToken, siteId }
     )
     return { form, res }
   } catch (error) {
@@ -227,6 +235,13 @@ export async function forumNestingAction({
   const form = await superValidate(request, valibot(forumNestingSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -238,12 +253,12 @@ export async function forumNestingAction({
 
   try {
     const res = await siteForumNestingUpdate(
-      form.data.siteId,
+      siteId,
       form.data.expectedSettingsRevision,
       session.user_id,
       getClientAddress(),
       form.data.maxNestLevel,
-      { sessionToken, siteId: form.data.siteId }
+      { sessionToken, siteId }
     )
     return { form, res }
   } catch (error) {
@@ -269,6 +284,13 @@ export async function discussionAction({
   const form = await superValidate(request, valibot(discussionSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -280,12 +302,12 @@ export async function discussionAction({
 
   try {
     const res = await categoryDiscussionUpdate(
-      form.data.siteId,
+      siteId,
       form.data.categoryId,
       session.user_id,
       getClientAddress(),
       discussionUpdateValue(form.data),
-      { sessionToken, siteId: form.data.siteId }
+      { sessionToken, siteId }
     )
     return { form, res }
   } catch (error) {
@@ -381,6 +403,13 @@ export async function ratingAction({ request, getClientAddress, cookies }: Reque
   const form = await superValidate(request, valibot(ratingSchema))
   if (!form.valid) return fail(400, { form })
 
+  let siteId: number
+  try {
+    siteId = loadTrustedAdminSiteId(request, form.data.siteId)
+  } catch (error) {
+    return failForActionError(error, { form })
+  }
+
   const sessionToken = cookies.get("wikijump_token")
   const session = await authGetSession(sessionToken)
   if (!sessionToken || !session) {
@@ -390,8 +419,7 @@ export async function ratingAction({ request, getClientAddress, cookies }: Reque
     })
   }
 
-  const { siteId, categoryId, inherit, enabled, permission, visibility, ratingType } =
-    form.data
+  const { categoryId, inherit, enabled, permission, visibility, ratingType } = form.data
   try {
     const res = await categoryRatingUpdate(
       siteId,
@@ -708,7 +736,7 @@ const analyticsSchema = object({
   profile: pipe(
     string(),
     custom(
-      (value) => value === "" || /^UA-[0-9]+-[0-9]+$/u.test(value),
+      (value) => value === "" || isGoogleAnalyticsProfile(value),
       "Wrong analytics key"
     )
   )

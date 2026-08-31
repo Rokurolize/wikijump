@@ -20,7 +20,10 @@
 
 //! Helper functions and macros for running individual test cases.
 
-use deepwell::api::{ServerState, build_server_state_without_workers};
+use deepwell::api::{
+    ServerState, build_server_state_without_workers,
+    build_server_state_without_workers_with_job_queue_namespace,
+};
 use deepwell::config::{Config, Secrets};
 use deepwell::services::{RequestContext, ServiceContext};
 use sea_orm::{DatabaseTransaction, TransactionTrait};
@@ -35,13 +38,37 @@ pub struct TestRunnerRequestContext {
 
 impl TestRunnerRequestContext {
     pub async fn new() -> Self {
+        Self::new_with_config(Config::integration_testing()).await
+    }
+
+    pub async fn new_with_config(config: Config) -> Self {
         let secrets = Secrets::load();
-        let config = Config::integration_testing();
 
         let state = build_server_state_without_workers(config, secrets)
             .await
             .expect("Unable to set up server state");
 
+        let txn = state
+            .database
+            .begin()
+            .await
+            .expect("Unable to start database transaction");
+
+        TestRunnerRequestContext {
+            state,
+            transaction: Some(txn),
+            request_ctx: RequestContext::default(),
+        }
+    }
+
+    pub async fn new_with_job_queue_namespace(namespace: &str) -> Self {
+        let state = build_server_state_without_workers_with_job_queue_namespace(
+            Config::integration_testing(),
+            Secrets::load(),
+            namespace,
+        )
+        .await
+        .expect("Unable to set up namespaced server state");
         let txn = state
             .database
             .begin()
@@ -89,6 +116,19 @@ self_cell!(
 impl TestRunner {
     pub async fn setup() -> Self {
         let request_ctx = TestRunnerRequestContext::new().await;
+        Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
+    }
+
+    #[allow(unused)]
+    pub async fn setup_with_config(config: Config) -> Self {
+        let request_ctx = TestRunnerRequestContext::new_with_config(config).await;
+        Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
+    }
+
+    #[allow(unused)]
+    pub async fn setup_with_job_queue_namespace(namespace: &str) -> Self {
+        let request_ctx =
+            TestRunnerRequestContext::new_with_job_queue_namespace(namespace).await;
         Self::new(request_ctx, TestRunnerRequestContext::build_service_context)
     }
 

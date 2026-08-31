@@ -53,6 +53,23 @@ export const pages = {
     wikitext: "Main",
     compiled_body_html: "<p>Main</p>"
   },
+  "data-form-date-options-flow:example": {
+    page_id: 3000400,
+    revision_id: 9000400,
+    page_created_at: "2026-08-16T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-16T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Data Form Date Options",
+    slug: "data-form-date-options-flow:example",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      "date-primary: 1411099200\ndate-secondary: 1418360400\nalt-date: 12/11/2014",
+    compiled_body_html: "<p>Data form date options fixture.</p>"
+  },
   "scp-173": {
     page_id: 3000173,
     revision_id: 9000173,
@@ -100,6 +117,38 @@ export const pages = {
     rating: 0,
     wikitext: "Private page body marker.",
     compiled_body_html: "<p>Private page body marker.</p>"
+  },
+  "public-child-private-parent": {
+    page_id: 3000197,
+    revision_id: 9000197,
+    page_created_at: "2026-07-02T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-02T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Public Child",
+    slug: "public-child-private-parent",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Public child body marker.",
+    compiled_body_html: "<p>Public child body marker.</p>"
+  },
+  "ambiguous-parent-child": {
+    page_id: 3000196,
+    revision_id: 9000196,
+    page_created_at: "2026-07-03T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-07-03T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Ambiguous Parent Child",
+    slug: "ambiguous-parent-child",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Ambiguous parent child body marker.",
+    compiled_body_html: "<p>Ambiguous parent child body marker.</p>"
   },
   "xmlrpc-post-page": {
     page_id: 3000300,
@@ -154,7 +203,7 @@ export const pages = {
     wikitext:
       "[[tabview]]\n[[tab First]]First panel[[/tab]]\n[[tab Second]]Second panel[[/tab]]\n[[/tabview]]",
     compiled_body_html:
-      '<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset yui-navset-top"><ul class="yui-nav"><li class="selected" title="active"><a href="javascript:;"><em>First</em></a></li><li><a href="javascript:;"><em>Second</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0" style="display: block;"><p>First panel</p></div><div id="wiki-tab-0-1" style="display: none;"><p>Second panel</p></div></div></div>'
+      '<script type="text/javascript" src="http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--javascript/yahooui/tabview-min.js"></script>\n<div id="wiki-tabview-0123456789abcdef0123456789abcdef" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>First</em></a></li><li><a href="javascript:;"><em>Second</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0" style="display: block;"><p>First panel</p></div><div id="wiki-tab-0-1" style="display: none;"><p>Second panel</p></div></div></div>'
   },
   "search:all": {
     page_id: 3000325,
@@ -172,6 +221,23 @@ export const pages = {
     wikitext: "[[module SearchAll]]",
     compiled_body_html:
       '<div class="search-box"><div class="query-area"><form action="dummy" id="search-form-all"><div><input class="text" type="text" size="30" name="query" id="search-form-all-input" value=""><input class="button" type="submit" value="Search"></div><div style="margin-top:5px;"><input id="search-all-pf" class="radio" type="radio" name="area" value="pf" checked="checked"><label for="search-all-pf">pages and forums</label><input id="search-all-p" class="radio" type="radio" name="area" value="p"><label for="search-all-p">pages only</label><input id="search-all-f" class="radio" type="radio" name="area" value="f"><label for="search-all-f">forums only</label></div></form></div><div class="search-results"></div></div>'
+  },
+  "search:site": {
+    page_id: 3000326,
+    revision_id: 9000326,
+    page_created_at: "2026-08-09T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-09T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Search",
+    slug: "search:site",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "[[module Search]]",
+    compiled_body_html:
+      '<div class="error-block">Search is temporarily unavailable, we are working to bring it online!</div>'
   },
   "wikidot-collapsible": {
     page_id: 3000330,
@@ -245,7 +311,24 @@ x^2 + y^2 = z^2
     tags: ["fixture"],
     rating: 0,
     wikitext: "Page workflow probe",
-    compiled_body_html: "<p>Page workflow probe</p>"
+    compiled_body_html:
+      '<p>Page workflow probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
+  },
+  "authoring-history-probe": {
+    page_id: 3000345,
+    revision_id: 9000345,
+    page_created_at: "2026-07-24T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 3,
+    revision_created_at: "2026-07-24T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Authoring History Probe",
+    slug: "authoring-history-probe",
+    tags: ["fixture"],
+    wikitext: "Authoring history probe",
+    compiled_body_html:
+      '<p>Authoring history probe</p><a id="navigate-history-target" href="/scp-173" data-sveltekit-reload="off">Navigate to history target</a>'
   },
   "navigation-style-a": {
     page_id: 3000360,
@@ -379,6 +462,24 @@ x^2 + y^2 = z^2
     compiled_body_html:
       '<div id="default-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Default create" style="margin: 1px;"/></form></div><div id="autosave-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Autosave" style="margin: 1px;"/><input type="hidden" name="mode" value="save-and-go"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div><div id="template-newpage" class="new-page-box" style="text-align: center; margin: 1em 0;"><form action="dummy.html" method="get" onsubmit="WIKIDOT.modules.NewPageHelperModule.listeners.create(event);"><input class="text" name="pageName" type="text" size="30" maxlength="128" style="margin: 1px"/><input type="submit" class="button" value="Template" style="margin: 1px;"/><input type="hidden" name="template" value="1469068384"/><input type="hidden" name="tags" value="alpha beta"/><input type="hidden" name="parent" value="main"/></form></div>'
   },
+  "gallery-lightbox": {
+    page_id: 3000415,
+    revision_id: 9000415,
+    page_created_at: "2026-08-19T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-08-19T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Gallery Lightbox",
+    slug: "gallery-lightbox",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext:
+      '[[gallery]]\n: first.png\n: second.png\n[[/gallery]]\n\n[[gallery viewer="false"]]\n: disabled.png\n[[/gallery]]\n\n[[gallery]]\n: broken.png\n[[/gallery]]',
+    compiled_body_html:
+      '<div class="gallery-box" id="gallery-box-1"><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-one" href="/gallery-image-one.webp" class="with-lb" title="First image"><img src="/gallery-thumb-one.webp" alt="first" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-two" href="/gallery-image-two.webp" class="with-lb" title="Second image"><img src="/gallery-thumb-two.webp" alt="second" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-custom-link" href="/main"><img src="/gallery-thumb-custom.webp" alt="custom" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div></div><div class="gallery-box" id="gallery-box-2"><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-disabled" href="/gallery-image-disabled.webp" class="with-lb"><img src="/gallery-thumb-disabled.webp" alt="disabled" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div></div><div class="gallery-box" id="gallery-box-3"><div class="gallery-item thumbnail"><table><tbody><tr><td><a id="gallery-viewer-failure" href="/gallery-image-broken.webp" class="with-lb"><img src="/gallery-thumb-broken.webp" alt="broken" class="gallery-image-size-thumbnail"/></a></td></tr></tbody></table></div></div>'
+  },
   "data-form-edit-flow:example": {
     page_id: 3000420,
     revision_id: 9000420,
@@ -494,6 +595,17 @@ export const toArticleViewResult = (page) => ({
 
 /** @type {Record<string, FixtureForumPost[]>} */
 export const forumPostsByPage = {
+  "xmlrpc-integer-post-page": [
+    {
+      id: 7000301,
+      reply_to: null,
+      title: "XML-RPC integer ID proof",
+      content: "XML-RPC integer post ID proof body.",
+      html: "<p>XML-RPC integer post ID proof body.</p>",
+      created_by: "administrator",
+      created_at: "2026-06-22T00:00:00Z"
+    }
+  ],
   "xmlrpc-post-page": [
     {
       id: 7000300,
@@ -507,9 +619,11 @@ export const forumPostsByPage = {
   ]
 }
 
-/** @type {Record<string, string>} */
+/** @type {Record<string, string | string[]>} */
 export const parentBySlug = {
-  "scp-173": "scp-173-parent"
+  "scp-173": "scp-173-parent",
+  "public-child-private-parent": "private-page",
+  "ambiguous-parent-child": ["main", "scp-173-parent"]
 }
 
 /**

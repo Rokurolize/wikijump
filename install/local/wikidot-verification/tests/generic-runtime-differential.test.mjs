@@ -30,6 +30,8 @@ import {
   composeIdentityDocument,
   main as runStack,
   parseArgs as parseStackArgs,
+  requireOutputAbsent,
+  resourcesAbsent,
   runtimeIdentity as stackRuntimeIdentity,
 } from "../scripts/run-generic-runtime-differential-stack.mjs";
 import {
@@ -1566,6 +1568,7 @@ test("disposable stack controller binds resources and candidate identity", () =>
     "--captures", "/tmp/first.jsonl",
     "--captures", "/tmp/second.jsonl",
     "--state-fixture", "/tmp/state.json",
+    "--run-id", "candidate-run-abcdef123456",
     "--output", "/tmp/report.json",
   ]);
   assert.deepEqual(args.captures, ["/tmp/first.jsonl", "/tmp/second.jsonl"]);
@@ -1588,6 +1591,7 @@ test("disposable stack controller binds resources and candidate identity", () =>
       "--binary", "candidate/debug/deepwell",
       "--cases", "/tmp/cases.jsonl",
       "--captures", "/tmp/captures.jsonl",
+      "--run-id", "candidate-run-abcdef123456",
       "--output", "/tmp/report.json",
     ]),
     /--binary must be an absolute path/u,
@@ -1639,6 +1643,19 @@ test("disposable stack controller binds resources and candidate identity", () =>
   assert.equal(identity.runtime_config_sha256.length, 64);
 });
 
+test("stack cleanup requires actual absence of containers, volumes, and networks", () => {
+  const calls = [];
+  const inspect = (command, args) => {
+    calls.push([command, args]);
+    return {status: 0, signal: null, stdout: "", stderr: ""};
+  };
+  assert.equal(resourcesAbsent("candidate-run-abcdef123456", {DOCKER_HOST: "test"}, inspect), true);
+  assert.equal(calls.length, 4);
+  assert.match(calls[0][1].at(-1), /candidate-run-abcdef123456/u);
+  assert.equal(resourcesAbsent("candidate-run-abcdef123456", {}, () => ({status: 0, signal: null, stdout: "leftover\n", stderr: ""})), false);
+  assert.equal(resourcesAbsent("candidate-run-abcdef123456", {}, () => ({status: 1, signal: null, stdout: "", stderr: "inspect failed"})), false);
+});
+
 test("stack controller binds an exact reusable dev candidate", async (t) => {
   const fixture = await reusableCandidateFixture(t);
   const candidate = await bindCandidate({
@@ -1665,6 +1682,25 @@ test("stack controller accepts an explicit matching binary path", async (t) => {
   });
 
   assert.equal(candidate.binary, binary);
+});
+
+test("candidate binding ignores caller Git routing", async (t) => {
+  const fixture = await reusableCandidateFixture(t);
+  const saved = Object.fromEntries(["PATH", "GIT_DIR", "GIT_WORK_TREE"].map((name) => [name, process.env[name]]));
+  Object.assign(process.env, {PATH: "/poison", GIT_DIR: "/poison", GIT_WORK_TREE: "/poison"});
+  try {
+    const candidate = await bindCandidate({
+      repository: fixture.repository,
+      candidateManifest: fixture.candidateManifest,
+      binary: null,
+    });
+    assert.equal(candidate.binary, fixture.binary);
+  } finally {
+    for (const [name, previous] of Object.entries(saved)) {
+      if (previous === undefined) delete process.env[name];
+      else process.env[name] = previous;
+    }
+  }
 });
 
 test("candidate binding rejects an artifact key digest mismatch", async (t) => {
@@ -1784,29 +1820,44 @@ test("candidate binding fails closed on identity mismatches", async (t) => {
   }
 });
 
-test("stack controller has no candidate build path", async () => {
+test("stack controller uses the active Node executable and has no candidate build path", async () => {
   const source = await fsp.readFile(
     new URL("../scripts/run-generic-runtime-differential-stack.mjs", import.meta.url),
     "utf8",
   );
+  assert.match(source, /const NODE = process\.execPath;/u);
   assert.doesNotMatch(source, /build-deepwell-candidate|CARGO_TARGET_DIR|cargo build/u);
+});
+
+test("stack output guard rejects a broken symlink", async (t) => {
+  const root = await fsp.mkdtemp(path.join(os.tmpdir(), "runtime-output-guard-"));
+  t.after(() => fsp.rm(root, {recursive: true, force: true}));
+  const output = path.join(root, "report.json");
+  await fsp.symlink(path.join(root, "missing.json"), output);
+  assert.throws(() => requireOutputAbsent(output, "output"), /output already exists/u);
 });
 
 test("stack cleanup does not remove reusable candidate assets", async (t) => {
   const fixture = await reusableCandidateFixture(t);
+  const output = path.join(path.dirname(fixture.repository), "report.json");
   await assert.rejects(
     runStack([
       "--repository", fixture.repository,
       "--candidate-manifest", fixture.candidateManifest,
       "--cases", path.join(path.dirname(fixture.repository), "cases.jsonl"),
       "--captures", path.join(path.dirname(fixture.repository), "captures.jsonl"),
-      "--output", path.join(path.dirname(fixture.repository), "report.json"),
+      "--run-id", "candidate-run-abcdef123456",
+      "--output", output,
     ]),
     /install\/local\/deepwell\/config\.toml/u,
   );
 
   assert.equal((await fsp.stat(fixture.candidateManifest)).isFile(), true);
   assert.equal((await fsp.stat(fixture.binary)).isFile(), true);
+  const cleanup = JSON.parse(await fsp.readFile(`${output}.cleanup.json`, "utf8"));
+  assert.equal(cleanup.status, "pass");
+  assert.equal(cleanup.compose_started, false);
+  assert.equal(cleanup.run_root_removed, true);
 });
 
 test("runtime identity rejects obsolete candidate manifest shapes", () => {

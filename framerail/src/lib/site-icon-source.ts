@@ -14,11 +14,20 @@ const WIKIDOT_ROUTE_PREFIX: Partial<Record<SiteIconSourceKind, string>> = {
 }
 
 function safeLocalFileSource(source: string): boolean {
+  if (!source.startsWith("/local--files/")) return false
+
+  let url: URL
+  try {
+    url = new URL(source, "https://wikijump.invalid")
+  } catch {
+    return false
+  }
+
   return (
-    source.startsWith("/local--files/") &&
-    source.length > "/local--files/".length &&
-    !source.includes("?") &&
-    !source.includes("#")
+    url.pathname.startsWith("/local--files/") &&
+    url.pathname.length > "/local--files/".length &&
+    url.search === "" &&
+    url.hash === ""
   )
 }
 

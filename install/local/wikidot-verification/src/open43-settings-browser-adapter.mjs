@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { parse as parseDevalue } from "devalue";
 
+import { DEFAULT_SETTLE_MS } from "./standing-browser-canaries.mjs";
 import { waitForBrowserParitySettledResources } from "./standing-browser-parity-observation.mjs";
 import { sha256Value } from "./standing-browser-parity-util.mjs";
 
@@ -69,6 +70,36 @@ function browserSemanticSnapshot() {
   const toolbarLink = toolbar?.querySelector("a");
   const toolbarBounds = toolbar?.getBoundingClientRect();
   const linkBounds = toolbarLink?.getBoundingClientRect();
+  const roundedRect = (value) => value === null ? null : {
+    x: value.x,
+    y: value.y,
+    width: value.width,
+    height: value.height,
+  };
+  const pageTags = document.querySelector(".page-tags");
+  const pageTagChildren = pageTags === null ? [] : [...pageTags.children];
+  const pageTagStyleRules = [];
+  const visitStyleRules = (rules, href) => {
+    for (const rule of rules ?? []) {
+      if (typeof rule.selectorText === "string" && rule.selectorText.includes(".page-tags")) {
+        let matches = false;
+        try { matches = pageTags !== null && pageTags.matches(rule.selectorText); } catch {}
+        if (matches) pageTagStyleRules.push({
+          href,
+          selector: rule.selectorText,
+          display: rule.style.display || null,
+          justify_content: rule.style.justifyContent || null,
+          text_align: rule.style.textAlign || null,
+        });
+      }
+      try { if (rule.cssRules) visitStyleRules(rule.cssRules, href); } catch {}
+    }
+  };
+  for (const sheet of document.styleSheets) {
+    try { visitStyleRules(sheet.cssRules, sheet.href); } catch {}
+  }
+  const pageTagsStyle = pageTags === null ? null : getComputedStyle(pageTags);
+  const pageTagChildRects = pageTagChildren.map((child) => roundedRect(child.getBoundingClientRect()));
   return {
     analytics: {
       profile: document.querySelector("meta[name='wikidot-site-analytics-profile']")?.content ?? null,
@@ -91,6 +122,23 @@ function browserSemanticSnapshot() {
       geometry: toolbarBounds ? { width: toolbarBounds.width, height: toolbarBounds.height } : null,
       hit_target: linkBounds ? { width: linkBounds.width, height: linkBounds.height } : null,
     },
+    page_tags: pageTags === null ? null : {
+      container: {
+        child_count: pageTagChildren.length,
+        display: pageTagsStyle.display,
+        justify_content: pageTagsStyle.justifyContent,
+        text_align: pageTagsStyle.textAlign,
+        flex_wrap: pageTagsStyle.flexWrap,
+        gap: pageTagsStyle.gap,
+        rect: roundedRect(pageTags.getBoundingClientRect()),
+      },
+      child_tags: pageTagChildren.map((child) => child.localName),
+      labels: pageTagChildren.map((child) => child.textContent ?? ""),
+      hrefs: pageTagChildren.map((child) => child instanceof HTMLAnchorElement ? child.href : null),
+      child_rects: pageTagChildRects,
+      line_count: new Set(pageTagChildRects.filter(Boolean).map(({ y }) => y)).size,
+      active_rules: pageTagStyleRules,
+    },
     page_content_text: document.querySelector("#page-content")?.textContent?.trim() ?? "",
     admin: {
       controls: generalControls,
@@ -100,6 +148,7 @@ function browserSemanticSnapshot() {
 }
 
 const INITIAL_PROBE = `globalThis.__open43DocumentIdentity=crypto.randomUUID();globalThis.__open43SemanticSnapshot=${browserSemanticSnapshot.toString()};document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43InitialObservation=globalThis.__open43SemanticSnapshot()},{once:true});`;
+const CREATE_PROBE = `document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43CreateFirstPaint={title:document.querySelector("#page-title")?.textContent?.trim()??"",content:document.querySelector("#page-content")?.textContent?.trim()??""}},{once:true});`;
 
 async function activateClientNavigation(page) {
   await page.evaluate(() => {
@@ -128,10 +177,11 @@ export class Open43SettingsBrowserAdapter {
     return (await this.#contexts.get(actor)).context;
   }
 
-  async capturePagePair({ url, label, index, viewport = DEFAULT_VIEWPORT, contract = null, navigationFromUrl = null, beforeClientNavigation = null }) {
+  async capturePagePair({ url, label, index, viewport = DEFAULT_VIEWPORT, contract = null, navigationFromUrl = null, beforeClientNavigation = null, captureStylesheetAssets = false }) {
     const page = await (await this.#context("administrator")).newPage();
     const consoleErrors = [];
     const analyticsRequests = [];
+    const stylesheetAssetPromises = [];
     let initialNavigationCspHeader = null;
     const onConsole = (message) => {
       if (message.type() === "error") consoleErrors.push(sha256(message.text()));
@@ -140,9 +190,15 @@ export class Open43SettingsBrowserAdapter {
     const onRequest = (request) => {
       if (/google-analytics|googletagmanager/u.test(new URL(request.url()).hostname)) analyticsRequests.push(sha256(request.url()));
     };
+    const onResponse = (response) => {
+      if (captureStylesheetAssets && response.request().resourceType() === "stylesheet") {
+        stylesheetAssetPromises.push(response.body().then((body) => ({ url: response.url(), sha256: sha256(body) })));
+      }
+    };
     page.on("console", onConsole);
     page.on("pageerror", onPageError);
     page.on("request", onRequest);
+    page.on("response", onResponse);
     try {
       await page.setViewportSize(viewport);
       await page.addInitScript({ content: INITIAL_PROBE });
@@ -234,6 +290,9 @@ export class Open43SettingsBrowserAdapter {
           client_navigation_preserved: document.querySelectorAll("#navi-bar").length === 1,
         };
       });
+      const stylesheetAssets = captureStylesheetAssets
+        ? [...new Map((await Promise.all(stylesheetAssetPromises)).map((asset) => [JSON.stringify(asset), asset])).values()]
+        : [];
       return {
         capture,
         initial,
@@ -255,11 +314,13 @@ export class Open43SettingsBrowserAdapter {
         csp_nonce_matches_initial_navigation_header:
           initial.analytics.nonce.length > 0 &&
           initialNavigationCspHeader?.includes(`'nonce-${initial.analytics.nonce}'`) === true,
+        stylesheet_assets: stylesheetAssets,
       };
     } finally {
       page.off("console", onConsole);
       page.off("pageerror", onPageError);
       page.off("request", onRequest);
+      page.off("response", onResponse);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }
@@ -378,6 +439,122 @@ export class Open43SettingsBrowserAdapter {
     } finally {
       page.off("console", onConsole);
       page.off("pageerror", onPageError);
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+
+  async captureAutonumberPage({ requestedSlug, title, wikitext, expectedUrl, index }) {
+    const page = await (await this.#context("administrator")).newPage();
+    const editorUrl = new URL(`/${encodeURIComponent(requestedSlug)}/edit/true`, this.#pageOrigin).href;
+    try {
+      await page.addInitScript({ content: CREATE_PROBE });
+      let actionResponse = null;
+      let editorNavigationStatus = null;
+      const capture = await this.#browserContexts.captureCandidateObservation({
+        context: await this.#context("administrator"),
+        page,
+        url: expectedUrl,
+        label: "S758_CREATE",
+        index,
+        viewport: DEFAULT_VIEWPORT,
+        timeoutMs: CAPTURE_TIMEOUT_MS,
+        settleMs: DEFAULT_SETTLE_MS,
+        navigate: async ({ page: targetPage, timeoutMs }) => {
+          const editorResponse = await targetPage.goto(editorUrl, { waitUntil: "domcontentloaded", timeout: timeoutMs });
+          editorNavigationStatus = editorResponse?.status() ?? null;
+          if (editorNavigationStatus !== 404) throw new Error(`S758 missing-page editor returned ${editorNavigationStatus}`);
+          await targetPage.locator("input[name='title']").fill(title);
+          await targetPage.locator("textarea[name='wikitext']").fill(wikitext);
+          await targetPage.locator("textarea[name='comments']").fill("Open43 autonumber candidate");
+          const [response] = await Promise.all([
+            targetPage.waitForResponse(
+              (candidate) => candidate.request().method() === "POST" && candidate.url().includes("?/edit"),
+              { timeout: timeoutMs },
+            ),
+            targetPage.locator("#editor input[type='submit'], #editor button[type='submit']").click(),
+          ]);
+          actionResponse = response;
+          await targetPage.waitForURL(expectedUrl, { timeout: timeoutMs });
+          return actionResponse;
+        },
+        onPhase: async (phase) => {
+          await this.#browserContexts.setActiveFixture(phase === "settled" ? "S758_CREATE_SETTLED" : "S758_CREATE_INITIAL");
+        },
+      });
+      if (capture.capture_error || capture.navigation_status !== 200 || capture.final_url !== expectedUrl || actionResponse === null) {
+        const detail = capture.capture_error?.message ?? `status=${capture.navigation_status} final=${capture.final_url} action=${actionResponse === null ? "missing" : "present"}`;
+        throw new Error(`S758 autonumber create capture failed: ${detail}`);
+      }
+      const expectedEditorFailures = capture.failures.filter((failure) => failure.kind === "http_error" && failure.status === 404 && failure.resource_type === "document" && failure.url === editorUrl);
+      const unexpectedFailures = capture.failures.filter((failure) => !expectedEditorFailures.includes(failure));
+      if (editorNavigationStatus !== 404 || expectedEditorFailures.length !== 1) throw new Error("S758 create did not retain the expected missing-page editor boundary");
+      const actionBody = await actionResponse.text();
+      let actionResult;
+      try { actionResult = JSON.parse(actionBody); } catch { throw new Error("S758 autonumber action did not return JSON"); }
+      const data = typeof actionResult?.data === "string" ? parseDevalue(actionResult.data) : null;
+      const assignedSlug = data?.res?.slug;
+      if (typeof assignedSlug !== "string" || assignedSlug.length === 0) throw new Error("S758 autonumber action did not return an assigned slug");
+      const domIdentity = await page.evaluate(() => ({
+        page_id: Number(document.querySelector("[data-page-id]")?.getAttribute("data-page-id") ?? 0),
+        revision_id: Number(document.querySelector("[data-revision-id]")?.getAttribute("data-revision-id") ?? 0),
+        slug: decodeURIComponent(location.pathname.slice(1)),
+        title: document.querySelector("#page-title")?.textContent?.trim() ?? "",
+      }));
+      const pageIdentity = {
+        page_id: Number(data.res.page_id ?? domIdentity.page_id),
+        revision_id: Number(data.res.revision_id ?? domIdentity.revision_id),
+        slug: domIdentity.slug,
+        title: domIdentity.title,
+      };
+      return {
+        assigned_slug: assignedSlug,
+        redirect_url: expectedUrl,
+        title,
+        action: {
+          http_status: actionResponse.status(),
+          action_type: actionResult?.type,
+          response_body_sha256: sha256(actionBody),
+        },
+        capture: {
+          navigation_status: capture.navigation_status,
+          input_url: expectedUrl,
+          final_url: capture.final_url,
+          editor_navigation_status: editorNavigationStatus,
+          failures: unexpectedFailures,
+          request_gate_aborts: capture.request_gate_aborts,
+          first_paint: {
+            phase: capture.first_paint.document.phase,
+            screenshot: capture.first_paint.screenshot,
+            title: await page.evaluate(() => globalThis.__open43CreateFirstPaint?.title ?? ""),
+            content: await page.evaluate(() => globalThis.__open43CreateFirstPaint?.content ?? ""),
+          },
+          settled: {
+            phase: capture.document.phase,
+            resource_completion: capture.document.resource_completion.status,
+            content: (await page.locator("#page-content").innerText()).trim(),
+          },
+        },
+        page: pageIdentity,
+      };
+    } finally {
+      await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
+    }
+  }
+
+  async observeHistoryAndReload({ pageUrl }) {
+    const page = await (await this.#context("administrator")).newPage();
+    try {
+      const historyUrl = `${pageUrl}#_history`;
+      const history = await page.goto(historyUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      await page.locator(".page-history").waitFor({ state: "visible", timeout: CAPTURE_TIMEOUT_MS });
+      const historyRowCount = await page.locator(".page-history tr").count();
+      await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      const reload = await page.reload({ waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      return {
+        history: { url: historyUrl, status: history?.status() ?? 0, row_count: historyRowCount },
+        reload: { url: page.url(), status: reload?.status() ?? 0 },
+      };
+    } finally {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }

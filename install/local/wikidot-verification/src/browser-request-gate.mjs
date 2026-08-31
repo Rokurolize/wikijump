@@ -148,11 +148,12 @@ export function localBrowserCaptureOrigins(value) {
   } catch {
     throw new Error(`local capture URL is not a URL: ${value}`);
   }
-  if (url.protocol !== "https:" || url.username || url.password || url.port || !LOCAL_WIKIJUMP_HOST_RE.test(url.hostname)) {
-    throw new Error(`local capture URL must be an HTTPS *.wikijump.localhost origin without credentials or a non-default port: ${value}`);
+  if (url.protocol !== "https:" || url.username || url.password || !LOCAL_WIKIJUMP_HOST_RE.test(url.hostname)) {
+    throw new Error(`local capture URL must be an HTTPS *.wikijump.localhost origin without credentials: ${value}`);
   }
   const site = url.hostname.slice(0, -".wikijump.localhost".length);
-  return [url.origin, `https://${site}.wjfiles.localhost`];
+  const port = url.port === "" ? "" : `:${url.port}`;
+  return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
 export function isWikidotCapturePublicOrigin(value, resourceType, method) {
@@ -500,6 +501,18 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
   if (publicOriginPredicate !== null && typeof publicOriginPredicate !== "function") throw new Error("browser request-gate public origin predicate is malformed");
   const exempt = normalizedOrigins(exemptOrigins);
   const attributedAborts = new WeakMap();
+  if (exempt.size > 0) {
+    context.on("request", (request) => {
+      try {
+        const url = new URL(request.url());
+        if (new Set(["http:", "https:"]).has(url.protocol) && exempt.has(url.origin)) {
+          gate.recordLocalExempt();
+        }
+      } catch {
+        // Malformed/non-HTTP requests remain the route handler's fail-closed concern.
+      }
+    });
+  }
   const abortWithAttribution = async (route, decision) => {
     const request = route.request();
     attributedAborts.set(request, Object.freeze({
@@ -508,17 +521,15 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
     }));
     if (!(await abortRoute(route))) attributedAborts.delete(request);
   };
-  await context.route("**/*", async (route) => {
+  const routePattern = exempt.size === 0
+    ? "**/*"
+    : (url) => !exempt.has(url.origin);
+  await context.route(routePattern, async (route) => {
     try {
       const url = new URL(route.request().url());
       if (!new Set(["http:", "https:"]).has(url.protocol)) {
         gate.recordUnsupportedRequestBlocked();
         await abortWithAttribution(route, "unsupported_protocol");
-        return;
-      }
-      if (exempt.has(url.origin)) {
-        gate.recordLocalExempt();
-        await route.continue();
         return;
       }
       if (

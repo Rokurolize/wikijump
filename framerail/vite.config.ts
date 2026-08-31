@@ -2,6 +2,9 @@ import pkg from "./package.json"
 
 import { sveltekit } from "@sveltejs/kit/vite"
 import { execSync } from "child_process"
+import { rmSync } from "fs"
+import { tmpdir } from "os"
+import { resolve } from "path"
 
 import type { UserConfig } from "vite"
 
@@ -12,7 +15,16 @@ try {
   // ignore pnpm version if there are errors
 }
 
+const testCacheDir = process.env.NODE_TEST_CONTEXT
+  ? resolve(tmpdir(), `wikijump-framerail-vite-test-${process.pid}`)
+  : null
+
+if (testCacheDir) {
+  process.on("exit", () => rmSync(testCacheDir, { recursive: true, force: true }))
+}
+
 const config: UserConfig = {
+  ...(testCacheDir ? { cacheDir: testCacheDir } : {}),
   server: {
     host: "::",
     port: 3393,

@@ -3,6 +3,7 @@
 - Feature ID: `watching-notifications`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,53 @@ Allow users to watch and unwatch sites, categories, pages, and forum topics, wit
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+
+### P1 - invocation grammar and scalar interpretation
+
+- Users can watch sites, categories, and pages; page watching covers page alterations and comments. Watching may begin automatically after documented actions or manually through Start watching, and users can disable automatic watching in account activity settings.
+
+### P2 - parser stage, nesting, and composition
+
+- Watching is account/runtime state, not wiki syntax.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Watch subscriptions persist per user/source. Editing/commenting may create a watch according to user settings; unwatching removes that subscription without mutating the watched page.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Notifications and watch-list management are private to the user. A notification must not disclose content the recipient is no longer permitted to view at delivery/render time.
+
+### P5 - selection, ordering, counting, and pagination
+
+- A site watch semantically covers all page changes in that site; a category watch covers its pages. Watch-list UI may paginate but inheritance must not depend on visible list page boundaries.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Notifications are delivered by email from the documented watching address; each email contains an unsubscribe link capable of removing that event source or all email notifications. Account Activity/Settings provides manual management.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- Page options expose Start watching/stop behavior where applicable; notification email/UI content must identify the watched event without exposing private account settings.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Duplicate events/retries must not create uncontrolled duplicate subscriptions. Permission loss and unwatch must converge so later notifications do not leak protected updates; email delivery failure must not roll back the page mutation.
 
 
 ## Suggested public TDD seams

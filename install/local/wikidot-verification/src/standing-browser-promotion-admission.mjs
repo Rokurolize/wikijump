@@ -175,6 +175,9 @@ export async function verifyStandingCandidateParityAdmission({
     validateCandidateParityIdentity(identityRaw),
     { now },
   );
+  if (externalIdentity.candidate.profile !== "production-build") {
+    throw new Error("candidate parity admission requires production-build");
+  }
   const receipt = validateCandidateParityReceipt(receiptRaw, {
     now,
     requirePass: true,

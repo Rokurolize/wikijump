@@ -211,14 +211,6 @@ impl PageQueryService {
             }
         }
 
-        if matches!(categories, Some(ref values) if values.is_empty())
-            || matches!(tags_any, Some(ref values) if values.is_empty())
-        {
-            return Ok(Vec::new());
-        }
-        let tags_all = tags_all.filter(|values| !values.is_empty());
-        let tags_none = tags_none.filter(|values| !values.is_empty());
-
         let make_error = || Error::new("failed to select pages", ErrorType::Page);
         let user_id = ctx.request().user_id().or_raise(|| {
             Error::new(
@@ -227,6 +219,14 @@ impl PageQueryService {
             )
         })?;
         let site_id = SiteService::get_id(ctx, site).await.or_raise(make_error)?;
+        if matches!(categories, Some(ref values) if values.is_empty())
+            || matches!(tags_any, Some(ref values) if values.is_empty())
+        {
+            return Ok(Vec::new());
+        }
+        let tags_all = tags_all.filter(|values| !values.is_empty());
+        let tags_none = tags_none.filter(|values| !values.is_empty());
+
         let parent = normalize_optional(parent);
         let created_by = normalize_optional(created_by);
         let rating = normalize_optional(rating);

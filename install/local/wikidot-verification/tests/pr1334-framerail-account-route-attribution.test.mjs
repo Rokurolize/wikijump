@@ -2,13 +2,15 @@ import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import { readFile } from "node:fs/promises"
 import test from "node:test"
+import { historicalBytes, historicalSha256 } from "./historical-git.mjs"
 
 const root = new URL("../../../../", import.meta.url)
 const artifactPath = new URL(
   "install/local/wikidot-verification/artifacts/pr1334-framerail-account-route-attribution-20260810.json",
   root
 )
-const inventoryPath = new URL("docs/development/compatibility-surface-inventory.json", root)
+const baseCommit = "c78561b3f6dc35198658f618fc01d10e4bcad6d0"
+const captureCommit = "fa8e3f381e290caeff9e78bd8ab4468075e61469"
 const expectedIds = [
   "catalog-feature:account-lifecycle",
   "catalog-feature:secure-login",
@@ -40,12 +42,11 @@ const expectedActions = new Map([
   ["framerail-server-action:/-/user?/userEdit", ["userEdit", "userEditAction", "framerail/src/routes/[x+2d]/user/+page.server.ts", "framerail/src/lib/server/load/user.ts", "test_gap"]]
 ])
 
-const bytes = async (path) => readFile(new URL(path, root))
 const hash = (value) => createHash("sha256").update(value).digest("hex")
 
 async function verifyWitness(witness) {
   assert.match(witness.path, /^(framerail\/src|framerail\/tests)\//)
-  const sourceBytes = await bytes(witness.path)
+  const sourceBytes = historicalBytes(baseCommit, witness.path)
   const source = sourceBytes.toString("utf8")
   assert.equal(witness.sha256, hash(sourceBytes), witness.path)
   assert.ok(witness.anchors.length > 0, witness.path)
@@ -60,7 +61,7 @@ async function verifyWitness(witness) {
 test("attributes the exact Framerail account route source slice without compatibility overclaim", async () => {
   const artifact = JSON.parse(await readFile(artifactPath, "utf8"))
   assert.equal(artifact.schema, "wikijump.pr1334.framerail_account_route_attribution.v1")
-  assert.equal(artifact.base_commit, "c78561b3f6dc35198658f618fc01d10e4bcad6d0")
+  assert.equal(artifact.base_commit, baseCommit)
   assert.equal(artifact.base_tree, "9f236023be41fd9c807272bbb16dd060b500b140")
   assert.equal(artifact.claim_scope, "source_attribution_only")
   assert.equal(artifact.compatibility_verdict, "not_evaluated")
@@ -73,12 +74,12 @@ test("attributes the exact Framerail account route source slice without compatib
   assert.deepEqual(artifact.records.map(({ surface_id }) => surface_id), expectedIds)
   assert.deepEqual(artifact.blocked_surface_ids, [])
 
-  const inventoryBytes = await readFile(inventoryPath)
+  const inventoryBytes = historicalBytes(captureCommit, "docs/development/compatibility-surface-inventory.json")
   const inventory = JSON.parse(inventoryBytes)
   assert.equal(artifact.identities.inventory.path, "docs/development/compatibility-surface-inventory.json")
   assert.equal(artifact.identities.inventory.sha256, hash(inventoryBytes))
   for (const identity of [artifact.identities.fixture, artifact.identities.script]) {
-    assert.equal(identity.sha256, hash(await bytes(identity.path)), identity.path)
+    assert.equal(identity.sha256, historicalSha256(captureCommit, identity.path), identity.path)
   }
   const inventoryRows = new Map(inventory.surfaces.map((row) => [row.surface_id, row]))
 

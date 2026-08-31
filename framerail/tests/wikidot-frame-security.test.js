@@ -71,6 +71,25 @@ test("materializes an exact current-site file origin", () => {
   assert.doesNotMatch(policy, /wikijump-current-site\.invalid|\*\.wjfiles/u)
 })
 
+test("preserves a local request port in the current-site file CSP origin", () => {
+  const response = new Response("", {
+    headers: {
+      "content-security-policy":
+        "img-src 'self' https://wikijump-current-site.invalid; style-src 'self' https://wikijump-current-site.invalid"
+    }
+  })
+  materializeSiteCsp(
+    response,
+    "scp-wiki",
+    "local",
+    "https://scp-wiki.wikijump.localhost:18443"
+  )
+  assert.equal(
+    response.headers.get("content-security-policy"),
+    "img-src 'self' https://scp-wiki.wjfiles.localhost:18443; style-src 'self' https://scp-wiki.wjfiles.localhost:18443"
+  )
+})
+
 test("does not materialize untrusted site slugs", () => {
   const response = new Response("", {
     headers: {

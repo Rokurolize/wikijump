@@ -9,13 +9,36 @@ import path from "node:path";
 import {spawnSync} from "node:child_process";
 
 import {runCliIfMain} from "../src/cli-entry.mjs";
+import {publishBytesNoReplace} from "../src/atomic-no-replace.mjs";
 import {sha256Hex, stableStringify} from "../src/canonical-json.mjs";
 import {sha256} from "../src/syntax-differential.mjs";
 
 const OWNER = "generic-runtime-differential";
 const CANDIDATE_SCHEMA = "roku.candidate_build_manifest.v1";
+const GIT = "/usr/bin/git";
+const DOCKER = "/usr/bin/docker";
+const NODE = process.execPath;
 const SHA1_RE = /^[0-9a-f]{40}$/u;
 const SHA256_RE = /^[0-9a-f]{64}$/u;
+const GIT_ENV = Object.freeze({
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_NO_REPLACE_OBJECTS: "1",
+  GIT_OPTIONAL_LOCKS: "0",
+  LANG: "C",
+  LC_ALL: "C",
+  PATH: "/usr/bin:/bin",
+});
+
+function dockerEnv(config) {
+  return {
+    DOCKER_CONFIG: config,
+    DOCKER_HOST: "unix:///var/run/docker.sock",
+    LANG: "C",
+    LC_ALL: "C",
+    PATH: "/usr/bin:/bin",
+  };
+}
 
 function valueAfter(argv, index, option) {
   const value = argv[index + 1];
@@ -33,6 +56,7 @@ export function parseArgs(argv) {
     externalReferences: [],
     stateFixtures: [],
     output: null,
+    runId: null,
     site: "sandbox-for-codex",
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -51,6 +75,7 @@ export function parseArgs(argv) {
     } else if (option === "--external-reference") {
       args.externalReferences.push(path.resolve(valueAfter(argv, index++, option)));
     } else if (option === "--output") args.output = path.resolve(valueAfter(argv, index++, option));
+    else if (option === "--run-id") args.runId = valueAfter(argv, index++, option);
     else if (option === "--site") args.site = valueAfter(argv, index++, option);
     else throw new Error(`unknown option: ${option}`);
   }
@@ -64,6 +89,8 @@ export function parseArgs(argv) {
   }
   if (args.captures.length === 0) throw new Error("--captures is required");
   if (args.site !== "sandbox-for-codex") throw new Error("--site must be sandbox-for-codex");
+  if (!args.runId) throw new Error("--run-id is required");
+  if (!/^candidate-run-[0-9a-f]{12}$/u.test(args.runId)) throw new Error("--run-id must be a candidate run ID");
   return args;
 }
 
@@ -78,6 +105,42 @@ function run(command, args, options = {}) {
     throw new Error(`${command} ${args.join(" ")} failed: ${result.stderr || result.stdout}`);
   }
   return result.stdout.trim();
+}
+
+export function resourceSnapshot(project, env, inspect = spawnSync) {
+  const resources = [
+    ["containers", ["ps", "--all"]],
+    ["volumes", ["volume", "ls"]],
+    ["networks", ["network", "ls"]],
+    ["images", ["image", "ls"]],
+  ];
+  try {
+    return Object.fromEntries(resources.map(([name, command]) => {
+      const result = inspect(DOCKER, [...command, "--quiet", "--filter", `label=com.rokurolize.wikijump.run_id=${project}`], {
+        encoding: "utf8",
+        env,
+        stdio: "pipe",
+      });
+      if (result.error || result.status !== 0 || result.signal !== null) throw result.error ?? new Error(`${name} inspection failed`);
+      return [name, (result.stdout ?? "").trim() ? result.stdout.trim().split(/\s+/u) : []];
+    }));
+  } catch {
+    return null;
+  }
+}
+
+export function resourcesAbsent(project, env, inspect = spawnSync) {
+  const snapshot = resourceSnapshot(project, env, inspect);
+  return snapshot !== null && Object.values(snapshot).every((items) => items.length === 0);
+}
+
+export function requireOutputAbsent(target, name) {
+  try {
+    fs.lstatSync(target);
+    throw new Error(`${name} already exists: ${target}`);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
 }
 
 function exactFtmlSha(cargoLock) {
@@ -103,8 +166,10 @@ function isRecord(value) {
 
 export async function bindCandidate({repository, candidateManifest, binary}) {
   let manifest;
+  let candidateManifestBytes;
   try {
-    manifest = JSON.parse(await fsp.readFile(candidateManifest, "utf8"));
+    candidateManifestBytes = await fsp.readFile(candidateManifest);
+    manifest = JSON.parse(candidateManifestBytes.toString("utf8"));
   } catch (error) {
     throw new Error(`candidate manifest is unreadable: ${error.message}`);
   }
@@ -180,11 +245,11 @@ export async function bindCandidate({repository, candidateManifest, binary}) {
     "has inconsistent features",
   );
 
-  if (run("git", ["status", "--porcelain"], {cwd: repository}) !== "") {
+  if (run(GIT, ["status", "--porcelain"], {cwd: repository, env: GIT_ENV}) !== "") {
     throw new Error("candidate repository must be clean");
   }
-  const head = run("git", ["rev-parse", "--verify", "HEAD"], {cwd: repository});
-  const wikijumpTree = run("git", ["rev-parse", "--verify", "HEAD^{tree}"], {cwd: repository});
+  const head = run(GIT, ["rev-parse", "--verify", "HEAD"], {cwd: repository, env: GIT_ENV});
+  const wikijumpTree = run(GIT, ["rev-parse", "--verify", "HEAD^{tree}"], {cwd: repository, env: GIT_ENV});
   requireCandidate(head === source.wikijump_sha, "does not match the repository commit");
   requireCandidate(SHA1_RE.test(wikijumpTree), "repository has no valid source tree");
 
@@ -206,7 +271,7 @@ export async function bindCandidate({repository, candidateManifest, binary}) {
     sha256(await fsp.readFile(selectedBinary)) === build.binary_sha256,
     "binary hash does not match",
   );
-  return {manifest, binary: selectedBinary};
+  return {manifest, binary: selectedBinary, candidateReceipt: {path: candidateManifest, sha256: sha256Hex(candidateManifestBytes)}};
 }
 
 async function freePorts(count) {
@@ -228,13 +293,13 @@ async function freePorts(count) {
   }
 }
 
-function standingImageId(service) {
-  return run("docker", [
+function standingImageId(service, env) {
+  return run(DOCKER, [
     "inspect",
     `wikijump-standing-${service}-1`,
     "--format",
     "{{.Image}}",
-  ]);
+  ], {env});
 }
 
 function readAdministrator(repository) {
@@ -427,29 +492,50 @@ export function runtimeIdentity(manifest, compose, config) {
 
 export async function main(argv) {
   const args = parseArgs(argv);
-  if (fs.existsSync(args.output)) throw new Error(`output already exists: ${args.output}`);
-  const {manifest, binary} = await bindCandidate(args);
-  const runId = `runtime-diff-${crypto.randomUUID().slice(0, 12)}`;
+  requireOutputAbsent(args.output, "output");
+  const cleanupReceiptPath = `${args.output}.cleanup.json`;
+  const stackLogPath = `${args.output}.stack.log`;
+  requireOutputAbsent(cleanupReceiptPath, "cleanup receipt");
+  requireOutputAbsent(stackLogPath, "stack log");
+  const runId = args.runId;
+  let boundCandidate;
+  try {
+    boundCandidate = await bindCandidate(args);
+  } catch (error) {
+    const failure = {schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1", run_id: runId, project: runId, status: "fail", reason: error?.message ?? String(error), compose_started: false, compose_down_exit_code: null, compose_down_signal: null, run_root_removed: true, public_absence_verified: false, resources_released: true, vacant: true, browser_closed: true};
+    await publishBytesNoReplace(cleanupReceiptPath, `${JSON.stringify(failure)}\n`);
+    throw error;
+  }
+  const {manifest, binary, candidateReceipt} = boundCandidate;
   const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
-  const runRoot = await fsp.mkdtemp(path.join(os.tmpdir(), `${runId}-`));
   const project = runId;
-  const composePath = path.join(runRoot, "compose.yaml");
-  const configPath = path.join(runRoot, "config.toml");
-  const identityPath = path.join(runRoot, "runtime-identity.json");
-  const [rpcPort, textBlockPort] = await freePorts(2);
-  const labels = {
-    "com.rokurolize.wikijump.owner": OWNER,
-    "com.rokurolize.wikijump.expiry": expiresAt,
-    "com.rokurolize.wikijump.run_id": runId,
-    "com.rokurolize.wikijump.lifecycle": "delete-on-close",
-  };
-  const credentials = {
-    databasePassword: crypto.randomBytes(32).toString("hex"),
-    filesAccessKey: `runtime${crypto.randomBytes(12).toString("hex")}`,
-    filesSecretKey: crypto.randomBytes(32).toString("hex"),
-  };
+  let runRoot = null;
+  let composePath = null;
+  let configPath = null;
+  let identityPath = null;
+  let localDockerEnv = null;
   let composeStarted = false;
   try {
+    runRoot = await fsp.mkdtemp(path.join(os.tmpdir(), `${runId}-`));
+    composePath = path.join(runRoot, "compose.yaml");
+    configPath = path.join(runRoot, "config.toml");
+    identityPath = path.join(runRoot, "runtime-identity.json");
+    const dockerConfigPath = path.join(runRoot, "docker-config");
+    for (const [target, name] of [[composePath, "compose output"], [configPath, "runtime config output"], [identityPath, "runtime identity output"]]) requireOutputAbsent(target, name);
+    await fsp.mkdir(dockerConfigPath, {mode: 0o700});
+    localDockerEnv = dockerEnv(dockerConfigPath);
+    const [rpcPort, textBlockPort] = await freePorts(2);
+    const labels = {
+      "com.rokurolize.wikijump.owner": OWNER,
+      "com.rokurolize.wikijump.expiry": expiresAt,
+      "com.rokurolize.wikijump.run_id": runId,
+      "com.rokurolize.wikijump.lifecycle": "delete-on-close",
+    };
+    const credentials = {
+      databasePassword: crypto.randomBytes(32).toString("hex"),
+      filesAccessKey: `runtime${crypto.randomBytes(12).toString("hex")}`,
+      filesSecretKey: crypto.randomBytes(32).toString("hex"),
+    };
     const localConfig = await fsp.readFile(
       path.join(args.repository, "install/local/deepwell/config.toml"),
       "utf8",
@@ -460,10 +546,10 @@ export async function main(argv) {
       project,
       labels,
       images: {
-        database: standingImageId("database"),
-        cache: standingImageId("cache"),
-        files: standingImageId("files"),
-        deepwell: standingImageId("deepwell"),
+        database: standingImageId("database", localDockerEnv),
+        cache: standingImageId("cache", localDockerEnv),
+        files: standingImageId("files", localDockerEnv),
+        deepwell: standingImageId("deepwell", localDockerEnv),
       },
       binary,
       config: configPath,
@@ -478,16 +564,16 @@ export async function main(argv) {
     const identity = runtimeIdentity(manifest, composeIdentityDocument(composeOptions), config);
     await fsp.writeFile(identityPath, `${JSON.stringify(identity, null, 2)}\n`, {mode: 0o600});
     composeStarted = true;
-    run("docker", [
+    run(DOCKER, [
       "compose", "-p", project, "-f", composePath,
       "up", "--detach", "--wait", "--wait-timeout", "600", "deepwell",
-    ]);
-    run("docker", [
+    ], {env: localDockerEnv});
+    run(DOCKER, [
       "compose", "-p", project, "-f", composePath,
       "exec", "--no-TTY", "files", "sh", "-ec",
       'mc alias -q set local http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null; mc anonymous set download local/deepwell-text-blocks >/dev/null',
-    ]);
-    const ratingUpdate = run("docker", [
+    ], {env: localDockerEnv});
+    const ratingUpdate = run(DOCKER, [
       "compose", "-p", project, "-f", composePath,
       "exec", "--no-TTY", "--user", "wikijump",
       "database", "psql",
@@ -495,11 +581,11 @@ export async function main(argv) {
       "--set", "ON_ERROR_STOP=1",
       "--command",
       "UPDATE page_category SET rating_type = 'plus' WHERE site_id = (SELECT site_id FROM site WHERE slug = 'sandbox-for-codex') AND slug = '_default';",
-    ]);
+    ], {env: localDockerEnv});
     if (!ratingUpdate.endsWith("UPDATE 1")) {
       throw new Error("sandbox oracle rating state did not update exactly one category");
     }
-    const userInsert = run("docker", [
+    const userInsert = run(DOCKER, [
       "compose", "-p", project, "-f", composePath,
       "exec", "--no-TTY", "--user", "wikijump",
       "database", "psql",
@@ -507,7 +593,7 @@ export async function main(argv) {
       "--set", "ON_ERROR_STOP=1",
       "--command",
       "INSERT INTO known_user (user_id) VALUES (2506), (9318), (111115), (122357), (5910559); INSERT INTO wikidot_user (user_id, created_at, fetched_at, is_deleted, name, slug, karma, is_pro) VALUES (2506, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Alice', 'alice', 0, FALSE), (9318, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Bob', 'bob', 0, FALSE), (111115, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Missing', 'missing', 0, FALSE), (122357, NOW() - INTERVAL '1 second', NOW(), FALSE, 'system', 'system', 0, FALSE), (5910559, NOW() - INTERVAL '1 second', NOW(), FALSE, 'Account Name', 'account-name', 0, FALSE);",
-    ]);
+    ], {env: localDockerEnv});
     if (!userInsert.endsWith("INSERT 0 5")) {
       throw new Error("sandbox oracle user state did not insert exactly five users");
     }
@@ -524,11 +610,13 @@ export async function main(argv) {
       "--site", args.site,
       "--output", args.output,
     ];
-    const result = spawnSync(process.execPath, runnerArgs, {
+    const result = spawnSync(NODE, runnerArgs, {
       cwd: args.repository,
       encoding: "utf8",
       env: {
-        ...process.env,
+        LANG: "C",
+        LC_ALL: "C",
+        PATH: "/usr/bin:/bin",
         WIKIDOT_VERIFY_ADMIN_EMAIL: administrator.email,
         WIKIDOT_VERIFY_ADMIN_PASS: administrator.password,
         WIKIDOT_VERIFY_DISPOSABLE_RUN_ID: runId,
@@ -541,22 +629,62 @@ export async function main(argv) {
     process.stderr.write(result.stderr);
     return result.status ?? 2;
   } finally {
+    let stackLogError = null;
     if (composeStarted) {
       const logs = spawnSync(
-        "docker",
+        DOCKER,
         ["compose", "-p", project, "-f", composePath, "logs", "--no-color"],
-        {encoding: "utf8"},
+        {encoding: "utf8", env: localDockerEnv},
       );
-      await fsp.writeFile(`${args.output}.stack.log`, `${logs.stdout}\n${logs.stderr}`, {mode: 0o600})
-        .catch(() => {});
+      try {
+        await fsp.writeFile(stackLogPath, `${logs.stdout ?? ""}\n${logs.stderr ?? ""}`, {flag: "wx", mode: 0o600});
+      } catch (error) {
+        stackLogError = error;
+      }
     }
-    if (fs.existsSync(composePath)) {
-      spawnSync("docker", [
+    let down = null;
+    if (composePath !== null && fs.existsSync(composePath)) {
+      down = spawnSync(DOCKER, [
         "compose", "-p", project, "-f", composePath,
         "down", "--volumes", "--remove-orphans",
-      ], {encoding: "utf8"});
+      ], {encoding: "utf8", env: localDockerEnv});
     }
-    await fsp.rm(runRoot, {recursive: true, force: true});
+    const downSucceeded = !composeStarted || (down?.status === 0 && down?.signal === null);
+    const resourcesReleased = !composeStarted || resourcesAbsent(project, localDockerEnv);
+    const preserveRunRoot = composeStarted && (!downSucceeded || !resourcesReleased || stackLogError !== null);
+    let runRootRemovalError = null;
+    if (runRoot !== null && !preserveRunRoot) {
+      try {
+        await fsp.rm(runRoot, {recursive: true, force: true});
+      } catch (error) {
+        runRootRemovalError = error;
+      }
+    }
+    const cleanup = {
+      schema: "wikijump_syntax_differential.runtime_stack_cleanup.v1",
+      run_id: runId,
+      project,
+      run_root: runRoot,
+      status: (!composeStarted || (downSucceeded && resourcesReleased && stackLogError === null)) && !preserveRunRoot && runRootRemovalError === null ? "pass" : "fail",
+      run_root_removal_error: runRootRemovalError?.message ?? null,
+      compose_started: composeStarted,
+      compose_down_exit_code: down?.status ?? null,
+      compose_down_signal: down?.signal ?? null,
+      run_root_removed: runRoot === null || !fs.existsSync(runRoot),
+      public_absence_verified: false,
+      resources_released: resourcesReleased,
+      vacant: false,
+      browser_closed: true,
+      candidate_receipt: candidateReceipt,
+      resource_observation: {
+        after: composeStarted ? resourceSnapshot(project, localDockerEnv) : {containers: [], volumes: [], networks: [], images: []},
+      },
+    };
+    cleanup.public_absence_verified = cleanup.status === "pass";
+    cleanup.vacant = cleanup.status === "pass" && cleanup.run_root_removed;
+    await publishBytesNoReplace(cleanupReceiptPath, `${JSON.stringify(cleanup, null, 2)}\n`);
+    if (stackLogError !== null) throw new Error(`runtime differential stack log publication failed: ${stackLogError.message}`);
+    if (cleanup.status !== "pass") throw new Error(`runtime differential stack cleanup failed; see ${cleanupReceiptPath}`);
   }
 }
 

@@ -26,9 +26,13 @@ use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::error::prelude::*;
 use deepwell::license::License;
 use deepwell::models::alias::{self, Entity as AliasTable};
+use deepwell::models::audit_log::{Column as AuditLogColumn, Entity as AuditLogTable};
+use deepwell::models::relation::{Column as RelationColumn, Entity as RelationTable};
 use deepwell::models::site::Entity as SiteTable;
+use deepwell::models::user::{Column as UserColumn, Entity as UserTable};
 use deepwell::services::PageService;
 use deepwell::services::RequestContext;
+use deepwell::services::ServiceContext;
 use deepwell::services::alias::{AliasService, CreateAlias};
 use deepwell::services::category::CategoryService;
 use deepwell::services::page::CreatePage;
@@ -36,6 +40,7 @@ use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
+use deepwell::services::session::{CreateSession, SessionService};
 use deepwell::services::site::{CreateSite, SiteService, UpdateSiteBody};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{
@@ -43,9 +48,10 @@ use deepwell::types::{
 };
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, EntityTrait, IntoActiveModel, PaginatorTrait,
-    QueryFilter, Set,
+    QueryFilter, QueryOrder, Set, TransactionTrait,
 };
 use serde_json::json;
+use std::borrow::Cow;
 use std::sync::atomic::{AtomicU64, Ordering};
 use str_macro::str;
 
@@ -124,6 +130,62 @@ async fn grant_site_edit(runner: &TestRunner, site_id: i64, user_id: i64, n: u64
     .expect("failed to grant site editor role to user");
 }
 
+async fn grant_site_page_create(runner: &TestRunner, site_id: i64, user_id: i64, n: u64) {
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: format!("Site Page Creator {n}"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("failed to create page-creator role");
+
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: vec![
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::Create,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::View,
+                },
+            ],
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("failed to grant page-create permission to role");
+
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("failed to grant page-creator role to user");
+}
+
 async fn create_site(runner: &TestRunner, n: u64) -> i64 {
     SiteService::create(
         runner.context(),
@@ -138,10 +200,374 @@ async fn create_site(runner: &TestRunner, n: u64) -> i64 {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("failed to create test site")
     .site_id
+}
+
+#[tokio::test]
+async fn public_site_create_audits_authenticated_actor_and_supplied_ip_once() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "site-creator").await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("public-site-create-audit-{n}"),
+            "name": format!("Public site create audit {n}"),
+            "tagline": "Audited public creation",
+            "description": "Public site creation actor projection fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.create"))
+        .filter(AuditLogColumn::SiteId.eq(created.site_id))
+        .all(runner.context().transaction())
+        .await
+        .expect("site-create audit lookup should succeed");
+    assert_eq!(events.len(), 1, "successful public creation audits once");
+    assert_eq!(events[0].user_id, Some(actor_user_id));
+    assert_eq!(events[0].ip_address, common::IP_ADDRESS.to_string());
+}
+
+#[tokio::test]
+async fn hosted_sites_keep_same_slug_page_state_isolated_at_public_endpoints() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "hosted-site-owner").await;
+    let session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: actor_user_id,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "deepwell hosted-site isolation test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("hosted-site owner session should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(actor_user_id),
+        ..Default::default()
+    });
+
+    let mut sites = Vec::new();
+    for suffix in ["alpha", "beta"] {
+        let site = run_endpoint!(
+            runner,
+            site_create,
+            json!({
+                "slug": format!("hosted-isolation-{n}-{suffix}"),
+                "name": format!("Hosted isolation {n} {suffix}"),
+                "tagline": "",
+                "description": format!("Hosted site isolation fixture {suffix}"),
+                "default_page": null,
+                "layout": "wikidot",
+                "license": "cc-by-sa-4.0",
+                "locale": "en",
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        grant_site_page_create(&runner, site.site_id, actor_user_id, n).await;
+        sites.push((suffix, site));
+    }
+
+    for (suffix, site) in &sites {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(actor_user_id),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Slug(Cow::Borrowed("shared-page"))),
+        });
+        let page = run_endpoint!(
+            runner,
+            page_create,
+            json!({
+                "site_id": site.site_id,
+                "wikitext": format!("Hosted content {suffix}"),
+                "title": format!("Hosted page {suffix}"),
+                "alt_title": null,
+                "slug": "shared-page",
+                "layout": "wikidot",
+                "revision_comments": "create hosted isolation page",
+                "user_id": actor_user_id,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_eq!(page.slug, "shared-page");
+    }
+
+    for (suffix, site) in &sites {
+        runner.set_request_context(RequestContext {
+            session: None,
+            user_id: Some(actor_user_id),
+            site_id: Some(site.site_id),
+            page_reference: Some(Reference::Slug(Cow::Borrowed("shared-page"))),
+        });
+        let view = run_endpoint!(
+            runner,
+            article_view,
+            json!({
+                "site_id": site.site_id,
+                "session_token": session_token,
+                "route": { "slug": "shared-page", "extra": "" },
+                "locales": ["en"],
+            }),
+        );
+        let body = match view.page {
+            deepwell::services::view::GetPageViewOutput::Found {
+                compiled_body_html,
+                ..
+            } => compiled_body_html,
+            other => {
+                panic!("expected hosted page to resolve in its own site, got {other:?}")
+            }
+        };
+        assert!(body.contains(&format!("Hosted content {suffix}")));
+        let other = if *suffix == "alpha" { "beta" } else { "alpha" };
+        assert!(
+            !body.contains(&format!("Hosted content {other}")),
+            "same-slug content from another hosted site leaked into site {}: {body}",
+            site.site_id,
+        );
+    }
+}
+
+#[tokio::test]
+async fn anonymous_site_create_emits_no_event() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let before = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("baseline site-create audit count should succeed");
+
+    let error = run_endpoint_err!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("anonymous-site-create-audit-{n}"),
+            "name": format!("Anonymous site create audit {n}"),
+            "tagline": "",
+            "description": "Anonymous creation must be rejected",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::PermissionDenied);
+
+    let after = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("anonymous site-create audit count should succeed");
+    assert_eq!(after, before);
+}
+
+#[tokio::test]
+async fn educational_upgrade_is_site_scoped_and_master_admin_only() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let master_admin = create_user(&runner, n, "educational-master").await;
+    let ordinary_admin = create_user(&runner, n, "educational-admin").await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(master_admin),
+        ..Default::default()
+    });
+    let created = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": format!("educational-site-{n}"),
+            "name": format!("Educational site {n}"),
+            "tagline": "",
+            "description": "Educational status fixture",
+            "default_page": null,
+            "layout": "wikidot",
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    grant_site_edit(&runner, created.site_id, master_admin, n).await;
+    grant_site_edit(&runner, created.site_id, ordinary_admin, n + 100_000).await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ordinary_admin),
+        site_id: Some(created.site_id),
+        ..Default::default()
+    });
+    let denied = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": ordinary_admin,
+            "expected_settings_revision": 0,
+            "educational_upgrade": {
+                "organization": "Run Owned University",
+                "purpose": "Research and teaching",
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(denied, ErrorType::PermissionDenied);
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(master_admin),
+        site_id: Some(created.site_id),
+        ..Default::default()
+    });
+    let upgraded = run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": master_admin,
+            "expected_settings_revision": 0,
+            "educational_upgrade": {
+                "organization": "Run Owned University",
+                "purpose": "Research and teaching",
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let public_site = serde_json::to_value(&upgraded).expect("site should serialize");
+    assert_eq!(public_site["educational"], true);
+    assert_eq!(public_site["settings_revision"], 1);
+    assert!(public_site.get("master_admin_user_id").is_none());
+    assert!(public_site.get("educational_organization").is_none());
+    assert!(public_site.get("educational_purpose").is_none());
+
+    let repeated = run_endpoint_err!(
+        runner,
+        site_update,
+        json!({
+            "site": created.site_id,
+            "user_id": master_admin,
+            "expected_settings_revision": 1,
+            "educational_upgrade": {
+                "organization": "Run Owned University",
+                "purpose": "Research and teaching",
+            },
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(repeated, ErrorType::BadRequest);
+}
+
+#[tokio::test]
+async fn site_create_site_user_relation_and_audit_roll_back_together() {
+    let runner = TestRunner::setup().await;
+    let n = next_n();
+    let actor_user_id = create_user(&runner, n, "rollback-site-creator").await;
+    let slug = format!("site-create-audit-rollback-{n}");
+    let site_user_name = format!("site:{slug}");
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("site-create audit savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(actor_user_id),
+            ..Default::default()
+        });
+
+    let created = deepwell::endpoints::all::site_create(
+        &ctx,
+        common::make_params(json!({
+            "slug": slug,
+            "name": format!("Site create audit rollback {n}"),
+            "tagline": "",
+            "description": "Savepoint rollback fixture",
+            "default_page": null,
+            "layout": null,
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional public site creation should succeed");
+
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("site.create"))
+            .filter(AuditLogColumn::SiteId.eq(created.site_id))
+            .count(&transaction)
+            .await
+            .expect("transactional site-create audit count should succeed"),
+        1,
+    );
+    assert_eq!(
+        RelationTable::find()
+            .filter(RelationColumn::DestId.eq(created.site_id))
+            .filter(RelationColumn::FromId.eq(created.site_user_id))
+            .count(&transaction)
+            .await
+            .expect("transactional site-user relation count should succeed"),
+        1,
+    );
+
+    transaction
+        .rollback()
+        .await
+        .expect("site-create audit savepoint should roll back");
+
+    assert_eq!(
+        SiteTable::find_by_id(created.site_id)
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site count should succeed"),
+        0,
+    );
+    assert_eq!(
+        UserTable::find()
+            .filter(UserColumn::Name.eq(site_user_name))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site user count should succeed"),
+        0,
+    );
+    assert_eq!(
+        RelationTable::find()
+            .filter(RelationColumn::DestId.eq(created.site_id))
+            .filter(RelationColumn::FromId.eq(created.site_user_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site-user relation count should succeed"),
+        0,
+    );
+    assert_eq!(
+        AuditLogTable::find()
+            .filter(AuditLogColumn::EventType.eq("site.create"))
+            .filter(AuditLogColumn::SiteId.eq(created.site_id))
+            .count(runner.context().transaction())
+            .await
+            .expect("rolled-back site-create audit count should succeed"),
+        0,
+    );
 }
 
 #[tokio::test]
@@ -244,6 +670,161 @@ async fn site_update_allows_users_with_site_edit_permission() {
 
     assert_eq!(updated.site_id, site_id);
     assert_eq!(updated.name, "Authorized site rename");
+}
+
+#[tokio::test]
+async fn public_site_update_audits_icon_set_clear_and_unset_states() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let site_id = create_site(&runner, n).await;
+    let user_id = create_user(&runner, n, "icon-audit-editor").await;
+    grant_site_edit(&runner, site_id, user_id, n).await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        ..Default::default()
+    });
+
+    let favicon_source = "/local--files/site/favicon.png";
+    let ios_icon_source = "/local--files/site/ios-icon.png";
+    let windows_tile_source = "/local--files/site/windows-tile.png";
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 0,
+            "favicon_source": favicon_source,
+            "ios_icon_source": ios_icon_source,
+            "windows_tile_source": windows_tile_source,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 1,
+            "favicon_source": null,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let original_name = format!("Site update permission {n}");
+    run_endpoint!(
+        runner,
+        site_update,
+        json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 2,
+            "name": "Icon audit name-only update",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let events = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.update"))
+        .filter(AuditLogColumn::SiteId.eq(site_id))
+        .order_by_asc(AuditLogColumn::EventId)
+        .all(runner.context().transaction())
+        .await
+        .expect("site update audit lookup should succeed");
+    assert_eq!(events.len(), 3);
+    for event in &events {
+        assert_eq!(event.user_id, Some(user_id));
+        assert_eq!(event.ip_address, common::IP_ADDRESS.to_string());
+    }
+
+    let before_set: serde_json::Value =
+        serde_json::from_str(events[0].extra_string_1.as_deref().unwrap()).unwrap();
+    let changed_set: serde_json::Value =
+        serde_json::from_str(events[0].extra_string_2.as_deref().unwrap()).unwrap();
+    assert_eq!(
+        before_set,
+        json!({
+            "favicon_source": null,
+            "ios_icon_source": null,
+            "windows_tile_source": null,
+        }),
+    );
+    assert_eq!(
+        changed_set,
+        json!({
+            "favicon_source": favicon_source,
+            "ios_icon_source": ios_icon_source,
+            "windows_tile_source": windows_tile_source,
+        }),
+    );
+
+    let before_clear: serde_json::Value =
+        serde_json::from_str(events[1].extra_string_1.as_deref().unwrap()).unwrap();
+    let changed_clear: serde_json::Value =
+        serde_json::from_str(events[1].extra_string_2.as_deref().unwrap()).unwrap();
+    assert_eq!(before_clear, json!({"favicon_source": favicon_source}));
+    assert_eq!(changed_clear, json!({"favicon_source": null}));
+
+    let before_name: serde_json::Value =
+        serde_json::from_str(events[2].extra_string_1.as_deref().unwrap()).unwrap();
+    let changed_name: serde_json::Value =
+        serde_json::from_str(events[2].extra_string_2.as_deref().unwrap()).unwrap();
+    assert_eq!(before_name, json!({"name": original_name}));
+    assert_eq!(changed_name, json!({"name": "Icon audit name-only update"}));
+    for icon_key in ["favicon_source", "ios_icon_source", "windows_tile_source"] {
+        assert!(before_name.get(icon_key).is_none());
+        assert!(changed_name.get(icon_key).is_none());
+    }
+
+    let transaction = runner
+        .context()
+        .transaction()
+        .begin()
+        .await
+        .expect("site update audit savepoint should begin");
+    let ctx =
+        ServiceContext::new(runner.state(), &transaction).with_request(RequestContext {
+            user_id: Some(user_id),
+            ..Default::default()
+        });
+    deepwell::endpoints::all::site_update(
+        &ctx,
+        common::make_params(json!({
+            "site": site_id,
+            "user_id": SYSTEM_USER_ID,
+            "expected_settings_revision": 3,
+            "ios_icon_source": null,
+            "ip_address": common::IP_ADDRESS,
+        })),
+    )
+    .await
+    .expect("transactional site update should succeed");
+    let transactional_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.update"))
+        .filter(AuditLogColumn::SiteId.eq(site_id))
+        .count(&transaction)
+        .await
+        .expect("transactional site update audit count should succeed");
+    assert_eq!(transactional_count, 4);
+    transaction
+        .rollback()
+        .await
+        .expect("site update audit savepoint should roll back");
+
+    let stored = SiteTable::find_by_id(site_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("rolled-back site lookup should succeed")
+        .expect("rolled-back site should still exist");
+    assert_eq!(stored.settings_revision, 3);
+    assert_eq!(stored.ios_icon_source.as_deref(), Some(ios_icon_source));
+    let rolled_back_count = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("site.update"))
+        .filter(AuditLogColumn::SiteId.eq(site_id))
+        .count(runner.context().transaction())
+        .await
+        .expect("rolled-back site update audit count should succeed");
+    assert_eq!(rolled_back_count, 3);
 }
 
 #[tokio::test]
@@ -494,6 +1075,9 @@ async fn site_update_restricts_icon_sources_to_site_owned_routes() {
         String::from("//evil.example/favicon.png"),
         String::from("/local--favicon/favicon.gif"),
         String::from("/local--files/"),
+        String::from("/local--files/../admin"),
+        String::from("/local--files/%2e%2e/admin"),
+        String::from("/local--files/site/../../admin"),
         String::from("/local--files/site/favicon.png\r\nLocation: https://evil.example"),
     ];
     for source in invalid_sources {
@@ -688,6 +1272,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
             },
+            None,
         )
         .await
         .expect_err("normalized platform hostname must not be creatable");
@@ -779,6 +1364,7 @@ async fn platform_hostname_policy_covers_site_and_alias_lifecycle_paths() {
             locale: String::from("en"),
             ip_address: common::IP_ADDRESS,
         },
+        None,
     )
     .await
     .expect("unrelated slug containing a reserved word should remain valid");

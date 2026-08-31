@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.pr1334.join_membership_source_attribution_fixture.v1",
-  "base_commit": "c78561b3f6dc35198658f618fc01d10e4bcad6d0",
-  "base_tree": "9f236023be41fd9c807272bbb16dd060b500b140",
+  "base_commit": "955fcb7a2d7aad16e8cb2204637e77cabfaaa3a7",
+  "base_tree": "e7c4c9e806d298af162b2809d1878452e56255c8",
   "surfaces": [
     {
       "surface_id": "catalog-feature:module-join",

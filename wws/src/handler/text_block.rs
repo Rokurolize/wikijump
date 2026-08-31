@@ -21,8 +21,8 @@
 use super::{get_session_token, get_site_id};
 use crate::deepwell::{TextBlockId, TextBlockIndex, TextBlockType};
 use crate::error::{
-    BasicError, Error as WwsError, FallbackError, TextBlockErrorReason,
-    build_basic_error_response, is_deepwell_permission_denied,
+    BasicError, FallbackError, TextBlockErrorReason, build_basic_error_response,
+    is_deepwell_permission_denied,
 };
 use crate::state::ServerState;
 use axum::body::Body;
@@ -30,8 +30,11 @@ use axum::extract::{Path, State};
 use axum::http::header::{self, HeaderMap};
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Response};
-use jsonrpsee::core::ClientError;
+use futures_util::StreamExt;
+use sha1::{Digest, Sha1};
 use std::collections::HashMap;
+
+const MAX_TEXT_BLOCK_OBJECT_BYTES: usize = 16 * 1024 * 1024;
 
 const HTML_BLOCK_DOCUMENT_PREFIX: &[u8] = br#"<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html id="html-block-html" xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"><head><meta http-equiv="Content-type" content="text/html; charset=utf-8"/><link rel="stylesheet" href="/common--theme/base/css/html-block.css"/></head><body>
@@ -58,6 +61,74 @@ pub async fn handle_html_block(
         TextBlockType::Html,
         &page_slug,
         BlockId::Index(index),
+    )
+    .await
+}
+
+pub async fn handle_html_terminal(
+    State(state): State<ServerState>,
+    Path((_page_slug, id, _domain)): Path<(String, String, String)>,
+    headers: HeaderMap,
+) -> Response {
+    let site_id = get_site_id(&headers);
+    let Some(sha1) = parse_wikidot_html_route_id(&id) else {
+        return build_basic_error_response(
+            &state,
+            &headers,
+            BasicError::TextBlock {
+                site_id,
+                index: &id,
+                block_type: TextBlockType::Html,
+                reason: TextBlockErrorReason::Invalid,
+            },
+        )
+        .await;
+    };
+    let block_info = match state
+        .deepwell
+        .get_text_block_by_hash(site_id, sha1, get_session_token(&headers))
+        .await
+    {
+        Ok(Some(block_info)) => block_info,
+        Ok(None) => {
+            let mut response = build_basic_error_response(
+                &state,
+                &headers,
+                BasicError::TextBlock {
+                    site_id,
+                    index: &id,
+                    block_type: TextBlockType::Html,
+                    reason: TextBlockErrorReason::Missing,
+                },
+            )
+            .await;
+            *response.status_mut() = StatusCode::OK;
+            return response;
+        }
+        Err(error) => {
+            error!("Unable to retrieve hashed HTML text block: {error}");
+            return build_basic_error_response(
+                &state,
+                &headers,
+                BasicError::TextBlock {
+                    site_id,
+                    index: &id,
+                    block_type: TextBlockType::Html,
+                    reason: TextBlockErrorReason::Fetch,
+                },
+            )
+            .await;
+        }
+    };
+
+    serve_text_block(
+        &state,
+        &headers,
+        TextBlockType::Html,
+        None,
+        block_info.index.get(),
+        block_info.s3_filename,
+        Some(sha1),
     )
     .await
 }
@@ -91,7 +162,8 @@ async fn handle_text_block(
     block_id: BlockId,
 ) -> Response {
     let site_id = get_site_id(headers);
-    let page_id = try_response!(state.get_page_or_response(headers, site_id, page_slug));
+    let page_id =
+        try_response!(state.get_page_fresh_or_response(headers, site_id, page_slug));
     let session_token = get_session_token(headers);
 
     let (index, s3_filename) = match block_id {
@@ -193,43 +265,182 @@ async fn handle_text_block(
         }
     };
 
-    info!("Fetching HTML text block from S3 object '{s3_filename}' (index {index})");
+    serve_text_block(
+        state,
+        headers,
+        block_type,
+        Some(page_id),
+        index.get(),
+        s3_filename,
+        None,
+    )
+    .await
+}
 
-    // Since text blocks are much smaller than files (necessarily being
-    // at most as big as the biggest page's sources) then it's fine for
-    // us to download the whole thing to memory instead of streaming it.
-    let s3_response = match state.s3_tblocks_bucket.get_object(&s3_filename).await {
-        Ok(response) => {
-            assert_eq!(
-                response.status_code(),
-                StatusCode::OK,
-                "get_object() succeeded but did not reply 200",
+async fn serve_text_block(
+    state: &ServerState,
+    headers: &HeaderMap,
+    block_type: TextBlockType,
+    page_id: Option<i64>,
+    index: u16,
+    s3_filename: String,
+    expected_sha1: Option<&str>,
+) -> Response {
+    info!(
+        "Fetching {} text block from S3 object '{s3_filename}' (index {index})",
+        block_type.value()
+    );
+
+    let (metadata, status_code) =
+        match state.s3_tblocks_bucket.head_object(&s3_filename).await {
+            Ok((metadata, status_code)) if status_code == StatusCode::OK.as_u16() => {
+                (metadata, status_code)
+            }
+            Ok((_, status_code)) => {
+                error!(
+                    page_id,
+                    block_type = block_type.value(),
+                    s3_filename,
+                    status_code,
+                    "S3 text block HEAD returned an unexpected status",
+                );
+                return FallbackError::TextBlockS3Fetch.into_response();
+            }
+            Err(error) => {
+                error!(
+                    page_id,
+                    block_type = block_type.value(),
+                    s3_filename,
+                    "Cannot HEAD text block data: {error}",
+                );
+                return FallbackError::TextBlockS3Fetch.into_response();
+            }
+        };
+    if metadata.content_length.is_some_and(|length| {
+        length < 0
+            || u64::try_from(length)
+                .is_ok_and(|length| length > MAX_TEXT_BLOCK_OBJECT_BYTES as u64)
+    }) {
+        error!(
+            page_id,
+            block_type = block_type.value(),
+            s3_filename,
+            limit = MAX_TEXT_BLOCK_OBJECT_BYTES,
+            "S3 text block exceeds the byte limit",
+        );
+        return FallbackError::TextBlockS3Fetch.into_response();
+    }
+    let content_type = match metadata.content_type {
+        Some(content_type) => content_type,
+        None => {
+            error!(
+                page_id,
+                block_type = block_type.value(),
+                s3_filename,
+                "S3 text block has no content type"
             );
+            return FallbackError::TextBlockS3Fetch.into_response();
+        }
+    };
+    let etag = match metadata.e_tag {
+        Some(etag) => etag,
+        None => {
+            error!(
+                page_id,
+                block_type = block_type.value(),
+                s3_filename,
+                "S3 text block has no ETag"
+            );
+            return FallbackError::TextBlockS3Fetch.into_response();
+        }
+    };
 
-            response
+    let s3::request::request_trait::ResponseDataStream { mut bytes, .. } = match state
+        .s3_tblocks_bucket
+        .get_object_stream(&s3_filename)
+        .await
+    {
+        Ok(response) if response.status_code == status_code => response,
+        Ok(response) => {
+            error!(
+                page_id,
+                block_type = block_type.value(),
+                s3_filename,
+                status_code = response.status_code,
+                "S3 text block returned an unexpected status",
+            );
+            return FallbackError::TextBlockS3Fetch.into_response();
         }
         Err(error) => {
-            // NOTE: If the error here is 404 we still return 500.
-            //
-            //       If we have a file record for a file, then the
-            //       corresponding blob *should* exist.
-            //
-            //       If it doesn't, the data invariant is not being met,
-            //       which is an unexpected error.
-            //
-            //       Fallback error code: XF-1004
             error!(
-                page_id = page_id,
-                block_type = "html",
-                s3_filename = s3_filename,
+                page_id,
+                block_type = block_type.value(),
+                s3_filename,
                 "Cannot get text block data: {error}",
             );
             return FallbackError::TextBlockS3Fetch.into_response();
         }
     };
 
-    let Headers { content_type, etag } = get_headers(s3_response.headers());
-    let body = Body::from(text_block_response_body(block_type, s3_response.to_vec()));
+    let mut raw_body = Vec::new();
+    while let Some(chunk) = bytes.next().await {
+        let chunk = match chunk {
+            Ok(chunk) => chunk,
+            Err(error) => {
+                error!(
+                    page_id,
+                    block_type = block_type.value(),
+                    s3_filename,
+                    "Cannot read text block data from S3: {error}",
+                );
+                return FallbackError::TextBlockS3Fetch.into_response();
+            }
+        };
+        let Some(total) = raw_body.len().checked_add(chunk.len()) else {
+            return FallbackError::TextBlockS3Fetch.into_response();
+        };
+        if total > MAX_TEXT_BLOCK_OBJECT_BYTES {
+            error!(
+                page_id,
+                block_type = block_type.value(),
+                s3_filename,
+                limit = MAX_TEXT_BLOCK_OBJECT_BYTES,
+                "S3 text block exceeds the byte limit",
+            );
+            return FallbackError::TextBlockS3Fetch.into_response();
+        }
+        raw_body.extend_from_slice(&chunk);
+    }
+    if let Some(expected_sha1) = expected_sha1 {
+        let actual_sha1 = format!("{:x}", Sha1::digest(&raw_body));
+        if actual_sha1 != expected_sha1 {
+            error!(
+                page_id,
+                expected_sha1,
+                actual_sha1,
+                "S3 text block bytes do not match requested SHA-1",
+            );
+            return build_basic_error_response(
+                state,
+                headers,
+                BasicError::TextBlock {
+                    site_id: get_site_id(headers),
+                    index: expected_sha1,
+                    block_type: TextBlockType::Html,
+                    reason: TextBlockErrorReason::Missing,
+                },
+            )
+            .await;
+        }
+    }
+    if headers
+        .get(header::IF_NONE_MATCH)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.trim() == etag)
+    {
+        return StatusCode::NOT_MODIFIED.into_response();
+    }
+    let body = Body::from(text_block_response_body(block_type, raw_body));
     let result = Response::builder()
         .header(header::CONTENT_TYPE, &content_type)
         .header(header::ETAG, &etag)
@@ -267,6 +478,21 @@ fn ensure_trailing_newline(mut bytes: Vec<u8>) -> Vec<u8> {
         bytes.push(b'\n');
     }
     bytes
+}
+
+fn parse_wikidot_html_route_id(value: &str) -> Option<&str> {
+    let (sha1, nonce) = value.split_once('-')?;
+    if sha1.len() != 40
+        || nonce.is_empty()
+        || !sha1
+            .bytes()
+            .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+        || !nonce.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        return None;
+    }
+
+    Some(sha1)
 }
 
 async fn get_text_block_info(
@@ -358,8 +584,228 @@ fn get_headers(headers: HashMap<String, String>) -> Headers {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::HeaderValue;
+    use crate::config::{RpcToken, Secrets};
+    use crate::error::Error as WwsError;
+    use crate::route::build_router;
+    use crate::state::build_server_state;
+    use axum::Router;
+    use axum::body::Bytes;
+    use axum::extract::State;
+    use axum::http::{HeaderName, HeaderValue, Method, StatusCode};
+    use axum::routing::{get, post};
+    use jsonrpsee::core::ClientError;
     use jsonrpsee_types::ErrorObjectOwned;
+    use s3::creds::Credentials;
+    use s3::region::Region;
+    use serde_json::{Value, json};
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+    use tokio::net::TcpListener;
+    use tokio::task::JoinHandle;
+
+    const SITE_ID: i64 = 10;
+    const PAGE_ID: i64 = 42;
+    const HTML_BLOCK_BYTES: &[u8] = b"<p>moved content</p>";
+    const HTML_BLOCK_SHA1: &str = "9079b854a8fdfa2328a297ff563fce21f866af0e";
+    const HTML_BLOCK_S3_KEY: &str = "text-blocks/immutable-html-object";
+    const CODE_BLOCK_S3_KEY: &str = "text-blocks/immutable-code-object";
+    const MISMATCH_SHA1: &str = "1234567890abcdef1234567890abcdef12345678";
+    const MISSING_SHA1: &str = "abcdef0123456789abcdef0123456789abcdef01";
+
+    #[derive(Debug)]
+    struct MutableTextBlockMock {
+        pages: Mutex<HashMap<String, i64>>,
+    }
+
+    impl MutableTextBlockMock {
+        fn move_page(&self) {
+            let mut pages = self.pages.lock().unwrap();
+            pages.remove("old-page");
+            pages.insert("new-page".to_owned(), PAGE_ID);
+        }
+    }
+
+    #[derive(Debug)]
+    struct TextBlockTestApp {
+        base_url: String,
+        client: reqwest::Client,
+        mock: Arc<MutableTextBlockMock>,
+        tasks: Vec<JoinHandle<()>>,
+    }
+
+    impl TextBlockTestApp {
+        async fn spawn() -> Self {
+            let mock = Arc::new(MutableTextBlockMock {
+                pages: Mutex::new(HashMap::from([("old-page".to_owned(), PAGE_ID)])),
+            });
+            let services = Router::new()
+                .route("/", post(mock_rpc))
+                .route("/{*path}", get(mock_text_block_s3).head(mock_text_block_s3))
+                .with_state(Arc::clone(&mock));
+            let services_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let services_address = services_listener.local_addr().unwrap();
+            let services_task = tokio::spawn(async move {
+                axum::serve(services_listener, services).await.unwrap();
+            });
+            let endpoint = format!("http://{services_address}");
+            let state = build_server_state(
+                false,
+                Secrets {
+                    deepwell_url: endpoint.clone(),
+                    deepwell_rpc_token: RpcToken::parse("0".repeat(64)).unwrap(),
+                    redis_url: str!("redis://127.0.0.1:1/"),
+                    s3_files_bucket: str!("files"),
+                    s3_tblocks_bucket: str!("text-blocks"),
+                    s3_region: Region::Custom {
+                        region: str!("test"),
+                        endpoint,
+                    },
+                    s3_credentials: Credentials::new(
+                        Some("access-key"),
+                        Some("secret-key"),
+                        None,
+                        None,
+                        None,
+                    )
+                    .unwrap(),
+                    s3_path_style: true,
+                },
+            )
+            .await
+            .unwrap();
+            let wws_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let wws_address = wws_listener.local_addr().unwrap();
+            let wws_task = tokio::spawn(async move {
+                axum::serve(wws_listener, build_router(state))
+                    .await
+                    .unwrap();
+            });
+
+            Self {
+                base_url: format!("http://{wws_address}"),
+                client: reqwest::Client::new(),
+                mock,
+                tasks: vec![wws_task, services_task],
+            }
+        }
+
+        async fn get(&self, path: &str) -> reqwest::Response {
+            self.request(Method::GET, path, &[]).await
+        }
+
+        async fn request(
+            &self,
+            method: Method,
+            path: &str,
+            headers: &[(HeaderName, &str)],
+        ) -> reqwest::Response {
+            let mut request = self
+                .client
+                .request(method, format!("{}{path}", self.base_url))
+                .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID.to_string());
+            for (name, value) in headers {
+                request = request.header(name, *value);
+            }
+            request.send().await.unwrap()
+        }
+    }
+
+    impl Drop for TextBlockTestApp {
+        fn drop(&mut self) {
+            for task in &self.tasks {
+                task.abort();
+            }
+        }
+    }
+
+    async fn mock_rpc(
+        State(state): State<Arc<MutableTextBlockMock>>,
+        body: Bytes,
+    ) -> Response {
+        let request: Value = serde_json::from_slice(&body).unwrap();
+        let id = request["id"].clone();
+        let result = match request["method"].as_str().unwrap() {
+            "page_get" => {
+                let page = request["params"]["page"].as_str().unwrap();
+                state
+                    .pages
+                    .lock()
+                    .unwrap()
+                    .get(page)
+                    .map(|page_id| json!({"page_id": page_id}))
+            }
+            "text_block_get_index" => {
+                if request["params"]["sha1"].is_string() {
+                    assert_eq!(request["params"]["site_id"], SITE_ID);
+                    assert!(request["params"]["page_id"].is_null());
+                    assert_eq!(request["params"]["block_type"], "html");
+                    assert!(request["params"]["index"].is_null());
+                    assert!(request["params"]["name"].is_null());
+                    assert!(request["params"]["session_token"].is_null());
+                    if !matches!(
+                        request["params"]["sha1"].as_str().unwrap(),
+                        HTML_BLOCK_SHA1 | MISMATCH_SHA1
+                    ) {
+                        return json!({
+                            "jsonrpc": "2.0",
+                            "result": null,
+                            "id": id,
+                        })
+                        .to_string()
+                        .into_response();
+                    }
+                }
+                Some(json!({
+                    "index": 1,
+                    "s3_filename": match request["params"]["block_type"].as_str().unwrap() {
+                        "html" => HTML_BLOCK_S3_KEY,
+                        "code" => CODE_BLOCK_S3_KEY,
+                        block_type => panic!("unexpected text block type: {block_type}"),
+                    },
+                }))
+            }
+            "basic_error_missing_page_slug" => Some(json!({
+                "title": "missing page",
+                "body": "not found",
+            })),
+            "basic_error_text_block" => Some(json!({
+                "title": "missing text block",
+                "body": "not found",
+            })),
+            other => panic!("unexpected mock JSON-RPC method: {other}"),
+        };
+        json!({"jsonrpc": "2.0", "result": result, "id": id})
+            .to_string()
+            .into_response()
+    }
+
+    async fn mock_text_block_s3(Path(path): Path<String>) -> Response {
+        let is_html = path.ends_with(HTML_BLOCK_S3_KEY);
+        let body: &'static [u8] = if is_html {
+            HTML_BLOCK_BYTES
+        } else {
+            b"moved content"
+        };
+        Response::builder()
+            .status(StatusCode::OK)
+            .header(
+                header::CONTENT_TYPE,
+                if is_html { "text/html" } else { "text/plain" },
+            )
+            .header(header::ETAG, "\"text-block\"")
+            .body(Body::from(body))
+            .unwrap()
+    }
+
+    fn assert_html_cache_headers_omitted(headers: &HeaderMap) {
+        for omitted in [
+            header::LAST_MODIFIED,
+            header::CACHE_CONTROL,
+            header::ACCEPT_RANGES,
+        ] {
+            assert!(!headers.contains_key(omitted));
+        }
+    }
 
     #[test]
     fn s3_headers_are_read_case_insensitively() {
@@ -372,6 +818,306 @@ mod tests {
 
         assert_eq!(parsed.content_type, "text/html");
         assert_eq!(parsed.etag, "\"abc\"");
+    }
+
+    #[tokio::test]
+    async fn public_text_block_routes_follow_page_moves_after_the_old_slug_is_warm() {
+        for route in ["code", "html"] {
+            let app = TextBlockTestApp::spawn().await;
+            let old_path = format!("/-/{route}/old-page/1");
+            let new_path = format!("/-/{route}/new-page/1");
+
+            let warm = app.get(&old_path).await;
+            assert_eq!(warm.status(), StatusCode::OK, "warm {route} route");
+            assert!(
+                String::from_utf8_lossy(&warm.bytes().await.unwrap())
+                    .contains("moved content")
+            );
+
+            app.mock.move_page();
+
+            let stale = app.get(&old_path).await;
+            assert_eq!(stale.status(), StatusCode::NOT_FOUND, "old {route} route");
+            assert!(
+                !String::from_utf8_lossy(&stale.bytes().await.unwrap())
+                    .contains("moved content")
+            );
+
+            let moved = app.get(&new_path).await;
+            assert_eq!(moved.status(), StatusCode::OK, "new {route} route");
+            assert!(
+                String::from_utf8_lossy(&moved.bytes().await.unwrap())
+                    .contains("moved content")
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn code_exact_if_none_match_returns_bare_not_modified() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app
+            .request(
+                Method::GET,
+                "/-/code/old-page/1",
+                &[(header::IF_NONE_MATCH, "\"text-block\"")],
+            )
+            .await;
+
+        assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
+        assert!(response.headers().get(header::ETAG).is_none());
+        assert!(response.headers().get(header::CONTENT_TYPE).is_none());
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn code_wrong_if_none_match_returns_full_response_without_cache_control() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app
+            .request(
+                Method::GET,
+                "/-/code/old-page/1",
+                &[(header::IF_NONE_MATCH, "\"wrong\"")],
+            )
+            .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(header::ETAG).unwrap(),
+            "\"text-block\""
+        );
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/plain"
+        );
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert_eq!(response.bytes().await.unwrap(), &b"moved content\n"[..]);
+    }
+
+    #[tokio::test]
+    async fn code_ignores_range_and_if_range() {
+        let app = TextBlockTestApp::spawn().await;
+
+        for headers in [
+            vec![(header::RANGE, "bytes=0-4")],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"text-block\""),
+            ],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"wrong\""),
+            ],
+        ] {
+            let response = app
+                .request(Method::GET, "/-/code/old-page/1", &headers)
+                .await;
+
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(!response.headers().contains_key(header::CONTENT_RANGE));
+            assert_eq!(response.bytes().await.unwrap(), &b"moved content\n"[..]);
+        }
+    }
+
+    #[tokio::test]
+    async fn code_head_returns_metadata_without_a_body() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app.request(Method::HEAD, "/-/code/old-page/1", &[]).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response.headers().get(header::ETAG).unwrap(),
+            "\"text-block\""
+        );
+        assert_eq!(
+            response.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/plain"
+        );
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn code_head_exact_if_none_match_returns_bare_not_modified() {
+        let app = TextBlockTestApp::spawn().await;
+
+        let response = app
+            .request(
+                Method::HEAD,
+                "/-/code/old-page/1",
+                &[(header::IF_NONE_MATCH, "\"text-block\"")],
+            )
+            .await;
+
+        assert_eq!(response.status(), StatusCode::NOT_MODIFIED);
+        assert!(response.headers().get(header::ETAG).is_none());
+        assert!(response.headers().get(header::CONTENT_TYPE).is_none());
+        assert!(!response.headers().contains_key(header::CACHE_CONTROL));
+        assert!(response.bytes().await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn html_terminal_matches_evidenced_cache_and_method_behavior() {
+        let app = TextBlockTestApp::spawn().await;
+        let path = "/-/html/old-page/1";
+
+        let redirect_client = reqwest::Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let redirect = redirect_client
+            .get(format!("{}/local--html/old-page/1", app.base_url))
+            .header(crate::handler::HEADER_SITE_ID.as_str(), SITE_ID)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(redirect.status(), StatusCode::PERMANENT_REDIRECT);
+        assert_eq!(redirect.headers().get(header::LOCATION).unwrap(), path);
+
+        let full = app.get(path).await;
+        assert_eq!(full.status(), StatusCode::OK);
+        assert_eq!(full.headers().get(header::ETAG).unwrap(), "\"text-block\"");
+        assert_eq!(
+            full.headers().get(header::CONTENT_TYPE).unwrap(),
+            "text/html"
+        );
+        assert_html_cache_headers_omitted(full.headers());
+        let full_body = full.bytes().await.unwrap();
+
+        let head = app.request(Method::HEAD, path, &[]).await;
+        assert_eq!(head.status(), StatusCode::OK);
+        assert_eq!(head.headers().get(header::ETAG).unwrap(), "\"text-block\"");
+        assert_html_cache_headers_omitted(head.headers());
+        assert!(head.bytes().await.unwrap().is_empty());
+
+        for method in [Method::GET, Method::HEAD] {
+            let exact = app
+                .request(method, path, &[(header::IF_NONE_MATCH, "\"text-block\"")])
+                .await;
+            assert_eq!(exact.status(), StatusCode::NOT_MODIFIED);
+            assert_html_cache_headers_omitted(exact.headers());
+            assert!(exact.bytes().await.unwrap().is_empty());
+        }
+
+        let wrong = app
+            .request(Method::GET, path, &[(header::IF_NONE_MATCH, "\"wrong\"")])
+            .await;
+        assert_eq!(wrong.status(), StatusCode::OK);
+        assert_html_cache_headers_omitted(wrong.headers());
+        assert_eq!(wrong.bytes().await.unwrap(), full_body);
+
+        for request_headers in [
+            vec![(header::RANGE, "bytes=0-4")],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"text-block\""),
+            ],
+            vec![
+                (header::RANGE, "bytes=0-4"),
+                (header::IF_RANGE, "\"wrong\""),
+            ],
+        ] {
+            let ranged = app.request(Method::GET, path, &request_headers).await;
+            assert_eq!(ranged.status(), StatusCode::OK);
+            assert!(!ranged.headers().contains_key(header::CONTENT_RANGE));
+            assert_html_cache_headers_omitted(ranged.headers());
+            assert_eq!(ranged.bytes().await.unwrap(), full_body);
+        }
+    }
+
+    #[tokio::test]
+    async fn html_terminal_hash_verifies_fetched_bytes() {
+        let app = TextBlockTestApp::spawn().await;
+        let paths = [
+            format!("/local--html/old-page/{HTML_BLOCK_SHA1}-1/scp-wiki.wikidot.com"),
+            format!(
+                "/local--html/renamed-metadata/{HTML_BLOCK_SHA1}-999/attacker.example"
+            ),
+        ];
+
+        let mut body = None;
+        for path in &paths {
+            let response = app.get(path).await;
+            assert_eq!(response.status(), StatusCode::OK);
+            let response_body = response.bytes().await.unwrap();
+            assert!(String::from_utf8_lossy(&response_body).contains("moved content"));
+            if let Some(expected) = &body {
+                assert_eq!(&response_body, expected);
+            } else {
+                body = Some(response_body);
+            }
+        }
+
+        let head = app.request(Method::HEAD, &paths[0], &[]).await;
+        assert_eq!(head.status(), StatusCode::OK);
+        assert!(head.bytes().await.unwrap().is_empty());
+
+        let conditional = app
+            .request(
+                Method::GET,
+                &paths[0],
+                &[(header::IF_NONE_MATCH, "\"text-block\"")],
+            )
+            .await;
+        assert_eq!(conditional.status(), StatusCode::NOT_MODIFIED);
+
+        let mismatch = app
+            .get(&format!(
+                "/local--html/old-page/{MISMATCH_SHA1}-1/scp-wiki.wikidot.com"
+            ))
+            .await;
+        assert_eq!(mismatch.status(), StatusCode::NOT_FOUND);
+        assert!(
+            !String::from_utf8_lossy(&mismatch.bytes().await.unwrap())
+                .contains("moved content")
+        );
+
+        let missing = app
+            .get(&format!(
+                "/local--html/old-page/{MISSING_SHA1}-1/scp-wiki.wikidot.com"
+            ))
+            .await;
+        assert_eq!(missing.status(), StatusCode::OK);
+        let missing_body = missing.bytes().await.unwrap();
+        assert!(!String::from_utf8_lossy(&missing_body).contains("moved content"));
+
+        let post = app.request(Method::POST, &paths[0], &[]).await;
+        assert_eq!(post.status(), StatusCode::METHOD_NOT_ALLOWED);
+
+        for id in [
+            format!("0{}-1", &HTML_BLOCK_SHA1[1..]),
+            format!("{}0-1", &HTML_BLOCK_SHA1[..39]),
+        ] {
+            let response = app
+                .get(&format!("/local--html/ignored/{id}/scp-wiki.wikidot.com"))
+                .await;
+            assert_eq!(response.status(), StatusCode::OK);
+            let response_body = response.bytes().await.unwrap();
+            assert_eq!(response_body, missing_body);
+            assert!(!String::from_utf8_lossy(&response_body).contains("moved content"));
+        }
+
+        for nonce in ["0", "01"] {
+            let response = app
+                .get(&format!(
+                    "/local--html/ignored/{HTML_BLOCK_SHA1}-{nonce}/scp-wiki.wikidot.com"
+                ))
+                .await;
+            assert_eq!(response.status(), StatusCode::OK);
+            assert_eq!(response.bytes().await.unwrap(), body.as_ref().unwrap());
+        }
+
+        for nonce in ["", "x"] {
+            let response = app
+                .get(&format!(
+                    "/local--html/ignored/{HTML_BLOCK_SHA1}-{nonce}/scp-wiki.wikidot.com"
+                ))
+                .await;
+            assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        }
     }
 
     #[test]

@@ -144,9 +144,12 @@ impl ViewService {
                  WHERE p.site_id = {} AND p.deleted_at IS NULL \
                    AND NOT EXISTS ( \
                      SELECT 1 FROM page_connection pc \
+                     JOIN page source_page ON source_page.page_id = pc.from_page_id \
                      WHERE pc.to_page_id = p.page_id \
                        AND pc.from_page_id <> p.page_id \
                        AND pc.connection_type = 'link' \
+                       AND source_page.site_id = p.site_id \
+                       AND source_page.deleted_at IS NULL \
                    ) \
                  ORDER BY p.page_id LIMIT {SITE_TOOLS_PAGE_SCAN_LIMIT}",
                     input.site_id,

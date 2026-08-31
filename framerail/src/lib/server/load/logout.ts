@@ -2,6 +2,8 @@ import defaults from "$lib/defaults"
 
 import { parseAcceptLangHeader } from "$lib/locales"
 import { authLogout } from "$lib/server/auth/logout"
+import { deleteSessionCookie } from "$lib/server/auth/session-cookie"
+import { isInvalidSessionTokenError } from "$lib/server/deepwell/public-error.js"
 import { translate } from "$lib/server/deepwell/translate"
 import { failForActionError } from "$lib/server/load/action-error"
 import { loadSiteInfo } from "$lib/server/load/site-info"
@@ -54,16 +56,13 @@ export async function logoutAction({ cookies, request }: RequestEvent) {
 
   try {
     await authLogout(sessionToken)
-
-    cookies.delete("wikijump_token", {
-      path: "/",
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax"
-    })
-
-    return { success: true }
   } catch (error) {
-    return failForActionError(error)
+    if (!isInvalidSessionTokenError(error)) {
+      return failForActionError(error)
+    }
   }
+
+  deleteSessionCookie(cookies, request.url)
+
+  return { success: true }
 }

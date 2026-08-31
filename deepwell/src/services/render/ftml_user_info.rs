@@ -23,16 +23,20 @@ use crate::models::wikidot_user::{
     self, Entity as WikidotUser, Model as WikidotUserModel,
 };
 use crate::services::ServiceContext;
-use crate::services::page_query::normalize_wikidot_author_name;
+use crate::services::page_query::{
+    normalize_wikidot_author_name, wikidot_author_name_sql,
+};
 use crate::services::user::User;
 use ftml::data::UserInfo;
 use ftml::render::UserInfoResolver;
-use sea_orm::{ColumnTrait, Condition, EntityTrait, QueryFilter};
+use sea_orm::sea_query::Expr;
+use sea_orm::{ColumnTrait, Condition, EntityTrait, ExprTrait, QueryFilter};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Default)]
 pub(super) struct UserInfoSnapshot {
-    users: BTreeMap<String, UserInfo<'static>>,
+    users_by_id: BTreeMap<i64, UserInfo<'static>>,
+    users_by_name: BTreeMap<String, UserInfo<'static>>,
 }
 
 impl UserInfoSnapshot {
@@ -43,16 +47,57 @@ impl UserInfoSnapshot {
         }
 
         let users = load_visible_wikidot_users(ctx, &slugs, &user_ids).await?;
-        let mut resolved = BTreeMap::new();
+        let mut users_by_id = BTreeMap::new();
+        let mut users_by_name = BTreeMap::new();
+        let mut collisions = BTreeSet::new();
         for user in users {
             let Some(info) = wikidot_user_info(user) else {
                 continue;
             };
-            resolved.insert(info.user_id.to_string(), info.clone());
-            resolved.insert(normalize_wikidot_author_name(&info.user_slug), info);
+            index_user_info(&mut users_by_id, &mut users_by_name, &mut collisions, info);
         }
 
-        Ok(Self { users: resolved })
+        Ok(Self {
+            users_by_id,
+            users_by_name,
+        })
+    }
+}
+
+fn index_user_info(
+    users_by_id: &mut BTreeMap<i64, UserInfo<'static>>,
+    users_by_name: &mut BTreeMap<String, UserInfo<'static>>,
+    collisions: &mut BTreeSet<String>,
+    info: UserInfo<'static>,
+) {
+    users_by_id.insert(info.user_id, info.clone());
+    let keys = [
+        normalize_wikidot_author_name(&info.user_slug),
+        normalize_wikidot_author_name(&info.user_name),
+    ];
+    for key in keys {
+        if key.is_empty() || collisions.contains(&key) {
+            continue;
+        }
+        match users_by_name.get(&key).map(|existing| existing.user_id) {
+            Some(user_id) if user_id != info.user_id => {
+                users_by_name.remove(&key);
+                collisions.insert(key);
+            }
+            Some(_) => {}
+            None => {
+                users_by_name.insert(key, info.clone());
+            }
+        }
+    }
+}
+
+fn numeric_user_reference(value: &str) -> Option<i64> {
+    let normalized = normalize_wikidot_author_name(value);
+    if !normalized.is_empty() && normalized.bytes().all(|byte| byte.is_ascii_digit()) {
+        normalized.parse().ok()
+    } else {
+        None
     }
 }
 
@@ -60,9 +105,8 @@ fn user_reference_sets(names: &[String]) -> (BTreeSet<String>, BTreeSet<i32>) {
     let mut slugs = BTreeSet::new();
     let mut user_ids = BTreeSet::new();
     for name in names {
-        let trimmed = name.trim();
-        if !trimmed.is_empty() && trimmed.bytes().all(|byte| byte.is_ascii_digit()) {
-            if let Ok(user_id) = trimmed.parse() {
+        if let Some(user_id) = numeric_user_reference(name) {
+            if let Ok(user_id) = i32::try_from(user_id) {
                 user_ids.insert(user_id);
             }
             continue;
@@ -104,6 +148,12 @@ async fn load_visible_wikidot_users(
     if !slugs.is_empty() {
         reference =
             reference.add(wikidot_user::Column::Slug.is_in(slugs.iter().cloned()));
+        reference = reference.add(
+            // Keep values bound through `is_in`; this uses the shared
+            // Unicode White_Space, lowercase, and separator contract.
+            Expr::cust(wikidot_author_name_sql("wikidot_user.name"))
+                .is_in(slugs.iter().cloned()),
+        );
     }
     if !user_ids.is_empty() {
         reference =
@@ -114,6 +164,8 @@ async fn load_visible_wikidot_users(
         .filter(
             Condition::all()
                 .add(wikidot_user::Column::IsDeleted.eq(false))
+                .add(wikidot_user::Column::Name.is_not_null())
+                .add(wikidot_user::Column::Slug.is_not_null())
                 .add(reference),
         )
         .all(ctx.transaction())
@@ -132,7 +184,10 @@ fn wikidot_user_info(user: WikidotUserModel) -> Option<UserInfo<'static>> {
 
 impl UserInfoResolver for UserInfoSnapshot {
     fn user_info(&self, name: &str) -> Option<UserInfo<'static>> {
-        self.users
+        if let Some(user_id) = numeric_user_reference(name) {
+            return self.users_by_id.get(&user_id).cloned();
+        }
+        self.users_by_name
             .get(&normalize_wikidot_author_name(name))
             .cloned()
     }
@@ -157,11 +212,67 @@ mod tests {
             user_profile_url: Cow::Borrowed("http://www.wikidot.com/user:info/system"),
         };
         let snapshot = UserInfoSnapshot {
-            users: BTreeMap::from([("system".to_owned(), canonical.clone())]),
+            users_by_id: BTreeMap::from([(122357, canonical.clone())]),
+            users_by_name: BTreeMap::from([("system".to_owned(), canonical.clone())]),
         };
 
         assert_eq!(snapshot.user_info(" SYSTEM "), Some(canonical));
         assert!(snapshot.user_info("unknown").is_none());
+    }
+
+    #[test]
+    fn snapshot_indexes_normalized_slug_and_display_name() {
+        let user = test_user(1, "display-slug", "Display Name");
+        let mut users_by_id = BTreeMap::new();
+        let mut users_by_name = BTreeMap::new();
+        let mut collisions = BTreeSet::new();
+        index_user_info(
+            &mut users_by_id,
+            &mut users_by_name,
+            &mut collisions,
+            user.clone(),
+        );
+        let snapshot = UserInfoSnapshot {
+            users_by_id,
+            users_by_name,
+        };
+
+        assert_eq!(snapshot.user_info("DISPLAY SLUG"), Some(user.clone()));
+        assert_eq!(snapshot.user_info(" display_name "), Some(user));
+    }
+
+    #[test]
+    fn snapshot_collisions_fail_closed_independent_of_load_order() {
+        let first = test_user(1, "first-user", "Shared Name");
+        let second = test_user(2, "shared-name", "Second User");
+        let third = test_user(3, "third-user", "Shared Name");
+
+        let snapshot = |users_to_load: Vec<UserInfo<'static>>| {
+            let mut users_by_id = BTreeMap::new();
+            let mut users_by_name = BTreeMap::new();
+            let mut collisions = BTreeSet::new();
+            for user in users_to_load {
+                index_user_info(
+                    &mut users_by_id,
+                    &mut users_by_name,
+                    &mut collisions,
+                    user,
+                );
+            }
+            UserInfoSnapshot {
+                users_by_id,
+                users_by_name,
+            }
+        };
+        let forward = snapshot(vec![first.clone(), second.clone(), third.clone()]);
+        let reverse = snapshot(vec![third.clone(), second.clone(), first.clone()]);
+
+        assert_eq!(forward.users_by_id, reverse.users_by_id);
+        assert_eq!(forward.users_by_name, reverse.users_by_name);
+        assert!(forward.user_info("shared-name").is_none());
+        assert_eq!(forward.user_info("first-user"), Some(first));
+        assert_eq!(forward.user_info("second-user"), Some(second));
+        assert_eq!(forward.user_info("third-user"), Some(third));
     }
 
     #[test]
@@ -171,5 +282,48 @@ mod tests {
 
         assert_eq!(slugs, BTreeSet::from(["system-user".to_owned()]));
         assert_eq!(user_ids, BTreeSet::from([122357]));
+    }
+
+    #[test]
+    fn numeric_id_namespace_survives_a_numeric_display_name() {
+        let numeric = test_user(2, "numeric-target", "Numeric Target");
+        let display = test_user(3, "display-two", "2");
+        let mut users_by_id = BTreeMap::new();
+        let mut users_by_name = BTreeMap::new();
+        let mut collisions = BTreeSet::new();
+        index_user_info(
+            &mut users_by_id,
+            &mut users_by_name,
+            &mut collisions,
+            numeric.clone(),
+        );
+        index_user_info(
+            &mut users_by_id,
+            &mut users_by_name,
+            &mut collisions,
+            display.clone(),
+        );
+        let snapshot = UserInfoSnapshot {
+            users_by_id,
+            users_by_name,
+        };
+
+        assert_eq!(snapshot.user_info("2"), Some(numeric));
+        assert_eq!(snapshot.user_info("display-two"), Some(display));
+    }
+
+    fn test_user(
+        user_id: i64,
+        slug: &'static str,
+        name: &'static str,
+    ) -> UserInfo<'static> {
+        UserInfo {
+            user_id,
+            user_slug: Cow::Borrowed(slug),
+            user_name: Cow::Borrowed(name),
+            user_karma: KarmaLevel::Zero,
+            user_avatar_data: Cow::Borrowed(""),
+            user_profile_url: Cow::Borrowed(""),
+        }
     }
 }

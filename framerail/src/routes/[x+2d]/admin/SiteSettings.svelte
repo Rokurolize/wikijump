@@ -127,33 +127,62 @@
     </div>
   </div>
 
-  <div class="control-group">
-    <label class="control-label" for="sm-general-start">Default start page</label>
-    <div class="controls">
-      <input
-        id="sm-general-start"
-        name="default_page"
-        class="autocomplete-input text"
-        size="35"
-        type="text"
-        bind:value={$form.defaultPage}
-      />
-      <div id="sm-general-start-list" class="autocomplete-list"></div>
-    </div>
-  </div>
+  <div class="accordion" id="accordion2">
+    <div class="accordion-group">
+      <div class="accordion-heading">
+        <a
+          class="accordion-toggle"
+          data-toggle="collapse"
+          data-parent="#accordion2"
+          href="#collapseOne"
+          aria-expanded="false"
+          aria-controls="collapseOne"
+        >
+          <i class="icon-reorder"></i> Advanced Settings
+        </a>
+      </div>
+      <div id="collapseOne" class="accordion-body collapse">
+        <div class="accordion-inner">
+          <div class="control-group">
+            <label class="control-label" for="sm-general-start">Default start page</label>
+            <div class="controls">
+              <div class="autocomplete-container">
+                <input
+                  id="sm-general-start"
+                  name="default_page"
+                  class="autocomplete-input text"
+                  size="35"
+                  type="text"
+                  bind:value={$form.defaultPage}
+                />
+                <div id="sm-general-start-list" class="autocomplete-list"></div>
+              </div>
+              <div class="sub">
+                Which page will be displayed when people just type http://{$form.slug}.wikidot.com?
+              </div>
+            </div>
+          </div>
 
-  <div class="control-group">
-    <label class="control-label" for="sm-general-welcome">Welcome page</label>
-    <div class="controls">
-      <input
-        id="sm-general-welcome"
-        name="welcome_page"
-        class="autocomplete-input text"
-        size="35"
-        type="text"
-        bind:value={$form.welcomePage}
-      />
-      <div id="sm-general-welcome-list" class="autocomplete-list"></div>
+          <div class="control-group">
+            <label class="control-label" for="sm-general-welcome"
+              >Welcome page for new members</label
+            >
+            <div class="controls">
+              <div class="autocomplete-container">
+                <input
+                  id="sm-general-welcome"
+                  name="welcome_page"
+                  class="autocomplete-input text"
+                  size="35"
+                  type="text"
+                  bind:value={$form.welcomePage}
+                />
+                <div id="sm-general-welcome-list" class="autocomplete-list"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 

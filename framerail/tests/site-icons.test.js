@@ -5,6 +5,7 @@ import {
   FAVICON_ROUTE_PREFIX,
   IOS_ICON_DECLARATIONS,
   IOS_ICON_ROUTE_PREFIX,
+  SITE_ICON_CACHE_CONTROL,
   faviconDeclaration,
   hasIosIcons
 } from "../src/lib/site-icons.ts"
@@ -37,19 +38,20 @@ test("favicon declaration keeps Wikidot's local route rather than the configured
   )
 })
 
-test("favicon declaration carries the type matching the configured extension", () => {
+test("favicon declaration keeps Wikidot's fixed gif route for supported configured icons", () => {
+  assert.equal(SITE_ICON_CACHE_CONTROL, "no-store")
   assert.deepEqual(
     faviconDeclaration(localSite({ favicon_source: "/local--files/site/icon.png" })),
     {
-      href: `${FAVICON_ROUTE_PREFIX}favicon.png`,
-      type: "image/png"
+      href: `${FAVICON_ROUTE_PREFIX}favicon.gif`,
+      type: "image/gif"
     }
   )
   assert.deepEqual(
     faviconDeclaration(localSite({ favicon_source: "/local--files/site/icon.ICO" })),
     {
-      href: `${FAVICON_ROUTE_PREFIX}favicon.ico`,
-      type: "image/x-icon"
+      href: `${FAVICON_ROUTE_PREFIX}favicon.gif`,
+      type: "image/gif"
     }
   )
 })

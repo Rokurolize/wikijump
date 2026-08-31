@@ -50,6 +50,7 @@ RUN apt install -y curl libmagic1 libmagic-mgc
 COPY --from=rust /src/deepwell/target/release/deepwell /usr/local/bin/deepwell
 COPY --from=rust /tmp/sqlx-root/bin/sqlx /usr/local/bin/sqlx
 COPY ./deepwell/migrations /opt/deepwell/migrations
+COPY ./deepwell/seeder /opt/deepwell/seeder
 COPY ./install/prod/deepwell/deepwell-start /usr/local/bin/wikijump-deepwell-start
 COPY ./install/prod/deepwell/health-check.sh /bin/wikijump-health-check
 COPY ./install/prod/deepwell/config.toml /etc/deepwell.toml

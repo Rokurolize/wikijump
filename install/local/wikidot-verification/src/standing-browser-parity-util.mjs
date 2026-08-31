@@ -30,6 +30,105 @@ export function requireSha256(value, name) {
   return value;
 }
 
+export function requireExactHttpsOrigins(values, name) {
+  if (!Array.isArray(values) || new Set(values).size !== values.length) {
+    throw new Error(`${name} must be a unique array of exact HTTPS origins`);
+  }
+  return Object.freeze(values.map((value) => {
+    let url;
+    try {
+      url = new URL(value);
+    } catch {
+      throw new Error(`${name} must contain exact HTTPS origins`);
+    }
+    if (
+      typeof value !== "string" ||
+      value !== url.origin ||
+      url.protocol !== "https:" ||
+      url.username ||
+      url.password ||
+      url.port
+    ) {
+      throw new Error(`${name} must contain exact HTTPS origins`);
+    }
+    return value;
+  }));
+}
+
+const MAX_STABLE_FILE_BYTES = 128 * 1024 * 1024;
+
+function requireStableRegularFile(stat, name) {
+  if (
+    !stat?.isFile() ||
+    stat.isSymbolicLink() ||
+    (stat.nlink !== 1n && stat.nlink !== 1)
+  ) {
+    throw new Error(`${name} must be a regular file`);
+  }
+  if (stat.size > BigInt(MAX_STABLE_FILE_BYTES)) {
+    throw new Error(`${name} exceeds the maximum size`);
+  }
+}
+
+function stableFileFingerprint(stat) {
+  return Object.freeze({
+    dev: String(stat.dev),
+    ino: String(stat.ino),
+    nlink: String(stat.nlink),
+    mode: String(stat.mode),
+    size: String(stat.size),
+    mtimeNs: String(stat.mtimeNs),
+    ctimeNs: String(stat.ctimeNs),
+  });
+}
+
+function requireSameStableFileFingerprint(before, after, name) {
+  if (JSON.stringify(before) !== JSON.stringify(after)) {
+    throw new Error(`${name} changed while it was being read`);
+  }
+}
+
+export async function readStableRegularFile(filePath, name) {
+  const beforeStat = await fs
+    .lstat(filePath, {bigint: true})
+    .catch(() => null);
+  requireStableRegularFile(beforeStat, name);
+  const before = stableFileFingerprint(beforeStat);
+  if (!fsConstants.O_NOFOLLOW) {
+    throw new Error("stable file verification requires O_NOFOLLOW support");
+  }
+  const handle = await fs.open(
+    filePath,
+    fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW,
+  );
+  let bytes;
+  try {
+    const openedStat = await handle.stat({bigint: true});
+    requireStableRegularFile(openedStat, name);
+    requireSameStableFileFingerprint(
+      before,
+      stableFileFingerprint(openedStat),
+      name,
+    );
+    bytes = await handle.readFile();
+  } finally {
+    await handle.close();
+  }
+  const afterStat = await fs
+    .lstat(filePath, {bigint: true})
+    .catch(() => null);
+  requireStableRegularFile(afterStat, name);
+  requireSameStableFileFingerprint(
+    before,
+    stableFileFingerprint(afterStat),
+    name,
+  );
+  return Object.freeze({
+    bytes,
+    sha256: createHash("sha256").update(bytes).digest("hex"),
+  });
+}
+
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue);
   if (isPlainObject(value)) {

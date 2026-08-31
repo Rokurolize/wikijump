@@ -220,8 +220,8 @@ pub(in crate::services::render) fn render_list_pages_wikidot_user(
         concat!(
             r#"<span class="printuser avatarhover" data-wikijump-compat-listpages-user="1">"#,
             r#"<a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">"#,
-            r#"<img class="small" src="https://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
-            r#"alt="{name_attr}" style="background-image:url(https://www.wikidot.com/userkarma.php?u={user_id})" />"#,
+            r#"<img class="small" src="http://www.wikidot.com/avatar.php?userid={user_id}&amp;amp;size=small&amp;amp;timestamp={avatar_timestamp}" "#,
+            r#"alt="{name_attr}" style="background-image:url(http://www.wikidot.com/userkarma.php?u={user_id})" />"#,
             r#"</a><a href="http://www.wikidot.com/user:info/{slug}" onclick="WIKIDOT.page.listeners.userInfo({user_id}); return false;">{name_text}</a>"#,
             r#"</span>"#
         ),
@@ -281,17 +281,6 @@ pub(in crate::services::render) fn render_list_pages_snapshot_wikidot_user(
         wikidot_profile: true,
     };
     render_list_pages_wikidot_user(user_id, Some(&display))
-}
-
-pub(in crate::services::render) fn list_pages_revision_count(
-    page: &FoundPageRow,
-    snapshot_displays: &BTreeMap<i64, ListPagesSnapshotDisplay>,
-    revision_counts: &BTreeMap<i64, u64>,
-) -> Option<u64> {
-    match snapshot_displays.get(&page.page_id) {
-        Some(snapshot) => u64::try_from(snapshot.source_revision_count).ok(),
-        None => revision_counts.get(&page.page_id).copied(),
-    }
 }
 
 pub(in crate::services::render) fn list_pages_parent_fullname<'a>(
@@ -451,10 +440,12 @@ mod tests {
             "unexpected user markup: {html}"
         );
         assert!(!html.contains(r#"alt="quoted" onload="alert(1)""#));
-        assert!(html.contains("https://www.wikidot.com/avatar.php?userid=42"));
-        assert!(html.contains(
-            "background-image:url(https://www.wikidot.com/userkarma.php?u=42)"
-        ));
+        assert!(html.contains("http://www.wikidot.com/avatar.php?userid=42"));
+        assert!(
+            html.contains(
+                "background-image:url(http://www.wikidot.com/userkarma.php?u=42)"
+            )
+        );
         assert!(html.contains("http://www.wikidot.com/user:info/quoted-user"));
         assert!(
             feed_html.contains(r##"alt="quoted&quot; onload=&quot;alert(1)&quot;""##),

@@ -1,25 +1,24 @@
 import assert from "node:assert/strict";
-import {createHash} from "node:crypto";
 import {readFileSync} from "node:fs";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
+import {historicalSha256, historicalText} from "./historical-git.mjs";
 
 process.chdir(fileURLToPath(new URL("../../../../", import.meta.url)));
 
 const artifactPath = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json";
+const captureCommit = "fa8e3f381e290caeff9e78bd8ab4468075e61469";
 let artifact;
 try { artifact = JSON.parse(readFileSync(artifactPath, "utf8")); }
 catch (error) { if (error.code === "ENOENT") throw new Error("artifact_missing: run bounded WWS route source-attribution capture"); throw error; }
-const readJson = (path) => JSON.parse(readFileSync(path, "utf8"));
-const sha256 = (path) => createHash("sha256").update(readFileSync(path)).digest("hex");
-const fixture = readJson(artifact.fixture_path);
+const fixture = JSON.parse(historicalText(captureCommit, artifact.fixture_path));
 
 test("base, fixture, script, inventory identity, and privacy", () => {
   assert.equal(artifact.schema, "wikijump.pr1334.wws_route_attribution.v1");
   assert.equal(artifact.base_commit, "f2b5769e1ff6206c31cc2b66a03675c64fba6318");
-  assert.equal(artifact.fixture_sha256, sha256(artifact.fixture_path));
-  assert.equal(artifact.capture_script_sha256, sha256(artifact.capture_script_path));
-  assert.equal(artifact.inventory_sha256, sha256(artifact.inventory_path));
+  assert.equal(artifact.fixture_sha256, historicalSha256(captureCommit, artifact.fixture_path));
+  assert.equal(artifact.capture_script_sha256, historicalSha256(captureCommit, artifact.capture_script_path));
+  assert.equal(artifact.inventory_sha256, historicalSha256(captureCommit, artifact.inventory_path));
   const serialized = JSON.stringify({fixture, artifact});
   assert.doesNotMatch(serialized, /(?:\/home\/|\/mnt\/|[A-Za-z]:\\)/);
   assert.doesNotMatch(serialized, /(?:authorization|bearer|password|secret|csrf|session.token|cookie|request.body|environment)/i);
@@ -53,7 +52,7 @@ test("exact handler-owner attribution", () => {
     assert.match(record.registered_handler_symbol, /^handle_[a-z_]+$/);
     assert.match(record.handler_definition_path, /^wws\/src\/handler\/[a-z_]+\.rs$/);
     assert.deepEqual(record.handler_definition_line_range.length, 2);
-    for (const [path, hash] of Object.entries(record.source_sha256)) assert.equal(hash, sha256(path));
+    for (const [path, hash] of Object.entries(record.source_sha256)) assert.equal(hash, historicalSha256(artifact.base_commit, path));
   }
 });
 

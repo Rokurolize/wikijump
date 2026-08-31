@@ -84,6 +84,20 @@ impl PageLockService {
                 .update(txn)
                 .await
                 .or_raise(make_error)?;
+
+                AuditService::log(
+                    ctx,
+                    input.ip_address,
+                    AuditEvent::PageLockRemove {
+                        user_id,
+                        site_id,
+                        page_id: old_lock.page_id,
+                        page_lock_id: old_lock.page_lock_id,
+                        lock_type: old_lock.lock_type,
+                    },
+                )
+                .await
+                .or_raise(make_error)?;
             }
         }
 
@@ -170,6 +184,7 @@ impl PageLockService {
             ip_address,
             AuditEvent::PageLockRemove {
                 user_id,
+                site_id,
                 page_id: page_lock.page_id,
                 page_lock_id: page_lock.page_lock_id,
                 lock_type: page_lock.lock_type,

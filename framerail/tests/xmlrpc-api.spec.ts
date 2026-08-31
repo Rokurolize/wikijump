@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto"
 
-import { expect, test } from "@playwright/test"
+import { expect, test, type APIRequestContext } from "@playwright/test"
 
 import {
   handleXmlRpcRequest,
+  MAX_XML_RPC_BODY_BYTES,
   parseXmlRpcCall,
   serializeMethodResponse
 } from "../src/lib/server/xmlrpc"
@@ -11,7 +12,23 @@ import {
 test.describe.configure({ mode: "serial" })
 
 const fixtureUrl = `http://127.0.0.1:${process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747"}`
-
+const emptyPageReadRequests = {
+  forumPostSelect: [],
+  forumPostPageSummary: [],
+  forumPostGet: [],
+  pageGet: [],
+  pageGetDirect: [],
+  pageLifecycleIdentity: [],
+  pageRevisionDiff: [],
+  pageRevisionGet: [],
+  pageView: [],
+  pageViewPermission: [],
+  pageSelect: [],
+  parentDirectMetadata: [],
+  parentRelationshipsGet: [],
+  siteGet: [],
+  voteList: []
+}
 const requiredEnvironmentValue = (name: string): string => {
   const value = process.env[name]
   if (!value) throw new Error(`Missing required test environment variable: ${name}`)
@@ -136,7 +153,25 @@ const xmlRpcCategoriesSelectRequest = `<?xml version="1.0"?>
   </params>
 </methodCall>`
 
-const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
+function xmlRpcTagsSelectRequest(
+  categories: string[] | null | undefined,
+  pages: string[] | null | undefined
+): string {
+  const selectorMember = (
+    name: "categories" | "pages",
+    values: string[] | null | undefined
+  ): string => {
+    if (values === undefined) return ""
+    const value =
+      values === null
+        ? "<nil />"
+        : `<array><data>${values
+            .map((entry) => `<value><string>${xmlEscape(entry)}</string></value>`)
+            .join("")}</data></array>`
+    return `<member><name>${name}</name><value>${value}</value></member>`
+  }
+
+  return `<?xml version="1.0"?>
 <methodCall>
   <methodName>tags.select</methodName>
   <params>
@@ -144,13 +179,14 @@ const xmlRpcTagsSelectRequest = `<?xml version="1.0"?>
       <value>
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
-          <member><name>categories</name><value><array><data><value><string>_default</string></value></data></array></value></member>
-          <member><name>pages</name><value><array><data><value><string>the-great-hippo</string></value></data></array></value></member>
+          ${selectorMember("categories", categories)}
+          ${selectorMember("pages", pages)}
         </struct>
       </value>
     </param>
   </params>
 </methodCall>`
+}
 
 const xmlRpcPagesSelectRequest = `<?xml version="1.0"?>
 <methodCall>
@@ -239,6 +275,21 @@ function xmlRpcPagesGetOneForPageRequest(page: string): string {
 </methodCall>`
 }
 
+async function expectXmlRpcPageMissing(
+  request: APIRequestContext,
+  page: string
+): Promise<void> {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<fault>")
+  expect(body).toContain("Argument page invalid: page does not exist")
+}
+
 const xmlRpcPagesGetMetaTooManyRequest = `<?xml version="1.0"?>
 <methodCall>
   <methodName>pages.get_meta</methodName>
@@ -292,7 +343,8 @@ function xmlRpcPagesSaveOneRequest({
   parentFullname,
   saveMode,
   renameAs,
-  revisionComment
+  revisionComment,
+  notifyWatchersValue
 }: {
   page: string
   title?: string
@@ -302,6 +354,7 @@ function xmlRpcPagesSaveOneRequest({
   saveMode?: string
   renameAs?: string
   revisionComment?: string
+  notifyWatchersValue?: string
 }): string {
   const optionalMembers = [
     title !== undefined
@@ -326,6 +379,9 @@ function xmlRpcPagesSaveOneRequest({
       : "",
     revisionComment !== undefined
       ? `<member><name>revision_comment</name><value><string>${revisionComment}</string></value></member>`
+      : "",
+    notifyWatchersValue !== undefined
+      ? `<member><name>notify_watchers</name><value>${notifyWatchersValue}</value></member>`
       : ""
   ].join("")
 
@@ -372,7 +428,7 @@ function xmlRpcFilesSelectRequest(page: string): string {
 </methodCall>`
 }
 
-function xmlRpcFilesGetMetaRequest(page: string, files: string[]): string {
+function xmlRpcFilesGetMetaRequest(site: string, page: string, files: string[]): string {
   return `<?xml version="1.0"?>
 <methodCall>
   <methodName>files.get_meta</methodName>
@@ -380,7 +436,7 @@ function xmlRpcFilesGetMetaRequest(page: string, files: string[]): string {
     <param>
       <value>
         <struct>
-          <member><name>site</name><value><string>scp-wiki</string></value></member>
+          <member><name>site</name><value><string>${xmlEscape(site)}</string></value></member>
           <member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>
           <member><name>files</name><value><array><data>${files
             .map((file) => `<value><string>${xmlEscape(file)}</string></value>`)
@@ -456,7 +512,11 @@ function xmlRpcFilesSaveOneRequest({
 </methodCall>`
 }
 
-function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): string {
+function xmlRpcPostsSelectRequest(
+  page?: string,
+  replyTo?: string | number,
+  threadValue?: string
+): string {
   const pageMember =
     page !== undefined
       ? `<member><name>page</name><value><string>${xmlEscape(page)}</string></value></member>`
@@ -469,6 +529,10 @@ function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): str
             : `<string>${xmlEscape(replyTo)}</string>`
         }</value></member>`
       : ""
+  const threadMember =
+    threadValue !== undefined
+      ? `<member><name>thread</name><value>${threadValue}</value></member>`
+      : ""
 
   return `<?xml version="1.0"?>
 <methodCall>
@@ -479,6 +543,7 @@ function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): str
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           ${pageMember}
+          ${threadMember}
           ${replyToMember}
         </struct>
       </value>
@@ -488,8 +553,13 @@ function xmlRpcPostsSelectRequest(page?: string, replyTo?: string | number): str
 }
 
 function xmlRpcPostsGetRequest(
-  posts: string[],
-  valueType: "string" | "int" = "string"
+  posts: (string | number)[],
+  valueType:
+    | "string"
+    | "int"
+    | "i4"
+    | "boolean"
+    | ("string" | "int" | "i4" | "boolean")[] = "string"
 ): string {
   return `<?xml version="1.0"?>
 <methodCall>
@@ -500,11 +570,15 @@ function xmlRpcPostsGetRequest(
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           <member><name>posts</name><value><array><data>${posts
-            .map((post) =>
-              valueType === "int"
-                ? `<value><int>${post}</int></value>`
-                : `<value><string>${xmlEscape(post)}</string></value>`
-            )
+            .map((post, index) => {
+              const type = Array.isArray(valueType)
+                ? valueType[index]
+                : typeof post === "number"
+                  ? "int"
+                  : valueType
+              const value = type === "string" ? xmlEscape(String(post)) : post
+              return `<value><${type}>${value}</${type}></value>`
+            })
             .join("")}</data></array></value></member>
         </struct>
       </value>
@@ -531,6 +605,37 @@ function xmlRpcPagesSelectWithFilterCount(
         <struct>
           <member><name>site</name><value><string>scp-wiki</string></value></member>
           <member><name>${filterName}</name><value><array><data>${filterValues}</data></array></value></member>
+        </struct>
+      </value>
+    </param>
+  </params>
+</methodCall>`
+}
+
+function xmlRpcPagesSelectWithFilters(
+  site: string,
+  filters: Partial<
+    Record<"categories" | "tags_any" | "tags_all" | "tags_none", string[]>
+  > = {}
+): string {
+  const filterMembers = Object.entries(filters)
+    .map(
+      ([name, values]) =>
+        `<member><name>${name}</name><value><array><data>${values
+          .map((value) => `<value><string>${xmlEscape(value)}</string></value>`)
+          .join("")}</data></array></value></member>`
+    )
+    .join("")
+
+  return `<?xml version="1.0"?>
+<methodCall>
+  <methodName>pages.select</methodName>
+  <params>
+    <param>
+      <value>
+        <struct>
+          <member><name>site</name><value><string>${xmlEscape(site)}</string></value></member>
+          ${filterMembers}
         </struct>
       </value>
     </param>
@@ -622,6 +727,19 @@ const xmlRpcHandlerRequestWithBody = (body: string): Request =>
     headers: xmlRpcHeaders,
     method: "POST"
   })
+
+function decodeXmlRpcFault(body: string) {
+  const faultValue =
+    /^<\?xml version="1\.0"\?><methodResponse><fault>(<value>[\s\S]*<\/value>)<\/fault><\/methodResponse>$/u.exec(
+      body
+    )?.[1]
+  if (!faultValue) throw new Error("Expected an XML-RPC fault response")
+
+  return parseXmlRpcCall(`<methodCall>
+  <methodName>fault</methodName>
+  <params><param>${faultValue}</param></params>
+</methodCall>`).params[0]
+}
 
 function nestedXmlRpcValue(depth: number): string {
   let value = "<value><string>x</string></value>"
@@ -854,29 +972,74 @@ test("XML-RPC endpoint selects local categories", async ({ request }) => {
   expect(categoriesBody).toContain("<string>nav</string>")
 })
 
-test("XML-RPC endpoint selects local tags", async ({ request }) => {
-  const tagsResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcTagsSelectRequest,
-    headers: xmlRpcHeaders
-  })
+test("XML-RPC tags.select rejects categories and pages together before selector caps", async ({
+  request
+}) => {
+  for (const [categories, pages] of [
+    [[], []],
+    [["_default"], ["the-great-hippo"]],
+    [Array.from({ length: 101 }, (_, index) => `category-${index}`), ["page"]]
+  ] satisfies [string[], string[]][]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest(categories, pages),
+      headers: xmlRpcHeaders
+    })
 
-  expect(tagsResponse.status()).toBe(200)
-  const tagsBody = await tagsResponse.text()
-  expect(tagsBody).toContain("<string>_cc</string>")
-  expect(tagsBody).toContain("<string>tale</string>")
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(decodeXmlRpcFault(body)).toEqual({
+      faultCode: -32602,
+      faultString: "tags.select accepts categories or pages, not both"
+    })
+  }
+})
 
-  const deepwellRequest = await request.get(`${fixtureUrl}/last-page-tags-request`)
-  expect(deepwellRequest.status()).toBe(200)
-  expect(await deepwellRequest.json()).toEqual({
-    headers: {
-      sessionToken: "fixture-session-token"
-    },
-    params: {
-      categories: ["_default"],
-      pages: ["the-great-hippo"],
-      site: "scp-wiki"
-    }
-  })
+test("XML-RPC tags.select validates mixed selector fields before mutual exclusion", async ({
+  request
+}) => {
+  for (const [selector, malformedValue, faultString] of [
+    [
+      "categories",
+      "<string>not-an-array</string>",
+      "Expected string array field: categories"
+    ],
+    ["pages", "<boolean>1</boolean>", "Expected string array field: pages"]
+  ] as const) {
+    const emptyArrayMember = `<member><name>${selector}</name><value><array><data></data></array></value></member>`
+    const malformedMember = `<member><name>${selector}</name><value>${malformedValue}</value></member>`
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest([], []).replace(emptyArrayMember, malformedMember),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    expect(decodeXmlRpcFault(await response.text())).toEqual({
+      faultCode: -32602,
+      faultString
+    })
+  }
+})
+
+test("XML-RPC tags.select treats nil and omitted selectors as absent", async ({
+  request
+}) => {
+  for (const [categories, pages] of [
+    [undefined, undefined],
+    [null, null],
+    [["_default"], null],
+    [undefined, ["the-great-hippo"]]
+  ] satisfies [string[] | null | undefined, string[] | null | undefined][]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcTagsSelectRequest(categories, pages),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain("<string>_cc</string>")
+    expect(body).toContain("<string>tale</string>")
+  }
 })
 
 test("XML-RPC endpoint selects pages with documented filters and ordering", async ({
@@ -905,6 +1068,62 @@ test("XML-RPC endpoint selects pages with documented filters and ordering", asyn
     rating: ">=0",
     site: "scp-wiki"
   })
+})
+
+test("XML-RPC pages.select resolves a missing site before empty selectors", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+
+  const variants = [
+    {},
+    { categories: [] },
+    { tags_any: [] },
+    { categories: [], tags_any: [] },
+    { tags_all: [] },
+    { tags_none: [] }
+  ]
+  const responses = []
+  for (const filters of variants) {
+    responses.push(
+      await request.post("/xml-rpc-api.php", {
+        data: xmlRpcPagesSelectWithFilters("missing-site", filters),
+        headers: xmlRpcHeaders
+      })
+    )
+  }
+  const baselineBody = await responses[0].text()
+
+  for (const response of responses) {
+    expect(response.status()).toBe(200)
+    expect(response.headers()["content-type"]).toContain("text/xml")
+    expect(await response.text()).toBe(baselineBody)
+  }
+  expect(baselineBody).toContain("<fault>")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(deepwellRequests.status()).toBe(200)
+  expect((await deepwellRequests.json()).pageSelect).toEqual(
+    variants.map((filters) => ({
+      headers: { sessionToken: "fixture-session-token" },
+      params: { site: "missing-site", ...filters }
+    }))
+  )
+
+  for (const filters of [
+    { categories: [] },
+    { tags_any: [] },
+    { categories: [], tags_any: [] }
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSelectWithFilters("scp-wiki", filters),
+      headers: xmlRpcHeaders
+    })
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).toContain("<array><data></data></array>")
+    expect(body).not.toContain("<fault>")
+  }
 })
 
 test("XML-RPC endpoint bounds pages.select filters", async ({ request }) => {
@@ -947,6 +1166,8 @@ test("XML-RPC endpoint rejects invalid pages.select scalar filters", async ({
 test("XML-RPC endpoint returns page metadata and bodies for corpus clients", async ({
   request
 }) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+
   const metaResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesGetMetaRequest,
     headers: xmlRpcHeaders
@@ -964,11 +1185,31 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   expect(metaBody).toContain(
     "<name>parent_fullname</name><value><string>scp-173-parent</string></value>"
   )
-  expect(metaBody).toContain("<name>created_by</name><value><string>123</string></value>")
-  expect(metaBody).toContain("<name>updated_by</name><value><string>456</string></value>")
+  expect(metaBody).toContain(
+    "<name>created_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(metaBody).toContain(
+    "<name>updated_by</name><value><string>Fixture Updater</string></value>"
+  )
   expect(metaBody).toContain("<name>tags</name><value><array><data>")
   expect(metaBody).toContain("<name>rating</name><value><int>173</int></value>")
   expect(metaBody).toContain("<name>revisions</name><value><int>3</int></value>")
+  const metaMemberNames = [...metaBody.matchAll(/<name>([^<]+)<\/name>/g)]
+    .map((match) => match[1])
+    .filter((name) => name !== "scp-173")
+    .sort()
+  expect(metaMemberNames).toEqual([
+    "created_at",
+    "created_by",
+    "fullname",
+    "parent_fullname",
+    "rating",
+    "revisions",
+    "tags",
+    "title",
+    "updated_at",
+    "updated_by"
+  ])
   expect(metaBody).not.toContain("Item #:")
 
   const oneResponse = await request.post("/xml-rpc-api.php", {
@@ -982,8 +1223,12 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   expect(oneBody).toContain(
     "<name>fullname</name><value><string>scp-173</string></value>"
   )
-  expect(oneBody).toContain("<name>created_by</name><value><string>123</string></value>")
-  expect(oneBody).toContain("<name>updated_by</name><value><string>456</string></value>")
+  expect(oneBody).toContain(
+    "<name>created_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(oneBody).toContain(
+    "<name>updated_by</name><value><string>Fixture Updater</string></value>"
+  )
   expect(oneBody).toContain("<name>content</name><value><string>")
   expect(oneBody).toContain("**Item #:** SCP-173")
   expect(oneBody).toContain("<name>html</name><value><string>")
@@ -1036,11 +1281,8 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
   const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
   expect(deepwellRequests.status()).toBe(200)
   expect(await deepwellRequests.json()).toEqual({
+    ...emptyPageReadRequests,
     forumPostPageSummary: [
-      {
-        page: "scp-173",
-        site_id: 6000005
-      },
       {
         page: "scp-173",
         site_id: 6000005
@@ -1068,32 +1310,22 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         site_id: 6000005
       }
     ],
-    pageGetDirect: [
+    pageLifecycleIdentity: [
       {
-        allow_deleted: false,
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000172,
-        site_id: 6000005
+        headers: {
+          page: "scp-173",
+          sessionToken: "fixture-session-token",
+          siteId: "6000005"
+        },
+        params: { page: "scp-173", site_id: 6000005 }
       },
       {
-        allow_deleted: false,
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000172,
-        site_id: 6000005
-      }
-    ],
-    pageRevisionGet: [
-      {
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000173,
-        revision_number: 0,
-        site_id: 6000005
-      },
-      {
-        details: { compiled_html: false, wikitext: false },
-        page_id: 3000173,
-        revision_number: 0,
-        site_id: 6000005
+        headers: {
+          page: "scp-173",
+          sessionToken: "fixture-session-token",
+          siteId: "6000005"
+        },
+        params: { page: "scp-173", site_id: 6000005 }
       }
     ],
     pageSelect: [
@@ -1130,16 +1362,14 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
         }
       }
     ],
-    parentRelationshipsGet: [
+    parentDirectMetadata: [
       {
-        page: "scp-173",
-        relationship_type: "parents",
-        site_id: 6000005
+        headers: { sessionToken: "fixture-session-token" },
+        params: { page: "scp-173", site_id: 6000005 }
       },
       {
-        page: "scp-173",
-        relationship_type: "parents",
-        site_id: 6000005
+        headers: { sessionToken: "fixture-session-token" },
+        params: { page: "scp-173", site_id: 6000005 }
       }
     ],
     siteGet: [
@@ -1147,8 +1377,7 @@ test("XML-RPC endpoint returns page metadata and bodies for corpus clients", asy
       { site: "scp-wiki" },
       { site: "missing-site" },
       { site: "missing-site" }
-    ],
-    voteList: []
+    ]
   })
 })
 
@@ -1198,6 +1427,117 @@ test("XML-RPC endpoint enforces page view ACLs for page reads", async ({ request
       (entry: { page: string }) => entry.page === "private-page"
     )
   ).toBe(false)
+})
+
+test("XML-RPC page reads omit parent metadata when the parent is not viewable", async ({
+  request
+}) => {
+  const page = "public-child-private-parent"
+  const metaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaForPagesRequest([page]),
+    headers: xmlRpcHeaders
+  })
+  expect(metaResponse.status()).toBe(200)
+
+  const metaBody = await metaResponse.text()
+  expect(metaBody).toContain(`<name>${page}</name>`)
+  expect(metaBody).toContain(
+    "<name>fullname</name><value><string>public-child-private-parent</string></value>"
+  )
+  expect(metaBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(metaBody).not.toContain("<string>private-page</string>")
+
+  const oneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(oneResponse.status()).toBe(200)
+
+  const oneBody = await oneResponse.text()
+  expect(oneBody).toContain("Public child body marker.")
+  expect(oneBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(oneBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(oneBody).not.toContain("<string>private-page</string>")
+  expect(oneBody).not.toContain("Private Page")
+
+  const saveResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({ page, saveMode: "update" }),
+    headers: xmlRpcHeaders
+  })
+  expect(saveResponse.status()).toBe(200)
+
+  const saveBody = await saveResponse.text()
+  expect(saveBody).toContain("Public child body marker.")
+  expect(saveBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(saveBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(saveBody).not.toContain("<string>private-page</string>")
+  expect(saveBody).not.toContain("Private Page")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(deepwellRequests.status()).toBe(200)
+  const readRequests = await deepwellRequests.json()
+  expect(readRequests.parentDirectMetadata).toEqual([
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    },
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    },
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    }
+  ])
+  expect(readRequests.parentRelationshipsGet).toEqual([])
+  expect(readRequests.pageViewPermission).toEqual([])
+  expect(readRequests.pageGetDirect).toEqual([])
+})
+
+test("XML-RPC page reads omit ambiguous parent metadata", async ({ request }) => {
+  const page = "ambiguous-parent-child"
+  const metaResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetMetaForPagesRequest([page]),
+    headers: xmlRpcHeaders
+  })
+  expect(metaResponse.status()).toBe(200)
+
+  const metaBody = await metaResponse.text()
+  expect(metaBody).toContain(`<name>${page}</name>`)
+  expect(metaBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(metaBody).not.toContain("<string>main</string>")
+  expect(metaBody).not.toContain("<string>scp-173-parent</string>")
+
+  const oneResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(oneResponse.status()).toBe(200)
+
+  const oneBody = await oneResponse.text()
+  expect(oneBody).toContain("Ambiguous parent child body marker.")
+  expect(oneBody).toContain("<name>parent_fullname</name><value><nil /></value>")
+  expect(oneBody).toContain("<name>parent_title</name><value><nil /></value>")
+  expect(oneBody).not.toContain("<string>main</string>")
+  expect(oneBody).not.toContain("SCP Foundation")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(deepwellRequests.status()).toBe(200)
+  const readRequests = await deepwellRequests.json()
+  expect(readRequests.parentDirectMetadata).toEqual([
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    },
+    {
+      headers: { sessionToken: "fixture-session-token" },
+      params: { page, site_id: 6000005 }
+    }
+  ])
+  expect(readRequests.parentRelationshipsGet).toEqual([])
+  expect(readRequests.pageViewPermission).toEqual([])
+  expect(readRequests.pageGetDirect).toEqual([])
 })
 
 test("XML-RPC page HTML omits generated CSS that browser views place in head", async ({
@@ -1282,7 +1622,7 @@ test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
   )
 
   const postsGetResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcPostsGetRequest(["7000300"], "int"),
+    data: xmlRpcPostsGetRequest(["7000300"]),
     headers: xmlRpcHeaders
   })
   expect(postsGetResponse.status()).toBe(200)
@@ -1332,6 +1672,135 @@ test("XML-RPC endpoint returns page comment summaries and forum posts", async ({
   )
 })
 
+test("XML-RPC posts.select rejects the unimplemented thread selector locally", async ({
+  request
+}) => {
+  for (const threadValue of ["<string>123</string>", "<boolean>1</boolean>"]) {
+    await request.get(`${fixtureUrl}/last-page-read-requests`)
+
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPostsSelectRequest(undefined, undefined, threadValue),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).toContain("<fault>")
+    expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+    expect(body).toContain("posts.select thread is not implemented")
+
+    const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+    expect(await deepwellRequests.json()).toEqual(emptyPageReadRequests)
+  }
+})
+
+test("XML-RPC posts.select treats a nil thread selector as omitted", async ({
+  request
+}) => {
+  for (const requestBody of [
+    xmlRpcPostsSelectRequest(undefined, undefined, "<nil />"),
+    xmlRpcPostsSelectRequest("xmlrpc-post-page"),
+    xmlRpcPostsSelectRequest("xmlrpc-post-page", "-")
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: requestBody,
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain("<value><int>7000300</int></value>")
+  }
+})
+
+test("XML-RPC posts.select validates required site before thread support", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-page-read-requests`)
+  const requestBody = xmlRpcPostsSelectRequest(
+    undefined,
+    undefined,
+    "<string>123</string>"
+  ).replace(
+    "<member><name>site</name><value><string>scp-wiki</string></value></member>",
+    ""
+  )
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: requestBody,
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("Expected string field: site")
+  expect(body).not.toContain("posts.select thread is not implemented")
+
+  const deepwellRequests = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(await deepwellRequests.json()).toEqual(emptyPageReadRequests)
+})
+
+test("XML-RPC posts.get accepts integer and i4 post IDs", async ({ request }) => {
+  const resetReads = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(resetReads.status()).toBe(200)
+
+  const mixedResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest(["7000300", 7000301]),
+    headers: xmlRpcHeaders
+  })
+  expect(mixedResponse.status()).toBe(200)
+  const mixedBody = await mixedResponse.text()
+  expect(mixedBody).toContain("<name>7000300</name>")
+  expect(mixedBody).toContain("<name>7000301</name>")
+
+  const mixedReadsResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(mixedReadsResponse.status()).toBe(200)
+  const mixedReads = await mixedReadsResponse.json()
+  expect(mixedReads.forumPostGet).toEqual([
+    {
+      params: { posts: ["7000300", "7000301"], site_id: 6000005 },
+      resultIds: [7000300, 7000301]
+    }
+  ])
+
+  const i4Response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest(["7000301"], "i4"),
+    headers: xmlRpcHeaders
+  })
+  expect(i4Response.status()).toBe(200)
+  expect(await i4Response.text()).toContain("<name>7000301</name>")
+
+  const i4ReadsResponse = await request.get(`${fixtureUrl}/last-page-read-requests`)
+  expect(i4ReadsResponse.status()).toBe(200)
+  const i4Reads = await i4ReadsResponse.json()
+  expect(i4Reads.forumPostGet).toEqual([
+    {
+      params: { posts: ["7000301"], site_id: 6000005 },
+      resultIds: [7000301]
+    }
+  ])
+
+  const forbiddenResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPostsGetRequest(["7000300", "1"], ["string", "boolean"]),
+    headers: xmlRpcHeaders
+  })
+  expect(forbiddenResponse.status()).toBe(200)
+  const forbiddenBody = await forbiddenResponse.text()
+  expect(forbiddenBody).toContain("<fault>")
+  expect(forbiddenBody).toContain(
+    "<name>faultCode</name><value><int>-32602</int></value>"
+  )
+
+  const forbiddenReadsResponse = await request.get(
+    `${fixtureUrl}/last-page-read-requests`
+  )
+  expect(forbiddenReadsResponse.status()).toBe(200)
+  const forbiddenReads = await forbiddenReadsResponse.json()
+  expect(forbiddenReads.forumPostGet).toEqual([])
+})
+
 test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename", async ({
   request
 }) => {
@@ -1369,6 +1838,15 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
     "<name>parent_fullname</name><value><string>main</string></value>"
   )
   expect(createBody).toContain("<value><string>xmlrpc-save</string></value>")
+  expect(createBody).toContain(
+    "<name>created_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(createBody).toContain(
+    "<name>updated_by</name><value><string>Rokurokubi</string></value>"
+  )
+  expect(createBody).not.toMatch(
+    /<name>(?:created_by|updated_by)<\/name><value><string>\d+<\/string>/u
+  )
 
   const updateResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesSaveOneRequest({
@@ -1394,6 +1872,9 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
   expect(updateBody).toContain("<name>parent_fullname</name><value><nil /></value>")
   expect(updateBody).toContain("<value><string>xmlrpc-save-updated</string></value>")
   expect(updateBody).not.toContain("<value><string>xmlrpc-save</string></value>")
+  expect(updateBody).not.toMatch(
+    /<name>(?:created_by|updated_by)<\/name><value><string>\d+<\/string>/u
+  )
 
   const renameResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcPagesSaveOneRequest({
@@ -1424,6 +1905,9 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
     "<name>parent_fullname</name><value><string>main</string></value>"
   )
   expect(renameBody).toContain("<value><string>xmlrpc-save-renamed</string></value>")
+  expect(renameBody).not.toMatch(
+    /<name>(?:created_by|updated_by)<\/name><value><string>\d+<\/string>/u
+  )
 
   const writeRequests = await request.get(`${fixtureUrl}/last-page-write-requests`)
   expect(writeRequests.status()).toBe(200)
@@ -1462,9 +1946,298 @@ test("XML-RPC endpoint saves pages with actor context, parents, tags, and rename
   })
 })
 
+test("pages.save_one rejects a non-boolean notify_watchers value without saving a page", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-${randomUUID()}`
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      notifyWatchersValue: "<string>false</string>"
+    }),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("Expected boolean field: notify_watchers")
+  await expectXmlRpcPageMissing(request, page)
+})
+
+test("pages.save_one rejects enabled watcher notifications without saving a page", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-${randomUUID()}`
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      notifyWatchersValue: "<boolean>1</boolean>"
+    }),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(body).toContain("pages.save_one notify_watchers is not implemented")
+  await expectXmlRpcPageMissing(request, page)
+})
+
+test("pages.save_one leaves an existing page unchanged when watcher notifications are enabled", async ({
+  request
+}) => {
+  const page = `fixture-xmlrpc-notify-update-${randomUUID()}`
+  const originalTitle = "Watcher notification baseline title"
+  const originalContent = "Watcher notification baseline content."
+  const originalTag = "watcher-notification-baseline"
+  const rejectedTitle = "Rejected watcher notification title"
+  const rejectedContent = "Rejected watcher notification content."
+  const rejectedTag = "rejected-watcher-notification"
+
+  const createResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      title: originalTitle,
+      content: originalContent,
+      tags: [originalTag],
+      saveMode: "create"
+    }),
+    headers: xmlRpcHeaders
+  })
+  expect(createResponse.status()).toBe(200)
+  expect(await createResponse.text()).not.toContain("<fault>")
+
+  const baselineResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(baselineResponse.status()).toBe(200)
+  const baselineBody = await baselineResponse.text()
+  expect(baselineBody).toContain(
+    `<name>title</name><value><string>${originalTitle}</string></value>`
+  )
+  expect(baselineBody).toContain(
+    `<name>content</name><value><string>${originalContent}</string></value>`
+  )
+  expect(baselineBody).toContain(
+    `<name>tags</name><value><array><data><value><string>${originalTag}</string></value></data></array></value>`
+  )
+
+  const updateResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesSaveOneRequest({
+      page,
+      title: rejectedTitle,
+      content: rejectedContent,
+      tags: [rejectedTag],
+      saveMode: "update",
+      notifyWatchersValue: "<boolean>1</boolean>"
+    }),
+    headers: xmlRpcHeaders
+  })
+  expect(updateResponse.status()).toBe(200)
+  const updateBody = await updateResponse.text()
+  expect(updateBody).toContain("<name>faultCode</name><value><int>-32602</int></value>")
+  expect(updateBody).toContain("pages.save_one notify_watchers is not implemented")
+
+  const finalResponse = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcPagesGetOneForPageRequest(page),
+    headers: xmlRpcHeaders
+  })
+  expect(finalResponse.status()).toBe(200)
+  const finalBody = await finalResponse.text()
+  expect(finalBody).toContain(
+    `<name>title</name><value><string>${originalTitle}</string></value>`
+  )
+  expect(finalBody).toContain(
+    `<name>content</name><value><string>${originalContent}</string></value>`
+  )
+  expect(finalBody).toContain(
+    `<name>tags</name><value><array><data><value><string>${originalTag}</string></value></data></array></value>`
+  )
+  expect(finalBody).not.toContain(rejectedTitle)
+  expect(finalBody).not.toContain(rejectedContent)
+  expect(finalBody).not.toContain(rejectedTag)
+})
+
+test("pages.save_one treats omitted, nil, and false notify_watchers as disabled", async ({
+  request
+}) => {
+  for (const [description, notifyWatchersValue] of [
+    ["omitted", undefined],
+    ["nil", "<nil />"],
+    ["false", "<boolean>0</boolean>"]
+  ] as const) {
+    const slug = `fixture-xmlrpc-notify-${description}-${randomUUID()}`
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: slug,
+        saveMode: "create",
+        notifyWatchersValue
+      }),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    const body = await response.text()
+    expect(body).not.toContain("<fault>")
+    expect(body).toContain(`<name>fullname</name><value><string>${slug}</string></value>`)
+
+    const readResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesGetOneForPageRequest(slug),
+      headers: xmlRpcHeaders
+    })
+    expect(readResponse.status()).toBe(200)
+    const readBody = await readResponse.text()
+    expect(readBody).not.toContain("<fault>")
+    expect(readBody).toContain(
+      `<name>fullname</name><value><string>${slug}</string></value>`
+    )
+  }
+})
+
+test("pages.save_one validates each of revision_comment and save_mode before notify_watchers", async ({
+  request
+}) => {
+  for (const notifyWatchersValue of ["<string>false</string>", "<boolean>1</boolean>"]) {
+    const invalidRevisionPage = `fixture-xmlrpc-notify-${randomUUID()}`
+    const invalidRevisionResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: invalidRevisionPage,
+        revisionComment: "invalid-revision-comment",
+        notifyWatchersValue
+      }).replace("<string>invalid-revision-comment</string>", "<boolean>0</boolean>"),
+      headers: xmlRpcHeaders
+    })
+    expect(await invalidRevisionResponse.text()).toContain(
+      "Expected string field: revision_comment"
+    )
+    await expectXmlRpcPageMissing(request, invalidRevisionPage)
+
+    const invalidSaveModePage = `fixture-xmlrpc-notify-${randomUUID()}`
+    const invalidSaveModeResponse = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcPagesSaveOneRequest({
+        page: invalidSaveModePage,
+        saveMode: "invalid",
+        notifyWatchersValue
+      }),
+      headers: xmlRpcHeaders
+    })
+    expect(await invalidSaveModeResponse.text()).toContain(
+      "Unsupported pages.save_one save_mode: invalid"
+    )
+    await expectXmlRpcPageMissing(request, invalidSaveModePage)
+  }
+})
+
+test("XML-RPC files.get_meta validates resources before returning an empty struct", async ({
+  request
+}) => {
+  for (const [site, page] of [
+    ["missing-site", "scp-173"],
+    ["scp-wiki", "missing-page"]
+  ]) {
+    const response = await request.post("/xml-rpc-api.php", {
+      data: xmlRpcFilesGetMetaRequest(site, page, []),
+      headers: xmlRpcHeaders
+    })
+
+    expect(response.status()).toBe(200)
+    expect(await response.text()).toContain("<fault>")
+  }
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetMetaRequest("scp-wiki", "scp-173", []),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).toContain("<methodResponse><params><param>")
+  expect(body).toContain("<value><struct></struct></value>")
+  expect(body).not.toContain("<fault>")
+})
+
+test("XML-RPC files.get_one rejects metadata above the local 6 MB read limit before requesting content", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-file-requests`)
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest("scp-173", "xmlrpc-read-limit-over-cap.txt"),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(413)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>413</int></value>")
+  expect(body).toContain("files.get_one file exceeds local 6 MB read limit")
+
+  const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
+  expect(fileLogResponse.status()).toBe(200)
+  const fileLog = await fileLogResponse.json()
+  expect(fileLog.fileGet.map(({ params }) => params.details.data)).toEqual([false])
+})
+
+test("XML-RPC files.get_one allows the local 6 MB boundary using a tiny synthetic payload", async ({
+  request
+}) => {
+  await request.get(`${fixtureUrl}/last-file-requests`)
+
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest("scp-173", "xmlrpc-read-limit-at-cap.txt"),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).not.toContain("<fault>")
+  expect(body).toContain("<name>size</name><value><int>6000000</int></value>")
+  expect(body).toContain(
+    `<name>content</name><value><string>${Buffer.from("at cap").toString("base64")}</string></value>`
+  )
+
+  const fileLogResponse = await request.get(`${fixtureUrl}/last-file-requests`)
+  expect(fileLogResponse.status()).toBe(200)
+  const fileLog = await fileLogResponse.json()
+  expect(fileLog.fileGet.map(({ params }) => params.details.data)).toEqual([false, true])
+})
+
+test("XML-RPC files.get_meta still returns metadata above the local files.get_one read limit", async ({
+  request
+}) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetMetaRequest("scp-wiki", "scp-173", [
+      "xmlrpc-read-limit-over-cap.txt"
+    ]),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(200)
+  const body = await response.text()
+  expect(body).not.toContain("<fault>")
+  expect(body).toContain("<name>size</name><value><int>6000001</int></value>")
+})
+
+test("XML-RPC files.get_one rechecks the local read limit after fetching content", async ({
+  request
+}) => {
+  const response = await request.post("/xml-rpc-api.php", {
+    data: xmlRpcFilesGetOneRequest("scp-173", "xmlrpc-read-limit-race.txt"),
+    headers: xmlRpcHeaders
+  })
+
+  expect(response.status()).toBe(413)
+  const body = await response.text()
+  expect(body).toContain("<name>faultCode</name><value><int>413</int></value>")
+  expect(body).toContain("files.get_one file exceeds local 6 MB read limit")
+})
+
 test("XML-RPC endpoint saves and reads small page attachments", async ({ request }) => {
   const pageSlug = `fixture-xmlrpc-file-${randomUUID()}`
-  const fileName = "proof.txt"
+  const fileName = "B&W.txt"
   const initialText = "XML-RPC file proof initial content."
   const updatedText = "XML-RPC file proof updated content with extra bytes."
   const initialContent = Buffer.from(initialText).toString("base64")
@@ -1506,24 +2279,31 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
     "<name>comment</name><value><string>xmlrpc file create proof</string></value>"
   )
   expect(saveBody).toContain("<name>mime_type</name><value><string>text/plain")
+  expect(saveBody).toContain(
+    "<name>filename</name><value><string>B&amp;W.txt</string></value>"
+  )
 
   const selectResponse = await request.post("/xml-rpc-api.php", {
     data: xmlRpcFilesSelectRequest(pageSlug),
     headers: xmlRpcHeaders
   })
   expect(selectResponse.status()).toBe(200)
-  expect(await selectResponse.text()).toContain("<string>proof.txt</string>")
+  expect(await selectResponse.text()).toContain("<string>B&amp;W.txt</string>")
 
   const metaResponse = await request.post("/xml-rpc-api.php", {
-    data: xmlRpcFilesGetMetaRequest(pageSlug, [fileName]),
+    data: xmlRpcFilesGetMetaRequest("scp-wiki", pageSlug, [fileName]),
     headers: xmlRpcHeaders
   })
   expect(metaResponse.status()).toBe(200)
   const metaBody = await metaResponse.text()
-  expect(metaBody).toContain("<name>proof.txt</name>")
+  expect(metaBody).toContain("<name>B&amp;W.txt</name>")
   expect(metaBody).toContain("<name>size</name><value><int>35</int></value>")
   expect(metaBody).toContain(
     "<name>comment</name><value><string>xmlrpc file create proof</string></value>"
+  )
+  expect(metaBody.match(/<name>B&amp;W\.txt<\/name>/gu)).toHaveLength(1)
+  expect(metaBody).toContain(
+    "<name>filename</name><value><string>B&amp;W.txt</string></value>"
   )
   expect(metaBody).not.toContain(initialContent)
 
@@ -1533,6 +2313,9 @@ test("XML-RPC endpoint saves and reads small page attachments", async ({ request
   })
   expect(oneResponse.status()).toBe(200)
   const oneBody = await oneResponse.text()
+  expect(oneBody).toContain(
+    "<name>filename</name><value><string>B&amp;W.txt</string></value>"
+  )
   expect(oneBody).toContain(
     `<name>content</name><value><string>${initialContent}</string></value>`
   )
@@ -2481,7 +3264,7 @@ test("XML-RPC endpoint lets SvelteKit reject non-POST HEAD requests", async ({
 })
 
 test("XML-RPC endpoint rejects oversized request bodies", async ({ request }) => {
-  const oversizedBody = `${" ".repeat(1_048_577)}<methodCall />`
+  const oversizedBody = `${" ".repeat(MAX_XML_RPC_BODY_BYTES + 1)}<methodCall />`
   const response = await request.post("/xml-rpc-api.php", {
     data: oversizedBody,
     headers: {

@@ -134,6 +134,7 @@ mod tests {
             multi_factor_recovery_codes: None,
             locales: vec![str!("en")],
             avatar_s3_hash: None,
+            forum_signature: None,
             real_name: None,
             gender: None,
             birthday: None,

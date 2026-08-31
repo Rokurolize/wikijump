@@ -180,15 +180,18 @@ test("the Wikidot shell preserves the legacy two-input search chrome", async () 
     "utf8"
   )
 
-  assert.match(layout, /<div id="search-top-box">/u)
+  assert.match(layout, /<div id="search-top-box" class="form-search">/u)
   assert.match(
     layout,
-    /<form(?=[^>]*id="search-top-box-form")(?=[^>]*action="dummy")[^>]*>/u
+    /<form(?=[^>]*id="search-top-box-form")(?=[^>]*action="dummy")(?=[^>]*class="input-append")[^>]*>/u
   )
-  assert.match(layout, /id="search-top-box-input"[\s\S]*?type="text"/u)
   assert.match(
     layout,
-    /<input(?=[^>]*name="search")(?=[^>]*class="button")(?=[^>]*type="submit")(?=[^>]*value="Search")[^>]*>/u
+    /<input(?=[^>]*id="search-top-box-input")(?=[^>]*class="text empty search-query")(?=[^>]*type="text")[^>]*>/u
+  )
+  assert.match(
+    layout,
+    /<input(?=[^>]*name="search")(?=[^>]*class="button btn")(?=[^>]*type="submit")(?=[^>]*value="Search")[^>]*>/u
   )
 })
 
@@ -199,6 +202,9 @@ test("the Wikidot error dialog exposes the real visible display state", async ()
   )
 
   assert.match(popup, /id="odialog-container"\s+style:display="block"/u)
+  assert.match(popup, /\.modal-container > \.modal \{/u)
+  assert.match(popup, /\.modal-container > \.modal h2 \{/u)
+  assert.doesNotMatch(popup, /^\s*\.modal\s*\{/mu)
   assert.doesNotMatch(popup, /basalt-compat/u)
 })
 

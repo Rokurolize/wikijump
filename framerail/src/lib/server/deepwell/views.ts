@@ -160,6 +160,7 @@ export interface DataFormFieldDefinition {
   values: DataFormValueDefinition[]
   default_value: Nullable<string>
   configured_value: Nullable<string>
+  options: Record<string, unknown>
   width: number
   height: number
   match_pattern: Nullable<string>
@@ -167,6 +168,13 @@ export interface DataFormFieldDefinition {
   before: string
   after: string
   join: boolean
+  pagepath_category: Nullable<string>
+  pagepath_max_level: Nullable<number>
+}
+export interface DataFormPagepathNode {
+  fullname: string
+  name: string
+  parent: Nullable<string>
 }
 export interface DataFormDefinition {
   fields: DataFormFieldDefinition[]
@@ -175,6 +183,7 @@ export interface DataFormDefinition {
 export interface DataFormEditor {
   definition: DataFormDefinition
   values: Record<string, string>
+  pagepaths: Record<string, DataFormPagepathNode[]>
 }
 interface PageViewMissing {
   type: "missing"
@@ -254,6 +263,7 @@ interface AdminViewSiteFound {
   data: {
     categories: PageCategoryModel[]
     page_templates: PageTemplateSummary[]
+    is_master_admin: boolean
   }
 }
 

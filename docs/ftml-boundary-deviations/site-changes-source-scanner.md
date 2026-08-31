@@ -4,7 +4,7 @@ Shim: `SITE_CHANGES_MODULE_REGEX` and the raw-source recognition in `RenderServi
 
 Reason it lives in Wikijump: `SiteChanges` needs the request actor, current page, categories, revisions, users, permissions, filters, and pagination. Deepwell excludes literal owners, recognizes only the evidenced argument-free closer-free head, and delegates those runtime decisions to Wikijump services.
 
-Why FTML is not yet sufficient: pinned FTML revision `62ebba4efda1f10e82363c23c925061fbe939e49` exposes an unknown module as `Module::Runtime` only when the source has a body and a later `[[/module]]`. The evidenced `SiteChanges` form is closer-free, so FTML converts it to its generic unknown-module result before Deepwell can preserve it for runtime rendering.
+Why FTML is not yet sufficient: pinned FTML revision `324ac373ed0a3ee8dc46dbad5aa1d91688be95d6` exposes an unknown module as `Module::Runtime` only when the source has a body and a later `[[/module]]`. The evidenced `SiteChanges` form is closer-free, so FTML converts it to its generic unknown-module result before Deepwell can preserve it for runtime rendering.
 
 Evidence: `deepwell/tests/page.rs::sitechanges_default_snapshot_filters_before_the_initial_page_limit` and `deepwell/tests/page.rs::sitechanges_ajax_endpoint_filters_before_pagination_and_matches_observed_reads` are the public regressions. The frozen initial and Ajax cases are recorded under issue 1035 in `docs/development/open43-q-page-query-closure-audit.json` and `docs/wikidot-specifications/specifications/module/module-sitechanges.md`.
 

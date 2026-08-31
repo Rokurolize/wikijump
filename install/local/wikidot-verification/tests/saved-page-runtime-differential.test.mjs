@@ -51,7 +51,7 @@ function reference(selectedHtml) {
   };
 }
 
-function documentWithGenerator(html, generator = "ftml v1.42.0 [22222222]; deepwell-render/v1") {
+function documentWithGenerator(html, generator = "ftml v1.42.0 [22222222]; deepwell-render/v10") {
   return `<main>${html}</main><script type="application/json">{"compiled_generator":"${generator}"}</script>`;
 }
 
@@ -91,21 +91,21 @@ test("saved-page comparison reports DOM and unexpanded include differences", () 
 test("compiled generator check rejects stale, missing, and duplicate page artifacts", () => {
   assert.equal(
     compiledGeneratorCheck(
-      '{"compiled_generator":"ftml v1.42.0 [22222222]; deepwell-render/v1"}',
+      '{"compiled_generator":"ftml v1.42.0 [22222222]; deepwell-render/v10"}',
       identity.ftml_sha,
     ).status,
     "match",
   );
   assert.equal(
     compiledGeneratorCheck(
-      '{compiled_generator:"ftml v1.42.0 [22222222]; deepwell-render/v1"}',
+      '{compiled_generator:"ftml v1.42.0 [22222222]; deepwell-render/v10"}',
       identity.ftml_sha,
     ).status,
     "match",
   );
   assert.equal(
     compiledGeneratorCheck(
-      '{compiled_generator:"ftml v1.42.0 [11111111]; deepwell-render/v1"}',
+      '{compiled_generator:"ftml v1.42.0 [11111111]; deepwell-render/v10"}',
       identity.ftml_sha,
     ).status,
     "mismatch",

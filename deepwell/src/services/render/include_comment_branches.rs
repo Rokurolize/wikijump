@@ -34,6 +34,19 @@ pub(super) fn remove_unresolved_include_comment_branches(wikitext: &mut String) 
     remove_unresolved_include_comment_branches_inner(wikitext, None);
 }
 
+/// Include-local comment boundaries must not close a branch owned by the
+/// caller after nested sources are assembled.
+pub(super) fn remove_nested_include_boundaries(wikitext: &mut String) {
+    let mut output = String::with_capacity(wikitext.len());
+    for line in wikitext.split_inclusive('\n') {
+        let marker = line.trim();
+        if !is_boundary(marker) && !is_unresolved_branch_open(marker) {
+            output.push_str(line);
+        }
+    }
+    *wikitext = output;
+}
+
 /// Removes bounded inactive branches and protects malformed openers so they
 /// cannot claim a boundary from a caller or sibling source after assembly.
 pub(super) fn remove_unresolved_include_comment_branches_source_local(
@@ -238,6 +251,22 @@ mod tests {
         remove_unresolved_include_comment_branches(&mut wikitext);
 
         assert_eq!(wikitext, original);
+    }
+
+    #[test]
+    fn removes_nested_boundaries_but_preserves_content() {
+        let mut wikitext = concat!(
+            "Before\n",
+            "[!-- {$normal}\n",
+            "Nested content\n",
+            "[!----]\n",
+            "After\n",
+        )
+        .to_owned();
+
+        remove_nested_include_boundaries(&mut wikitext);
+
+        assert_eq!(wikitext, "Before\nNested content\nAfter\n");
     }
 
     #[test]

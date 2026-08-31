@@ -41,6 +41,8 @@ pub struct Model {
     #[sea_orm(column_type = "VarBinary(StringLen::None)", nullable)]
     pub avatar_s3_hash: Option<Vec<u8>>,
     #[sea_orm(column_type = "Text", nullable)]
+    pub forum_signature: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
     pub real_name: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub gender: Option<String>,

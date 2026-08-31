@@ -90,7 +90,7 @@ test("extracts external and inline styleFrame CSS in canonical cascade order", (
   )
 })
 
-test("does not preload a styleFrame theme already imported by page CSS", () => {
+test("preloads styleFrame themes even when page CSS imports them", () => {
   assert.deepEqual(
     extractWikidotStyleFrameDeclarations(
       [
@@ -101,7 +101,15 @@ test("does not preload a styleFrame theme already imported by page CSS", () => {
         '@import url("https://scp-wiki.wdfiles.com/local--code/theme%3Ay2k/1"); .page-rule { color: red; }'
       ]
     ),
-    []
+    [
+      {
+        href: "https://scp-wiki.wjfiles.localhost/local--code/theme%3Ay2k/1",
+        kind: "theme",
+        order: 0,
+        priority: "1",
+        priorityValue: 1
+      }
+    ]
   )
 })
 
@@ -195,6 +203,13 @@ test("localizes Wikidot local file and code theme URLs to the local file host", 
       "https://scp-wiki.wikijump.localhost"
     ),
     "https://scp-wiki.wjfiles.localhost/local--code/theme:basalt/1"
+  )
+  assert.equal(
+    localizeWikidotThemeUrl(
+      "https://scp-wiki.wdfiles.com/local--code/theme:basalt/1",
+      "https://scp-wiki.wikijump.localhost:18443"
+    ),
+    "https://scp-wiki.wjfiles.localhost:18443/local--code/theme:basalt/1"
   )
   assert.equal(
     localizeWikidotThemeUrl(

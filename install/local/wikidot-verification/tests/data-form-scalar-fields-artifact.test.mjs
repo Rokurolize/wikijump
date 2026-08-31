@@ -17,6 +17,16 @@ test("scalar field artifact is complete, independent, and secret-free", () => {
   assert.doesNotMatch(JSON.stringify(artifact), /(?:WIKIDOT_(?:SESSION_ID|PASSWORD)|wikidot_token7)=/i);
 });
 
+test("hidden generated forms declare no control, fragment, or form field", () => {
+  const hidden = artifact.field_runs.find((run) => run.field === "hidden");
+  assert.ok(hidden, "missing hidden run");
+  for (const phase of [hidden.create, hidden.edit, hidden.reload]) {
+    assert.equal(phase.control.tag, null);
+    assert.equal(phase.form_fields, "");
+    assert.equal(phase.field_fragment, null);
+  }
+});
+
 for (const expectedRun of cases.field_runs) {
   test(`${expectedRun.field} has two positive and two negative live controls`, () => {
     const actual = artifact.field_runs.find((run) => run.field === expectedRun.field);

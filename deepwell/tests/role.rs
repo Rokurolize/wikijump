@@ -376,6 +376,7 @@ impl RoleFixture {
                 locale: String::from("en"),
                 ip_address: common::IP_ADDRESS,
             },
+            None,
         )
         .await
         .expect("Failed to create test site");

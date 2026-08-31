@@ -6,18 +6,18 @@ There are two operational tiers. Routine application refreshes use Tier 1. Tier 
 
 ## Tier 1: routine merged-head refresh
 
-Tier 1 is the expected default after a change merges to `develop`. It activates already-prepared immutable application images and replaces only Deepwell, Framerail, and WWS. Image preparation is a separate leased operation; activation never compiles Rust or bundles JavaScript. It does not stop Caddy, database, files, or cache; it does not run `down`; and its command-line parser has no volume-removal or Compose passthrough option.
+Tier 1 is the expected default after a change merges to `develop`. It activates the immutable Deepwell, Framerail, and WWS images that already passed the sealed pre-merge candidate. Preparation verifies and binds those exact image IDs to the normal two-parent merge whose tree equals the candidate tree; it does not rebuild them. Activation never compiles Rust or bundles JavaScript. It does not stop Caddy, database, files, or cache; it does not run `down`; and its command-line parser has no volume-removal or Compose passthrough option.
 
 A Tier 1 refresh is required before anyone asserts that a browser-visible, chrome, layout, or DOM defect is fixed or still present in the standing runtime. A browser claim against an older standing SHA is not evidence about current code.
 
-Start from a clean checkout whose `HEAD` equals the fetched `origin/develop` head. Prepare the three exact application images under the host resource lease:
+Start from a clean checkout whose `HEAD` equals the fetched `origin/develop` head. Bind the three exact candidate application images to that merged source:
 
 ```sh
 git fetch origin develop
-/home/roku/.local/bin/roku-resource-lease run exclusive -- \
-  python install/standing/prepare.py \
-    --source-root "$PWD" \
-    --output /home/roku/wjlab/runtime/wikijump-standing/prepared-<wikijump-sha>.json
+python install/standing/prepare.py \
+  --source-root "$PWD" \
+  --promotion-precondition /secure/promotion/promotion-precondition.json \
+  --output /home/roku/wjlab/runtime/wikijump-standing/prepared-<wikijump-sha>.json
 ```
 
 Then activate that receipt without a build:
@@ -29,17 +29,17 @@ python install/standing/refresh.py \
   --prepared-receipt /home/roku/wjlab/runtime/wikijump-standing/prepared-<wikijump-sha>.json
 ```
 
-Preparation records the cold image-build duration and exact image IDs. Activation performs one fixed sequence:
+Preparation records the candidate-image verification duration and exact image IDs. Activation performs one fixed sequence:
 
 1. Verify the source checkout is clean and exactly matches `origin/develop`, then read the exact Wikijump tree and FTML pin.
-2. Verify the prepared receipt's exact source, FTML pin, lock hash, production Dockerfile hashes, SHA-derived image references, image IDs, profiles, and labels. Verify each local image ID again immediately before activation.
+2. Verify that the promotion candidate is a parent of the normal two-parent merge, its tree and FTML pin equal the merged source, and the prepared receipt reuses the exact sealed candidate image IDs. Verify the production Dockerfile hashes, immutable references, profiles, and candidate provenance labels, then inspect each local image ID again immediately before activation.
 3. Atomically update the three `STANDING_*_IMAGE` values, `STANDING_WIKIJUMP_SHA`, `STANDING_FTML_SHA`, and the prepared resource expiry in the runtime `.env`. Deepwell reads the locales packaged in its immutable production image.
 4. Run `docker compose --project-name wikijump-standing up --detach --no-deps --no-build deepwell framerail wws` with the checked-in refresh label overlay. The overlay adds owner and expiry labels to the three recreated containers and has no volume declarations.
-5. Wait for all three services to become healthy, fetch `http://scp-wiki.wikijump.localhost/scp-9506`, require the expected document markers, and overwrite `runtime-differential-identity.json` and `refresh-receipt.json` with the preparation receipt, exact source, FTML pin, dependency lock, application image IDs, effective Compose configuration, phase timings, health, canary, and resource-disposition record.
+5. Wait for all three services to become healthy, fetch `http://scp-wiki.wikijump.localhost/scp-9506`, require the expected document markers, update `runtime-differential-identity.json`, and seal a revision-specific `refresh-receipt-<wikijump-sha>.json` with the preparation receipt, exact source, FTML pin, dependency lock, application image IDs, effective Compose configuration, phase timings, health, canary, and resource-disposition record.
 
-The standing Framerail image is built from the production Dockerfile with origin checks enabled by default, and the standing Compose environment repeats `FRAMERAIL_CSRF_CHECK_ORIGIN=true` so the runtime cannot silently disable the check.
+The candidate Framerail image is built from the production Dockerfile with origin checks enabled by default, and the standing Compose environment repeats `FRAMERAIL_CSRF_CHECK_ORIGIN=true` so the runtime cannot silently disable the check.
 
-The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while prepared standing images start already-built artifacts. Deepwell's prepared image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.
+The standing image tier is deliberately separate from `install/local`: local images retain bind mounts and watch-mode startup for source iteration, while the sealed candidate images are already-built production artifacts. Deepwell's candidate image contains the pinned `sqlx-cli` and migrations and runs `sqlx migrate run` before the binary; migration handling is therefore explicit rather than silently lost when the local startup script is removed.
 
 The script refuses unknown arguments, including `-v`, `--volumes`, and `--remove-volumes`. There is no argument that is forwarded to Docker or Docker Compose.
 
@@ -66,9 +66,9 @@ Physical volume renames remain a separate data migration with rollback retention
 
 ## Sealed Tier 2 receipt verifiers
 
-`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, the sealed build inventory, and the rendered staging-home binding. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
+`install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs` and `install/standing/scripts/verify-promotion-precondition.mjs` are real, side-effect-free receipt verifiers for Tier 2. They validate browser-parity evidence, candidate identity, exact final-frozen inputs, the sealed build inventory, and the rendered staging-home binding. `install/standing/promote.mjs` chains the admission CLI, canonical promotion validator, image preparation, and standing refresh. Refresh owns activation, rollback, and failure receipts; the controller does not remove those artifacts or forward arbitrary Compose arguments. They do not build images, render or replace the canonical home, enter maintenance, run Compose, or change routing.
 
-No checked-in host mutation controller currently chains those verifiers into a deploy. Treat the commands below as sealed-receipt validation tools, not as an operational orchestrator:
+Use `promote.mjs` for the complete post-merge sequence. Its explicit paths are the candidate receipt, final-frozen receipt, candidate identity, live reference, live completion policy, sealed build evidence, rendered staging home, admission output, promotion precondition, prepared receipt, standing runtime home, and standing receipt. The standalone commands below remain available for receipt-only validation:
 
 ```sh
 node install/local/wikidot-verification/scripts/verify-standing-candidate-parity-admission.mjs \
@@ -82,6 +82,7 @@ node install/local/wikidot-verification/scripts/verify-standing-candidate-parity
 ```sh
 node install/standing/scripts/verify-promotion-precondition.mjs \
   --receipt /secure/candidate/standing-candidate-parity-receipt.json \
+  --final-frozen-receipt /secure/candidate/final-frozen-receipt.json \
   --candidate-identity /secure/candidate/candidate-parity-identity.json \
   --live-reference /secure/live/standing-browser-live-reference.json \
   --live-completion-policy /secure/live/standing-live-completion-policy.json \

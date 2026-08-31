@@ -56,8 +56,12 @@ const pageRequest = (path) =>
 
 test("account route loads expose their public SvelteKit page data", async () => {
   const userViewNames = []
+  const translateCalls = []
   client.request = async (method, params) => {
-    if (method === "translate") return {}
+    if (method === "translate") {
+      translateCalls.push(params)
+      return {}
+    }
     if (method === "user_view") {
       userViewNames.push(params.user)
       return {
@@ -96,7 +100,13 @@ test("account route loads expose their public SvelteKit page data", async () => 
   const settings = await routes.settings.load({
     parent: async () => ({
       ...parentData,
-      user_session: { user: { user_id: 41, locales: ["en-US", "ja-JP"] } }
+      user_session: {
+        user: {
+          user_id: 41,
+          locales: ["en-US", "ja-JP"],
+          forum_signature: "**Stored signature**"
+        }
+      }
     })
   })
   const user = await routes.user.load({
@@ -117,10 +127,251 @@ test("account route loads expose their public SvelteKit page data", async () => 
   assert.equal(register.isLoggedIn, false)
   assert.equal(register.registerForm.valid, false)
   assert.equal(settings.displaySettingsForm.data.locales, "en-US ja-JP")
+  assert.equal(settings.displaySettingsForm.data.signature, "**Stored signature**")
+  const settingsTranslate = translateCalls.find(
+    (params) =>
+      params.messages?.settings && params.messages?.["user-profile-info.locales"]
+  )
+  assert.deepEqual(settingsTranslate?.strip_message_keys, [])
   assert.equal(user.view, "user_found")
   assert.equal(user.user.slug, "account-fixture")
   assert.equal(userSlug.view, "user_found")
   assert.deepEqual(userViewNames, [undefined, "account-fixture"])
+})
+
+test("display settings persist the forum signature through the existing account mutation", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    if (method === "session_get") {
+      return {
+        session_token: "account-session",
+        user_id: 41,
+        created_at: "2026-08-10T00:00:00Z",
+        expires_at: "2026-08-11T00:00:00Z",
+        ip_address: "192.0.2.41",
+        user_agent: "account route test",
+        restricted: false
+      }
+    }
+    if (method === "user_edit") return { user_id: 41 }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const formData = new FormData()
+  formData.set("locales", "en-US en")
+  formData.set("signature", "**Forum signature**\nSecond line")
+  const result = await routes.settings.actions.display({
+    request: new Request("https://wikijump.test/-/settings?/display", {
+      method: "POST",
+      headers: siteHeaders,
+      body: formData
+    }),
+    cookies: { get: () => "account-session" },
+    getClientAddress: () => "192.0.2.41",
+    locals: {
+      requestContext: {
+        siteId: 17,
+        page: "-/settings",
+        sessionToken: "account-session"
+      }
+    }
+  })
+
+  assert.equal(result.form.valid, true)
+  assert.deepEqual(calls, [
+    { method: "session_get", params: ["account-session"], context: undefined },
+    {
+      method: "user_edit",
+      params: {
+        user: 41,
+        ip_address: "192.0.2.41",
+        bypass_filter: false,
+        locales: ["en-US", "en"],
+        forum_signature: "**Forum signature**\nSecond line"
+      },
+      context: { siteId: 17, page: "-/settings", sessionToken: "account-session" }
+    }
+  ])
+
+  calls.length = 0
+  const tooManyLines = new FormData()
+  tooManyLines.set("locales", "en-US en")
+  tooManyLines.set("signature", "one\ntwo\nthree\nfour\nfive")
+  const rejected = await routes.settings.actions.display({
+    request: new Request("https://wikijump.test/-/settings?/display", {
+      method: "POST",
+      headers: siteHeaders,
+      body: tooManyLines
+    }),
+    cookies: { get: () => "account-session" },
+    getClientAddress: () => "192.0.2.41",
+    locals: { requestContext: { siteId: 17, page: "-/settings" } }
+  })
+  assert.equal(rejected.status, 400)
+  assert.equal(calls.length, 0)
+})
+
+test("login shares a session across native Wikijump wiki hosts but not custom domains", async () => {
+  const previousFramerailEnv = process.env.FRAMERAIL_ENV
+  process.env.FRAMERAIL_ENV = "local"
+
+  try {
+    client.request = async (method, params) => {
+      if (method === "login") {
+        assert.equal(params.name_or_email, "account-fixture")
+        assert.equal(params.password, "fixture-password")
+        return { session_token: "shared-account-session", needs_mfa: false }
+      }
+      if (method === "session_get") {
+        assert.deepEqual(params, ["shared-account-session"])
+        return {
+          session_token: "shared-account-session",
+          user_id: 41,
+          created_at: "2026-08-10T00:00:00Z",
+          expires_at: "2026-08-11T00:00:00Z",
+          ip_address: "192.0.2.41",
+          user_agent: "account route test",
+          restricted: false
+        }
+      }
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
+
+    const login = async (origin) => {
+      const formData = new FormData()
+      formData.set("nameOrEmail", "account-fixture")
+      formData.set("password", "fixture-password")
+      const setCookies = []
+      const result = await routes.login.actions.default({
+        request: new Request(`${origin}/-/login`, {
+          method: "POST",
+          headers: siteHeaders,
+          body: formData
+        }),
+        getClientAddress: () => "192.0.2.41",
+        cookies: {
+          set: (name, value, options) => setCookies.push({ name, value, options })
+        }
+      })
+      assert.equal(result.isLoggedIn, true)
+      assert.equal(result.needsMfa, false)
+      assert.equal(result.session_token, undefined)
+      assert.equal(setCookies.length, 1)
+      return setCookies[0]
+    }
+
+    const nativeCookie = await login("https://scp-wiki.wikijump.localhost")
+    assert.equal(nativeCookie.name, "wikijump_token")
+    assert.equal(nativeCookie.value, "shared-account-session")
+    assert.equal(nativeCookie.options.domain, "wikijump.localhost")
+    assert.equal(nativeCookie.options.path, "/")
+    assert.equal(nativeCookie.options.httpOnly, true)
+    assert.equal(nativeCookie.options.secure, true)
+    assert.equal(nativeCookie.options.sameSite, "lax")
+
+    const customDomainCookie = await login("https://wiki.example.test")
+    assert.equal(customDomainCookie.options.domain, undefined)
+  } finally {
+    if (previousFramerailEnv === undefined) delete process.env.FRAMERAIL_ENV
+    else process.env.FRAMERAIL_ENV = previousFramerailEnv
+  }
+})
+
+test("register binds account creation to the request address and redacts submitted passwords", async () => {
+  const calls = []
+  client.request = async (method, params) => {
+    calls.push({ method, params })
+    if (method === "user_create") {
+      return { user_id: 42, name: "registration-fixture", slug: "registration-fixture" }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const password = "registration-password-fixture"
+  const formData = new FormData()
+  formData.set("username", "registration-fixture")
+  formData.set("email", "registration-fixture@example.invalid")
+  formData.set("password", password)
+  formData.set("confirmPassword", password)
+  formData.append("locale", "en")
+
+  const result = await routes.register.actions.default({
+    request: new Request("https://wikijump.test/-/register", {
+      method: "POST",
+      headers: siteHeaders,
+      body: formData
+    }),
+    getClientAddress: () => "192.0.2.42"
+  })
+
+  assert.equal(result.isRegistered, true)
+  assert.equal(result.form.valid, true)
+  assert.equal(result.form.data.password, "")
+  assert.equal(result.form.data.confirmPassword, "")
+  assert.equal(JSON.stringify(result).includes(password), false)
+  assert.deepEqual(calls, [
+    {
+      method: "user_create",
+      params: {
+        user_type: "regular",
+        name: "registration-fixture",
+        email: "registration-fixture@example.invalid",
+        locales: ["en"],
+        password,
+        ip_address: "192.0.2.42",
+        bypass_filter: false,
+        bypass_email_verification: false
+      }
+    }
+  ])
+})
+
+test("legacy user slug route fails closed for imported profiles", async () => {
+  client.request = async (method) => {
+    if (method === "translate") return {}
+    if (method === "user_view") {
+      return {
+        type: "user_found",
+        data: {
+          user: {
+            user_id: 169306,
+            user_type: "wikidot",
+            created_at: "2008-07-19T21:26:10Z",
+            fetched_at: "2026-08-13T00:00:00Z",
+            is_deleted: false,
+            name: "The Administrator",
+            slug: "the-administrator",
+            avatar_s3_hash: null,
+            real_name: null,
+            gender: null,
+            birthday: null,
+            location: null,
+            biography: null,
+            website: null,
+            karma: 3,
+            is_pro: false
+          }
+        }
+      }
+    }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  await assert.rejects(
+    routes.userSlug.load({
+      params: { slug: "the-administrator" },
+      request: pageRequest("/-/user/the-administrator"),
+      cookies: { get: () => undefined },
+      parent: async () => parentData
+    }),
+    (error) => {
+      assert.equal(error.status, 404)
+      assert.equal(error.body.view, "user_missing")
+      assert.equal("user" in error.body, false)
+      return true
+    }
+  )
 })
 
 test("logout and user-edit route actions bind mutations to the server session", async () => {
@@ -139,7 +390,12 @@ test("logout and user-edit route actions bind mutations to the server session", 
         restricted: false
       }
     }
-    if (method === "user_edit") return { user_id: 41 }
+    if (method === "user_edit") {
+      return {
+        user_id: 987654321,
+        slug: "rpc-user-edit-result-must-remain-private"
+      }
+    }
     throw new Error(`Unexpected Deepwell method ${method}`)
   }
 
@@ -171,6 +427,12 @@ test("logout and user-edit route actions bind mutations to the server session", 
   })
 
   assert.equal(edited.form.valid, true)
+  assert.deepEqual(Object.keys(edited), ["form"])
+  assert.equal("res" in edited, false)
+  assert.equal(
+    JSON.stringify(edited).includes("rpc-user-edit-result-must-remain-private"),
+    false
+  )
   assert.deepEqual(deletedCookies, [
     {
       name: "wikijump_token",
@@ -191,4 +453,75 @@ test("logout and user-edit route actions bind mutations to the server session", 
       context: { siteId: 17, page: "-/user", sessionToken: "account-session" }
     }
   ])
+})
+
+test("logout clears a stale browser session when Deepwell reports it invalid", async () => {
+  client.request = async (method) => {
+    assert.equal(method, "logout")
+    throw Object.assign(new Error("Session token is invalid"), { code: 3001 })
+  }
+
+  const deletedCookies = []
+  const result = await routes.logout.actions.logout({
+    request: pageRequest("/-/logout?/logout"),
+    cookies: {
+      get: () => "stale-account-session",
+      delete: (name, options) => deletedCookies.push({ name, options })
+    }
+  })
+
+  assert.deepEqual(result, { success: true })
+  assert.deepEqual(deletedCookies, [
+    {
+      name: "wikijump_token",
+      options: { path: "/", httpOnly: true, secure: true, sameSite: "lax" }
+    }
+  ])
+})
+
+test("logout retains the browser session when invalidation otherwise fails", async () => {
+  const errors = [
+    new Error("Deepwell transport unavailable"),
+    Object.assign(new Error("Database query failed"), { code: 1200 }),
+    Object.assign(new Error("Unexpected logout failure"), { code: 3999 })
+  ]
+  const statuses = []
+  const deletedCookies = []
+
+  for (const error of errors) {
+    client.request = async (method) => {
+      assert.equal(method, "logout")
+      throw error
+    }
+
+    const result = await routes.logout.actions.logout({
+      request: pageRequest("/-/logout?/logout"),
+      cookies: {
+        get: () => "active-account-session",
+        delete: (name, options) => deletedCookies.push({ name, options })
+      }
+    })
+    statuses.push(result.status)
+  }
+
+  assert.deepEqual(statuses, [500, 500, 500])
+  assert.deepEqual(deletedCookies, [])
+})
+
+test("logout without a browser session remains a bad request", async () => {
+  client.request = async (method) => {
+    assert.equal(method, "translate")
+    return { "error-api.NOT_LOGGED_IN": "Not logged in" }
+  }
+
+  const result = await routes.logout.actions.logout({
+    request: pageRequest("/-/logout?/logout"),
+    cookies: {
+      get: () => undefined,
+      delete: () => assert.fail("missing session must not delete a cookie")
+    }
+  })
+
+  assert.equal(result.status, 400)
+  assert.deepEqual(result.data, { message: "Not logged in" })
 })

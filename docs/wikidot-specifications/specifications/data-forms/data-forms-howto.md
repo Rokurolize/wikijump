@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-howto`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Implement the documented data-form capability â€œHow to create a new data formâ€
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-create-edit` -> `install/local/wikidot-verification/artifacts/data-form-create-edit-live.json` (SHA-256 `12a85fc671c52b036d5fe648e63ff5cbfc7d28a8cd0d88e662de614cd6772a8b`)
+- `category-template-lifecycle` -> `install/local/wikidot-verification/artifacts/category-template-lifecycle-live-20260730.json` (SHA-256 `e58aa2a56d352c83fdc5795b12d086265bd744477b8e5d438707bbeb689d94f7`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- A data form is defined in category:_template by one [[form]] block containing YAML. Indentation is significant, and a space is required after the YAML colon in the documented forms; omitted field type defaults as documented by the overview/reference contract.
+
+### P2 - parser stage, nesting, and composition
+
+- The form block is parsed as YAML inside the category template. Invalid indentation or malformed key/value spacing MUST produce the live form/template error boundary rather than silently reinterpret the schema.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Once a category has a valid form template, create/edit uses the generated field editor and saves structured values into page source. Live create/edit evidence confirms a complete generated-editor save and reload round trip.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Data-form categories use ordinary category permissions. The documented example that only an author may edit is a permission configuration, not a separate data-form authorization mechanism.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Field order follows template/YAML order. This how-to feature does not add independent result pagination; query behavior belongs to ListPages and field-specific contracts.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Direct navigation to a missing data-form page uses the normal missing-page view; the user must activate Create page before PageEditModule loads the generated form. PageEditModule save and cancel listeners own the editor workflow.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- While the generated editor is open, live Wikidot hides normal page content, title, page-info, watch controls, and top action area. Saved data-form pages render the form-table/form-row label/value structure.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- A malformed schema MUST fail before creating a partially structured page. Save/cancel/edit/reload must preserve one coherent form revision and page revision, including the live missing-page-to-editor transition.
 
 ## Live-Wikidot behavioral corrections
 

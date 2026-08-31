@@ -24,6 +24,9 @@ use super::super::service::{
 };
 use std::ops::Range;
 
+const RESIDUAL_CLEAR_DIV: &str =
+    r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#;
+
 impl RenderService {
     pub(in crate::services::render) fn restore_residual_wikidot_div_paragraph_markers(
         html: &str,
@@ -307,7 +310,7 @@ impl RenderService {
                         &mut output,
                         line_body,
                         line_end,
-                        r#"<p><span style="white-space: pre-wrap;"> </span></p>"#,
+                        r#"<p><span style="white-space: pre-wrap;"> </span><br></p>"#,
                     );
                     raw_text_depth = Self::update_residual_div_raw_text_depth(
                         raw_text_depth,
@@ -317,11 +320,12 @@ impl RenderService {
                 }
 
                 if trimmed == "~~~~" {
+                    Self::remove_synthetic_wikidot_list_break(&mut output);
                     Self::push_replaced_standalone_wikidot_marker_line(
                         &mut output,
                         line_body,
                         line_end,
-                        r#"<div style="clear:both; height: 0px; font-size: 1px"></div>"#,
+                        RESIDUAL_CLEAR_DIV,
                     );
                     raw_text_depth = Self::update_residual_div_raw_text_depth(
                         raw_text_depth,
@@ -331,6 +335,9 @@ impl RenderService {
                 }
             }
 
+            if trimmed.starts_with(RESIDUAL_CLEAR_DIV) {
+                Self::remove_synthetic_wikidot_list_break(&mut output);
+            }
             output.push_str(line_body);
             output.push_str(line_end);
             raw_text_depth =
@@ -338,6 +345,18 @@ impl RenderService {
         }
 
         output
+    }
+
+    fn remove_synthetic_wikidot_list_break(output: &mut String) {
+        for close in ["</ul>", "</ol>"] {
+            for line_end in ["\r\n", "\n"] {
+                let suffix = format!("{close}<br>{line_end}");
+                if output.ends_with(&suffix) {
+                    output.truncate(output.len() - "<br>".len() - line_end.len());
+                    return;
+                }
+            }
+        }
     }
 
     pub(in crate::services::render) fn restore_residual_wikidot_heading_markers(

@@ -42,8 +42,11 @@ function sha256(bytes) {
 function missingRoute(value, name) {
   const route = object(value, name);
   const head = object(route.head, `${name}.head`);
-  expect(route.status === 404 && head.status === 404 && head.body_size === 0, `${name} must be absent through GET and HEAD`);
-  return { get_status: 404, head_status: 404 };
+  const wikidotMissingOriginal = route.status === 200
+    && route.content_type === "text/html; charset=utf-8"
+    && route.body_sha256 === "eabe424dd70c56173c2cfcfe8ca6b328ef2077d6ce9b3243540148a2d76f20ab";
+  expect((route.status === 404 || wikidotMissingOriginal) && head.status === 404 && head.body_size === 0, `${name} must be absent through GET and HEAD`);
+  return { get_status: route.status, head_status: 404 };
 }
 
 function matchingRow(inventory, fileName, name) {
@@ -85,6 +88,21 @@ function download(value, input, row, name) {
   expect(route.etag === etag, `${name} ETag does not bind the active blob`);
   headMatches(route, etag, name);
   return { body_sha256: bodySha256, etag };
+}
+
+function localIconCase(observations, plan) {
+  const value = object(observations, "M756 local icon observation");
+  const file = fileRow(value.file, plan.file_names.action_upload, plan.inputs.initial, plan, "M756 local icon file");
+  const expectedSource = `/local--files/${encodeURIComponent(plan.page_slug)}/${encodeURIComponent(plan.file_names.action_upload)}`;
+  expect(value.configured_source === expectedSource && value.site?.favicon_source === expectedSource, "M756 configured favicon source is not the run-owned local file");
+  const route = object(value.route, "M756 local icon route");
+  expect(route.source === expectedSource, "M756 local icon source path drifted");
+  expect(route.favicon?.status === 302 && new URL(route.favicon.location, "https://candidate.invalid").pathname === expectedSource, "M756 favicon route did not redirect to the configured local file");
+  expect(route.source_on_page_host?.status === 302 && new URL(route.source_on_page_host.location).hostname.endsWith(".wjfiles.localhost"), "M756 local-file page-host route did not cross to the candidate files origin");
+  const legacy = download(route.legacy_on_files_host, plan.inputs.initial, file, "M756 anonymous legacy local-file bytes");
+  const original = download(route.original, plan.inputs.initial, file, "M756 anonymous local icon bytes");
+  expect(legacy.body_sha256 === original.body_sha256 && legacy.etag === original.etag, "M756 legacy and canonical file routes do not bind the same public blob");
+  return { source: expectedSource, body_sha256: original.body_sha256, anonymous_visibility_verified: true, route_identity_verified: true };
 }
 
 function resized(value, row, plan, name) {
@@ -176,7 +194,23 @@ function serializableActionCase(observations, plan) {
   expect(sha256Value(observations.inventory_before_failed_action) === sha256Value(observations.inventory_after_failed_action), "failed multipart action changed the public inventory");
   missingRoute(observations.failed_route, "failed multipart route");
   matchingRow(observations.inventory_after_failed_action, plan.file_names.action_upload, "failed action post-inventory");
-  return { successful, failed, failed_action_left_inventory_unchanged: true };
+  const failedPut = object(observations.failed_put, "failed PUT cleanup");
+  expect(requireNonEmptyString(failedPut.upload_error, "failed PUT cleanup.upload_error"), "failed PUT did not fail");
+  expect(Array.isArray(failedPut.adapter_events) && failedPut.adapter_events.length === 4, "failed PUT cleanup event denominator is wrong");
+  const expectedEvents = [
+    ["deepwell", "page_edit_permission", "POST", 200],
+    ["deepwell", "blob_upload", "POST", 200],
+    ["object-store", "presigned_put", "PUT", null],
+    ["deepwell", "blob_cancel", "POST", 200],
+  ];
+  failedPut.adapter_events.forEach((event, index) => {
+    const [service, operation, method, status] = expectedEvents[index];
+    expect(event?.sequence === index + 1 && event.service === service && event.operation === operation && event.method === method, "failed PUT cleanup events are wrong or out of order");
+    if (status === null) expect(event.response_status < 200 || event.response_status >= 300, "failed PUT unexpectedly succeeded");
+    else expect(event.response_status === status, "failed PUT cleanup response status is wrong");
+  });
+  expect(failedPut.adapter_events.every((event) => event.operation !== "file_create"), "failed PUT attempted file_create");
+  return { successful, failed, failed_action_left_inventory_unchanged: true, failed_put_cancelled_without_file_create: true };
 }
 
 function uploadOrderCase(observations, plan) {
@@ -200,7 +234,8 @@ function uploadOrderCase(observations, plan) {
 export function verifyOpen43MediaCase(caseId, observations, plan) {
   object(observations, `${caseId} observations`);
   let verification;
-  if (caseId === "M1039_MUTATION_TO_NEXT_READ") verification = mutationCase(observations, plan);
+  if (caseId === "M756_LOCAL_ROUTE_BYTES") verification = localIconCase(observations, plan);
+  else if (caseId === "M1039_MUTATION_TO_NEXT_READ") verification = mutationCase(observations, plan);
   else if (caseId === "M1043_RESIZED_BLOB_IDENTITY") verification = resizedCase(observations, plan);
   else if (caseId === "M1062_SERIALIZABLE_ACTION_RESPONSE") verification = serializableActionCase(observations, plan);
   else if (caseId === "M1062_UPLOAD_TRANSACTION_ORDER") verification = uploadOrderCase(observations, plan);

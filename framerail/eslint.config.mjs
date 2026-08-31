@@ -189,6 +189,12 @@ export default defineConfig(
       }
     },
     {
+      files: ["static/wikidot/scripts/tabview-compat.js"],
+
+      languageOptions: ts.configs.disableTypeChecked.languageOptions,
+      rules: ts.configs.disableTypeChecked.rules
+    },
+    {
       files: ["**/*.svelte"],
 
       languageOptions: {

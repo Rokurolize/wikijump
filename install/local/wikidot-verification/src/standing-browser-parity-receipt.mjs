@@ -21,11 +21,20 @@ import {
 import { validateCandidateRuntimeObservation } from "./standing-browser-runtime-identity.mjs";
 import { validateCandidateExecutionIdentity } from "./standing-browser-execution-identity.mjs";
 
+const CANDIDATE_PROFILES = new Set(["development-build", "production-build"]);
+
 function requireGitObject(value, name) {
   if (typeof value !== "string" || !/^[0-9a-f]{40}$/u.test(value)) {
     throw new Error(`${name} must be a full lowercase Git object id`);
   }
+  if (/^(.)\1+$/u.test(value)) throw new Error(`${name} must not be a placeholder identity`);
   return value;
+}
+
+function requireRealSha256(value, name) {
+  const digest = requireSha256(value, name);
+  if (/^(.)\1+$/u.test(digest)) throw new Error(`${name} must not be a placeholder identity`);
+  return digest;
 }
 
 function requireIsoTimestamp(value, name) {
@@ -52,6 +61,7 @@ function requireImageMap(value) {
         `candidate.images.${role} must be an immutable sha256 image id`,
       );
     }
+    requireRealSha256(image.slice("sha256:".length), `candidate.images.${role}`);
   }
   return Object.freeze(Object.fromEntries(entries));
 }
@@ -134,6 +144,41 @@ export function candidatePageOrigin(identity) {
   return `${endpoint.scheme}://${endpoint.host}:${endpoint.port}`;
 }
 
+function candidateSiteOrigins(value, endpoint) {
+  const origins = requirePlainObject(value, "candidate.site_origins");
+  const normalized = {};
+  for (const [siteSlug, raw] of Object.entries(origins)) {
+    if (!/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/u.test(siteSlug)) {
+      throw new Error("candidate.site_origins keys must be valid site slugs");
+    }
+    const row = requirePlainObject(raw, `candidate.site_origins.${siteSlug}`);
+    const page = requireNonEmptyString(row.page, `candidate.site_origins.${siteSlug}.page`);
+    const files = requireNonEmptyString(row.files, `candidate.site_origins.${siteSlug}.files`);
+    const expectedPage = `https://${siteSlug}.wikijump.localhost:${endpoint.port}`;
+    const expectedFiles = `https://${siteSlug}.wjfiles.localhost:${endpoint.port}`;
+    if (page !== expectedPage || files !== expectedFiles) {
+      throw new Error(`candidate.site_origins.${siteSlug} must use the candidate port and exact local hosts`);
+    }
+    normalized[siteSlug] = Object.freeze({page, files});
+  }
+  const endpointSlug = endpoint.host.slice(0, -".wikijump.localhost".length);
+  if (normalized[endpointSlug]?.page !== candidatePageOrigin({candidate: {endpoint}})) {
+    throw new Error("candidate.site_origins must include the selected endpoint site");
+  }
+  return Object.freeze(normalized);
+}
+
+export function candidateSitePageOrigin(identity, siteSlug) {
+  const endpoint = identity?.candidate?.endpoint;
+  if (!endpoint || typeof siteSlug !== "string") throw new Error("candidate site origin requires one sealed endpoint and site slug");
+  const selectedHost = `${siteSlug}.wikijump.localhost`;
+  if (endpoint.host === selectedHost) return candidatePageOrigin(identity);
+  const origin = identity.candidate.site_origins?.[siteSlug]?.page;
+  const expected = `https://${selectedHost}:${endpoint.port}`;
+  if (origin !== expected) throw new Error(`candidate identity does not seal the ${siteSlug} page origin`);
+  return origin;
+}
+
 export function validateCandidateParityIdentity(value) {
   const identity = requirePlainObject(value, "candidate parity identity");
   if (identity.schema !== STANDING_CANDIDATE_PARITY_IDENTITY_SCHEMA) {
@@ -160,17 +205,17 @@ export function validateCandidateParityIdentity(value) {
   const normalized = {
     schema: STANDING_CANDIDATE_PARITY_IDENTITY_SCHEMA,
     status: "sealed",
-    artifact_key: requireSha256(
+    artifact_key: requireRealSha256(
       identity.artifact_key,
       "candidate parity identity.artifact_key",
     ),
     build: {
-      seal_sha256: requireSha256(build.seal_sha256, "build.seal_sha256"),
-      verdict_sha256: requireSha256(
+      seal_sha256: requireRealSha256(build.seal_sha256, "build.seal_sha256"),
+      verdict_sha256: requireRealSha256(
         build.verdict_sha256,
         "build.verdict_sha256",
       ),
-      final_images_sha256: requireSha256(
+      final_images_sha256: requireRealSha256(
         build.final_images_sha256,
         "build.final_images_sha256",
       ),
@@ -199,15 +244,15 @@ export function validateCandidateParityIdentity(value) {
       source_clean: candidate.source_clean,
       images: requireImageMap(candidate.images),
       config: {
-        isolated_overlay_sha256: requireSha256(
+        isolated_overlay_sha256: requireRealSha256(
           config.isolated_overlay_sha256,
           "candidate.config.isolated_overlay_sha256",
         ),
-        promotion_base_manifest_sha256: requireSha256(
+        promotion_base_manifest_sha256: requireRealSha256(
           config.promotion_base_manifest_sha256,
           "candidate.config.promotion_base_manifest_sha256",
         ),
-        effective_runtime_services_sha256: requireSha256(
+        effective_runtime_services_sha256: requireRealSha256(
           config.effective_runtime_services_sha256,
           "candidate.config.effective_runtime_services_sha256",
         ),
@@ -216,21 +261,29 @@ export function validateCandidateParityIdentity(value) {
     },
     evidence: {
       status: evidence.status,
-      manifest_sha256: requireSha256(
+      manifest_sha256: requireRealSha256(
         evidence.manifest_sha256,
         "evidence.manifest_sha256",
       ),
-      seal_sha256: requireSha256(evidence.seal_sha256, "evidence.seal_sha256"),
+      seal_sha256: requireRealSha256(evidence.seal_sha256, "evidence.seal_sha256"),
     },
   };
+  if (candidate.site_origins !== undefined) {
+    normalized.candidate.site_origins = candidateSiteOrigins(
+      candidate.site_origins,
+      normalized.candidate.endpoint,
+    );
+  }
   if (normalized.candidate.compose_project === "wikijump-standing") {
     throw new Error("candidate.compose_project must not be wikijump-standing");
   }
   if (normalized.candidate.port_443_published !== false) {
     throw new Error("candidate.port_443_published must be false");
   }
-  if (normalized.candidate.profile !== "production-build") {
-    throw new Error("candidate.profile must be production-build");
+  if (!CANDIDATE_PROFILES.has(normalized.candidate.profile)) {
+    throw new Error(
+      "candidate.profile must be development-build or production-build",
+    );
   }
   if (normalized.candidate.source_clean !== true) {
     throw new Error("candidate.source_clean must be true");
@@ -346,9 +399,14 @@ function validateFinalRequestGate(value) {
   if (gate.schema !== "wikijump_full_parity.browser_request_gate.v1") {
     throw new Error("candidate parity request gate has an unsupported schema");
   }
-  if (!Number.isInteger(gate.interval_ms) || gate.interval_ms < 4_000) {
+  if (gate.execution_mode !== "candidate") {
     throw new Error(
-      "candidate parity request gate must preserve the initial 0.25 req/s throttle",
+      "candidate parity request gate must be sealed in candidate execution mode",
+    );
+  }
+  if (gate.interval_ms !== 0) {
+    throw new Error(
+      "candidate parity request gate must not apply the live public-request throttle",
     );
   }
   if (gate.enforcement_failed !== false) {

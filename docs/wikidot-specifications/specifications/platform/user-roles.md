@@ -3,6 +3,7 @@
 - Feature ID: `user-roles`
 - Category: `platform`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Distinguish anonymous users, registered users, site members, moderators, adminis
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `authenticated-structure` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/authenticated-structural-observation.json` (SHA-256 `64b09693cd4cc1cf712afee67a7dad87c5515494b58c65da067454937d1cc93a`): A redacted authenticated sandbox observation confirms administrator/member role membership, registered-user avatar URL shape, and availability of private-message inbox and sent collections without retaining identities, messages, credentials, or session data.
+- `userinfo-targets` -> `install/local/wikidot-verification/artifacts/userinfo-target-routes-live-20260810.json` (SHA-256 `692f40efc26f114877edb8200403137864e9cc3ce709a9f93131b22cfdbe84c4`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- One Wikidot account has the same identity across sites. Within a site, the documented statuses are anonymous user, registered non-member, member, administrator, page moderator, forum moderator, plus network Superusers.
+
+### P2 - parser stage, nesting, and composition
+
+- Roles are identity/permission state, not wiki syntax; authored role names cannot create authority.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Membership can arise by application, membership password, or administrator invitation; admins assign moderator/admin roles according to site rules. Site creation makes the creator an administrator.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Administrators have all site permissions; page/forum moderators have their documented restricted powers and cannot use Site Manager solely by moderator status. Anonymous edits, where allowed, expose IP identity as documented. Superuser authority is platform-owned and must never be author-assignable.
+
+### P5 - selection, ordering, counting, and pagination
+
+- Role/member lists may paginate through their own modules, but permission decisions must be made on the complete authoritative role state, not one visible list page.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Membership/admin/moderator actions use membership/Site Manager boundaries. Live sandbox structure confirms account A can simultaneously be member and administrator without implying moderator status.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- UserInfo exposes Member of, Moderator of, and Admin of tabs as distinct public views. Role-specific controls elsewhere must reflect effective server authority, not client-side labels alone.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Role changes must take effect coherently for subsequent requests and invalidate stale permission caches. Concurrent role removal/action must fail closed if authority is lost before mutation commit.
 
 
 ## Suggested public TDD seams

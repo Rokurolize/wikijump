@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-images`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,56 @@ Implement the documented data-form capability “Images in Data Forms”, includ
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-public-demos` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/data-form-public-demo-observations.jsonl` (SHA-256 `54248258185b3d580ac92d11d34ed4f76cea026d832c3263214bbd99a664c9f5`): The current public date, Vineyard, and pagepath demonstration pages remain available and their exact sources and rendered pages were frozen.
+- `data-form-images-links-youtube` -> `install/local/wikidot-verification/artifacts/data-form-images-links-youtube-live-20260810.json` (SHA-256 `861cb225b63b7a0e3797c1f3a7df90df73bd193c7be2aea42646c601d6873ae3`)
+- `data-form-file-field` -> `install/local/wikidot-verification/artifacts/data-form-file-field-live-20260810.json` (SHA-256 `d524bb00bb7ca6d5ec135a00ed1b796b50f7f1a3781ef00c3dd9b09e877e69f7`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- Data-form images use a file field. Display syntax uses %%form_raw{field}%% when the stored file value must be consumed as image/source syntax; %%form_data{field}%% is not an interchangeable raw-image value.
+
+### P2 - parser stage, nesting, and composition
+
+- The image field is a file-field declaration in the form schema, while image presentation is authored in the template above the form separator using ordinary image/include syntax.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Documentation describes a separate storage page, default file category, optional configured category, and a page name derived from the uploaded image name. The current file-upload lifecycle is not safely observed, so those storage mutation details MUST NOT be approximated beyond documentation until live upload evidence is captured.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- Image upload and later visibility inherit page/file permissions; template rendering MUST NOT reveal a private attachment or storage page solely because the stored form field names it.
+
+### P5 - selection, ordering, counting, and pagination
+
+- This feature has no independent pagination. Gallery/ListPages interactions, including exclusion or inclusion of storage pages, remain owned by those query features and require explicit evidence.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- Saved pages resolve the stored file reference through ordinary Wikidot page/file URLs and authored image syntax. No external media fetch is required to establish the data-form storage contract.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- The generated editor currently exposes the underlying file field as dataform-file-value. The template may add image width, float, caption, link, or image-box presentation exactly as authored; no generic image wrapper may be invented by the data-form layer.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- An empty field MUST NOT fabricate an upload URL. Upload failure, replacement, duplicate name, and cleanup behavior remain fail-closed until an exact cleanup-safe live workflow is observed.
 
 
 ## Suggested public TDD seams

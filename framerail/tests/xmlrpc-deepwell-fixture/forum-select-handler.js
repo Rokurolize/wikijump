@@ -1,4 +1,4 @@
-import { isSignedI64String } from "./context.js"
+import { fixtureState, isSignedI64String } from "./context.js"
 import { forumPostsByPage } from "./data.js"
 import { sendRpcError } from "./response.js"
 
@@ -34,6 +34,8 @@ export const handleForumSelectRpc = ({ rpcRequest, response }) => {
   ) {
     return undefined
   }
+
+  fixtureState.pageReadRequests.forumPostSelect.push(rpcRequest.params)
 
   if (
     rpcRequest.params.reply_to !== undefined &&

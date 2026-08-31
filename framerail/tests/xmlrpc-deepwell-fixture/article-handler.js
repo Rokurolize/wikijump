@@ -2,6 +2,7 @@ import { fixtureState, hasExactKeys, requestContextHeaders } from "./context.js"
 import { pages, toArticleViewResult } from "./data.js"
 
 const LISTPAGES_NAVIGATION_EXTRA = /^p\/[1-9][0-9]*$/u
+const SEARCH_SITE_EXTRA = /^q\/.+$/u
 const NEW_PAGE_EDIT_EXTRA = /^edit\/true(?:\/.*)?$/u
 const DATA_FORM_CREATE_SLUG = "data-form-create-flow:example"
 const DATA_FORM_CONTROLS_CREATE_SLUG = "data-form-controls-flow:example"
@@ -10,6 +11,10 @@ const DATA_FORM_INVALID_REGEX_CREATE_SLUG = "data-form-invalid-regex-flow:exampl
 const DATA_FORM_EMPTY_SELECT_CREATE_SLUG = "data-form-empty-select-flow:example"
 const DATA_FORM_PROPERTIES_CREATE_SLUG = "data-form-properties-flow:example"
 const DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG = "data-form-checkbox-wiki-flow:example"
+const DATA_FORM_DATE_CREATE_SLUG = "data-form-date-field-flow:example"
+const DATA_FORM_DATE_OPTIONS_CREATE_SLUG = "data-form-date-options-flow:example"
+const DATA_FORM_PAGEPATH_CREATE_SLUG = "data-form-pagepath-flow:example"
+const DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG = "data-form-pagepath-root-flow:example"
 const DATA_FORM_EDIT_SLUG = "data-form-edit-flow:example"
 const DATA_FORM_DEFINITION = {
   default_layout: true,
@@ -34,6 +39,134 @@ const DATA_FORM_DEFINITION = {
       default_value: "b"
     }
   ]
+}
+const DATA_FORM_DATE_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "date",
+      label: "Date value",
+      hint: "",
+      field_type: "date",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 24,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      options: { dateFormat: "mm/dd/yy", showOn: "button" }
+    }
+  ]
+}
+const DATA_FORM_DATE_OPTIONS_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "date-primary",
+      label: "Primary date",
+      hint: "",
+      field_type: "date",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 24,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      options: {
+        altField: "input[name=field-alt-date]",
+        altFormat: "m/d/yy",
+        dateFormat: "mm/dd/yy",
+        showOn: "button"
+      }
+    },
+    {
+      name: "date-secondary",
+      label: "Secondary date",
+      hint: "",
+      field_type: "date",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 24,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      options: { dateFormat: "DD, d MM yy", showOn: "both", firstDay: 1 }
+    },
+    {
+      name: "alt-date",
+      label: "Alternate date",
+      hint: "",
+      field_type: "text",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      width: 10,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false
+    }
+  ]
+}
+const DATA_FORM_PAGEPATH_DEFINITION = {
+  default_layout: true,
+  fields: [
+    {
+      name: "origin",
+      label: "Origin",
+      hint: "",
+      field_type: "pagepath",
+      values: [],
+      default_value: null,
+      configured_value: null,
+      options: {},
+      width: 40,
+      height: 1,
+      match_pattern: null,
+      match_error: null,
+      before: "",
+      after: "",
+      join: false,
+      pagepath_category: "data-form-pagepath-tree",
+      pagepath_max_level: 3
+    }
+  ]
+}
+const DATA_FORM_PAGEPATH_NODES = {
+  origin: [
+    { fullname: "data-form-pagepath-tree:_root", name: "_root", parent: null },
+    {
+      fullname: "data-form-pagepath-tree:alpha",
+      name: "alpha",
+      parent: "data-form-pagepath-tree:_root"
+    },
+    {
+      fullname: "data-form-pagepath-tree:beta",
+      name: "beta",
+      parent: "data-form-pagepath-tree:alpha"
+    }
+  ]
+}
+const DATA_FORM_PAGEPATH_ROOT_DEFINITION = {
+  ...DATA_FORM_PAGEPATH_DEFINITION,
+  fields: DATA_FORM_PAGEPATH_DEFINITION.fields.map((field) => ({
+    ...field,
+    pagepath_category: "data-form-pagepath-root-tree"
+  }))
 }
 const DATA_FORM_CONTROLS_DEFINITION = {
   default_layout: true,
@@ -418,10 +551,14 @@ const pageForArticleRoute = (route) => {
       ].join("")
     }
   }
+  if (route.slug === "search:site") {
+    return SEARCH_SITE_EXTRA.test(route.extra) ? page : null
+  }
   if (
     (route.slug === DATA_FORM_EDIT_SLUG ||
       route.slug === DATA_FORM_CONTROLS_CREATE_SLUG ||
-      route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG) &&
+      route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG ||
+      route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG) &&
     route.extra === "edit"
   ) {
     return page
@@ -491,20 +628,64 @@ const missingPageArticleViewResult = (route) => ({
       selected_template_page_id: null,
       data_form:
         route.slug === DATA_FORM_CREATE_SLUG
-          ? { definition: DATA_FORM_DEFINITION, values: {} }
-          : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
-            ? { definition: DATA_FORM_CONTROLS_DEFINITION, values: {} }
-            : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
-              ? { definition: DATA_FORM_REGEX_BUDGET_DEFINITION, values: {} }
-              : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
-                ? { definition: DATA_FORM_INVALID_REGEX_DEFINITION, values: {} }
-                : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
-                  ? { definition: DATA_FORM_EMPTY_SELECT_DEFINITION, values: {} }
-                  : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
-                    ? { definition: DATA_FORM_PROPERTIES_DEFINITION, values: {} }
-                    : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
-                      ? { definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION, values: {} }
-                      : null
+          ? { definition: DATA_FORM_DEFINITION, values: {}, pagepaths: {} }
+          : route.slug === DATA_FORM_DATE_CREATE_SLUG
+            ? { definition: DATA_FORM_DATE_DEFINITION, values: {}, pagepaths: {} }
+            : route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG
+              ? {
+                  definition: DATA_FORM_DATE_OPTIONS_DEFINITION,
+                  values: {},
+                  pagepaths: {}
+                }
+              : route.slug === DATA_FORM_PAGEPATH_CREATE_SLUG
+                ? {
+                    definition: DATA_FORM_PAGEPATH_DEFINITION,
+                    values: {},
+                    pagepaths: DATA_FORM_PAGEPATH_NODES
+                  }
+                : route.slug === DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG
+                  ? {
+                      definition: DATA_FORM_PAGEPATH_ROOT_DEFINITION,
+                      values: {},
+                      pagepaths: { origin: [] }
+                    }
+                  : route.slug === DATA_FORM_CONTROLS_CREATE_SLUG
+                    ? {
+                        definition: DATA_FORM_CONTROLS_DEFINITION,
+                        values: {},
+                        pagepaths: {}
+                      }
+                    : route.slug === DATA_FORM_REGEX_BUDGET_CREATE_SLUG
+                      ? {
+                          definition: DATA_FORM_REGEX_BUDGET_DEFINITION,
+                          values: {},
+                          pagepaths: {}
+                        }
+                      : route.slug === DATA_FORM_INVALID_REGEX_CREATE_SLUG
+                        ? {
+                            definition: DATA_FORM_INVALID_REGEX_DEFINITION,
+                            values: {},
+                            pagepaths: {}
+                          }
+                        : route.slug === DATA_FORM_EMPTY_SELECT_CREATE_SLUG
+                          ? {
+                              definition: DATA_FORM_EMPTY_SELECT_DEFINITION,
+                              values: {},
+                              pagepaths: {}
+                            }
+                          : route.slug === DATA_FORM_PROPERTIES_CREATE_SLUG
+                            ? {
+                                definition: DATA_FORM_PROPERTIES_DEFINITION,
+                                values: {},
+                                pagepaths: {}
+                              }
+                            : route.slug === DATA_FORM_CHECKBOX_WIKI_CREATE_SLUG
+                              ? {
+                                  definition: DATA_FORM_CHECKBOX_WIKI_DEFINITION,
+                                  values: {},
+                                  pagepaths: {}
+                                }
+                              : null
     }
   }
 })
@@ -535,7 +716,11 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
     hasExactKeys(rpcRequest.params.route, ["extra", "slug"]) &&
     typeof rpcRequest.params.route.slug === "string" &&
     (pageForArticleRoute(rpcRequest.params.route) ||
-      (rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG &&
+      ((rpcRequest.params.route.slug === DATA_FORM_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_DATE_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_PAGEPATH_CREATE_SLUG ||
+        rpcRequest.params.route.slug === DATA_FORM_PAGEPATH_ROOT_CREATE_SLUG) &&
         rpcRequest.params.route.extra === "") ||
       NEW_PAGE_EDIT_EXTRA.test(rpcRequest.params.route.extra))
   ) {
@@ -551,6 +736,19 @@ export const handleArticleRpc = ({ rpcRequest, request }) => {
         result.page.data.data_form = {
           definition: DATA_FORM_DEFINITION,
           values: { name: "Probe Name", choice: "a" }
+        }
+      } else if (
+        rpcRequest.params.route.slug === DATA_FORM_DATE_OPTIONS_CREATE_SLUG &&
+        rpcRequest.params.route.extra === "edit"
+      ) {
+        result.page.data.options.edit = true
+        result.page.data.data_form = {
+          definition: DATA_FORM_DATE_OPTIONS_DEFINITION,
+          values: {
+            "date-primary": "1411099200",
+            "date-secondary": "1418360400",
+            "alt-date": "12/11/2014"
+          }
         }
       } else if (
         rpcRequest.params.route.slug === DATA_FORM_CONTROLS_CREATE_SLUG &&

@@ -24,11 +24,109 @@ const REQUIRED_ROLES = Object.freeze([
 const ROLE_CHARACTERS = Object.freeze(["0", "1", "2", "3", "4", "5", "6"]);
 
 const hash = (value) => createHash("sha256").update(value).digest("hex");
-const git = (character) => character.repeat(40);
-const image = (character) => `sha256:${character.repeat(64)}`;
+const git = (character) => character.repeat(39) + String.fromCharCode(character.charCodeAt(0) + 1);
+const image = (character) => `sha256:${hash(`image-${character}`)}`;
 
 async function writeJson(filePath, value) {
   await fs.writeFile(filePath, `${JSON.stringify(value)}\n`, { mode: 0o600 });
+}
+
+async function finalFrozenFixture(root, identity) {
+  const directory = path.join(root, "final-frozen");
+  await fs.mkdir(path.join(directory, "deepwell"), { recursive: true });
+  const paths = {
+    lockfile: path.join(directory, "deepwell", "Cargo.lock"),
+    verifier: path.join(directory, "verifier.mjs"),
+    fixture: path.join(directory, "fixture.json"),
+    tool: path.join(directory, "tool.mjs"),
+    denominator: path.join(directory, "denominator.json"),
+    images: path.join(directory, "images.json"),
+    standardsReview: path.join(directory, "standards-review.json"),
+    specReview: path.join(directory, "spec-review.json"),
+    manifest: path.join(directory, "inputs.json"),
+    writers: path.join(directory, "writers.json"),
+    receipt: path.join(directory, "receipt.json"),
+  };
+  await fs.writeFile(paths.lockfile, "lock\n");
+  await fs.writeFile(paths.verifier, "verifier\n");
+  await fs.writeFile(paths.fixture, "fixture\n");
+  await fs.writeFile(paths.tool, "tool\n");
+  await fs.writeFile(paths.denominator, "denominator\n");
+  for (const [axis, reviewPath] of [
+    ["standards", paths.standardsReview],
+    ["spec", paths.specReview],
+  ]) {
+    await writeJson(reviewPath, {
+      schema: "wikijump.compatibility_review.v1",
+      axis,
+      status: "pass",
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      findings: [],
+    });
+  }
+  await writeJson(paths.images, {
+    status: "pass",
+    wikijump_sha: identity.candidate.wikijump_commit,
+    wikijump_tree: identity.candidate.wikijump_tree,
+    ftml_sha: identity.candidate.ftml_sha,
+    images: { deepwell: { id: image("f") } },
+  });
+  await writeJson(paths.manifest, {
+    lockfiles: [paths.lockfile],
+    verifier: [paths.verifier],
+    fixtures: [paths.fixture],
+    tools: [paths.tool],
+    denominator: [paths.denominator],
+    reviews: {
+      standards: paths.standardsReview,
+      spec: paths.specReview,
+    },
+    images: paths.images,
+  });
+  await writeJson(paths.writers, {
+    schema: "wikijump.phase4.source_writer_roster.v1",
+    status: "pass",
+    wikijump_commit: identity.candidate.wikijump_commit,
+    wikijump_tree: identity.candidate.wikijump_tree,
+    lanes: [{ name: "candidate", state: "stopped" }],
+  });
+  const ref = async (filePath) => ({
+    path: filePath,
+    sha256: await sha256File(filePath),
+  });
+  await writeJson(paths.receipt, {
+    schema: "wikijump.phase4.final_frozen_receipt.v1",
+    status: "FINAL_FROZEN",
+    source: {
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      ftml_sha: identity.candidate.ftml_sha,
+      lockfiles: [await ref(paths.lockfile)],
+    },
+    verifier: {
+      wikijump_commit: identity.candidate.wikijump_commit,
+      wikijump_tree: identity.candidate.wikijump_tree,
+      files: [await ref(paths.verifier)],
+    },
+    fixtures: [await ref(paths.fixture)],
+    tools: [await ref(paths.tool)],
+    denominator: [await ref(paths.denominator)],
+    reviews: {
+      standards: await ref(paths.standardsReview),
+      spec: await ref(paths.specReview),
+    },
+    images: {
+      producer: await ref(paths.images),
+      identities: { deepwell: image("f") },
+    },
+    inputs: {
+      manifest: await ref(paths.manifest),
+      source_writers: await ref(paths.writers),
+    },
+    source_writers: [],
+  });
+  return paths.receipt;
 }
 
 function finalImages() {
@@ -182,7 +280,7 @@ async function createFixture(t) {
   const identity = {
     schema: "wikijump.standing_candidate_parity_identity.v1",
     status: "sealed",
-    artifact_key: "d".repeat(64),
+    artifact_key: hash("artifact-key"),
     build: {
       seal_sha256: await sha256File(fixture.sealPath),
       verdict_sha256: await sha256File(fixture.verdictPath),
@@ -200,9 +298,9 @@ async function createFixture(t) {
       source_clean: true,
       images: imageMap(images),
       config: {
-        isolated_overlay_sha256: "f".repeat(64),
+        isolated_overlay_sha256: hash("isolated-overlay"),
         promotion_base_manifest_sha256: manifestSha256,
-        effective_runtime_services_sha256: "0".repeat(64),
+        effective_runtime_services_sha256: hash("effective-runtime"),
       },
       endpoint: {
         scheme: "https",
@@ -218,12 +316,13 @@ async function createFixture(t) {
     },
     evidence: {
       status: "sealed",
-      manifest_sha256: "1".repeat(64),
-      seal_sha256: "2".repeat(64),
+      manifest_sha256: hash("manifest"),
+      seal_sha256: hash("seal"),
     },
   };
   const candidateIdentityPath = path.join(root, "candidate-identity.json");
   await writeJson(candidateIdentityPath, identity);
+  const finalFrozenReceiptPath = await finalFrozenFixture(root, identity);
   const inputPaths = {
     receiptPath: path.join(root, "candidate-receipt.json"),
     candidateIdentityPath,
@@ -240,6 +339,7 @@ async function createFixture(t) {
   return {
     ...fixture,
     ...inputPaths,
+    finalFrozenReceiptPath,
     identity,
     identitySha256: await sha256File(candidateIdentityPath),
   };
@@ -278,6 +378,11 @@ test("binds a verified source admission to the exact sealed build and rendered h
   ]);
   assert.equal(result.schema, STANDING_PROMOTION_PRECONDITION_SCHEMA);
   assert.equal(result.status, "pass");
+  assert.equal(result.final_frozen_receipt.path, fixture.finalFrozenReceiptPath);
+  assert.equal(
+    result.final_frozen_receipt.sha256,
+    await sha256File(fixture.finalFrozenReceiptPath),
+  );
   assert.equal(
     result.candidate.wikijump_commit,
     fixture.identity.candidate.wikijump_commit,
@@ -306,6 +411,38 @@ test("rejects a build seal that no longer matches the candidate identity before 
       verifyAdmission: passingVerifier(fixture, []),
     }),
     /candidate build seal SHA-256 does not match/u,
+  );
+  await assert.rejects(fs.access(fixture.outputPath));
+});
+
+test("rejects candidate admission without a final frozen receipt", async (t) => {
+  const fixture = await createFixture(t);
+  const { finalFrozenReceiptPath, ...withoutFinalFrozenReceipt } = fixture;
+
+  await assert.rejects(
+    verifyStandingPromotionPrecondition({
+      ...withoutFinalFrozenReceipt,
+      verifyAdmission: passingVerifier(fixture, []),
+    }),
+  );
+  await assert.rejects(fs.access(fixture.outputPath));
+});
+
+test("rejects a final frozen input that drifts before publishing output", async (t) => {
+  const fixture = await createFixture(t);
+  const lockfile = path.join(
+    path.dirname(fixture.finalFrozenReceiptPath),
+    "deepwell",
+    "Cargo.lock",
+  );
+  await fs.appendFile(lockfile, "drift\n");
+
+  await assert.rejects(
+    verifyStandingPromotionPrecondition({
+      ...fixture,
+      verifyAdmission: passingVerifier(fixture, []),
+    }),
+    /final frozen lockfile is stale/u,
   );
   await assert.rejects(fs.access(fixture.outputPath));
 });
@@ -440,6 +577,11 @@ test("rejects receipts inside a hashed input tree or at an input path", async (t
       name: "candidate parity receipt",
       outputPath: fixture.receiptPath,
       error: /output must not equal candidate parity receipt/u,
+    },
+    {
+      name: "final frozen receipt",
+      outputPath: fixture.finalFrozenReceiptPath,
+      error: /output must not equal final frozen receipt/u,
     },
   ];
   for (const { name, outputPath, error } of cases) {

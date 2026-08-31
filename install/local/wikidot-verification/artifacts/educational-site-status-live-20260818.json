@@ -1,0 +1,45 @@
+{
+  "schema": "wikidot.live.educational_site_status.v1",
+  "captured_at_utc": "2026-08-18T04:31:14Z",
+  "site": "sandbox-for-codex",
+  "surface_ids": ["catalog-feature:educational-site-status"],
+  "mutated": false,
+  "actor": "master-administrator",
+  "captured_contract": {
+    "manager_welcome": {
+      "module": "managesite/ManageSiteWelcomeModule",
+      "site_plan": "Basic Free",
+      "educational_upgrade_control": "sm-edu",
+      "educational_upgrade_module": "managesite/ManageSiteUpgradeEduModule"
+    },
+    "educational_upgrade": {
+      "module": "managesite/ManageSiteUpgradeEduModule",
+      "heading": "Edu upgrade",
+      "purpose_heading": "Wikidot for educational purposes",
+      "benefits": [
+        "unlimited number of members even if your site is private",
+        "25 GB for file uploads, each file up to 100 MB, more storage per request",
+        "SSL security",
+        "unlimited number of revisions per page",
+        "other small improvements"
+      ],
+      "cost": "absolutely free",
+      "application_timing_claim": "applied instantly, after providing some basic information",
+      "form_id": "sm-eduupgrade-form",
+      "fields": ["organization", "purpose"],
+      "submit_label": "Please upgrade my site now",
+      "monitoring_notice": "We are periodically monitoring educational sites if they are really used for educational / research purposes. This is to prevent abuse."
+    },
+    "browser_action": {
+      "script": "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/common--modules/js/managesite/ManageSiteUpgradeEduModule.js",
+      "form": "sm-eduupgrade-form",
+      "action": "UpgradesAction",
+      "event": "upgradeEdu",
+      "success_navigation": "reload sm-welcome"
+    }
+  },
+  "not_observed": [
+    "post-upgrade educational module body",
+    "staff-side monitoring or revocation workflow"
+  ]
+}

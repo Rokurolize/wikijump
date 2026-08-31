@@ -1,8 +1,10 @@
 // @ts-nocheck
 import assert from "node:assert/strict"
 import { once } from "node:events"
+import { readFile } from "node:fs/promises"
 import { createServer as createHttpServer } from "node:http"
 import { fileURLToPath } from "node:url"
+import vm from "node:vm"
 import { after, before, describe, it } from "node:test"
 
 import { createServer as createViteServer } from "vite"
@@ -21,6 +23,7 @@ let originalClientRequest
 let adminData
 let siteSettingsComponent
 let layoutSettingsComponent
+let analyticsSettingsComponent
 let rootLayoutComponent
 let canonicalAdminPage
 let legacyAdminPage
@@ -28,6 +31,7 @@ let canonicalAdminError
 let legacyAdminError
 let canonicalAdminServer
 let legacyAdminServer
+let wikidotCollapsibles
 
 const requestContext = (data, { error = null, routeId = "/[x+2d]/admin" } = {}) => {
   const page = {
@@ -143,6 +147,9 @@ before(async () => {
   ;({ default: layoutSettingsComponent } = await vite.ssrLoadModule(
     "/src/routes/[x+2d]/admin/LayoutSettings.svelte"
   ))
+  ;({ default: analyticsSettingsComponent } = await vite.ssrLoadModule(
+    "/src/routes/[x+2d]/admin/AnalyticsSettings.svelte"
+  ))
   ;({ default: rootLayoutComponent } = await vite.ssrLoadModule(
     "/src/routes/+layout.svelte"
   ))
@@ -157,6 +164,9 @@ before(async () => {
   ))
   ;({ default: legacyAdminError } = await vite.ssrLoadModule(
     "/src/routes/_admin/+error.svelte"
+  ))
+  ;({ wikidotCollapsibles } = await vite.ssrLoadModule(
+    "/src/lib/wikidot/wikidot-collapsibles.ts"
   ))
   canonicalAdminServer = await vite.ssrLoadModule(
     "/src/routes/[x+2d]/admin/+page.server.ts"
@@ -190,12 +200,126 @@ describe("Wikidot site settings public boundaries", () => {
     }
     assert.match(siteBody, /<form id="sm-general-form"/u)
     assert.doesNotMatch(siteBody, /name="layout"/u)
+    assert.match(siteBody, /<div class="accordion" id="accordion2">/u)
+    assert.match(
+      siteBody,
+      /<a(?=[^>]*class="accordion-toggle")(?=[^>]*data-toggle="collapse")(?=[^>]*data-parent="#accordion2")(?=[^>]*href="#collapseOne")(?=[^>]*aria-expanded="false")(?=[^>]*aria-controls="collapseOne")[^>]*>/u
+    )
+    assert.match(siteBody, /<div id="collapseOne" class="accordion-body collapse">/u)
+    assert.doesNotMatch(siteBody, /id="collapseOne"[^>]*hidden/u)
+    assert.match(
+      siteBody,
+      /<div class="autocomplete-container">\s*<input[^>]+id="sm-general-start"/u
+    )
+    assert.match(
+      siteBody,
+      /<div class="autocomplete-container">\s*<input[^>]+id="sm-general-welcome"/u
+    )
+    assert.match(siteBody, /Welcome page for new members/u)
 
     const layoutBody = renderComponent(layoutSettingsComponent, {
       data: adminData
     }).body
     assert.match(layoutBody, /id="wikijump-layout-settings"/u)
     assert.match(layoutBody, /name="layout"/u)
+  })
+
+  it("keeps the advanced settings accordion collapsed until click or keyboard activation", () => {
+    class FakeElement {
+      constructor() {
+        this.listeners = new Map()
+        this.attributes = new Map()
+        const classes = new Set()
+        this.classList = {
+          contains: (name) => classes.has(name),
+          toggle: (name, force) => {
+            const enabled = force ?? !classes.has(name)
+            if (enabled) classes.add(name)
+            else classes.delete(name)
+            return enabled
+          }
+        }
+      }
+
+      addEventListener(type, listener) {
+        this.listeners.set(type, listener)
+      }
+
+      removeEventListener(type) {
+        this.listeners.delete(type)
+      }
+
+      contains(element) {
+        return element === this.link
+      }
+
+      closest(selector) {
+        return selector === 'a.accordion-toggle[data-toggle="collapse"]' ? this : null
+      }
+
+      getAttribute(name) {
+        return this.attributes.get(name) ?? null
+      }
+
+      setAttribute(name, value) {
+        this.attributes.set(name, String(value))
+      }
+    }
+
+    const root = new FakeElement()
+    const link = new FakeElement()
+    const panel = new FakeElement()
+    root.link = link
+    root.querySelector = (selector) => (selector === "#collapseOne" ? panel : null)
+    link.attributes.set("href", "#collapseOne")
+    link.attributes.set("aria-controls", "collapseOne")
+    link.attributes.set("aria-expanded", "false")
+    panel.classList.toggle("collapse", true)
+
+    const previousElement = globalThis.Element
+    const previousHTMLElement = globalThis.HTMLElement
+    globalThis.Element = FakeElement
+    globalThis.HTMLElement = FakeElement
+    try {
+      const behavior = wikidotCollapsibles(root)
+      assert.equal(panel.classList.contains("collapse"), true)
+      assert.equal(panel.classList.contains("in"), false)
+      assert.equal(link.getAttribute("aria-expanded"), "false")
+      assert.equal(link.getAttribute("aria-controls"), "collapseOne")
+
+      let prevented = false
+      root.listeners.get("click")({
+        target: link,
+        preventDefault: () => {
+          prevented = true
+        }
+      })
+      assert.equal(panel.classList.contains("in"), true)
+      assert.equal(link.getAttribute("aria-expanded"), "true")
+      assert.equal(prevented, true)
+
+      root.listeners.get("keydown")({
+        key: "Enter",
+        target: link,
+        preventDefault: () => {}
+      })
+      assert.equal(panel.classList.contains("in"), false)
+      assert.equal(link.getAttribute("aria-expanded"), "false")
+
+      root.listeners.get("keydown")({
+        key: " ",
+        target: link,
+        preventDefault: () => {}
+      })
+      assert.equal(panel.classList.contains("in"), true)
+      assert.equal(link.getAttribute("aria-expanded"), "true")
+      behavior.destroy()
+    } finally {
+      if (previousElement === undefined) delete globalThis.Element
+      else globalThis.Element = previousElement
+      if (previousHTMLElement === undefined) delete globalThis.HTMLElement
+      else globalThis.HTMLElement = previousHTMLElement
+    }
   })
 
   it("server-renders analytics, theme, and toolbar settings from the request view", () => {
@@ -226,7 +350,10 @@ describe("Wikidot site settings public boundaries", () => {
       {},
       requestContext(enabledData, { routeId: "/[slug]/[...extra]" })
     )
-    assert.match(enabled.head, /name="wikidot-site-analytics-profile" content="UA-1-2"/u)
+    assert.match(
+      enabled.head,
+      /name="wikidot-site-analytics-profile" content="UA-1-2" data-wikidot-site-analytics-valid="true"/u
+    )
     assert.match(
       enabled.head,
       /data-wikidot-site-theme="" href="https:\/\/themes\.example\/site\.css"/u
@@ -245,6 +372,56 @@ describe("Wikidot site settings public boundaries", () => {
     assert.doesNotMatch(disabled.head, /wikidot-site-analytics-profile/u)
     assert.doesNotMatch(disabled.head, /data-wikidot-site-theme/u)
     assert.doesNotMatch(disabled.body, /id="navi-bar"/u)
+
+    const analyticsBody = renderComponent(analyticsSettingsComponent, {
+      data: {
+        ...adminData,
+        site: {
+          ...adminData.site,
+          google_analytics_enabled: false,
+          google_analytics_profile: null
+        }
+      }
+    }).body
+    assert.match(analyticsBody, />Profile key<\/label>/u)
+    assert.match(analyticsBody, />Use Google Analytics<\/label>/u)
+  })
+
+  it("rejects analytics profiles with trailing line terminators", () => {
+    const data = {
+      site: {
+        name: "Line terminator fixture",
+        slug: "line-terminator-fixture",
+        locale: "en",
+        layout: "wikidot"
+      },
+      site_settings: {
+        google_analytics: { enabled: true, profile: "UA-1-2" }
+      },
+      theme: { type: "built_in", id: 1 },
+      license_name: "CC BY-SA 3.0",
+      license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
+      license_kind: "standard",
+      license_html: null,
+      user_session: null,
+      internationalization: {}
+    }
+    for (const [name, terminator] of [
+      ["CR", "\r"],
+      ["LF", "\n"],
+      ["U+2028", "\u2028"],
+      ["U+2029", "\u2029"]
+    ]) {
+      data.site_settings.google_analytics.profile = `UA-1-2${terminator}`
+      const rendered = renderComponent(
+        rootLayoutComponent,
+        {},
+        requestContext(data, { routeId: "/[slug]/[...extra]" })
+      )
+
+      assert.doesNotMatch(rendered.head, /wikidot-site-analytics-profile/u, name)
+      assert.doesNotMatch(rendered.head, /UA-1-2/u, name)
+    }
   })
 
   it("serves analytics through nonce-protected full-document SSR without a remote loader", async () => {
@@ -328,12 +505,43 @@ describe("Wikidot site settings public boundaries", () => {
         document.slice(analyticsScriptIndex, analyticsOpeningTagEnd + 1),
         `<script nonce="${analyticsNonce}">`
       )
+      assert.match(
+        document,
+        /name="wikidot-site-analytics-profile" content="UA-1-2" data-wikidot-site-analytics-valid="true"/u
+      )
     } finally {
       await new Promise((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()))
       })
       client.request = originalClientRequest
     }
+  })
+
+  it("does not bootstrap analytics from an invalid unmarked meta", async () => {
+    const template = await readFile(new URL("../src/app.html", import.meta.url), "utf8")
+    const scriptStart = template.indexOf("      const analyticsProfile")
+    const scriptEnd = template.indexOf("    </script>", scriptStart)
+    assert.ok(scriptStart >= 0)
+    assert.ok(scriptEnd > scriptStart)
+
+    const selectors = []
+    const context = {
+      document: {
+        querySelector(selector) {
+          selectors.push(selector)
+          return selector === 'meta[name="wikidot-site-analytics-profile"]'
+            ? { content: "UA-1-2\n" }
+            : null
+        }
+      },
+      globalThis: {}
+    }
+    vm.runInNewContext(template.slice(scriptStart, scriptEnd), context)
+
+    assert.deepEqual(selectors, [
+      'meta[name="wikidot-site-analytics-profile"][data-wikidot-site-analytics-valid="true"]'
+    ])
+    assert.equal(context.globalThis._gaq, undefined)
   })
 
   it("routes settings writes through the trusted site and revision-bound action seam", async () => {
@@ -458,6 +666,25 @@ describe("Wikidot site settings public boundaries", () => {
         }
       }
 
+      for (const [name, terminator] of [
+        ["CR", "\r"],
+        ["LF", "\n"],
+        ["U+2028", "\u2028"],
+        ["U+2029", "\u2029"]
+      ]) {
+        calls.length = 0
+        const invalid = await canonicalAdminServer.actions.analytics(
+          actionEvent("analytics", {
+            siteId,
+            expectedSettingsRevision: settingsRevision,
+            enabled: true,
+            profile: `UA-1-2${terminator}`
+          })
+        )
+        assert.equal(invalid.status, 400, name)
+        assert.deepEqual(calls, [], name)
+      }
+
       calls.length = 0
       const denied = await canonicalAdminServer.actions.analytics(
         actionEvent("analytics", {
@@ -513,6 +740,48 @@ describe("Wikidot site settings public boundaries", () => {
     } finally {
       client.request = originalClientRequest
     }
+  })
+
+  it("page template settings bind the category mutation to the trusted site actor", async () => {
+    const calls = []
+    client.request = async (method, params, context) => {
+      calls.push({ method, params, context })
+      if (method === "session_get") return { user_id: 41 }
+      if (method === "category_update") return { category_id: 23, template_page_id: 91 }
+      throw new Error(`Unexpected Deepwell method ${method}`)
+    }
+
+    const result = await canonicalAdminServer.actions.template(
+      actionEvent("template", {
+        siteId,
+        categoryId: 23,
+        templatePageId: 91
+      })
+    )
+
+    assert.equal(result.form.valid, true)
+    assert.deepEqual(calls, [
+      {
+        method: "session_get",
+        params: [sessionToken],
+        context: undefined
+      },
+      {
+        method: "category_update",
+        params: {
+          site: siteId,
+          category: 23,
+          user_id: 41,
+          template_page_id: 91,
+          ip_address: "192.0.2.63"
+        },
+        context: { sessionToken, siteId }
+      }
+    ])
+    assert.equal(
+      legacyAdminServer.actions.template,
+      canonicalAdminServer.actions.template
+    )
   })
 
   it("serves the legacy admin route through the same rendered page and action seam", () => {

@@ -41,7 +41,8 @@ export function parseDeviationLog(text) {
  * @param {object[]} input.deviations  parsed deviation entries
  * @param {object[]} [input.logErrors] deviation-log parse errors
  */
-export function buildMergeReadiness({ runId, branch, validators, deviations, logErrors = [] }) {
+export function buildMergeReadiness({ runId, branch, validators, deviations, logErrors = [], frozenCandidateCommit = null, prHead = null, candidateReviewFreeze = null }) {
+  const candidateRunId = candidateReviewFreeze?.run_id ?? null;
   const blockers = [];
   for (const validator of validators) {
     if (validator.exitCode !== 0) {
@@ -63,13 +64,29 @@ export function buildMergeReadiness({ runId, branch, validators, deviations, log
       blockers.push({ kind: 'deviation-rejected', id: deviation.id, detail: deviation.summary });
     }
   }
+  if (frozenCandidateCommit !== null && prHead !== null && frozenCandidateCommit !== prHead) {
+    blockers.push({
+      kind: 'candidate-pr-head-mismatch',
+      detail: `frozen candidate ${frozenCandidateCommit} differs from PR head ${prHead}`,
+    });
+  }
   return {
     schema: MERGE_READINESS_SCHEMA,
     run_id: runId,
+    merge_run_id: runId,
+    candidate_run_id: candidateRunId,
     branch,
     merge_ready: blockers.length === 0,
     blockers,
-    validators: validators.map(({ name, exitCode }) => ({ name, exit_code: exitCode })),
+    validators: validators.map(({ name, exitCode, path, sha256 }) => ({
+      name,
+      exit_code: exitCode,
+      ...(path === undefined ? {} : {path, sha256}),
+    })),
     deviations: deviations.map(({ id, review_state }) => ({ id, review_state })),
+    candidate_pr_binding: frozenCandidateCommit === null && prHead === null
+      ? null
+      : {frozen_candidate_commit: frozenCandidateCommit, pr_head: prHead, matched: frozenCandidateCommit === prHead},
+    candidate_review_freeze: candidateReviewFreeze,
   };
 }

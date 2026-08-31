@@ -3,6 +3,7 @@
 - Feature ID: `data-forms-css-styling`
 - Category: `data-forms`
 - Documentation status: `documented`
+- Detailed conformance status: `detailed-p1-p8`
 - Specification source: frozen local Wikidot documentation corpus
 - Behavioral authority: documentation-derived; live Wikidot wins if tested behavior conflicts
 
@@ -19,6 +20,55 @@ Implement the documented data-form capability “CSS Styling”, including its t
 Every explicit default, accepted value, rejected value, alias, limit, interaction, output form, URL form, permission rule, and stated limitation in the evidence below is part of this specification. Examples are conformance fixtures. Text that merely describes the documentation site or presents a live demo is informative rather than normative.
 
 If the documentation is silent or contradictory, the implementation MUST fail closed or preserve the existing literal behavior until a live Wikidot experiment supplies a stable expectation. The spec and catalog must then be updated with that evidence.
+
+## Detailed conformance contract
+
+- Status: `detailed-p1-p8`
+- Source-gap snapshot: Wikijump `257f6a3936976f1a6ea5094ae0cee5ac12777495`
+- Evidence manifest: `docs/wikidot-specifications/detailed-spec-evidence-20260816.json`
+
+This section is normative. It maps the complete evidence below to every P1-P8
+implementation axis. A statement that deliberately keeps an unobserved path
+fail-closed is a boundary of the specification, not permission to invent the
+missing Wikidot behavior.
+
+Evidence basis:
+
+- `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
+- `data-form-create-edit` -> `install/local/wikidot-verification/artifacts/data-form-create-edit-live.json` (SHA-256 `12a85fc671c52b036d5fe648e63ff5cbfc7d28a8cd0d88e662de614cd6772a8b`)
+- `data-form-output-css` -> `install/local/wikidot-verification/artifacts/data-form-output-css-hostile-theme-live-20260810.json` (SHA-256 `fdca5d523379c76256f5175d4e88dc7a3ded8e8e004f959cfd6157d4f892fbe0`)
+
+### P1 - invocation grammar and scalar interpretation
+
+- A data-form template may be styled by site CSS or page CSS. Documentation lists form-table, form-row row-{row number}, form-labels, form-label, form-values, form-value field-{field name}, form-error, form-{field type}, and form-message as styling hooks, but current authenticated live create/save evidence overrides that list for the observed default text/select path: the editor exposes form-horizontal data-form plus form-text/form-select control classes, while saved output exposes form-table, form-row, form-labels, form-label, and form-values and uses plain value spans. Documentation-only hooks that are absent from that live path MUST NOT be fabricated there without a separate live observation establishing the context in which they appear.
+
+### P2 - parser stage, nesting, and composition
+
+- CSS styling does not change YAML or [[form]] parsing. Styling applies only after a valid data-form template has produced its editor or saved-field DOM.
+
+### P3 - lifecycle, persistence, import, and round trips
+
+- Styling is presentation-only and MUST NOT change stored field values, field order, save semantics, or the create/edit round trip.
+
+### P4 - actors, permissions, visibility, and privacy
+
+- CSS MUST NOT bypass the same category/page edit permissions that govern the underlying data form, and hidden or unauthorized values MUST NOT become visible because a style selector exists.
+
+### P5 - selection, ordering, counting, and pagination
+
+- CSS styling has no independent selection, counting, ordering, or pagination semantics; those remain owned by the field and query features being styled.
+
+### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
+
+- The saved page and editor MUST expose the class hooks established for their exact live-observed field and rendering context. CSS loading follows the ordinary site/page CSS routes rather than a data-form-specific network API; no data-form-only stylesheet transport is inferred.
+
+### P7 - DOM, CSS, resources, interaction, and geometry
+
+- For the current live-observed default text/select saved-page path, output MUST retain table.form-table, tr.form-row, td.form-labels/span.form-label, td.form-values, and the plain value span structure; it MUST NOT invent row-number or field-specific value classes absent from that capture. Editor-side field/control classes remain governed by the separately observed generated editor. The hostile-theme capture established no computed-style parity, so no extra layout, cascade, or documentation-only hook requirement is invented for an unobserved context.
+
+### P8 - temporal behavior, failure atomicity, limits, and resource bounds
+
+- Adding or removing CSS MUST NOT alter persistence or create partial saves. Browser-computed cascade behavior that is not fixed by the documented hook model remains ordinary CSS behavior rather than a data-form-specific compatibility rule.
 
 
 ## Suggested public TDD seams

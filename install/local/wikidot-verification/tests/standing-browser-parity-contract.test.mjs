@@ -169,6 +169,80 @@ test("DOMContentLoaded selector geometry is independently blocking", () => {
   assert.equal(result.geometry[0].status, "pass");
 });
 
+test("public geometry comparison rejects over-threshold raw height but accepts the boundary", () => {
+  const trace = (height) => ({
+    root_selector: "#page-content",
+    element_count: 1,
+    captured_count: 1,
+    truncated: false,
+    incomplete_image_count: 0,
+    elements: [{
+      path: "p[1]",
+      tag: "p",
+      id: null,
+      classes: [],
+      direct_text_sha256: "same",
+      child_element_count: 0,
+      rect: { x: 0, y: 0, width: 100, height },
+      style: { display: "block" },
+    }],
+  });
+  const contract = {
+    geometry_selectors: ["#page-content"],
+    first_paint_geometry_selectors: [],
+    presence_probes: [],
+    first_paint_custom_properties: {},
+    first_divergence_trace: { root_selector: "#page-content", max_elements: 10 },
+  };
+  const live = capture({
+    geometry: {
+      "#page-content": {
+        count: 1,
+        rect: { x: 0, y: 0, width: 100, height: 1000 },
+      },
+    },
+    document: { presence_probes: [], first_divergence_trace: trace(1000) },
+  });
+  const over = compareCaptures(
+    capture({
+      geometry: {
+        "#page-content": {
+          count: 1,
+          rect: { x: 0, y: 0, width: 100, height: 1012.004 },
+        },
+      },
+      document: { presence_probes: [], first_divergence_trace: trace(1012.004) },
+    }),
+    live,
+    DEFAULT_THRESHOLDS,
+    [],
+    contract,
+  );
+  assert.equal(over.status, "fail");
+  assert.equal(over.geometry[0].delta.height, 12);
+  assert.equal(over.geometry[0].status, "fail");
+  assert.equal(over.settled_first_divergent_element.kind, "geometry_divergence");
+  assert.equal(over.settled_first_divergent_element.geometry_delta.height, 12);
+  const boundary = compareCaptures(
+    capture({
+      geometry: {
+        "#page-content": {
+          count: 1,
+          rect: { x: 0, y: 0, width: 100, height: 1012 },
+        },
+      },
+      document: { presence_probes: [], first_divergence_trace: trace(1012) },
+    }),
+    live,
+    DEFAULT_THRESHOLDS,
+    [],
+    contract,
+  );
+  assert.equal(boundary.status, "pass");
+  assert.equal(boundary.geometry[0].status, "pass");
+  assert.equal(boundary.settled_first_divergent_element.kind, "none");
+});
+
 test("settled page geometry is not reused as DOMContentLoaded geometry", () => {
   const contract = {
     geometry_selectors: ["#main-content"],

@@ -10,7 +10,7 @@ import {
   pageFileRestoreSchema,
   pageFileUploadSchema
 } from "$lib/server/load/page/page-file-actions"
-import { pageParentSchema } from "$lib/server/load/page/page-relation-actions"
+import { pageParentFormSchema } from "$lib/server/load/page/page-relation-actions"
 import { pageRestoreSchema } from "$lib/server/load/page/page-revision-actions"
 import { pageLockSchema } from "$lib/server/load/page/page-lock-actions"
 import { superValidate } from "sveltekit-superforms"
@@ -27,7 +27,7 @@ export const buildPageForms = async (request: Request) => ({
   fileRestoreForm: await superValidate(request, valibot(pageFileRestoreSchema)),
   layoutForm: await superValidate(request, valibot(layoutSchema)),
   pageMoveForm: await superValidate(request, valibot(pageMoveSchema)),
-  pageParentForm: await superValidate(request, valibot(pageParentSchema)),
+  pageParentForm: await superValidate(request, valibot(pageParentFormSchema)),
   pageLockForm: await superValidate(request, valibot(pageLockSchema)),
   pageRestoreForm: await superValidate(request, valibot(pageRestoreSchema))
 })

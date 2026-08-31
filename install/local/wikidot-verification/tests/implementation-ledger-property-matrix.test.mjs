@@ -69,6 +69,22 @@ test("generated compatibility ledger cannot drift from its canonical source", ()
   assert.deepEqual(generatedLedger, canonicalLedger);
 });
 
+test("module-rate records its Framerail sidecar source and regression", () => {
+  const moduleRate = canonicalLedger.features["module-rate"];
+  assert.ok(
+    moduleRate.implementation_files.includes(
+      "framerail/src/lib/wikidot/wikidot-legacy-actions.js",
+    ),
+  );
+  assert.ok(
+    moduleRate.tests.some(
+      ({ path, name }) =>
+        path === "framerail/tests/wikidot-legacy-actions.test.js" &&
+        name === "initialized Rate stars preserve the live hidden score value",
+    ),
+  );
+});
+
 test("campaign scope cannot omit its P1-P8 matrix", () => {
   const ledger = structuredClone(canonicalLedger);
   delete ledger.feature_property_matrix["module-listpages"];

@@ -1,14 +1,134 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { installCandidateFilePortRoute } from "../src/standing-browser-parity-browser-session.mjs";
+import {
+  candidateLocalOriginSets,
+  isParityBrowserPublicOrigin,
+  installCandidateFilePortRoute,
+  parityBrowserExecutionMode,
+  parityBrowserRequestIntervalMs,
+  parityBrowserThrottleConfig,
+} from "../src/standing-browser-parity-browser-session.mjs";
+
+const hash = (character) => character.repeat(64);
+
+test("candidate browser local origins include every sealed site on an editable candidate", () => {
+  const sets = candidateLocalOriginSets({
+    candidate: {
+      endpoint: {
+        allowed_origin_set: [
+          "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+          "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+        ],
+      },
+      site_origins: {
+        "scp-wiki": {
+          page: "https://scp-wiki.wikijump.localhost:18449",
+          files: "https://scp-wiki.wjfiles.localhost:18449",
+        },
+        scpaiueouiuiuiui: {
+          page: "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+          files: "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+        },
+      },
+    },
+  });
+
+  assert.deepEqual(
+    sets.localOrigins,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+      "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+      "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+    ].sort(),
+  );
+  assert.deepEqual(sets.fileRouteOriginSets, [
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    [
+      "https://scpaiueouiuiuiui.wikijump.localhost:18449",
+      "https://scpaiueouiuiuiui.wjfiles.localhost:18449",
+    ],
+  ]);
+});
+
+test("browser throttle receipt binds exact case-set public origins", () => {
+  const base = {
+    args: { mode: "candidate-case" },
+    runId: "fixture-run",
+    lock: { path: "/private/lock", owner: "fixture" },
+    policy: { sha256: hash("a"), value: { policy_version: "fixture-v1" } },
+    localOrigins: [],
+    candidate: null,
+  };
+  const config = parityBrowserThrottleConfig({
+    ...base,
+    publicOrigins: ["https://www.youtube.com", "https://embed.acast.com"],
+  });
+
+  assert.equal(parityBrowserExecutionMode("candidate-case"), "candidate");
+  assert.equal(parityBrowserRequestIntervalMs("candidate-case"), 0);
+  assert.equal(parityBrowserExecutionMode("live-reference"), "live");
+  assert.equal(parityBrowserRequestIntervalMs("live-reference"), 4_000);
+  assert.equal(config.execution_mode, "candidate");
+  assert.equal(config.interval_ms, 0);
+  assert.deepEqual(config.case_set_public_origins, [
+    "https://www.youtube.com",
+    "https://embed.acast.com",
+  ]);
+  const liveConfig = parityBrowserThrottleConfig({
+    ...base,
+    args: { mode: "live-reference" },
+    publicOrigins: [],
+  });
+  assert.equal(liveConfig.execution_mode, "live");
+  assert.equal(liveConfig.interval_ms, 4_000);
+  assert.throws(
+    () =>
+      parityBrowserThrottleConfig({
+        ...base,
+        publicOrigins: ["https://www.youtube.com/watch"],
+      }),
+    /exact HTTPS origins/u,
+  );
+  assert.equal(
+    isParityBrowserPublicOrigin(
+      "https://www.youtube.com/embed/video",
+      "document",
+      "GET",
+      config.case_set_public_origins,
+    ),
+    true,
+  );
+  assert.equal(
+    isParityBrowserPublicOrigin(
+      "https://www.youtube.com/embed/video",
+      "document",
+      "POST",
+      config.case_set_public_origins,
+    ),
+    false,
+  );
+  assert.equal(
+    isParityBrowserPublicOrigin(
+      "https://youtube.com/embed/video",
+      "document",
+      "GET",
+      config.case_set_public_origins,
+    ),
+    false,
+  );
+});
 
 test("candidate file routing maps only the exact canonical file authority to its sealed port", async () => {
-  let pattern;
+  const patterns = [];
   let handler;
   const context = {
     async route(value, callback) {
-      pattern = value;
+      patterns.push(value);
       handler = callback;
     },
   };
@@ -18,7 +138,10 @@ test("candidate file routing maps only the exact canonical file authority to its
   ];
 
   assert.equal(await installCandidateFilePortRoute(context, origins), true);
-  assert.equal(pattern, "https://scp-wiki.wjfiles.localhost/**");
+  assert.deepEqual(patterns, [
+    "https://scp-wiki.wjfiles.localhost/**",
+    "https://scp-wiki.wjfiles.localhost:18449/**",
+  ]);
 
   const response = { status: 200 };
   let fetchOptions;
@@ -44,6 +167,55 @@ test("candidate file routing maps only the exact canonical file authority to its
     maxRedirects: 0,
   });
   assert.deepEqual(fulfillment, { response });
+});
+
+test("candidate file routing also gates an already-localized sealed-port file request", async () => {
+  const handlers = new Map();
+  const context = {
+    async route(value, callback) {
+      handlers.set(value, callback);
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+  const handler = handlers.get("https://scp-wiki.wjfiles.localhost:18449/**");
+  assert.equal(typeof handler, "function");
+  const response = { status: () => 200, headers: () => ({}) };
+  let fetchOptions;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost:18449/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+      };
+    },
+    async fetch(options) {
+      fetchOptions = options;
+      return response;
+    },
+    async fulfill() {},
+  });
+
+  assert.deepEqual(fetchOptions, {
+    url: "https://scp-wiki.wjfiles.localhost:18449/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+    maxRedirects: 0,
+  });
+  assert.equal(admissions, 2);
 });
 
 test("candidate file routing follows only same-authority redirects on the sealed port", async () => {
@@ -134,6 +306,186 @@ test("candidate file routing returns public redirects to Chromium for gate enfor
 
   assert.equal(fetchCount, 1);
   assert.deepEqual(fulfillment, { response: redirect });
+});
+
+test("candidate file routing preserves the live public admission before a Wikidot fallback redirect", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const redirect = {
+    status: () => 302,
+    headers: () => ({
+      location:
+        "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+    }),
+  };
+  let fulfillment;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+      };
+    },
+    async fetch() {
+      return redirect;
+    },
+    async fulfill(options) {
+      fulfillment = options;
+    },
+  });
+
+  assert.equal(admissions, 1);
+  assert.deepEqual(fulfillment, { response: redirect });
+});
+
+test("candidate file routing preserves both Wikidot local-file admissions on a mirror hit", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const response = { status: () => 200, headers: () => ({}) };
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--files/theme%3Abasalt/basalt-theme-logo.svg",
+      };
+    },
+    async fetch() {
+      return response;
+    },
+    async fulfill() {},
+  });
+
+  assert.equal(admissions, 2);
+});
+
+test("candidate file routing preserves one direct wdfiles admission on a local-code mirror hit", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const response = { status: () => 200, headers: () => ({}) };
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "stylesheet",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--code/theme%3Abasalt/1",
+      };
+    },
+    async fetch() {
+      return response;
+    },
+    async fulfill() {},
+  });
+
+  assert.equal(admissions, 1);
+});
+
+test("candidate file routing preserves collapsed source admissions when a redirect is outside the public gate", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const redirect = {
+    status: () => 302,
+    headers: () => ({ location: "https://cdn.example.invalid/asset.png" }),
+  };
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () => "https://scp-wiki.wjfiles.localhost/local--files/a.png",
+      };
+    },
+    async fetch() {
+      return redirect;
+    },
+    async fulfill() {},
+  });
+
+  assert.equal(admissions, 2);
 });
 
 test("candidate file routing refuses malformed or ambiguous local origin declarations", async () => {

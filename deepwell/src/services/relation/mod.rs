@@ -368,6 +368,7 @@ impl RelationService {
                     .add(relation_type_condition(relation_type))
                     .add(object_type_column.eq(object_type))
                     .add(object_id_column.eq(object_id))
+                    .add(relation::Column::OverwrittenAt.is_null())
                     .add(relation::Column::DeletedAt.is_null()),
             )
             .order_by_asc(relation::Column::CreatedAt)

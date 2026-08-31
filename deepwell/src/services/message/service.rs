@@ -521,7 +521,7 @@ impl MessageService {
             // If it was sent *only* to oneself, then there is not outbox message.
             // If it was sent to others in addition to oneself, then there *is* an outbox message.
             debug!("Self message, checking recipients list");
-            (recipients.only_has(sender_id), true)
+            (!recipients.only_has(sender_id), true)
         } else {
             // For regular messages, then just mark the outbox.
             debug!("Regular message, marking outbox only");
@@ -758,7 +758,7 @@ impl MessageService {
         // Check that the user has access to the message.
         // That is, the user is the sender or one of the recipients.
         if record.sender_id != user_id
-            && Self::any_recipient_exists(ctx, record_id, user_id)
+            && !Self::any_recipient_exists(ctx, record_id, user_id)
                 .await
                 .or_raise(make_error)?
         {

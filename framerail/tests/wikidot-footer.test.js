@@ -4,6 +4,7 @@ import test from "node:test"
 import {
   WIKIDOT_FOOTER_LINKS,
   WIKIDOT_POWERED_BY,
+  buildWikidotAccountLabels,
   buildWikidotFooterLinks,
   buildWikidotLicenseHtml,
   buildWikidotLoginLabels,
@@ -29,6 +30,11 @@ test("uses Japanese Wikidot footer and login labels for Japanese imported sites"
     createAccount: "アカウントを作成",
     or: "または",
     signIn: "サインイン"
+  })
+  assert.deepEqual(buildWikidotAccountLabels("ja"), {
+    myAccount: "マイアカウント",
+    settings: "設定",
+    signOut: "サインアウト"
   })
 })
 

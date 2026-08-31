@@ -158,6 +158,28 @@ impl Deepwell {
         Ok(block_info)
     }
 
+    pub async fn get_text_block_by_hash(
+        &self,
+        site_id: i64,
+        sha1: &str,
+        session_token: Option<&str>,
+    ) -> Result<Option<TextBlockIndex>> {
+        let params = rpc_object! {
+            "site_id" => site_id,
+            "page_id" => Option::<i64>::None,
+            "block_type" => TextBlockType::Html.value(),
+            "index" => Option::<i16>::None,
+            "name" => Option::<String>::None,
+            "sha1" => Some(sha1),
+            "session_token" => session_token,
+        };
+
+        let block_info: Option<TextBlockIndex> =
+            self.client.request("text_block_get_index", params).await?;
+
+        Ok(block_info)
+    }
+
     // Basic errors
 
     pub async fn basic_error_missing_site_slug(
@@ -328,6 +350,8 @@ pub struct PageData {
 pub struct FileData {
     pub file_id: i64,
     pub revision_id: i64,
+    #[serde(with = "time::serde::rfc3339")]
+    pub revision_created_at: time::OffsetDateTime,
     pub mime: String,
     pub size: i64,
     pub s3_hash: String,
@@ -401,6 +425,7 @@ mod tests {
             "file_get" => json!({
                 "file_id": 7,
                 "revision_id": 17,
+                "revision_created_at": "2020-07-23T06:38:39Z",
                 "mime": "text/plain",
                 "size": 42,
                 "s3_hash": "abc123",
@@ -504,6 +529,7 @@ mod tests {
             .unwrap()
             .unwrap();
         assert_eq!(file.file_id, 7);
+        assert_eq!(file.revision_created_at.unix_timestamp(), 1_595_486_319);
         assert_eq!(file.mime, "text/plain");
         assert_eq!(file.size, 42);
         assert_eq!(file.s3_hash, "abc123");
@@ -535,6 +561,16 @@ mod tests {
             .unwrap();
         assert_eq!(named_block.index, NonZeroU16::new(2).unwrap());
 
+        deepwell
+            .get_text_block_by_hash(
+                42,
+                "9079b854a8fdfa2328a297ff563fce21f866af0e",
+                Some("session-token"),
+            )
+            .await
+            .unwrap()
+            .unwrap();
+
         let page_get = requests_by_method(&requests, "page_get");
         assert_eq!(page_get[0]["params"]["site_id"], 42);
         assert_eq!(page_get[0]["params"]["page"], "scp-173");
@@ -557,6 +593,16 @@ mod tests {
         assert!(block_gets[1]["params"]["index"].is_null());
         assert_eq!(block_gets[1]["params"]["name"], "example");
         assert!(block_gets[1]["params"]["session_token"].is_null());
+        assert_eq!(block_gets[2]["params"]["site_id"], 42);
+        assert!(block_gets[2]["params"]["page_id"].is_null());
+        assert_eq!(block_gets[2]["params"]["block_type"], "html");
+        assert!(block_gets[2]["params"]["index"].is_null());
+        assert!(block_gets[2]["params"]["name"].is_null());
+        assert_eq!(
+            block_gets[2]["params"]["sha1"],
+            "9079b854a8fdfa2328a297ff563fce21f866af0e"
+        );
+        assert_eq!(block_gets[2]["params"]["session_token"], "session-token");
     }
 
     #[tokio::test]

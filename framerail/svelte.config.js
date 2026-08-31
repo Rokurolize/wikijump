@@ -1,5 +1,6 @@
 import adapter from "@sveltejs/adapter-node"
-import { statSync } from "fs"
+import { rmSync, statSync } from "fs"
+import { tmpdir } from "os"
 import { dirname, resolve } from "path"
 import { sveltePreprocess } from "svelte-preprocess"
 import { fileURLToPath } from "url"
@@ -43,11 +44,13 @@ const LOCAL_SCP_FILE_IMAGE_SOURCES = [
 /** @type {CspSources} */
 const WIKIDOT_IMAGE_SOURCES = [
   "https://scp-wiki.wikidot.com",
+  "https://www.wikidot.com",
   "https://scp-jp-storage.wikidot.com",
   "https://scpsandboxcn.wikidot.com",
   "https://*.wdfiles.com",
   "https://cdn.scpwiki.com",
-  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
+  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com",
+  "https://d2qhngyckgiutd.cloudfront.net"
 ]
 /** @type {CspSources} */
 const WIKIDOT_STYLE_SOURCES = [
@@ -78,6 +81,13 @@ const WIKIDOT_FONT_SOURCES = [
 const WIKIDOT_MEDIA_FRAME_SOURCES = ["https://www.youtube.com", "https://embed.acast.com"]
 
 const deploymentEnvironment = parseDeploymentEnvironment()
+const testOutDir = process.env.NODE_TEST_CONTEXT
+  ? resolve(tmpdir(), `wikijump-framerail-svelte-kit-test-${process.pid}`)
+  : null
+
+if (testOutDir) {
+  process.on("exit", () => rmSync(testOutDir, { recursive: true, force: true }))
+}
 
 /** @returns {CspSources} */
 function imageSources() {
@@ -133,6 +143,7 @@ const config = {
 
   kit: {
     adapter: adapter(),
+    ...(testOutDir ? { outDir: testOutDir } : {}),
     csrf: {
       checkOrigin: parseCsrfCheckOrigin({ deploymentEnvironment })
     },

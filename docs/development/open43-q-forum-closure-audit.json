@@ -113,6 +113,39 @@
       "multi_all_missing_evidence_sha256": "05eaebfa3f62a6067cf75b12a7932262318730485f80e8d7622e7c0903e08506",
       "multi_malformed_evidence_sha256": "55b9f18f883b03ec0b549b8234a860a0f4c7aafa2aad42ccb124d73eeb9f246b",
       "audited_at": "2026-08-10"
+    },
+    {
+      "scope": "layout-forum read-only route page-content HTTP seam",
+      "integration_base": "48440434dc39e0c880273d48ec58b70a6f8614da",
+      "integration_base_tree": "ac465e6e67123364e3af3c21dbfdc5f35fdc4cbc",
+      "branch": "agent/forum-page-content-v23-20260813",
+      "source_commit": "0c7b4a7231f713c1d7b6fdfcec2671ff53d38dc6",
+      "source_tree": "a2c23783a0baa8b4dde40236f22f3cc7b94f1e48",
+      "implementation_ledger_sha256": "42b79a4b3e6018ed9101072812021522b2f6f7e06a2fdd5311a89cd09b0dc71f",
+      "catalog_sha256": "7bd9065391dc836a0ddfef20ef5e4f31c3aff321cd6fee29c2a003a512946b29",
+      "test_command": "pnpm --dir framerail exec node --test tests/forum-page-content-public-boundary.test.js tests/forum-routes.test.js",
+      "test_result": {
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      "retained_observation_id": "forum-q1034-readonly-route-core-20260809",
+      "retained_artifact_path": "install/local/wikidot-verification/artifacts/forum-q1034-readonly-live-20260809.json",
+      "retained_artifact_sha256": "0a188e7960890a0ad05fbb7733671072abc1f08156e0d2df7e70b523e3405fd4",
+      "claim_boundary": "The local public HTTP seam covers exactly one div#page-content enclosing populated ForumStart, empty category, and missing-thread error bodies. It does not establish byte-exact whole-layout, browser lifecycle, fallback /forum, mutation, or new-thread behavior.",
+      "audited_at": "2026-08-13"
+    },
+    {
+      "scope": "Issue 1034 authenticated Comments hideForm actor and form-state boundary",
+      "source_commit": "a7de9e60cc1b606328c0fa97860a823d2515f211",
+      "source_tree": "437a1927cbeba49097480e78c5756f3007f62080",
+      "actor_evidence_commit": "7c2b4035d9f4909020f837a9736dbfea921917c4",
+      "actor_evidence_sha256": "b4a39e93a739b575aac7cf2d1e57877b852995459dd396b497bcf2e92790fd4c",
+      "browser_evidence_commit": "6f0c7e0ed8a64924536aadfabba4f593444a5c65",
+      "browser_evidence_sha256": "bfc48d60524db85a6324bdc0f71f59d8a0aadbe53ecf4a4ced183e4fa6993be1",
+      "candidate_case_commit": "2685e4a069d8384e1eb49f3a692d6418e1113457",
+      "candidate_case_tree": "1ca947739fa390f0146777c642e24ea3561bef51",
+      "audited_at": "2026-08-15"
     }
   ],
   "method": {
@@ -439,17 +472,20 @@
             "deepwell/tests/page.rs#forum_start_and_recent_posts_filter_before_counts_order_and_pagination"
           ],
           "result": "Public PagePreview and saved page_view accept the observed double-quoted semicolon category list and offset forms. Existing categories contribute one permission-filtered global newest sequence, empty or missing selected categories cannot suppress an existing category, all-missing and malformed lists render their exact errors, offset is applied after permission filtering, invalid offset defaults to zero, saturated candidate scans fail closed, and each row keeps its own category identity and link."
-        }
-      ],
-      "needs_source": [
+        },
         {
           "case_id": "Q1034_COMMENTS_HIDEFORM_ACTOR_AND_FORM_STATE",
-          "specification": "docs/wikidot-specifications/specifications/module/module-comments.md",
-          "missing": "Anonymous evidence cannot distinguish hideForm from the actor's permission to open a form. It also does not establish the documented yes value, the permitted actor DOM, or form authority.",
-          "requires": "Acquire a non-mutating authenticated actor differential for omitted hideForm, hideForm=false, hideForm=true, and hideForm=yes. Implement the setting only after the evidence identifies the exact permitted-actor form state and browser boundary.",
-          "forbidden_inference": "Do not infer an open form, a safe action, or the yes spelling from anonymous Add a New Comment controls or from documentation alone."
+          "status": "implemented_unverified",
+          "evidence_ids": ["FORUM_COMMENTS_HIDEFORM_ACTOR_LIVE_20260810", "ISSUE1367_COMMENTS_HIDEFORM_BROWSER_LIVE_20260815_R7"],
+          "public_tests": [
+            "deepwell/tests/page.rs#forum_comments_list_resolves_only_visible_page_discussions",
+            "install/local/wikidot-verification/tests/comments-hideform-actor-artifact.test.mjs#authenticated Comments hideForm evidence preserves the exact actor and form-state differential",
+            "install/local/wikidot-verification/tests/comments-hideform-browser-candidate-case-set.test.mjs#Comments hideForm is registered as one executable candidate case with both actor controls"
+          ],
+          "result": "Authenticated live evidence proves the actor differential for omitted hideForm, hideForm=false, hideForm=true, and hideForm=yes. The public saved-page implementation keeps the Comments link for denied actors, exposes the form only to an allowed actor when hideForm is omitted or false, and suppresses the form for true and yes. The retained browser receipt separately proves the live DOM boundary and exact cleanup, and the executable candidate case carries the same actor controls into the frozen candidate run."
         }
       ],
+      "needs_source": [],
       "candidate_required": [
         {
           "case_id": "Q1034_EXACT_CANDIDATE_PUBLIC_READ_MODELS",

@@ -1,4 +1,8 @@
 import { buildAnonymousArticleResponseCacheMetadata } from "$lib/server/cache/article-response/index.js"
+import {
+  resolveShellLayoutValue,
+  WIKIDOT_LAYOUT
+} from "$lib/layout/wikidot-shell-decision"
 import { resolvePageRedirect } from "$lib/server/page-redirect"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"
@@ -88,10 +92,11 @@ export async function loadPage(
       internationalization,
       ...presentation
     }
-    error(
-      pageErrorStatus(response.type),
-      buildPageLoadData(parentData, errorViewData, errorForms)
-    )
+    const errorData = buildPageLoadData(parentData, errorViewData, errorForms)
+    if (locals) {
+      locals.wikidotDocument = resolveShellLayoutValue(errorData) === WIKIDOT_LAYOUT
+    }
+    error(pageErrorStatus(response.type), errorData)
   }
 
   const viewData = {
@@ -103,7 +108,11 @@ export async function loadPage(
   runRedirect(response.data, slug, extra, request.url)
 
   // Return to page for rendering
-  return buildPageLoadData(parentData, viewData, await buildPageForms(request))
+  const loadData = buildPageLoadData(parentData, viewData, await buildPageForms(request))
+  if (locals) {
+    locals.wikidotDocument = resolveShellLayoutValue(loadData) === WIKIDOT_LAYOUT
+  }
+  return loadData
 }
 
 function pageErrorStatus(type: Exclude<PageView["type"], "found">): number {

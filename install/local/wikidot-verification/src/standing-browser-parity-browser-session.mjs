@@ -15,6 +15,7 @@ import {
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
 import {
+  requireExactHttpsOrigins,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -30,6 +31,18 @@ export const DEFAULT_PARITY_BROWSER_ROOT = path.resolve(
 const THROTTLE_CONFIG_SCHEMA = "wikijump.standing_browser_throttle_config.v1";
 const MAX_CANDIDATE_FILE_REDIRECTS = 10;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+export function parityBrowserExecutionMode(mode) {
+  if (mode === "live-reference") return "live";
+  if (mode === "candidate" || mode === "candidate-case") return "candidate";
+  throw new Error(`unsupported parity browser mode: ${mode}`);
+}
+
+export function parityBrowserRequestIntervalMs(mode) {
+  return parityBrowserExecutionMode(mode) === "live"
+    ? DEFAULT_REQUEST_INTERVAL_MS
+    : 0;
+}
 
 function requirePlaywright(browserRoot) {
   const requireFromRoot = createRequire(path.join(browserRoot, "package.json"));
@@ -74,7 +87,11 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
   };
 }
 
-export async function installCandidateFilePortRoute(context, localOrigins) {
+export async function installCandidateFilePortRoute(
+  context,
+  localOrigins,
+  { sourceRequestGate = null } = {},
+) {
   if (!Array.isArray(localOrigins) || localOrigins.length !== 2) {
     throw new Error(
       "candidate local origins must contain exactly page and file origins",
@@ -111,13 +128,16 @@ export async function installCandidateFilePortRoute(context, localOrigins) {
     );
   }
   const canonicalFilesOrigin = `https://${files.hostname}`;
-  await context.route(`${canonicalFilesOrigin}/**`, async (route) => {
+  const fileRouteHandler = async (route) => {
     const requestUrl = new URL(route.request().url());
-    if (requestUrl.origin !== canonicalFilesOrigin) {
+    if (
+      requestUrl.origin !== canonicalFilesOrigin &&
+      requestUrl.origin !== files.origin
+    ) {
       await route.continue();
       return;
     }
-    requestUrl.port = files.port;
+    if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
     let response;
     for (let redirects = 0; ; redirects += 1) {
       response = await route.fetch({
@@ -146,9 +166,69 @@ export async function installCandidateFilePortRoute(context, localOrigins) {
       redirectUrl.port = files.port;
       requestUrl.href = redirectUrl.href;
     }
+    if (sourceRequestGate !== null && route.request().method?.() === "GET") {
+      const sourcePath = new URL(route.request().url()).pathname;
+      const location = REDIRECT_STATUSES.has(response.status())
+        ? response.headers().location
+        : null;
+      const redirectUrl = location ? new URL(location, requestUrl) : null;
+      const returnsGatedPublicRedirect =
+        redirectUrl !== null &&
+        !new Set([canonicalFilesOrigin, files.origin]).has(
+          redirectUrl.origin,
+        ) &&
+        isWikidotCapturePublicOrigin(
+          redirectUrl,
+          route.request().resourceType?.() ?? "other",
+          "GET",
+        );
+
+      if (sourcePath.startsWith("/local--files/")) {
+        // Wikidot-rendered page-owned file URLs first hit
+        // <site>.wikidot.com/local--files/... and then the corresponding
+        // wdfiles authority. The local candidate mirror collapses those public
+        // stages into one exempt wjfiles request. Preserve the two source-side
+        // admissions before exposing a mirror hit to Chromium. If the mirror
+        // falls back to a public redirect, only synthesize the first stage; the
+        // redirected public request consumes the second admission normally.
+        await sourceRequestGate.acquire();
+        if (!returnsGatedPublicRedirect) await sourceRequestGate.acquire();
+      } else if (
+        sourcePath.startsWith("/local--code/") &&
+        !returnsGatedPublicRedirect
+      ) {
+        // Authored/generated local-code URLs are direct wdfiles requests on
+        // Wikidot. A successful local mirror therefore represents one public
+        // source request. A fallback public redirect is already gated normally.
+        await sourceRequestGate.acquire();
+      }
+    }
     await route.fulfill({ response });
-  });
+  };
+  // Framerail can emit either Wikidot's canonical no-port file authority or
+  // the candidate's already-localized sealed-port authority. Both represent
+  // the same source-owned file request and must pass through the timing shim;
+  // otherwise already-localized assets bypass the source request gate and can
+  // complete before Wikidot's DOMContentLoaded-immediate observation.
+  await context.route(`${canonicalFilesOrigin}/**`, fileRouteHandler);
+  await context.route(`${files.origin}/**`, fileRouteHandler);
   return true;
+}
+
+export function candidateLocalOriginSets(candidate) {
+  const endpointOrigins =
+    candidate?.candidate?.endpoint?.allowed_origin_set ?? [];
+  const siteOrigins = candidate?.candidate?.site_origins;
+  const fileRouteOriginSets =
+    siteOrigins && Object.keys(siteOrigins).length > 0
+      ? Object.values(siteOrigins).map(({ page, files }) => [page, files])
+      : endpointOrigins.length > 0
+        ? [endpointOrigins]
+        : [];
+  const localOrigins = [
+    ...new Set([...endpointOrigins, ...fileRouteOriginSets.flat()]),
+  ].sort();
+  return { localOrigins, fileRouteOriginSets };
 }
 
 export function parityBrowserThrottleConfig({
@@ -159,7 +239,13 @@ export function parityBrowserThrottleConfig({
   localOrigins,
   candidate,
   credentialPolicy = "none",
+  publicOrigins = [],
 }) {
+  const executionMode = parityBrowserExecutionMode(args.mode);
+  const caseSetPublicOrigins = requireExactHttpsOrigins(
+    publicOrigins,
+    "browser public origins",
+  );
   let credentials = "none";
   if (credentialPolicy !== "none") {
     const value = requirePlainObject(
@@ -195,7 +281,8 @@ export function parityBrowserThrottleConfig({
     status: "sealed_before_browser_request",
     run_id: runId,
     mode: args.mode,
-    interval_ms: DEFAULT_REQUEST_INTERVAL_MS,
+    execution_mode: executionMode,
+    interval_ms: parityBrowserRequestIntervalMs(args.mode),
     browser_capture_lock: { path: lock.path, owner: lock.owner },
     live_completion_policy: {
       sha256: policy.sha256,
@@ -203,14 +290,37 @@ export function parityBrowserThrottleConfig({
     },
     local_context_exempt_origins: localOrigins,
     candidate_endpoint: candidate ?? null,
-    public_request_policy:
-      "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
-    public_origin_policy:
-      "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents plus interwiki/resizeIframe scripts) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+    ...(caseSetPublicOrigins.length === 0
+      ? {
+          public_request_policy:
+            "Wikidot-family requests and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
+          public_origin_policy:
+            "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents plus interwiki/resizeIframe scripts) are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+        }
+      : {
+          case_set_public_origins: caseSetPublicOrigins,
+          public_request_policy:
+            "Wikidot-family requests, exact case-set GET origins, and non-Wikidot stylesheets, fonts, and images are admitted by the shared persistent gate; scripts and fetches from other public origins are aborted before admission",
+          public_origin_policy:
+            "HTTP(S) Wikidot page/resource hosts (wikidot.com and its subdomains, wdfiles.com resources, /v-- static assets on a CloudFront host, and exact HTTPS GET interwiki.scpwiki.com styleFrame/interwikiFrame documents plus interwiki/resizeIframe scripts) and exact case-set HTTPS GET origins are gated; non-Wikidot stylesheet, font, and image dependencies are gated by resource type; other public hosts are aborted before admission",
+        }),
     service_workers: "block",
     web_sockets: "blocked_without_network_connection",
     credentials,
   };
+}
+
+export function isParityBrowserPublicOrigin(
+  value,
+  resourceType,
+  method,
+  publicOrigins = [],
+) {
+  const url = value instanceof URL ? value : new URL(value);
+  return (
+    isWikidotCapturePublicOrigin(url, resourceType, method) ||
+    (method === "GET" && publicOrigins.includes(url.origin))
+  );
 }
 
 export async function createParityBrowserControls({
@@ -219,8 +329,10 @@ export async function createParityBrowserControls({
   policy,
   candidate,
   credentialPolicy = "none",
+  publicOrigins = [],
 }) {
   const runId = randomUUID();
+  const executionMode = parityBrowserExecutionMode(args.mode);
   // Live-reference capture shares one host-global admission state. A caller
   // must not be able to select a second lock/state pair from the public CLI.
   const lock = await acquireBrowserCaptureLock({ runId });
@@ -229,9 +341,14 @@ export async function createParityBrowserControls({
   try {
     gate = await createPersistentBrowserRequestGate({
       statePath: lock.statePath,
-      intervalMs: DEFAULT_REQUEST_INTERVAL_MS,
+      intervalMs: parityBrowserRequestIntervalMs(args.mode),
     });
-    const localOrigins = candidate?.candidate.endpoint.allowed_origin_set ?? [];
+    const { localOrigins, fileRouteOriginSets } =
+      candidateLocalOriginSets(candidate);
+    const caseSetPublicOrigins = requireExactHttpsOrigins(
+      publicOrigins,
+      "browser public origins",
+    );
     const configPath = path.join(outputDir, "throttle-config-receipt.json");
     const configSeal = await sealJsonNoReplace(
       configPath,
@@ -243,6 +360,7 @@ export async function createParityBrowserControls({
         localOrigins,
         candidate: candidate?.candidate.endpoint ?? null,
         credentialPolicy,
+        publicOrigins: caseSetPublicOrigins,
       }),
     );
     proxy = await startCaptureEgressProxy({
@@ -265,6 +383,8 @@ export async function createParityBrowserControls({
       configPath,
       configSha256: configSeal.sha256,
       localOrigins,
+      fileRouteOriginSets,
+      publicOrigins: caseSetPublicOrigins,
       async close() {
         let failure = null;
         await proxy?.close().catch((error) => {
@@ -275,7 +395,11 @@ export async function createParityBrowserControls({
         });
         const finalGateSnapshot = failure
           ? null
-          : { ...gate.snapshot(), config_sha256: configSeal.sha256 };
+          : {
+              ...gate.snapshot(),
+              execution_mode: executionMode,
+              config_sha256: configSeal.sha256,
+            };
         if (!failure) {
           await lock.confirmState().catch((error) => {
             failure ??= error;
@@ -338,10 +462,20 @@ export async function launchParityBrowser({
     const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
-      publicOriginPredicate: isWikidotCapturePublicOrigin,
+      publicOriginPredicate: (url, resourceType, method) =>
+        isParityBrowserPublicOrigin(
+          url,
+          resourceType,
+          method,
+          controls.publicOrigins,
+        ),
     });
     if (local) {
-      await installCandidateFilePortRoute(context, controls.localOrigins);
+      for (const originSet of controls.fileRouteOriginSets) {
+        await installCandidateFilePortRoute(context, originSet, {
+          sourceRequestGate: controls.gate,
+        });
+      }
     }
     return {
       browser,

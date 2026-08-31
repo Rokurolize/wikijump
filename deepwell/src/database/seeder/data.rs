@@ -327,6 +327,27 @@ mod tests {
             .expect("theme:basalt seed page");
         assert_eq!(theme_basalt.tags, ["theme"]);
 
+        let sidebar = pages
+            .iter()
+            .find(|page| page.slug == "nav:side")
+            .expect("scp-wiki sidebar seed page");
+        assert!(
+            sidebar
+                .wikitext
+                .contains("local--files/nav:side/social-facebook.png")
+        );
+        assert!(
+            sidebar
+                .wikitext
+                .contains("local--files/nav:side/icon-Discord-2023.png")
+        );
+        let sidebar_files = seed
+            .files
+            .get("scp-wiki")
+            .and_then(|files| files.get("nav:side"))
+            .expect("scp-wiki sidebar attachment seed");
+        assert_eq!(sidebar_files.len(), 8);
+
         let component_betterfootnotes = pages
             .iter()
             .find(|page| page.slug == "component:betterfootnotes")
@@ -370,5 +391,11 @@ mod tests {
 
         assert_eq!(join.title, "Join this site");
         assert_eq!(join.wikitext.trim(), "[[module Join]]");
+
+        let draft = pages
+            .iter()
+            .find(|page| page.slug == "corpus:scp-9506-draft")
+            .expect("editable local site should expose the corpus draft fixture");
+        assert_eq!(draft.tags, ["draft"]);
     }
 }
