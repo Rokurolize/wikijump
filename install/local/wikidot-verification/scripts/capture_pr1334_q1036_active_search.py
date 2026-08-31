@@ -2,8 +2,10 @@
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
+import socket
 import time
 from pathlib import Path
 from urllib.parse import urljoin, urlparse
@@ -20,10 +22,68 @@ CHALLENGE_MARKERS = (
     "verify you are human",
     "attention required",
 )
+EXPECTED_INITIAL_HOSTS = frozenset(("scp-wiki.wikidot.com", "www.wikidot.com"))
+MAX_BUDGETS = {
+    "max_requests": 24,
+    "max_pages_per_query": 2,
+    "max_rows_per_response": 10,
+    "max_rows_per_query": 20,
+    "max_response_bytes": 524288,
+    "max_aggregate_bytes": 4194304,
+    "connect_timeout_seconds": 5,
+    "request_deadline_seconds": 15,
+    "max_same_origin_redirects": 2,
+    "max_idempotent_retries": 1,
+    "max_retry_after_seconds": 10,
+    "stability_interval_seconds": 10,
+    "max_wall_clock_seconds": 180,
+}
 
 
 def sha256(data):
     return hashlib.sha256(data).hexdigest()
+
+
+def validate_public_url(value, allowed_hosts):
+    try:
+        parsed = urlparse(value)
+        hostname = parsed.hostname
+        port = parsed.port
+    except (TypeError, ValueError) as error:
+        raise ValueError("public URL is malformed") from error
+    if parsed.scheme != "https" or hostname not in allowed_hosts or port not in (None, 443) or parsed.username or parsed.password or parsed.query or parsed.fragment:
+        raise ValueError("public URL is outside the declared HTTPS host policy")
+    try:
+        addresses = {ipaddress.ip_address(result[4][0]) for result in socket.getaddrinfo(hostname, 443, type=socket.SOCK_STREAM)}
+    except OSError as error:
+        raise ValueError("public URL host could not be resolved") from error
+    if not addresses or any(not address.is_global for address in addresses):
+        raise ValueError("public URL host resolved to a non-public address")
+    return value
+
+
+def validate_budgets(value):
+    if not isinstance(value, dict):
+        raise ValueError("fixture budgets are not an object")
+    for name, maximum in MAX_BUDGETS.items():
+        current = value.get(name)
+        if isinstance(current, bool) or not isinstance(current, (int, float)) or current < 0 or current > maximum:
+            raise ValueError(f"fixture budget {name} exceeds the committed bound")
+    return value
+
+
+def validate_fixture(value):
+    if not isinstance(value, dict) or value.get("schema") != SCHEMA:
+        raise ValueError("fixture schema is invalid")
+    budgets = validate_budgets(value.get("budgets"))
+    cases = value.get("canary_cases")
+    if not isinstance(cases, list) or not cases:
+        raise ValueError("fixture canary cases are invalid")
+    for case in cases:
+        if not isinstance(case, dict):
+            raise ValueError("fixture canary case is invalid")
+        validate_public_url(case.get("url"), EXPECTED_INITIAL_HOSTS)
+    return value, budgets
 
 
 def parse_args():
@@ -45,6 +105,7 @@ def bounded_body(response, maximum):
 
 
 def fetch(client, url, budgets, deadline):
+    validate_public_url(url, EXPECTED_INITIAL_HOSTS)
     redirects = []
     retries = 0
     current = url
@@ -60,7 +121,7 @@ def fetch(client, url, budgets, deadline):
                     raise RuntimeError("redirect_without_location")
                 target = urljoin(current, location)
                 parsed = urlparse(target)
-                if parsed.scheme != "https" or parsed.hostname != expected_host:
+                if parsed.hostname != expected_host:
                     return {
                         "status": status,
                         "body": b"",
@@ -70,6 +131,7 @@ def fetch(client, url, budgets, deadline):
                         "forced_reason": "cross_origin_redirect",
                         "retries": retries,
                     }
+                validate_public_url(target, {expected_host})
                 redirects.append(target)
                 if len(redirects) > budgets["max_same_origin_redirects"]:
                     raise RuntimeError("redirect_budget_exceeded")
@@ -124,9 +186,8 @@ def main():
     fixture_path = Path(args.fixture)
     output_path = Path(args.output)
     fixture_bytes = fixture_path.read_bytes()
-    fixture = json.loads(fixture_bytes)
+    fixture, budgets = validate_fixture(json.loads(fixture_bytes))
     capture_bytes = Path(__file__).read_bytes()
-    budgets = fixture["budgets"]
     started = time.monotonic()
     deadline = started + budgets["max_wall_clock_seconds"]
     attempts = []
