@@ -28,13 +28,16 @@ use super::super::wikidot_hosts::local_file_host_site_slug;
 use crate::error::Result;
 use crate::models::page::Model as PageModel;
 use crate::models::site::Model as SiteModel;
-use crate::services::{FileRevisionService, FileService, PageService, ServiceContext};
-use crate::types::{FileOrder, Reference};
+use crate::services::{FileService, PageService, ServiceContext};
+use crate::types::Reference;
 
 const WIKIDOT_GALLERY_MARKER: &str = "wj-gallery";
 const WIKIDOT_GALLERY_SELECTION_ERROR: &str =
     r#"<div class="error-block">Error selecting page.</div>"#;
 const WIKIDOT_GALLERY_EMPTY_ERROR: &str = r#"<div class="error-block">Sorry, we couldn't find any images attached to this page.</div>"#;
+const MAX_GALLERY_FILES: u64 = 500;
+const MAX_GALLERY_ENTRIES: usize = 500;
+const MAX_GALLERY_REQUIREMENTS: usize = 32;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum GallerySize {
@@ -174,41 +177,37 @@ impl<'a, 'ctx> VisibleFileLoader<'a, 'ctx> {
 
         // File rows and their revisions are intentionally loaded only after
         // the parent page's complete actor-aware view decision.
-        let files = FileService::get_all(
+        let Some(rows) = FileService::get_visible_rows(
             self.ctx,
             self.site_id,
             page.page_id,
-            Some(false),
-            FileOrder::default(),
+            MAX_GALLERY_FILES,
         )
-        .await?;
-        let mut visible = Vec::with_capacity(files.len());
-        for file in files {
-            let revision = FileRevisionService::get_latest(
-                self.ctx,
-                self.site_id,
-                page.page_id,
-                file.file_id,
-            )
-            .await?;
-            if !revision.mime.to_ascii_lowercase().starts_with("image/") {
+        .await?
+        else {
+            self.files_by_page_id.insert(page.page_id, None);
+            return Ok(None);
+        };
+        let mut visible = Vec::with_capacity(rows.len());
+        for row in rows {
+            if !row.mime.to_ascii_lowercase().starts_with("image/") {
                 continue;
             }
             visible.push(VisibleGalleryFile {
-                name: file.name.clone(),
+                name: row.name.clone(),
                 original_url: format!(
                     "https://{}{}{}",
                     self.site_slug,
                     self.files_domain,
-                    owned_file_path(&page.slug, &file.name),
+                    owned_file_path(&page.slug, &row.name),
                 ),
                 resized_url_prefix: format!(
                     "https://{}{}{}",
                     self.site_slug,
                     self.files_domain,
-                    owned_resized_file_path_prefix(&page.slug, &file.name),
+                    owned_resized_file_path_prefix(&page.slug, &row.name),
                 ),
-                created_at: file.created_at,
+                created_at: row.created_at,
             });
         }
         let files = VisiblePageFiles { files: visible };
@@ -250,28 +249,33 @@ impl RenderService {
         let context = current_site_id
             .zip(current_site)
             .filter(|(site_id, site)| *site_id == site.site_id);
+        if requirements.len() > MAX_GALLERY_REQUIREMENTS {
+            return Ok(false);
+        }
+        let mut loader = context.map(|(site_id, site)| {
+            VisibleFileLoader::new(
+                ctx,
+                site_id,
+                &site.slug,
+                &ctx.config().files_domain,
+                viewer_user_id,
+            )
+        });
         let mut replacements = Vec::with_capacity(requirements.len());
         for (index, (marker, gallery)) in requirements.into_iter().enumerate() {
-            let replacement = match context {
-                Some((site_id, site)) => {
-                    let mut loader = VisibleFileLoader::new(
-                        ctx,
-                        site_id,
-                        &site.slug,
-                        &ctx.config().files_domain,
-                        viewer_user_id,
-                    );
+            let replacement = match (context, loader.as_mut()) {
+                (Some((_, site)), Some(loader)) => {
                     render_gallery_requirement(
                         &gallery,
                         current_page_id,
                         site,
                         ctx,
-                        &mut loader,
+                        loader,
                         index + 1,
                     )
                     .await?
                 }
-                None => WIKIDOT_GALLERY_SELECTION_ERROR.to_owned(),
+                _ => WIKIDOT_GALLERY_SELECTION_ERROR.to_owned(),
             };
             replacements.push((marker, replacement));
         }
@@ -364,6 +368,9 @@ async fn resolve_explicit_gallery(
     ctx: &ServiceContext<'_>,
     loader: &mut VisibleFileLoader<'_, '_>,
 ) -> Result<GalleryResolution> {
+    if entries.len() > MAX_GALLERY_ENTRIES {
+        return Ok(GalleryResolution::SelectionError);
+    }
     let mut images = Vec::new();
     for entry in entries {
         // Custom link behavior belongs to a later evidence-backed viewer

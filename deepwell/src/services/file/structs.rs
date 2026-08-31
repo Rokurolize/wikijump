@@ -108,7 +108,9 @@ pub struct GetPageFiles {
 #[derive(Debug, Clone)]
 pub struct VisibleFileRow {
     pub file_id: i64,
+    pub created_at: OffsetDateTime,
     pub name: String,
+    pub mime: String,
     pub size: i64,
     pub content_type: ContentTypeDescriptor,
 }
