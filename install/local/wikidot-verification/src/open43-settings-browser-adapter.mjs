@@ -177,8 +177,8 @@ export class Open43SettingsBrowserAdapter {
     return (await this.#contexts.get(actor)).context;
   }
 
-  async capturePagePair({ url, label, index, viewport = DEFAULT_VIEWPORT, contract = null, navigationFromUrl = null, beforeClientNavigation = null, captureStylesheetAssets = false }) {
-    const page = await (await this.#context("administrator")).newPage();
+  async capturePagePair({ url, label, index, viewport = DEFAULT_VIEWPORT, contract = null, navigationFromUrl = null, beforeClientNavigation = null, captureStylesheetAssets = false, actor = "anonymous" }) {
+    const page = await (await this.#context(actor)).newPage();
     const consoleErrors = [];
     const analyticsRequests = [];
     const stylesheetAssetPromises = [];
@@ -204,7 +204,7 @@ export class Open43SettingsBrowserAdapter {
       await page.addInitScript({ content: INITIAL_PROBE });
       let navigationSource = null;
       const capture = await this.#browserContexts.captureCandidateObservation({
-        context: await this.#context("administrator"), page, url,
+        context: await this.#context(actor), page, url,
         label: "settings",
         index, contract, viewport, timeoutMs: CAPTURE_TIMEOUT_MS, settleMs: 0,
         navigate: async ({ page: targetPage, url: targetUrl, timeoutMs }) => {
@@ -254,7 +254,7 @@ export class Open43SettingsBrowserAdapter {
         await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       } else {
         clientTransitionCapture = await this.#browserContexts.captureCandidateObservation({
-          context: await this.#context("administrator"), page, url,
+          context: await this.#context(actor), page, url,
           label: "settings-client-transition",
           index, contract, viewport, timeoutMs: CAPTURE_TIMEOUT_MS, settleMs: 0,
           navigate: async () => {

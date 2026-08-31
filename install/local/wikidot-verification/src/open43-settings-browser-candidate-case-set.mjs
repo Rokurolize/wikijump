@@ -263,7 +263,7 @@ class Open43SettingsRun {
       ]);
       const matrix = await this.#matrix();
       const adminUrl = new URL("/_admin", this.#session.pageOrigin).href;
-      const adminInitial = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 0 });
+      const adminInitial = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 0, actor: "administrator" });
       const adminInitialSite = await this.#site();
       const adminInitialValuesSha256 = sha256Value(generalValues(adminInitialSite));
       const adminSettledValuesSha256 = sha256Value({ ...generalValues(adminInitialSite), description: this.#fixedPlan.general_ui_description_marker });
@@ -282,7 +282,7 @@ class Open43SettingsRun {
         },
       });
       const adminSettledSite = await this.#site();
-      const adminSettled = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 1 });
+      const adminSettled = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 1, actor: "administrator" });
       this.#verificationPlan = { ...this.#verificationPlan, admin_url: adminUrl, admin_initial_values_sha256: adminInitialValuesSha256, admin_settled_values_sha256: adminSettledValuesSha256, admin_initial_revision: adminInitialSite.settings_revision, admin_settled_revision: adminInitialSite.settings_revision + 3, general_description_sha256: sha256Value(this.#fixedPlan.general_ui_description_marker), matrix_site_id: matrix.site_id, matrix_before_revision: matrix.before_revision, matrix_admin_after_revision: matrix.admin_after_revision, matrix_before_sha256: matrix.before_sha256, matrix_admin_after_sha256: matrix.expected_admin_after_sha256 };
       const { success_dom_values: successDomValues, ...generalLifecycleReceipt } = generalLifecycle;
       return [
@@ -423,7 +423,7 @@ class Open43SettingsRun {
     const toolbar = [];
     for (const [offset, width] of VIEWPORTS.entries()) toolbar.push(await this.#browser.capturePagePair({ url: pageUrl, label: "S757_TOOLBAR", index: offset + 7, viewport: { width, height: 900 } }));
     const adminUrl = new URL("/_admin", this.#session.pageOrigin).href;
-    const adminInitial = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 10 });
+      const adminInitial = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 10, actor: "administrator" });
     const adminInitialSite = await this.#site();
     const adminInitialValuesSha256 = sha256Value(generalValues(adminInitialSite));
     const adminSettledValuesSha256 = sha256Value({ ...generalValues(adminInitialSite), description: this.#fixedPlan.general_ui_description_marker });
@@ -443,7 +443,7 @@ class Open43SettingsRun {
     });
     const adminSettledSite = await this.#site();
     const adminSettledPublicValuesSha256 = sha256Value(generalValues(adminSettledSite));
-    const adminSettled = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 11 });
+      const adminSettled = await this.#browser.capturePagePair({ url: adminUrl, label: "S1046_ADMIN", index: 11, actor: "administrator" });
     this.#verificationPlan = { ...this.#fixedPlan, default_page_url: pageUrl, transition_page_url: transitionUrl, admin_url: adminUrl, admin_initial_values_sha256: adminInitialValuesSha256, admin_settled_values_sha256: adminSettledValuesSha256, admin_initial_revision: adminInitialSite.settings_revision, admin_settled_revision: adminInitialSite.settings_revision + 3, general_description_sha256: sha256Value(this.#fixedPlan.general_ui_description_marker), matrix_site_id: matrix.site_id, matrix_before_revision: matrix.before_revision, matrix_admin_after_revision: matrix.admin_after_revision, matrix_before_sha256: matrix.before_sha256, matrix_admin_after_sha256: matrix.expected_admin_after_sha256 };
     const analyticsState = (pair, enabled) => {
       const { nonce, ...analytics } = pair.initial.analytics;

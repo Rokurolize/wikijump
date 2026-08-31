@@ -64,12 +64,13 @@ function fakePage(initialUrl, events, { replaceDocumentOnNavigation = false, doc
 
 test("the settings adapter changes gate attribution between immediate and settled capture phases", async () => {
   const events = [];
+  const requestedActors = [];
   const url = "https://scpaiueouiuiuiui.wikijump.localhost:18443/104";
   const page = fakePage(url, events);
   const context = { async newPage() { return page; } };
   let captureCount = 0;
   const browserContexts = {
-    async newCandidateContext() { return { context, environment: {} }; },
+    async newCandidateContext({ storageState }) { requestedActors.push(storageState.actor); return { context, environment: {} }; },
     async setActiveFixture(fixtureId) { events.push(`fixture:${fixtureId}`); },
     async captureCandidateObservation(options) {
       events.push("capture:start");
@@ -94,7 +95,7 @@ test("the settings adapter changes gate attribution between immediate and settle
   const adapter = new Open43SettingsBrowserAdapter({
     browserContexts,
     pageOrigin: "https://scpaiueouiuiuiui.wikijump.localhost:18443",
-    storageState: () => ({ cookies: [], origins: [] }),
+    storageState: (actor) => ({ actor, cookies: [], origins: [] }),
   });
   const fromUrl = "https://scpaiueouiuiuiui.wikijump.localhost:18443/boundary-check";
   const pair = await adapter.capturePagePair({ url, label: "S755_THEME", index: 0, navigationFromUrl: fromUrl });
@@ -122,6 +123,7 @@ test("the settings adapter changes gate attribution between immediate and settle
   assert.ok(pair.client_transition_capture);
   assert.notEqual(pair.client_transition_capture.first_paint.screenshot.path, pair.client_transition_capture.settled_viewport_screenshot.path);
   assert.notEqual(pair.capture.first_paint.screenshot.sha256, pair.capture.settled_viewport_screenshot.sha256);
+  assert.deepEqual(requestedActors, ["anonymous"]);
 });
 
 test("the settings adapter cannot repair a missing initial CSP header with a later response", async () => {

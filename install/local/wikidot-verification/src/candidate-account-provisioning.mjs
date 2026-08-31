@@ -227,22 +227,26 @@ class CandidateAccountProvisioner {
   }
 
   async #verifyLoginContract() {
-    const successful = await this.#login(this.#input.account.password);
-    const successfulResult = actionResult(successful, "ordinary candidate login");
-    const sessionToken = sessionCookie(successful);
-    if (sessionToken === null) throw new Error("ordinary candidate login did not create a session");
-    const sessionsToClose = [sessionToken];
+    const sessionsToClose = [];
+    let successful;
+    let successfulResult;
+    let sessionToken;
     let session;
     let rejected;
     let operationError = null;
     try {
+      successful = await this.#login(this.#input.account.password);
+      sessionToken = sessionCookie(successful);
+      if (sessionToken !== null) sessionsToClose.push(sessionToken);
+      if (sessionToken === null) throw new Error("ordinary candidate login did not create a session");
+      successfulResult = actionResult(successful, "ordinary candidate login");
       if (successfulResult.type !== "success") throw new Error("ordinary candidate login did not create a session");
       session = await this.#rpc("session_get", [sessionToken]);
       if (session?.user_id !== this.#input.account.userId) throw new Error("ordinary candidate login session has the wrong user identity");
       rejected = await this.#login(`wrong-${randomUUID()}`);
-      const rejectedResult = actionResult(rejected, "ordinary candidate wrong-password login");
       const rejectedSession = sessionCookie(rejected);
       if (rejectedSession !== null) sessionsToClose.push(rejectedSession);
+      const rejectedResult = actionResult(rejected, "ordinary candidate wrong-password login");
       if (rejectedResult.type !== "failure" || rejectedSession !== null) throw new Error("ordinary candidate login accepted a different password");
       rejected.action_status = rejectedResult.status;
     } catch (error) {
