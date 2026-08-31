@@ -21,15 +21,14 @@
 use super::super::service::{
     RenderService, WIKIDOT_COMPAT_STYLE_BLOCK_REGEX, WIKIDOT_EMAIL_SPAN_REGEX,
     WIKIDOT_EMBED_PARAGRAPH_REGEX, WIKIDOT_TABVIEW_INIT_SCRIPT,
-    WIKIDOT_TABVIEW_PANEL_ID_REGEX, WIKIDOT_TABVIEW_SCRIPT_URL,
-    WIKIJUMP_CODE_BLOCK_OPEN_REGEX, WIKIJUMP_CODE_BLOCK_PANEL_REGEX,
-    WIKIJUMP_FOOTNOTE_DATA_ID_REGEX, WIKIJUMP_FOOTNOTE_MARKER_REGEX,
-    WIKIJUMP_FOOTNOTE_REF_LEADING_SPACE_REGEX, WIKIJUMP_FOOTNOTE_REF_SPAN_WRAPPER_REGEX,
-    WIKIJUMP_INLINE_MATH_REGEX, WIKIJUMP_SELECTED_TAB_BUTTON_REGEX,
-    WIKIJUMP_TAB_BUTTON_LIST_REGEX, WIKIJUMP_TAB_BUTTON_REGEX,
-    WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX, WIKIJUMP_TAB_PANEL_REGEX,
-    decode_wikidot_email_html_entities, escape_list_pages_html_attr,
-    escape_list_pages_html_text,
+    WIKIDOT_TABVIEW_PANEL_ID_REGEX, WIKIJUMP_CODE_BLOCK_OPEN_REGEX,
+    WIKIJUMP_CODE_BLOCK_PANEL_REGEX, WIKIJUMP_FOOTNOTE_DATA_ID_REGEX,
+    WIKIJUMP_FOOTNOTE_MARKER_REGEX, WIKIJUMP_FOOTNOTE_REF_LEADING_SPACE_REGEX,
+    WIKIJUMP_FOOTNOTE_REF_SPAN_WRAPPER_REGEX, WIKIJUMP_INLINE_MATH_REGEX,
+    WIKIJUMP_SELECTED_TAB_BUTTON_REGEX, WIKIJUMP_TAB_BUTTON_LIST_REGEX,
+    WIKIJUMP_TAB_BUTTON_REGEX, WIKIJUMP_TAB_PANEL_LIST_OPEN_REGEX,
+    WIKIJUMP_TAB_PANEL_REGEX, decode_wikidot_email_html_entities,
+    escape_list_pages_html_attr, escape_list_pages_html_text,
 };
 use super::footnote_dom::{
     enclose_list_pages_footnote_footer, restore_wikidot_footnote_list_dom,
@@ -220,12 +219,8 @@ impl RenderService {
                     }
                 })
                 .into_owned();
-            let loader = format!(
-                r#"<script type="text/javascript" src="{WIKIDOT_TABVIEW_SCRIPT_URL}"></script>
-"#
-            );
             let _ = suffix;
-            let replacement = format!("{loader}{root}{WIKIDOT_TABVIEW_INIT_SCRIPT}");
+            let replacement = format!("{root}{WIKIDOT_TABVIEW_INIT_SCRIPT}");
             restored.replace_range(root_start..root_end, &replacement);
         }
         restored
@@ -264,13 +259,20 @@ impl RenderService {
     pub(in crate::services::render) fn restore_wikidot_tabview_dom_compatibility(
         html: &str,
     ) -> String {
-        let html = html.replace(
-            r#"<wj-tabs class="wj-tabs">"#,
-            &format!(
-                r#"<script type="text/javascript" src="{WIKIDOT_TABVIEW_SCRIPT_URL}"></script>
+        let html = if html.contains(WIKIDOT_TABVIEW_INIT_SCRIPT) {
+            html.replace(
+                r#"<wj-tabs class="wj-tabs">"#,
+                r#"<div class="yui-navset">"#,
+            )
+        } else {
+            html.replace(
+                r#"<wj-tabs class="wj-tabs">"#,
+                &format!(
+                    r#"{WIKIDOT_TABVIEW_INIT_SCRIPT}
 <div class="yui-navset">"#
-            ),
-        );
+                ),
+            )
+        };
         let html = WIKIJUMP_TAB_BUTTON_LIST_REGEX
             .replace_all(&html, r#"<ul class="yui-nav">$body</ul>"#);
         let html = Self::restore_wikidot_tab_panel_visibility(&html);
