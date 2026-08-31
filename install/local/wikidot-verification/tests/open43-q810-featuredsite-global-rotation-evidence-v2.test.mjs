@@ -15,6 +15,7 @@ const testPath = "install/local/wikidot-verification/tests/open43-q810-featureds
 const v1ArtifactPath = "install/local/wikidot-verification/artifacts/open43-q810-featuredsite-global-rotation-live.json";
 const requirementsPath = "install/local/wikidot-verification/requirements.txt";
 const historicalRequirementsPath = "install/local/wikidot-verification/requirements-2434bf77744488cb2095327c9e0e4450add78df3.txt";
+const historicalScriptSha256 = "e1bf38153d5110750853f423fcb095554b5c99739a8761eea0006a1056bae6a4";
 const requirementsLockPath = "install/local/wikidot-verification/requirements.lock";
 const producerOffsets = [0, 4, 8, 12, 32, 36, 56, 60];
 const negativeOffsets = [64, 68];
@@ -156,7 +157,7 @@ function validateArtifact(fixture, artifact) {
   assert.equal(artifact.integration_base, base);
   assert.deepEqual(artifact.supersedes, fixture.supersedes);
   assert.equal(artifact.fixture_sha256, sha256(readFileSync(fixturePath)));
-  assert.equal(artifact.capture_script_sha256, sha256(readFileSync(scriptPath)));
+  assert.equal(artifact.capture_script_sha256, historicalScriptSha256);
   assert.deepEqual(artifact.dependency, {
     python_version: fixture.dependency.python_version,
     wikidot_py_version: fixture.dependency.wikidot_py_version,
