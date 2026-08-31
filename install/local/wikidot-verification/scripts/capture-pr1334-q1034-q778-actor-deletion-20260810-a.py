@@ -5,19 +5,69 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import socket
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 
 SCHEMA = "wikijump.pr1334.q1034_q778_actor_deletion_live.v1"
 LANE_ID = "A_Q1034_Q778_ACTOR_DELETION"
 ACCOUNT_LABELS = tuple("ABCDEFG")
+EXPECTED_PUBLIC_ORIGIN = "http://sandbox-for-codex.wikidot.com"
+MAX_BUDGETS = {
+    "max_total_requests": 160,
+    "max_mutation_requests": 32,
+    "cleanup_mutation_reserve": 10,
+    "max_request_body_bytes": 32768,
+    "max_response_body_bytes_per_request": 262144,
+    "max_total_response_bytes": 8388608,
+    "max_persisted_fragment_bytes_per_case": 8192,
+    "max_artifact_bytes": 1572864,
+    "per_request_timeout_ms": 20000,
+    "total_wall_time_ms": 1200000,
+    "minimum_interval_between_mutations_ms": 1000,
+    "read_retry_limit": 1,
+    "mutation_retry_limit": 0,
+}
+
+
+class RefuseRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, new_url: str) -> None:
+        raise urllib.error.HTTPError(request.full_url, code, "public read redirect refused", headers, fp)
+
+
+def validate_public_origin(value: Any) -> str:
+    if value != EXPECTED_PUBLIC_ORIGIN:
+        raise SystemExit("fixture public_origin is not the committed sandbox origin")
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme != "http" or parsed.hostname != "sandbox-for-codex.wikidot.com" or parsed.port is not None or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+        raise SystemExit("fixture public_origin is not a plain sandbox origin")
+    try:
+        addresses = {ipaddress.ip_address(result[4][0]) for result in socket.getaddrinfo(parsed.hostname, 80, type=socket.SOCK_STREAM)}
+    except OSError as error:
+        raise SystemExit("sandbox origin could not be resolved") from error
+    if not addresses or any(not address.is_global for address in addresses):
+        raise SystemExit("sandbox origin resolved to a non-public address")
+    return value
+
+
+def validate_budgets(value: Any) -> dict[str, int]:
+    if not isinstance(value, dict):
+        raise SystemExit("fixture budgets must be an object")
+    for name, maximum in MAX_BUDGETS.items():
+        current = value.get(name)
+        if isinstance(current, bool) or not isinstance(current, int) or current < 0 or current > maximum:
+            raise SystemExit(f"fixture budget {name} exceeds the committed bound")
+    return value
 
 
 def timestamp() -> str:
@@ -71,10 +121,12 @@ def main() -> None:
     if missing_credentials:
         raise SystemExit("credential helper setup is incomplete for one or more actor labels")
 
-    limits = fixture["budgets"]
+    public_origin = validate_public_origin(fixture["public_origin"])
+    limits = validate_budgets(fixture["budgets"])
     started = time.monotonic()
     started_at = timestamp()
-    forum_url = f"{fixture['public_origin']}/forum/start"
+    forum_url = f"{public_origin}/forum/start"
+    public_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), RefuseRedirectHandler())
     request = urllib.request.Request(
         forum_url,
         method="GET",
@@ -88,7 +140,7 @@ def main() -> None:
     for attempt in range(limits["read_retry_limit"] + 1):
         attempts += 1
         try:
-            with urllib.request.urlopen(request, timeout=limits["per_request_timeout_ms"] / 1000) as response:
+            with public_opener.open(request, timeout=limits["per_request_timeout_ms"] / 1000) as response:
                 response_bytes = response.read(limits["max_response_body_bytes_per_request"] + 1)
                 http_status = response.status
                 content_type = response.headers.get_content_type()
