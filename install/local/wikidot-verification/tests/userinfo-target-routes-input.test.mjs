@@ -15,6 +15,7 @@ test("UserInfo redirects remain on the declared origin and route", () => {
     "https://evil.example/user:info/dr-clef",
     "https://www.wikidot.com/account/messages",
     "https://www.wikidot.com/user:info/dr-clef/extra",
-    "https://www.wikidot.com/user:info/../account/messages"
+    "https://www.wikidot.com/user:info/../account/messages",
+    "https://www.wikidot.com/user:info/%2Fadmin"
   ]) assert.throws(() => validateUserInfoUrl(value));
 });
