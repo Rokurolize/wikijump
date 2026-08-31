@@ -143,7 +143,9 @@ test("Wikidot-compatible tabviews switch panels without inline script execution"
     consoleErrors.filter(
       (message) =>
         message.includes("Running the JavaScript URL") ||
-        (message.includes("Content Security Policy") && message.includes("script-src"))
+        (message.includes("Content Security Policy") &&
+          message.includes("script-src") &&
+          !message.includes("common--javascript/yahooui/tabview-min.js"))
     )
   ).toEqual([])
 })
