@@ -292,3 +292,72 @@ test("ordered element traces preserve but normalize mutable page rating scores",
   assert.equal(element.direct_text_normalized, true);
   assert.notEqual(element.direct_text_sha256, element.normalized_direct_text_sha256);
 });
+
+test("large flat element traces do not rescan all siblings for every path", async () => {
+  let rootChildrenReads = 0;
+  const root = { querySelectorAll: () => elements };
+  const elements = Array.from({ length: 10_000 }, (_, index) => {
+    const element = {
+      localName: "div",
+      id: "",
+      classList: [],
+      children: [],
+      childNodes: [],
+      parentElement: root,
+      matches: () => false,
+      getBoundingClientRect: () => ({ x: 0, y: index, width: 100, height: 20 }),
+    };
+    return element;
+  });
+  Object.defineProperty(root, "children", {
+    get() {
+      rootChildrenReads += 1;
+      return elements;
+    },
+  });
+  const fakeDocument = {
+    images: [],
+    body: null,
+    documentElement: {},
+    querySelector: (selector) => (selector === "#page-content" ? root : null),
+    querySelectorAll: (selector) => (selector === "#page-content" ? [root] : []),
+  };
+  const fakePage = {
+    evaluate: async (callback, argument) => {
+      const previous = {
+        document: globalThis.document,
+        getComputedStyle: globalThis.getComputedStyle,
+        Node: globalThis.Node,
+        window: globalThis.window,
+      };
+      globalThis.document = fakeDocument;
+      globalThis.getComputedStyle = () => ({
+        display: "block",
+        visibility: "visible",
+        opacity: "1",
+        getPropertyValue: () => "",
+      });
+      globalThis.Node = { TEXT_NODE: 3 };
+      globalThis.window = { scrollX: 0, scrollY: 0 };
+      try {
+        return callback(argument);
+      } finally {
+        Object.assign(globalThis, previous);
+      }
+    },
+  };
+  const observation = await captureDocumentObservation(fakePage, {
+    contract: {
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+      first_divergence_trace: { root_selector: "#page-content", max_elements: 10_000 },
+    },
+    phase: "settled",
+    viewport: { width: 1366, height: 900 },
+  });
+  assert.equal(observation.first_divergence_trace.captured_count, 10_000);
+  assert.equal(observation.first_divergence_trace.elements.at(-1).path, "div[10000]");
+  assert.equal(rootChildrenReads, 0);
+});

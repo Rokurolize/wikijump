@@ -219,27 +219,26 @@ export async function captureDocumentObservation(
       const traceRoot = traceContract
         ? document.querySelector(traceContract.root_selector)
         : null;
-      const tracePath = (element) => {
-        const parts = [];
-        for (
-          let candidate = element;
-          candidate && candidate !== traceRoot;
-          candidate = candidate.parentElement
-        ) {
-          const siblings = candidate.parentElement
-            ? [...candidate.parentElement.children].filter(
-                (sibling) => sibling.localName === candidate.localName,
-              )
-            : [candidate];
-          parts.push(
-            `${candidate.localName}[${siblings.indexOf(candidate) + 1}]`,
-          );
-        }
-        return parts.reverse().join("/");
-      };
-      const traceElements = traceRoot
-        ? [...traceRoot.querySelectorAll("*")].filter(rendered)
+      const allTraceElements = traceRoot
+        ? [...traceRoot.querySelectorAll("*")]
         : [];
+      const tracePaths = new WeakMap();
+      const siblingOrdinals = new WeakMap();
+      for (const element of allTraceElements) {
+        const parent = element.parentElement;
+        const ordinals = siblingOrdinals.get(parent) ?? new Map();
+        const ordinal = (ordinals.get(element.localName) ?? 0) + 1;
+        ordinals.set(element.localName, ordinal);
+        siblingOrdinals.set(parent, ordinals);
+        const parentPath = parent === traceRoot ? "" : tracePaths.get(parent);
+        tracePaths.set(
+          element,
+          parentPath
+            ? `${parentPath}/${element.localName}[${ordinal}]`
+            : `${element.localName}[${ordinal}]`,
+        );
+      }
+      const traceElements = allTraceElements.filter(rendered);
       const traceLimit = Math.max(
         0,
         Math.floor(Number(traceContract?.max_elements ?? 0)),
@@ -263,7 +262,7 @@ export async function captureDocumentObservation(
               const style = getComputedStyle(element);
               const box = element.getBoundingClientRect();
               return {
-                path: tracePath(element),
+                path: tracePaths.get(element),
                 tag: element.localName,
                 id: element.id || null,
                 classes: [...element.classList].sort(),
