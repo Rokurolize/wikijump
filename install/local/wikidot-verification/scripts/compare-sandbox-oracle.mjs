@@ -122,7 +122,9 @@ async function main() {
       local: local.get(fixture.fixture_id),
       frozen: frozen.get(fixture.fixture_id),
       contract: contracts.get(fixture.fixture_id) ?? null,
-      blockedHosts: blockedHostsByFixture[fixture.fixture_id] ?? null,
+      blockedHosts: Object.hasOwn(blockedHostsByFixture, fixture.fixture_id)
+        ? blockedHostsByFixture[fixture.fixture_id]
+        : null,
     }),
   );
   const { verdict, exitCode } = aggregateSandboxOracleVerdict({

@@ -290,6 +290,11 @@ export function validateSandboxOracleCapture(value, name = "capture") {
       `${name} failed: ${JSON.stringify(capture.capture_error)}`,
     );
   }
+  if (capture.capture_validation_error !== undefined) {
+    throw new Error(
+      `${name} capture validation failed: ${JSON.stringify(capture.capture_validation_error)}`,
+    );
+  }
   if (
     !Number.isInteger(capture.navigation_status) ||
     capture.navigation_status < 200 ||
@@ -688,6 +693,12 @@ export function compareSandboxOracleFixture({
   }
   if (!isPlainObject(local)) {
     throw new Error(`local capture is required for ${checkedFixture.fixture_id}`);
+  }
+  if (local.capture_validation_error !== undefined) {
+    throw new Error(`local capture validation failed for ${checkedFixture.fixture_id}`);
+  }
+  if (frozen?.capture_validation_error !== undefined) {
+    throw new Error(`frozen capture validation failed for ${checkedFixture.fixture_id}`);
   }
   let layers;
   if (checkedFixture.assertion_class === "match-live") {
