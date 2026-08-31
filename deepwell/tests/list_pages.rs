@@ -5227,6 +5227,68 @@ async fn listpages_default_rows_render_only_the_first_paragraph() {
 }
 
 #[tokio::test]
+async fn listpages_selected_content_evaluates_iftags_against_selected_page_tags() {
+    const TARGET_SLUG: &str = "listpages-selected-iftags-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(TARGET_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": "[[iftags +component]]SELECTED_TAG_BODY[[/iftags]]",
+            "title": "ListPages Selected Iftags Target",
+            "alt_title": null,
+            "slug": TARGET_SLUG,
+            "tags": ["component"],
+            "layout": "wikidot",
+            "revision_comments": "ListPages selected iftags fixture",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "Unsaved ListPages selected iftags preview",
+        format!(
+            r#"[[module ListPages name="{TARGET_SLUG}" separate="no" wrapper="no"]]%%content%%[[/module]]"#,
+        ),
+    )
+    .await
+    .expect("selected page content should render")
+    .html_output
+    .body;
+
+    assert!(
+        preview.contains("SELECTED_TAG_BODY"),
+        "selected-page iftags must use the selected row tags:\n{preview}",
+    );
+    assert!(
+        !preview.contains("[[iftags") && !preview.contains("[[/iftags]]"),
+        "selected-page iftags markers must not leak into rendered HTML:\n{preview}",
+    );
+}
+
+#[tokio::test]
 async fn listpages_default_rows_suppress_nested_rate_modules() {
     const TARGET_SLUG: &str = "listpages-default-rate-module-target";
 
