@@ -75,11 +75,15 @@ describe("Wikidot site settings foundation", () => {
       id: 1
     })
     assert.deepEqual(
-      normalizeThemeSetting({ type: "external", url: "https://themes.example/a.css" }),
-      { type: "external", url: "https://themes.example/a.css" }
+      normalizeThemeSetting({ type: "external", url: "https://cdn.scpwiki.com/a.css" }),
+      { type: "external", url: "https://cdn.scpwiki.com/a.css" }
     )
     assert.deepEqual(
       normalizeThemeSetting({ type: "external", url: "http://themes.example/a.css" }),
+      { type: "built_in", id: 1 }
+    )
+    assert.deepEqual(
+      normalizeThemeSetting({ type: "external", url: "https://themes.example/a.css" }),
       { type: "built_in", id: 1 }
     )
     assert.deepEqual(

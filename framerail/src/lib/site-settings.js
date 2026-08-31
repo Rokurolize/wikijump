@@ -28,6 +28,23 @@ export const googleAnalyticsHeadHtml = (settings) => {
 
 /** @type {ThemeSetting} */
 const BUILT_IN_THEME = { type: "built_in", id: 1 }
+const EXTERNAL_THEME_HOSTS = new Set([
+  "cdn.scpwiki.com",
+  "d3g0gp89917ko0.cloudfront.net",
+  "fonts.bunny.net",
+  "fonts.googleapis.com",
+  "maxcdn.bootstrapcdn.com",
+  "nu-scptheme.github.io",
+  "rsms.me",
+  "scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com"
+])
+
+const isAllowedExternalThemeUrl = (url) =>
+  url.protocol === "https:" &&
+  url.port === "" &&
+  !url.username &&
+  !url.password &&
+  (EXTERNAL_THEME_HOSTS.has(url.hostname) || url.hostname.endsWith(".wdfiles.com"))
 
 /**
  * @param {{ type?: unknown; id?: unknown; url?: unknown; css?: unknown }
@@ -47,7 +64,7 @@ export const normalizeThemeSetting = (theme) => {
   if (theme?.type === "external" && typeof theme.url === "string") {
     try {
       const url = new URL(theme.url)
-      if (url.protocol === "https:" && !url.username && !url.password) {
+      if (isAllowedExternalThemeUrl(url)) {
         return { type: "external", url: url.href }
       }
     } catch {
