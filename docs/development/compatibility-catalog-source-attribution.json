@@ -955,7 +955,7 @@
     {
       "surface_id": "catalog-feature:syntax-layout",
       "sources": [
-        { "path": "deepwell/src/services/render/service.rs", "anchor": "WIKIDOT_TABVIEW_SCRIPT_URL" },
+        { "path": "deepwell/src/services/render/service.rs", "anchor": "WIKIDOT_TABVIEW_SCRIPT" },
         { "path": "framerail/src/lib/wikidot/wikidot-tabviews.ts", "anchor": "export function wikidotTabviews(node: HTMLElement)" }
       ],
       "tests": [{ "path": "framerail/tests/wikidot-tabview.spec.ts", "anchor": "Wikidot-compatible tabviews switch panels without inline script execution" }]

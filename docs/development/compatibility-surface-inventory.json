@@ -11171,8 +11171,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "b3507ffe46cf0f5ad3423f3c8334111b799fc7a4",
-      "tree": "ddaa42e612c7ea167d5ac7801b06fb27501f2faa"
+      "commit": "8fa1e7865ecf6208533e03f288269bb0972d6434",
+      "tree": "60ba8abd2960657b7c2f3a135b037dcbe1cf264b"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11321,7 +11321,7 @@
       },
       {
         "path": "docs/development/compatibility-catalog-source-attribution.json",
-        "sha256": "2d324cf3f20dc6875a8228a1f349c45bf03f4ede1cb1588cf53e127e18bab4bb"
+        "sha256": "ab9e974298a26986380a56125a5d8a8462e0324ac6f36dc1ab10526970c70786"
       },
       {
         "path": "docs/development/compatibility-surface-semantics.json",
@@ -11389,7 +11389,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "f6a23b8148e8da09345fef00bca855ddae60afcb742ceb10771864c0186ac5ee"
+        "sha256": "68b5b671907f280231620c951e237a67287ca59078fb0e005bff72e97fabbb42"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -21036,7 +21036,7 @@
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/render/service.rs#WIKIDOT_TABVIEW_SCRIPT_URL",
+          "deepwell/src/services/render/service.rs#WIKIDOT_TABVIEW_SCRIPT",
           "framerail/src/lib/wikidot/wikidot-tabviews.ts#export function wikidotTabviews(node: HTMLElement)"
         ]
       },
