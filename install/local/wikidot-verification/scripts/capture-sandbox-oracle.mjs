@@ -474,6 +474,7 @@ async function main(argv) {
       outputDir: args.outputDir,
       policy,
       candidate: {candidate: {endpoint: {allowed_origin_set: SANDBOX_ORACLE_LOCAL_ORIGINS, local_connect_address: "127.0.0.1"}}},
+      resume: args.resume,
     });
     browser = await launchParityBrowser({browserRoot: args.browserRoot, browserExecutable: args.browserExecutable, controls, local: true, viewport: args.viewport});
     liveBrowserPage = await browser.context.newPage();
