@@ -211,15 +211,16 @@ function outermostListPagesOwnedSubtrees(nodes) {
   return output;
 }
 
-function normalizeListPagesOwnedWhitespace(node) {
+function normalizeListPagesOwnedWhitespace(node, preserveWhitespace = false) {
   if (node?.type === "text") {
-    return node.value.trim() === "" ? null : { ...node };
+    return !preserveWhitespace && node.value.trim() === "" ? null : { ...node };
   }
   if (node?.type !== "element") return node === undefined ? null : { ...node };
+  const preserveChildren = preserveWhitespace || ["code", "pre", "textarea"].includes(node.name);
   return {
     ...node,
     children: (node.children ?? [])
-      .map(normalizeListPagesOwnedWhitespace)
+      .map((child) => normalizeListPagesOwnedWhitespace(child, preserveChildren))
       .filter((child) => child !== null),
   };
 }

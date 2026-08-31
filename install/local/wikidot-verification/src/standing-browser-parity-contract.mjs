@@ -451,6 +451,8 @@ function environmentTranslationEvent(local, live, raw, normalized) {
     if (
       localRow.tag !== liveRow.tag ||
       localRow.name !== liveRow.name ||
+      localNormalized.applied.length !== 1 ||
+      liveNormalized.applied.length !== 1 ||
       !localNormalized.applied.includes("hostname_map") ||
       !liveNormalized.applied.includes("hostname_map")
     ) return null;

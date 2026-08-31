@@ -558,6 +558,16 @@ test("volatile normalization remains a finding beside a host translation", () =>
   assert.equal(result.anomalies[0].code, "normalization_hides_difference");
 });
 
+test("host translation does not mask a second attribute normalization channel", () => {
+  const result = compareAttributeSignatures(
+    [{tag: "img", name: "src", value: "https://scp-wiki.wjfiles.localhost/a.png?v=local"}],
+    [{tag: "img", name: "src", value: "https://scp-wiki.wdfiles.com/a.png?v=live"}],
+  );
+  assert.equal(result.status, "fail");
+  assert.deepEqual(result.normalization_events, []);
+  assert.equal(result.anomalies[0].code, "normalization_hides_difference");
+});
+
 test("completion policy is sealed and names exact external failures", () => {
   const policy = validateLiveCompletionPolicy({
     schema: "wikijump.standing_browser_live_completion_policy.v1",

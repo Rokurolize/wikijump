@@ -864,6 +864,21 @@ test("preview classifier compares every generated shell when a page has multiple
   assert.equal(result.cases[0].disposition, "none");
 });
 
+test("preview classifier does not remove whitespace from preformatted ListPages content", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-preformatted-whitespace-"));
+  const referencesPath = path.join(root, "references.jsonl");
+  const verdictPath = path.join(root, "verdict.json");
+  const source = '[[module ListPages tags="+example"]]%%title%%[[/module]]';
+  const liveHtml = '<div class="list-pages-box"><pre>live\n</pre></div>';
+  const localHtml = '<div class="list-pages-box"><pre>live</pre></div>';
+  await fs.writeFile(referencesPath, `${JSON.stringify(reference("preformatted-whitespace", source, liveHtml))}\n`);
+  await fs.writeFile(verdictPath, JSON.stringify({cases: [mismatchCase("preformatted-whitespace", liveHtml, localHtml)]}));
+
+  const result = await classifyListPagesPreviewDifferential({verdictPath, referencesPath});
+  assert.equal(result.cases[0].classification, "listpages-query-or-row-render-divergence");
+  assert.equal(result.cases[0].disposition, "investigate-query-or-renderer");
+});
+
 test("preview classifier does not mask a missing zero-row line as fixture state", async () => {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wj-listpages-classify-"));
   const referencesPath = path.join(root, "references.jsonl");
