@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
-import {fileURLToPath} from "node:url";
+import {fileURLToPath, pathToFileURL} from "node:url";
 
 import {parseFragment} from "parse5";
 
@@ -496,6 +496,10 @@ function storedValue(source, field) {
   return scalar.replace(/^'(.*)'$/u, "$1").replace(/''/gu, "'");
 }
 
+export function dataFormSource(values) {
+  return `date_value: ${values.date_value ?? ""}\norigin: '${(values.origin ?? "").replaceAll("'", "''")}'`;
+}
+
 async function main(argv) {
   const args = parseArgs(argv);
   const fixtureBytes = await readFile(args.cases, "utf8");
@@ -559,6 +563,7 @@ async function main(argv) {
       const values = declared.surface_id === "data-forms-date-field"
         ? {date_value: declared.submitted, origin: ""}
         : {date_value: "", origin: declared.submitted};
+      created.set(slug, dataFormSource(values));
       const backlinkBefore = backlinksPlan?.case_id === declared.case_id
         ? await client.get(declared.submitted, false)
         : null;
@@ -718,4 +723,4 @@ async function main(argv) {
   process.stdout.write(`${args.output}\n`);
 }
 
-await main(process.argv);
+if (import.meta.url === pathToFileURL(process.argv[1]).href) await main(process.argv);
