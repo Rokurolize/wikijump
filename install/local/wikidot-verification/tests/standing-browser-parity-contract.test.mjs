@@ -468,6 +468,31 @@ test("tabview instance identities normalize only the live 32-hex shape", () => {
   assert.equal(result.attributes.status, "pass");
 });
 
+test("tabview identity normalization requires a tabview root", () => {
+  const id = (value) => `wiki-tabview-${value.repeat(32)}`;
+  const result = compareCaptures(
+    capture({
+      dom_signatures: [`span#${id("a")}`],
+      attribute_signatures: [{ tag: "span", name: "id", value: id("a") }],
+    }),
+    capture({
+      dom_signatures: [`span#${id("b")}`],
+      attribute_signatures: [{ tag: "span", name: "id", value: id("b") }],
+    }),
+    DEFAULT_THRESHOLDS,
+    [],
+    {
+      comparison_scope: "construct",
+      geometry_selectors: [],
+      first_paint_geometry_selectors: [],
+      presence_probes: [],
+      first_paint_custom_properties: {},
+    },
+  );
+  assert.equal(result.status, "fail");
+  assert.ok(result.anomalies.some((anomaly) => anomaly.code === "normalization_hides_difference"));
+});
+
 test("tabview normalization remains fail-closed for malformed identities", () => {
   const result = compareCaptures(
     capture({
