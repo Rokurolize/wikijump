@@ -20,7 +20,7 @@ use crate::types::{Action, ConnectionType, Permission, Reference, Resource};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder, QuerySelect};
 
 const MAX_PAGE_BACKLINKS: usize = 500;
-const PAGE_BACKLINK_SCAN_LIMIT: u64 = MAX_PAGE_BACKLINKS as u64 + 1;
+const PAGE_BACKLINK_SCAN_BATCH: u64 = MAX_PAGE_BACKLINKS as u64 + 1;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct GetPageBacklinksView<'a> {
@@ -34,8 +34,8 @@ pub struct PageBacklinkView {
     pub title: String,
 }
 
-fn backlinks_scan_saturated(row_count: usize) -> bool {
-    row_count > MAX_PAGE_BACKLINKS
+fn backlinks_scan_saturated(visible_count: usize) -> bool {
+    visible_count > MAX_PAGE_BACKLINKS
 }
 
 async fn can_view_page(
@@ -83,56 +83,64 @@ impl ViewService {
             );
         }
 
-        let connections = PageConnection::find()
-            .filter(page_connection::Column::ToPageId.eq(target.page_id))
-            .filter(page_connection::Column::ConnectionType.eq(ConnectionType::Link))
-            .order_by_asc(page_connection::Column::FromPageId)
-            .limit(PAGE_BACKLINK_SCAN_LIMIT)
-            .all(ctx.transaction())
-            .await
-            .or_raise(make_error)?;
-        if backlinks_scan_saturated(connections.len()) {
-            return Err(Error::new(
-                "page backlinks scan exceeded its public limit",
-                ErrorType::PageLink,
-            )
-            .into());
-        }
-
-        let mut backlinks = Vec::with_capacity(connections.len());
-        for connection in connections {
-            let Some(page) = PageService::get_optional(
-                ctx,
-                input.site_id,
-                Reference::Id(connection.from_page_id),
-            )
-            .await
-            .or_raise(make_error)?
-            else {
-                continue;
-            };
-            if !can_view_page(ctx, input.site_id, &page)
+        let mut backlinks = Vec::new();
+        let mut offset = 0;
+        loop {
+            let connections = PageConnection::find()
+                .filter(page_connection::Column::ToPageId.eq(target.page_id))
+                .filter(page_connection::Column::ConnectionType.eq(ConnectionType::Link))
+                .order_by_asc(page_connection::Column::FromPageId)
+                .offset(offset)
+                .limit(PAGE_BACKLINK_SCAN_BATCH)
+                .all(ctx.transaction())
+                .await
+                .or_raise(make_error)?;
+            let scanned = connections.len() as u64;
+            for connection in connections {
+                let Some(page) = PageService::get_optional(
+                    ctx,
+                    input.site_id,
+                    Reference::Id(connection.from_page_id),
+                )
                 .await
                 .or_raise(make_error)?
-            {
-                continue;
-            }
-
-            let revision =
-                PageRevisionService::get_latest(ctx, input.site_id, page.page_id)
+                else {
+                    continue;
+                };
+                if !can_view_page(ctx, input.site_id, &page)
                     .await
-                    .or_raise(make_error)?;
-            if revision
-                .hidden
-                .iter()
-                .any(|field| field == "title" || field == "slug")
-            {
-                continue;
+                    .or_raise(make_error)?
+                {
+                    continue;
+                }
+
+                let revision =
+                    PageRevisionService::get_latest(ctx, input.site_id, page.page_id)
+                        .await
+                        .or_raise(make_error)?;
+                if revision
+                    .hidden
+                    .iter()
+                    .any(|field| field == "title" || field == "slug")
+                {
+                    continue;
+                }
+                backlinks.push(PageBacklinkView {
+                    slug: revision.slug,
+                    title: revision.title,
+                });
+                if backlinks_scan_saturated(backlinks.len()) {
+                    return Err(Error::new(
+                        "page backlinks scan exceeded its public limit",
+                        ErrorType::PageLink,
+                    )
+                    .into());
+                }
             }
-            backlinks.push(PageBacklinkView {
-                slug: revision.slug,
-                title: revision.title,
-            });
+            if scanned < PAGE_BACKLINK_SCAN_BATCH {
+                break;
+            }
+            offset += scanned;
         }
 
         backlinks.sort_by(|left, right| {
@@ -150,7 +158,7 @@ mod tests {
     use super::{MAX_PAGE_BACKLINKS, backlinks_scan_saturated};
 
     #[test]
-    fn page_backlinks_requires_a_complete_bounded_scan() {
+    fn page_backlinks_limit_counts_visible_rows() {
         assert!(!backlinks_scan_saturated(MAX_PAGE_BACKLINKS));
         assert!(backlinks_scan_saturated(MAX_PAGE_BACKLINKS + 1));
     }
