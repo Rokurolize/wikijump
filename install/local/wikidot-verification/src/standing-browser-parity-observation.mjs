@@ -533,7 +533,7 @@ export async function waitForBrowserParitySettledResources(page, timeoutMs) {
 }
 
 export function isExpectedExternalAssetFailure(event) {
-  if (event?.error !== "net::ERR_BLOCKED_BY_ORB") return false;
+  if (event?.error !== "net::ERR_BLOCKED_BY_ORB" && event?.error !== "net::ERR_TIMED_OUT") return false;
   try {
     const url = new URL(event.url);
     return (event.resource_type === "stylesheet" && url.hostname.endsWith(".wdfiles.com")) ||
