@@ -256,6 +256,12 @@ def make_observation(*, probe_id: str, kind: str, scheduled_offset: float, actua
 def classify(observations: list[dict[str, Any]], fixture: dict[str, Any]) -> tuple[str, list[dict[str, Any]], list[str], dict[str, int], list[str]]:
     producers = [item for item in observations if item["kind"] == "producer"]
     negatives = [item for item in observations if item["kind"] == "negative_control"]
+    all_observations_succeeded = all(
+        item["error_type"] is None
+        and item["response_status"] == 200
+        and not item["response_rejected_over_budget"]
+        for item in observations
+    )
     counts = Counter(item["selected_card_identity"] for item in producers if isinstance(item["selected_card_identity"], str))
     qualifying = sorted(identity for identity, count in counts.items() if count >= 2)
     producer_hashes = {item["request_body_sha256"] for item in producers}
@@ -267,6 +273,7 @@ def classify(observations: list[dict[str, Any]], fixture: dict[str, Any]) -> tup
     selected_identities = set(qualifying[:2])
     threshold = (
         len(observations) == 10
+        and all_observations_succeeded
         and len(selected_positive) == 4
         and len(negatives) == 2
         and len(producer_hashes) == 1
