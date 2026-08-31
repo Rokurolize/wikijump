@@ -587,6 +587,14 @@ export async function captureBrowserParityObservation({
   }
   const page = suppliedPage ?? (await context.newPage());
   const ownsPage = suppliedPage === null;
+  if (!ownsPage) {
+    await page.evaluate(() => {
+      window.stop();
+      window.name = "";
+      window.sessionStorage.clear();
+    });
+    await page.goto("about:blank", {waitUntil: "commit", timeout: timeoutMs});
+  }
   const failures = [];
   const expectedFailures = [];
   const requestGateAborts = [];
