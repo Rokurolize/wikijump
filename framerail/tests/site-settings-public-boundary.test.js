@@ -337,7 +337,7 @@ describe("Wikidot site settings public boundaries", () => {
         google_analytics: { enabled: true, profile: "UA-1-2" },
         toolbars: { top: true, bottom: false }
       },
-      theme: { type: "external", url: "https://themes.example/site.css" },
+      theme: { type: "external", url: "https://cdn.scpwiki.com/site.css" },
       license_name: "CC BY-SA 3.0",
       license_url: "https://creativecommons.org/licenses/by-sa/3.0/",
       license_kind: "standard",
@@ -356,7 +356,7 @@ describe("Wikidot site settings public boundaries", () => {
     )
     assert.match(
       enabled.head,
-      /data-wikidot-site-theme="" href="https:\/\/themes\.example\/site\.css"/u
+      /data-wikidot-site-theme="" href="https:\/\/cdn\.scpwiki\.com\/site\.css"/u
     )
     assert.match(enabled.body, /id="navi-bar"/u)
 
@@ -601,13 +601,13 @@ describe("Wikidot site settings public boundaries", () => {
           expectedSettingsRevision: settingsRevision,
           themeType: "external",
           builtinId: 1,
-          externalUrl: "https://themes.example/site.css",
+          externalUrl: "https://cdn.scpwiki.com/site.css",
           customCss: ""
         },
         method: "category_update",
         expected: {
           category: 23,
-          theme: { type: "external", url: "https://themes.example/site.css" }
+          theme: { type: "external", url: "https://cdn.scpwiki.com/site.css" }
         }
       },
       {

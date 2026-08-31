@@ -111,13 +111,7 @@ function imageSources() {
 /** @returns {CspSources} */
 function styleSources() {
   /** @type {CspSources} */
-  return [
-    "self",
-    "unsafe-inline",
-    "https:",
-    CURRENT_SITE_FILE_ORIGIN,
-    ...WIKIDOT_STYLE_SOURCES
-  ]
+  return ["self", "unsafe-inline", CURRENT_SITE_FILE_ORIGIN, ...WIKIDOT_STYLE_SOURCES]
 }
 
 /** @returns {CspSources} */
