@@ -180,6 +180,12 @@ test("preview classifier separates exact bare-default fixture state from its str
       expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
     },
     {
+      id: "active-content-in-bare-default-row",
+      source,
+      local: wrapper([row(30, 1000).replace("<p>Summary 30</p>", "<p>Summary 30<script>alert(1)</script></p>")]),
+      expected: ["listpages-query-or-row-render-divergence", "investigate-query-or-renderer"],
+    },
+    {
       id: "non-bare-default-source",
       source: '[[module ListPages category="*"]] ',
       local: wrapper(localRows),
