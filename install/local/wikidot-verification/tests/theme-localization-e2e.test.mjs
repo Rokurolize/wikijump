@@ -83,10 +83,9 @@ test("tier selection is deterministic and run-owned slugs cannot drift", () => {
 });
 
 test("target allowlist rejects mirror sites, paths, credentials, and wrong protocols", () => {
-  // Free Wikidot sites serve HTTP; HTTPS is reserved for paying sites and redirects here.
-  assert.equal(validateTargetOrigin("http://scpaiueouiuiuiui.wikidot.com", "wikidot"), "http://scpaiueouiuiuiui.wikidot.com");
+  assert.equal(validateTargetOrigin("https://scpaiueouiuiuiui.wikidot.com", "wikidot"), "https://scpaiueouiuiuiui.wikidot.com");
   assert.equal(validateTargetOrigin("https://scpaiueouiuiuiui.wikijump.localhost:18443", "wikijump"), "https://scpaiueouiuiuiui.wikijump.localhost:18443");
-  assert.throws(() => validateTargetOrigin("https://scpaiueouiuiuiui.wikidot.com", "wikidot"), /hard allowlist/);
+  assert.throws(() => validateTargetOrigin("http://scpaiueouiuiuiui.wikidot.com", "wikidot"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scpaiueouiuiui.wikijump.localhost:18443", "wikijump"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scp-wiki.wikijump.localhost", "wikijump"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("https://scp-jp.wikijump.localhost", "wikijump"), /hard allowlist/);

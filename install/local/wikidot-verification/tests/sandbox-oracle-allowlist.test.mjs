@@ -36,9 +36,9 @@ function registry() {
 test("site allowlist is frozen, shared, and constructs origins from the validated slug", () => {
   assert.deepEqual([...ALLOWED_SITE_SLUGS].sort(), ["sandbox-for-codex", DEFAULT_SITE_SLUG].sort());
   assert.equal(validateSiteSlug("sandbox-for-codex"), "sandbox-for-codex");
-  assert.equal(validateTargetOrigin("http://sandbox-for-codex.wikidot.com", "wikidot", "sandbox-for-codex"), "http://sandbox-for-codex.wikidot.com");
+  assert.equal(validateTargetOrigin("https://sandbox-for-codex.wikidot.com", "wikidot", "sandbox-for-codex"), "https://sandbox-for-codex.wikidot.com");
   assert.equal(validateTargetOrigin("https://sandbox-for-codex.wikijump.localhost", "wikijump", "sandbox-for-codex"), "https://sandbox-for-codex.wikijump.localhost");
-  assert.throws(() => validateTargetOrigin("https://scpaiueouiuiuiui.wikidot.com", "wikidot", "sandbox-for-codex"), /hard allowlist/);
+  assert.throws(() => validateTargetOrigin("http://sandbox-for-codex.wikidot.com", "wikidot", "sandbox-for-codex"), /hard allowlist/);
   assert.throws(() => validateTargetOrigin("not a URL", "wikidot", "not-allowlisted"), /not allowlisted/);
 });
 
@@ -82,8 +82,8 @@ except module.PublicError as error: print(error.code)
   assert.equal(result.status, 0, result.stderr);
   const [sites, oracleOrigin, defaultOrigin, rejected, oracleSlug, oversizedRejected, oracleRejected] = result.stdout.trim().split("\n");
   assert.deepEqual(JSON.parse(sites), [...ALLOWED_SITE_SLUGS].sort());
-  assert.equal(oracleOrigin, "http://sandbox-for-codex.wikidot.com");
-  assert.equal(defaultOrigin, `http://${DEFAULT_SITE_SLUG}.wikidot.com`);
+  assert.equal(oracleOrigin, "https://sandbox-for-codex.wikidot.com");
+  assert.equal(defaultOrigin, `https://${DEFAULT_SITE_SLUG}.wikidot.com`);
   assert.equal(rejected, "site_not_allowed");
   assert.equal(oracleSlug, "codex-oracle:20260805-allowlist-syntax:basic");
   assert.equal(oversizedRejected, "resource_not_allowed");

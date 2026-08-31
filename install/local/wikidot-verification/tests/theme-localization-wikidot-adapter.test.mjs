@@ -22,13 +22,13 @@ function sha256(value) {
 function fixtureResource() {
   const source = "日本語 theme source\n";
   const slug = "codex-l10n:20260713-adapter-yossistyle";
-  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
+  return {source, resource: {resource_id: "yossistyle:wikidot", tier_id: "yossistyle", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Theme localization canary: yossistyle", tags: ["テーマ"]}};
 }
 
 function prerequisiteResource() {
   const source = "[[include component:image-block-base]]";
   const slug = "component:image-block";
-  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `http://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
+  return {source, resource: {resource_id: `prerequisite:${slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", slug, url: `https://${SITE}.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Image Block", tags: ["codex-source-parity-redo", "component"]}};
 }
 
 class FakeHelper {
@@ -72,10 +72,10 @@ test("private-site adapter uses the execution interface without ListPages lookup
   assert.deepEqual(helper.calls.map(({action}) => action), ["inspect", "inspect", "create", "inspect", "remove", "inspect", "inspect"]);
   assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["テーマ"]);
   await assert.rejects(adapter.inspect({...resource, url: `https://scp-wiki.wikidot.com/${resource.slug}`}), /hard allowlist/);
-  await assert.rejects(adapter.inspect({...resource, url: `https://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
+  await assert.rejects(adapter.inspect({...resource, url: `http://${SITE}.wikidot.com/${resource.slug}`}), /hard allowlist/);
   await assert.rejects(adapter.inspect({...resource, slug: "theme:yossistyle"}), /validated/);
   const legacySlug = "theme:codex-l10n-20260713-adapter-yossistyle";
-  const legacy = {...resource, slug: legacySlug, url: `http://${SITE}.wikidot.com/${legacySlug}`};
+  const legacy = {...resource, slug: legacySlug, url: `https://${SITE}.wikidot.com/${legacySlug}`};
   assert.equal(await adapter.inspect(legacy), null);
   await assert.rejects(adapter.create(legacy, {source}), /validated/);
 });
@@ -85,14 +85,14 @@ test("private-site adapter accepts only the oracle run-owned namespace", async (
   const adapter = new WikidotThemePageAdapter({helperClient: helper, siteSlug: "sandbox-for-codex"});
   const source = "[[collapsible]]oracle[[/collapsible]]";
   const slug = "codex-oracle:20260805-adapter-syntax-inline";
-  const resource = {resource_id: "syntax:inline", target: "wikidot", site_slug: "sandbox-for-codex", slug, url: `http://sandbox-for-codex.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Oracle fixture", tags: ["codex-oracle"]};
+  const resource = {resource_id: "syntax:inline", target: "wikidot", site_slug: "sandbox-for-codex", slug, url: `https://sandbox-for-codex.wikidot.com/${slug}`, source_sha256: sha256(source), title: "Oracle fixture", tags: ["codex-oracle"]};
   await adapter.connect();
   assert.equal(await adapter.inspect(resource), null);
   await adapter.create(resource, {source});
   assert.deepEqual(helper.calls.find(({action}) => action === "create").fields.tags, ["codex-oracle"]);
   await adapter.remove(resource, {expected: {title: resource.title, source_sha256: targetRoundTripSourceSha256("wikidot", source), tags: resource.tags}, identity: 1234});
   const unsupported = "codex-oracle:20260805-";
-  await assert.rejects(adapter.inspect({...resource, slug: unsupported, url: `http://sandbox-for-codex.wikidot.com/${unsupported}`}), /validated/);
+  await assert.rejects(adapter.inspect({...resource, slug: unsupported, url: `https://sandbox-for-codex.wikidot.com/${unsupported}`}), /validated/);
 });
 
 test("private-site adapter exposes exact read-only reference prerequisites", async () => {
@@ -102,7 +102,7 @@ test("private-site adapter exposes exact read-only reference prerequisites", asy
   helper.pages.set(resource.slug, {identity: 77, title: resource.title, source_sha256: resource.source_sha256, tags: resource.tags});
   assert.equal((await adapter.inspect(resource)).identity, 77);
   await assert.rejects(adapter.create(resource, {source}), /read-only/);
-  await assert.rejects(adapter.inspect({...resource, slug: "component:other", url: `https://${SITE}.wikidot.com/component:other`}), /validated/);
+  await assert.rejects(adapter.inspect({...resource, slug: "component:other", url: `http://${SITE}.wikidot.com/component:other`}), /validated/);
   await assert.rejects(adapter.inspect({...resource, title: "changed"}), /read-only contract/);
 });
 
