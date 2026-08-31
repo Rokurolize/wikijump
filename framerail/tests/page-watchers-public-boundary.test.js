@@ -64,6 +64,10 @@ test("Watchers renders typed public identities without exposing an untyped ID", 
     /<span class="printuser"><a href="\/-\/user\/watcher-fixture">Watcher Fixture<\/a><\/span>/u
   )
   assert.doesNotMatch(body, /19000001/u)
+  assert.equal(
+    body,
+    '<!--[--><ul class="page-watchers-list"><!--[--><li><!--[0--><span class="printuser"><a href="/-/user/watcher-fixture">Watcher Fixture</a></span><!--]--><!----></li><!--]--></ul><!--]-->'
+  )
 })
 
 test("Watchers action derives the site from trusted context and remains anonymous", async () => {
