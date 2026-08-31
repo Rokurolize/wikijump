@@ -90,7 +90,7 @@ function response(status, body, headers = {}) {
   };
 }
 
-function requestFixture({ activated = false, member = false, userId = 123456, denyActivation = false } = {}) {
+function requestFixture({ activated = false, member = false, userId = 123456, denyActivation = false, malformedSuccessful = false } = {}) {
   const calls = [];
   let currentActivated = activated;
   let currentMember = member;
@@ -168,6 +168,11 @@ function requestFixture({ activated = false, member = false, userId = 123456, de
     calls.push({ kind: "login", correct });
     if (correct) {
       loginSessionActive = true;
+      if (malformedSuccessful) {
+        return response(200, "not-an-action-result", {
+          "set-cookie": ["wikijump_token=candidate-login-session; Path=/; HttpOnly; Secure; SameSite=Lax"],
+        });
+      }
       return response(200, '{"type":"success","status":200}', {
         "content-type": "application/json",
         "set-cookie": ["wikijump_token=candidate-login-session; Path=/; HttpOnly; Secure; SameSite=Lax"],
@@ -300,6 +305,21 @@ test("a failed wrong-password probe still logs out the successful probe session"
   }, { requestImpl }), /accepted a different password/u);
   assert.equal(fixture.calls.some(({ method }) => method === "logout"), true);
   await assert.rejects(fs.access(paths.receiptPath));
+});
+
+test("a malformed successful login still logs out the issued probe session", async (t) => {
+  const paths = await fixtureFiles(t);
+  const fixture = requestFixture({ malformedSuccessful: true });
+
+  await assert.rejects(
+    runCandidateAccountProvisioningCommand({
+      "candidate-identity": paths.identityPath,
+      "private-input": paths.privatePath,
+      receipt: paths.receiptPath,
+    }, { requestImpl: fixture.requestImpl }),
+    /serialized SvelteKit ActionResult/u,
+  );
+  assert.equal(fixture.calls.filter(({ kind, method }) => kind === "rpc" && method === "logout").length, 1);
 });
 
 test("candidate account provisioning fails closed on identity, operator, and origin mismatches", async (t) => {
