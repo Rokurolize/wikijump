@@ -569,7 +569,7 @@ test("empty and unselected select fields save and restore as Wikidot null", asyn
   await expect(selectTwo).toHaveCount(2)
   expect(
     await selectTwo.evaluateAll((controls) =>
-      controls.every((control) => !control.checked)
+      controls.every((control) => !(control as HTMLInputElement).checked)
     )
   ).toBe(true)
   await expect(page.locator("select[name='field-select_five']")).toHaveValue("a")
@@ -604,7 +604,7 @@ test("empty and unselected select fields save and restore as Wikidot null", asyn
   await expect(selectTwo).toHaveCount(2)
   expect(
     await selectTwo.evaluateAll((controls) =>
-      controls.every((control) => !control.checked)
+      controls.every((control) => !(control as HTMLInputElement).checked)
     )
   ).toBe(true)
   await expect(page.locator("select[name='field-select_five']")).toHaveValue("a")

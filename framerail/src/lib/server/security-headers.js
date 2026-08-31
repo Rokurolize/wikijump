@@ -128,6 +128,8 @@ export const staticSecurityHeaderEntries = (
  * @param {Response} response
  * @param {string} pathname
  * @param {string | undefined} siteSlug
+ * @param {"local" | "dev" | "prod"} [deploymentEnvironment]
+ * @param {string | undefined} [requestOrigin]
  */
 export const applyStaticSecurityHeaders = (
   response,

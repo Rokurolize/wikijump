@@ -650,7 +650,7 @@
                   <input
                     name={`field-${field.name}`}
                     class="form-checkbox"
-                    checked="checked"
+                    checked={true}
                     onchange={(event) =>
                       (values[field.name] = event.currentTarget.checked ? "1" : "0")}
                     type="checkbox"

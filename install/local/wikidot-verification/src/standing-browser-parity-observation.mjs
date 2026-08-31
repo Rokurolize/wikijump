@@ -541,6 +541,23 @@ export function isExpectedExternalAssetFailure(event) {
   } catch { return false; }
 }
 
+/**
+ * @param {{
+ *   context: import("@playwright/test").BrowserContext
+ *   page?: import("@playwright/test").Page | null
+ *   url: string
+ *   label: string
+ *   index: number
+ *   outputDir: string
+ *   contract: Record<string, any> | null
+ *   viewport: { width: number; height: number }
+ *   timeoutMs: number
+ *   settleMs: number
+ *   requestGateAttribution?: { classifyRequestFailure: (request: import("@playwright/test").Request) => Record<string, any> | null } | null
+ *   onPhase?: ((phase: string) => void | Promise<void>) | null
+ *   navigate?: ((input: { page: import("@playwright/test").Page; url: string; timeoutMs: number }) => Promise<{ status?: number } | null>) | null
+ * }} input
+ */
 export async function captureBrowserParityObservation({
   context,
   page: suppliedPage = null,

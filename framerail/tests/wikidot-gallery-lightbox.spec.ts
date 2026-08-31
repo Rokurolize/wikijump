@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page, type Route } from "@playwright/test"
 
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
@@ -8,8 +8,8 @@ const SITE_HEADERS = {
 const SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><rect width="40" height="30" fill="white"/></svg>'
 
-const installImageFixture = async (page) => {
-  await page.route("**/gallery-*.webp", async (route) => {
+const installImageFixture = async (page: Page) => {
+  await page.route("**/gallery-*.webp", async (route: Route) => {
     if (route.request().url().endsWith("gallery-image-broken.webp")) {
       await route.fulfill({ status: 404, contentType: "text/plain", body: "missing" })
       return

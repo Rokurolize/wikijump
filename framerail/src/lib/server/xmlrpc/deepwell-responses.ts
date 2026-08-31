@@ -167,7 +167,7 @@ export function expectDeepwellPageCreateOutput(value: unknown): DeepwellPageCrea
   ) {
     throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_create")
   }
-  return value
+  return { slug: value.slug }
 }
 
 export function expectDeepwellPageMoveOutput(value: unknown): DeepwellPageMoveOutput {
@@ -178,7 +178,7 @@ export function expectDeepwellPageMoveOutput(value: unknown): DeepwellPageMoveOu
   ) {
     throw new XmlRpcFault(-32603, "Malformed Deepwell response: page_move")
   }
-  return value
+  return { new_slug: value.new_slug }
 }
 
 export function isDeepwellBlobUpload(
