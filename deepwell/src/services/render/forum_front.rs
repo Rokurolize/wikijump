@@ -23,6 +23,8 @@ const MAX_LIMIT: usize = 100;
 const CANDIDATE_LIMIT: usize = 1_001;
 const MAX_CATEGORY_IDS: usize = 32;
 const MAX_THREAD_IDS: usize = 5_000;
+pub(super) const MAX_CUSTOM_BODY_BYTES: usize = 64 * 1024;
+const MAX_CUSTOM_OUTPUT_BYTES: usize = 2 * 1024 * 1024;
 
 #[derive(Debug)]
 pub(super) struct FrontForumArguments {
@@ -412,7 +414,10 @@ pub(super) fn render_custom_body(
     items: &[FrontForumItem],
     body: &str,
     compat_html: &mut super::compat::CompatHtmlFragments,
-) -> String {
+) -> Option<String> {
+    if body.len() > MAX_CUSTOM_BODY_BYTES {
+        return None;
+    }
     let avatar_timestamp = time::OffsetDateTime::now_utc().unix_timestamp();
     let mut output = String::from("[[div class=\"front-forum-box\"]]\n");
     for item in items {
@@ -424,9 +429,12 @@ pub(super) fn render_custom_body(
             },
         ));
         output.push_str("\n[[/div]]\n");
+        if output.len() > MAX_CUSTOM_OUTPUT_BYTES {
+            return None;
+        }
     }
     output.push_str("[[/div]]");
-    output
+    Some(output)
 }
 
 #[cfg(test)]
@@ -454,6 +462,13 @@ mod tests {
             parse_arguments(&format!(r#" category="{categories}""#)),
             Some(FrontForumArgumentsParse::CategoryError)
         ));
+    }
+
+    #[test]
+    fn frontforum_custom_body_is_bounded() {
+        let mut fragments = CompatHtmlFragments::new("");
+        let body = "x".repeat(MAX_CUSTOM_BODY_BYTES + 1);
+        assert!(render_custom_body(&[], &body, &mut fragments).is_none());
     }
 
     fn item(title: &str, description: &str, compiled_html: &str) -> FrontForumItem {
