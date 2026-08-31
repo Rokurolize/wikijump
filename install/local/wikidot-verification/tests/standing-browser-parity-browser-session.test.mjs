@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import test from "node:test";
 
 import {
   candidateLocalOriginSets,
+  createParityBrowserControls,
   isParityBrowserPublicOrigin,
   installCandidateFilePortRoute,
   parityBrowserExecutionMode,
@@ -121,6 +125,18 @@ test("browser throttle receipt binds exact case-set public origins", () => {
     ),
     false,
   );
+});
+
+test("resumed browser controls reuse the sealed throttle receipt identity", async () => {
+  const outputDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-resume-"));
+  const policy = {sha256: hash("a"), value: {policy_version: "fixture-v1"}};
+  const args = {mode: "candidate", timeoutMs: 1_000};
+  const first = await createParityBrowserControls({args, outputDir, policy, candidate: null});
+  const firstConfigSha256 = first.configSha256;
+  await first.close();
+  const resumed = await createParityBrowserControls({args, outputDir, policy, candidate: null, resume: true});
+  assert.equal(resumed.configSha256, firstConfigSha256);
+  await resumed.close();
 });
 
 test("candidate file routing maps only the exact canonical file authority to its sealed port", async () => {

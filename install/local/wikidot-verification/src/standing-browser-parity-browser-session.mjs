@@ -16,6 +16,8 @@ import {
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
 import {
   requireExactHttpsOrigins,
+  readJsonObject,
+  requireNonEmptyString,
   requirePlainObject,
   requireSha256,
   sealJsonNoReplace,
@@ -330,6 +332,7 @@ export async function createParityBrowserControls({
   candidate,
   credentialPolicy = "none",
   publicOrigins = [],
+  resume = false,
 }) {
   const runId = randomUUID();
   const executionMode = parityBrowserExecutionMode(args.mode);
@@ -350,12 +353,19 @@ export async function createParityBrowserControls({
       "browser public origins",
     );
     const configPath = path.join(outputDir, "throttle-config-receipt.json");
+    let configRunId = runId;
+    let configLock = lock;
+    if (resume) {
+      const existing = await readJsonObject(configPath, "existing throttle config");
+      configRunId = requireNonEmptyString(existing.run_id, "existing throttle config run_id");
+      configLock = requirePlainObject(existing.browser_capture_lock, "existing throttle config browser_capture_lock");
+    }
     const configSeal = await sealJsonNoReplace(
       configPath,
       parityBrowserThrottleConfig({
         args,
-        runId,
-        lock,
+        runId: configRunId,
+        lock: configLock,
         policy,
         localOrigins,
         candidate: candidate?.candidate.endpoint ?? null,
