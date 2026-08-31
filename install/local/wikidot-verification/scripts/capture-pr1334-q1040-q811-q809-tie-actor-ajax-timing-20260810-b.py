@@ -5,11 +5,14 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import socket
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +27,57 @@ SCHEMA = "wikijump.pr1334.q1040_q811_q809_tie_actor_ajax_timing_live.v1"
 LANE_ID = "B_Q1040_Q811_Q809_TIE_ACTOR_AJAX_TIMING"
 BASE_COMMIT = "f2b5769e1ff6206c31cc2b66a03675c64fba6318"
 BASE_TREE = "7b9967ff145092f5c1c358c04128ee94929557a9"
+EXPECTED_PUBLIC_ORIGIN = "http://sandbox-for-codex.wikidot.com"
+EXPECTED_NAMESPACE_PREFIX = "codex-pr1334-b-pagequery-"
+MAX_BUDGETS = {
+    "max_total_requests": 180,
+    "max_mutation_requests": 48,
+    "cleanup_mutation_reserve": 16,
+    "max_concurrent_read_requests": 2,
+    "max_request_body_bytes": 32768,
+    "max_response_body_bytes_per_request": 262144,
+    "max_total_response_bytes": 10485760,
+    "max_persisted_fragment_bytes_per_case": 8192,
+    "max_artifact_bytes": 1572864,
+    "per_request_timeout_ms": 20000,
+    "total_wall_time_ms": 1200000,
+    "minimum_interval_between_mutations_ms": 5000,
+    "read_retry_limit": 1,
+    "mutation_retry_limit": 0,
+}
+
+
+class RefuseRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, new_url: str) -> None:
+        raise urllib.error.HTTPError(request.full_url, code, "public read redirect refused", headers, fp)
+
+
+def validate_public_origin(value: Any) -> str:
+    if value != EXPECTED_PUBLIC_ORIGIN:
+        raise SystemExit("fixture public_origin is not the committed sandbox origin")
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme != "http" or parsed.hostname != "sandbox-for-codex.wikidot.com" or parsed.port is not None or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+        raise SystemExit("fixture public_origin is not a plain sandbox origin")
+    try:
+        addresses = {ipaddress.ip_address(result[4][0]) for result in socket.getaddrinfo(parsed.hostname, 80, type=socket.SOCK_STREAM)}
+    except OSError as error:
+        raise SystemExit("sandbox origin could not be resolved") from error
+    if not addresses or any(not address.is_global for address in addresses):
+        raise SystemExit("sandbox origin resolved to a non-public address")
+    return value
+
+
+def validate_budgets(value: Any) -> dict[str, int]:
+    if not isinstance(value, dict):
+        raise SystemExit("fixture limits must be an object")
+    for name, maximum in MAX_BUDGETS.items():
+        current = value.get(name)
+        if isinstance(current, bool) or not isinstance(current, int) or current < 0 or current > maximum:
+            raise SystemExit(f"fixture budget {name} exceeds the committed bound")
+    return value
+
+
+PUBLIC_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), RefuseRedirectHandler())
 
 
 def utc_now() -> str:
@@ -104,7 +158,7 @@ def public_get(origin: str, fullname: str, budget: Budget) -> tuple[int, bytes]:
         f"{origin}/{fullname}", headers={"User-Agent": "wikijump-compatibility-evidence/1"}
     )
     try:
-        with urllib.request.urlopen(
+        with PUBLIC_OPENER.open(
             request, timeout=budget.limits["per_request_timeout_ms"] / 1000
         ) as response:
             body = response.read(budget.limits["max_response_body_bytes_per_request"] + 1)
@@ -160,16 +214,20 @@ def main() -> None:
     fixture = json.loads(fixture_bytes)
     if fixture["schema"] != "wikijump.pr1334.q1040_q811_q809_tie_actor_ajax_timing_fixture.v1":
         raise SystemExit("unexpected fixture schema")
-    if fixture["lane_id"] != LANE_ID or re.fullmatch(fixture["run_id_pattern"], args.run_id) is None:
+    if fixture["lane_id"] != LANE_ID or fixture.get("site") != "sandbox-for-codex" or RUN_ID_PATTERN.fullmatch(args.run_id) is None:
         raise SystemExit("invalid lane or run identity")
+    public_origin = validate_public_origin(fixture.get("public_origin"))
+    limits = validate_budgets(fixture["limits"])
     if args.output.exists():
         raise SystemExit("refusing to replace an existing artifact")
     required_env = [f"WIKIDOT_{label}_{field}" for label in "ABCDE" for field in ("USERNAME", "PASSWORD")]
     if missing_env := [name for name in required_env if not os.environ.get(name)]:
         raise SystemExit(f"credential environment incomplete: {len(missing_env)} required values absent")
 
-    namespace = fixture["run_namespace_prefix"] + sha256_bytes(args.run_id.encode())[:12]
-    if not namespace.startswith("codex-pr1334-b-pagequery-"):
+    if fixture.get("run_namespace_prefix") != EXPECTED_NAMESPACE_PREFIX:
+        raise SystemExit("fixture namespace prefix is not lane-owned")
+    namespace = EXPECTED_NAMESPACE_PREFIX + sha256_bytes(args.run_id.encode())[:12]
+    if not namespace.startswith(EXPECTED_NAMESPACE_PREFIX):
         raise SystemExit("run namespace escaped its ownership prefix")
     category = namespace
     names = {
@@ -198,7 +256,7 @@ def main() -> None:
         f"RATED_START [[module RatedPages category=\"{category}\" order=\"rating-desc\" limit=\"20\"]] RATED_END\n"
         f"{marker}-end"
     )
-    budget = Budget(fixture["limits"])
+    budget = Budget(limits)
     started = utc_now()
     cases: list[dict[str, Any]] = []
     setup_inventory: list[dict[str, Any]] = []
@@ -224,10 +282,10 @@ def main() -> None:
 
     def client_config() -> AjaxModuleConnectorConfig:
         return AjaxModuleConnectorConfig(
-            request_timeout=fixture["limits"]["per_request_timeout_ms"] / 1000,
+            request_timeout=limits["per_request_timeout_ms"] / 1000,
             attempt_limit=1,
-            semaphore_limit=fixture["limits"]["max_concurrent_read_requests"],
-            allow_insecure_session_transport_for=fixture["site"],
+            semaphore_limit=limits["max_concurrent_read_requests"],
+            allow_insecure_session_transport_for=SITE,
         )
 
     failure_stage = "client_construction"
@@ -238,7 +296,7 @@ def main() -> None:
                 password=os.environ[f"WIKIDOT_{label}_PASSWORD"],
                 amc_config=client_config(),
             )
-        sites = {label: client.site.get(fixture["site"]) for label, client in clients.items()}
+        sites = {label: client.site.get(SITE) for label, client in clients.items()}
         failure_stage = "actor_role_read"
         actor_matrix = [
             {"actor_label": label, **actor_role(sites[label], clients[label], budget)} for label in "ABCDE"
@@ -260,7 +318,7 @@ def main() -> None:
                 raise RuntimeError("run-owned page identity unexpectedly preexisted")
         failure_stage = "anonymous_absence_preflight"
         for fullname in names.values():
-            status, _ = public_get(fixture["public_origin"], fullname, budget)
+            status, _ = public_get(public_origin, fullname, budget)
             if status != 404:
                 raise RuntimeError("anonymous absence preflight failed")
         if authenticated_redirect_negatives != set(names.values()):
@@ -297,7 +355,7 @@ def main() -> None:
         ]
         before_timing: dict[str, str] = {}
         for key in ("tie_b_1", "tie_b_2"):
-            status, body = public_get(fixture["public_origin"], names[key], budget)
+            status, body = public_get(public_origin, names[key], budget)
             if status != 200:
                 raise RuntimeError("saved holder page was not publicly readable")
             before_timing[key] = sha256_bytes(body)
@@ -309,8 +367,8 @@ def main() -> None:
             page.vote(value)
             votes.append((key, actor))
             if key in ("tie_b_1", "tie_b_2"):
-                status, body = public_get(fixture["public_origin"], names[key], budget)
-                fragment = bounded_marker_fragment(body, marker, fixture["limits"]["max_persisted_fragment_bytes_per_case"])
+                status, body = public_get(public_origin, names[key], budget)
+                fragment = bounded_marker_fragment(body, marker, limits["max_persisted_fragment_bytes_per_case"])
                 timing_case = "R7_MUTATION_A_FIRST_READ" if key.endswith("1") else "R7_MUTATION_B_FIRST_READ"
                 timing_matrix.append({"case_id": timing_case, "page_label": key, "http_status": status, "response_changed": sha256_bytes(body) != before_timing[key], **fragment})
                 cases.append({"id": timing_case, "status": "executed", "authority": "live_public_wikidot"})
@@ -338,10 +396,10 @@ def main() -> None:
 
         failure_stage = "saved_page_query_read"
         for index, key in enumerate(("tie_a_1", "tie_b_1", "unique_low", "unique_high")):
-            status, body = public_get(fixture["public_origin"], names[key], budget)
+            status, body = public_get(public_origin, names[key], budget)
             if status != 200:
                 raise RuntimeError("page-query holder GET failed")
-            fragment = bounded_marker_fragment(body, marker, fixture["limits"]["max_persisted_fragment_bytes_per_case"])
+            fragment = bounded_marker_fragment(body, marker, limits["max_persisted_fragment_bytes_per_case"])
             row = {"holder_label": key, "http_status": status, **fragment}
             if key.startswith("tie_a"):
                 next_id, previous_id = "R3_NEXT_TIE_A", "R4_PREVIOUS_TIE_A"
@@ -372,7 +430,7 @@ def main() -> None:
         for key, actor in reversed(votes):
             try:
                 budget.request()
-                page = clients[actor].site.get(fixture["site"]).page.get(names[key])
+                page = clients[actor].site.get(SITE).page.get(names[key])
                 budget.request(mutation=True, cleanup=True)
                 page.cancel_vote()
             except Exception as error:
@@ -380,7 +438,7 @@ def main() -> None:
         for fullname in reversed(created):
             try:
                 budget.request()
-                page = clients["A"].site.get(fixture["site"]).page.get(fullname, raise_when_not_found=False)
+                page = clients["A"].site.get(SITE).page.get(fullname, raise_when_not_found=False)
                 if page is not None:
                     budget.request(mutation=True, cleanup=True)
                     page.destroy()
@@ -388,9 +446,9 @@ def main() -> None:
                 cleanup_errors.append(type(error).__name__)
         if clients:
             try:
-                anonymous_absent = all(public_get(fixture["public_origin"], fullname, budget)[0] == 404 for fullname in names.values())
+                anonymous_absent = all(public_get(public_origin, fullname, budget)[0] == 404 for fullname in names.values())
                 authenticated_absent = True
-                site_a = clients["A"].site.get(fixture["site"])
+                site_a = clients["A"].site.get(SITE)
                 for fullname in names.values():
                     budget.request()
                     try:
@@ -454,7 +512,7 @@ def main() -> None:
         "audit_case_ids": fixture["audit_case_ids"],
         "run_id": args.run_id,
         "run_namespace": namespace,
-        "site": fixture["site"],
+        "site": SITE,
         "fixture_sha256": sha256_bytes(fixture_bytes),
         "script_sha256": sha256_file(Path(__file__).resolve()),
         "capture_started_at": started,
@@ -462,7 +520,7 @@ def main() -> None:
         "capture_status": "partial" if cleanup_verified and failure_class is None else "blocked",
         "closure_status": "non_closing_evidence",
         "authority_preflight": {"status": "partial", "proved": sorted(set(authority_proved)), "missing": sorted(set(authority_missing)), "failure_class": failure_class, "failure_stage": failure_stage if failure_class else None},
-        "budgets": fixture["limits"],
+        "budgets": limits,
         "actual_usage": actual,
         "setup_inventory": setup_inventory,
         "actor_matrix": actor_matrix,
@@ -498,7 +556,7 @@ def main() -> None:
     encoded = json.dumps(artifact, indent=2, sort_keys=True).encode() + b"\n"
     artifact["actual_usage"]["artifact_bytes"] = len(encoded)
     encoded = json.dumps(artifact, indent=2, sort_keys=True).encode() + b"\n"
-    if len(encoded) > fixture["limits"]["max_artifact_bytes"]:
+    if len(encoded) > limits["max_artifact_bytes"]:
         raise SystemExit("artifact byte budget exceeded")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("xb") as handle:
