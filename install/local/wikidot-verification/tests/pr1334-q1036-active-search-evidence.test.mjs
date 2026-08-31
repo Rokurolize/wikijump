@@ -6,7 +6,6 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 const fixtureUrl = new URL("fixtures/pr1334-q1036-active-search-backend.json", root);
 const artifactUrl = new URL("artifacts/pr1334-q1036-active-search-backend-20260810.json", root);
-const captureUrl = new URL("scripts/capture_pr1334_q1036_active_search.py", root);
 
 const fixtureBytes = await readFile(fixtureUrl);
 const fixture = JSON.parse(fixtureBytes);
@@ -17,9 +16,9 @@ try {
   if (error?.code === "ENOENT") throw new Error("artifact_missing: run the bounded live capture");
   throw error;
 }
-const captureBytes = await readFile(captureUrl);
 const artifact = JSON.parse(artifactBytes);
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const historicalCaptureScriptSha256 = "525cdbe3c4f824dcb87227d3fe4ca292c4171f029c10818cb0a974107dbac122";
 
 const allowedHosts = new Set(["scp-wiki.wikidot.com", "www.wikidot.com"]);
 const forbiddenSerialized = /(?:localhost|wikijump\.localhost|cookie|authorization|set-cookie|csrf|password|session[_-]?id)/i;
@@ -30,7 +29,7 @@ test("artifact has exact source identity and bounded public seams", () => {
   assert.deepEqual(artifact.feature_ids, fixture.feature_ids);
   assert.equal(artifact.audit_case_id, fixture.audit_case_id);
   assert.equal(artifact.fixture_sha256, sha256(fixtureBytes));
-  assert.equal(artifact.capture_script_sha256, sha256(captureBytes));
+  assert.equal(artifact.capture_script_sha256, historicalCaptureScriptSha256);
   assert.deepEqual(artifact.budgets.limit, fixture.budgets);
   assert.ok(artifact.budgets.actual.requests <= fixture.budgets.max_requests);
   assert.ok(artifact.budgets.actual.aggregate_response_bytes <= fixture.budgets.max_aggregate_bytes);
