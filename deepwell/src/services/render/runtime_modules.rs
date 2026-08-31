@@ -1554,9 +1554,13 @@ impl RenderService {
         let mut cursor = 0;
         for module in executable_new_page_modules(&wikitext) {
             output.push_str(&wikitext[cursor..module.source_range.start]);
+            let Some(template_names) = module.template_names.as_deref() else {
+                output.push_str(&wikitext[module.source_range.clone()]);
+                cursor = module.source_range.end;
+                continue;
+            };
             let templates =
-                resolve_new_page_templates(ctx, current_site_id, &module.template_names)
-                    .await?;
+                resolve_new_page_templates(ctx, current_site_id, template_names).await?;
             let rendered = render_new_page_module(module.head, templates);
             output.push_str(&compat_html.push_html(rendered));
             cursor = module.source_range.end;
