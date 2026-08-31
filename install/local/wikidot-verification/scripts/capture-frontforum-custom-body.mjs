@@ -4,6 +4,7 @@ import fs from "node:fs/promises"
 const defaultCasesUrl = new URL("../fixtures/frontforum-custom-body/cases.json", import.meta.url)
 const defaultOutputUrl = new URL("../artifacts/frontforum-custom-body-live-20260810.json", import.meta.url)
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
+const expectedEndpoint = "http://sandbox-for-codex.wikidot.com/ajax-module-connector.php"
 
 function parseArguments(argv) {
   const options = { cases: defaultCasesUrl, output: defaultOutputUrl }
@@ -32,6 +33,7 @@ async function postPreview(endpoint, caseId, source) {
     try {
       response = await fetch(endpoint, {
         method: "POST",
+        redirect: "manual",
         headers: {
           "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
           cookie: "wikidot_token7=123456;",
@@ -41,6 +43,7 @@ async function postPreview(endpoint, caseId, source) {
         body: form,
         signal: AbortSignal.timeout(20_000),
       })
+      if (response.url !== endpoint || response.redirected) throw new Error(`${caseId}: Wikidot redirected the preview request`)
       if (response.status !== 503) break
     } catch (error) {
       lastError = error
@@ -55,6 +58,24 @@ async function postPreview(endpoint, caseId, source) {
     throw new Error(`${caseId}: unexpected PagePreviewModule response`)
   }
   return { httpStatus: response.status, payload, rawResponse, request }
+}
+
+function validateFixture(fixture) {
+  if (fixture.schema !== "wikijump.frontforum_custom_body_cases.v1" || fixture.site !== "sandbox-for-codex" || fixture.actor !== "anonymous" || fixture.mutated !== false) {
+    throw new Error("unsupported or mutating FrontForum capture fixture")
+  }
+  if (fixture.endpoint !== expectedEndpoint || !Array.isArray(fixture.cases) || fixture.cases.length === 0) {
+    throw new Error("FrontForum capture fixture endpoint or cases are not sealed")
+  }
+  const endpoint = new URL(fixture.endpoint)
+  if (endpoint.protocol !== "http:" || endpoint.hostname !== "sandbox-for-codex.wikidot.com" || endpoint.port || endpoint.username || endpoint.password || endpoint.pathname !== "/ajax-module-connector.php" || endpoint.search || endpoint.hash) {
+    throw new Error("FrontForum capture fixture endpoint is outside the sealed public seam")
+  }
+  for (const fixtureCase of fixture.cases) {
+    if (typeof fixtureCase.case_id !== "string" || typeof fixtureCase.source !== "string" || !fixtureCase.selection || typeof fixtureCase.selection !== "object") {
+      throw new Error("FrontForum capture fixture case is malformed")
+    }
+  }
 }
 
 function redactSandboxAuthor(body) {
@@ -128,7 +149,7 @@ async function main() {
   const options = parseArguments(process.argv.slice(2))
   const fixtureBytes = await fs.readFile(options.cases)
   const fixture = JSON.parse(fixtureBytes)
-  if (fixture.mutated !== false || fixture.actor !== "anonymous") throw new Error("capture fixture must be anonymous and read-only")
+  validateFixture(fixture)
 
   const cases = []
   for (const fixtureCase of fixture.cases) {
