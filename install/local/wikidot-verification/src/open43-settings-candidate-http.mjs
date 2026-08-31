@@ -11,6 +11,7 @@ import {
   requirePlainObject,
 } from "./standing-browser-parity-util.mjs";
 
+const WRONG_ORIGIN_REJECTION_MESSAGE = "Cross-site POST form submissions are forbidden";
 const ACTORS = Object.freeze(["administrator", "non_admin", "expired"]);
 const ACTIVE_ACTORS = Object.freeze(["administrator", "non_admin"]);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
@@ -186,7 +187,7 @@ export class Open43SettingsCandidateSession {
       actionResult !== null &&
       typeof actionResult === "object" &&
       typeof actionResult.message === "string" &&
-      actionResult.message.length > 0
+      actionResult.message === WRONG_ORIGIN_REJECTION_MESSAGE
     ) {
       return {
         http_status: response.status,

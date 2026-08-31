@@ -135,6 +135,23 @@ test("settings candidate session records an exact wrong-origin transport rejecti
   await assert.rejects(session.action("site", { siteId: 17 }), /returned a malformed result/u);
 });
 
+test("settings candidate session rejects an unrelated wrong-origin 403", async () => {
+  const session = new Open43SettingsCandidateSession({
+    candidateIdentity,
+    privateInput,
+    requestImpl: async () => ({
+      status: 403,
+      headers: { "content-type": "application/json" },
+      body: Buffer.from('{"message":"Forbidden"}'),
+    }),
+  });
+
+  await assert.rejects(
+    session.action("site", { siteId: 17 }, { origin: "https://wrong-origin.invalid" }),
+    /returned a malformed result/u,
+  );
+});
+
 test("settings candidate session rejects malformed public action results", async () => {
   for (const [body, message] of [
     ["not-json", /returned non-JSON/u],
