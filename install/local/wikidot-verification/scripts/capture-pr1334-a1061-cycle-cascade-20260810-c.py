@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import socket
 import time
 import urllib.parse
 from pathlib import Path
@@ -21,6 +23,51 @@ BASE_TREE = "7b9967ff145092f5c1c358c04128ee94929557a9"
 SITE = "sandbox-for-codex"
 RUN_ID_PATTERN = re.compile(r"^pr1334-c-a1061-cycle-[0-9]{8}t[0-9]{6}z-[a-z0-9]{6,12}$")
 FORBIDDEN_PREFIX = "codex-pr1334-d-cache-breadcrumb-"
+EXPECTED_PUBLIC_ORIGIN = "http://sandbox-for-codex.wikidot.com"
+MAX_BUDGETS = {
+    "max_total_requests": 112,
+    "max_mutation_requests": 40,
+    "cleanup_mutation_reserve": 14,
+    "max_concurrent_read_requests": 2,
+    "max_live_pages": 8,
+    "max_cycle_length": 2,
+    "max_source_bytes_per_page": 2048,
+    "max_request_body_bytes": 8192,
+    "max_response_body_bytes_per_request": 262144,
+    "max_total_response_bytes": 6291456,
+    "max_persisted_fragment_bytes_per_case": 8192,
+    "max_artifact_bytes": 1048576,
+    "per_request_timeout_ms": 20000,
+    "total_wall_time_ms": 900000,
+    "minimum_interval_between_mutations_ms": 1500,
+    "read_retry_limit": 1,
+    "mutation_retry_limit": 0,
+}
+
+
+def validate_public_origin(value: Any) -> str:
+    if value != EXPECTED_PUBLIC_ORIGIN:
+        raise SystemExit("fixture public_origin is not the committed sandbox origin")
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme != "http" or parsed.hostname != "sandbox-for-codex.wikidot.com" or parsed.port is not None or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+        raise SystemExit("fixture public_origin is not a plain sandbox origin")
+    try:
+        addresses = {ipaddress.ip_address(result[4][0]) for result in socket.getaddrinfo(parsed.hostname, 80, type=socket.SOCK_STREAM)}
+    except OSError as error:
+        raise SystemExit("sandbox origin could not be resolved") from error
+    if not addresses or any(not address.is_global for address in addresses):
+        raise SystemExit("sandbox origin resolved to a non-public address")
+    return value
+
+
+def validate_budgets(value: Any) -> dict[str, int]:
+    if not isinstance(value, dict):
+        raise SystemExit("fixture budgets must be an object")
+    for name, maximum in MAX_BUDGETS.items():
+        current = value.get(name)
+        if isinstance(current, bool) or not isinstance(current, int) or current < 0 or current > maximum:
+            raise SystemExit(f"fixture budget {name} exceeds the committed bound")
+    return value
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -112,7 +159,8 @@ def main() -> None:
     fixture = json.loads(fixture_bytes)
     if fixture.get("lane_id") != LANE_ID or fixture.get("site") != SITE:
         raise SystemExit("fixture identity does not match lane C")
-    budgets = fixture["budgets"]
+    public_origin = validate_public_origin(fixture.get("public_origin"))
+    budgets = validate_budgets(fixture["budgets"])
     usage = Usage(budgets)
     namespace = f"codex-pr1334-c-cycle-{args.run_id}"
     names = {role: f"{namespace}-{role}" for role in fixture["roles"]}
@@ -185,7 +233,7 @@ def main() -> None:
         for attempt in range(budgets["read_retry_limit"] + 1):
             try:
                 response = client.get(
-                    f"{fixture['public_origin']}/{urllib.parse.quote(fullname, safe=':-')}",
+                    f"{public_origin}/{urllib.parse.quote(fullname, safe=':-')}",
                     timeout=budgets["per_request_timeout_ms"] / 1000,
                     follow_redirects=False,
                 )
