@@ -147,6 +147,8 @@ def main() -> None:
     parser.add_argument("--ftml-checkout", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
+    if args.output != ARTIFACT_REL:
+        raise ValueError(f"output_path_not_allowed: expected {ARTIFACT_REL}")
 
     repo = Path(__file__).resolve().parents[4]
     ftml = args.ftml_checkout.resolve(strict=True)
@@ -305,6 +307,9 @@ def main() -> None:
     serialized = json.dumps(artifact, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
     if any(value in serialized for value in ("/home/", "/mnt/", "C:\\")):
         raise ValueError("artifact contains an absolute local path")
+    if args.output.is_symlink():
+        raise ValueError("output_path_not_allowed: artifact must not be a symlink")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(serialized, encoding="utf-8")
 
 

@@ -326,6 +326,8 @@ def main():
         "mutations": 0,
         "private_output_retained": False,
     }
+    if arguments.output.is_symlink():
+        fail("output_path_not_allowed: artifact must not be a symlink")
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     arguments.output.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 

@@ -13,6 +13,7 @@ FTML_REV = "62ebba4efda1f10e82363c23c925061fbe939e49"
 FTML_VERSION = "1.42.0+roku.20260630.1"
 FIXTURE_REL = Path("install/local/wikidot-verification/fixtures/pr1334-ftml-structural-syntax-source-attribution.json")
 SCRIPT_REL = Path("install/local/wikidot-verification/scripts/capture_pr1334_ftml_structural_syntax_attribution.py")
+ARTIFACT_REL = Path("install/local/wikidot-verification/artifacts/pr1334-ftml-structural-syntax-attribution-20260810.json")
 INVENTORY_REL = Path("docs/development/compatibility-surface-inventory.json")
 MANIFEST_REL = Path("deepwell/Cargo.toml")
 LOCK_REL = Path("deepwell/Cargo.lock")
@@ -56,6 +57,8 @@ def main() -> None:
     parser.add_argument("--ftml-checkout", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
+    if args.output != ARTIFACT_REL:
+        raise ValueError(f"output_path_not_allowed: expected {ARTIFACT_REL}")
 
     repo = Path(__file__).resolve().parents[4]
     ftml = args.ftml_checkout.resolve(strict=True)
@@ -214,6 +217,9 @@ def main() -> None:
     serialized = json.dumps(artifact, indent=2, sort_keys=True, ensure_ascii=True) + "\n"
     if any(value in serialized for value in ("/home/", "/mnt/", "C:\\")):
         raise ValueError("artifact contains an absolute local path")
+    if args.output.is_symlink():
+        raise ValueError("output_path_not_allowed: artifact must not be a symlink")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(serialized, encoding="utf-8")
 
 
