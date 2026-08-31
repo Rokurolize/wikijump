@@ -286,7 +286,7 @@ impl RenderService {
                 settings,
                 list_pages_arguments,
                 &template,
-                *include_budget,
+                include_budget,
                 render_cost_budget,
                 Some(pages),
                 prefetched_displays.as_ref(),
@@ -305,12 +305,11 @@ impl RenderService {
                         IncludeExpansion {
                             wikitext: replacement,
                             included_pages: replacement_included_pages,
-                            expanded_include_count,
+                            expanded_include_count: _,
                         },
                     pending_delayed,
                     runtime_css_insertions: _,
                 }) => {
-                    include_budget.consume(expanded_include_count);
                     let replacement = if let Some(pending_delayed) = pending_delayed {
                         seal_protected_list_pages_delayed_output(
                             &replacement,
