@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import {readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
-import {fileURLToPath} from "node:url";
+import {fileURLToPath, pathToFileURL} from "node:url";
 
 import {visibleText as parsedVisibleText} from "../src/syntax-differential.mjs";
 
@@ -230,6 +230,11 @@ class WikidotSession {
   }
 }
 
+export async function cleanupPageIfRunOwned(owner, slug, expectedSource, created) {
+  if (!created) return {slug, status: "not-run-owned"};
+  return owner.removePage(slug, expectedSource);
+}
+
 function findRow(matrixCase, slug) {
   return matrixCase.rows.find(({href}) => href === `/${slug}`) ?? null;
 }
@@ -436,7 +441,7 @@ async function main(argv) {
     draftLocks.clear();
     for (const [slug, source, created] of [[holderPage, holderSource, holderCreated], [existingPage, publishedSource, publishedCreated]]) {
       try {
-        const result = await owner.removePage(slug, source);
+        const result = await cleanupPageIfRunOwned(owner, slug, source, created);
         cleanupOperations.push({object: `page:${slug}`, status: result.status});
       } catch (error) {
         cleanupOperations.push({object: `page:${slug}`, status: "cleanup-failed", failure: error.message});
@@ -545,4 +550,4 @@ async function main(argv) {
   process.stdout.write(`${args.output}\nstatus=${status}\n`);
 }
 
-await main(process.argv);
+if (import.meta.url === pathToFileURL(process.argv[1]).href) await main(process.argv);
