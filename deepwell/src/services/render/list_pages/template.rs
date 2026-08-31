@@ -358,13 +358,15 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
         return Some((ListPagesSections::default(), body.to_owned(), false));
     };
 
+    let valid_head_gap_starts = section_gap_closure_suffixes(
+        body,
+        body_pair.open_start,
+        ListPagesSectionKind::Head,
+    );
     let head_pair = pairs.iter().rev().find(|pair| {
         pair.kind == ListPagesSectionKind::Head
             && pair.close_end <= body_pair.open_start
-            && section_gap_contains_only_closes(
-                &body[pair.close_end..body_pair.open_start],
-                ListPagesSectionKind::Head,
-            )
+            && valid_head_gap_starts.contains(&pair.close_end)
     });
     let head_starts_on_next_line = head_pair.is_some_and(|pair| {
         matches!(
@@ -406,21 +408,33 @@ fn split_list_pages_sections(body: &str) -> Option<(ListPagesSections, String, b
     ))
 }
 
-fn section_gap_contains_only_closes(gap: &str, kind: ListPagesSectionKind) -> bool {
-    let mut cursor = 0usize;
-    for captures in LISTPAGES_SECTION_MARKER_REGEX.captures_iter(gap) {
+fn section_gap_closure_suffixes(
+    source: &str,
+    end: usize,
+    kind: ListPagesSectionKind,
+) -> BTreeSet<usize> {
+    let mut cursor = end;
+    let mut valid = true;
+    let mut starts = BTreeSet::new();
+    let markers = LISTPAGES_SECTION_MARKER_REGEX
+        .captures_iter(&source[..end])
+        .collect::<Vec<_>>();
+    for captures in markers.into_iter().rev() {
         let matched = captures
             .get(0)
             .expect("the section marker regex has a whole match");
-        if !gap[cursor..matched.start()].trim().is_empty()
+        if !source[matched.end()..cursor].trim().is_empty()
             || captures.name("close").is_none()
             || ListPagesSectionKind::parse(&captures["name"]) != kind
         {
-            return false;
+            valid = false;
         }
-        cursor = matched.end();
+        if valid {
+            starts.insert(matched.end());
+        }
+        cursor = matched.start();
     }
-    gap[cursor..].trim().is_empty()
+    starts
 }
 
 impl ListPagesTemplatePlan {

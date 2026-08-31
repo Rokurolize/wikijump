@@ -34,7 +34,7 @@ pub(super) const MAX_NEW_PAGE_TEMPLATES_PER_MODULE: usize = 32;
 pub(super) struct ExecutableNewPageModule<'a> {
     pub(super) source_range: Range<usize>,
     pub(super) head: &'a str,
-    pub(super) template_names: Vec<&'a str>,
+    pub(super) template_names: Option<Vec<&'a str>>,
 }
 
 pub(super) fn executable_new_page_modules(
@@ -60,9 +60,7 @@ pub(super) fn executable_new_page_modules(
         module_count += 1;
 
         let head = captures.name("head").map_or("", |head| head.as_str());
-        let Some(template_names) = new_page_template_names(head) else {
-            continue;
-        };
+        let template_names = new_page_template_names(head);
         recognized.push(ExecutableNewPageModule {
             source_range: matched.start()..matched.end(),
             head,
@@ -76,7 +74,8 @@ pub(super) fn wikitext_has_runtime_dependent_new_page_module(source: &str) -> bo
     executable_new_page_modules(source).iter().any(|module| {
         module
             .template_names
-            .first()
+            .as_ref()
+            .and_then(|names| names.first())
             .is_some_and(|name| new_page_template_lookup_slug(name).is_some())
     })
 }
@@ -312,8 +311,8 @@ fn advance_char(value: &str, cursor: &mut usize) {
 #[cfg(test)]
 mod tests {
     use super::{
-        NewPageTemplateOption, NewPageTemplateRendering, new_page_template_names,
-        render_new_page_module,
+        NewPageTemplateOption, NewPageTemplateRendering, executable_new_page_modules,
+        new_page_template_names, render_new_page_module,
     };
 
     #[test]
@@ -363,5 +362,19 @@ mod tests {
         let head = format!(r#" template="{names}" "#);
 
         assert_eq!(new_page_template_names(&head), None);
+    }
+
+    #[test]
+    fn retains_over_budget_modules_for_literal_fallback() {
+        let names = (0..=super::MAX_NEW_PAGE_TEMPLATES_PER_MODULE)
+            .map(|index| format!("template:{index}"))
+            .collect::<Vec<_>>()
+            .join(",");
+        let source = format!(r#"[[module NewPage template="{names}"]]"#);
+
+        let modules = executable_new_page_modules(&source);
+
+        assert_eq!(modules.len(), 1);
+        assert_eq!(modules[0].template_names, None);
     }
 }
