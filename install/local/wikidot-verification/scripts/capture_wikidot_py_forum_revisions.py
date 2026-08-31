@@ -8,9 +8,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import wikidot
-from bs4 import BeautifulSoup, Tag
-from wikidot.connector.ajax import AjaxModuleConnectorConfig
 
 
 LANE_ID = "FW-07-WIKIDOTPY-FORUM-REVISION-EVIDENCE"
@@ -19,6 +16,7 @@ CLIENT_REPOSITORY = Path("/home/roku/src/Rokurolize/wikidot.py")
 ROOT = Path(__file__).resolve().parents[4]
 DEFAULT_CASES = ROOT / "install/local/wikidot-verification/fixtures/wikidot-py-forum-revisions/cases.json"
 DEFAULT_OUTPUT = ROOT / "install/local/wikidot-verification/artifacts/wikidot-py-forum-revisions-live-20260810.json"
+ALLOWED_SITE = "sandbox-for-codex"
 
 
 def sha256(path: Path) -> str:
@@ -52,6 +50,12 @@ def response_envelope(result: object) -> dict[str, Any]:
     return {"kind": "response", **data}
 
 
+def validate_site(value: object) -> str:
+    if value != ALLOWED_SITE:
+        raise ValueError(f"forum revision capture site is outside the read/write allowlist: {value}")
+    return value
+
+
 def request_one(site: Any, request: dict[str, Any]) -> dict[str, Any]:
     result = site.amc_request([request], return_exceptions=True)[0]
     return response_envelope(result)
@@ -66,6 +70,8 @@ def classify(envelope: dict[str, Any]) -> dict[str, str]:
 
 
 def parse_edit_form(envelope: dict[str, Any]) -> dict[str, Any]:
+    from bs4 import BeautifulSoup, Tag
+
     body = envelope.get("body")
     if not isinstance(body, str):
         return classify(envelope)
@@ -96,10 +102,13 @@ def make_case(case_id: str, actor: str, request: dict[str, Any], envelope: dict[
 
 
 def capture(cases_path: Path, output_path: Path) -> None:
+    import wikidot
+    from wikidot.connector.ajax import AjaxModuleConnectorConfig
+
     cases_bytes = cases_path.read_bytes()
     manifest = json.loads(cases_bytes)
     fixture = manifest["fixture"]
-    site_name = manifest["site"]
+    site_name = validate_site(manifest["site"])
     config = AjaxModuleConnectorConfig(
         allow_insecure_session_transport_for=site_name,
     )
