@@ -13,7 +13,7 @@ use rand::RngExt;
 use regex::Regex;
 use sea_orm::{
     ColumnTrait, Condition, ConnectionTrait, EntityTrait, FromQueryResult, QueryFilter,
-    Statement, Value,
+    QuerySelect, Statement, Value,
 };
 use serde::Serialize;
 
@@ -36,6 +36,11 @@ use crate::types::{Action, Permission, RelationObjectType, RelationType, Resourc
 use crate::utils::now;
 
 pub(super) const MEMBERS_PAGE_SIZE: usize = 100;
+const MAX_MEMBERS_DIRECTORY_SCAN_ROWS: usize = 1_000;
+
+fn members_directory_scan_exceeded(row_count: usize) -> bool {
+    row_count > MAX_MEMBERS_DIRECTORY_SCAN_ROWS
+}
 
 pub(super) static MEMBERS_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"(?is)\[\[module\s+Members\b(?P<head>(?:[^\]"]+|"[^"]*")*)\]\]"#)
@@ -324,9 +329,19 @@ async fn load_directory_rows(
                 .add(relation::Column::OverwrittenAt.is_null())
                 .add(relation::Column::DeletedAt.is_null()),
         )
+        .limit((MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1) as u64)
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
+    if members_directory_scan_exceeded(memberships.len()) {
+        return Err(Error::new(
+            format!(
+                "member directory for site ID {site_id} exceeds the render scan budget"
+            ),
+            ErrorType::Render,
+        )
+        .into());
+    }
     let mut joined_at = BTreeMap::<i64, time::OffsetDateTime>::new();
     for membership in memberships {
         joined_at
@@ -336,7 +351,7 @@ async fn load_directory_rows(
     }
 
     if let Some(role_name) = group.role_name() {
-        let role_ids = Role::find()
+        let roles = Role::find()
             .filter(
                 Condition::all()
                     .add(role::Column::SiteId.eq(site_id))
@@ -344,16 +359,27 @@ async fn load_directory_rows(
                     .add(role::Column::IsVirtual.eq(false))
                     .add(role::Column::DeletedAt.is_null()),
             )
+            .limit((MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1) as u64)
             .all(ctx.transaction())
             .await
-            .or_raise(make_error)?
+            .or_raise(make_error)?;
+        if members_directory_scan_exceeded(roles.len()) {
+            return Err(Error::new(
+                format!(
+                    "member directory roles for site ID {site_id} exceed the render scan budget"
+                ),
+                ErrorType::Render,
+            )
+            .into());
+        }
+        let role_ids = roles
             .into_iter()
             .map(|role| role.role_id)
             .collect::<BTreeSet<_>>();
         if role_ids.is_empty() {
             return Ok(Vec::new());
         }
-        let assigned_user_ids = UserRole::find()
+        let assignments = UserRole::find()
             .filter(
                 Condition::all()
                     .add(user_role::Column::SiteId.eq(site_id))
@@ -365,9 +391,20 @@ async fn load_directory_rows(
                             .add(user_role::Column::ExpiresAt.gt(now())),
                     ),
             )
+            .limit((MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1) as u64)
             .all(ctx.transaction())
             .await
-            .or_raise(make_error)?
+            .or_raise(make_error)?;
+        if members_directory_scan_exceeded(assignments.len()) {
+            return Err(Error::new(
+                format!(
+                    "member directory role assignments for site ID {site_id} exceed the render scan budget"
+                ),
+                ErrorType::Render,
+            )
+            .into());
+        }
+        let assigned_user_ids = assignments
             .into_iter()
             .map(|assignment| assignment.user_id)
             .collect::<BTreeSet<_>>();
@@ -903,5 +940,15 @@ mod tests {
         let page_seven = output.find(">7</a>").expect("page 7 target should render");
         assert!(page_two < page_three && page_three < dots);
         assert!(dots < page_six && page_six < page_seven);
+    }
+
+    #[test]
+    fn member_directory_scan_budget_rejects_rows_beyond_render_limit() {
+        assert!(!members_directory_scan_exceeded(
+            MAX_MEMBERS_DIRECTORY_SCAN_ROWS
+        ));
+        assert!(members_directory_scan_exceeded(
+            MAX_MEMBERS_DIRECTORY_SCAN_ROWS + 1
+        ));
     }
 }
