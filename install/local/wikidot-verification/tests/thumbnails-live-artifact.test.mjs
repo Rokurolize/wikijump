@@ -5,6 +5,8 @@ import path from "node:path";
 import test from "node:test";
 import {fileURLToPath} from "node:url";
 
+import {isUnsafeHostname, validateCases as validateCaptureCases} from "../scripts/capture-thumbnails-live.mjs";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const casesPath = path.join(root, "install/local/wikidot-verification/fixtures/thumbnails-live/cases.json");
 const artifactPath = path.join(root, "install/local/wikidot-verification/artifacts/thumbnails-live-20260810.json");
@@ -272,4 +274,13 @@ test("thumbnail live artifact is internally valid and preserves COMPLETE or BLOC
   blockedEstablished.blocker = {reason: "insufficient_rule_boundary", stage: "rule_evaluation"};
   blockedEstablished.rule_summaries.site.status = "established";
   assert.throws(() => validateArtifact(cases, blockedEstablished));
+});
+
+test("thumbnail redirect policy rejects bracketed private IPv6 hosts", () => {
+  assert.equal(isUnsafeHostname("[::1]"), true);
+  assert.equal(isUnsafeHostname("[fc00::1]"), true);
+  assert.equal(isUnsafeHostname("[fe80::1]"), true);
+  const cases = readJson(casesPath);
+  cases.safety.authorized_redirect_hosts = ["[::1]"];
+  assert.throws(() => validateCaptureCases(cases, integrationCommit), /Invalid authorized_redirect_hosts/u);
 });

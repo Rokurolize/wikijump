@@ -5,7 +5,7 @@ import childProcess from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import {fileURLToPath} from "node:url";
+import {fileURLToPath, pathToFileURL} from "node:url";
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const scriptRelativePath = "install/local/wikidot-verification/scripts/capture-thumbnails-live.mjs";
@@ -53,7 +53,7 @@ function parseArguments(argv) {
   };
 }
 
-function validateCases(cases, integrationCommit) {
+export function validateCases(cases, integrationCommit) {
   if (cases.schema !== expectedSchema || cases.surface_id !== expectedSurface) throw new Error("Unexpected thumbnail case-manifest identity");
   if (cases.integration_commit !== integrationCommit) throw new Error("Integration commit does not match the case manifest");
   if (cases.documented?.host !== expectedHost) throw new Error("Unexpected thumbnail host");
@@ -62,6 +62,18 @@ function validateCases(cases, integrationCommit) {
   const probes = cases.cases.flatMap((entry) => entry.probes.map((probe) => ({entry, probe})));
   if (probes.length === 0 || probes.length > cases.budgets.maximum_logical_probes || cases.budgets.maximum_logical_probes > 64) throw new Error("Logical probe budget is invalid");
   if (cases.budgets.maximum_http_transactions > 128 || cases.budgets.maximum_redirect_hops_per_probe > 5 || cases.budgets.timeout_ms_per_transaction > 15_000 || cases.budgets.maximum_body_bytes_per_response > 4 * 1024 * 1024 || cases.budgets.maximum_aggregate_body_bytes > 16 * 1024 * 1024) throw new Error("Network budget exceeds the lane envelope");
+  for (const field of ["allowed_initial_hosts", "authorized_redirect_hosts"]) {
+    const hosts = cases.safety[field];
+    if (!Array.isArray(hosts) || hosts.length === 0 || new Set(hosts).size !== hosts.length || hosts.some((host) => {
+      if (typeof host !== "string" || host === "") return true;
+      try {
+        const url = new URL(`https://${host}/`);
+        return url.hostname !== host || isUnsafeHostname(url.hostname);
+      } catch {
+        return true;
+      }
+    })) throw new Error(`Invalid ${field}`);
+  }
   const probeIds = probes.map(({probe}) => probe.probe_id);
   if (new Set(probeIds).size !== probeIds.length) throw new Error("Probe IDs must be unique");
   const allowedInitialHosts = new Set(cases.safety.allowed_initial_hosts);
@@ -78,8 +90,8 @@ function requestUrl(entry) {
   return `${entry.scheme}://${expectedHost}/thumbnail/${entry.route_family}/${entry.identity}/${entry.size}.jpg`;
 }
 
-function isUnsafeHostname(hostname) {
-  const value = hostname.toLowerCase().replace(/\.$/u, "");
+export function isUnsafeHostname(hostname) {
+  const value = hostname.toLowerCase().replace(/^\[|\]$/gu, "").replace(/\.$/u, "");
   return value === "localhost" || value === "0.0.0.0" || value === "::1" || /^(?:127\.|10\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/u.test(value) || /^(?:fc|fd|fe80)/u.test(value);
 }
 
@@ -415,7 +427,9 @@ async function main() {
   process.exitCode = liveBlock ? 2 : 0;
 }
 
-main().catch((error) => {
-  process.stderr.write(`capture-thumbnails-live: ${error.message}\n`);
-  process.exitCode = 1;
-});
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
+    process.stderr.write(`capture-thumbnails-live: ${error.message}\n`);
+    process.exitCode = 1;
+  });
+}
