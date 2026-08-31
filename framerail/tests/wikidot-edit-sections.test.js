@@ -52,6 +52,18 @@ test("Edit Sections supports repeated tertiary headings through end of source", 
   )
 })
 
+test("Edit Sections handles large heading sequences without copying suffixes", () => {
+  const source = Array(30000).fill("+ Heading").join("\n")
+  const sections = findWikidotEditSections(
+    source,
+    pageContent(Array.from({ length: 30000 }, (_, index) => heading(1, index)))
+  )
+
+  assert.equal(sections.length, 30000)
+  assert.equal(sections[0].end, source.indexOf("\n") + 1)
+  assert.equal(sections.at(-1).end, source.length)
+})
+
 test("Edit Sections fails closed without a one-to-one direct heading match", () => {
   const source = "+ Direct\n\nBody"
   assert.deepEqual(findWikidotEditSections(source, pageContent([])), [])
