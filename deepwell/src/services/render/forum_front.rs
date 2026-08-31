@@ -166,14 +166,16 @@ pub(super) async fn load(
         return Ok(FrontForumLoad::MissingCategory);
     }
     let mut visible_thread_ids = Vec::new();
+    let mut visibility_complete = true;
     for &category_id in &category_ids {
-        let Some(category_thread_ids) = visibility
+        let Some(category_threads) = visibility
             .visible_thread_ids(site_id, Some(category_id), None, true)
             .await?
         else {
             return Ok(FrontForumLoad::ScanLimit);
         };
-        visible_thread_ids.extend(category_thread_ids);
+        visibility_complete &= category_threads.complete;
+        visible_thread_ids.extend(category_threads.ids);
     }
     if visible_thread_ids.is_empty() {
         return Ok(FrontForumLoad::Items(Vec::new()));
@@ -238,7 +240,7 @@ pub(super) async fn load(
     .await
     .or_raise(make_error)?;
 
-    if candidates.len() == CANDIDATE_LIMIT {
+    if candidates.len() == CANDIDATE_LIMIT && visibility_complete {
         return Ok(FrontForumLoad::ScanLimit);
     }
 

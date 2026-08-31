@@ -235,12 +235,14 @@ async fn load_forum_mini_threads(
     if !visibility.site_is_viewable(site_id).await? {
         return Ok(None);
     }
-    let Some(visible_thread_ids) = visibility
+    let Some(visible_threads) = visibility
         .visible_thread_ids(site_id, None, None, true)
         .await?
     else {
         return Ok(None);
     };
+    let visibility_complete = visible_threads.complete;
+    let visible_thread_ids = visible_threads.ids;
     if visible_thread_ids.is_empty() {
         return Ok(Some(Vec::new()));
     }
@@ -328,7 +330,7 @@ async fn load_forum_mini_threads(
             return Ok(Some(threads));
         }
     }
-    if scan_exhausted {
+    if scan_exhausted && visibility_complete {
         return Ok(None);
     }
     Ok(Some(threads))
@@ -344,12 +346,14 @@ async fn load_forum_mini_posts(
     if !visibility.site_is_viewable(site_id).await? {
         return Ok(None);
     }
-    let Some(visible_thread_ids) = visibility
+    let Some(visible_threads) = visibility
         .visible_thread_ids(site_id, None, None, true)
         .await?
     else {
         return Ok(None);
     };
+    let visibility_complete = visible_threads.complete;
+    let visible_thread_ids = visible_threads.ids;
     if visible_thread_ids.is_empty() {
         return Ok(Some(Vec::new()));
     }
@@ -450,7 +454,7 @@ async fn load_forum_mini_posts(
             return Ok(Some(posts));
         }
     }
-    if scan_exhausted {
+    if scan_exhausted && visibility_complete {
         return Ok(None);
     }
     Ok(Some(posts))

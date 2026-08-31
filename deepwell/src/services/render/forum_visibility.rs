@@ -30,6 +30,11 @@ struct ForumThreadVisibilityCandidate {
     page_category_id: Option<i64>,
 }
 
+pub(super) struct VisibleForumThreadIds {
+    pub(super) ids: Vec<i64>,
+    pub(super) complete: bool,
+}
+
 pub(super) struct ForumPageVisibility<'a, 'ctx> {
     ctx: &'a ServiceContext<'ctx>,
     viewer_user_id: Option<i64>,
@@ -153,7 +158,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         category_id: Option<i64>,
         thread_id: Option<i64>,
         visible_groups_only: bool,
-    ) -> Result<Option<Vec<i64>>> {
+    ) -> Result<Option<VisibleForumThreadIds>> {
         if !self.site_is_viewable(site_id).await? {
             return Ok(None);
         }
@@ -166,7 +171,7 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         let candidates = ForumThreadVisibilityCandidate::find_by_statement(
             Statement::from_sql_and_values(
                 self.ctx.transaction().get_database_backend(),
-                concat!(
+                format!(concat!(
                     "SELECT t.forum_thread_id, t.page_id, p.page_category_id ",
                     "FROM forum_thread t ",
                     "JOIN forum_category c ON c.forum_category_id = t.forum_category_id ",
@@ -180,8 +185,8 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
                     " AND ($3::BIGINT IS NULL OR t.forum_thread_id = $3) ",
                     " AND (NOT $4::BOOLEAN OR g.visible = TRUE) ",
                     " AND (t.page_id IS NULL OR p.page_id IS NOT NULL) ",
-                    "ORDER BY t.forum_thread_id LIMIT 1001",
-                ),
+                    "ORDER BY t.forum_thread_id LIMIT {candidate_limit}",
+                ), candidate_limit = FORUM_VISIBILITY_CANDIDATE_LIMIT),
                 [
                     Value::from(site_id),
                     Value::BigInt(category_id),
@@ -193,11 +198,8 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
         .all(self.ctx.transaction())
         .await
         .or_raise(make_error)?;
-        if candidates.len() == FORUM_VISIBILITY_CANDIDATE_LIMIT {
-            return Ok(None);
-        }
-
-        let mut visible = Vec::with_capacity(candidates.len());
+        let candidate_count = candidates.len();
+        let mut visible = Vec::with_capacity(candidate_count);
         for candidate in candidates {
             if self
                 .page_is_viewable(site_id, candidate.page_id, candidate.page_category_id)
@@ -206,7 +208,10 @@ impl<'a, 'ctx> ForumPageVisibility<'a, 'ctx> {
                 visible.push(candidate.forum_thread_id);
             }
         }
-        Ok(Some(visible))
+        Ok(Some(VisibleForumThreadIds {
+            ids: visible,
+            complete: candidate_count < FORUM_VISIBILITY_CANDIDATE_LIMIT,
+        }))
     }
 
     async fn check(
