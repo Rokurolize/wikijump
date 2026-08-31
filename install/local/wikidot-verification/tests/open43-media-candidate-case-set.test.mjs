@@ -241,7 +241,6 @@ async function createFakeCandidate({
         const pending = state.pending.get(params.uploaded_blob_id);
         if (!pending?.bytes) return rpcError(response, id, "missing upload");
         file.bytes = pending.bytes;
-        state.pending.delete(params.uploaded_blob_id);
       }
       file.revision_id = ++state.nextRevisionId;
       if (ambiguousReplacement && params.uploaded_blob_id !== undefined) {
@@ -497,7 +496,7 @@ async function runFixture(
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
     privateInput: secretInput,
-    privateInputSha256: hash("e"),
+    privateInputSha256: sha256Value(secretInput),
     outputDir: path.join(root, "evidence"),
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -545,6 +544,7 @@ test("shared runner proves all runtime media cases through public HTTP and clean
   );
   assert.equal(candidate.state.page, null);
   assert.equal(candidate.state.pending.size, 0);
+  assert.equal(candidate.state.cancelled.length, 2);
   assert.ok([...candidate.state.files.values()].every((file) => file.deleted));
   assert.equal(candidate.state.fileCreateCalls, 1);
   const actionCase = receipt.cases.find((entry) => entry.case_id === "M1062_SERIALIZABLE_ACTION_RESPONSE");
@@ -658,7 +658,7 @@ test("an ambiguous page create never authorizes deletion by slug", async (t) => 
 test("cleanup continues to public page absence after an ambiguous consumed blob", async (t) => {
   const candidate = await createFakeCandidate({ ambiguousReplacement: true });
   t.after(() => candidate.close());
-  await assert.rejects(runFixture(t, candidate), /candidate case execution or cleanup failed/u);
+  await assert.rejects(runFixture(t, candidate), /candidate case execution failed/u);
   assert.equal(candidate.state.page, null);
   assert.equal(candidate.state.pending.size, 0);
   assert.ok([...candidate.state.files.values()].every((file) => file.deleted));
