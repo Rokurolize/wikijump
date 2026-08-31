@@ -10,6 +10,13 @@ const casesPath = path.join(verificationRoot, "fixtures/comments-hideform-actor/
 const artifactPath = path.join(verificationRoot, "artifacts/forum-comments-hideform-actor-live-20260810.json");
 const sha256 = (value) => crypto.createHash("sha256").update(value).digest("hex");
 
+test("authenticated capture uses TLS for page reads and never enables insecure session transport", async () => {
+  const source = await fs.readFile(path.join(verificationRoot, "scripts/capture-comments-hideform-actor.mjs"), "utf8");
+
+  assert.match(source, /origin = f"https:\/\//u);
+  assert.doesNotMatch(source, /allow_insecure_session_transport_for/u);
+});
+
 test("authenticated Comments hideForm evidence preserves the exact actor and form-state differential", async () => {
   const contract = JSON.parse(await fs.readFile(casesPath, "utf8"));
   const artifact = JSON.parse(await fs.readFile(artifactPath, "utf8"));
