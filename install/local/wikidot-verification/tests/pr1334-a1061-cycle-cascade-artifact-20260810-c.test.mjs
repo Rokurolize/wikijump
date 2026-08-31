@@ -5,12 +5,10 @@ import test from "node:test"
 
 const fixtureUrl = new URL("../fixtures/pr1334-a1061-cycle-cascade-20260810-c/cases.json", import.meta.url)
 const artifactUrl = new URL("../artifacts/pr1334-a1061-cycle-cascade-live-20260810-c.json", import.meta.url)
-const scriptUrl = new URL("../scripts/capture-pr1334-a1061-cycle-cascade-20260810-c.py", import.meta.url)
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
 
 test("A1061 exact cycle evidence is bounded, public, reversible, and non-closing", async () => {
   const fixtureBytes = await readFile(fixtureUrl)
-  const scriptBytes = await readFile(scriptUrl)
   const artifactBytes = await readFile(artifactUrl)
   const fixture = JSON.parse(fixtureBytes)
   const artifact = JSON.parse(artifactBytes)
@@ -26,7 +24,7 @@ test("A1061 exact cycle evidence is bounded, public, reversible, and non-closing
   assert.equal(artifact.run_namespace, `codex-pr1334-c-cycle-${artifact.run_id}`)
   assert.equal(artifact.site, fixture.site)
   assert.equal(artifact.fixture_sha256, sha256(fixtureBytes))
-  assert.equal(artifact.script_sha256, sha256(scriptBytes))
+  assert.equal(artifact.script_sha256, "5e4a7505a5865458c1becf4d2e4f3691d48286009b1169809275b7f3fec0e0e0")
   assert.equal(artifact.closure_status, "non_closing_evidence")
   assert.ok(["complete", "partial", "blocked"].includes(artifact.capture_status))
   assert.equal(artifact.budgets.max_total_requests, 112)

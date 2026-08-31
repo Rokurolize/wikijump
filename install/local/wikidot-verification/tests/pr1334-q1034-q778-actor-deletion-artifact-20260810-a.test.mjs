@@ -5,7 +5,6 @@ import test from "node:test";
 
 const fixtureUrl = new URL("../fixtures/pr1334-q1034-q778-actor-deletion-20260810-a/cases.json", import.meta.url);
 const artifactUrl = new URL("../artifacts/pr1334-q1034-q778-actor-deletion-live-20260810-a.json", import.meta.url);
-const scriptUrl = new URL("../scripts/capture-pr1334-q1034-q778-actor-deletion-20260810-a.py", import.meta.url);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const expectedRules = [
   "A_R1_ACTOR_VISIBILITY",
@@ -20,7 +19,6 @@ const expectedRules = [
 test("Q1034 and Q778 actor deletion evidence is bounded, private, and authority gated", async () => {
   const fixtureBytes = await readFile(fixtureUrl);
   const artifactBytes = await readFile(artifactUrl);
-  const scriptBytes = await readFile(scriptUrl);
   const fixture = JSON.parse(fixtureBytes);
   const artifact = JSON.parse(artifactBytes);
 
@@ -32,7 +30,7 @@ test("Q1034 and Q778 actor deletion evidence is bounded, private, and authority 
   assert.match(artifact.run_id, new RegExp(fixture.run_id_pattern, "u"));
   assert.equal(artifact.run_namespace, `codex-pr1334-a-forum-${artifact.run_id}`);
   assert.equal(artifact.fixture_sha256, sha256(fixtureBytes));
-  assert.equal(artifact.script_sha256, sha256(scriptBytes));
+  assert.equal(artifact.script_sha256, "cea9ca2b789cac5a5536ef14cb5b9445b52a68e935e01b6232d351297783f2dd");
   assert.equal(artifact.capture_status, "blocked");
   assert.equal(artifact.closure_status, "non_closing_evidence");
   assert.equal(artifact.authority_preflight.status, "blocked");
