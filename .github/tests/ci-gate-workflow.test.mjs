@@ -223,17 +223,8 @@ test("Wikidot verification inputs select only the dedicated workflow", () => {
 
   const source = workflow("wikidot-verification.yaml")
   const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
-  for (const pathFilter of [
-    "'install/local/wikidot-verification/**'",
-    "'install/standing/**'",
-    "'scripts/data/wikidot-implementation-ledger.json'",
-    "'scripts/data/wikidot-live-observations.json'",
-    "'scripts/generate-wikidot-specifications.mjs'",
-    "'scripts/initialize-wikidot-implementation-ledger.mjs'",
-    "'scripts/lib/wikidot-implementation-ledger.mjs'",
-    "'docs/wikidot-specifications/**'",
-    "'.github/workflows/wikidot-verification.yaml'"
-  ]) assert.ok(hasYamlLine(trigger, `- ${pathFilter}`), pathFilter)
+  assert.match(trigger, /workflow_dispatch:/)
+  assert.doesNotMatch(trigger, /pull_request:|push:/)
 
   const concurrency = source.slice(source.indexOf("concurrency:\n"), source.indexOf("\njobs:\n"))
   assert.match(concurrency, /format\('wikidot-verification-pr-\{0\}', github\.event\.pull_request\.number\)/)
