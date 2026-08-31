@@ -16,6 +16,7 @@ from pathlib import Path
 LANE_ID = "evidence-a1037-simpletodo-mutation"
 SCHEMA = "wikijump.wikidot.simpletodo-mutation-evidence.v1"
 TOKEN = "123456"
+EXPECTED_PUBLIC_ORIGIN = "http://sandbox-for-codex.wikidot.com"
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -28,6 +29,12 @@ def sha256_file(path: Path) -> str:
 
 def timestamp() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
+def validate_public_origin(value: object) -> str:
+    if not isinstance(value, str) or value != EXPECTED_PUBLIC_ORIGIN:
+        raise SystemExit("fixture public_origin is not the allowlisted sandbox origin")
+    return value
 
 
 def main() -> None:
@@ -43,6 +50,7 @@ def main() -> None:
         raise SystemExit("fixture identity does not match the requested lane and run")
     if fixture["mutation_budget"] != 0 or fixture["request_budget"] != 1:
         raise SystemExit("this capture permits one read and zero mutations")
+    public_origin = validate_public_origin(fixture.get("public_origin"))
 
     started_at = timestamp()
     ordered_fields = [
@@ -54,7 +62,7 @@ def main() -> None:
     ]
     encoded = urllib.parse.urlencode(ordered_fields).encode()
     request = urllib.request.Request(
-        f"{fixture['public_origin']}/ajax-module-connector.php",
+        f"{public_origin}/ajax-module-connector.php",
         data=encoded,
         method="POST",
         headers={
