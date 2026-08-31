@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from "node:crypto";
+import childProcess from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -25,6 +26,14 @@ class LiveBlock extends Error {
 
 function sha256(bytes) {
   return crypto.createHash("sha256").update(bytes).digest("hex");
+}
+
+function sourceIdentity() {
+  const git = (args) => childProcess.execFileSync("git", args, {cwd: repositoryRoot, encoding: "utf8"}).trim();
+  const commit = git(["rev-parse", "HEAD"]);
+  const tree = git(["rev-parse", "HEAD^{tree}"]);
+  if (git(["status", "--porcelain=v1", "--untracked-files=all"])) throw new Error("Capture requires a clean source checkout");
+  return {commit, tree};
 }
 
 function parseArguments(argv) {
@@ -298,6 +307,7 @@ async function main() {
   const casesBytes = await fs.readFile(args.cases);
   const cases = JSON.parse(casesBytes);
   const declaredProbes = validateCases(cases, args.integrationCommit);
+  const capturedSource = sourceIdentity();
   await fs.stat(args.output).then(() => { throw new Error(`Refusing to overwrite existing output: ${args.output}`); }, (error) => { if (error.code !== "ENOENT") throw error; });
 
   const state = {transactionCount: 0, aggregateBodyBytes: 0};
@@ -349,6 +359,7 @@ async function main() {
     integration_commit: args.integrationCommit,
     captured_at: new Date().toISOString(),
     capture_script: {path: scriptRelativePath, sha256: sha256(await fs.readFile(fileURLToPath(import.meta.url)))},
+    capture_source: capturedSource,
     case_manifest: {path: path.relative(repositoryRoot, args.cases), sha256: sha256(casesBytes)},
     authority: cases.authority,
     inventory_identity: {total: 893, role: "frozen provenance only"},
