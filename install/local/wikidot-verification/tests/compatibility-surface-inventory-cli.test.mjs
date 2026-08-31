@@ -1037,7 +1037,7 @@ test("CLI keeps an explicit source revision across metadata commits and rejects 
 })
 
 test("CLI emits the pinned FTML raw manifest without changing the public denominator", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-ftml-raw-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-ftml-raw-"))
   cleanupFixture(t, outputRoot)
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
     cwd: repositoryRoot,
@@ -1103,7 +1103,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
 })
 
 test("CLI projects the audited registry issue owners and catalog implementation boundary", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-audited-ownership-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-audited-ownership-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1186,7 +1186,7 @@ test("CLI projects the audited registry issue owners and catalog implementation 
 })
 
 test("CLI projects the current Deepwell contract evidence without promoting source-only test gaps", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-deepwell-contract-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-deepwell-contract-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1232,7 +1232,7 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
 })
 
 test("CLI projects WWS route-contract evidence while keeping hash-domain evidence partial", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-wws-contract-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-wws-contract-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1273,7 +1273,7 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
 })
 
 test("CLI projects current Framerail route-action tests without inventing browser evidence", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-framerail-route-action-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-framerail-route-action-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1312,7 +1312,7 @@ test("CLI projects current Framerail route-action tests without inventing browse
 })
 
 test("CLI projects only directly exercised Framerail AMC server tests", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-framerail-amc-tests-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-framerail-amc-tests-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1459,7 +1459,7 @@ test("CLI rejects semantic registry identity, crosswalk, owner, and edge drift",
 })
 
 test("CLI emits closed owner keys and typed edges without double-counting FTML records", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-owner-edges-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-owner-edges-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1569,7 +1569,7 @@ test("CLI rejects a canonical implementation ledger mirror mismatch before disco
 })
 
 test("CLI keeps cited data-form owners and fills only audited ownerless rows", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-data-form-owners-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-data-form-owners-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1660,7 +1660,7 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
 })
 
 test("CLI keeps canonical module owners and fills audited ownerless modules", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-module-owners-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-module-owners-"))
   cleanupFixture(t, outputRoot)
   const outputPath = path.join(outputRoot, "inventory.json")
   const sourceRevision = spawnSync("git", ["rev-parse", "HEAD"], {
@@ -1766,7 +1766,7 @@ test("CLI does not infer a module owner from a cited source path", async (t) => 
 })
 
 test("tracked compatibility inventory exactly matches one generator run", async (t) => {
-  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-byte-compare-"))
+  const outputRoot = await fs.mkdtemp(path.join(repositoryRoot, ".compatibility-inventory-byte-compare-"))
   cleanupFixture(t, outputRoot)
   const trackedPath = path.join(repositoryRoot, "docs/development/compatibility-surface-inventory.json")
   const trackedBytes = await fs.readFile(trackedPath)
@@ -1839,6 +1839,46 @@ test("CLI rejects a missing-page source identity outside the repository", async 
   assert.equal(result.status, 1)
   assert.match(result.stderr, /create has an invalid source identity/u)
   await assert.rejects(fs.access(path.join(root, "inventory.json")))
+})
+
+test("CLI confines inventory inputs and output to the repository", async (t) => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-output-path-"))
+  cleanupFixture(t, outputRoot)
+  await writeRepositoryFixture(outputRoot)
+  const outsideOutput = path.join(path.dirname(outputRoot), "compatibility-inventory-outside.json")
+  await fs.rm(outsideOutput, { force: true })
+  const outside = runCli(outputRoot, outsideOutput)
+  assert.equal(outside.status, 1)
+  assert.match(outside.stderr, /public reference is outside the repository/u)
+  await assert.rejects(fs.access(outsideOutput))
+
+  const symlinkRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-output-link-"))
+  cleanupFixture(t, symlinkRoot)
+  await writeRepositoryFixture(symlinkRoot)
+  const target = path.join(path.dirname(symlinkRoot), "compatibility-inventory-target.json")
+  await fs.writeFile(target, "untouched\n")
+  const symlink = path.join(symlinkRoot, "inventory.json")
+  await fs.symlink(target, symlink)
+  const linked = runCli(symlinkRoot, symlink)
+  assert.equal(linked.status, 1)
+  assert.match(linked.stderr, /output must not be a symbolic link/u)
+  assert.equal(await fs.readFile(target, "utf8"), "untouched\n")
+
+  const auditRoot = await fs.mkdtemp(path.join(os.tmpdir(), "compatibility-inventory-audit-path-"))
+  cleanupFixture(t, auditRoot)
+  await writeRepositoryFixture(auditRoot)
+  const routingPath = path.join(auditRoot, "docs/development/open43-blocked-evidence-routing.json")
+  const reconciliationPath = path.join(auditRoot, "docs/development/open43-closure-audit-ownership-reconciliation.json")
+  const routing = JSON.parse(await fs.readFile(routingPath, "utf8"))
+  const reconciliation = JSON.parse(await fs.readFile(reconciliationPath, "utf8"))
+  const escaped = "docs/development/../../../outside-audit.json"
+  routing.source_audits[0] = escaped
+  reconciliation.closure_audits[0].path = escaped
+  await fs.writeFile(routingPath, `${JSON.stringify(routing, null, 2)}\n`)
+  await fs.writeFile(reconciliationPath, `${JSON.stringify(reconciliation, null, 2)}\n`)
+  const audit = runCli(auditRoot, path.join(auditRoot, "inventory.json"))
+  assert.equal(audit.status, 1)
+  assert.match(audit.stderr, /public reference is outside the repository/u)
 })
 
 test("CLI rejects malformed or contradictory available browser proof", async (t) => {
