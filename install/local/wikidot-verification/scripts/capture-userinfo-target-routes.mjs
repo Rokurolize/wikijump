@@ -13,9 +13,21 @@ const verifierRoot = path.resolve(path.dirname(scriptPath), "..");
 const defaultCasesPath = path.join(verifierRoot, "fixtures/userinfo-target-routes/cases.json");
 const defaultOutputPath = path.join(verifierRoot, "artifacts/userinfo-target-routes-live-20260810.json");
 const maximumBoundedBodyCharacters = 30_000;
+const publicOrigin = "https://www.wikidot.com";
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
+}
+
+export function validateRouteTarget(value) {
+  if (typeof value !== "string" || !/^(?:[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*|-\d+)$/u.test(value)) throw new Error("UserInfo route target is not a single allowlisted path segment");
+  return value;
+}
+
+export function validateUserInfoUrl(value) {
+  const parsed = new URL(value);
+  if (parsed.origin !== publicOrigin || !/^\/user:info\/[^/]+$/u.test(parsed.pathname)) throw new Error(`UserInfo capture left the declared route: ${value}`);
+  return parsed;
 }
 
 function parseArgs(argv) {
@@ -158,14 +170,14 @@ async function captureRoute(url, cookieHeader, throttle) {
   const redirects = [];
   let current = url;
   for (let count = 0; count < 6; count += 1) {
-    const parsed = new URL(current);
-    const headers = parsed.protocol === "https:" && parsed.hostname === "www.wikidot.com" && cookieHeader ? {cookie: cookieHeader} : {};
+    const parsed = validateUserInfoUrl(current);
+    const headers = cookieHeader ? {cookie: cookieHeader} : {};
     await throttle();
     const response = await fetch(current, {method: "GET", redirect: "manual", headers});
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get("location");
       if (!location) throw new Error(`Redirect from ${current} omitted Location`);
-      const next = new URL(location, current).href;
+      const next = validateUserInfoUrl(new URL(location, current).href).href;
       redirects.push({status: response.status, url: current, location: next});
       current = next;
       continue;
@@ -181,6 +193,7 @@ async function main() {
   const casesBytes = await fs.readFile(args.cases);
   const fixture = JSON.parse(casesBytes);
   if (fixture.schema !== "wikijump.userinfo_target_routes.cases.v1" || fixture.cases.length !== 8) throw new Error("Unexpected UserInfo target-route fixture");
+  for (const target of fixture.targets) validateRouteTarget(target.route_target);
   await fs.stat(args.output).then(() => { throw new Error(`Refusing to replace existing output: ${args.output}`); }, (error) => { if (error.code !== "ENOENT") throw error; });
 
   const actors = new Map(fixture.actors.map((actor) => [actor.actor_id, actor]));
@@ -193,7 +206,7 @@ async function main() {
     const actor = actors.get(entry.actor_id);
     const target = targets.get(entry.target_id);
     if (!actor || !target) throw new Error(`Unresolved fixture reference in ${entry.case_id}`);
-    const requestUrl = `https://www.wikidot.com/user:info/${target.route_target}`;
+    const requestUrl = `${publicOrigin}/user:info/${target.route_target}`;
     const capture = await captureRoute(requestUrl, actor.authenticated ? account.cookieHeader : null, throttle);
     const rawBoundedBody = extractBoundedBody(capture.body);
     const redacted = redactPrivateContent(rawBoundedBody, account.username);
