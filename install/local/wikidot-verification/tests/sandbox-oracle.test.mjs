@@ -10,6 +10,7 @@ import {
   SANDBOX_ORACLE_REGISTRY_SCHEMA,
   validateSandboxOracleCapture,
   validateSandboxOracleRegistry,
+  validateSandboxOracleSourceProvenance,
 } from "../src/sandbox-oracle.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../../");
@@ -137,6 +138,36 @@ test("capture validation accepts an explicit syntax-only delayed observation", (
   assert.throws(
     () => validateSandboxOracleCapture({...syntaxCapture, document: {resource_completion: {status: "complete"}}}, "syntax capture"),
     /syntax-only completion/u,
+  );
+});
+
+test("source provenance binds external includes and images to captured bytes", () => {
+  const source = {
+    source: "[[include :scp-wiki:theme:sigma]]\n[[image http://sandbox-for-codex.wdfiles.com/local--files/oracle.png]]",
+    include_provenance: [{
+      site_slug: "scp-wiki",
+      page: "theme:sigma",
+      source_sha256: HASH,
+      evidence_path: "/tmp/theme-sigma.txt",
+    }],
+    asset_provenance: {
+      origin: "sandbox-for-codex.wdfiles.com",
+      wikidot_path: "/local--files/oracle.png",
+      sha256: HASH,
+      evidence_path: "/tmp/oracle.png",
+    },
+  };
+  assert.deepEqual(validateSandboxOracleSourceProvenance(source), {
+    includes: source.include_provenance,
+    assets: [source.asset_provenance],
+  });
+  assert.throws(
+    () => validateSandboxOracleSourceProvenance({...source, include_provenance: []}),
+    /include_provenance must cover every external include/u,
+  );
+  assert.throws(
+    () => validateSandboxOracleSourceProvenance({...source, asset_provenance: {...source.asset_provenance, sha256: "not-a-hash"}}),
+    /asset_provenance\[0\]\.sha256 must be a lowercase SHA-256/u,
   );
 });
 
