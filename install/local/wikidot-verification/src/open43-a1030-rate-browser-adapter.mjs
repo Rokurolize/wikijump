@@ -173,7 +173,10 @@ export class Open43A1030RateBrowserAdapter {
       timeoutMs: TIMEOUT_MS,
       settleMs: 0,
       onPhase: async (phase) => {
-        if (phase === "settled") state = await widgetState(page, label.includes("STAR") ? { widget: STAR_WIDGET, star: true } : { widget: POINT_WIDGET, point: true });
+        if (phase === "settled") {
+          await waitForLegacyActionReadiness(page);
+          state = await widgetState(page, label.includes("STAR") ? { widget: STAR_WIDGET, star: true } : { widget: POINT_WIDGET, point: true });
+        }
       },
     });
     if (capture?.capture_error !== undefined || capture?.navigation_status !== 200) {
@@ -258,6 +261,7 @@ export class Open43A1030RateBrowserAdapter {
     while (Date.now() < deadline) {
       attempts += 1;
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await waitForLegacyActionReadiness(page);
       state = await widgetState(page, stateOptions);
       if (state?.[field] === expected) {
         return {
@@ -280,11 +284,13 @@ export class Open43A1030RateBrowserAdapter {
     try {
       await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await waitForLegacyActionReadiness(page);
       await page.evaluate(() => history.back());
       await page.waitForURL((current) => current.pathname === "/", { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const backPath = new URL(page.url()).pathname;
       await page.evaluate(() => history.forward());
       await page.waitForURL(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await waitForLegacyActionReadiness(page);
       const forward = await widgetState(page, stateOptions);
       return { back_path: backPath, forward_score: forward?.[field] ?? null, replay_request_count: replayRequestCount };
     } finally {
@@ -305,6 +311,7 @@ export class Open43A1030RateBrowserAdapter {
     const page = await context.newPage();
     try {
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await waitForLegacyActionReadiness(page);
       const state = await widgetState(page, stateOptions);
       return { http_status: response.status(), score_after: state?.[field] ?? null };
     } finally {
