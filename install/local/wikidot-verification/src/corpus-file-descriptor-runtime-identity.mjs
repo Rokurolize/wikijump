@@ -196,15 +196,19 @@ export async function observeFileDescriptorRuntimeBinding({
   if (deepwell.image_id !== `sha256:${identity.executable_sha256}`) {
     throw new Error('Deepwell image does not match the sealed runtime identity');
   }
+  const effectiveServicesConfigSha256 = effectiveRuntimeServicesSha256([
+    databaseInspect,
+    deepwellInspect,
+    filesInspect,
+  ]);
+  if (effectiveServicesConfigSha256 !== identity.runtime_config_sha256) {
+    throw new Error('Runtime service configuration does not match the sealed runtime identity');
+  }
   const binding = Object.freeze({
     schema: RUNTIME_BINDING_SCHEMA,
     project_name: PROJECT_NAME,
     runtime_config_sha256: identity.runtime_config_sha256,
-    effective_services_config_sha256: effectiveRuntimeServicesSha256([
-      databaseInspect,
-      deepwellInspect,
-      filesInspect,
-    ]),
+    effective_services_config_sha256: effectiveServicesConfigSha256,
     services: {
       database: {
         ...database,
