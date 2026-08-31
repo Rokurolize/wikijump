@@ -1034,6 +1034,14 @@ async function captureObservation(page, captureDisplay, diagnostics, args, execu
   };
 }
 
+async function waitForCandidateNetworkIdle(page, timeoutMs, executionMode) {
+  try {
+    await page.waitForLoadState("networkidle", {timeout: timeoutMs});
+  } catch (error) {
+    if (executionMode !== "candidate" || !/Timeout/u.test(errorMessage(error))) throw error;
+  }
+}
+
 async function captureSubjectScenario(context, captureDisplay, args, execution, subject, scenario, url, outputDir, options = {}) {
   const page = options.page ?? await context.newPage();
   const ownsPage = options.page === undefined;
@@ -1059,7 +1067,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
     if (scenario.id === "success") {
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "selection", navigationStatus, outputDir));
       await page.waitForLoadState("domcontentloaded", {timeout: triggerTimeoutMs});
-      await page.waitForLoadState("networkidle", {timeout: triggerTimeoutMs});
+      await waitForCandidateNetworkIdle(page, triggerTimeoutMs, args.executionMode);
       const loadingSignal = subject.loading.kind === "dom"
         ? armDomPredicate(page, subject.loading, signalTimeoutMs, `${subject.id} loading`)
         : armBrowserEvent(page, subject.loading, signalTimeoutMs, `${subject.id} loading`);
@@ -1086,7 +1094,7 @@ async function captureSubjectScenario(context, captureDisplay, args, execution, 
       records.push(await captureObservation(page, captureDisplay, diagnostics, args, execution, subject, scenario, "success", navigationStatus, outputDir));
     } else {
       await page.waitForLoadState("domcontentloaded", {timeout: triggerTimeoutMs});
-      await page.waitForLoadState("networkidle", {timeout: triggerTimeoutMs});
+      await waitForCandidateNetworkIdle(page, triggerTimeoutMs, args.executionMode);
       if (!resultOracle) throw new Error(`${scenario.id} ${subject.id} has no exact result oracle`);
       const resultSignal = armResultOracle(page, resultOracle, args.timeoutMs, `${scenario.id} ${subject.id} result`);
       void resultSignal.catch(() => undefined);

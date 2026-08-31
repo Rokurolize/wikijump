@@ -328,12 +328,12 @@ test("issue #1372 browser run contract is complete, source-bound, and executable
     "success activation must wait for the browser DOMContentLoaded readiness boundary after selection evidence"
   )
   assert.ok(
-    captureScript.indexOf('await page.waitForLoadState("networkidle"') > captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') &&
-      captureScript.indexOf('await page.waitForLoadState("networkidle"') < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
+    captureScript.indexOf("await waitForCandidateNetworkIdle(page") > captureScript.indexOf('await page.waitForLoadState("domcontentloaded"') &&
+      captureScript.indexOf("await waitForCandidateNetworkIdle(page") < captureScript.indexOf("const loadingSignal = subject.loading.kind"),
     "success activation must wait for the browser network-idle hydration boundary before arming signals"
   )
   assert.equal(
-    (captureScript.match(/await page\.waitForLoadState\("networkidle"/gu) ?? []).length,
+    (captureScript.match(/await waitForCandidateNetworkIdle\(page/gu) ?? []).length,
     2,
     "both success and result scenarios must await browser hydration before interaction"
   )
