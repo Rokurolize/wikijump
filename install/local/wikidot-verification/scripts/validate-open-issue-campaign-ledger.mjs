@@ -47,7 +47,7 @@ for (const entry of ledger.entries) {
         throw new Error(`passed issue #${entry.number} has no required case kinds`);
       }
       for (const kind of entry.required_case_kinds) {
-        const field = caseFields[kind];
+        const field = typeof kind === "string" && Object.hasOwn(caseFields, kind) ? caseFields[kind] : null;
         if (!field) throw new Error(`passed issue #${entry.number} has unknown required case kind ${kind}`);
         if (!Array.isArray(entry[field]) || entry[field].length === 0) {
           throw new Error(`passed issue #${entry.number} has no required ${kind} case`);

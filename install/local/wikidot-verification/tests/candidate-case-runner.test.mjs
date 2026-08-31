@@ -151,11 +151,12 @@ async function temporaryOutput(t, name = "evidence") {
 
 async function runOne(t, caseSet, options = {}) {
   const identity = candidateIdentity();
+  const privateInput = { secret: "never-publish-me" };
   return await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
-    privateInput: { secret: "never-publish-me" },
-    privateInputSha256: hash("b"),
+    privateInput,
+    privateInputSha256: sha256Value(privateInput),
     outputDir: options.outputDir ?? (await temporaryOutput(t)),
     caseSet,
     runId: "candidate-run-0123456789ab",
@@ -169,16 +170,36 @@ function aggregateHas(pattern) {
     error.errors.some((cause) => pattern.test(cause.message));
 }
 
+test("candidate case runs reject hashes that do not match supplied inputs", async (t) => {
+  const identity = candidateIdentity();
+  const privateInput = { secret: "never-publish-me" };
+
+  await assert.rejects(
+    runCandidateCaseSet({
+      candidateIdentity: identity,
+      candidateIdentitySha256: hash("0"),
+      privateInput,
+      privateInputSha256: sha256Value(privateInput),
+      outputDir: await temporaryOutput(t),
+      caseSet: oneCaseSet([]),
+      runId: "candidate-run-0123456789ab",
+      dependencies: fixtureDependencies(),
+    }),
+    /candidate identity SHA-256 does not match/u,
+  );
+});
+
 test("CandidateCaseRunner publishes one exact case only after public cleanup and stable identity", async (t) => {
   const outputDir = await temporaryOutput(t);
   const events = [];
   let observation = 0;
   const identity = candidateIdentity();
+  const privateInput = { secret: "never-publish-me" };
   const result = await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
-    privateInput: { secret: "never-publish-me" },
-    privateInputSha256: hash("b"),
+    privateInput,
+    privateInputSha256: sha256Value(privateInput),
     outputDir,
     caseSet: oneCaseSet(events),
     runId: "candidate-run-0123456789ab",
