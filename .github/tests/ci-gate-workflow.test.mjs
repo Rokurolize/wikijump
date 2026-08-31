@@ -389,17 +389,13 @@ test("central gate owns workflow policy and locales validation", () => {
   assert.match(source, /cargo run --locked/)
 })
 
-test("verification changes are part of the required aggregate gate", () => {
+test("verification changes stay on the dedicated manual workflow", () => {
   const source = workflow("ci-gate.yaml")
   const classify = jobBlock(source, "classify").join("\n")
-  const verification = jobBlock(source, "verification").join("\n")
   const gate = jobBlock(source, "gate").join("\n")
   assert.match(classify, /verification: \$\{\{ steps\.changes\.outputs\.verification \}\}/u)
-  assert.match(verification, /needs\.classify\.outputs\.verification == 'true'/u)
-  assert.match(verification, /pnpm --dir install\/local\/wikidot-verification test/u)
-  assert.match(gate, /- verification\n/u)
-  assert.match(gate, /VERIFICATION_RESULT: \$\{\{ needs\.verification\.result \}\}/u)
-  assert.match(gate, /check verification/u)
+  assert.doesNotMatch(source, /^  verification:/mu)
+  assert.doesNotMatch(gate, /verification/u)
 })
 
 test("actions in touched workflows are immutable pins with version comments", () => {
