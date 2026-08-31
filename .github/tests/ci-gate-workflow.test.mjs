@@ -253,14 +253,13 @@ test("Deepwell validation stays fast and service-free", () => {
   assert.doesNotMatch(source, /deepwell_(?:draft|candidate)|tarpaulin|coverage\/cobertura/)
 })
 
-test("draft CI stays lightweight while candidate CI adds compiled checks", () => {
+test("draft and candidate CI keep Framerail production builds out of the central gate", () => {
   const source = workflow("ci-gate.yaml")
   const wws = jobBlock(source, "wws")
   const wwsDraft = stepBlock(wws, "Validate draft")
   const wwsCandidate = stepBlock(wws, "Validate candidate")
   const framerail = jobBlock(source, "framerail")
   const framerailDraft = stepBlock(framerail, "Validate draft")
-  const framerailCandidate = stepBlock(framerail, "Build candidate")
   const locales = jobBlock(source, "locales")
   const localesDraft = stepBlock(locales, "Validate draft")
   const localesCandidate = stepBlock(locales, "Validate candidate")
@@ -284,11 +283,7 @@ test("draft CI stays lightweight while candidate CI adds compiled checks", () =>
     "pnpm --dir framerail test:unit"
   ]) assert.ok(framerailDraft.join("\n").includes(command), command)
   assert.doesNotMatch(framerailDraft.join("\n"), /pnpm --dir framerail build/)
-  assert.equal(
-    yamlScalar(framerailCandidate, 8, "if"),
-    "${{ needs.classify.outputs.candidate == 'true' }}"
-  )
-  assert.match(framerailCandidate.join("\n"), /pnpm --dir framerail build/)
+  assert.doesNotMatch(framerail.join("\n"), /pnpm --dir framerail build/)
 
   assert.match(localesDraft.join("\n"), /cargo fmt --all -- --check/)
   assert.doesNotMatch(localesDraft.join("\n"), /cargo (?:clippy|run)/)
@@ -375,7 +370,8 @@ test("Framerail unit and browser suites remain separate", () => {
   // It must not chain the unit suite: ci-gate runs that already, and full-ci would repeat it.
   assert.equal(pkg.scripts.test, "node tests/playwright-runner.js")
   assert.doesNotMatch(pkg.scripts.test, /test:unit/)
-  for (const command of ["build", "test:unit", "lint"]) assert.ok(gate.includes(`pnpm --dir framerail ${command}`), command)
+  for (const command of ["test:unit", "lint"]) assert.ok(gate.includes(`pnpm --dir framerail ${command}`), command)
+  assert.doesNotMatch(gate, /pnpm --dir framerail build/)
   assert.match(full, /pnpm --dir framerail test/)
   assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/)
 })

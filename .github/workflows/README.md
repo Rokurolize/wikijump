@@ -15,7 +15,7 @@ which is why an unrelated change does not pay for the whole matrix. Its jobs:
   commit SHAs and that the Framerail unit and browser suites stay separate.
 - Deepwell fast checks: dependency hygiene and formatting without compiling the service. Clippy and full tests run in the explicit local final barrier.
 - WWS: dependency hygiene and formatting for drafts, with Clippy and the full test suite added for candidate and non-draft runs.
-- Framerail: lint and unit tests for drafts, with the production build added for candidate and non-draft runs.
+- Framerail: lint and unit tests; production builds remain in the explicit final/release paths.
 - Locales: formatting for drafts, with Clippy and the validator run added for candidate and non-draft runs.
 - CI / gate: the single aggregate status for the rest. Branch protection does
   not require it; merge readiness comes from the recorded local validation.
