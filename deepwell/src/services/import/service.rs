@@ -49,11 +49,29 @@ use crate::services::{CategoryService, UserService};
 use crate::types::{Maybe, PageId, PageLockType, Reference};
 use crate::utils::{get_category_name, now};
 use ftml::layout::Layout;
-use sea_orm::UpdateResult;
+use sea_orm::DatabaseTransaction;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
 };
+use sea_orm::{ConnectionTrait, DatabaseBackend, Statement, UpdateResult};
 use sea_query::Expr;
+
+const SYNC_PAGE_REVISION_SEQUENCE_SQL: &str = "SELECT setval('page_revision_revision_id_seq', GREATEST(COALESCE((SELECT MAX(revision_id) FROM page_revision), 1), CASE WHEN seq.is_called THEN seq.last_value ELSE 1 END), COALESCE((SELECT MAX(revision_id) FROM page_revision), 0) > 0 OR seq.is_called) FROM page_revision_revision_id_seq AS seq";
+
+async fn sync_page_revision_sequence(txn: &DatabaseTransaction) -> Result<()> {
+    txn.execute_raw(Statement::from_string(
+        DatabaseBackend::Postgres,
+        SYNC_PAGE_REVISION_SEQUENCE_SQL,
+    ))
+    .await
+    .map(|_| ())
+    .or_raise(|| {
+        Error::new(
+            "failed to synchronize the page revision ID sequence",
+            ErrorType::DatabaseImport,
+        )
+    })
+}
 
 #[derive(Debug)]
 pub struct ImportService;
@@ -485,6 +503,11 @@ impl ImportService {
             "More than one row updated in page_revision after revision creation",
         );
 
+        // Imported IDs replace generated BIGSERIAL values; keep the next normal insert above them.
+        sync_page_revision_sequence(txn)
+            .await
+            .or_raise(make_error)?;
+
         let model = page::ActiveModel {
             page_id: Set(page_id),
             latest_revision_id: Set(Some(revision_id)),
@@ -523,4 +546,20 @@ impl ImportService {
 
     // TODO file
     // TODO forum
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SYNC_PAGE_REVISION_SEQUENCE_SQL;
+
+    #[test]
+    fn imported_revision_sequence_sync_is_monotonic() {
+        assert!(
+            SYNC_PAGE_REVISION_SEQUENCE_SQL
+                .contains("setval('page_revision_revision_id_seq'")
+        );
+        assert!(SYNC_PAGE_REVISION_SEQUENCE_SQL.contains("MAX(revision_id)"));
+        assert!(SYNC_PAGE_REVISION_SEQUENCE_SQL.contains("seq.last_value"));
+        assert!(SYNC_PAGE_REVISION_SEQUENCE_SQL.contains("seq.is_called"));
+    }
 }
