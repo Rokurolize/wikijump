@@ -435,6 +435,13 @@ function rawObservationKey(observation) {
   return JSON.stringify(rawAttributeObservation(observation));
 }
 
+function hasTabviewRootSignature(signatures, id) {
+  return (signatures ?? []).some((signature) => {
+    const match = /^div#([^.#\s]+)((?:\.[^.#\s]+)*)/u.exec(String(signature ?? ""));
+    return match?.[1] === id && match[2].split(".").includes("yui-navset");
+  });
+}
+
 function environmentTranslationEvent(local, live, raw, normalized) {
   const localRows = (local ?? []).map(rawAttributeObservation).sort((left, right) => rawObservationKey(left).localeCompare(rawObservationKey(right)));
   const liveRows = (live ?? []).map(rawAttributeObservation).sort((left, right) => rawObservationKey(left).localeCompare(rawObservationKey(right)));
@@ -484,7 +491,7 @@ function environmentTranslationEvent(local, live, raw, normalized) {
   };
 }
 
-function tabviewIdentityTranslationEvent(local, live, raw, normalized) {
+function tabviewIdentityTranslationEvent(local, live, raw, normalized, localDomSignatures, liveDomSignatures) {
   const localRows = (local ?? [])
     .map(rawAttributeObservation)
     .sort((left, right) =>
@@ -509,7 +516,9 @@ function tabviewIdentityTranslationEvent(local, live, raw, normalized) {
     if (
       localRow.name !== "id" ||
       !/^wiki-tabview-[0-9a-f]{32}$/iu.test(localRow.value) ||
-      !/^wiki-tabview-[0-9a-f]{32}$/iu.test(liveRow.value)
+      !/^wiki-tabview-[0-9a-f]{32}$/iu.test(liveRow.value) ||
+      !hasTabviewRootSignature(localDomSignatures, localRow.value) ||
+      !hasTabviewRootSignature(liveDomSignatures, liveRow.value)
     ) return null;
     pairs.push({local: localRow.value, live: liveRow.value});
   }
@@ -520,7 +529,7 @@ function tabviewIdentityTranslationEvent(local, live, raw, normalized) {
   };
 }
 
-export function compareAttributeSignatures(local, live) {
+export function compareAttributeSignatures(local, live, localDomSignatures = [], liveDomSignatures = []) {
   const localRaw = attributeMultiset(local);
   const liveRaw = attributeMultiset(live);
   const localNormalized = normalizeAttributeSignatures(local).signatures;
@@ -546,6 +555,8 @@ export function compareAttributeSignatures(local, live) {
         live,
         raw,
         normalized,
+        localDomSignatures,
+        liveDomSignatures,
       );
       if (tabviewIdentityTranslation) {
         normalizationEvents.push(tabviewIdentityTranslation);
@@ -801,6 +812,8 @@ export function compareCaptures(
       ? compareAttributeSignatures(
           local.attribute_signatures,
           live.attribute_signatures,
+          local.dom_signatures,
+          live.dom_signatures,
         )
       : { status: "pass", raw: null, normalized: null, anomalies: [] };
   anomalies.push(...attributes.anomalies);
