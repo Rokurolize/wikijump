@@ -71,6 +71,7 @@ use std::sync::LazyLock;
 
 const MAX_REVISION_DIFF_LINES: usize = 20_000;
 const MAX_REVISION_DIFF_CELLS: usize = 4_000_000;
+const MAX_REVISION_DIFF_COMPARISON_BYTES: usize = 64 * 1024 * 1024;
 
 /// The changes for the first revision.
 /// The first revision is always considered to have changed everything.
@@ -2178,9 +2179,17 @@ fn build_revision_diff(from: &str, to: &str) -> Result<Vec<PageRevisionDiffLine>
     let from_lines = from.lines().count() + usize::from(from.ends_with('\n'));
     let to_lines = to.lines().count() + usize::from(to.ends_with('\n'));
     let cells = from_lines.checked_mul(to_lines);
+    let max_line_bytes = from
+        .lines()
+        .chain(to.lines())
+        .map(str::len)
+        .max()
+        .unwrap_or_default();
+    let comparison_bytes = cells.and_then(|cells| cells.checked_mul(max_line_bytes));
     if from_lines > MAX_REVISION_DIFF_LINES
         || to_lines > MAX_REVISION_DIFF_LINES
         || cells.is_none_or(|cells| cells > MAX_REVISION_DIFF_CELLS)
+        || comparison_bytes.is_none_or(|bytes| bytes > MAX_REVISION_DIFF_COMPARISON_BYTES)
     {
         bail!(Error::new(
             "revision diff exceeds the bounded line budget",
@@ -2205,6 +2214,24 @@ fn build_revision_diff(from: &str, to: &str) -> Result<Vec<PageRevisionDiffLine>
             },
         })
         .collect())
+}
+
+#[cfg(test)]
+mod revision_diff_tests {
+    use super::build_revision_diff;
+
+    #[test]
+    fn rejects_expensive_long_line_comparisons_before_diff() {
+        let from = (0..2_000)
+            .map(|index| format!("{index:04}{}", "a".repeat(1_020)))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let to = from.replace('a', "b");
+
+        let error =
+            build_revision_diff(&from, &to).expect_err("comparison budget must reject");
+        assert!(error.to_string().contains("bounded line budget"));
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
