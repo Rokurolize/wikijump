@@ -1,21 +1,19 @@
-import { randomUUID } from "node:crypto";
+import {randomUUID} from "node:crypto";
 import fs from "node:fs/promises";
-import { constants as fsConstants } from "node:fs";
+import {constants as fsConstants} from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { isWikidotResourceHost } from "./resource-manifest.mjs";
+import {isWikidotResourceHost} from "./resource-manifest.mjs";
 
 export const DEFAULT_REQUEST_INTERVAL_MS = 4_000;
-export const DEFAULT_BROWSER_CAPTURE_LOCK =
-  "/var/tmp/wikijump-wikidot-browser-capture.lock";
+export const DEFAULT_BROWSER_CAPTURE_LOCK = "/var/tmp/wikijump-wikidot-browser-capture.lock";
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRIES = 512;
 const DEFAULT_RESPONSE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES = 8 * 1024 * 1024;
 const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
-const LOCAL_WIKIJUMP_HOST_RE =
-  /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
+const LOCAL_WIKIJUMP_HOST_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.wikijump\.localhost$/u;
 const WIKIDOT_STATIC_CDN_RE = /^[a-z0-9-]+\.cloudfront\.net$/u;
 const WIKIDOT_INTERWIKI_GET_PATH_TYPES = new Map([
   ["/interwiki.js", "script"],
@@ -38,8 +36,7 @@ function defaultSleep(milliseconds) {
 }
 
 function finiteNonNegative(value, name) {
-  if (!Number.isFinite(value) || value < 0)
-    throw new Error(`${name} must be a non-negative finite number`);
+  if (!Number.isFinite(value) || value < 0) throw new Error(`${name} must be a non-negative finite number`);
   return value;
 }
 
@@ -57,15 +54,8 @@ function normalizedOrigins(values) {
     } catch {
       throw new Error(`browser request-gate exemption is not a URL: ${value}`);
     }
-    if (
-      !new Set(["http:", "https:"]).has(url.protocol) ||
-      url.username ||
-      url.password ||
-      url.origin !== String(value).replace(/\/$/u, "")
-    ) {
-      throw new Error(
-        `browser request-gate exemption must be an exact HTTP(S) origin: ${value}`,
-      );
+    if (!new Set(["http:", "https:"]).has(url.protocol) || url.username || url.password || url.origin !== String(value).replace(/\/$/u, "")) {
+      throw new Error(`browser request-gate exemption must be an exact HTTP(S) origin: ${value}`);
     }
     origins.add(url.origin);
   }
@@ -73,21 +63,15 @@ function normalizedOrigins(values) {
 }
 
 function positiveSafeInteger(value, name) {
-  if (!Number.isSafeInteger(value) || value <= 0)
-    throw new Error(`${name} must be a positive safe integer`);
+  if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive safe integer`);
   return value;
 }
 
-export function createBrowserResponseCache({
-  maxEntries = DEFAULT_RESPONSE_CACHE_MAX_ENTRIES,
-  maxBytes = DEFAULT_RESPONSE_CACHE_MAX_BYTES,
-  maxEntryBytes = DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES,
-} = {}) {
+export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_MAX_ENTRIES, maxBytes = DEFAULT_RESPONSE_CACHE_MAX_BYTES, maxEntryBytes = DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES} = {}) {
   positiveSafeInteger(maxEntries, "maxEntries");
   positiveSafeInteger(maxBytes, "maxBytes");
   positiveSafeInteger(maxEntryBytes, "maxEntryBytes");
-  if (maxEntryBytes > maxBytes)
-    throw new Error("maxEntryBytes cannot exceed maxBytes");
+  if (maxEntryBytes > maxBytes) throw new Error("maxEntryBytes cannot exceed maxBytes");
 
   const entries = new Map();
   let bytes = 0;
@@ -120,10 +104,7 @@ export function createBrowserResponseCache({
         entries.delete(key);
         bytes -= existing.body.length;
       }
-      while (
-        entries.size >= maxEntries ||
-        bytes + entry.body.length > maxBytes
-      ) {
+      while (entries.size >= maxEntries || bytes + entry.body.length > maxBytes) {
         const oldestKey = entries.keys().next().value;
         if (oldestKey === undefined) break;
         const oldest = entries.get(oldestKey);
@@ -167,57 +148,35 @@ export function localBrowserCaptureOrigins(value) {
   } catch {
     throw new Error(`local capture URL is not a URL: ${value}`);
   }
-  if (
-    url.protocol !== "https:" ||
-    url.username ||
-    url.password ||
-    !LOCAL_WIKIJUMP_HOST_RE.test(url.hostname)
-  ) {
-    throw new Error(
-      `local capture URL must be an HTTPS *.wikijump.localhost origin without credentials: ${value}`,
-    );
+  if (url.protocol !== "https:" || url.username || url.password || !LOCAL_WIKIJUMP_HOST_RE.test(url.hostname)) {
+    throw new Error(`local capture URL must be an HTTPS *.wikijump.localhost origin without credentials: ${value}`);
   }
   const site = url.hostname.slice(0, -".wikijump.localhost".length);
   const port = url.port === "" ? "" : `:${url.port}`;
   return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
-export function isWikidotCapturePublicOrigin(
-  value,
-  resourceType,
-  method,
-  initiatorFrameUrl = null,
-) {
+export function isWikidotCapturePublicOrigin(value, resourceType, method) {
   const url = value instanceof URL ? value : new URL(value);
   const hostname = url.hostname.toLowerCase();
-  const interwikiFrame =
-    initiatorFrameUrl === null ? null : new URL(initiatorFrameUrl);
-  return (
-    new Set(["http:", "https:"]).has(url.protocol) &&
+  return new Set(["http:", "https:"]).has(url.protocol) &&
     !url.username &&
     !url.password &&
     !url.port &&
     (hostname === "wikidot.com" ||
       isWikidotResourceHost(hostname) ||
-      (WIKIDOT_STATIC_CDN_RE.test(hostname) &&
-        url.pathname.startsWith("/v--")) ||
+      (WIKIDOT_STATIC_CDN_RE.test(hostname) && url.pathname.startsWith("/v--")) ||
       (url.protocol === "https:" &&
         hostname === "interwiki.scpwiki.com" &&
         method === "GET" &&
-        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType &&
-        (resourceType !== "script" ||
-          interwikiFrame?.origin === "https://interwiki.scpwiki.com")))
-  );
+        WIKIDOT_INTERWIKI_GET_PATH_TYPES.get(url.pathname) === resourceType));
 }
 
 export function isCaptureDependencyResourceType(resourceType) {
   return CAPTURE_DEPENDENCY_RESOURCE_TYPES.has(resourceType);
 }
 
-export function parseRetryAfterMilliseconds(
-  value,
-  { epochNow = Date.now } = {},
-) {
+export function parseRetryAfterMilliseconds(value, {epochNow = Date.now} = {}) {
   if (typeof value !== "string" || value.trim() === "") return null;
   const text = value.trim();
   if (/^\d+$/u.test(text)) {
@@ -230,7 +189,7 @@ export function parseRetryAfterMilliseconds(
   return Math.max(0, retryAt - current);
 }
 
-function stateSnapshot({ nextAvailableAt, blockedUntil }) {
+function stateSnapshot({nextAvailableAt, blockedUntil}) {
   return {
     next_admissible_at_epoch_ms: Math.max(0, nextAvailableAt),
     retry_after_until_epoch_ms: Math.max(0, blockedUntil),
@@ -247,20 +206,9 @@ export function createBrowserRequestGate({
   persistState = null,
 } = {}) {
   finiteNonNegative(intervalMs, "intervalMs");
-  finiteTimestampOrNegativeInfinity(
-    initialNextAvailableAt,
-    "initialNextAvailableAt",
-  );
+  finiteTimestampOrNegativeInfinity(initialNextAvailableAt, "initialNextAvailableAt");
   finiteTimestampOrNegativeInfinity(initialBlockedUntil, "initialBlockedUntil");
-  if (
-    typeof now !== "function" ||
-    typeof sleep !== "function" ||
-    typeof epochNow !== "function" ||
-    (persistState !== null && typeof persistState !== "function")
-  )
-    throw new Error(
-      "browser request gate requires valid clock, sleep, and persistence inputs",
-    );
+  if (typeof now !== "function" || typeof sleep !== "function" || typeof epochNow !== "function" || (persistState !== null && typeof persistState !== "function")) throw new Error("browser request gate requires valid clock, sleep, and persistence inputs");
 
   let nextAvailableAt = initialNextAvailableAt;
   let blockedUntil = initialBlockedUntil;
@@ -283,10 +231,7 @@ export function createBrowserRequestGate({
   let activeFixtureId = null;
 
   function recordBlockedHost(hostname) {
-    const host =
-      typeof hostname === "string" && hostname !== ""
-        ? hostname.toLowerCase()
-        : "<unsupported>";
+    const host = typeof hostname === "string" && hostname !== "" ? hostname.toLowerCase() : "<unsupported>";
     blockedHosts.set(host, (blockedHosts.get(host) ?? 0) + 1);
     const fixtureKey = activeFixtureId ?? "<unattributed>";
     const fixtureHosts = blockedHostsByFixture.get(fixtureKey) ?? new Map();
@@ -296,7 +241,7 @@ export function createBrowserRequestGate({
 
   function schedulePersistence() {
     if (!persistState) return Promise.resolve();
-    const nextState = stateSnapshot({ nextAvailableAt, blockedUntil });
+    const nextState = stateSnapshot({nextAvailableAt, blockedUntil});
     const turn = persistence.then(async () => {
       if (persistenceFailure) throw persistenceFailure;
       await persistState(nextState);
@@ -325,7 +270,7 @@ export function createBrowserRequestGate({
         if (due <= current) {
           nextAvailableAt = current + intervalMs;
           await schedulePersistence();
-          const grant = { sequence: ++sequence, released_at_epoch_ms: current };
+          const grant = {sequence: ++sequence, released_at_epoch_ms: current};
           grants.push(grant);
           return grant;
         }
@@ -337,7 +282,7 @@ export function createBrowserRequestGate({
   }
 
   function deferForRetryAfter(value) {
-    const milliseconds = parseRetryAfterMilliseconds(value, { epochNow });
+    const milliseconds = parseRetryAfterMilliseconds(value, {epochNow});
     if (milliseconds === null) {
       counters.retry_after_invalid += 1;
       return Promise.resolve(false);
@@ -353,10 +298,7 @@ export function createBrowserRequestGate({
     acquire,
     deferForRetryAfter,
     failClosed(error) {
-      enforcementFailure ??=
-        error instanceof Error
-          ? error
-          : new Error("browser request-gate enforcement failed");
+      enforcementFailure ??= error instanceof Error ? error : new Error("browser request-gate enforcement failed");
     },
     async flush() {
       await ensurePersistence();
@@ -375,48 +317,23 @@ export function createBrowserRequestGate({
       return {
         schema: "wikijump_full_parity.browser_request_gate.v1",
         interval_ms: intervalMs,
-        ...stateSnapshot({ nextAvailableAt, blockedUntil }),
+        ...stateSnapshot({nextAvailableAt, blockedUntil}),
         enforcement_failed: Boolean(enforcementFailure || persistenceFailure),
         grants: [...grants],
-        blocked_hosts: Object.fromEntries(
-          [...blockedHosts].sort(([left], [right]) =>
-            left.localeCompare(right),
-          ),
-        ),
-        blocked_hosts_by_fixture: Object.fromEntries(
-          [...blockedHostsByFixture]
-            .sort(([left], [right]) => left.localeCompare(right))
-            .map(([fixture, hosts]) => [
-              fixture,
-              Object.fromEntries(
-                [...hosts].sort(([left], [right]) => left.localeCompare(right)),
-              ),
-            ]),
-        ),
+        blocked_hosts: Object.fromEntries([...blockedHosts].sort(([left], [right]) => left.localeCompare(right))),
+        blocked_hosts_by_fixture: Object.fromEntries([...blockedHostsByFixture].sort(([left], [right]) => left.localeCompare(right)).map(([fixture, hosts]) => [fixture, Object.fromEntries([...hosts].sort(([left], [right]) => left.localeCompare(right)))])),
         ...counters,
       };
     },
     setActiveFixture(fixtureId) {
-      if (
-        fixtureId !== null &&
-        (typeof fixtureId !== "string" || fixtureId === "")
-      )
-        throw new Error(
-          "browser request-gate fixture id must be a non-empty string or null",
-        );
+      if (fixtureId !== null && (typeof fixtureId !== "string" || fixtureId === "")) throw new Error("browser request-gate fixture id must be a non-empty string or null");
       activeFixtureId = fixtureId;
     },
   };
 }
 
 function validState(state) {
-  return (
-    state?.schema === STATE_SCHEMA &&
-    Number.isSafeInteger(state.next_admissible_at_epoch_ms) &&
-    state.next_admissible_at_epoch_ms >= 0 &&
-    Number.isSafeInteger(state.retry_after_until_epoch_ms) &&
-    state.retry_after_until_epoch_ms >= 0
-  );
+  return state?.schema === STATE_SCHEMA && Number.isSafeInteger(state.next_admissible_at_epoch_ms) && state.next_admissible_at_epoch_ms >= 0 && Number.isSafeInteger(state.retry_after_until_epoch_ms) && state.retry_after_until_epoch_ms >= 0;
 }
 
 async function secureJsonFile(filePath) {
@@ -427,10 +344,7 @@ async function secureJsonFile(filePath) {
     if (error?.code === "ENOENT") return null;
     throw error;
   }
-  if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0)
-    throw new Error(
-      `browser request gate state is not a private regular file: ${filePath}`,
-    );
+  if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error(`browser request gate state is not a private regular file: ${filePath}`);
   try {
     return JSON.parse(await fs.readFile(filePath, "utf8"));
   } catch {
@@ -440,24 +354,13 @@ async function secureJsonFile(filePath) {
 
 async function writeDurablePrivateJson(filePath, value) {
   const directory = path.dirname(filePath);
-  await fs.mkdir(directory, { recursive: true, mode: 0o700 });
+  await fs.mkdir(directory, {recursive: true, mode: 0o700});
   const existing = await secureJsonFile(filePath);
-  if (existing !== null && !validState(existing))
-    throw new Error(`browser request gate state is malformed: ${filePath}`);
-  const temporary = path.join(
-    directory,
-    `.${path.basename(filePath)}.${process.pid}.${randomUUID()}.tmp`,
-  );
+  if (existing !== null && !validState(existing)) throw new Error(`browser request gate state is malformed: ${filePath}`);
+  const temporary = path.join(directory, `.${path.basename(filePath)}.${process.pid}.${randomUUID()}.tmp`);
   let handle = null;
   try {
-    handle = await fs.open(
-      temporary,
-      fsConstants.O_WRONLY |
-        fsConstants.O_CREAT |
-        fsConstants.O_EXCL |
-        (fsConstants.O_NOFOLLOW ?? 0),
-      0o600,
-    );
+    handle = await fs.open(temporary, fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (fsConstants.O_NOFOLLOW ?? 0), 0o600);
     await handle.writeFile(`${JSON.stringify(value)}\n`, "utf8");
     await handle.sync();
     await handle.close();
@@ -476,31 +379,18 @@ async function writeDurablePrivateJson(filePath, value) {
   }
 }
 
-export async function createPersistentBrowserRequestGate({
-  statePath,
-  intervalMs = DEFAULT_REQUEST_INTERVAL_MS,
-  now = defaultNow,
-  sleep = defaultSleep,
-  epochNow = Date.now,
-} = {}) {
-  if (typeof statePath !== "string" || statePath === "")
-    throw new Error("browser request gate requires a state path");
+export async function createPersistentBrowserRequestGate({statePath, intervalMs = DEFAULT_REQUEST_INTERVAL_MS, now = defaultNow, sleep = defaultSleep, epochNow = Date.now} = {}) {
+  if (typeof statePath !== "string" || statePath === "") throw new Error("browser request gate requires a state path");
   const existing = await secureJsonFile(statePath);
-  if (existing !== null && !validState(existing))
-    throw new Error(`browser request gate state is malformed: ${statePath}`);
+  if (existing !== null && !validState(existing)) throw new Error(`browser request gate state is malformed: ${statePath}`);
   return createBrowserRequestGate({
     intervalMs,
     now,
     sleep,
     epochNow,
-    initialNextAvailableAt:
-      existing?.next_admissible_at_epoch_ms ?? Number.NEGATIVE_INFINITY,
-    initialBlockedUntil:
-      existing?.retry_after_until_epoch_ms ?? Number.NEGATIVE_INFINITY,
-    persistState: async ({
-      next_admissible_at_epoch_ms,
-      retry_after_until_epoch_ms,
-    }) => {
+    initialNextAvailableAt: existing?.next_admissible_at_epoch_ms ?? Number.NEGATIVE_INFINITY,
+    initialBlockedUntil: existing?.retry_after_until_epoch_ms ?? Number.NEGATIVE_INFINITY,
+    persistState: async ({next_admissible_at_epoch_ms, retry_after_until_epoch_ms}) => {
       await writeDurablePrivateJson(statePath, {
         schema: STATE_SCHEMA,
         next_admissible_at_epoch_ms,
@@ -521,8 +411,7 @@ async function abortRoute(route) {
 }
 
 function requestCanUseResponseCache(request) {
-  if (request.method() !== "GET" || request.resourceType() === "document")
-    return false;
+  if (request.method() !== "GET" || request.resourceType() === "document") return false;
   const headers = request.headers();
   return headers.range === undefined && headers.authorization === undefined;
 }
@@ -540,10 +429,7 @@ function responseCanBeCached(response, cache) {
         const separator = directive.indexOf("=");
         return separator === -1
           ? [directive, null]
-          : [
-              directive.slice(0, separator).trim(),
-              directive.slice(separator + 1).trim(),
-            ];
+          : [directive.slice(0, separator).trim(), directive.slice(separator + 1).trim()];
       }),
   );
   if (
@@ -556,33 +442,27 @@ function responseCanBeCached(response, cache) {
   const maxAge = cacheDirectives.get("max-age");
   if (maxAge !== undefined) {
     const normalizedMaxAge = maxAge?.replace(/^"|"$/gu, "") ?? "";
-    if (!/^\d+$/u.test(normalizedMaxAge) || Number(normalizedMaxAge) === 0)
-      return false;
+    if (!/^\d+$/u.test(normalizedMaxAge) || Number(normalizedMaxAge) === 0) return false;
   }
   const variesByRequestHeader =
     headers.vary
       ?.split(",")
       .map((header) => header.trim())
       .some(Boolean) ?? false;
-  if (headers["set-cookie"] !== undefined || variesByRequestHeader)
-    return false;
+  if (headers["set-cookie"] !== undefined || variesByRequestHeader) return false;
   const contentLength = headers["content-length"];
-  return (
-    contentLength === undefined ||
-    (/^\d+$/u.test(contentLength) &&
-      Number(contentLength) <= cache.maxEntryBytes)
-  );
+  return contentLength === undefined || (/^\d+$/u.test(contentLength) && Number(contentLength) <= cache.maxEntryBytes);
 }
 
 function reusableResponseHeaders(response) {
-  const headers = { ...response.headers() };
+  const headers = {...response.headers()};
   delete headers["content-encoding"];
   delete headers["content-length"];
   delete headers["transfer-encoding"];
   return headers;
 }
 
-async function servePublicRoute(route, { gate, responseCache }) {
+async function servePublicRoute(route, {gate, responseCache}) {
   const request = route.request();
   if (!responseCache || !requestCanUseResponseCache(request)) {
     responseCache?.recordBypass();
@@ -599,10 +479,10 @@ async function servePublicRoute(route, { gate, responseCache }) {
   }
 
   await gate.acquire();
-  const response = await route.fetch({ maxRedirects: 0 });
+  const response = await route.fetch({maxRedirects: 0});
   if (!responseCanBeCached(response, responseCache)) {
     responseCache.recordBypass();
-    await route.fulfill({ response });
+    await route.fulfill({response});
     return;
   }
   const entry = {
@@ -620,62 +500,21 @@ async function servePublicRoute(route, { gate, responseCache }) {
  *   gate: object
  *   exemptOrigins?: string[]
  *   responseCache?: object | null
- *   publicOriginPredicate?: ((value: string, resourceType: string, method: string, initiatorFrameUrl: string | null) => boolean) | null
+ *   publicOriginPredicate?: ((value: string, resourceType: string, method: string) => boolean) | null
  * }} [options]
  */
-export async function installBrowserRequestGate(
-  context,
-  {
-    gate,
-    exemptOrigins = [],
-    responseCache = null,
-    publicOriginPredicate = null,
-  } = {},
-) {
-  if (
-    !gate ||
-    typeof gate.acquire !== "function" ||
-    typeof gate.deferForRetryAfter !== "function" ||
-    typeof gate.failClosed !== "function" ||
-    typeof gate.recordLocalExempt !== "function" ||
-    typeof gate.recordUnsupportedRequestBlocked !== "function" ||
-    typeof gate.recordWebSocketBlocked !== "function"
-  )
-    throw new Error("browser request gate is malformed");
-  if (
-    !context ||
-    typeof context.route !== "function" ||
-    typeof context.routeWebSocket !== "function" ||
-    typeof context.on !== "function"
-  )
-    throw new Error(
-      "browser context cannot enforce request-level capture controls",
-    );
-  if (
-    responseCache !== null &&
-    (typeof responseCache.get !== "function" ||
-      typeof responseCache.store !== "function" ||
-      typeof responseCache.recordBypass !== "function" ||
-      typeof responseCache.snapshot !== "function")
-  )
-    throw new Error("browser response cache is malformed");
-  if (
-    publicOriginPredicate !== null &&
-    typeof publicOriginPredicate !== "function"
-  )
-    throw new Error(
-      "browser request-gate public origin predicate is malformed",
-    );
+export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null} = {}) {
+  if (!gate || typeof gate.acquire !== "function" || typeof gate.deferForRetryAfter !== "function" || typeof gate.failClosed !== "function" || typeof gate.recordLocalExempt !== "function" || typeof gate.recordUnsupportedRequestBlocked !== "function" || typeof gate.recordWebSocketBlocked !== "function") throw new Error("browser request gate is malformed");
+  if (!context || typeof context.route !== "function" || typeof context.routeWebSocket !== "function" || typeof context.on !== "function") throw new Error("browser context cannot enforce request-level capture controls");
+  if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.store !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
+  if (publicOriginPredicate !== null && typeof publicOriginPredicate !== "function") throw new Error("browser request-gate public origin predicate is malformed");
   const exempt = normalizedOrigins(exemptOrigins);
   const attributedAborts = new WeakMap();
   if (exempt.size > 0) {
     context.on("request", (request) => {
       try {
         const url = new URL(request.url());
-        if (
-          new Set(["http:", "https:"]).has(url.protocol) &&
-          exempt.has(url.origin)
-        ) {
+        if (new Set(["http:", "https:"]).has(url.protocol) && exempt.has(url.origin)) {
           gate.recordLocalExempt();
         }
       } catch {
@@ -685,17 +524,15 @@ export async function installBrowserRequestGate(
   }
   const abortWithAttribution = async (route, decision) => {
     const request = route.request();
-    attributedAborts.set(
-      request,
-      Object.freeze({
-        decision,
-        abort_reason: "blockedbyclient",
-      }),
-    );
+    attributedAborts.set(request, Object.freeze({
+      decision,
+      abort_reason: "blockedbyclient",
+    }));
     if (!(await abortRoute(route))) attributedAborts.delete(request);
   };
-  const routePattern =
-    exempt.size === 0 ? "**/*" : (url) => !exempt.has(url.origin);
+  const routePattern = exempt.size === 0
+    ? "**/*"
+    : (url) => !exempt.has(url.origin);
   await context.route(routePattern, async (route) => {
     try {
       const url = new URL(route.request().url());
@@ -710,13 +547,6 @@ export async function installBrowserRequestGate(
           url,
           route.request().resourceType(),
           route.request().method(),
-          (() => {
-            try {
-              return route.request().frame?.()?.url?.() ?? null;
-            } catch {
-              return null;
-            }
-          })(),
         ) &&
         !isCaptureDependencyResourceType(route.request().resourceType())
       ) {
@@ -727,7 +557,7 @@ export async function installBrowserRequestGate(
         );
         return;
       }
-      await servePublicRoute(route, { gate, responseCache });
+      await servePublicRoute(route, {gate, responseCache});
     } catch (error) {
       gate.failClosed(error);
       await abortRoute(route);
@@ -738,33 +568,18 @@ export async function installBrowserRequestGate(
     try {
       url = new URL(response.url());
     } catch {
-      gate.failClosed(
-        new Error(
-          "browser response URL cannot be inspected for request-gate enforcement",
-        ),
-      );
+      gate.failClosed(new Error("browser response URL cannot be inspected for request-gate enforcement"));
       return;
     }
-    if (
-      !new Set(["http:", "https:"]).has(url.protocol) ||
-      exempt.has(url.origin)
-    )
-      return;
+    if (!new Set(["http:", "https:"]).has(url.protocol) || exempt.has(url.origin)) return;
     let retryAfter;
     try {
       retryAfter = response.headers()?.["retry-after"];
     } catch {
-      gate.failClosed(
-        new Error(
-          "browser response headers cannot be inspected for request-gate enforcement",
-        ),
-      );
+      gate.failClosed(new Error("browser response headers cannot be inspected for request-gate enforcement"));
       return;
     }
-    if (retryAfter !== undefined)
-      void gate
-        .deferForRetryAfter(retryAfter)
-        .catch((error) => gate.failClosed(error));
+    if (retryAfter !== undefined) void gate.deferForRetryAfter(retryAfter).catch((error) => gate.failClosed(error));
   });
   await context.routeWebSocket("**/*", () => {
     gate.recordWebSocketBlocked();
@@ -782,19 +597,14 @@ export async function installBrowserRequestGate(
 function processStartTicksFromStat(text) {
   const closing = text.lastIndexOf(")");
   if (closing < 0) return null;
-  const fields = text
-    .slice(closing + 2)
-    .trim()
-    .split(/\s+/u);
+  const fields = text.slice(closing + 2).trim().split(/\s+/u);
   return /^\d+$/u.test(fields[19] ?? "") ? fields[19] : null;
 }
 
 async function currentProcessStartTicks(pid) {
   if (!Number.isSafeInteger(pid) || pid <= 0) return null;
   try {
-    return processStartTicksFromStat(
-      await fs.readFile(`/proc/${pid}/stat`, "utf8"),
-    );
+    return processStartTicksFromStat(await fs.readFile(`/proc/${pid}/stat`, "utf8"));
   } catch (error) {
     if (error?.code === "ENOENT") return null;
     throw error;
@@ -802,14 +612,7 @@ async function currentProcessStartTicks(pid) {
 }
 
 async function writeLockOwner(lockPath, owner) {
-  const handle = await fs.open(
-    lockPath,
-    fsConstants.O_WRONLY |
-      fsConstants.O_CREAT |
-      fsConstants.O_EXCL |
-      (fsConstants.O_NOFOLLOW ?? 0),
-    0o600,
-  );
+  const handle = await fs.open(lockPath, fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (fsConstants.O_NOFOLLOW ?? 0), 0o600);
   try {
     await handle.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
     await handle.sync();
@@ -820,50 +623,17 @@ async function writeLockOwner(lockPath, owner) {
 }
 
 function validOwner(owner) {
-  return (
-    owner?.schema === LOCK_SCHEMA &&
-    typeof owner.hostname === "string" &&
-    Number.isSafeInteger(owner.pid) &&
-    owner.pid > 0 &&
-    /^\d+$/u.test(owner.process_start_ticks ?? "") &&
-    typeof owner.run_id === "string" &&
-    owner.run_id !== "" &&
-    STATE_CONFIRMATIONS.has(owner.state_confirmation)
-  );
+  return owner?.schema === LOCK_SCHEMA && typeof owner.hostname === "string" && Number.isSafeInteger(owner.pid) && owner.pid > 0 && /^\d+$/u.test(owner.process_start_ticks ?? "") && typeof owner.run_id === "string" && owner.run_id !== "" && STATE_CONFIRMATIONS.has(owner.state_confirmation);
 }
 
-export async function acquireBrowserCaptureLock({
-  lockPath = DEFAULT_BROWSER_CAPTURE_LOCK,
-  runId,
-  processStartTicks = currentProcessStartTicks,
-  hostname = os.hostname(),
-  now = () => new Date().toISOString(),
-} = {}) {
-  if (typeof runId !== "string" || runId === "")
-    throw new Error("browser capture lock requires a non-empty run ID");
-  if (
-    typeof processStartTicks !== "function" ||
-    typeof hostname !== "string" ||
-    hostname === "" ||
-    typeof now !== "function"
-  )
-    throw new Error("browser capture lock inputs are malformed");
+export async function acquireBrowserCaptureLock({lockPath = DEFAULT_BROWSER_CAPTURE_LOCK, runId, processStartTicks = currentProcessStartTicks, hostname = os.hostname(), now = () => new Date().toISOString()} = {}) {
+  if (typeof runId !== "string" || runId === "") throw new Error("browser capture lock requires a non-empty run ID");
+  if (typeof processStartTicks !== "function" || typeof hostname !== "string" || hostname === "" || typeof now !== "function") throw new Error("browser capture lock inputs are malformed");
   const absolute = path.resolve(lockPath);
-  await fs.mkdir(path.dirname(absolute), { recursive: true, mode: 0o700 });
+  await fs.mkdir(path.dirname(absolute), {recursive: true, mode: 0o700});
   const startTicks = await processStartTicks(process.pid);
-  if (!startTicks)
-    throw new Error(
-      "cannot bind browser capture lock to this process start time",
-    );
-  let owner = {
-    schema: LOCK_SCHEMA,
-    hostname,
-    pid: process.pid,
-    process_start_ticks: startTicks,
-    run_id: runId,
-    acquired_at: now(),
-    state_confirmation: "pending",
-  };
+  if (!startTicks) throw new Error("cannot bind browser capture lock to this process start time");
+  let owner = {schema: LOCK_SCHEMA, hostname, pid: process.pid, process_start_ticks: startTicks, run_id: runId, acquired_at: now(), state_confirmation: "pending"};
   let lockStat;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
@@ -872,23 +642,16 @@ export async function acquireBrowserCaptureLock({
     } catch (error) {
       if (error?.code !== "EEXIST" || attempt > 0) throw error;
       const stat = await fs.lstat(absolute);
-      if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0)
-        throw new Error("browser capture lock is malformed");
+      if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error("browser capture lock is malformed");
       let existing;
       try {
         existing = JSON.parse(await fs.readFile(absolute, "utf8"));
       } catch {
         throw new Error("browser capture lock owner is malformed");
       }
-      if (!validOwner(existing) || existing.hostname !== hostname)
-        throw new Error(
-          "browser capture lock is held by an unverifiable owner",
-        );
+      if (!validOwner(existing) || existing.hostname !== hostname) throw new Error("browser capture lock is held by an unverifiable owner");
       const existingTicks = await processStartTicks(existing.pid);
-      if (existingTicks === existing.process_start_ticks)
-        throw new Error(
-          `browser capture source lock is held by run ${existing.run_id}`,
-        );
+      if (existingTicks === existing.process_start_ticks) throw new Error(`browser capture source lock is held by run ${existing.run_id}`);
       if (existing.state_confirmation !== "sealed") {
         let persistedState = null;
         let persistedStateError = null;
@@ -900,17 +663,12 @@ export async function acquireBrowserCaptureLock({
         if (!validState(persistedState)) {
           throw new Error(
             `browser capture source lock has unconfirmed request-gate state from run ${existing.run_id}; operator review is required`,
-            persistedStateError === null
-              ? undefined
-              : { cause: persistedStateError },
+            persistedStateError === null ? undefined : {cause: persistedStateError},
           );
         }
       }
       const current = await fs.lstat(absolute);
-      if (current.dev !== stat.dev || current.ino !== stat.ino)
-        throw new Error(
-          "browser capture lock changed while recovering stale owner",
-        );
+      if (current.dev !== stat.dev || current.ino !== stat.ino) throw new Error("browser capture lock changed while recovering stale owner");
       await fs.unlink(absolute);
     }
   }
@@ -922,17 +680,11 @@ export async function acquireBrowserCaptureLock({
     owner,
     async confirmState() {
       if (owner.state_confirmation === "sealed") return;
-      const handle = await fs.open(
-        absolute,
-        fsConstants.O_WRONLY | (fsConstants.O_NOFOLLOW ?? 0),
-      );
+      const handle = await fs.open(absolute, fsConstants.O_WRONLY | (fsConstants.O_NOFOLLOW ?? 0));
       try {
         const current = await handle.stat();
-        if (current.dev !== lockStat.dev || current.ino !== lockStat.ino)
-          throw new Error(
-            "browser capture lock changed before request-gate state confirmation",
-          );
-        owner = { ...owner, state_confirmation: "sealed" };
+        if (current.dev !== lockStat.dev || current.ino !== lockStat.ino) throw new Error("browser capture lock changed before request-gate state confirmation");
+        owner = {...owner, state_confirmation: "sealed"};
         await handle.truncate(0);
         await handle.writeFile(`${JSON.stringify(owner)}\n`, "utf8");
         await handle.sync();
@@ -942,10 +694,7 @@ export async function acquireBrowserCaptureLock({
     },
     async release() {
       if (released) return;
-      if (owner.state_confirmation !== "sealed")
-        throw new Error(
-          "browser capture lock cannot be released before request-gate state confirmation",
-        );
+      if (owner.state_confirmation !== "sealed") throw new Error("browser capture lock cannot be released before request-gate state confirmation");
       released = true;
       let current = null;
       try {
@@ -953,12 +702,7 @@ export async function acquireBrowserCaptureLock({
       } catch (error) {
         if (error?.code !== "ENOENT") throw error;
       }
-      if (
-        current &&
-        current.dev === lockStat.dev &&
-        current.ino === lockStat.ino
-      )
-        await fs.unlink(absolute);
+      if (current && current.dev === lockStat.dev && current.ino === lockStat.ino) await fs.unlink(absolute);
     },
   };
 }

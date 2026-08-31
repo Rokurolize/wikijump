@@ -139,8 +139,7 @@ export async function installCandidateFilePortRoute(
       await route.continue();
       return;
     }
-    if (requestUrl.origin === canonicalFilesOrigin)
-      requestUrl.port = files.port;
+    if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
     let response;
     for (let redirects = 0; ; redirects += 1) {
       response = await route.fetch({
@@ -318,16 +317,10 @@ export function isParityBrowserPublicOrigin(
   resourceType,
   method,
   publicOrigins = [],
-  initiatorFrameUrl = null,
 ) {
   const url = value instanceof URL ? value : new URL(value);
   return (
-    isWikidotCapturePublicOrigin(
-      url,
-      resourceType,
-      method,
-      initiatorFrameUrl,
-    ) ||
+    isWikidotCapturePublicOrigin(url, resourceType, method) ||
     (method === "GET" && publicOrigins.includes(url.origin))
   );
 }
@@ -363,18 +356,9 @@ export async function createParityBrowserControls({
     let configRunId = runId;
     let configLock = lock;
     if (resume) {
-      const existing = await readJsonObject(
-        configPath,
-        "existing throttle config",
-      );
-      configRunId = requireNonEmptyString(
-        existing.run_id,
-        "existing throttle config run_id",
-      );
-      configLock = requirePlainObject(
-        existing.browser_capture_lock,
-        "existing throttle config browser_capture_lock",
-      );
+      const existing = await readJsonObject(configPath, "existing throttle config");
+      configRunId = requireNonEmptyString(existing.run_id, "existing throttle config run_id");
+      configLock = requirePlainObject(existing.browser_capture_lock, "existing throttle config browser_capture_lock");
     }
     const configSeal = await sealJsonNoReplace(
       configPath,
@@ -488,13 +472,12 @@ export async function launchParityBrowser({
     const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
-      publicOriginPredicate: (url, resourceType, method, initiatorFrameUrl) =>
+      publicOriginPredicate: (url, resourceType, method) =>
         isParityBrowserPublicOrigin(
           url,
           resourceType,
           method,
           controls.publicOrigins,
-          initiatorFrameUrl,
         ),
     });
     if (local) {
