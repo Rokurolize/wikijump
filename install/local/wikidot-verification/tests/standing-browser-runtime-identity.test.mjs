@@ -237,13 +237,6 @@ test("effective runtime identity normalizes Docker-reordered environment and mou
       },
     ],
     [
-      "binds",
-      (inspect) => {
-        inspect.HostConfig.Binds = ["volume-b:/b:rw", "volume-a:/a:ro"];
-        return () => inspect.HostConfig.Binds.reverse();
-      },
-    ],
-    [
       "inspect mounts",
       (inspect) => {
         inspect.Mounts = [
@@ -277,6 +270,13 @@ test("effective runtime identity normalizes Docker-reordered environment and mou
 
 test("effective runtime identity preserves order-sensitive Docker arrays", () => {
   const cases = [
+    [
+      "binds",
+      (inspect) => {
+        inspect.HostConfig.Binds = ["volume-b:/b:rw", "volume-a:/a:ro"];
+        return () => inspect.HostConfig.Binds.reverse();
+      },
+    ],
     [
       "host mounts",
       (inspect) => {
