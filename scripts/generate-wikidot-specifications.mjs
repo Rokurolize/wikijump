@@ -18,6 +18,7 @@ import {
 import {
   parseWikidotLiveEvidenceRows,
   resolveWikidotLiveEvidenceFormat,
+  verifiedExternalEvidenceCaseIds,
 } from "./lib/wikidot-live-evidence.mjs";
 import { escapeMarkdownTableCell } from "./lib/markdown.mjs";
 
@@ -196,6 +197,12 @@ for (const observation of liveObservations.observations) {
       rawEvidence,
       resolveWikidotLiveEvidenceFormat(evidence),
     );
+    const externalCaseIds = new Set();
+    for (const row of evidenceRows) {
+      for (const caseId of verifiedExternalEvidenceCaseIds(row)) {
+        externalCaseIds.add(caseId);
+      }
+    }
     const capturedCaseIds = new Set();
     for (const row of evidenceRows) {
       if (
@@ -237,6 +244,10 @@ for (const observation of liveObservations.observations) {
       }
       for (const rule of row.general_rules ?? []) {
         for (const caseId of rule.case_ids ?? []) {
+          invariant(
+            externalCaseIds.has(caseId),
+            `Summary live evidence case ${caseId} is not backed by a verified raw capture`,
+          );
           capturedCaseIds.add(caseId);
         }
       }
