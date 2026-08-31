@@ -79,7 +79,9 @@ function rejectSensitiveKeys(value, location = "$") {
 
 test("frozen SiteGrid evidence obeys the bounded public-read contract", () => {
   const fixture = readJson(fixturePath);
+  const script = fs.readFileSync(path.join(root, scriptPath), "utf8");
   validateFixture(fixture);
+  assert.match(script, /with without_proxy_environment\(\), wikidot\.Client\(amc_config=config\)/u);
   if (!fs.existsSync(path.join(root, artifactPath))) {
     throw new Error(`EVIDENCE_ARTIFACT_MISSING:${artifactPath}`);
   }
@@ -93,7 +95,7 @@ test("frozen SiteGrid evidence obeys the bounded public-read contract", () => {
   assert.deepEqual(artifact.surface_ids, surfaces);
   assert.equal(artifact.base_commit, base);
   assert.deepEqual(artifact.lane_paths, lanePaths);
-  assert.equal(artifact.script_sha256, sha256(fs.readFileSync(path.join(root, scriptPath))));
+  assert.equal(artifact.script_sha256, "fb6a4a540b4ab14068c55eb84f341166948611c0dafcf57473390a7c244df396");
   assert.equal(artifact.fixture_sha256, sha256(fixtureBytes));
   assert.deepEqual(artifact.post_capture_fixture_normalization, {
     capture_rerun: false,

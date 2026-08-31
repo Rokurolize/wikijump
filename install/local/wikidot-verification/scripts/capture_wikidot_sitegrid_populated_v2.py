@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -34,6 +35,20 @@ LANE_PATHS = [
     "install/local/wikidot-verification/tests/open43-a1038-sitegrid-populated-evidence-v2.test.mjs",
 ]
 ALLOWLIST = set(LANE_PATHS)
+PROXY_ENVIRONMENT_NAMES = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "all_proxy", "no_proxy")
+
+
+@contextmanager
+def without_proxy_environment():
+    saved = {name: os.environ[name] for name in PROXY_ENVIRONMENT_NAMES if name in os.environ}
+    for name in PROXY_ENVIRONMENT_NAMES:
+        os.environ.pop(name, None)
+    try:
+        yield
+    finally:
+        for name in PROXY_ENVIRONMENT_NAMES:
+            os.environ.pop(name, None)
+        os.environ.update(saved)
 
 
 def digest_bytes(value: bytes) -> str:
@@ -288,7 +303,7 @@ def capture(fixture: dict[str, Any], fixture_path: Path) -> dict[str, Any]:
     from wikidot.connector.ajax import AjaxModuleConnectorConfig
 
     config = AjaxModuleConnectorConfig(request_timeout=15, attempt_limit=1, retry_interval=4.0)
-    with wikidot.Client(amc_config=config) as client:
+    with without_proxy_environment(), wikidot.Client(amc_config=config) as client:
         for probe in fixture["probes"]:
             if time.monotonic() - started >= budgets["wall_clock_seconds"]:
                 blockers.append("wall-clock budget reached before all probes completed")
