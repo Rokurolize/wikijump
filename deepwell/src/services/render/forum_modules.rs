@@ -498,12 +498,14 @@ pub(super) async fn load_forum_start_activity(
     if !visibility.site_is_viewable(site_id).await? {
         return Ok(None);
     }
-    let Some(visible_thread_ids) = visibility
+    let Some(visible_threads) = visibility
         .visible_thread_ids(site_id, None, None, !include_hidden)
         .await?
     else {
         return Ok(None);
     };
+    let visibility_complete = visible_threads.complete;
+    let visible_thread_ids = visible_threads.ids;
     if visible_thread_ids.is_empty() {
         return Ok(Some(BTreeMap::new()));
     }
@@ -558,7 +560,7 @@ pub(super) async fn load_forum_start_activity(
     .await
     .or_raise(make_error)?;
 
-    if candidates.len() == FORUM_START_CANDIDATE_LIMIT {
+    if candidates.len() == FORUM_START_CANDIDATE_LIMIT && visibility_complete {
         return Ok(None);
     }
     let mut activity = BTreeMap::<i64, ForumCategoryActivity>::new();
@@ -675,12 +677,14 @@ pub(super) async fn load_recent_posts_page(
     if !visibility.site_is_viewable(site_id).await? {
         return Ok(None);
     }
-    let Some(visible_thread_ids) = visibility
+    let Some(visible_threads) = visibility
         .visible_thread_ids(site_id, category_id, None, true)
         .await?
     else {
         return Ok(None);
     };
+    let visibility_complete = visible_threads.complete;
+    let visible_thread_ids = visible_threads.ids;
     if visible_thread_ids.is_empty() {
         return if page == 1 {
             Ok(Some(RecentPostsPage {
@@ -742,7 +746,8 @@ pub(super) async fn load_recent_posts_page(
         .all(ctx.transaction())
         .await
         .or_raise(make_error)?;
-    let page_count_is_lower_bound = candidates.len() == RECENT_POSTS_CANDIDATE_LIMIT;
+    let page_count_is_lower_bound =
+        candidates.len() == RECENT_POSTS_CANDIDATE_LIMIT || !visibility_complete;
     let mut visible = candidates;
 
     let start = (page as usize - 1) * RECENT_POSTS_PER_PAGE;

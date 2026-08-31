@@ -141,12 +141,14 @@ async fn load_forum_threads(
     if !visibility.site_is_viewable(site_id).await? {
         return Ok(None);
     }
-    let Some(visible_thread_ids) = visibility
+    let Some(visible_threads) = visibility
         .visible_thread_ids(site_id, category_id, thread_id, false)
         .await?
     else {
         return Ok(None);
     };
+    let visibility_complete = visible_threads.complete;
+    let visible_thread_ids = visible_threads.ids;
     if visible_thread_ids.is_empty() {
         return Ok(Some(Vec::new()));
     }
@@ -212,7 +214,7 @@ async fn load_forum_threads(
     .await
     .or_raise(make_error)?;
 
-    if candidates.len() == THREAD_CANDIDATE_LIMIT {
+    if candidates.len() == THREAD_CANDIDATE_LIMIT && visibility_complete {
         return Ok(None);
     }
 
