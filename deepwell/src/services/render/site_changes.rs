@@ -61,6 +61,7 @@ struct SiteChangesRevisionRow {
     title: String,
     changes: Vec<String>,
     comments: String,
+    hidden: Vec<String>,
     user_id: i64,
     wikidot_user_name: Option<String>,
     wikidot_user_slug: Option<String>,
@@ -258,14 +259,14 @@ async fn load_site_changes_list(
                 format!(
                     "SELECT revision_id, is_new_page, is_file, created_at, \
                             revision_number, page_id, page_category_id, category_slug, \
-                            slug, title, changes, comments, user_id, \
+                            slug, title, changes, comments, hidden, user_id, \
                             wikidot_user_name, wikidot_user_slug, local_user_name \
                      FROM ( \
                        SELECT pr.revision_id, 0::SMALLINT AS activity_kind, \
                               pr.revision_type = 'create' AS is_new_page, \
                               FALSE AS is_file, pr.created_at, pr.revision_number, \
                               pr.page_id, p.page_category_id, pc.slug AS category_slug, \
-                              pr.slug, pr.title, pr.changes, pr.comments, pr.user_id, \
+                              pr.slug, pr.title, pr.changes, pr.comments, pr.hidden, pr.user_id, \
                               wu.name AS wikidot_user_name, \
                               wu.slug AS wikidot_user_slug, \
                               local_user.name AS local_user_name \
@@ -289,7 +290,7 @@ async fn load_site_changes_list(
                               FALSE AS is_new_page, TRUE AS is_file, fr.created_at, \
                               fr.revision_number, fr.page_id, p.page_category_id, \
                               pc.slug AS category_slug, current_pr.slug, current_pr.title, \
-                              fr.changes, fr.comments, fr.user_id, \
+                              fr.changes, fr.comments, fr.hidden || current_pr.hidden, fr.user_id, \
                               wu.name AS wikidot_user_name, \
                               wu.slug AS wikidot_user_slug, \
                               local_user.name AS local_user_name \
@@ -325,6 +326,11 @@ async fn load_site_changes_list(
         raw_offset = raw_offset.saturating_add(row_count);
 
         for row in rows {
+            if row.hidden.iter().any(|field| {
+                ["comments", "title", "alt_title", "slug"].contains(&field.as_str())
+            }) {
+                continue;
+            }
             let can_view = if let Some(can_view) = permission_cache.get(&row.page_id) {
                 *can_view
             } else {
@@ -693,6 +699,7 @@ mod tests {
             title: "Page".to_owned(),
             changes: changes.iter().map(|change| (*change).to_owned()).collect(),
             comments: String::new(),
+            hidden: Vec::new(),
             user_id: 4,
             wikidot_user_name: None,
             wikidot_user_slug: None,
