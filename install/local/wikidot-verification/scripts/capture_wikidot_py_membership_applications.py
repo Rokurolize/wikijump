@@ -23,6 +23,9 @@ MEMBERSHIP_APPLY_JAVASCRIPT = (
     "http://d3g0gp89917ko0.cloudfront.net/v--7690939296dc/"
     "common--modules/js/membership/MembershipApplyModule.js"
 )
+WIKIDOT_USER_PROFILE_URL = re.compile(
+    r"((?:https?:)?//www\.wikidot\.com/user:info/)[^\"'<\s]+"
+)
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -135,6 +138,9 @@ def normalize_populated_body(
     normalized = body.replace(marker, "<RUN_OWNED_APPLICATION_MARKER>")
     normalized = normalized.replace(applicant_name, "<RUN_OWNED_APPLICANT>")
     normalized = normalized.replace(str(applicant_id), "<RUN_OWNED_APPLICANT_ID>")
+    normalized = WIKIDOT_USER_PROFILE_URL.sub(
+        r"\1RUN_OWNED_APPLICANT", normalized
+    )
     if (
         marker in normalized
         or applicant_name in normalized
