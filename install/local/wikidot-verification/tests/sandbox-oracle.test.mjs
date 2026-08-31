@@ -87,6 +87,16 @@ test("capture validation fails closed on an incomplete browser observation", () 
   assert.throws(
     () =>
       validateSandboxOracleCapture(
+        capture({
+          capture_validation_error: {name: "Error", message: "invalid capture"},
+        }),
+        "fixture live capture",
+      ),
+    /capture validation failed/u,
+  );
+  assert.throws(
+    () =>
+      validateSandboxOracleCapture(
         capture({screenshot: null}),
         "fixture local capture",
       ),
@@ -540,6 +550,23 @@ test("preserved fixtures compare against the declared local shape", () => {
   assert.equal(
     result.layers["screenshot-receipt"].status,
     "not_applicable",
+  );
+});
+
+test("invalid preserved captures cannot pass by matching a partial shape", () => {
+  const fixture = {
+    ...liveFixture(),
+    fixture_id: "delayed-listpages",
+    construct_family: "ListPages",
+    assertion_class: "match-frozen-preserved",
+    expected_preserved: { dom_signature: signature() },
+  };
+  assert.throws(
+    () => compareSandboxOracleFixture({
+      fixture,
+      local: capture({capture_validation_error: {name: "Error", message: "invalid"}}),
+    }),
+    /local capture validation failed/u,
   );
 });
 

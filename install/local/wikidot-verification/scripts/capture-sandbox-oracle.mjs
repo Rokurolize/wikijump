@@ -605,7 +605,9 @@ async function main(argv) {
   const results = registry.fixtures.map((fixture) => {
     const frozen = frozenRows.find((row) => row.fixture_id === fixture.fixture_id)?.capture;
     const blockedHostPolicy = classifyBlockedResourceHosts({
-      blockedHosts: blockedHostsByFixture[fixture.fixture_id] ?? null,
+      blockedHosts: Object.hasOwn(blockedHostsByFixture, fixture.fixture_id)
+        ? blockedHostsByFixture[fixture.fixture_id]
+        : null,
       live: frozen,
       policy: policy.value,
     });

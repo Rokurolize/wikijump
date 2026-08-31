@@ -47,6 +47,8 @@ function proxyRequest(proxyUrl, target, { method = "GET", body = "" } = {}) {
     const request = http.request(
       { host: proxy.hostname, port: proxy.port, method, path: target },
       (response) => {
+        response.on("error", reject);
+        response.on("aborted", () => reject(new Error("proxy response aborted")));
         let data = "";
         response.setEncoding("utf8");
         response.on("data", (chunk) => {
@@ -192,6 +194,31 @@ test("an upstream that never responds is bounded and denied", async () => {
     assert.deepEqual(
       await proxyRequest(proxy.url, `http://fixture.test:${upstream.port}/hang`),
       {status: 502, body: "capture egress denied\n"},
+    );
+  } finally {
+    await proxy.close();
+    await close(upstream.server);
+  }
+});
+
+test("a timed-out partial upstream response closes without crashing the proxy", async () => {
+  const upstream = await listen((request, response) => {
+    if (request.url === "/ok") return response.end("OK");
+    response.writeHead(200, {"content-type": "text/plain"});
+    response.write("partial");
+  });
+  const proxy = await startCaptureEgressProxy({
+    allowedLocalOrigins: [`http://fixture.test:${upstream.port}`],
+    lookup: async () => [{address: "127.0.0.1"}],
+    requestTimeoutMs: 25,
+  });
+  try {
+    await assert.rejects(
+      proxyRequest(proxy.url, `http://fixture.test:${upstream.port}/partial`),
+    );
+    assert.deepEqual(
+      await proxyRequest(proxy.url, `http://fixture.test:${upstream.port}/ok`),
+      {status: 200, body: "OK"},
     );
   } finally {
     await proxy.close();

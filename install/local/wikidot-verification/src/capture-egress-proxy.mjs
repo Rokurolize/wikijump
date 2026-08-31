@@ -92,6 +92,10 @@ export async function resolvePinned(
 
 function deny(response, status = 403) {
   if (response.destroyed || response.writableEnded) return;
+  if (response.headersSent) {
+    response.destroy();
+    return;
+  }
   response.writeHead(status, {
     "content-type": "text/plain",
     connection: "close",

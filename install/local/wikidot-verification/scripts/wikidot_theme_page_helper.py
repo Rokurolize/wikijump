@@ -89,7 +89,7 @@ def validate_slug(value: object, *, kind: str = "theme_page", allow_legacy: bool
             raise PublicError("resource_not_allowed", "reference prerequisite is outside the read-only contract")
         return str(value)
     pattern = (CURRENT_RUN_OWNED_SLUG, LEGACY_RUN_OWNED_SLUG) if allow_legacy else (CURRENT_RUN_OWNED_SLUG,)
-    if isinstance(value, str) and ORACLE_RUN_OWNED_SLUG.fullmatch(value):
+    if isinstance(value, str) and len(value) <= WIKIDOT_PAGE_SLUG_MAX_LENGTH and ORACLE_RUN_OWNED_SLUG.fullmatch(value):
         return value
     if not isinstance(value, str) or len(value) > WIKIDOT_PAGE_SLUG_MAX_LENGTH or not any(candidate.fullmatch(value) for candidate in pattern):
         raise PublicError("resource_not_allowed", "resource is not a run-owned theme page")
