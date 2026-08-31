@@ -360,6 +360,7 @@ test("CandidateCaseRunner owns and closes its lazy browser contexts", async (t) 
         assert.equal(options.outputDir.endsWith("evidence"), true);
         assert.equal(options.candidateIdentity.candidate.endpoint.port, 18443);
         assert.equal(options.credentialPolicy, "none");
+        assert.equal(options.privateInputIdentitySha256, sha256Value({ editor_session_sha256: hash("8") }));
         assert.deepEqual(options.publicOrigins, ["https://www.youtube.com"]);
         return candidateBrowserContexts;
       },

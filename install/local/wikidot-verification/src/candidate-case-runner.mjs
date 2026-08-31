@@ -34,6 +34,8 @@ function validatePreparedRun(value) {
   requirePlainObject(run.privateInputIdentity, "prepared run privateInputIdentity");
   if (run.browserCredentialPolicy !== undefined && run.browserCredentialPolicy !== "none") {
     requirePlainObject(run.browserCredentialPolicy, "prepared run browserCredentialPolicy");
+    requireSha256(run.browserCredentialPolicy.private_input_identity_sha256, "prepared run browser credential private input identity SHA-256");
+    if (run.browserCredentialPolicy.private_input_identity_sha256 !== sha256Value(run.privateInputIdentity)) throw new Error("prepared run browser credential policy does not bind private input identity");
   }
   for (const method of ["execute", "cleanup", "verifyCase", "verifyCleanup"]) if (typeof run[method] !== "function") throw new Error(`prepared run ${method} must be a function`);
   return run;
@@ -173,6 +175,7 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     outputDir: output,
     signal,
     credentialPolicy: run.browserCredentialPolicy ?? "none",
+    privateInputIdentitySha256: sha256Value(run.privateInputIdentity),
     publicOrigins: browserPublicOrigins,
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
