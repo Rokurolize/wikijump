@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import fs from "node:fs/promises"
+import { constants as fsConstants } from "node:fs"
 import { createHash } from "node:crypto"
 import { execFileSync, spawnSync } from "node:child_process"
 import path from "node:path"
@@ -387,9 +388,11 @@ function parseArgs(argv) {
       throw new Error(`unknown argument: ${argument}`)
     }
   }
+  const resolvedOutput = output ?? path.join(root, DEFAULT_OUTPUT)
+  assertRepositoryPath(root, resolvedOutput)
   return {
     root,
-    output: output ?? path.join(root, DEFAULT_OUTPUT),
+    output: resolvedOutput,
     sourceRevision
   }
 }
@@ -412,8 +415,15 @@ function relativeReference(root, absolutePath) {
   return toPosix(relative)
 }
 
+function assertRepositoryPath(root, absolutePath) {
+  const relative = path.relative(root, absolutePath)
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`public reference is outside the repository: ${absolutePath}`)
+  }
+}
+
 async function readJson(root, relativePath) {
-  const absolutePath = path.join(root, relativePath)
+  const absolutePath = repositoryPath(root, relativePath)
   let source
   try {
     source = await fs.readFile(absolutePath, "utf8")
@@ -430,11 +440,40 @@ async function readJson(root, relativePath) {
 
 async function readText(root, relativePath) {
   try {
-    const source = await fs.readFile(path.join(root, relativePath), "utf8")
+    const source = await fs.readFile(repositoryPath(root, relativePath), "utf8")
     SOURCE_INPUTS.set(toPosix(relativePath), source)
     return source
   } catch (error) {
     throw new Error(`cannot read ${relativePath}: ${error.message}`)
+  }
+}
+
+function repositoryPath(root, relativePath) {
+  const absolutePath = path.resolve(root, relativePath)
+  assertRepositoryPath(root, absolutePath)
+  return absolutePath
+}
+
+async function writeRepositoryOutput(root, output, contents) {
+  await fs.mkdir(path.dirname(output), { recursive: true })
+  const rootRealPath = await fs.realpath(root)
+  const parentRealPath = await fs.realpath(path.dirname(output))
+  assertRepositoryPath(rootRealPath, parentRealPath)
+  try {
+    if ((await fs.lstat(output)).isSymbolicLink()) {
+      throw new Error(`output must not be a symbolic link: ${output}`)
+    }
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error
+  }
+  const handle = await fs.open(
+    output,
+    fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_TRUNC | fsConstants.O_NOFOLLOW
+  )
+  try {
+    await handle.writeFile(contents)
+  } finally {
+    await handle.close()
   }
 }
 
@@ -4072,8 +4111,7 @@ async function main() {
   const options = parseArgs(process.argv.slice(2))
   const sourceRevision = await pinnedSourceRevision(options.root, options.sourceRevision)
   const inventory = await buildInventory(options.root, sourceRevision)
-  await fs.mkdir(path.dirname(options.output), { recursive: true })
-  await fs.writeFile(options.output, `${JSON.stringify(inventory, null, 2)}\n`)
+  await writeRepositoryOutput(options.root, options.output, `${JSON.stringify(inventory, null, 2)}\n`)
   const outputReference = path.relative(options.root, options.output)
   process.stdout.write(
     `wrote ${inventory.counts.total} compatibility surfaces to ${
