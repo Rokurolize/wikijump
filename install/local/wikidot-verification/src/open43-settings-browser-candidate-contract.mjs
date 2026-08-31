@@ -479,6 +479,14 @@ function verifyPermissionMatrix(observations, plan) {
     if (caseName === "wrong_origin" && outcome.http_status !== 403) {
       throw new Error("wrong-origin request widened beyond CSRF denial");
     }
+    if (
+      caseName === "wrong_origin" &&
+      (outcome.action_type !== "transport_rejection" ||
+        outcome.response_body_sha256 !==
+          sha256Value('{"message":"Cross-site POST form submissions are forbidden"}'))
+    ) {
+      throw new Error("wrong-origin request is not the exact CSRF transport rejection");
+    }
     if (!mutated && outcome.mutated === true) {
       throw new Error(`${caseName} denied actor mutated public settings`);
     }

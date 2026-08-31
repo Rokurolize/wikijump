@@ -247,7 +247,7 @@ class Open43SettingsRun {
       const result = await this.#action("site", fields, options);
       const next = await this.#site();
       const nextHash = sha256Value(revisionBoundSiteSettings(next));
-      outcomes.push({ case: name, http_status: result.http_status, mutated: nextHash !== beforeHash, next_read_sha256: nextHash, site_id: next.site_id, settings_revision: next.settings_revision });
+      outcomes.push({ case: name, http_status: result.http_status, transport_status: result.transport_status, action_type: result.action_type, response_body_sha256: result.response_body_sha256, mutated: nextHash !== beforeHash, next_read_sha256: nextHash, site_id: next.site_id, settings_revision: next.settings_revision });
     }
     return { outcomes, site_id: before.site_id, before_revision: before.settings_revision, admin_after_revision: before.settings_revision + 1, before_sha256: beforeHash, expected_admin_after_sha256: sha256Value(expectedAdminAfter) };
   }
