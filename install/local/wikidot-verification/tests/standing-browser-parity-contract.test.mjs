@@ -7,6 +7,7 @@ import {
   compareAttributeSignatures,
   compareCaptures,
   evaluateFirstPaintCustomProperties,
+  validateRequestGateAborts,
   validateLiveCompletionPolicy,
 } from "../src/standing-browser-parity-contract.mjs";
 
@@ -89,6 +90,42 @@ test("request-gate parity does not depend on Chromium error suffix text", () => 
   assert.equal(
     result.classified_request_gate_aborts[0].classification,
     "parity_matched",
+  );
+});
+
+test("live-only request-gate aborts fail parity and policy validation is exact", () => {
+  const abort = {
+    kind: "request_gate_abort",
+    url: "https://cdn.example.test/blocked.js",
+    resource_type: "script",
+    error: "net::ERR_BLOCKED_BY_CLIENT.Inspector",
+    decision: "unsupported_public_origin_resource_type",
+    abort_reason: "blockedbyclient",
+  };
+  const live = capture({
+    input_url: "https://scp-wiki.wikidot.com/scp-9506",
+    final_url: "https://scp-wiki.wikidot.com/scp-9506",
+    request_gate_aborts: [abort],
+  });
+  const result = compareCaptures(capture(), live, DEFAULT_THRESHOLDS, [], null);
+  assert.equal(result.status, "fail");
+  assert.ok(result.anomalies.some((anomaly) => anomaly.code === "live_only_request_gate_abort"));
+
+  const policy = validateLiveCompletionPolicy({
+    schema: "wikijump.standing_browser_live_completion_policy.v1",
+    status: "sealed",
+    policy_version: "test-request-gate-abort-v1",
+    allowed_external_failures: [{
+      kind: "request_failed",
+      url: abort.url,
+      resource_type: abort.resource_type,
+      error: abort.error,
+    }],
+  });
+  assert.doesNotThrow(() => validateRequestGateAborts([abort], "aborts", policy, live));
+  assert.throws(
+    () => validateRequestGateAborts([abort], "aborts", {...policy, allowed_external_failures: []}, live),
+    /not allowed by the live completion policy/u,
   );
 });
 

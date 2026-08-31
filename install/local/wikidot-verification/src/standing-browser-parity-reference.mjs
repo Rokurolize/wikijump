@@ -151,6 +151,8 @@ async function validateLiveCapture(capture, pair, root, policy) {
   validateRequestGateAborts(
     value.request_gate_aborts,
     `live request-gate aborts for ${pair.live_url}`,
+    policy,
+    value,
   );
   if (
     value.first_paint?.document?.phase !==

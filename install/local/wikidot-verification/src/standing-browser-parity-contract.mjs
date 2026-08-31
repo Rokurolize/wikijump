@@ -90,7 +90,12 @@ const REQUEST_GATE_ABORT_DECISIONS = new Set([
   "unsupported_public_origin_resource_type",
 ]);
 
-export function validateRequestGateAborts(value, label = "request-gate aborts") {
+export function validateRequestGateAborts(
+  value,
+  label = "request-gate aborts",
+  policy = null,
+  capture = null,
+) {
   if (!Array.isArray(value)) throw new Error(`${label} must be an array`);
   return value.map((entry, index) => {
     const name = `${label}[${index}]`;
@@ -118,7 +123,7 @@ export function validateRequestGateAborts(value, label = "request-gate aborts") 
     if (abort.abort_reason !== "blockedbyclient") {
       throw new Error(`${name}.abort_reason must be blockedbyclient`);
     }
-    return {
+    const normalized = {
       kind: "request_gate_abort",
       url: normalizedUrl(abort.url, `${name}.url`).href,
       resource_type: requireNonEmptyString(
@@ -129,6 +134,22 @@ export function validateRequestGateAborts(value, label = "request-gate aborts") 
       decision,
       abort_reason: "blockedbyclient",
     };
+    if (
+      policy !== null &&
+      !policyAllowsFailure(
+        policy,
+        {
+          kind: "request_failed",
+          url: normalized.url,
+          resource_type: normalized.resource_type,
+          error: normalized.error,
+        },
+        capture,
+      )
+    ) {
+      throw new Error(`${name} is not allowed by the live completion policy`);
+    }
+    return normalized;
   });
 }
 
@@ -765,6 +786,9 @@ export function compareCaptures(
   const liveOnlyRequestGateAborts = (
     live.request_gate_aborts ?? []
   ).filter((abort) => !localGateAbortKeys.has(requestGateAbortKey(abort)));
+  for (const abort of liveOnlyRequestGateAborts) {
+    anomalies.push({ code: "live_only_request_gate_abort", detail: abort });
+  }
   if (local.navigation_status !== 200) {
     anomalies.push({
       code: "local_main_response_not_200",
