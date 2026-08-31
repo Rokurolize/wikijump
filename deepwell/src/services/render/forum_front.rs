@@ -1,5 +1,6 @@
 //! Observed default-format slice of Wikidot's FrontForum module.
 
+use std::collections::HashSet;
 use std::fmt::Write as _;
 use std::sync::LazyLock;
 
@@ -20,6 +21,8 @@ use crate::utils::{normalize_page_slug, normalize_slug_without_category_separato
 const DEFAULT_LIMIT: usize = 20;
 const MAX_LIMIT: usize = 100;
 const CANDIDATE_LIMIT: usize = 1_001;
+const MAX_CATEGORY_IDS: usize = 32;
+const MAX_THREAD_IDS: usize = 5_000;
 
 #[derive(Debug)]
 pub(super) struct FrontForumArguments {
@@ -92,6 +95,7 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
         match argument.key {
             "category" if category_ids.is_none() => {
                 let mut parsed = Vec::new();
+                let mut seen = HashSet::new();
                 for value in argument.value.split(';') {
                     let Some(category_id) = value
                         .parse::<i64>()
@@ -101,7 +105,11 @@ pub(super) fn parse_arguments(head: &str) -> Option<FrontForumArgumentsParse> {
                         category_error = true;
                         break;
                     };
-                    if !parsed.contains(&category_id) {
+                    if seen.insert(category_id) {
+                        if parsed.len() == MAX_CATEGORY_IDS {
+                            category_error = true;
+                            break;
+                        }
                         parsed.push(category_id);
                     }
                 }
@@ -175,7 +183,14 @@ pub(super) async fn load(
             return Ok(FrontForumLoad::ScanLimit);
         };
         visibility_complete &= category_threads.complete;
-        visible_thread_ids.extend(category_threads.ids);
+        let remaining = MAX_THREAD_IDS.saturating_sub(visible_thread_ids.len());
+        if category_threads.ids.len() > remaining {
+            visibility_complete = false;
+        }
+        visible_thread_ids.extend(category_threads.ids.into_iter().take(remaining));
+        if remaining == 0 {
+            break;
+        }
     }
     if visible_thread_ids.is_empty() {
         return Ok(FrontForumLoad::Items(Vec::new()));
@@ -428,6 +443,18 @@ mod tests {
     use crate::services::render::forum_modules::{
         FORUM_MODULE_REGEX, render_front_forum_items,
     };
+
+    #[test]
+    fn frontforum_category_fanout_is_bounded() {
+        let categories = (1..=MAX_CATEGORY_IDS + 1)
+            .map(|category_id| category_id.to_string())
+            .collect::<Vec<_>>()
+            .join(";");
+        assert!(matches!(
+            parse_arguments(&format!(r#" category="{categories}""#)),
+            Some(FrontForumArgumentsParse::CategoryError)
+        ));
+    }
 
     fn item(title: &str, description: &str, compiled_html: &str) -> FrontForumItem {
         FrontForumItem {
