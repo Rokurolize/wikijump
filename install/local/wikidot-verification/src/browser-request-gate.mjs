@@ -156,6 +156,12 @@ export function localBrowserCaptureOrigins(value) {
   return [url.origin, `https://${site}.wjfiles.localhost${port}`];
 }
 
+/**
+ * @param {string | URL} value
+ * @param {string} resourceType
+ * @param {string} method
+ * @param {string | null} initiatorFrameUrl
+ */
 export function isWikidotCapturePublicOrigin(value, resourceType, method, initiatorFrameUrl = null) {
   const url = value instanceof URL ? value : new URL(value);
   const hostname = url.hostname.toLowerCase();
