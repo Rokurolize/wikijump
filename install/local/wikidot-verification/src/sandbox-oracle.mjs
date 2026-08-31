@@ -159,6 +159,40 @@ function validatePreservedExpectation(value, name) {
   return result;
 }
 
+export function validateSandboxOracleSourceProvenance(value, name = "fixture source") {
+  const source = requirePlainObject(value, name);
+  if (typeof source.source !== "string" || source.source === "") throw new Error(`${name}.source must be a non-empty string`);
+  const includes = [...source.source.matchAll(/\[\[\s*include\s+:([a-z0-9-]+):([^\s\]|]+)(?:[|\s\]])/giu)].map(([, siteSlug, page]) => ({site_slug: siteSlug, page}));
+  const declaredIncludes = source.include_provenance ?? [];
+  if (!Array.isArray(declaredIncludes) || declaredIncludes.length !== includes.length) throw new Error(`${name}.include_provenance must cover every external include`);
+  const normalizedIncludes = declaredIncludes.map((entry, index) => {
+    const provenance = requirePlainObject(entry, `${name}.include_provenance[${index}]`);
+    const expected = includes[index];
+    if (provenance.site_slug !== expected.site_slug || provenance.page !== expected.page) throw new Error(`${name}.include_provenance[${index}] does not match the source include`);
+    return {
+      site_slug: requireNonEmptyString(provenance.site_slug, `${name}.include_provenance[${index}].site_slug`),
+      page: requireNonEmptyString(provenance.page, `${name}.include_provenance[${index}].page`),
+      source_sha256: requireSha256(provenance.source_sha256, `${name}.include_provenance[${index}].source_sha256`),
+      evidence_path: requireNonEmptyString(provenance.evidence_path, `${name}.include_provenance[${index}].evidence_path`),
+    };
+  });
+  const images = [...source.source.matchAll(/\[\[\s*image\s+(https?:\/\/[^\s\]]+)/giu)].map(([, url]) => new URL(url));
+  const declaredAssets = source.asset_provenance === undefined ? [] : Array.isArray(source.asset_provenance) ? source.asset_provenance : [source.asset_provenance];
+  if (declaredAssets.length !== images.length) throw new Error(`${name}.asset_provenance must cover every external image`);
+  const normalizedAssets = declaredAssets.map((entry, index) => {
+    const provenance = requirePlainObject(entry, `${name}.asset_provenance[${index}]`);
+    const expected = images[index];
+    if (provenance.origin !== expected.hostname || provenance.wikidot_path !== `${expected.pathname}${expected.search}`) throw new Error(`${name}.asset_provenance[${index}] does not match the source image`);
+    return {
+      origin: requireNonEmptyString(provenance.origin, `${name}.asset_provenance[${index}].origin`),
+      wikidot_path: requireNonEmptyString(provenance.wikidot_path, `${name}.asset_provenance[${index}].wikidot_path`),
+      sha256: requireSha256(provenance.sha256, `${name}.asset_provenance[${index}].sha256`),
+      evidence_path: requireNonEmptyString(provenance.evidence_path, `${name}.asset_provenance[${index}].evidence_path`),
+    };
+  });
+  return {includes: normalizedIncludes, assets: normalizedAssets};
+}
+
 export function validateSandboxOracleFixture(value, index = 0) {
   const entry = requirePlainObject(value, `fixtures[${index}]`);
   const fixtureId = requireNonEmptyString(
