@@ -59,5 +59,5 @@ test("History leaves a missing or deleted author identity neutral", () => {
     props: { author: null }
   }).body
 
-  assert.doesNotMatch(body, /<a|<span|undefined|null|user/u)
+  assert.equal(body, "<!--[--><!--[-1--><!--]--><!--]-->")
 })

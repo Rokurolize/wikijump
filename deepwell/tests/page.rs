@@ -13846,11 +13846,13 @@ async fn forum_comments_list_resolves_only_visible_page_discussions_impl() {
         "fixture-forum-comments-reverse-attributes",
     )
     .await;
+    let comment_411 = reverse_body.find("Page Comment 411");
+    let comment_410 = reverse_body.find("Page Comment 410");
     assert!(
         reverse_body.contains("<h1>Reverse Saved</h1>")
             && reverse_body.contains(r#"class="thread-container reverse""#)
-            && reverse_body.find("Page Comment 411")
-                < reverse_body.find("Page Comment 410")
+            && comment_411
+                .is_some_and(|position| comment_410.is_some_and(|other| position < other))
             && reverse_body.find("new-post-button")
                 < reverse_body.find("comments-options-shown"),
         "exact order=reverse should embed the reverse page:\n{reverse_body}",
