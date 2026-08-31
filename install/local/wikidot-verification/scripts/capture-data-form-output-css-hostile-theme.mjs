@@ -392,9 +392,11 @@ def capture_fixture(site, plan, css_source, run_token):
             "reload": {"form": reload_form, "saved_source": reload_source, "display": reload_display},
             "emitted_css_fragment": reload_display["emitted_css_fragment"],
         })
+    except Exception as exc:
+        result["capture_error"] = f"{type(exc).__name__}: {exc}"
     finally:
         errors = []
-        if target_created or site.page.get(target, raise_when_not_found=False) is not None:
+        if target_created:
             try:
                 cleanup["target_deleted"] = delete_and_verify(site, target)
             except Exception as exc:
@@ -404,7 +406,11 @@ def capture_fixture(site, plan, css_source, run_token):
                 cleanup["template_deleted"] = delete_and_verify(site, template)
             except Exception as exc:
                 errors.append(f"template cleanup: {type(exc).__name__}: {exc}")
-        cleanup["absence_verified"] = site.page.get(target, raise_when_not_found=False) is None and site.page.get(template, raise_when_not_found=False) is None
+        try:
+            cleanup["absence_verified"] = site.page.get(target, raise_when_not_found=False) is None and site.page.get(template, raise_when_not_found=False) is None
+        except Exception as exc:
+            errors.append(f"absence verification: {type(exc).__name__}: {exc}")
+            cleanup["absence_verified"] = False
         if errors:
             cleanup["errors"] = errors
     return result
@@ -431,7 +437,10 @@ def main():
             if not preflight["deleted"] or not preflight["absence_verified"]:
                 raise RuntimeError("public page deletion preflight did not restore absence")
             for plan in cases["fixtures"]:
-                fixture_results.append(capture_fixture(site, plan, cases["hostile_css_source"], run_token))
+                fixture_result = capture_fixture(site, plan, cases["hostile_css_source"], run_token)
+                fixture_results.append(fixture_result)
+                if "capture_error" in fixture_result or not fixture_result["cleanup"]["absence_verified"]:
+                    break
         except Exception as exc:
             blocked_reason = f"{type(exc).__name__}: {exc}"
             missing_authority = "complete public setup, observation, validation, or cleanup route"

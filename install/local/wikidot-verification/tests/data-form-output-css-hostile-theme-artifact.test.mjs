@@ -5,6 +5,7 @@ import test from "node:test";
 const root = new URL("../", import.meta.url);
 const cases = JSON.parse(await readFile(new URL("fixtures/data-form-output-css-hostile-theme/cases.json", root), "utf8"));
 const artifact = JSON.parse(await readFile(new URL("artifacts/data-form-output-css-hostile-theme-live-20260810.json", root), "utf8"));
+const captureScript = await readFile(new URL("scripts/capture-data-form-output-css-hostile-theme.mjs", root), "utf8");
 
 const phases = [
   "create_form",
@@ -37,6 +38,12 @@ test("hostile-theme artifact has the exact public evidence identity", () => {
   assert.match(artifact.hostile_css.sha256, /^[0-9a-f]{64}$/);
   assert.equal(artifact.cleanup.verified, true);
   assert.deepEqual(artifact.cleanup.remaining_pages, []);
+});
+
+test("hostile-theme capture retains partial failures and stops before the next fixture", () => {
+  assert.match(captureScript, /except Exception as exc:\n        result\["capture_error"\]/u);
+  assert.match(captureScript, /if "capture_error" in fixture_result or not fixture_result\["cleanup"\]\["absence_verified"\]:\n                    break/u);
+  assert.doesNotMatch(captureScript, /if target_created or site\.page\.get\(target/u);
 });
 
 test("hostile-theme artifact is complete and secret-free", () => {
