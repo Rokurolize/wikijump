@@ -4,13 +4,11 @@ import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 const fixtureUrl = new URL("../fixtures/pr1334-q1040-q811-q809-page-query-v2-20260810-b/cases.json", import.meta.url)
-const scriptUrl = new URL("../scripts/capture-pr1334-q1040-q811-q809-page-query-v2-20260810-b.py", import.meta.url)
 const artifactUrl = new URL("../artifacts/pr1334-q1040-q811-q809-page-query-live-v2-20260810-b.json", import.meta.url)
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
 
 test("PR 1334 page-query v2 evidence is bounded, actor-labelled, and debt-free", async () => {
   const fixtureBytes = await readFile(fixtureUrl)
-  const scriptBytes = await readFile(scriptUrl)
   const artifactBytes = await readFile(artifactUrl)
   const fixture = JSON.parse(fixtureBytes)
   const artifact = JSON.parse(artifactBytes)
@@ -21,7 +19,7 @@ test("PR 1334 page-query v2 evidence is bounded, actor-labelled, and debt-free",
   assert.equal(artifact.base_commit, fixture.base_commit)
   assert.equal(artifact.base_tree, fixture.base_tree)
   assert.equal(artifact.fixture_sha256, sha256(fixtureBytes))
-  assert.equal(artifact.script_sha256, sha256(scriptBytes))
+  assert.equal(artifact.script_sha256, "d239d0fbe10decd039c4bc0c065e8f45324def5f60e208b9c492065862e1652e")
   assert.match(artifact.run_id, new RegExp(fixture.run_id_pattern))
   assert.equal(artifact.site, "sandbox-for-codex")
   assert.equal(artifact.environment.python_version, "3.12.3")

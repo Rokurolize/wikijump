@@ -5,9 +5,11 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import ipaddress
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.error
@@ -32,6 +34,27 @@ LANE_ID = "B_Q1040_Q811_Q809_PAGE_QUERY_V2"
 BASE_COMMIT = "c78561b3f6dc35198658f618fc01d10e4bcad6d0"
 BASE_TREE = "9f236023be41fd9c807272bbb16dd060b500b140"
 REDIRECT_PREFIX = "Redirect refused for credential-bearing direct request:"
+EXPECTED_PUBLIC_ORIGIN = "http://sandbox-for-codex.wikidot.com"
+
+
+class RefuseRedirectHandler(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, request: urllib.request.Request, fp: Any, code: int, msg: str, headers: Any, new_url: str) -> None:
+        raise urllib.error.HTTPError(request.full_url, code, "public read redirect refused", headers, fp)
+
+
+def validate_public_origin(value: Any) -> str:
+    if value != EXPECTED_PUBLIC_ORIGIN:
+        raise SystemExit("fixture public_origin is not the committed sandbox origin")
+    parsed = urllib.parse.urlsplit(value)
+    if parsed.scheme != "http" or parsed.hostname != "sandbox-for-codex.wikidot.com" or parsed.port is not None or parsed.username or parsed.password or parsed.path or parsed.query or parsed.fragment:
+        raise SystemExit("fixture public_origin is not a plain sandbox origin")
+    try:
+        addresses = {ipaddress.ip_address(result[4][0]) for result in socket.getaddrinfo(parsed.hostname, 80, type=socket.SOCK_STREAM)}
+    except OSError as error:
+        raise SystemExit("sandbox origin could not be resolved") from error
+    if not addresses or any(not address.is_global for address in addresses):
+        raise SystemExit("sandbox origin resolved to a non-public address")
+    return value
 
 
 def utc_now() -> str:
@@ -225,6 +248,7 @@ def main() -> None:
         raise SystemExit("unexpected fixture identity")
     if fixture["base_commit"] != BASE_COMMIT or fixture["base_tree"] != BASE_TREE:
         raise SystemExit("fixture is not bound to the assigned integration tree")
+    public_origin = validate_public_origin(fixture.get("public_origin"))
     if re.fullmatch(fixture["run_id_pattern"], args.run_id) is None:
         raise SystemExit("invalid run identity")
     if args.output.exists():
@@ -348,6 +372,7 @@ def main() -> None:
     mutation_started = False
     capture_complete = False
     event_index = 0
+    public_opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), RefuseRedirectHandler())
 
     def config() -> AjaxModuleConnectorConfig:
         return AjaxModuleConnectorConfig(
@@ -363,11 +388,11 @@ def main() -> None:
         for attempt in range(attempts):
             budget.request()
             request = urllib.request.Request(
-                f"{fixture['public_origin']}/{fullname}",
+                f"{public_origin}/{fullname}",
                 headers={"User-Agent": "wikijump-compatibility-evidence/2"},
             )
             try:
-                with urllib.request.urlopen(
+                with public_opener.open(
                     request, timeout=fixture["limits"]["per_request_timeout_ms"] / 1000
                 ) as response:
                     body = response.read(fixture["limits"]["max_response_body_bytes_per_request"] + 1)
