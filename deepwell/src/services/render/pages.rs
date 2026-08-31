@@ -53,7 +53,7 @@ const PAGES_PER_PAGE: usize = 20;
 const MAX_PAGES_MODULE_SCAN_ROWS: usize = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
 const PAGES_MODULE_QUERY_LIMIT: usize = MAX_PAGES_MODULE_SCAN_ROWS + 1;
 
-#[derive(Debug, FromQueryResult)]
+#[derive(Debug, Clone, FromQueryResult)]
 pub(super) struct PagesModulePage {
     pub page_id: i64,
     pub page_category_id: i64,
@@ -113,14 +113,27 @@ impl PagesModulePagesCache {
         F: FnOnce() -> Fut,
         Fut: Future<Output = Result<Option<Arc<Vec<PagesModulePage>>>>>,
     {
-        if let Some(pages) = self.pages.get(&arguments) {
-            return Ok(pages.as_ref().map(Arc::clone));
+        let limit = arguments.limit;
+        let mut cache_key = arguments;
+        cache_key.limit = None;
+        if let Some(pages) = self.pages.get(&cache_key) {
+            return Ok(pages.as_ref().map(|pages| limit_pages(pages, limit)));
         }
 
         let pages = load().await?;
-        self.pages.insert(arguments, pages.as_ref().map(Arc::clone));
-        Ok(pages)
+        self.pages.insert(cache_key, pages.as_ref().map(Arc::clone));
+        Ok(pages.map(|pages| limit_pages(&pages, limit)))
     }
+}
+
+fn limit_pages(
+    pages: &Arc<Vec<PagesModulePage>>,
+    limit: Option<usize>,
+) -> Arc<Vec<PagesModulePage>> {
+    limit.map_or_else(
+        || Arc::clone(pages),
+        |limit| Arc::new(pages.iter().take(limit).cloned().collect()),
+    )
 }
 
 fn pages_module_scan_exceeded(row_count: usize) -> bool {
@@ -202,7 +215,8 @@ pub(super) async fn expand_pages_modules(
             continue;
         }
 
-        let load_arguments = arguments.clone();
+        let mut load_arguments = arguments.clone();
+        load_arguments.limit = None;
         let pages = pages_cache
             .get_or_init(arguments.clone(), move || async move {
                 load_pages_module_pages(ctx, current_site_id, &load_arguments)
@@ -754,6 +768,38 @@ mod tests {
                 .as_slice()[0]
                 .page_id,
         );
+    }
+
+    #[tokio::test]
+    async fn pages_module_limits_share_one_full_result_cache() {
+        let mut cache = PagesModulePagesCache::default();
+        let limited = PagesModuleArguments {
+            limit: Some(1),
+            ..PagesModuleArguments::default()
+        };
+        let mut loads = 0;
+
+        let first = cache
+            .get_or_init(limited, || async {
+                loads += 1;
+                Ok(Some(Arc::new(vec![page(1), page(2)])))
+            })
+            .await
+            .expect("the limited result should render")
+            .expect("the pages should be present");
+        let second = cache
+            .get_or_init(PagesModuleArguments::default(), || async {
+                panic!("a different limit must reuse the full cached result");
+                #[allow(unreachable_code)]
+                Ok(Some(Arc::new(vec![page(3)])))
+            })
+            .await
+            .expect("the full result should render")
+            .expect("the pages should be present");
+
+        assert_eq!(loads, 1);
+        assert_eq!(first.len(), 1);
+        assert_eq!(second.len(), 2);
     }
 
     #[tokio::test]

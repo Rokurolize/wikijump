@@ -1,35 +1,8 @@
 name: '[wikidot] Verification tests'
 
+# Wikidot is currently unavailable. Keep this live/candidate-dependent suite
+# manual so normal development does not produce outage failures or retries.
 on:
-  pull_request:
-    paths:
-      - 'install/local/wikidot-verification/**'
-      - 'install/standing/**'
-      - 'scripts/data/wikidot-implementation-ledger.json'
-      - 'scripts/data/wikidot-live-observations.json'
-      - 'scripts/generate-wikidot-specifications.mjs'
-      - 'scripts/initialize-wikidot-implementation-ledger.mjs'
-      - 'scripts/lib/wikidot-implementation-ledger.mjs'
-      - 'docs/wikidot-specifications/**'
-      - 'deepwell/Cargo.toml'
-      - 'deepwell/Cargo.lock'
-      - '.github/workflows/wikidot-verification.yaml'
-  push:
-    branches:
-      - develop
-      - prod
-    paths:
-      - 'install/local/wikidot-verification/**'
-      - 'install/standing/**'
-      - 'scripts/data/wikidot-implementation-ledger.json'
-      - 'scripts/data/wikidot-live-observations.json'
-      - 'scripts/generate-wikidot-specifications.mjs'
-      - 'scripts/initialize-wikidot-implementation-ledger.mjs'
-      - 'scripts/lib/wikidot-implementation-ledger.mjs'
-      - 'docs/wikidot-specifications/**'
-      - 'deepwell/Cargo.toml'
-      - 'deepwell/Cargo.lock'
-      - '.github/workflows/wikidot-verification.yaml'
   workflow_dispatch:
 
 permissions:
