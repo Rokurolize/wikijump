@@ -216,7 +216,7 @@ pub(super) fn resolve_typed_root_site_grid_runtime_modules(tree: &mut SyntaxTree
         }
 
         let mut attributes = AttributeMap::new();
-        debug_assert!(attributes.insert("class", Cow::Borrowed("error-block")));
+        assert!(attributes.insert("class", Cow::Borrowed("error-block")));
         *element = Element::Container(Container::new(
             ContainerType::Div,
             vec![Element::Text(Cow::Borrowed(SITE_GRID_EMPTY_MESSAGE))],
