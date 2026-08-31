@@ -71,8 +71,9 @@ test("base edits rerun central CI while metadata edits stay isolated", () => {
     assert.match(section, /github\.event\.action != 'edited' \|\| github\.event\.changes\.base != null/)
   }
   assert.match(concurrency, /format\('ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
+  assert.match(concurrency, /format\('ci-push-\{0\}', github\.ref\)/)
   assert.match(concurrency, /format\('ci-run-\{0\}', github\.run_id\)/)
-  assert.match(concurrency, /cancel-in-progress:/)
+  assert.match(concurrency, /cancel-in-progress:.*github\.event_name == 'push'/)
   assert.equal(
     yamlScalar(gate, 4, "name"),
     "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
