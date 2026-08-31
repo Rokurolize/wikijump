@@ -61,7 +61,7 @@ test('planDirectAttachmentMaterialization validates bytes and deduplicates by S3
   assert.equal(plan.attachments[0].content_type_label, 'PNG image data');
   assert.equal(plan.attachments[2].content_type_description, 'PNG image data, legacy capture detail');
   assert.equal(plan.attachments[1].content_type_label, 'JPEG image data');
-  assert.equal(plan.attachments[0].replace_existing_descriptor, true);
+  assert.equal(plan.attachments[0].replace_existing_descriptor, false);
   assert.equal(plan.blobs[0].first_file_path, rows[0].attachments[0].file_path);
   assert.equal(plan.blobs[0].mime, null);
 });

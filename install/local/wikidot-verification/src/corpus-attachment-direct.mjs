@@ -117,7 +117,7 @@ export function planDirectAttachmentMaterialization(rows) {
         description: attachment.content_type_description,
       }, attachment.file_path);
 
-      attachments.push({ fullname: row.fullname, filename: attachment.filename, file_path: attachment.file_path, sha256: attachment.sha256, size: bytes.length, mime: attachment.mime ?? null, s3_key_hex: s3KeyHex, content_type_label: descriptor.label, content_type_description: descriptor.description, replace_existing_descriptor: true, duplicate });
+      attachments.push({ fullname: row.fullname, filename: attachment.filename, file_path: attachment.file_path, sha256: attachment.sha256, size: bytes.length, mime: attachment.mime ?? null, s3_key_hex: s3KeyHex, content_type_label: descriptor.label, content_type_description: descriptor.description, replace_existing_descriptor: false, duplicate });
     }
   }
 
