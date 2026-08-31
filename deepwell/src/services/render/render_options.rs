@@ -153,10 +153,6 @@ impl RenderContext {
         }
     }
 
-    pub(super) fn page_preview(site_id: i64) -> Self {
-        Self::page_preview_with_page(site_id, None)
-    }
-
     pub(super) fn page_preview_with_page(
         site_id: i64,
         current_page_id: Option<i64>,
@@ -210,7 +206,7 @@ mod tests {
     #[test]
     fn page_preview_has_site_state_without_saved_page_identity() {
         assert_eq!(
-            RenderContext::page_preview(7),
+            RenderContext::page_preview_with_page(7, None),
             RenderContext {
                 current_site_id: Some(7),
                 current_category_id: None,
@@ -221,7 +217,7 @@ mod tests {
             },
         );
         assert_eq!(
-            RenderContext::page_preview(7).list_pages_pager_route(),
+            RenderContext::page_preview_with_page(7, None).list_pages_pager_route(),
             ListPagesPagerRoute::AjaxModuleConnector,
         );
     }

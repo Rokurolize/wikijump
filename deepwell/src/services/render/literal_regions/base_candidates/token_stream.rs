@@ -19,9 +19,7 @@
  */
 
 use super::{DelimiterIdentity, DelimiterKind};
-use crate::services::render::literal_regions::token_boundaries::{
-    TextTokenIndex, right_bracket_token,
-};
+use crate::services::render::literal_regions::token_boundaries::TextTokenIndex;
 use crate::services::render::literal_regions::wikidot::{
     PhysicalLines, physical_line_body,
 };
@@ -249,9 +247,10 @@ fn scan_literal(bytes: &[u8], start: usize) -> Option<TokenStep> {
         b'$' if has(bytes, start, b"$]]") => {
             TokenStep::delimiter(DelimiterKind::InlineMathClose, start + 3)
         }
-        b']' => {
-            TokenStep::other(start + right_bracket_token(bytes, start, bytes.len()).1)
-        }
+        // Right-bracket tokens do not emit delimiter events here. Consume a
+        // contiguous run in one step instead of rescanning its prefix for
+        // every bracket.
+        b']' => TokenStep::other(scan_same(bytes, start, b']')),
         b'|' if has(bytes, start, b"||~")
             || has(bytes, start, b"||>")
             || has(bytes, start, b"||=") =>
@@ -519,5 +518,17 @@ mod tests {
 
         assert_eq!(index.double_at.len(), TOKENS);
         assert!(advances <= source.len(), "{advances} > {}", source.len());
+    }
+
+    #[test]
+    fn dense_right_bracket_runs_are_consumed_once() {
+        let source = "]".repeat(20_000);
+
+        EVENT_SCAN_ADVANCES.with(|advances| advances.set(0));
+        let index = DelimiterIndex::new(&source);
+        let advances = EVENT_SCAN_ADVANCES.with(Cell::get);
+
+        assert!(index.right_raw.is_empty());
+        assert_eq!(advances, 1);
     }
 }

@@ -2040,8 +2040,8 @@ fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
     assert_eq!(list_pages_row_scan_target(100, None, None, 25, true), 126,);
     assert_eq!(
         list_pages_row_scan_target(250, None, Some(250), 0, false),
-        u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
-        "an unbounded paginated ListPages module must scan the complete matching set for its pager",
+        250,
+        "an unbounded paginated ListPages module must keep its scan bounded by the page size",
     );
     assert_eq!(
         list_pages_row_scan_target(250, Some(1_000), Some(250), 250, false),
@@ -2053,8 +2053,8 @@ fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
     );
     assert_eq!(
         list_pages_row_scan_target(1, None, Some(1), 0, false),
-        u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
-        "a one-row page still has an unbounded pager without an overall limit",
+        1,
+        "a one-row page must not scan the whole site without an overall limit",
     );
 }
 

@@ -2673,7 +2673,7 @@ impl RenderService {
             arguments.limit,
             &mut permission_cache,
             None,
-            arguments.limit as u64,
+            super::service::MAX_LISTPAGES_RENDER_LIMIT,
         )
         .await?;
         let runtime_displays = if arguments.comments {
