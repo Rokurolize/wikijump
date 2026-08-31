@@ -102,7 +102,8 @@ pub(in crate::services::render) fn render_list_pages_tags(
             let href = list_pages_tag_link_href(path_prefix, tag);
             let label = compat_html.push_plain(tag);
             if whitespace_target {
-                let linked_label = format!("/tag/{tag} {label}");
+                let linked_label =
+                    format!("/tag/{} {label}", escape_list_pages_html_text(tag));
                 return if render_as_html {
                     format!(r#"<a href="/">{linked_label}</a>"#)
                 } else {
@@ -400,9 +401,10 @@ pub(in crate::services::render) fn protect_list_pages_generated_html(
 #[cfg(test)]
 mod tests {
     use super::{
-        WikidotUserDisplay, list_pages_tag_target_prefix,
+        WikidotUserDisplay, list_pages_tag_target_prefix, render_list_pages_tags,
         render_list_pages_wikidot_feed_user, render_list_pages_wikidot_user,
     };
+    use crate::services::render::compat::CompatHtmlFragments;
 
     #[test]
     fn tag_target_builds_live_paths_without_admitting_protocol_relative_urls() {
@@ -420,6 +422,23 @@ mod tests {
         ] {
             assert_eq!(list_pages_tag_target_prefix(target).as_deref(), expected);
         }
+    }
+
+    #[test]
+    fn whitespace_tag_target_escapes_raw_tag_names_in_generated_html() {
+        let mut compat_html = CompatHtmlFragments::new("");
+        let output = render_list_pages_tags(
+            &["<svg/onload=alert(1)>".to_owned()],
+            Some(" "),
+            true,
+            &mut compat_html,
+        );
+
+        assert!(!output.contains("<svg"), "raw tag markup leaked: {output}");
+        assert!(
+            output.contains("&lt;svg/onload=alert(1)&gt;"),
+            "escaped tag missing: {output}"
+        );
     }
 
     #[test]

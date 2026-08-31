@@ -12,6 +12,7 @@ from pathlib import Path
 BASE = "f2b5769e1ff6206c31cc2b66a03675c64fba6318"
 FIXTURE_PATH = Path("install/local/wikidot-verification/fixtures/pr1334-deepwell-identity-jsonrpc-attribution.json")
 SCRIPT_PATH = Path("install/local/wikidot-verification/scripts/capture_pr1334_deepwell_identity_jsonrpc_attribution.py")
+ARTIFACT_PATH = Path("install/local/wikidot-verification/artifacts/pr1334-deepwell-identity-jsonrpc-attribution-20260810.json")
 INVENTORY_PATH = Path("docs/development/compatibility-surface-inventory.json")
 LANE_PATHS = {
     FIXTURE_PATH.as_posix(),
@@ -89,6 +90,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True, type=Path)
     arguments = parser.parse_args()
+    if arguments.output != ARTIFACT_PATH:
+        fail(f"output_path_not_allowed: expected {ARTIFACT_PATH}")
     validate_checkout()
 
     fixture = read_json(FIXTURE_PATH)
@@ -249,6 +252,8 @@ def main():
         "mutations": 0,
         "private_output_retained": False,
     }
+    if arguments.output.is_symlink():
+        fail("output_path_not_allowed: artifact must not be a symlink")
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     arguments.output.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 

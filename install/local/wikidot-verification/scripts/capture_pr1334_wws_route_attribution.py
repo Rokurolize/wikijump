@@ -9,6 +9,7 @@ from pathlib import Path
 BASE = "f2b5769e1ff6206c31cc2b66a03675c64fba6318"
 FIXTURE = Path("install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json")
 SCRIPT = Path("install/local/wikidot-verification/scripts/capture_pr1334_wws_route_attribution.py")
+ARTIFACT = Path("install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json")
 INVENTORY = Path("docs/development/compatibility-surface-inventory.json")
 OWNED = {str(FIXTURE), str(SCRIPT), "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json", "install/local/wikidot-verification/tests/pr1334-wws-route-attribution-no-thumbnails.test.mjs"}
 
@@ -113,6 +114,11 @@ def main():
         "network_requests": 0, "mutations": 0
     }
     output = Path(args.output)
+    if output != ARTIFACT:
+        raise SystemExit(f"output_path_not_allowed: expected {ARTIFACT}")
+    if output.is_symlink():
+        raise SystemExit("output_path_not_allowed: artifact must not be a symlink")
+    output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(artifact, indent=2, sort_keys=True) + "\n")
 
 if __name__ == "__main__":
