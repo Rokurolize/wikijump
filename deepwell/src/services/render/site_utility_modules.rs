@@ -110,6 +110,10 @@ pub(super) async fn expand_site_utility_modules(
     }
 
     let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+    let last_module_close_start = MODULE_CLOSE_REGEX
+        .find_iter(&wikitext)
+        .last()
+        .map(|matched| matched.start());
     let requires_admin_gate =
         SITE_UTILITY_MODULE_REGEX
             .captures_iter(&wikitext)
@@ -124,7 +128,7 @@ pub(super) async fn expand_site_utility_modules(
                 let head = captures.name("head").map_or("", |head| head.as_str());
                 !literal_regions.contains(matched.start())
                     && head.trim().is_empty()
-                    && !opens_module_body(&wikitext, matched.end())
+                    && !opens_module_body(last_module_close_start, matched.end())
                     && (name.eq_ignore_ascii_case("ManageSite")
                         || name.eq_ignore_ascii_case("PetitionAdmin"))
             });
@@ -160,8 +164,8 @@ pub(super) async fn expand_site_utility_modules(
             .expect("a site utility module capture always has a name")
             .as_str();
         let head = captures.name("head").map_or("", |head| head.as_str());
-        let is_standalone =
-            head.trim().is_empty() && !opens_module_body(&wikitext, matched.end());
+        let is_standalone = head.trim().is_empty()
+            && !opens_module_body(last_module_close_start, matched.end());
         let rendered = if name.eq_ignore_ascii_case("Clone") {
             (viewer_user_id.is_none() && head.trim().is_empty())
                 .then_some(CLONE_ANONYMOUS_HTML)
@@ -182,8 +186,9 @@ pub(super) async fn expand_site_utility_modules(
             }
         } else {
             debug_assert!(name.eq_ignore_ascii_case("SiteGrid"));
-            (head.trim().is_empty() && !opens_module_body(&wikitext, matched.end()))
-                .then_some(SITE_GRID_EMPTY_HTML)
+            (head.trim().is_empty()
+                && !opens_module_body(last_module_close_start, matched.end()))
+            .then_some(SITE_GRID_EMPTY_HTML)
         };
         let Some(rendered) = rendered else {
             continue;
@@ -225,6 +230,18 @@ pub(super) fn resolve_typed_root_site_grid_runtime_modules(tree: &mut SyntaxTree
     }
 }
 
-fn opens_module_body(wikitext: &str, opening_end: usize) -> bool {
-    MODULE_CLOSE_REGEX.is_match(&wikitext[opening_end..])
+fn opens_module_body(last_close_start: Option<usize>, opening_end: usize) -> bool {
+    last_close_start.is_some_and(|close_start| close_start >= opening_end)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::opens_module_body;
+
+    #[test]
+    fn module_body_detection_uses_the_last_close_boundary() {
+        assert!(opens_module_body(Some(20), 10));
+        assert!(!opens_module_body(Some(10), 20));
+        assert!(!opens_module_body(None, 10));
+    }
 }
