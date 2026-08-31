@@ -13,6 +13,8 @@ import type {
 } from "$lib/types"
 import type { RequestContext } from "../request-context"
 
+const MAX_PAGE_HISTORY_REVISIONS = 1_000
+
 /* ----- Page Delete ----- */
 interface PageDelete {
   page_id: number
@@ -400,6 +402,7 @@ export async function pageHistory(
   limit: Optional<number>,
   requestContext: RequestContext = {}
 ): Promise<PageRevisionModelFiltered[]> {
+  const requestedLimit = limit ?? defaults.page.history.limit
   return client.request(
     "page_revision_range",
     {
@@ -407,7 +410,7 @@ export async function pageHistory(
       page_id: pageId,
       revision_number: revisionNumber ?? defaults.page.history.revisionNumber,
       revision_direction: "before",
-      limit: limit ?? defaults.page.history.limit
+      limit: Math.min(Math.max(requestedLimit, 1), MAX_PAGE_HISTORY_REVISIONS)
     },
     requestContext
   )
