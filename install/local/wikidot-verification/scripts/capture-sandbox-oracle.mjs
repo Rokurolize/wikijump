@@ -40,7 +40,7 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 const REGISTRY_PATH = path.join(REPO_ROOT, "install/local/wikidot-verification/fixtures/sandbox-oracle-fixture-registry.json");
 const SOURCES_PATH = path.join(REPO_ROOT, "install/local/wikidot-verification/fixtures/sandbox-oracle/fixture-sources.json");
 const LOCAL_ORIGIN = SANDBOX_ORACLE_LOCAL_ORIGINS[0];
-const LIVE_ORIGIN = "http://sandbox-for-codex.wikidot.com";
+const LIVE_ORIGIN = "https://sandbox-for-codex.wikidot.com";
 const DEFAULT_RPC_URL = "http://127.0.0.1:12747/jsonrpc";
 
 function sha256(value) {

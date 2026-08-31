@@ -348,7 +348,7 @@ Theme-localization execution is site-scoped by the audited two-member allowlist
 (`scpaiueouiuiuiui` and `sandbox-for-codex`), mirrored in JavaScript and the
 Python helper and checked at every origin boundary. The default site remains
 `scpaiueouiuiuiui`; selecting the sandbox requires explicit
-`--site sandbox-for-codex --wikidot-origin http://sandbox-for-codex.wikidot.com`
+`--site sandbox-for-codex --wikidot-origin https://sandbox-for-codex.wikidot.com`
 and `--wikijump-origin https://sandbox-for-codex.wikijump.localhost`. The
 allowlist widening is a separate draft change held for owner sign-off before
 any live sandbox mutation.

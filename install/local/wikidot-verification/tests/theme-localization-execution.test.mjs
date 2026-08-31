@@ -65,7 +65,7 @@ function fixturePlan({runId = "20260713-core", tiers = ["yossistyle", "ashes-to-
         },
         capture: {computed_styles: {properties: ["display"], probes: [{id: "header", selector: "#header", expectation: "required"}]}},
         targets: [
-          {id: "wikidot", resource_id: `${id}:wikidot`, origin: `http://${DEFAULT_SITE_SLUG}.wikidot.com`, url: `http://${DEFAULT_SITE_SLUG}.wikidot.com/${slug}`},
+          {id: "wikidot", resource_id: `${id}:wikidot`, origin: `https://${DEFAULT_SITE_SLUG}.wikidot.com`, url: `https://${DEFAULT_SITE_SLUG}.wikidot.com/${slug}`},
           {id: "wikijump", resource_id: `${id}:wikijump`, origin: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443`, url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${slug}`},
         ],
       };
@@ -82,7 +82,7 @@ function fixturePlan({runId = "20260713-core", tiers = ["yossistyle", "ashes-to-
       accepted_source_sha256: dependency.accepted_source_sha256,
       source_transform: dependency.source_transform,
       source_sha256: dependency.materialized_source_sha256,
-      reference: {resource_id: `prerequisite:${dependency.slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", url: `http://${DEFAULT_SITE_SLUG}.wikidot.com/${dependency.slug}`, title: dependency.title, tags: [...dependency.reference_tags]},
+      reference: {resource_id: `prerequisite:${dependency.slug}:wikidot`, kind: "reference_prerequisite", target: "wikidot", url: `https://${DEFAULT_SITE_SLUG}.wikidot.com/${dependency.slug}`, title: dependency.title, tags: [...dependency.reference_tags]},
       candidate: {resource_id: `dependency:${dependency.slug}:wikijump`, kind: "component_dependency", target: "wikijump", url: `https://${DEFAULT_SITE_SLUG}.wikijump.localhost:18443/${dependency.slug}`, title: dependency.title, ownership_token: ownershipToken, tags: [`codex-l10n-owner-${ownershipToken}`, "component"]},
     };
   });
