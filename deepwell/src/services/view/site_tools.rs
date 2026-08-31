@@ -15,9 +15,10 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::{PageRevisionService, ServiceContext};
 use crate::types::{Action, Permission, Reference, Resource};
-use sea_orm::{ConnectionTrait, FromQueryResult, Statement};
+use sea_orm::sea_query::ArrayType;
+use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 const MAX_SITE_TOOLS_PAGES: usize = 2_000;
 const SITE_TOOLS_PAGE_SCAN_LIMIT: usize = MAX_SITE_TOOLS_PAGES + 1;
@@ -53,6 +54,11 @@ struct SiteToolsWantedLink {
     to_page_slug: String,
     from_page_id: i64,
     page_category_id: i64,
+}
+
+#[derive(Debug, FromQueryResult)]
+struct SiteToolsLinkedPage {
+    to_page_id: i64,
 }
 
 fn scan_exceeded(row_count: usize, maximum: usize) -> bool {
@@ -142,15 +148,6 @@ impl ViewService {
                 format!(
                     "SELECT p.page_id, p.page_category_id FROM page p \
                  WHERE p.site_id = {} AND p.deleted_at IS NULL \
-                   AND NOT EXISTS ( \
-                     SELECT 1 FROM page_connection pc \
-                     JOIN page source_page ON source_page.page_id = pc.from_page_id \
-                     WHERE pc.to_page_id = p.page_id \
-                       AND pc.from_page_id <> p.page_id \
-                       AND pc.connection_type = 'link' \
-                       AND source_page.site_id = p.site_id \
-                       AND source_page.deleted_at IS NULL \
-                   ) \
                  ORDER BY p.page_id LIMIT {SITE_TOOLS_PAGE_SCAN_LIMIT}",
                     input.site_id,
                 ),
@@ -166,9 +163,42 @@ impl ViewService {
             .into());
         }
 
-        let mut pages = Self::site_tools_viewable_pages(ctx, input.site_id, candidates)
-            .await?
-            .into_values()
+        let viewable =
+            Self::site_tools_viewable_pages(ctx, input.site_id, candidates).await?;
+        if viewable.is_empty() {
+            return Ok(Vec::new());
+        }
+        let ids = viewable.keys().copied().map(Value::from).collect();
+        let linked =
+            SiteToolsLinkedPage::find_by_statement(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                format!(
+                    "SELECT DISTINCT pc.to_page_id FROM page_connection pc \
+                 WHERE pc.to_page_id = ANY($1::BIGINT[]) \
+                   AND pc.from_page_id = ANY($1::BIGINT[]) \
+                   AND pc.from_page_id <> pc.to_page_id \
+                   AND pc.connection_type = 'link' LIMIT {SITE_TOOLS_PAGE_SCAN_LIMIT}",
+                ),
+                [Value::Array(ArrayType::BigInt, Some(Box::new(ids)))],
+            ))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        if scan_exceeded(linked.len(), MAX_SITE_TOOLS_PAGES) {
+            return Err(Error::new(
+                "Site Tools orphaned link scan exceeded its public limit",
+                ErrorType::PageLink,
+            )
+            .into());
+        }
+        let linked_ids = linked
+            .into_iter()
+            .map(|row| row.to_page_id)
+            .collect::<HashSet<_>>();
+        let mut pages = viewable
+            .into_iter()
+            .filter(|(page_id, _)| !linked_ids.contains(page_id))
+            .map(|(_, page)| page)
             .collect::<Vec<_>>();
         pages.sort_by(compare_pages);
         Ok(pages)
@@ -191,12 +221,6 @@ impl ViewService {
                    AND pcm.connection_type = 'link' \
                    AND p.site_id = {} \
                    AND p.deleted_at IS NULL \
-                   AND NOT EXISTS ( \
-                     SELECT 1 FROM page existing_page \
-                     WHERE existing_page.site_id = pcm.to_site_id \
-                       AND existing_page.slug = pcm.to_page_slug \
-                       AND existing_page.deleted_at IS NULL \
-                   ) \
                  ORDER BY pcm.to_page_slug, pcm.from_page_id \
                  LIMIT {SITE_TOOLS_WANTED_LINK_SCAN_LIMIT}",
                 input.site_id, input.site_id,
@@ -213,6 +237,41 @@ impl ViewService {
             .into());
         }
 
+        let target_slugs = rows
+            .iter()
+            .map(|row| row.to_page_slug.clone())
+            .collect::<HashSet<_>>();
+        let target_slug_values = target_slugs.into_iter().map(Value::from).collect();
+        let target_candidates =
+            SiteToolsPageCandidate::find_by_statement(Statement::from_sql_and_values(
+                txn.get_database_backend(),
+                format!(
+                    "SELECT page_id, page_category_id FROM page \
+                     WHERE site_id = $1 AND deleted_at IS NULL \
+                       AND slug = ANY($2::TEXT[]) LIMIT {SITE_TOOLS_PAGE_SCAN_LIMIT}",
+                ),
+                [
+                    Value::from(input.site_id),
+                    Value::Array(ArrayType::String, Some(Box::new(target_slug_values))),
+                ],
+            ))
+            .all(txn)
+            .await
+            .or_raise(make_error)?;
+        if scan_exceeded(target_candidates.len(), MAX_SITE_TOOLS_PAGES) {
+            return Err(Error::new(
+                "Site Tools target-page scan exceeded its public limit",
+                ErrorType::PageLink,
+            )
+            .into());
+        }
+        let visible_target_slugs =
+            Self::site_tools_viewable_pages(ctx, input.site_id, target_candidates)
+                .await?
+                .into_values()
+                .map(|page| page.slug)
+                .collect::<HashSet<_>>();
+
         let candidates = rows
             .iter()
             .map(|row| (row.from_page_id, row.page_category_id))
@@ -228,6 +287,9 @@ impl ViewService {
         let mut grouped: BTreeMap<String, BTreeMap<i64, SiteToolsPageView>> =
             BTreeMap::new();
         for row in rows {
+            if visible_target_slugs.contains(&row.to_page_slug) {
+                continue;
+            }
             let Some(source) = viewable.get(&row.from_page_id) else {
                 continue;
             };
