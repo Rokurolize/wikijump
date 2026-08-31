@@ -3755,6 +3755,7 @@ impl RenderService {
         Some(arguments)
     }
 
+    #[allow(dead_code)]
     fn find_preview_component_separator_markers(
         wikitext: &str,
     ) -> Option<(usize, usize, usize, usize)> {
