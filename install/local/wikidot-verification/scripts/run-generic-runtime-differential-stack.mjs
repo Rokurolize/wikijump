@@ -164,6 +164,23 @@ function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+function requireWrappedBuildAttestation(manifest, build) {
+  const attestation = manifest?.build_attestation;
+  requireCandidate(isRecord(attestation) && attestation.mode === "wrapped_pre_post", "has no wrapped build attestation");
+  requireCandidate(SHA256_RE.test(attestation.receipt_sha256), "has no build receipt hash");
+  const receipt = attestation.receipt;
+  requireCandidate(isRecord(receipt) && receipt.schema === "roku.artifact_key_build_receipt.v1" && receipt.wrapper_version === 1, "has an invalid build receipt");
+  requireCandidate(attestation.receipt_canonical_sha256 === sha256Hex(stableStringify(receipt)), "build receipt canonical hash does not match");
+  requireCandidate(stableStringify(receipt.before) === stableStringify(manifest.artifact_key), "build receipt before record does not match");
+  requireCandidate(stableStringify(receipt.after) === stableStringify(manifest.artifact_key), "build receipt after record does not match");
+  const expectedCommand = ["cargo", "build", "--locked", "--package", build.package];
+  if (build.default_features === false) expectedCommand.push("--no-default-features");
+  for (const feature of build.features) expectedCommand.push("--features", feature);
+  requireCandidate(stableStringify(receipt.build_command) === stableStringify(expectedCommand), "build receipt command does not match");
+  requireCandidate(stableStringify(receipt.cargo_lock_sha256) === stableStringify({before: build.cargo_lock_sha256, after: build.cargo_lock_sha256}), "build receipt Cargo.lock binding does not match");
+  requireCandidate(receipt.binary_sha256 === build.binary_sha256, "build receipt binary binding does not match");
+}
+
 export async function bindCandidate({repository, candidateManifest, binary}) {
   let manifest;
   let candidateManifestBytes;
@@ -244,7 +261,6 @@ export async function bindCandidate({repository, candidateManifest, binary}) {
     Array.isArray(inputs?.features) && JSON.stringify(inputs.features) === JSON.stringify(build.features),
     "has inconsistent features",
   );
-
   if (run(GIT, ["status", "--porcelain"], {cwd: repository, env: GIT_ENV}) !== "") {
     throw new Error("candidate repository must be clean");
   }
@@ -271,6 +287,7 @@ export async function bindCandidate({repository, candidateManifest, binary}) {
     sha256(await fsp.readFile(selectedBinary)) === build.binary_sha256,
     "binary hash does not match",
   );
+  requireWrappedBuildAttestation(manifest, build);
   return {manifest, binary: selectedBinary, candidateReceipt: {path: candidateManifest, sha256: sha256Hex(candidateManifestBytes)}};
 }
 

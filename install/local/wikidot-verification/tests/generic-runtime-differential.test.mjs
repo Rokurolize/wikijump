@@ -132,6 +132,21 @@ source = "git+https://github.com/Rokurolize/ftml?rev=${exactFtmlSha}#${exactFtml
     source,
     build,
   };
+  const receipt = {
+    schema: "roku.artifact_key_build_receipt.v1",
+    wrapper_version: 1,
+    build_command: ["cargo", "build", "--locked", "--package", "deepwell"],
+    cargo_lock_sha256: {before: cargoLockSha256, after: cargoLockSha256},
+    binary_sha256: binarySha256,
+    before: manifest.artifact_key,
+    after: manifest.artifact_key,
+  };
+  manifest.build_attestation = {
+    mode: "wrapped_pre_post",
+    receipt_sha256: sha256(Buffer.from(JSON.stringify(receipt))),
+    receipt_canonical_sha256: sha256Hex(stableStringify(receipt)),
+    receipt,
+  };
   await fsp.writeFile(candidateManifest, `${JSON.stringify(manifest, null, 2)}\n`);
   return {repository, binary, candidateManifest, manifest};
 }
@@ -1800,6 +1815,13 @@ test("candidate binding fails closed on identity mismatches", async (t) => {
         fixture.manifest.build.binary_sha256 = "4".repeat(64);
       },
       error: /binary hash does not match/u,
+    },
+    {
+      name: "build attestation",
+      change(fixture) {
+        delete fixture.manifest.build_attestation;
+      },
+      error: /wrapped build attestation/u,
     },
   ];
 
