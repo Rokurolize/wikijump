@@ -97,7 +97,7 @@ class Open43Q748TopBarSearchBrowserAdapter {
 
   async captureTopBarSearch() {
     await this.#browserContexts.setActiveFixture(FIXTURE_ID);
-    const owned = await this.#browserContexts.newCandidateContext({ storageState: { cookies: [], origins: [] }, viewport: DEFAULT_VIEWPORT });
+    const owned = await this.#browserContexts.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
     const page = await owned.context.newPage();
     const requestMethods = [];
     const failedRequests = [];

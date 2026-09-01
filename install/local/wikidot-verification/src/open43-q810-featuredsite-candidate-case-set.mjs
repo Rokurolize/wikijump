@@ -294,7 +294,7 @@ class Q810FeaturedSiteRun {
     };
 
     this.#browser.setActiveFixture("Q810_CANDIDATE_FAIL_CLOSED_NETWORK");
-    const { context } = await this.#browser.newCandidateContext({ storageState: { cookies: [], origins: [] } });
+    const { context } = await this.#browser.newCandidateContext({});
     const savedBrowser = await this.#capturePage(context, this.#fixture.saved_page, "Q810_SAVED", 0);
     const nestedBrowser = await this.#capturePage(context, this.#fixture.nested_page, "Q810_NESTED", 1);
     return [{

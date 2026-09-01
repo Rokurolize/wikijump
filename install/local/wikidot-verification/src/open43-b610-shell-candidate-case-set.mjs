@@ -213,10 +213,7 @@ export function createOpen43B610ShellCandidateCaseSet() {
       };
       const execute = async () => {
         await candidateBrowserContexts.setActiveFixture(INITIAL_FIXTURE_ID);
-        const { context, environment } = await candidateBrowserContexts.newCandidateContext({
-          storageState: { cookies: [], origins: [] },
-          viewport: VIEWPORT,
-        });
+        const { context, environment } = await candidateBrowserContexts.newCandidateContext({ viewport: VIEWPORT });
         const page = await context.newPage();
         try {
           const capture = await candidateBrowserContexts.captureCandidateObservation({
