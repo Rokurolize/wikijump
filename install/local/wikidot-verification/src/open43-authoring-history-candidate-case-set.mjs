@@ -251,7 +251,7 @@ function captureStatus(response) {
 }
 
 async function responseObservation(response) {
-  const body = await response.text();
+  const body = typeof response?.text === "function" ? await response.text() : response?.body ?? "";
   const httpStatus = captureStatus(response);
   let status = httpStatus;
   try {
@@ -485,15 +485,14 @@ class Open43AuthoringHistoryRun {
       const cancelled = await settingsState(page);
       const cancelAfter = postCount;
 
-      const invalidResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/display"));
       await page.fill("#user-display-locales", "   ");
-      await page.evaluate(async ({ operation }) => {
+      const invalidResponse = await page.evaluate(async ({ operation }) => {
         if (operation !== "submit-settings-form") throw new Error("unknown settings operation");
         const form = document.querySelector("#user-settings-form");
         if (!(form instanceof HTMLFormElement)) throw new Error("settings form is missing");
-        await fetch(form.action, { method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin" });
+        const response = await fetch(form.action, { method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin" });
+        return { status: response.status, body: await response.text() };
       }, { operation: "submit-settings-form" });
-      const invalidResponse = await invalidResponsePromise;
       const invalid = await responseObservation(invalidResponse);
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       const afterInvalidReload = await settingsState(page);
@@ -504,12 +503,17 @@ class Open43AuthoringHistoryRun {
       const submitted = `${desired[0].replaceAll("-", "_")}, ${desired[1]} ${desired[0]}`;
       await page.fill("#user-display-locales", submitted);
       await addSubmittedUserControl(page);
-      const saveResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/display"));
       this.#settingsRestored = false;
-      await page.click("#user-settings-form .button-save");
-      const saveResponse = await saveResponsePromise;
+      const saveResponse = await page.evaluate(async ({ operation }) => {
+        if (operation !== "submit-settings-form") throw new Error("unknown settings operation");
+        const form = document.querySelector("#user-settings-form");
+        if (!(form instanceof HTMLFormElement)) throw new Error("settings form is missing");
+        const requestBody = new URLSearchParams(new FormData(form)).toString();
+        const response = await fetch(form.action, { method: "POST", body: requestBody, credentials: "same-origin" });
+        return { status: response.status, body: await response.text(), request_body: requestBody };
+      }, { operation: "submit-settings-form" });
       const saved = await responseObservation(saveResponse);
-      const saveRequestBody = postBodies.at(-1) ?? "";
+      const saveRequestBody = saveResponse.request_body ?? postBodies.at(-1) ?? "";
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
       const afterSaveReload = await settingsState(page);
       const persisted = await this.#user();
