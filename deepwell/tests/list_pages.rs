@@ -864,6 +864,84 @@ async fn delayed_listpages_rows_keep_authored_html_blocks_literal_in_preview() {
 }
 
 #[tokio::test]
+async fn listpages_section_zero_html_opener_keeps_preview_literal_and_saved_html_executable()
+ {
+    const SOURCE_SLUG: &str = "listpages-section-zero-html-opener";
+    const SOURCE: &str = concat!(
+        "[[module ListPages fullname=\"scp-002\" separate=\"no\" wrapper=\"no\"]]\n",
+        "[[%%content{0}%%html]]<strong>GENERATED_HTML</strong>[[%%content{0}%%/html]]\n",
+        "[[/module]]",
+    );
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    let preview = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "ListPages section-zero HTML opener preview",
+        SOURCE.to_owned(),
+    )
+    .await
+    .expect("section-zero HTML opener preview should render")
+    .html_output
+    .body;
+    assert!(
+        preview.contains("[[html]]&lt;strong&gt;GENERATED_HTML&lt;/strong&gt;[[/html]]")
+            && !preview.contains("html-block-iframe")
+            && !preview.contains("%%content{0}%%"),
+        "PagePreview must keep generated section-zero HTML literal:
+{preview}",
+    );
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(SOURCE_SLUG.into())),
+    });
+    run_endpoint!(
+        runner,
+        page_create,
+        json!({
+            "site_id": site_id,
+            "wikitext": SOURCE,
+            "title": "ListPages section-zero HTML opener",
+            "alt_title": null,
+            "slug": SOURCE_SLUG,
+            "layout": "wikidot",
+            "revision_comments": "section-zero generated HTML regression",
+            "user_id": ADMIN_USER_ID,
+            "bypass_filter": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let page = deepwell::endpoints::all::page_get(
+        runner.context(),
+        common::make_params(json!({
+            "site_id": site_id,
+            "page": SOURCE_SLUG,
+            "details": {"compiled": true},
+        })),
+    )
+    .await
+    .expect("saved section-zero page_get should succeed")
+    .expect("saved section-zero page should exist");
+    let saved = page
+        .compiled_body_html
+        .expect("saved section-zero page should have compiled HTML");
+    assert!(
+        saved.contains(r#"class="html-block-iframe""#)
+            && !saved.contains("[[html]]")
+            && !saved.contains("GENERATED_HTML"),
+        "saved pages must execute generated section-zero HTML through the iframe boundary:
+{saved}",
+    );
+}
+
+#[tokio::test]
 async fn exact_name_listpages_missing_page_renders_no_row() {
     const SOURCE_SLUG: &str = "great-hippo-missing-name-smoke";
 
