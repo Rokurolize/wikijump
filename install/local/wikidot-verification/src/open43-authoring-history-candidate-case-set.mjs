@@ -508,9 +508,9 @@ class Open43AuthoringHistoryRun {
         if (operation !== "submit-settings-form") throw new Error("unknown settings operation");
         const form = document.querySelector("#user-settings-form");
         if (!(form instanceof HTMLFormElement)) throw new Error("settings form is missing");
-        const requestBody = new URLSearchParams(new FormData(form)).toString();
+        const requestBody = new URLSearchParams(new FormData(form));
         const response = await fetch(form.action, { method: "POST", body: requestBody, credentials: "same-origin" });
-        return { status: response.status, body: await response.text(), request_body: requestBody };
+        return { status: response.status, body: await response.text(), request_body: requestBody.toString() };
       }, { operation: "submit-settings-form" });
       const saved = await responseObservation(saveResponse);
       const saveRequestBody = saveResponse.request_body ?? postBodies.at(-1) ?? "";
