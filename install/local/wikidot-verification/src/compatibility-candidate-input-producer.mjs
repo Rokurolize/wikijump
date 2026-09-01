@@ -532,6 +532,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
       throw new Error("fresh candidate is missing the maintained scp-wiki site");
     }
     const standardSiteId = standardSite.site_id;
+    sql(database, `update site set favicon_source='https://scp-wiki.wdfiles.com/local--files/site/favicon.gif' where site_id=${standardSiteId};`);
     sql(database, `insert into wikidot_corpus_import_run(site_id,source_branch,source_site,manifest_sha256,manifest_row_count,complete_inventory,state,finished_at,summary) values(${standardSiteId},'master','scp-wiki',decode(md5('B689 candidate graph')||md5('B689 candidate graph'),'hex'),0,true,'done',now(),'{}'::jsonb);`);
     for (const dependency of B689_NAVIGATION_DEPENDENCIES) {
       const wikitext = await fs.readFile(dependency.path, "utf8");
