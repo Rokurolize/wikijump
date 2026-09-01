@@ -46,11 +46,12 @@ export function browserContextOptions({ignoreHttpsErrors, storageState = null, p
   };
 }
 
-async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer, requestGate = null, localOrigins = []}) {
+async function newContextPair({browser, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer, requestGate = null, localOrigins = [], sourceResponseCacheOptions = {}}) {
   let sourceContext = null;
   let localContext = null;
-  const sourceResponseCache = requestGate ? createBrowserResponseCache() : null;
+  const sourceResponseCache = requestGate ? createBrowserResponseCache(sourceResponseCacheOptions) : null;
   try {
+    await sourceResponseCache?.load();
     sourceContext = await browser.newContext(
       browserContextOptions({
         ignoreHttpsErrors,
@@ -94,7 +95,8 @@ async function closeContextPair({sourceContext, localContext}) {
   }
 }
 
-function browserSession({browser, sourceContext, localContext, sourceResponseCache, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer, requestGate, localOrigins}) {
+function browserSession({browser, sourceContext, localContext, sourceResponseCache, ignoreHttpsErrors, sourceStorageState, localStorageState, sourceProxyServer, localProxyServer, requestGate, localOrigins, sourceResponseCacheOptions}) {
+  const responseCaches = new Set(sourceResponseCache ? [sourceResponseCache] : []);
   return {
     browser,
     context: sourceContext,
@@ -102,7 +104,7 @@ function browserSession({browser, sourceContext, localContext, sourceResponseCac
     localContext,
     sourceResponseCache,
     async newContextPair() {
-      return await newContextPair({
+      const pair = await newContextPair({
         browser,
         ignoreHttpsErrors,
         sourceStorageState,
@@ -111,7 +113,10 @@ function browserSession({browser, sourceContext, localContext, sourceResponseCac
         localProxyServer,
         requestGate,
         localOrigins,
+        sourceResponseCacheOptions,
       });
+      if (pair.sourceResponseCache) responseCaches.add(pair.sourceResponseCache);
+      return pair;
     },
     async close() {
       let contextError = null;
@@ -120,11 +125,22 @@ function browserSession({browser, sourceContext, localContext, sourceResponseCac
       } catch (error) {
         contextError = error;
       }
+      let cacheError = null;
+      try {
+        await Promise.all([...responseCaches].map((cache) => cache.flush()));
+      } catch (error) {
+        cacheError = error;
+      }
       let browserError = null;
       try {
         await browser.close();
       } catch (error) {
         browserError = error;
+      }
+      if (cacheError !== null && browserError !== null) {
+        browserError = new AggregateError([cacheError, browserError], "browser session failed to close");
+      } else if (cacheError !== null) {
+        browserError = cacheError;
       }
       if (contextError !== null && browserError !== null) {
         throw new AggregateError([contextError, browserError], "browser session failed to close");
@@ -151,6 +167,7 @@ export async function openBrowser({
   localProxyServer = null,
   requestGate = null,
   localOrigins = [],
+  sourceResponseCacheOptions = {},
 }) {
   const resolvedStates = resolveStorageStates({storageState, sourceStorageState, localStorageState});
   let browser = null;
@@ -176,6 +193,7 @@ export async function openBrowser({
           localProxyServer,
           requestGate,
           localOrigins,
+          sourceResponseCacheOptions,
         })
       : {sourceContext: null, localContext: null};
     return browserSession({
@@ -188,6 +206,7 @@ export async function openBrowser({
       localProxyServer,
       requestGate,
       localOrigins,
+      sourceResponseCacheOptions,
     });
   } catch (error) {
     if (browser) {

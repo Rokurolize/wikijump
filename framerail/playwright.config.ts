@@ -4,6 +4,7 @@ import type { PlaywrightTestConfig } from "@playwright/test"
 
 const appPort = Number(process.env.PLAYWRIGHT_APP_PORT ?? "4173")
 const fixturePort = Number(process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747")
+const offlineEgress = process.env.WIKIJUMP_CI_OFFLINE_EGRESS === "1"
 const wikidotAppName = process.env.WIKIDOT_APP_NAME ?? "test-app"
 const wikidotApiKey = process.env.WIKIDOT_API_KEY ?? randomUUID()
 const xmlRpcWriteUsername = process.env.XML_RPC_WRITE_USERNAME ?? "admin@wikijump"
@@ -23,6 +24,16 @@ const config: PlaywrightTestConfig = {
   testMatch: "**/*.spec.ts",
   // The Deepwell fixture server keeps shared request and mutation state.
   workers: 1,
+  use: offlineEgress
+    ? {
+        launchOptions: {
+          proxy: {
+            server: `http://127.0.0.1:${fixturePort}`,
+            bypass: "localhost,127.0.0.1,*.localhost"
+          }
+        }
+      }
+    : {},
   webServer: {
     command: `sh -c 'node tests/xmlrpc-deepwell-fixture-server.js & fixture=$!; trap "kill $fixture" EXIT INT TERM; DEEPWELL_HOST=127.0.0.1 DEEPWELL_PORT=${fixturePort} DEEPWELL_RPC_TOKEN=${deepwellRpcToken} pnpm dev --host 127.0.0.1 --port ${appPort}'`,
     env: {

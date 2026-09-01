@@ -179,6 +179,20 @@ test("Browser CI changes select Framerail and workflow policy", () => {
   for (const group of ["deepwell", "wws", "locales"]) assert.equal(selected[group], false, group)
 })
 
+test("CI browser and verification jobs cannot reach Wikidot origins", () => {
+  const browserWorkflow = workflow("full-ci.yaml")
+  const verificationWorkflow = workflow("wikidot-verification.yaml")
+  assert.match(browserWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
+  assert.match(verificationWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
+  assert.match(verificationWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
+
+  const playwright = read("framerail/playwright.config.ts")
+  assert.match(playwright, /WIKIJUMP_CI_OFFLINE_EGRESS/)
+  assert.match(playwright, /server: `http:\/\/127\.0\.0\.1:\$\{fixturePort\}`/)
+  assert.match(playwright, /bypass: "localhost,127\.0\.0\.1,\*\.localhost"/)
+  assert.match(read("framerail/tests/xmlrpc-deepwell-fixture-server.js"), /server\.on\("connect"/)
+})
+
 test("documentation is cheap and unknown paths fail closed", () => {
   const docs = classifyChanges(["README.md", "AGENTS.md", "docs/development.md"])
   for (const group of GROUPS) assert.equal(docs[group], false, group)

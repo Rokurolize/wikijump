@@ -272,6 +272,40 @@ test("a source response cache serves repeated cacheable assets without another g
   });
 });
 
+test("an explicitly identified persistent source cache reuses documents without a second Wikidot request", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-response-cache-"));
+  t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
+  const identity = "live-reference:scp-8980:chromium-149:fixture-2026-08-27";
+  const url = "https://scp-wiki.wikidot.com/scp-8980";
+  const firstGate = createBrowserRequestGate({intervalMs: 4_000});
+  const firstCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity: identity, cacheDocuments: true});
+  await firstCache.load();
+  const firstContext = createContext();
+  await installBrowserRequestGate(firstContext, {gate: firstGate, responseCache: firstCache});
+  await firstContext.routes[0].handler(createRoute(url, {
+    resourceType: "document",
+    fetchResponse: createFetchResponse({headers: {"cache-control": "public, max-age=600"}, body: "<html>retained</html>"}),
+  }));
+  await firstCache.flush();
+
+  const secondGate = createBrowserRequestGate({intervalMs: 4_000});
+  const secondCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity: identity, cacheDocuments: true});
+  await secondCache.load();
+  const secondContext = createContext();
+  await installBrowserRequestGate(secondContext, {gate: secondGate, responseCache: secondCache});
+  const second = createRoute(url, {resourceType: "document"});
+  await secondContext.routes[0].handler(second);
+
+  assert.deepEqual(second.actions, [{type: "fulfill", status: 200}]);
+  assert.equal(secondGate.snapshot().public_requests, 0);
+  assert.equal(secondCache.snapshot().lifetime, "persistent");
+  assert.equal(secondCache.snapshot().persistent_entries_loaded, 1);
+  await assert.rejects(
+    createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity: "different-browser"}).load(),
+    /identity or schema mismatch/u,
+  );
+});
+
 test("a URL-only source response cache bypasses revalidation and request-context responses", async (t) => {
   const cases = [
     ["no-cache", {"cache-control": "no-cache"}],
