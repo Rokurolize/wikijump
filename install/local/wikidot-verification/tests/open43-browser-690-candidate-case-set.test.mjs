@@ -456,6 +456,17 @@ test("B690 verifies one fixed complete six-page denominator", () => {
     /settled geometry diverged/u,
   );
 
+  const inlineSettledGeometry = structuredClone(observations);
+  inlineSettledGeometry.pages[4].comparison.settled_first_divergent_element = {
+    kind: "geometry_divergence",
+    local: { tag: "span", rect: { x: 0, y: 0, width: 100, height: 20 } },
+    live: { tag: "span", rect: { x: 0, y: 0, width: 80, height: 20 } },
+  };
+  assert.equal(
+    verifyOpen43B690FixedSixPage(inlineSettledGeometry, plan).verified,
+    true,
+  );
+
   const divergent = structuredClone(observations);
   divergent.pages[4].comparison.settled_first_divergent_element.kind =
     "style_divergence";
