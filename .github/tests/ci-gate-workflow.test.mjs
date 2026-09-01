@@ -186,6 +186,10 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
   assert.match(browserWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
   assert.match(verificationWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
   assert.match(verificationWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
+  for (const source of [browserWorkflow, verificationWorkflow]) {
+    assert.match(source, /unshare --net --mount-proc bash -c/u)
+    assert.match(source, /ip link set lo up/u)
+  }
 
   const playwright = read("framerail/playwright.config.ts")
   assert.match(playwright, /WIKIJUMP_CI_OFFLINE_EGRESS/)
