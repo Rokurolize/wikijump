@@ -532,11 +532,12 @@ export async function waitForBrowserParitySettledResources(page, timeoutMs) {
 }
 
 export function isExpectedExternalAssetFailure(event) {
-  if (event?.error !== "net::ERR_BLOCKED_BY_ORB" && event?.error !== "net::ERR_TIMED_OUT") return false;
+  if (event?.error !== "net::ERR_BLOCKED_BY_ORB" && event?.error !== "net::ERR_TIMED_OUT" && event?.error !== "net::ERR_TUNNEL_CONNECTION_FAILED") return false;
   try {
     const url = new URL(event.url);
     return (event.resource_type === "stylesheet" && url.hostname.endsWith(".wdfiles.com")) ||
-      (event.resource_type === "other" && url.hostname.endsWith(".wikidot.com") && url.pathname.startsWith("/local--favicon/"));
+      (event.resource_type === "other" && (url.hostname.endsWith(".wikidot.com") || url.hostname.endsWith(".wdfiles.com")) && url.pathname.startsWith("/local--favicon/") ||
+        event.resource_type === "other" && url.hostname.endsWith(".wdfiles.com") && url.pathname.startsWith("/local--files/") && url.pathname.endsWith("/site/favicon.gif"));
   } catch { return false; }
 }
 

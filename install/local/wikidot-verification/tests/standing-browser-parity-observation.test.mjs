@@ -30,6 +30,7 @@ test("external wdfiles stylesheet ORB failures remain separately attributable", 
   assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" }), true);
   assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_TIMED_OUT" }), true);
   assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wikidot.com/local--favicon/favicon.gif", resource_type: "other", error: "net::ERR_BLOCKED_BY_ORB" }), true);
+  assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif", resource_type: "other", error: "net::ERR_TUNNEL_CONNECTION_FAILED" }), true);
   assert.equal(isExpectedExternalAssetFailure({ url: "https://example.test/app.js", resource_type: "script", error: "net::ERR_FAILED" }), false);
 });
 
