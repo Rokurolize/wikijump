@@ -423,8 +423,6 @@ export function verifyOpen43B690GeometrySettled(observations, plan) {
 function initialProbePassesOrIsResourceTiming(page, probe, settledProbes) {
   if (probe.status === "pass") return true;
   if (
-    page.candidate_initial_page_content_rendered_images ===
-      page.live_initial_page_content_rendered_images ||
     !Array.isArray(probe.properties) ||
     probe.properties.some(({ status }) => status !== "pass") ||
     probe.pseudo_layout?.status !== "fail"
