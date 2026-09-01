@@ -124,11 +124,11 @@ test("proxy pins one resolution and forwards method/body only to an exact allowe
   }
 });
 
-test("candidate proxy denies external targets before DNS or connection", async () => {
+test("candidate proxy denies Wikidot targets before DNS or connection", async () => {
   let lookups = 0;
   const proxy = await startCaptureEgressProxy({
     allowedLocalOrigins: ["http://fixture.test:1234"],
-    allowExternalTargets: false,
+    denyWikidotTargets: true,
     lookup: async () => {
       lookups += 1;
       return [{ address: "93.184.216.34" }];
