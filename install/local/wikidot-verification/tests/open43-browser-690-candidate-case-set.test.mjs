@@ -383,9 +383,33 @@ test("B690 verifies one fixed complete six-page denominator", () => {
     true,
   );
   initialResourceTiming.pages[0].candidate_initial_page_content_rendered_images = 0;
-  assert.throws(
-    () => verifyOpen43B690FixedSixPage(initialResourceTiming, plan),
-    /six-page comparison failed/u,
+  assert.equal(
+    verifyOpen43B690FixedSixPage(initialResourceTiming, plan).verified,
+    true,
+  );
+
+  const initialFontTiming = structuredClone(observations);
+  initialFontTiming.pages[0].comparison.domcontentloaded_immediate_probes = [
+    {
+      id: "header_subtitle",
+      selector: "#header h1 a span",
+      pseudo: "::after",
+      properties: [{ status: "pass" }],
+      pseudo_layout: { status: "fail" },
+      status: "fail",
+    },
+  ];
+  initialFontTiming.pages[0].comparison.settled_probes = [
+    {
+      id: "header_subtitle",
+      selector: "#header h1 a span",
+      pseudo: "::after",
+      status: "pass",
+    },
+  ];
+  assert.equal(
+    verifyOpen43B690FixedSixPage(initialFontTiming, plan).verified,
+    true,
   );
 
   const initialGeometryTiming = structuredClone(observations);
