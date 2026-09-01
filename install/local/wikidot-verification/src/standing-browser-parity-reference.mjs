@@ -391,6 +391,9 @@ export async function loadSealedLiveReference({
   policy,
   policySha256,
   policyFilePath,
+  referencePolicy = policy,
+  referencePolicySha256 = policySha256,
+  referencePolicyFilePath = policyFilePath,
 }) {
   const actualSha256 = await sha256File(filePath);
   if (
@@ -440,11 +443,32 @@ export async function loadSealedLiveReference({
       "live completion policy value does not match its sealed file",
     );
   }
+  const checkedReferencePolicy = validateLiveCompletionPolicy(referencePolicy);
+  const checkedReferencePolicySha256 = requireSha256(
+    referencePolicySha256,
+    "live reference capture policy SHA-256",
+  );
+  if (typeof referencePolicyFilePath !== "string" || referencePolicyFilePath === "") {
+    throw new Error("live reference capture policy file path is required");
+  }
+  if ((await sha256File(referencePolicyFilePath)) !== checkedReferencePolicySha256) {
+    throw new Error(
+      "live reference capture policy file does not match its supplied SHA-256",
+    );
+  }
+  const referencePolicyFromFile = validateLiveCompletionPolicy(
+    JSON.parse(await fs.readFile(referencePolicyFilePath, "utf8")),
+  );
+  if (!sameJson(referencePolicyFromFile, checkedReferencePolicy)) {
+    throw new Error(
+      "live reference capture policy value does not match its sealed file",
+    );
+  }
   const expectedContract = captureContract({
     viewport,
     thresholds: validateThresholds(thresholds),
-    policy: checkedPolicy,
-    policySha256: checkedPolicySha256,
+    policy: checkedReferencePolicy,
+    policySha256: checkedReferencePolicySha256,
   });
   if (!sameJson(reference.capture_contract, expectedContract)) {
     throw new Error(
