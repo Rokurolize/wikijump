@@ -283,6 +283,7 @@ test("candidate cache misses abort without an external request or gate grant", a
 
   assert.deepEqual(miss.actions, [{type: "abort", reason: "blockedbyclient"}]);
   assert.equal(gate.snapshot().public_requests, 0);
+  assert.equal(gate.snapshot().enforcement_failed, true);
   assert.equal(responseCache.snapshot().misses, 1);
 });
 

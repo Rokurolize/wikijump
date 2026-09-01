@@ -563,14 +563,10 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false})
   if (cacheOnly) {
     if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
       responseCache?.recordBypass();
-      await abortRoute(route);
-      return;
+      throw new Error(`candidate response cache cannot serve ${request.url()}`);
     }
     const cached = responseCache.get(request.url());
-    if (cached === null) {
-      await abortRoute(route);
-      return;
-    }
+    if (cached === null) throw new Error(`candidate response cache miss: ${request.url()}`);
     await route.fulfill(cached);
     return;
   }
