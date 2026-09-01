@@ -846,7 +846,7 @@ export function createOpen43AuthoringHistoryCandidateCaseSet({ sessionFactory = 
         sourceFiles,
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: session.privateInputIdentity,
-        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
+        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 3, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
         plan: {
           schema: "wikijump.open43_authoring_history_candidate_plan.v1",
           site_slug: SITE_SLUG,
