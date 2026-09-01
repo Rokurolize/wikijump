@@ -213,7 +213,7 @@ export const renderWikidotPageRevisionVersion = (revision) =>
  */
 export const renderWikidotPageFiles = (pageSlug, files) => {
   if (files.length === 0) {
-    return "<h1>Files</h1>\n<p>No files attached to this page</p>"
+    return '<h1>Files</h1>\n<p>\n\t\tNo files attached to this page.\t\t\n\t</p>\n<p class="manage-attachments-link" style="text-align: center;">\n<a href="javascript:;" onclick="WIKIDOT.page.listeners.filesClick(null)">Manage attachments</a>\n</p>'
   }
 
   const escapedSlug = encodeURIComponent(pageSlug)
@@ -223,5 +223,5 @@ export const renderWikidotPageFiles = (pageSlug, files) => {
         `<tr id="file-row-${file.file_id}"><td><a href="/local--files/${escapedSlug}/${encodeURIComponent(file.name)}">${escapeHtml(file.name)}</a></td><td><span title="${escapeHtml(file.mime)}">${escapeHtml(file.mime)}</span></td><td>${file.size} Bytes</td></tr>`
     )
     .join("")
-  return `<h1>Files</h1>\n<table class="page-files"><tbody>${rows}</tbody></table>`
+  return `<h1>Files</h1>\n<table class="page-files"><tbody>${rows}</tbody></table>\n<p class="manage-attachments-link" style="text-align: center;">\n<a href="javascript:;" onclick="WIKIDOT.page.listeners.filesClick(null)">Manage attachments</a>\n</p>`
 }
