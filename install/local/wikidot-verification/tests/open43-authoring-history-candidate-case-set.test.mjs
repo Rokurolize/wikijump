@@ -183,8 +183,11 @@ class FakePage {
       return undefined;
     }
     if (argument.operation === "submit-settings-form") {
-      await this.click("#user-settings-form .button-save");
-      return undefined;
+      const parsed = [...new Set(this.inputValue.replaceAll("_", "-").replaceAll(",", " ").split(/\s+/u).filter(Boolean))];
+      if (parsed.length === 0) return { status: 400, body: "invalid" };
+      const requestBody = "locales=ja_JP%2C+en-US+ja-JP&signature=&user=999&__superform_id=11b3t38";
+      this.state.locales = parsed;
+      return { status: 200, body: "saved", request_body: requestBody };
     }
     throw new Error(`unexpected browser operation ${argument.operation}`);
   }
