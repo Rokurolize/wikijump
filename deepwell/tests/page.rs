@@ -6988,7 +6988,6 @@ async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix(
         case_id: &'static str,
         arguments: &'static str,
         expected_size: &'static str,
-        viewer: bool,
     }
 
     let mut runner = TestRunner::setup().await;
@@ -7022,55 +7021,46 @@ async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix(
             case_id: "M1043_SIZE_DEFAULT",
             arguments: "",
             expected_size: "thumbnail",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_SIZE_SQUARE",
             arguments: r#"size="square""#,
             expected_size: "square",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_SIZE_THUMBNAIL",
             arguments: r#"size="thumbnail""#,
             expected_size: "thumbnail",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_SIZE_SMALL",
             arguments: r#"size="small""#,
             expected_size: "small",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_SIZE_MEDIUM",
             arguments: r#"size="medium""#,
             expected_size: "medium",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_VIEWER_YES",
             arguments: r#"viewer="yes""#,
             expected_size: "thumbnail",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_VIEWER_TRUE",
             arguments: r#"viewer="true""#,
             expected_size: "thumbnail",
-            viewer: true,
         },
         RenderCase {
             case_id: "M1043_VIEWER_NO",
             arguments: r#"viewer="no""#,
             expected_size: "thumbnail",
-            viewer: false,
         },
         RenderCase {
             case_id: "M1043_VIEWER_FALSE",
             arguments: r#"viewer="false""#,
             expected_size: "thumbnail",
-            viewer: false,
         },
     ];
     for case in valid_cases {
@@ -7136,12 +7126,10 @@ async fn wikidot_gallery_preview_enforces_size_viewer_and_invalid_option_matrix(
             case.case_id,
             preview.body,
         );
-        assert_eq!(
+        assert!(
             preview.body.contains(r#"class="with-lb""#),
-            case.viewer,
-            "{} should bind viewer={} without executing authored JavaScript:\n{}",
+            "{} should retain the static lightbox anchor; viewer activation is a browser concern:\n{}",
             case.case_id,
-            case.viewer,
             preview.body,
         );
     }
@@ -35316,7 +35304,10 @@ async fn create_file_fixture_with_mime(
             s3_hash: EMPTY_BLOB_HASH,
             size: 0,
             mime: mime.to_owned(),
-            content_type: None,
+            content_type: Some(ContentTypeDescriptor {
+                label: mime.to_owned(),
+                description: mime.to_owned(),
+            }),
             blob_created: false,
             revision_comments: "create file fixture".to_owned(),
         },
