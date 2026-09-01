@@ -32,7 +32,11 @@ test("permits the interwiki frame's required inline presentation", () => {
   )
   assert.match(
     interwiki.headers.get("content-security-policy") ?? "",
-    /style-src 'unsafe-inline'/u
+    /style-src(?: 'self')? 'unsafe-inline'/u
+  )
+  assert.match(
+    interwiki.headers.get("content-security-policy") ?? "",
+    /style-src 'self'/u
   )
 })
 
