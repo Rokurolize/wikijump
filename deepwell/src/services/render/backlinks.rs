@@ -78,7 +78,7 @@ pub(super) fn render_backlinks_module_box(pages: &[BacklinksModulePage]) -> Stri
 }
 
 fn backlinks_scan_is_incomplete(row_count: usize) -> bool {
-    row_count >= MAX_BACKLINKS_MODULE_ROWS
+    row_count > MAX_BACKLINKS_MODULE_ROWS
 }
 
 impl RenderService {
@@ -238,7 +238,7 @@ mod tests {
 
     #[test]
     fn backlinks_requires_a_complete_bounded_scan_before_acl_filtering() {
-        assert!(!backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS - 1));
-        assert!(backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS));
+        assert!(!backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS));
+        assert!(backlinks_scan_is_incomplete(MAX_BACKLINKS_MODULE_ROWS + 1));
     }
 }
