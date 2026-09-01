@@ -36,7 +36,7 @@ const DEPLOYMENT_FILE_SUFFIX = {
 const WIKIDOT_INTERWIKI_FRAME_POLICIES = new Map([
   [
     "/-/wikidot-interwiki/interwikiFrame.html",
-    "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src https://scp-wiki.wdfiles.com; frame-ancestors 'self'"
+    "default-src 'none'; script-src 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net https://rsms.me https://maxcdn.bootstrapcdn.com; img-src 'self' data: https://*.wdfiles.com https://cdn.scpwiki.com https://d3g0gp89917ko0.cloudfront.net; frame-ancestors 'self'"
   ]
 ])
 const LOCAL_WIKIDOT_STYLEFRAME_PATHNAME = "/-/wikidot-interwiki/styleFrame.html"
