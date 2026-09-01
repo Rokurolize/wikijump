@@ -100,11 +100,14 @@ def denotes_source_attribution(value) -> bool:
 
 
 def validate_prior_artifacts(repo: Path, expected_ids: list[str]) -> None:
-    tracked = run_git(repo, "ls-files", "install/local/wikidot-verification/artifacts/*.json").splitlines()
-    for relative in sorted(tracked):
+    artifact_root = repo / "install/local/wikidot-verification/artifacts"
+    for artifact_path in sorted(artifact_root.glob("*.json")):
+        if not artifact_path.is_file():
+            continue
+        relative = artifact_path.relative_to(repo).as_posix()
         if relative == str(ARTIFACT_REL):
             continue
-        for document in load_json_stream(repo / relative):
+        for document in load_json_stream(artifact_path):
             if denotes_source_attribution(document):
                 present = sorted(set(expected_ids).intersection(nested_strings(document)))
                 if present:
