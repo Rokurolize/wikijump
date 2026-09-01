@@ -128,6 +128,9 @@ const B690_CANARY_ATTACHMENTS = Object.freeze([
   Object.freeze({ page: "fragment:2117-1", filename: "2117.png" }),
   Object.freeze({ page: "scp-5516", filename: "Lobster" }),
 ]);
+const B610_CANARY_ATTACHMENTS = Object.freeze([
+  Object.freeze({ page: "scp-9506", filename: "NFSI.png" }),
+]);
 const B689_PRESERVED_DEPENDENCIES = new Set(["component:interwiki-style", "component:betterfootnotes", "component:acs-animation"]);
 const GENERATED_PRIVATE_INPUTS = new Set([
   "framerail-route-action-browser.json",
@@ -278,10 +281,10 @@ function putPresignedBytes(presignUrl, bytes, filesIp) {
   });
 }
 
-async function materializeB690CanaryAttachments({ args, database, filesIp, standardSiteId, rpc }) {
+async function materializeCanaryAttachments({ args, attachments, database, filesIp, standardSiteId, rpc }) {
   const sourceDir = args["b690-attachments-dir"];
   const materialized = [];
-  for (const attachment of B690_CANARY_ATTACHMENTS) {
+  for (const attachment of attachments) {
     const page = await rpc("page_get", { site_id: standardSiteId, page: attachment.page, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
     if (!page) throw new Error(`B690 attachment page is missing: ${attachment.page}`);
     const sourcePath = path.join(sourceDir, attachment.filename);
@@ -299,7 +302,7 @@ async function materializeB690CanaryAttachments({ args, database, filesIp, stand
     }
     materialized.push({ page: attachment.page, filename: attachment.filename, size: bytes.byteLength, sha256: sha256(bytes) });
   }
-  for (const slug of new Set(B690_CANARY_ATTACHMENTS.map(({ page }) => page))) {
+  for (const slug of new Set(attachments.map(({ page }) => page))) {
     const page = await rpc("page_get", { site_id: standardSiteId, page: slug, details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
     await rpc("page_rerender", { site_id: standardSiteId, category_id: page.page_category_id, page_id: page.page_id }, { siteId: standardSiteId });
   }
@@ -562,7 +565,8 @@ export async function prepareCompatibilityCandidateInputs(args) {
       await rpc("parent_set", { site_id: standardSiteId, parent: scp2117.slug, child: fragment.slug }, { siteId: standardSiteId });
     }
     await rpc("page_rerender", { site_id: standardSiteId, category_id: scp2117.page_category_id, page_id: scp2117.page_id }, { siteId: standardSiteId });
-    const b690Attachments = await materializeB690CanaryAttachments({ args, database, filesIp, standardSiteId, rpc });
+    const b690Attachments = await materializeCanaryAttachments({ args, attachments: B690_CANARY_ATTACHMENTS, database, filesIp, standardSiteId, rpc });
+    const b610Attachments = await materializeCanaryAttachments({ args, attachments: B610_CANARY_ATTACHMENTS, database, filesIp, standardSiteId, rpc });
     const basalt = await rpc("page_get", {
       site_id: standardSiteId,
       page: b689Fixtures.theme.slug,
@@ -862,7 +866,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     await fs.writeFile(generalPath, `${JSON.stringify(general, null, 2)}\n`, { mode: 0o600 });
     await propagateActors();
     clearCandidateRedisCache(cache);
-    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
+    const receipt = { schema: COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, status: "pass", generated_at: new Date().toISOString(), candidate: { wikijump_commit: candidate.wikijump_commit, wikijump_tree: candidate.wikijump_tree, ftml_sha: candidate.ftml_sha, compose_project: project, editable_identity_sha256: identitySha256 }, output_private_dir: args["output-private-dir"], private_files: privateFiles, fixture_counts: { members: 151, ftml_markers: markerPages.length, q1034_pagination_threads: 221, q1034_page_comment_posts: 24, q778_posts: 5, q1035_public_revisions: 2105 }, fixtures: { a1037_redirect_source: redirectSource.page_id, b610_canary_attachments: b610Attachments, b690_canary_attachments: b690Attachments, ftml_markers: markerPages.map(({ page_id, revision_id, slug }) => ({ page_id, revision_id, slug })), q1032_members: members.page_id, q1036_saved: q1036.page_id, q1026_identity: q1026Page.page_id, q810_saved: featured.page_id, q778_saved: forumMini.page_id, q809_private: q809Private.page_id, q1035_sitechanges: q1035Site.page_id } };
     const publication = await sealJsonNoReplace(args.receipt, receipt);
     if (publication.publication !== "created") throw new Error(`candidate input receipt already exists: ${args.receipt}`);
     return { receipt: { path: args.receipt, sha256: publication.sha256 }, private_dir: args["output-private-dir"] };
