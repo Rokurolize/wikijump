@@ -129,7 +129,8 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   const identity = assertCandidateIdentityFresh(validateCandidateParityIdentity(rawIdentity));
   requireSha256(candidateIdentitySha256, "candidate identity SHA-256");
   requireSha256(privateInputSha256, "private input SHA-256");
-  if (privateInput.candidate_identity_sha256 !== undefined && privateInput.candidate_identity_sha256 !== candidateIdentitySha256) throw new Error("private input is not sealed to the supplied candidate identity");
+  if (privateInput.candidate_identity_sha256 !== undefined && privateInput.editable_candidate_identity_sha256 !== undefined && ![privateInput.candidate_identity_sha256, privateInput.editable_candidate_identity_sha256].includes(candidateIdentitySha256)) throw new Error("private input is not sealed to the supplied candidate identity");
+  if (privateInput.candidate_identity_sha256 !== undefined && privateInput.editable_candidate_identity_sha256 === undefined && privateInput.candidate_identity_sha256 !== candidateIdentitySha256) throw new Error("private input is not sealed to the supplied candidate identity");
   const caseSet = validateCaseSet(rawCaseSet);
   const dependencies = { ...defaultDependencies(), ...overrides };
   if (!RUN_ID.test(runId)) throw new Error("candidate case run ID is invalid");
