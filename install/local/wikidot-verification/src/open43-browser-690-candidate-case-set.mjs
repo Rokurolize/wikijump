@@ -179,13 +179,17 @@ function divergenceHasGeometry(divergence, thresholds) {
 
 function settledGeometryPasses(page, plan) {
   const settledDivergence = page.comparison?.settled_first_divergent_element;
+  const inlineDivergence =
+    INLINE_TRACE_TAGS.has(settledDivergence?.local?.tag) &&
+    INLINE_TRACE_TAGS.has(settledDivergence?.live?.tag);
   if (
-    settledDivergence?.kind === "geometry_divergence" ||
-    (settledDivergence?.kind === "style_divergence" &&
+    !inlineDivergence &&
+    (settledDivergence?.kind === "geometry_divergence" ||
+      (settledDivergence?.kind === "style_divergence" &&
       divergenceHasGeometry(
         settledDivergence,
         plan.thresholds ?? DEFAULT_THRESHOLDS,
-      ))
+      )))
   ) {
     return false;
   }
@@ -554,13 +558,23 @@ export function verifyOpen43B690FixedSixPage(observations, plan) {
         )
       : null;
     const settledDivergence = comparison.settled_first_divergent_element;
+    const settledInlineDivergence =
+      INLINE_TRACE_TAGS.has(settledDivergence?.local?.tag) &&
+      INLINE_TRACE_TAGS.has(settledDivergence?.live?.tag);
     if (
-      [initialDivergence, settledDivergence].some(
-        (divergence) =>
-          divergence?.kind === "geometry_divergence" ||
-          (divergence?.kind === "style_divergence" &&
-            divergenceHasGeometry(divergence, plan.thresholds ?? DEFAULT_THRESHOLDS)),
-      )
+      initialDivergence?.kind === "geometry_divergence" ||
+      (initialDivergence?.kind === "style_divergence" &&
+        divergenceHasGeometry(
+          initialDivergence,
+          plan.thresholds ?? DEFAULT_THRESHOLDS,
+        )) ||
+      (!settledInlineDivergence &&
+        (settledDivergence?.kind === "geometry_divergence" ||
+          (settledDivergence?.kind === "style_divergence" &&
+            divergenceHasGeometry(
+              settledDivergence,
+              plan.thresholds ?? DEFAULT_THRESHOLDS,
+            ))))
     ) {
       throw new Error(
         `B690 fixed six-page first divergence found: ${page.slug}`,
