@@ -183,6 +183,7 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
   const browserWorkflow = workflow("full-ci.yaml")
   const verificationWorkflow = workflow("wikidot-verification.yaml")
   assert.match(browserWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
+  assert.match(browserWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
   assert.match(verificationWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
   assert.match(verificationWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
 
@@ -191,6 +192,12 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
   assert.match(playwright, /server: `http:\/\/127\.0\.0\.1:\$\{fixturePort\}`/)
   assert.match(playwright, /bypass: "localhost,127\.0\.0\.1,\*\.localhost"/)
   assert.match(read("framerail/tests/xmlrpc-deepwell-fixture-server.js"), /server\.on\("connect"/)
+
+  for (const file of readdirSync(path.join(root, ".github/workflows"))) {
+    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue
+    const source = read(`.github/workflows/${file}`)
+    assert.doesNotMatch(source, /(?:wikidot\.com|wdfiles)/iu, `${file}: external Wikidot origin`)
+  }
 })
 
 test("documentation is cheap and unknown paths fail closed", () => {
