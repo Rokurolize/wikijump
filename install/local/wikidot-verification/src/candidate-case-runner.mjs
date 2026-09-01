@@ -251,7 +251,10 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   const verifiedCases = caseSet.caseIds.map((caseId) => ({
     caseId,
     observations: observations.get(caseId),
-    verification: verifiedCase(run.verifyCase(caseId, observations.get(caseId)), caseId),
+    verification: verifiedCase(
+      run.verifyCase(caseId, observations.get(caseId), observations),
+      caseId,
+    ),
   }));
   const cases = [];
   for (const { caseId, observations: caseObservations, verification } of verifiedCases) {
