@@ -169,3 +169,50 @@ test("public file upload cancels a pending blob when the PUT fails", async (t) =
     pending_blob_id: "pending-public-put-failure"
   })
 })
+
+test("public file upload commits the pending blob without returning the File object", async (t) => {
+  const originalFetch = globalThis.fetch
+  const events = []
+  t.after(() => {
+    client.request = originalClientRequest
+    globalThis.fetch = originalFetch
+  })
+
+  client.request = async (method, params, context) => {
+    events.push({ kind: "rpc", method, params, context })
+    if (method === "session_get") return { user_id: 29 }
+    if (method === "page_edit_permission") return { can_edit: true }
+    if (method === "blob_upload") {
+      return {
+        pending_blob_id: "pending-public-commit",
+        presign_url: "https://uploads.example.test/pending-public-commit"
+      }
+    }
+    if (method === "file_create") return { file_id: 1062, file_revision_id: 1063, blob_created: true }
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+  globalThis.fetch = async (url, init) => {
+    events.push({ kind: "put", url, init })
+    return new Response(null, { status: 200 })
+  }
+
+  const result = await actions.fileUpload(authenticatedUploadEvent())
+
+  assert.equal(result.res.file_id, 1062)
+  assert.equal(Object.hasOwn(result.form.data, "file"), false)
+  assert.doesNotThrow(() => JSON.stringify(result))
+  assert.deepEqual(
+    events.map((event) => (event.kind === "put" ? "PUT" : event.method)),
+    ["session_get", "page_edit_permission", "blob_upload", "PUT", "file_create"]
+  )
+  assert.deepEqual(events.at(-1).params, {
+    site_id: 17,
+    page_id: 23,
+    user_id: 29,
+    name: "before-commit.txt",
+    uploaded_blob_id: "pending-public-commit",
+    revision_comments: "blob failure",
+    ip_address: "192.0.2.62",
+    bypass_filter: false
+  })
+})
