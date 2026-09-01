@@ -11171,8 +11171,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "8fa1e7865ecf6208533e03f288269bb0972d6434",
-      "tree": "60ba8abd2960657b7c2f3a135b037dcbe1cf264b"
+      "commit": "9a12826a7bb5f8a391f077c4775a075be942956b",
+      "tree": "844240b80e3abfe9ab8ae921dce0d84de97a5898"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11389,7 +11389,7 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "68b5b671907f280231620c951e237a67287ca59078fb0e005bff72e97fabbb42"
+        "sha256": "cc6c79a737aa89c8596b156a17f28aa070702cdfa954686b1a47e733f66ba53c"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
@@ -11545,7 +11545,7 @@
       },
       {
         "path": "framerail/src/routes/ajax-module-connector.php/+server.ts",
-        "sha256": "f867bcf8c386350cf71ec7bf58b7945841235512f32481218a4fe9bdf1b41927"
+        "sha256": "157ca69c54035d9c0b6d8e8ff2a08f52d11ef140b5346d5be5cf83493609aa68"
       },
       {
         "path": "framerail/src/routes/common--images/jquery-raty/[asset]/+server.ts",
