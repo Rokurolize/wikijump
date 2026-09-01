@@ -626,7 +626,7 @@ export function createOpen43A1030RateCandidateCaseSet({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: [...new Map(ACTORS.flatMap((actor) => sessions[actor].requiredServiceBindings).map((binding) => [JSON.stringify(binding), binding])).values()],
         privateInputIdentity,
-        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 2, private_input_identity_sha256: sha256Value(privateInputIdentity) },
+        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value(privateInputIdentity) },
         plan: {
           schema: "wikijump.open43_a1030_rate_candidate_plan.v1",
           site_slug: SITE_SLUG,
