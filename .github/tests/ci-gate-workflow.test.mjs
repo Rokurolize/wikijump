@@ -182,6 +182,9 @@ test("Browser CI changes select Framerail and workflow policy", () => {
 test("CI browser and verification jobs cannot reach Wikidot origins", () => {
   const browserWorkflow = workflow("full-ci.yaml")
   const verificationWorkflow = workflow("wikidot-verification.yaml")
+  const centralWorkflow = workflow("ci-gate.yaml")
+  assert.match(centralWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
+  assert.match(centralWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
   assert.match(browserWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
   assert.match(browserWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
   assert.match(verificationWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
@@ -190,6 +193,9 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
     assert.match(source, /unshare --net --mount-proc bash -c/u)
     assert.match(source, /ip link set lo up/u)
   }
+  const framerail = stepBlock(jobBlock(centralWorkflow, "framerail"), "Validate draft")
+  assert.match(framerail.join("\n"), /unshare --net --mount-proc bash -c/u)
+  assert.match(framerail.join("\n"), /ip link set lo up/u)
 
   const playwright = read("framerail/playwright.config.ts")
   assert.match(playwright, /WIKIJUMP_CI_OFFLINE_EGRESS/)

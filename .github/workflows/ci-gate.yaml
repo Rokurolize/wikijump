@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+env:
+  WIKIJUMP_CI_OFFLINE_EGRESS: "1"
+  WIKIDOT_LIVE_PROBES: "disabled"
+
 concurrency:
   group: ${{ github.event_name == 'pull_request' && (github.event.action != 'edited' || github.event.changes.base != null) && format('ci-pr-{0}', github.event.pull_request.number) || github.event_name == 'push' && format('ci-push-{0}', github.ref) || format('ci-run-{0}', github.run_id) }}
   cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && (github.event.action != 'edited' || github.event.changes.base != null) }}
@@ -193,7 +197,16 @@ jobs:
 
       - name: Validate draft
         run: |
-          pnpm --dir framerail test:unit
+          sudo -n env \
+            "PATH=$PATH" \
+            "HOME=$HOME" \
+            "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
+            "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
+            unshare --net --mount-proc bash -c '
+              set -euo pipefail
+              ip link set lo up
+              exec pnpm --dir framerail test:unit
+            '
           pnpm --dir framerail lint
 
   locales:
