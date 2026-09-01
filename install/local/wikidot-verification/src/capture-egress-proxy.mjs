@@ -115,6 +115,7 @@ export function guardedPipeline(source, destination, onFailure, pipelineImpl = p
 
 export async function startCaptureEgressProxy({
   allowedLocalOrigins = [],
+  allowExternalTargets = true,
   lookup = dns.lookup,
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 } = {}) {
@@ -155,6 +156,9 @@ export async function startCaptureEgressProxy({
       if (target.protocol !== "http:" || target.username || target.password)
         throw new Error();
       const port = Number(target.port || 80);
+      if (!allowExternalTargets && !allowedTargets.has(targetKey("http:", target.hostname, port))) {
+        throw new CaptureEgressError("external target denied");
+      }
       const address = await resolvePinned(target.hostname, port, {
         lookup,
         protocol: "http:",
@@ -228,6 +232,9 @@ export async function startCaptureEgressProxy({
     client.on("close", () => upstream?.destroy());
     try {
       const { hostname, port } = parseAuthority(request.url, 443);
+      if (!allowExternalTargets && !allowedTargets.has(targetKey("https:", hostname, port))) {
+        throw new CaptureEgressError("external target denied");
+      }
       const address = await resolvePinned(hostname, port, {
         lookup,
         protocol: "https:",

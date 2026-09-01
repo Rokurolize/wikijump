@@ -376,6 +376,7 @@ export async function createParityBrowserControls({
     );
     proxy = await startCaptureEgressProxy({
       allowedLocalOrigins: localOrigins,
+      allowExternalTargets: candidate === null,
       requestTimeoutMs: args.timeoutMs,
       ...(candidate
         ? {
