@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import { COMPATIBILITY_CANDIDATE_INPUT_RECEIPT_SCHEMA, Q778_WIKIDOT_AUTHOR, b689BasaltUserFixtures, b689Scp8980CandidateFixtures, b689Scp8980UserFixtures, compatibilityMarkerFixtures, parseCompatibilityCandidateInputArgs } from "../src/compatibility-candidate-input-producer.mjs";
 
@@ -9,6 +12,12 @@ test("compatibility candidate input producer requires distinct identity-bound pa
   assert.match(parsed["candidate-identity"], /candidate\.json$/u);
   assert.notEqual(parsed["template-private-dir"], parsed["output-private-dir"]);
   assert.throws(() => parseCompatibilityCandidateInputArgs(["--candidate-identity", "candidate.json"]), /Usage/u);
+});
+
+test("candidate input cleanup preserves the RSMQ job namespace", () => {
+  const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
+  assert.doesNotMatch(source, /FLUSHALL/u);
+  assert.match(source, /string\.sub\(key,1,5\) ~= 'rsmq:'/u);
 });
 
 test("compatibility candidate input producer binds the exact five FTML marker fixtures", () => {
