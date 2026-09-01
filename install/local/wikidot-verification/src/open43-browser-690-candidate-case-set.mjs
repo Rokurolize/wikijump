@@ -32,9 +32,9 @@ export const OPEN43_B690_GEOMETRY_FIXTURE = Object.freeze({
   live_reference_sha256:
     "2d3b98a9f04767f396b9e3f4d6f2f1881f78d3a270a4bf5c5c22d939fc72ae4f",
   live_policy_path:
-    "/home/roku/wjlab/evidence/standing-promotion-20260812-onesignal-gate-policy/live-completion-policy.json",
+    "/home/roku/wjlab/evidence/standing-promotion-20260812-reference-complete-policy/live-completion-policy.json",
   live_policy_sha256:
-    "124e71906b69ccc44861f803568087db3874d06ff38609ac6549d34ec03c416c",
+    "f4c20951e9a7ec8b2386d1e0f9c577692bd222423ab619b8dc8052772658ed06",
   capture_policy_path:
     "/home/roku/wjlab/evidence/standing-promotion-20260812-organic-external-policy/live-completion-policy.json",
   capture_policy_sha256:

@@ -11,6 +11,7 @@ import { SAVED_SOURCE as Q1036_SAVED_SOURCE } from "./open43-q1036-search-feed-c
 import { FORUM_MINI_SAVED_SOURCE } from "./open43-q778-forum-mini-candidate-case-set.mjs";
 import { Q1034_SAVED_SOURCES } from "./open43-q1034-forum-candidate-case-set.mjs";
 import { Q1035_SAVED_SOURCES } from "./open43-q1035-sitechanges-candidate-case-set.mjs";
+import { OPEN43_B690_GEOMETRY_FIXTURE } from "./open43-browser-690-candidate-case-set.mjs";
 import { captureUrlsSha256 } from "../scripts/capture-framerail-route-action-temporal.mjs";
 import { defaultBrowserRoot, loadPlaywright } from "./browser-session.mjs";
 import { readJsonObject, sealJsonNoReplace, sha256File } from "./standing-browser-parity-util.mjs";
@@ -398,6 +399,10 @@ export async function prepareCompatibilityCandidateInputs(args) {
       ],
     };
     const privateFiles = await copyPrivateTemplates(args["template-private-dir"], args["output-private-dir"], bindings);
+    const b690Path = path.join(args["output-private-dir"], "b690-r11.json");
+    const b690 = JSON.parse(await fs.readFile(b690Path, "utf8"));
+    b690.fixture = OPEN43_B690_GEOMETRY_FIXTURE;
+    await fs.writeFile(b690Path, `${JSON.stringify(b690, null, 2)}\n`, { mode: 0o600 });
     const generalPath = path.join(args["output-private-dir"], "general-r11.json");
     const general = JSON.parse(await fs.readFile(generalPath, "utf8"));
 
