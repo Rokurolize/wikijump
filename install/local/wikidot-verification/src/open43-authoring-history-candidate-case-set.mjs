@@ -487,7 +487,12 @@ class Open43AuthoringHistoryRun {
 
       const invalidResponsePromise = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes("?/display"));
       await page.fill("#user-display-locales", "   ");
-      await page.click("#user-settings-form .button-save");
+      await page.evaluate(async ({ operation }) => {
+        if (operation !== "submit-settings-form") throw new Error("unknown settings operation");
+        const form = document.querySelector("#user-settings-form");
+        if (!(form instanceof HTMLFormElement)) throw new Error("settings form is missing");
+        await fetch(form.action, { method: "POST", body: new URLSearchParams(new FormData(form)), credentials: "same-origin" });
+      }, { operation: "submit-settings-form" });
       const invalidResponse = await invalidResponsePromise;
       const invalid = await responseObservation(invalidResponse);
       await page.reload({ waitUntil: "domcontentloaded", timeout: 300_000 });
