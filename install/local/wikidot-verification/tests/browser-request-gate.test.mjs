@@ -272,6 +272,21 @@ test("a source response cache serves repeated cacheable assets without another g
   });
 });
 
+test("candidate cache misses abort without an external request or gate grant", async () => {
+  const gate = createBrowserRequestGate({intervalMs: 4_000});
+  const responseCache = createBrowserResponseCache();
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, responseCache, cacheOnly: true});
+  const miss = createRoute("https://rsms.me/inter/inter.css", {resourceType: "stylesheet"});
+
+  await context.routes[0].handler(miss);
+
+  assert.deepEqual(miss.actions, [{type: "abort", reason: "blockedbyclient"}]);
+  assert.equal(gate.snapshot().public_requests, 0);
+  assert.equal(gate.snapshot().enforcement_failed, true);
+  assert.equal(responseCache.snapshot().misses, 1);
+});
+
 test("an explicitly identified persistent source cache reuses documents without a second Wikidot request", async (t) => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-response-cache-"));
   t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
