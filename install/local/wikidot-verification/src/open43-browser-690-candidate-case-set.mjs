@@ -34,7 +34,7 @@ export const OPEN43_B690_GEOMETRY_FIXTURE = Object.freeze({
   live_policy_path:
     "/home/roku/wjlab/evidence/standing-promotion-20260812-reference-complete-policy/live-completion-policy.json",
   live_policy_sha256:
-    "f4c20951e9a7ec8b2386d1e0f9c577692bd222423ab619b8dc8052772658ed06",
+    "e8a8292af666bfacb3db5516adca59223cbd8a08912f8a0a36fac31851500cac",
   capture_policy_path:
     "/home/roku/wjlab/evidence/standing-promotion-20260812-organic-external-policy/live-completion-policy.json",
   capture_policy_sha256:
