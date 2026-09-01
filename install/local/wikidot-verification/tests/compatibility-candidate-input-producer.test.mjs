@@ -92,6 +92,11 @@ test("compatibility candidate input producer owns the retained B689 SCP-8980 aut
   ]);
 });
 
+test("compatibility candidate input producer binds the retained Wikidot favicon route fixture", () => {
+  const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
+  assert.match(source, /favicon_source='https:\/\/scp-wiki\.wdfiles\.com\/local--files\/site\/favicon\.gif'/u);
+});
+
 test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {
   assert.deepEqual(Q778_WIKIDOT_AUTHOR, {
     user_id: 20_000_013,
