@@ -93,7 +93,7 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
 export async function installCandidateFilePortRoute(
   context,
   localOrigins,
-  { sourceRequestGate = null } = {},
+  { sourceRequestGate = null, responseCache = null } = {},
 ) {
   if (!Array.isArray(localOrigins) || localOrigins.length !== 2) {
     throw new Error(
@@ -141,6 +141,7 @@ export async function installCandidateFilePortRoute(
       return;
     }
     if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
+    const sourcePath = requestUrl.pathname;
     let response;
     for (let redirects = 0; ; redirects += 1) {
       response = await route.fetch({
@@ -169,9 +170,20 @@ export async function installCandidateFilePortRoute(
       redirectUrl.port = files.port;
       requestUrl.href = redirectUrl.href;
     }
+    const responseStatus =
+      typeof response.status === "function" ? response.status() : response.status;
+    if (
+      responseCache !== null &&
+      responseStatus !== 200 &&
+      (sourcePath.startsWith("/local--files/") || sourcePath.startsWith("/local--code/"))
+    ) {
+      const cached = responseCache.get(
+        `https://${filesSite}.wdfiles.com${sourcePath}${new URL(route.request().url()).search}`,
+      );
+      if (cached !== null) response = cached;
+    }
     if (sourceRequestGate !== null && route.request().method?.() === "GET") {
-      const sourcePath = new URL(route.request().url()).pathname;
-      const location = REDIRECT_STATUSES.has(response.status())
+      const location = REDIRECT_STATUSES.has(responseStatus)
         ? response.headers().location
         : null;
       const redirectUrl = location ? new URL(location, requestUrl) : null;
@@ -501,6 +513,7 @@ export async function launchParityBrowser({
       for (const originSet of controls.fileRouteOriginSets) {
         await installCandidateFilePortRoute(context, originSet, {
           sourceRequestGate: controls.gate,
+          responseCache,
         });
       }
     }

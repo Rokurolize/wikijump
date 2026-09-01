@@ -460,6 +460,58 @@ test("candidate file routing preserves one direct wdfiles admission on a local-c
   assert.equal(admissions, 1);
 });
 
+test("candidate file routing replays a retained wdfiles asset when the local mirror misses", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  const cached = {
+    status: 200,
+    headers: {"content-type": "image/png"},
+    body: Buffer.from("retained-asset"),
+  };
+  const lookups = [];
+  const responseCache = {
+    get(key) {
+      lookups.push(key);
+      return cached;
+    },
+  };
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {responseCache},
+  );
+
+  let fulfillment;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-8980/femalescientist.png",
+      };
+    },
+    async fetch() {
+      return {status: () => 404, headers: () => ({})};
+    },
+    async fulfill(options) {
+      fulfillment = options;
+    },
+  });
+
+  assert.deepEqual(lookups, [
+    "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
+  ]);
+  assert.deepEqual(fulfillment, {response: cached});
+});
+
 test("candidate file routing preserves collapsed source admissions when a redirect is outside the public gate", async () => {
   let handler;
   const context = {
