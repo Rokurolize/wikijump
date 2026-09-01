@@ -338,7 +338,7 @@ class Open43Q778Run {
     const saved = savedPageObservation(page, view, this.#fixture);
 
     await this.#browser.setActiveFixture(FIXTURE_ID);
-    const { context, environment } = await this.#browser.newCandidateContext({ storageState: { cookies: [], origins: [] }, viewport: VIEWPORT });
+    const { context, environment } = await this.#browser.newCandidateContext({ viewport: VIEWPORT });
     const browserPage = await context.newPage();
     const url = new URL(`/${encodeURIComponent(this.#fixture.saved_page.slug)}`, this.#session.pageOrigin).href;
     let firstHtml = "";

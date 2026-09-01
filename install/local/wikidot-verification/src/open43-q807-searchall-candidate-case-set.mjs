@@ -152,7 +152,7 @@ export class Open43Q807SearchAllBrowserAdapter {
   }
 
   async captureSearchAll() {
-    const owned = await this.#browserContexts.newCandidateContext({ storageState: { cookies: [], origins: [] }, viewport: DEFAULT_VIEWPORT });
+    const owned = await this.#browserContexts.newCandidateContext({ viewport: DEFAULT_VIEWPORT });
     const page = await owned.context.newPage();
     const requestMethods = [];
     const failedRequests = [];
