@@ -179,6 +179,13 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     credentialPolicy: run.browserCredentialPolicy ?? "none",
     privateInputIdentitySha256: sha256Value(run.privateInputIdentity),
     publicOrigins: browserPublicOrigins,
+    responseCacheOptions: process.env.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR === undefined
+      ? null
+      : {
+          persistentDir: process.env.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR,
+          persistentIdentity: process.env.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_IDENTITY,
+          cacheDocuments: false,
+        },
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };

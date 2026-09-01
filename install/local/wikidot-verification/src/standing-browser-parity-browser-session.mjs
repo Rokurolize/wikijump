@@ -10,6 +10,7 @@ import {
   DEFAULT_REQUEST_INTERVAL_MS,
   acquireBrowserCaptureLock,
   createPersistentBrowserRequestGate,
+  createBrowserResponseCache,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
 } from "./browser-request-gate.mjs";
@@ -334,6 +335,7 @@ export async function createParityBrowserControls({
   credentialPolicy = "none",
   publicOrigins = [],
   resume = false,
+  responseCacheOptions = null,
 }) {
   const runId = randomUUID();
   const executionMode = parityBrowserExecutionMode(args.mode);
@@ -342,11 +344,16 @@ export async function createParityBrowserControls({
   const lock = await acquireBrowserCaptureLock({ runId });
   let gate = null;
   let proxy = null;
+  let responseCache = null;
   try {
     gate = await createPersistentBrowserRequestGate({
       statePath: lock.statePath,
       intervalMs: parityBrowserRequestIntervalMs(args.mode),
     });
+    if (responseCacheOptions !== null) {
+      responseCache = createBrowserResponseCache(responseCacheOptions);
+      await responseCache.load();
+    }
     const { localOrigins, fileRouteOriginSets } =
       candidateLocalOriginSets(candidate);
     const caseSetPublicOrigins = requireExactHttpsOrigins(
@@ -394,12 +401,16 @@ export async function createParityBrowserControls({
       runId,
       configPath,
       configSha256: configSeal.sha256,
+      responseCache,
       localOrigins,
       fileRouteOriginSets,
       publicOrigins: caseSetPublicOrigins,
       async close() {
         let failure = null;
         await proxy?.close().catch((error) => {
+          failure ??= error;
+        });
+        await responseCache?.flush().catch((error) => {
           failure ??= error;
         });
         await gate.flush().catch((error) => {
@@ -431,6 +442,7 @@ export async function createParityBrowserControls({
     };
   } catch (error) {
     await proxy?.close().catch(() => undefined);
+    await responseCache?.flush().catch(() => undefined);
     if (gate) {
       const flushed = await gate
         .flush()
@@ -452,6 +464,7 @@ export async function launchParityBrowser({
   local,
   storageState = null,
   viewport,
+  responseCache = null,
 }) {
   const { chromium } = requirePlaywright(browserRoot);
   const executable = await resolveBrowserExecutable(
@@ -474,6 +487,7 @@ export async function launchParityBrowser({
     const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
+      responseCache,
       publicOriginPredicate: (url, resourceType, method, initiatorUrl) =>
         isParityBrowserPublicOrigin(
           url,
