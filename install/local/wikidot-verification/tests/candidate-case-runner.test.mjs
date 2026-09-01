@@ -151,7 +151,7 @@ async function temporaryOutput(t, name = "evidence") {
 
 async function runOne(t, caseSet, options = {}) {
   const identity = candidateIdentity();
-  const privateInput = { secret: "never-publish-me" };
+  const privateInput = { candidate_identity_sha256: sha256Value(identity), secret: "never-publish-me" };
   return await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
@@ -172,7 +172,7 @@ function aggregateHas(pattern) {
 
 test("candidate case runs reject hashes that do not match supplied inputs", async (t) => {
   const identity = candidateIdentity();
-  const privateInput = { secret: "never-publish-me" };
+  const privateInput = { candidate_identity_sha256: hash("1"), secret: "never-publish-me" };
 
   await assert.rejects(
     runCandidateCaseSet({
@@ -185,7 +185,7 @@ test("candidate case runs reject hashes that do not match supplied inputs", asyn
       runId: "candidate-run-0123456789ab",
       dependencies: fixtureDependencies(),
     }),
-    /candidate identity SHA-256 does not match/u,
+    /private input is not sealed to the supplied candidate identity/u,
   );
 });
 
@@ -194,7 +194,7 @@ test("CandidateCaseRunner publishes one exact case only after public cleanup and
   const events = [];
   let observation = 0;
   const identity = candidateIdentity();
-  const privateInput = { secret: "never-publish-me" };
+  const privateInput = { candidate_identity_sha256: sha256Value(identity), secret: "never-publish-me" };
   const result = await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
