@@ -170,7 +170,7 @@ export async function installCandidateFilePortRoute(
       redirectUrl.port = files.port;
       requestUrl.href = redirectUrl.href;
     }
-    const responseStatus =
+    let responseStatus =
       typeof response.status === "function" ? response.status() : response.status;
     if (
       responseCache !== null &&
@@ -180,11 +180,14 @@ export async function installCandidateFilePortRoute(
       const cached = responseCache.get(
         `https://${filesSite}.wdfiles.com${sourcePath}${new URL(route.request().url()).search}`,
       );
-      if (cached !== null) response = cached;
+      if (cached !== null) {
+        response = cached;
+        responseStatus = cached.status;
+      }
     }
     if (sourceRequestGate !== null && route.request().method?.() === "GET") {
       const location = REDIRECT_STATUSES.has(responseStatus)
-        ? response.headers().location
+        ? (typeof response.headers === "function" ? response.headers() : response.headers).location
         : null;
       const redirectUrl = location ? new URL(location, requestUrl) : null;
       const returnsGatedPublicRedirect =
