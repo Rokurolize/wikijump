@@ -330,7 +330,7 @@ function effectiveServiceConfiguration(inspect, role) {
       ),
     },
     host_config: safeRuntimeValue({
-      binds: orderedRuntimeArray(hostConfig.Binds),
+      binds: sortedRuntimeArray(hostConfig.Binds),
       mounts: orderedRuntimeArray(hostConfig.Mounts),
       network_mode: hostConfig.NetworkMode ?? null,
       cgroup: hostConfig.Cgroup ?? null,
