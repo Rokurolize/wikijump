@@ -175,6 +175,7 @@ export async function installCandidateFilePortRoute(
     }
     let responseStatus =
       typeof response.status === "function" ? response.status() : response.status;
+    let replayedResponse = false;
     if (
       responseCache !== null &&
       responseStatus !== 200 &&
@@ -186,6 +187,7 @@ export async function installCandidateFilePortRoute(
       if (cached !== null) {
         response = cached;
         responseStatus = cached.status;
+        replayedResponse = true;
       }
     }
     if (
@@ -228,7 +230,11 @@ export async function installCandidateFilePortRoute(
         await sourceRequestGate.acquire();
       }
     }
-    await route.fulfill({ response });
+    await route.fulfill(
+      replayedResponse
+        ? {status: response.status, headers: response.headers, body: response.body}
+        : {response},
+    );
   };
   // Framerail can emit either Wikidot's canonical no-port file authority or
   // the candidate's already-localized sealed-port authority. Both represent

@@ -514,7 +514,7 @@ test("candidate file routing replays a retained wdfiles asset when the local mir
   assert.deepEqual(lookups, [
     "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
   ]);
-  assert.deepEqual(fulfillment, {response: cached});
+  assert.deepEqual(fulfillment, {status: cached.status, headers: cached.headers, body: cached.body});
 
   fulfillment = undefined;
   await handlers.get("https://scp-wiki.wikijump.localhost:18449/local--files/**")(
@@ -523,7 +523,7 @@ test("candidate file routing replays a retained wdfiles asset when the local mir
       {status: () => 404, headers: () => {}},
     ),
   );
-  assert.deepEqual(fulfillment, {response: cached});
+  assert.deepEqual(fulfillment, {status: cached.status, headers: cached.headers, body: cached.body});
   assert.deepEqual(lookups, [
     "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
     "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
