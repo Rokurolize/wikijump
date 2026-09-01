@@ -54,6 +54,9 @@ function parseArgs(argv) {
     ignoreHttpsErrors: false,
     waitUntil: "domcontentloaded",
     visibleTextScope: "main-frame",
+    sourceResponseCacheDir: null,
+    sourceResponseCacheIdentity: null,
+    sourceResponseCacheDocuments: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -101,6 +104,14 @@ function parseArgs(argv) {
     } else if (arg === "--local-storage-state") {
       args.localStorageState = path.resolve(nextArg(argv, index, arg));
       index += 1;
+    } else if (arg === "--source-response-cache-dir") {
+      args.sourceResponseCacheDir = path.resolve(nextArg(argv, index, arg));
+      index += 1;
+    } else if (arg === "--source-response-cache-identity") {
+      args.sourceResponseCacheIdentity = nextArg(argv, index, arg);
+      index += 1;
+    } else if (arg === "--cache-source-documents") {
+      args.sourceResponseCacheDocuments = true;
     } else if (arg === "--actor-label") {
       args.actorLabel = nextArg(argv, index, arg);
       index += 1;
@@ -142,11 +153,13 @@ function parseArgs(argv) {
 
   if (!args.inventory) throw new Error("--inventory is required");
   if (!args.outputDir) throw new Error("--output-dir is required");
+  if (args.sourceResponseCacheDir !== null && args.sourceResponseCacheIdentity === null) throw new Error("--source-response-cache-identity is required with --source-response-cache-dir");
+  if (args.sourceResponseCacheDir === null && args.sourceResponseCacheIdentity !== null) throw new Error("--source-response-cache-dir is required with --source-response-cache-identity");
   return args;
 }
 
 function printHelp() {
-  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
+  console.log(`Usage: capture-browser-rendering.mjs --inventory FILE --output-dir DIR [--shard-manifest FILE --shard-id ID] [--fixture-id ID ...] [--limit N] [--browser-root framerail] [--browser-executable /usr/bin/google-chrome | --cdp-endpoint http://127.0.0.1:9222] [--storage-state FILE | --source-storage-state FILE --local-storage-state FILE] [--source-response-cache-dir DIR --source-response-cache-identity ID [--cache-source-documents]] [--actor-label LABEL] [--local-url-field local_https_url] [--timeout-ms 900000] [--settle-ms 1000] [--visible-text-scope main-frame] [--ignore-https-errors] [--no-screenshot] [--json]
 
 Writes validator-compatible browser rendering evidence JSON plus DOM/screenshot artifacts for selected corpus inventory rows. The output directory should live under one of the render validator evidence roots, for example:
 
@@ -404,6 +417,11 @@ async function run() {
       localProxyServer: localEgressProxy.url,
       requestGate,
       localOrigins,
+      sourceResponseCacheOptions: args.sourceResponseCacheDir === null ? {} : {
+        persistentDir: args.sourceResponseCacheDir,
+        persistentIdentity: args.sourceResponseCacheIdentity,
+        cacheDocuments: args.sourceResponseCacheDocuments,
+      },
     });
     const runContexts = {
       sourceContext: browserSession.sourceContext,
@@ -483,6 +501,7 @@ async function run() {
       request_gate_config: requestGateConfigPath,
       request_gate: requestGate.snapshot(),
       browser_context_scope: "run",
+      source_response_cache_mode: args.sourceResponseCacheDir === null ? "browser_context" : "persistent_identity_bound",
       source_response_cache: browserSession.sourceResponseCache?.snapshot() ?? null,
     },
     };

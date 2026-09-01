@@ -10,6 +10,7 @@ export const DEFAULT_BROWSER_CAPTURE_LOCK = "/var/tmp/wikijump-wikidot-browser-c
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRIES = 512;
 const DEFAULT_RESPONSE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES = 8 * 1024 * 1024;
+const RESPONSE_CACHE_STORE_SCHEMA = "wikijump_full_parity.browser_response_cache_store.v1";
 const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
@@ -68,23 +69,103 @@ function positiveSafeInteger(value, name) {
   return value;
 }
 
-export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_MAX_ENTRIES, maxBytes = DEFAULT_RESPONSE_CACHE_MAX_BYTES, maxEntryBytes = DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES} = {}) {
+async function ensurePrivateCacheDirectory(directory) {
+  await fs.mkdir(directory, {recursive: true, mode: 0o700});
+  const stat = await fs.lstat(directory);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error(`browser response cache directory is not private: ${directory}`);
+}
+
+async function readPrivateCacheManifest(filePath) {
+  let stat;
+  try {
+    stat = await fs.lstat(filePath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+  if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) throw new Error(`browser response cache manifest is not a private regular file: ${filePath}`);
+  try {
+    return JSON.parse(await fs.readFile(filePath, "utf8"));
+  } catch {
+    throw new Error(`browser response cache manifest is malformed: ${filePath}`);
+  }
+}
+
+async function writePrivateCacheManifest(filePath, value) {
+  const directory = path.dirname(filePath);
+  await ensurePrivateCacheDirectory(directory);
+  const existing = await readPrivateCacheManifest(filePath);
+  if (existing !== null && existing.schema !== RESPONSE_CACHE_STORE_SCHEMA) throw new Error(`browser response cache manifest is malformed: ${filePath}`);
+  const temporary = path.join(directory, `.${path.basename(filePath)}.${process.pid}.${randomUUID()}.tmp`);
+  let handle = null;
+  try {
+    handle = await fs.open(temporary, fsConstants.O_WRONLY | fsConstants.O_CREAT | fsConstants.O_EXCL | (fsConstants.O_NOFOLLOW ?? 0), 0o600);
+    await handle.writeFile(`${JSON.stringify(value)}\n`, "utf8");
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await fs.rename(temporary, filePath);
+  } catch (error) {
+    await handle?.close().catch(() => {});
+    await fs.unlink(temporary).catch(() => {});
+    throw error;
+  }
+}
+
+export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_MAX_ENTRIES, maxBytes = DEFAULT_RESPONSE_CACHE_MAX_BYTES, maxEntryBytes = DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES, persistentDir = null, persistentIdentity = null, cacheDocuments = false} = {}) {
   positiveSafeInteger(maxEntries, "maxEntries");
   positiveSafeInteger(maxBytes, "maxBytes");
   positiveSafeInteger(maxEntryBytes, "maxEntryBytes");
   if (maxEntryBytes > maxBytes) throw new Error("maxEntryBytes cannot exceed maxBytes");
+  if (persistentDir !== null && (typeof persistentDir !== "string" || persistentDir === "")) throw new Error("persistentDir must be a non-empty path or null");
+  if (persistentDir !== null && (typeof persistentIdentity !== "string" || persistentIdentity === "")) throw new Error("persistentIdentity is required for a persistent browser response cache");
 
   const entries = new Map();
+  const persistentPath = persistentDir === null ? null : path.resolve(persistentDir, "manifest.json");
   let bytes = 0;
   let hits = 0;
   let misses = 0;
   let stores = 0;
   let bypasses = 0;
   let evictions = 0;
+  let loaded = persistentPath === null;
+  let dirty = false;
+  let loadedEntries = 0;
 
   return {
     maxEntryBytes,
+    cacheDocuments,
+    async load() {
+      if (loaded) return;
+      await ensurePrivateCacheDirectory(path.dirname(persistentPath));
+      const manifest = await readPrivateCacheManifest(persistentPath);
+      if (manifest === null) {
+        loaded = true;
+        return;
+      }
+      if (manifest.schema !== RESPONSE_CACHE_STORE_SCHEMA || manifest.identity !== persistentIdentity || !Array.isArray(manifest.entries)) throw new Error(`browser response cache identity or schema mismatch: ${persistentPath}`);
+      for (const entry of manifest.entries) {
+        if (typeof entry?.key !== "string" || !/^https?:\/\//u.test(entry.key) || entry.status !== 200 || typeof entry.headers !== "object" || entry.headers === null || typeof entry.body_base64 !== "string") throw new Error(`browser response cache entry is malformed: ${persistentPath}`);
+        const body = Buffer.from(entry.body_base64, "base64");
+        if (body.toString("base64") !== entry.body_base64 || body.length > maxEntryBytes || entries.has(entry.key)) throw new Error(`browser response cache entry exceeds limits or is duplicated: ${persistentPath}`);
+        entries.set(entry.key, {status: entry.status, headers: entry.headers, body});
+        bytes += body.length;
+        if (entries.size > maxEntries || bytes > maxBytes) throw new Error(`browser response cache manifest exceeds limits: ${persistentPath}`);
+      }
+      loadedEntries = entries.size;
+      loaded = true;
+    },
+    async flush() {
+      if (persistentPath === null || !dirty) return;
+      await writePrivateCacheManifest(persistentPath, {
+        schema: RESPONSE_CACHE_STORE_SCHEMA,
+        identity: persistentIdentity,
+        entries: [...entries].map(([key, entry]) => ({key, status: entry.status, headers: entry.headers, body_base64: entry.body.toString("base64")})),
+      });
+      dirty = false;
+    },
     get(key) {
+      if (!loaded) throw new Error("persistent browser response cache must be loaded before lookup");
       const entry = entries.get(key);
       if (!entry) {
         misses += 1;
@@ -96,6 +177,7 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
       return entry;
     },
     store(key, entry) {
+      if (!loaded) throw new Error("persistent browser response cache must be loaded before storage");
       if (!Buffer.isBuffer(entry?.body) || entry.body.length > maxEntryBytes) {
         bypasses += 1;
         return false;
@@ -116,6 +198,7 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
       entries.set(key, entry);
       bytes += entry.body.length;
       stores += 1;
+      if (persistentPath !== null) dirty = true;
       return true;
     },
     recordBypass() {
@@ -135,8 +218,9 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         max_bytes: maxBytes,
         max_entry_bytes: maxEntryBytes,
         lookup_key: "exact_url",
-        lifetime: "browser_context",
-        documents_cached: false,
+        lifetime: persistentPath === null ? "browser_context" : "persistent",
+        documents_cached: cacheDocuments,
+        ...(persistentPath === null ? {} : {persistent_identity: persistentIdentity, persistent_entries_loaded: loadedEntries}),
       };
     },
   };
@@ -422,8 +506,8 @@ async function abortRoute(route) {
   }
 }
 
-function requestCanUseResponseCache(request) {
-  if (request.method() !== "GET" || request.resourceType() === "document") return false;
+function requestCanUseResponseCache(request, responseCache) {
+  if (request.method() !== "GET" || (request.resourceType() === "document" && !responseCache.cacheDocuments)) return false;
   const headers = request.headers();
   return headers.range === undefined && headers.authorization === undefined;
 }
@@ -476,7 +560,7 @@ function reusableResponseHeaders(response) {
 
 async function servePublicRoute(route, {gate, responseCache}) {
   const request = route.request();
-  if (!responseCache || !requestCanUseResponseCache(request)) {
+  if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
     responseCache?.recordBypass();
     await gate.acquire();
     await route.continue();
@@ -497,12 +581,21 @@ async function servePublicRoute(route, {gate, responseCache}) {
     await route.fulfill({response});
     return;
   }
+  const body = await response.body();
+  if (body.length > responseCache.maxEntryBytes) {
+    responseCache.recordBypass();
+    await route.fulfill({response});
+    return;
+  }
   const entry = {
     status: response.status(),
     headers: reusableResponseHeaders(response),
-    body: await response.body(),
+    body,
   };
-  responseCache.store(cacheKey, entry);
+  if (!responseCache.store(cacheKey, entry)) {
+    await route.fulfill({response});
+    return;
+  }
   await route.fulfill(entry);
 }
 
