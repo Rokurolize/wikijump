@@ -520,6 +520,7 @@ export async function launchParityBrowser({
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
       responseCache,
+      cacheOnly: local,
       publicOriginPredicate: (url, resourceType, method, initiatorUrl) =>
         isParityBrowserPublicOrigin(
           url,

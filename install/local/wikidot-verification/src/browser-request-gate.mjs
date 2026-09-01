@@ -558,8 +558,22 @@ function reusableResponseHeaders(response) {
   return headers;
 }
 
-async function servePublicRoute(route, {gate, responseCache}) {
+async function servePublicRoute(route, {gate, responseCache, cacheOnly = false}) {
   const request = route.request();
+  if (cacheOnly) {
+    if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
+      responseCache?.recordBypass();
+      await abortRoute(route);
+      return;
+    }
+    const cached = responseCache.get(request.url());
+    if (cached === null) {
+      await abortRoute(route);
+      return;
+    }
+    await route.fulfill(cached);
+    return;
+  }
   if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
     responseCache?.recordBypass();
     await gate.acquire();
@@ -608,7 +622,7 @@ async function servePublicRoute(route, {gate, responseCache}) {
  *   publicOriginPredicate?: ((value: string, resourceType: string, method: string) => boolean) | null
  * }} [options]
  */
-export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null} = {}) {
+export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null, cacheOnly = false} = {}) {
   if (!gate || typeof gate.acquire !== "function" || typeof gate.deferForRetryAfter !== "function" || typeof gate.failClosed !== "function" || typeof gate.recordLocalExempt !== "function" || typeof gate.recordUnsupportedRequestBlocked !== "function" || typeof gate.recordWebSocketBlocked !== "function") throw new Error("browser request gate is malformed");
   if (!context || typeof context.route !== "function" || typeof context.routeWebSocket !== "function" || typeof context.on !== "function") throw new Error("browser context cannot enforce request-level capture controls");
   if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.store !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
@@ -663,7 +677,7 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         );
         return;
       }
-      await servePublicRoute(route, {gate, responseCache});
+      await servePublicRoute(route, {gate, responseCache, cacheOnly});
     } catch (error) {
       gate.failClosed(error);
       await abortRoute(route);
