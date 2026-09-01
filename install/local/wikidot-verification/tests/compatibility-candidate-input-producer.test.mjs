@@ -95,7 +95,8 @@ test("compatibility candidate input producer owns the retained B689 SCP-8980 aut
 test("compatibility candidate input producer binds the retained Wikidot favicon route fixture", () => {
   const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
   assert.match(source, /favicon_source='https:\/\/scp-wiki\.wdfiles\.com\/local--files\/site\/favicon\.gif'/u);
-  assert.match(source, /update site set favicon_source=.*where site_id=\$\{standardSiteId\}/u);
+  assert.match(source, /update site set from_wikidot=true,favicon_source=.*where site_id=\$\{standardSiteId\}/u);
+  assert.match(source, /update page set from_wikidot=true where page_id=\$\{b610Page\.page_id\}/u);
   assert.match(source, /update page set from_wikidot=true where page_id=\$\{prior\.page_id\}/u);
 });
 
