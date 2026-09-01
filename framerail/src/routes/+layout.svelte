@@ -121,7 +121,15 @@
   const effectiveTheme = $derived(normalizeThemeSetting(viewData?.theme))
   const customThemeHtml = $derived(customThemeHeadHtml(effectiveTheme))
   const wikidotSiteTitle = $derived(resolveWikidotSiteTitle(viewData))
-  const siteFavicon = $derived(faviconDeclaration(viewData?.site ?? null))
+  const iconSite = $derived(
+    viewData?.site
+      ? {
+          ...viewData.site,
+          from_wikidot: viewData.site.from_wikidot || isImportedWikidotLayout
+        }
+      : null
+  )
+  const siteFavicon = $derived(faviconDeclaration(iconSite))
   const siteHasIosIcons = $derived(hasIosIcons(viewData?.site ?? null))
   const wikidotSiteTagline = $derived(resolveWikidotSiteTagline(viewData))
   const wikidotSessionUserName = $derived(resolveWikidotSessionUserName(viewData))
