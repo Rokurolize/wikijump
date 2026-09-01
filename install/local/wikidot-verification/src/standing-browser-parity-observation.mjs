@@ -590,7 +590,11 @@ export async function captureBrowserParityObservation({
     await page.evaluate(() => {
       window.stop();
       window.name = "";
-      window.sessionStorage.clear();
+      try {
+        window.sessionStorage.clear();
+      } catch (error) {
+        if (error?.name !== "SecurityError") throw error;
+      }
     });
     await page.goto("about:blank", {waitUntil: "commit", timeout: timeoutMs});
   }
