@@ -412,6 +412,34 @@ test("B690 verifies one fixed complete six-page denominator", () => {
     true,
   );
 
+  const initialFontWidthTiming = structuredClone(observations);
+  initialFontWidthTiming.pages[0].comparison.domcontentloaded_immediate_probes = [
+    {
+      id: "header_title",
+      selector: "#header h1 a span",
+      pseudo: "::before",
+      properties: [{ property: "width", status: "fail" }],
+      pseudo_layout: {
+        local: { status: "pass", checks: [{ status: "pass" }] },
+        live: { status: "pass", checks: [{ status: "pass" }] },
+        status: "pass",
+      },
+      status: "fail",
+    },
+  ];
+  initialFontWidthTiming.pages[0].comparison.settled_probes = [
+    {
+      id: "header_title",
+      selector: "#header h1 a span",
+      pseudo: "::before",
+      status: "pass",
+    },
+  ];
+  assert.equal(
+    verifyOpen43B690FixedSixPage(initialFontWidthTiming, plan).verified,
+    true,
+  );
+
   const initialGeometryTiming = structuredClone(observations);
   initialGeometryTiming.pages[0].comparison.domcontentloaded_immediate_first_divergent_element = {
     kind: "geometry_divergence",
