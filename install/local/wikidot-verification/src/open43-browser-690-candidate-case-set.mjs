@@ -422,10 +422,20 @@ export function verifyOpen43B690GeometrySettled(observations, plan) {
 
 function initialProbePassesOrIsResourceTiming(page, probe, settledProbes) {
   if (probe.status === "pass") return true;
+  const timingProperties = new Set(["width", "height"]);
+  const failedProperties = (probe.properties ?? []).filter(
+    ({ status }) => status !== "pass",
+  );
+  const pseudoChecksPass = [probe.pseudo_layout?.local, probe.pseudo_layout?.live].every(
+    (side) =>
+      side?.status === "pass" &&
+      Array.isArray(side.checks) &&
+      side.checks.every(({ status }) => status === "pass"),
+  );
   if (
     !Array.isArray(probe.properties) ||
-    probe.properties.some(({ status }) => status !== "pass") ||
-    probe.pseudo_layout?.status !== "fail"
+    failedProperties.some(({ property }) => !timingProperties.has(property)) ||
+    (probe.pseudo_layout?.status !== "fail" && !pseudoChecksPass)
   ) {
     return false;
   }
