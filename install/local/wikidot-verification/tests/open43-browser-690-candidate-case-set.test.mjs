@@ -155,6 +155,8 @@ function sixPageFixture() {
           font_status: "loaded",
           incomplete_image_count: 0,
         },
+        candidate_page_content_height: 20,
+        live_page_content_height: 20,
         live_capture_sha256: plan.live_capture_sha256_by_slug[slug],
         artifact_sha256: {
           domcontentloaded_immediate: "e".repeat(64),
@@ -257,6 +259,39 @@ test("B690 verifies the ordered initial traces and fails on the first causal div
   );
 });
 
+test("B690 accepts initial geometry timing only with a passing settled companion", () => {
+  const initial = initialFixture();
+  const settled = settledFixture();
+  const plan = {
+    ...initial.plan,
+    settled_live_trace_sha256_by_slug: settled.plan.settled_live_trace_sha256_by_slug,
+    live_page_content_height_by_slug: settled.plan.live_page_content_height_by_slug,
+  };
+  initial.observations.pages[0].candidate_trace.elements[0].rect.height = 100;
+  const observations = new Map([
+    ["B690_GEOMETRY_INITIAL", initial.observations],
+    ["B690_GEOMETRY_SETTLED", settled.observations],
+  ]);
+
+  assert.throws(
+    () => verifyOpen43B690GeometryInitial(initial.observations, plan),
+    /first divergence found.*geometry_divergence/u,
+  );
+  const verified = verifyOpen43B690GeometryInitial(
+    initial.observations,
+    plan,
+    observations,
+  );
+  assert.equal(verified.verified, true);
+  assert.equal(verified.classifications[0].kind, "resource_timing");
+
+  settled.observations.pages[0].candidate_page_content_height = 200;
+  assert.throws(
+    () => verifyOpen43B690GeometryInitial(initial.observations, plan, observations),
+    /settled #page-content height diverged/u,
+  );
+});
+
 test("B690 verifies settled resource completion before the total-height boundary", () => {
   const { observations, plan } = settledFixture();
   const verified = verifyOpen43B690GeometrySettled(observations, plan);
@@ -353,6 +388,22 @@ test("B690 verifies one fixed complete six-page denominator", () => {
     /six-page comparison failed/u,
   );
 
+  const initialGeometryTiming = structuredClone(observations);
+  initialGeometryTiming.pages[0].comparison.domcontentloaded_immediate_first_divergent_element = {
+    kind: "geometry_divergence",
+    local: { rect: { x: 0, y: 0, width: 100, height: 100 } },
+    live: { rect: { x: 0, y: 0, width: 100, height: 20 } },
+  };
+  assert.equal(
+    verifyOpen43B690FixedSixPage(initialGeometryTiming, plan).verified,
+    true,
+  );
+  initialGeometryTiming.pages[0].candidate_page_content_height = 40;
+  assert.throws(
+    () => verifyOpen43B690FixedSixPage(initialGeometryTiming, plan),
+    /settled geometry diverged/u,
+  );
+
   const divergent = structuredClone(observations);
   divergent.pages[4].comparison.settled_first_divergent_element.kind =
     "style_divergence";
@@ -364,6 +415,6 @@ test("B690 verifies one fixed complete six-page denominator", () => {
   };
   assert.throws(
     () => verifyOpen43B690FixedSixPage(divergent, plan),
-    /first divergence found/u,
+    /settled geometry diverged/u,
   );
 });
