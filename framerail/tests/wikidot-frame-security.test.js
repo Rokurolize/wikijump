@@ -38,6 +38,7 @@ test("permits the interwiki frame's required inline presentation", () => {
     interwiki.headers.get("content-security-policy") ?? "",
     /style-src 'self'/u
   )
+  assert.match(interwiki.headers.get("content-security-policy") ?? "", /font-src 'self'/u)
 })
 
 test("styleFrame permits inline CSS without permitting scripts", () => {
