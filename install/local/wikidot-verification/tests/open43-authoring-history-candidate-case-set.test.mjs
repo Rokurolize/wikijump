@@ -182,6 +182,10 @@ class FakePage {
       this.submittedUser = 999;
       return undefined;
     }
+    if (argument.operation === "submit-settings-form") {
+      await this.click("#user-settings-form .button-save");
+      return undefined;
+    }
     throw new Error(`unexpected browser operation ${argument.operation}`);
   }
 
