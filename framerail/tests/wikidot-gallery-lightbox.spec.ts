@@ -27,6 +27,7 @@ test("Wikidot Gallery viewer preserves loading, navigation, keyboard, and close 
   await installImageFixture(page)
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/gallery-lightbox")
+  await page.waitForLoadState("networkidle")
 
   await expect(page.locator("#jquery-lightbox")).toHaveCount(0)
   await page.locator("#gallery-viewer-one").click()
@@ -73,11 +74,13 @@ test("Wikidot Gallery disabled viewers and custom links stay inert while image f
   await installImageFixture(page)
   await page.setExtraHTTPHeaders(SITE_HEADERS)
   await page.goto("/gallery-lightbox")
+  await page.waitForLoadState("networkidle")
 
   await page.locator("#gallery-viewer-disabled").click()
   await expect(page).toHaveURL(/\/gallery-image-disabled\.webp$/u)
   await expect(page.locator("#jquery-lightbox")).toHaveCount(0)
   await page.goto("/gallery-lightbox")
+  await page.waitForLoadState("networkidle")
 
   await page.locator("#gallery-viewer-failure").click()
   await expect(page.locator("#lightbox-loading")).toBeVisible()
