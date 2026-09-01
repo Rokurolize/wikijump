@@ -461,10 +461,10 @@ test("candidate file routing preserves one direct wdfiles admission on a local-c
 });
 
 test("candidate file routing replays a retained wdfiles asset when the local mirror misses", async () => {
-  let handler;
+  const handlers = new Map();
   const context = {
-    async route(_value, callback) {
-      handler = callback;
+    async route(value, callback) {
+      handlers.set(value, callback);
     },
   };
   const cached = {
@@ -489,27 +489,45 @@ test("candidate file routing replays a retained wdfiles asset when the local mir
   );
 
   let fulfillment;
-  await handler({
+  const route = (url, response) => ({
     request() {
       return {
         method: () => "GET",
         resourceType: () => "image",
-        url: () =>
-          "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-8980/femalescientist.png",
+        url: () => url,
       };
     },
     async fetch() {
-      return {status: () => 404, headers: () => ({})};
+      return response;
     },
     async fulfill(options) {
       fulfillment = options;
     },
   });
+  await handlers.get("https://scp-wiki.wjfiles.localhost:18449/**")(
+    route(
+      "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-8980/femalescientist.png",
+      {status: () => 404, headers: () => {}},
+    ),
+  );
 
   assert.deepEqual(lookups, [
     "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
   ]);
   assert.deepEqual(fulfillment, {response: cached});
+
+  fulfillment = undefined;
+  await handlers.get("https://scp-wiki.wikijump.localhost:18449/local--files/**")(
+    route(
+      "https://scp-wiki.wikijump.localhost:18449/local--files/scp-8980/femalescientist.png",
+      {status: () => 404, headers: () => {}},
+    ),
+  );
+  assert.deepEqual(fulfillment, {response: cached});
+  assert.deepEqual(lookups, [
+    "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
+    "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
+  ]);
 });
 
 test("candidate file routing preserves collapsed source admissions when a redirect is outside the public gate", async () => {

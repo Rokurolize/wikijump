@@ -133,10 +133,13 @@ export async function installCandidateFilePortRoute(
   const canonicalFilesOrigin = `https://${files.hostname}`;
   const fileRouteHandler = async (route) => {
     const requestUrl = new URL(route.request().url());
-    if (
-      requestUrl.origin !== canonicalFilesOrigin &&
-      requestUrl.origin !== files.origin
-    ) {
+    const isSourceFileAuthority =
+      requestUrl.origin === canonicalFilesOrigin || requestUrl.origin === files.origin;
+    const isLocalPageFile =
+      requestUrl.origin === page.origin &&
+      (requestUrl.pathname.startsWith("/local--files/") ||
+        requestUrl.pathname.startsWith("/local--code/"));
+    if (!isSourceFileAuthority && !isLocalPageFile) {
       await route.continue();
       return;
     }
@@ -185,7 +188,11 @@ export async function installCandidateFilePortRoute(
         responseStatus = cached.status;
       }
     }
-    if (sourceRequestGate !== null && route.request().method?.() === "GET") {
+    if (
+      sourceRequestGate !== null &&
+      isSourceFileAuthority &&
+      route.request().method?.() === "GET"
+    ) {
       const location = REDIRECT_STATUSES.has(responseStatus)
         ? (typeof response.headers === "function" ? response.headers() : response.headers).location
         : null;
@@ -230,6 +237,10 @@ export async function installCandidateFilePortRoute(
   // complete before Wikidot's DOMContentLoaded-immediate observation.
   await context.route(`${canonicalFilesOrigin}/**`, fileRouteHandler);
   await context.route(`${files.origin}/**`, fileRouteHandler);
+  if (responseCache !== null) {
+    await context.route(`${page.origin}/local--files/**`, fileRouteHandler);
+    await context.route(`${page.origin}/local--code/**`, fileRouteHandler);
+  }
   return true;
 }
 
