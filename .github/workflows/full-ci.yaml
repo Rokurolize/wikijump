@@ -55,7 +55,27 @@ jobs:
         run: pnpm --dir framerail exec playwright install --with-deps chromium firefox webkit
 
       - name: Test Chromium suite
-        run: pnpm --dir framerail test
+        run: |
+          sudo -n env \
+            "PATH=$PATH" \
+            "HOME=$HOME" \
+            "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
+            "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
+            unshare --net --mount-proc bash -c '
+              set -euo pipefail
+              ip link set lo up
+              exec pnpm --dir framerail test
+            '
 
       - name: Test supported browser families
-        run: pnpm --dir framerail test:browser-support
+        run: |
+          sudo -n env \
+            "PATH=$PATH" \
+            "HOME=$HOME" \
+            "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
+            "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
+            unshare --net --mount-proc bash -c '
+              set -euo pipefail
+              ip link set lo up
+              exec pnpm --dir framerail test:browser-support
+            '

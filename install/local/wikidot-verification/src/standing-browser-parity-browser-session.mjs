@@ -10,6 +10,7 @@ import {
   DEFAULT_REQUEST_INTERVAL_MS,
   acquireBrowserCaptureLock,
   createPersistentBrowserRequestGate,
+  createBrowserResponseCache,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
 } from "./browser-request-gate.mjs";
@@ -92,7 +93,7 @@ function localConnectLookup(address, allowedOrigins, fallback = dns.lookup) {
 export async function installCandidateFilePortRoute(
   context,
   localOrigins,
-  { sourceRequestGate = null } = {},
+  { sourceRequestGate = null, responseCache = null } = {},
 ) {
   if (!Array.isArray(localOrigins) || localOrigins.length !== 2) {
     throw new Error(
@@ -132,14 +133,18 @@ export async function installCandidateFilePortRoute(
   const canonicalFilesOrigin = `https://${files.hostname}`;
   const fileRouteHandler = async (route) => {
     const requestUrl = new URL(route.request().url());
-    if (
-      requestUrl.origin !== canonicalFilesOrigin &&
-      requestUrl.origin !== files.origin
-    ) {
+    const isSourceFileAuthority =
+      requestUrl.origin === canonicalFilesOrigin || requestUrl.origin === files.origin;
+    const isLocalPageFile =
+      requestUrl.origin === page.origin &&
+      (requestUrl.pathname.startsWith("/local--files/") ||
+        requestUrl.pathname.startsWith("/local--code/"));
+    if (!isSourceFileAuthority && !isLocalPageFile) {
       await route.continue();
       return;
     }
     if (requestUrl.origin === canonicalFilesOrigin) requestUrl.port = files.port;
+    const sourcePath = requestUrl.pathname;
     let response;
     for (let redirects = 0; ; redirects += 1) {
       response = await route.fetch({
@@ -168,10 +173,30 @@ export async function installCandidateFilePortRoute(
       redirectUrl.port = files.port;
       requestUrl.href = redirectUrl.href;
     }
-    if (sourceRequestGate !== null && route.request().method?.() === "GET") {
-      const sourcePath = new URL(route.request().url()).pathname;
-      const location = REDIRECT_STATUSES.has(response.status())
-        ? response.headers().location
+    let responseStatus =
+      typeof response.status === "function" ? response.status() : response.status;
+    let replayedResponse = false;
+    if (
+      responseCache !== null &&
+      responseStatus !== 200 &&
+      (sourcePath.startsWith("/local--files/") || sourcePath.startsWith("/local--code/"))
+    ) {
+      const cached = responseCache.get(
+        `https://${filesSite}.wdfiles.com${sourcePath}${new URL(route.request().url()).search}`,
+      );
+      if (cached !== null) {
+        response = cached;
+        responseStatus = cached.status;
+        replayedResponse = true;
+      }
+    }
+    if (
+      sourceRequestGate !== null &&
+      isSourceFileAuthority &&
+      route.request().method?.() === "GET"
+    ) {
+      const location = REDIRECT_STATUSES.has(responseStatus)
+        ? (typeof response.headers === "function" ? response.headers() : response.headers).location
         : null;
       const redirectUrl = location ? new URL(location, requestUrl) : null;
       const returnsGatedPublicRedirect =
@@ -205,7 +230,11 @@ export async function installCandidateFilePortRoute(
         await sourceRequestGate.acquire();
       }
     }
-    await route.fulfill({ response });
+    await route.fulfill(
+      replayedResponse
+        ? {status: response.status, headers: response.headers, body: response.body}
+        : {response},
+    );
   };
   // Framerail can emit either Wikidot's canonical no-port file authority or
   // the candidate's already-localized sealed-port authority. Both represent
@@ -214,6 +243,10 @@ export async function installCandidateFilePortRoute(
   // complete before Wikidot's DOMContentLoaded-immediate observation.
   await context.route(`${canonicalFilesOrigin}/**`, fileRouteHandler);
   await context.route(`${files.origin}/**`, fileRouteHandler);
+  if (responseCache !== null) {
+    await context.route(`${page.origin}/local--files/**`, fileRouteHandler);
+    await context.route(`${page.origin}/local--code/**`, fileRouteHandler);
+  }
   return true;
 }
 
@@ -334,6 +367,7 @@ export async function createParityBrowserControls({
   credentialPolicy = "none",
   publicOrigins = [],
   resume = false,
+  responseCacheOptions = null,
 }) {
   const runId = randomUUID();
   const executionMode = parityBrowserExecutionMode(args.mode);
@@ -342,11 +376,16 @@ export async function createParityBrowserControls({
   const lock = await acquireBrowserCaptureLock({ runId });
   let gate = null;
   let proxy = null;
+  let responseCache = null;
   try {
     gate = await createPersistentBrowserRequestGate({
       statePath: lock.statePath,
       intervalMs: parityBrowserRequestIntervalMs(args.mode),
     });
+    if (responseCacheOptions !== null) {
+      responseCache = createBrowserResponseCache(responseCacheOptions);
+      await responseCache.load();
+    }
     const { localOrigins, fileRouteOriginSets } =
       candidateLocalOriginSets(candidate);
     const caseSetPublicOrigins = requireExactHttpsOrigins(
@@ -376,6 +415,7 @@ export async function createParityBrowserControls({
     );
     proxy = await startCaptureEgressProxy({
       allowedLocalOrigins: localOrigins,
+      denyWikidotTargets: candidate !== null,
       requestTimeoutMs: args.timeoutMs,
       ...(candidate
         ? {
@@ -393,12 +433,16 @@ export async function createParityBrowserControls({
       runId,
       configPath,
       configSha256: configSeal.sha256,
+      responseCache,
       localOrigins,
       fileRouteOriginSets,
       publicOrigins: caseSetPublicOrigins,
       async close() {
         let failure = null;
         await proxy?.close().catch((error) => {
+          failure ??= error;
+        });
+        await responseCache?.flush().catch((error) => {
           failure ??= error;
         });
         await gate.flush().catch((error) => {
@@ -430,6 +474,7 @@ export async function createParityBrowserControls({
     };
   } catch (error) {
     await proxy?.close().catch(() => undefined);
+    await responseCache?.flush().catch(() => undefined);
     if (gate) {
       const flushed = await gate
         .flush()
@@ -451,6 +496,7 @@ export async function launchParityBrowser({
   local,
   storageState = null,
   viewport,
+  responseCache = null,
 }) {
   const { chromium } = requirePlaywright(browserRoot);
   const executable = await resolveBrowserExecutable(
@@ -473,6 +519,7 @@ export async function launchParityBrowser({
     const requestGateAttribution = await installBrowserRequestGate(context, {
       gate: controls.gate,
       exemptOrigins: local ? controls.localOrigins : [],
+      responseCache,
       publicOriginPredicate: (url, resourceType, method, initiatorUrl) =>
         isParityBrowserPublicOrigin(
           url,
@@ -486,6 +533,7 @@ export async function launchParityBrowser({
       for (const originSet of controls.fileRouteOriginSets) {
         await installCandidateFilePortRoute(context, originSet, {
           sourceRequestGate: controls.gate,
+          responseCache,
         });
       }
     }

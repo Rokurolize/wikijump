@@ -20,6 +20,7 @@ export function createCandidateBrowserContexts({
   credentialPolicy = "none",
   publicOrigins = [],
   privateInputIdentitySha256 = null,
+  responseCacheOptions = null,
 }) {
   if (credentialPolicy !== "none") {
     if (!Number.isSafeInteger(credentialPolicy?.storage_state_count) || credentialPolicy.storage_state_count < 1 || !/^[0-9a-f]{64}$/u.test(credentialPolicy.private_input_identity_sha256 ?? "")) {
@@ -49,6 +50,7 @@ export function createCandidateBrowserContexts({
       candidate: candidateIdentity,
       credentialPolicy,
       publicOrigins,
+      responseCacheOptions,
     });
     controls = await controlsPromise;
     if (activeFixture !== null) controls.setActiveFixture(activeFixture);
@@ -81,6 +83,7 @@ export function createCandidateBrowserContexts({
         local: true,
         viewport,
         storageState,
+        responseCache: activeControls.responseCache,
       });
       sessions.push(session);
       ownedContexts.add(session.context);

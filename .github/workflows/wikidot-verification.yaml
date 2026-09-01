@@ -92,7 +92,27 @@ jobs:
         run: cd install/local/wikidot-verification && pnpm install --frozen-lockfile
 
       - name: Test
-        run: cd install/local/wikidot-verification && pnpm test
+        run: |
+          sudo -n env \
+            "PATH=$PATH" \
+            "HOME=$HOME" \
+            "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
+            "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
+            unshare --net --mount-proc bash -c '
+              set -euo pipefail
+              ip link set lo up
+              exec pnpm --dir install/local/wikidot-verification test
+            '
 
       - name: Test standing promotion precondition
-        run: node --test install/standing/tests/verify-promotion-precondition.test.mjs
+        run: |
+          sudo -n env \
+            "PATH=$PATH" \
+            "HOME=$HOME" \
+            "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
+            "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
+            unshare --net --mount-proc bash -c '
+              set -euo pipefail
+              ip link set lo up
+              exec node --test install/standing/tests/verify-promotion-precondition.test.mjs
+            '

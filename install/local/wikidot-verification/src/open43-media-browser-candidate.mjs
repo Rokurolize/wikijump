@@ -750,7 +750,7 @@ export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (opt
         sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js", "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte", "wws/src/handler/resized_image.rs", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"])]),
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: { ...session.privateInputIdentity, media_browser_evidence_sha256: sha256Value(casePlans) },
-        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
+        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value({ ...session.privateInputIdentity, media_browser_evidence_sha256: sha256Value(casePlans) }) },
         plan: { schema: "wikijump.open43_media_browser_candidate_plan.v3", site_slug: SITE_SLUG, case_ids: OPEN43_MEDIA_BROWSER_CASE_IDS, evidence: casePlans },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),

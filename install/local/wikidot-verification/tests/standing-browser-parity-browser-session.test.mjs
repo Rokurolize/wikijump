@@ -460,6 +460,76 @@ test("candidate file routing preserves one direct wdfiles admission on a local-c
   assert.equal(admissions, 1);
 });
 
+test("candidate file routing replays a retained wdfiles asset when the local mirror misses", async () => {
+  const handlers = new Map();
+  const context = {
+    async route(value, callback) {
+      handlers.set(value, callback);
+    },
+  };
+  const cached = {
+    status: 200,
+    headers: {"content-type": "image/png"},
+    body: Buffer.from("retained-asset"),
+  };
+  const lookups = [];
+  const responseCache = {
+    get(key) {
+      lookups.push(key);
+      return cached;
+    },
+  };
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {responseCache},
+  );
+
+  let fulfillment;
+  const route = (url, response) => ({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () => url,
+      };
+    },
+    async fetch() {
+      return response;
+    },
+    async fulfill(options) {
+      fulfillment = options;
+    },
+  });
+  await handlers.get("https://scp-wiki.wjfiles.localhost:18449/**")(
+    route(
+      "https://scp-wiki.wjfiles.localhost:18449/local--files/scp-8980/femalescientist.png",
+      {status: () => 404, headers: () => {}},
+    ),
+  );
+
+  assert.deepEqual(lookups, [
+    "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
+  ]);
+  assert.deepEqual(fulfillment, {status: cached.status, headers: cached.headers, body: cached.body});
+
+  fulfillment = undefined;
+  await handlers.get("https://scp-wiki.wikijump.localhost:18449/local--files/**")(
+    route(
+      "https://scp-wiki.wikijump.localhost:18449/local--files/scp-8980/femalescientist.png",
+      {status: () => 404, headers: () => {}},
+    ),
+  );
+  assert.deepEqual(fulfillment, {status: cached.status, headers: cached.headers, body: cached.body});
+  assert.deepEqual(lookups, [
+    "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
+    "https://scp-wiki.wdfiles.com/local--files/scp-8980/femalescientist.png",
+  ]);
+});
+
 test("candidate file routing preserves collapsed source admissions when a redirect is outside the public gate", async () => {
   let handler;
   const context = {

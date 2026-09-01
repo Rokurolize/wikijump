@@ -8,6 +8,11 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 
 export class CaptureEgressError extends Error {}
 
+function isWikidotTarget(hostname) {
+  const host = hostname.toLowerCase().replace(/\.$/u, "");
+  return host === "wikidot.com" || host.endsWith(".wikidot.com") || host === "wdfiles.com" || host.endsWith(".wdfiles.com");
+}
+
 function normalizeIp(address) {
   return address.startsWith("::ffff:") ? address.slice(7) : address;
 }
@@ -115,6 +120,7 @@ export function guardedPipeline(source, destination, onFailure, pipelineImpl = p
 
 export async function startCaptureEgressProxy({
   allowedLocalOrigins = [],
+  denyWikidotTargets = false,
   lookup = dns.lookup,
   requestTimeoutMs = DEFAULT_REQUEST_TIMEOUT_MS,
 } = {}) {
@@ -155,6 +161,9 @@ export async function startCaptureEgressProxy({
       if (target.protocol !== "http:" || target.username || target.password)
         throw new Error();
       const port = Number(target.port || 80);
+      if (denyWikidotTargets && isWikidotTarget(target.hostname) && !allowedTargets.has(targetKey("http:", target.hostname, port))) {
+        throw new CaptureEgressError("external target denied");
+      }
       const address = await resolvePinned(target.hostname, port, {
         lookup,
         protocol: "http:",
@@ -228,6 +237,9 @@ export async function startCaptureEgressProxy({
     client.on("close", () => upstream?.destroy());
     try {
       const { hostname, port } = parseAuthority(request.url, 443);
+      if (denyWikidotTargets && isWikidotTarget(hostname) && !allowedTargets.has(targetKey("https:", hostname, port))) {
+        throw new CaptureEgressError("external target denied");
+      }
       const address = await resolvePinned(hostname, port, {
         lookup,
         protocol: "https:",

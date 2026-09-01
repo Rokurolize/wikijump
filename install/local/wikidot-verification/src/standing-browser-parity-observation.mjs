@@ -555,6 +555,7 @@ export function isExpectedExternalAssetFailure(event) {
  *   requestGateAttribution?: { classifyRequestFailure: (request: import("@playwright/test").Request) => Record<string, any> | null } | null
  *   onPhase?: ((phase: string) => void | Promise<void>) | null
  *   navigate?: ((input: { page: import("@playwright/test").Page; url: string; timeoutMs: number }) => Promise<{ status?: number } | null>) | null
+ *   resetSuppliedPage?: boolean
  * }} input
  */
 export async function captureBrowserParityObservation({
@@ -571,6 +572,7 @@ export async function captureBrowserParityObservation({
   requestGateAttribution = null,
   onPhase = null,
   navigate = null,
+  resetSuppliedPage = true,
 }) {
   if (onPhase !== null && typeof onPhase !== "function") {
     throw new Error("browser observation phase callback must be a function");
@@ -586,11 +588,15 @@ export async function captureBrowserParityObservation({
   }
   const page = suppliedPage ?? (await context.newPage());
   const ownsPage = suppliedPage === null;
-  if (!ownsPage) {
+  if (!ownsPage && resetSuppliedPage) {
     await page.evaluate(() => {
       window.stop();
       window.name = "";
-      window.sessionStorage.clear();
+      try {
+        window.sessionStorage.clear();
+      } catch (error) {
+        if (error?.name !== "SecurityError") throw error;
+      }
     });
     await page.goto("about:blank", {waitUntil: "commit", timeout: timeoutMs});
   }

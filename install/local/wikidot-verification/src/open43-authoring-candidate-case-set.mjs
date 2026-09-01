@@ -251,6 +251,7 @@ class Open43AuthoringRun {
         viewport: VIEWPORT,
         timeoutMs: 300_000,
         settleMs: 0,
+        resetSuppliedPage: false,
         navigate: async ({ page, timeoutMs }) => {
           const response = await page.reload({
             waitUntil: "domcontentloaded",

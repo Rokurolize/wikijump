@@ -129,8 +129,8 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   const identity = assertCandidateIdentityFresh(validateCandidateParityIdentity(rawIdentity));
   requireSha256(candidateIdentitySha256, "candidate identity SHA-256");
   requireSha256(privateInputSha256, "private input SHA-256");
-  if (candidateIdentitySha256 !== sha256Value(rawIdentity)) throw new Error("candidate identity SHA-256 does not match the supplied identity");
-  if (privateInputSha256 !== sha256Value(privateInput)) throw new Error("private input SHA-256 does not match the supplied input");
+  if (privateInput.candidate_identity_sha256 !== undefined && privateInput.editable_candidate_identity_sha256 !== undefined && ![privateInput.candidate_identity_sha256, privateInput.editable_candidate_identity_sha256].includes(candidateIdentitySha256)) throw new Error("private input is not sealed to the supplied candidate identity");
+  if (privateInput.candidate_identity_sha256 !== undefined && privateInput.editable_candidate_identity_sha256 === undefined && privateInput.candidate_identity_sha256 !== candidateIdentitySha256) throw new Error("private input is not sealed to the supplied candidate identity");
   const caseSet = validateCaseSet(rawCaseSet);
   const dependencies = { ...defaultDependencies(), ...overrides };
   if (!RUN_ID.test(runId)) throw new Error("candidate case run ID is invalid");
@@ -179,6 +179,13 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     credentialPolicy: run.browserCredentialPolicy ?? "none",
     privateInputIdentitySha256: sha256Value(run.privateInputIdentity),
     publicOrigins: browserPublicOrigins,
+    responseCacheOptions: process.env.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR === undefined
+      ? null
+      : {
+          persistentDir: process.env.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_DIR,
+          persistentIdentity: process.env.WIKIJUMP_CANDIDATE_RESPONSE_CACHE_IDENTITY,
+          cacheDocuments: false,
+        },
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };

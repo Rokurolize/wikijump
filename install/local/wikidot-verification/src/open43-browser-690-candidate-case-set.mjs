@@ -32,8 +32,12 @@ export const OPEN43_B690_GEOMETRY_FIXTURE = Object.freeze({
   live_reference_sha256:
     "2d3b98a9f04767f396b9e3f4d6f2f1881f78d3a270a4bf5c5c22d939fc72ae4f",
   live_policy_path:
-    "/home/roku/wjlab/evidence/standing-promotion-20260812-organic-external-policy/live-completion-policy.json",
+    "/home/roku/wjlab/evidence/standing-promotion-20260812-reference-complete-policy/live-completion-policy.json",
   live_policy_sha256:
+    "e8a8292af666bfacb3db5516adca59223cbd8a08912f8a0a36fac31851500cac",
+  capture_policy_path:
+    "/home/roku/wjlab/evidence/standing-promotion-20260812-organic-external-policy/live-completion-policy.json",
+  capture_policy_sha256:
     "bb7133d92598c4c957f57f1b77e0ab24a10d0f4f044ae442d2b44cddd4246125",
   reference_local_origin: "https://scp-wiki.wikijump.localhost:18443",
   live_origin: "https://scp-wiki.wikidot.com",
@@ -524,6 +528,10 @@ export function createOpen43B690GeometryCandidateCaseSet() {
         fixture.live_policy_path,
         "B690 live completion policy",
       );
+      const capturePolicy = await readJsonObject(
+        fixture.capture_policy_path,
+        "B690 live reference capture policy",
+      );
       const pairs = defaultCanaryPairs({
         localOrigin: fixture.reference_local_origin,
         liveOrigin: fixture.live_origin,
@@ -537,6 +545,9 @@ export function createOpen43B690GeometryCandidateCaseSet() {
         policy,
         policySha256: fixture.live_policy_sha256,
         policyFilePath: fixture.live_policy_path,
+        referencePolicy: capturePolicy,
+        referencePolicySha256: fixture.capture_policy_sha256,
+        referencePolicyFilePath: fixture.capture_policy_path,
       });
       const liveRecords = liveRecordBySlug(liveReference);
       const liveInitialDocuments = liveDocumentBySlug(liveRecords, "initial");

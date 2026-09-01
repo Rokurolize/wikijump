@@ -124,6 +124,24 @@ test("proxy pins one resolution and forwards method/body only to an exact allowe
   }
 });
 
+test("candidate proxy denies Wikidot targets before DNS or connection", async () => {
+  let lookups = 0;
+  const proxy = await startCaptureEgressProxy({
+    allowedLocalOrigins: ["http://fixture.test:1234"],
+    denyWikidotTargets: true,
+    lookup: async () => {
+      lookups += 1;
+      return [{ address: "93.184.216.34" }];
+    },
+  });
+  try {
+    assert.equal((await proxyRequest(proxy.url, "http://www.wikidot.com/")).status, 403);
+    assert.equal(lookups, 0);
+  } finally {
+    await proxy.close();
+  }
+});
+
 test("a DNS rebinding answer is revalidated and denied before connection", async () => {
   let lookupCount = 0;
   const lookup = async () => [
