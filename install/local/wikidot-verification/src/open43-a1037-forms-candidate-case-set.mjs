@@ -539,7 +539,7 @@ export function createOpen43A1037FormsCandidateCaseSet({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: [...new Map([...administrator.requiredServiceBindings, ...editor.requiredServiceBindings].map((binding) => [JSON.stringify(binding), binding])).values()],
         privateInputIdentity,
-        browserCredentialPolicy: "none",
+        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 1, private_input_identity_sha256: sha256Value(privateInputIdentity) },
         plan: {
           schema: "wikijump.open43_a1037_forms_candidate_plan.v1",
           site_slug: SITE_SLUG,
