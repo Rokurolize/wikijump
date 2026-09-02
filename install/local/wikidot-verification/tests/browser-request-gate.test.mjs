@@ -298,6 +298,11 @@ test("a persistent response cache replays a stable external 404 without another 
   assert.deepEqual(second.actions, [{type: "fulfill", status: 404}]);
   assert.equal(secondGate.snapshot().public_requests, 0);
   assert.equal(secondCache.snapshot().persistent_entries_loaded, 1);
+
+  const timestamped = createRoute("https://www.wikidot.com/avatar.php?userid=19102600&amp;size=small&amp;timestamp=1788341729", {resourceType: "image"});
+  await secondContext.routes[0].handler(timestamped);
+  assert.deepEqual(timestamped.actions, [{type: "fulfill", status: 404}]);
+  assert.equal(secondGate.snapshot().public_requests, 0);
 });
 
 test("candidate cache misses for unsupported scripts abort without an external request or gate grant", async () => {
