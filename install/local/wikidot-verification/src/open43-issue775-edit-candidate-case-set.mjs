@@ -163,7 +163,7 @@ export function createOpen43Issue775EditCandidateCaseSet({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity,
-        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 2, private_input_identity_sha256: sha256Value(privateInputIdentity) },
+        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 3, private_input_identity_sha256: sha256Value(privateInputIdentity) },
         plan: { schema: "wikijump.open43_issue775_edit_candidate_plan.v1", site_slug: SITE_SLUG, page_origin: session.pageOrigin, case_ids: OPEN43_ISSUE775_CASE_IDS, actor_order: ["anonymous", "editable_member", "non_editable_member"], source_sha256: sha256Text(PAGE_SOURCE) },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
