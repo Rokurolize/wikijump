@@ -272,6 +272,34 @@ test("a source response cache serves repeated cacheable assets without another g
   });
 });
 
+test("a persistent response cache replays a stable external 404 without another request", async (t) => {
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-negative-cache-"));
+  t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
+  const identity = "live-reference:avatar-19102600";
+  const firstGate = createBrowserRequestGate({intervalMs: 4_000});
+  const firstCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity: identity});
+  await firstCache.load();
+  const firstContext = createContext();
+  await installBrowserRequestGate(firstContext, {gate: firstGate, responseCache: firstCache});
+  await firstContext.routes[0].handler(createRoute("https://www.wikidot.com/avatar.php?userid=19102600&amp;size=small", {
+    resourceType: "image",
+    fetchResponse: createFetchResponse({status: 404, headers: {"cache-control": "public, max-age=600"}, body: "not found"}),
+  }));
+  await firstCache.flush();
+
+  const secondGate = createBrowserRequestGate({intervalMs: 4_000});
+  const secondCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity: identity});
+  await secondCache.load();
+  const secondContext = createContext();
+  await installBrowserRequestGate(secondContext, {gate: secondGate, responseCache: secondCache, cacheOnly: true});
+  const second = createRoute("https://www.wikidot.com/avatar.php?userid=19102600&amp;size=small", {resourceType: "image"});
+  await secondContext.routes[0].handler(second);
+
+  assert.deepEqual(second.actions, [{type: "fulfill", status: 404}]);
+  assert.equal(secondGate.snapshot().public_requests, 0);
+  assert.equal(secondCache.snapshot().persistent_entries_loaded, 1);
+});
+
 test("candidate cache misses for unsupported scripts abort without an external request or gate grant", async () => {
   const gate = createBrowserRequestGate({intervalMs: 4_000});
   const responseCache = createBrowserResponseCache();
