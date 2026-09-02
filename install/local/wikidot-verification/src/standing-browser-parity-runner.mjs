@@ -478,13 +478,16 @@ async function sealCandidateParity({
         local_url: pairs[index].local_url,
         live_url: pairs[index].live_url,
       },
-      comparison: compareCaptures(
-        local,
-        referenceRecord.capture,
-        DEFAULT_THRESHOLDS,
-        undefined,
-        comparisonContractForPair(pairs[index]),
-      ),
+      comparison: {
+        ...compareCaptures(
+          local,
+          referenceRecord.capture,
+          DEFAULT_THRESHOLDS,
+          undefined,
+          comparisonContractForPair(pairs[index]),
+        ),
+        comparison_scope: "standing-chrome",
+      },
       artifact_hashes: candidateArtifactHashes(
         local,
         referenceRecord.artifacts,

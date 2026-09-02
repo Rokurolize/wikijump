@@ -480,6 +480,10 @@ function requireCompletePassRows(rows, expectedValues, key, name) {
 
 function validateComparison(value, contract = null) {
   const comparison = requirePlainObject(value, "parity record comparison");
+  const comparisonScope = comparison.comparison_scope ?? null;
+  if (comparisonScope !== null && comparisonScope !== "standing-chrome") {
+    throw new Error("parity record comparison scope is invalid");
+  }
   if (!new Set(["pass", "fail"]).has(comparison.status)) {
     throw new Error("parity record comparison status is invalid");
   }
@@ -513,9 +517,12 @@ function validateComparison(value, contract = null) {
       }
     }
     if (contract) {
+      const geometrySelectors = comparisonScope === "standing-chrome"
+        ? ["#header", "#header h1 a"]
+        : contract.geometry_selectors;
       requireCompletePassRows(
         comparison.geometry,
-        contract.geometry_selectors,
+        geometrySelectors,
         "selector",
         "settled geometry selector",
       );
