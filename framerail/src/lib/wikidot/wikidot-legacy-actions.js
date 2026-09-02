@@ -464,7 +464,7 @@ export const wikidotLegacyActions = (root, parameters) => {
   }
   /** @param {KeyboardEvent} event */
   const keydown = (event) => {
-    if (event.key !== " ") return undefined
+    if (![" ", "Spacebar", "Space", "Enter"].includes(event.key)) return undefined
     return activate(event)
   }
 
