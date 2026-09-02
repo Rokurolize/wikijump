@@ -159,7 +159,11 @@ export class Open43Q807SearchAllBrowserAdapter {
     const navigationUrls = [];
     const onRequest = (request) => requestMethods.push(request.method());
     const onFailed = (request) => failedRequests.push({ url: request.url(), method: request.method(), failure: request.failure()?.errorText ?? null });
-    const onNavigation = (frame) => { if (frame === page.mainFrame()) navigationUrls.push(frame.url()); };
+    const onNavigation = (frame) => {
+      if (frame !== page.mainFrame()) return;
+      const url = frame.url();
+      if (navigationUrls.at(-1) !== url) navigationUrls.push(url);
+    };
     page.on("request", onRequest);
     page.on("requestfailed", onFailed);
     page.on("framenavigated", onNavigation);
