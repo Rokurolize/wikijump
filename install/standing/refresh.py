@@ -767,7 +767,6 @@ def main() -> int:
                 override_file=override_file,
             ),
             cwd=runtime_home,
-            capture=False,
         )
         health_started = time.monotonic()
         health = wait_for_health(
