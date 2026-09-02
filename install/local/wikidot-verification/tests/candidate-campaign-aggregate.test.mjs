@@ -194,7 +194,7 @@ test("candidate campaign accepts site-bound identity projections only for one se
   );
 });
 
-test("candidate campaign aggregate fails closed on missing, duplicate, or cross-run receipts", async (t) => {
+test("candidate campaign aggregate fails closed on missing or duplicate receipts and records case run IDs", async (t) => {
   const fixture = await campaignFixture(t);
   await assert.rejects(
     aggregateCandidateCaseCampaign({
@@ -218,16 +218,25 @@ test("candidate campaign aggregate fails closed on missing, duplicate, or cross-
   const changedPath = fixture.receipts[0];
   const changed = JSON.parse(await fs.readFile(changedPath));
   changed.run_id = "candidate-run-ffffffffffff";
+  for (const caseRef of changed.cases) {
+    const caseValue = JSON.parse(await fs.readFile(caseRef.path, "utf8"));
+    caseValue.run_id = changed.run_id;
+    await writeJson(caseRef.path, caseValue);
+    caseRef.sha256 = await sha256File(caseRef.path);
+  }
+  const cleanupPath = path.join(path.dirname(changedPath), changed.cleanup_receipt);
+  const cleanup = JSON.parse(await fs.readFile(cleanupPath, "utf8"));
+  cleanup.run_id = changed.run_id;
+  await writeJson(cleanupPath, cleanup);
   await writeJson(changedPath, changed);
-  await assert.rejects(
-    aggregateCandidateCaseCampaign({
-      candidateIdentityPath: fixture.identityPath,
-      manifestPath: fixture.manifestPath,
-      receiptPaths: fixture.receipts,
-      now: new Date("2026-08-18T00:00:00.000Z"),
-    }),
-    /different run IDs/u,
-  );
+  const aggregate = await aggregateCandidateCaseCampaign({
+    candidateIdentityPath: fixture.identityPath,
+    manifestPath: fixture.manifestPath,
+    receiptPaths: fixture.receipts,
+    now: new Date("2026-08-18T00:00:00.000Z"),
+  });
+  assert.equal(aggregate.status, "pass");
+  assert.equal(aggregate.case_set_run_ids.length, 2);
 });
 
 test("candidate campaign aggregate verifies immutable case artifacts and cleanup", async (t) => {
