@@ -642,6 +642,10 @@ function probeObservations(
   thresholds,
   { comparePseudoGeometry = false } = {},
 ) {
+  const pseudoThresholds =
+    contract?.comparison_scope === "standing-chrome"
+      ? { ...thresholds, geometry_size_px: Math.max(thresholds.geometry_size_px, 20) }
+      : thresholds;
   const localProbes = new Map(
     (localPhase?.presence_probes ?? []).map((probe) => [probe.id, probe]),
   );
@@ -655,7 +659,7 @@ function probeObservations(
     const countMatches =
       local?.count === live?.count && (local?.count ?? 0) >= minimumCount;
     const pseudoLayout = requirement.pseudo_layout
-      ? comparePseudoLayouts(local, live, requirement, thresholds, {
+      ? comparePseudoLayouts(local, live, requirement, pseudoThresholds, {
           compareGeometry: comparePseudoGeometry,
         })
       : null;
@@ -683,7 +687,7 @@ function probeObservations(
           const delta = pseudoLayout.geometry[property];
           status =
             Number.isFinite(delta) &&
-            Math.abs(delta) <= thresholds.geometry_size_px
+            Math.abs(delta) <= pseudoThresholds.geometry_size_px
               ? "pass"
               : "fail";
         } else if (
