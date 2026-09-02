@@ -64,11 +64,16 @@ async function createMergeRepository(root) {
   await git(repository, "add", "README");
   await git(repository, "commit", "--quiet", "-m", "base");
   await git(repository, "switch", "--quiet", "-c", "candidate");
-  await fs.writeFile(path.join(repository, "README"), "candidate\n");
-  await git(repository, "commit", "--quiet", "-am", "candidate");
+  await fs.mkdir(path.join(repository, "install", "standing"), {recursive: true});
+  await fs.writeFile(path.join(repository, "install", "standing", "fixture.txt"), "candidate\n");
+  await git(repository, "add", "install/standing/fixture.txt");
+  await git(repository, "commit", "--quiet", "-m", "candidate");
   const candidateCommit = await git(repository, "rev-parse", "HEAD");
   await git(repository, "switch", "--quiet", "develop");
-  await git(repository, "commit", "--quiet", "--allow-empty", "-m", "develop");
+  await fs.mkdir(path.join(repository, "install", "standing"), {recursive: true});
+  await fs.writeFile(path.join(repository, "install", "standing", "develop.txt"), "develop\n");
+  await git(repository, "add", "install/standing/develop.txt");
+  await git(repository, "commit", "--quiet", "-m", "develop");
   const developCommit = await git(repository, "rev-parse", "HEAD");
   await git(repository, "merge", "--quiet", "--no-ff", "candidate", "-m", "merge candidate");
   return {
@@ -89,6 +94,7 @@ function promotionPrecondition({candidateCommit, tree}) {
     verified_at: "2026-08-15T00:00:00.000Z",
     admission: Object.fromEntries(["candidate_parity_receipt_sha256", "candidate_identity_sha256", "live_reference_sha256", "live_completion_policy_sha256", "source_runner_sha256", "source_observation_sha256", "source_execution_identity_sha256"].map((name, index) => [name, String(index + 1).repeat(64)])),
     candidate: {artifact_key: candidateArtifactKey, wikijump_commit: candidateCommit, wikijump_tree: tree, ftml_sha: ftmlCommit, compose_project: "wikijump-candidate", expires_at: "2026-08-16T00:00:00.000Z"},
+    final_frozen_receipt: {path: "/tmp/final-frozen-receipt.json", sha256: "9".repeat(64)},
     build: {
       seal_sha256: "a".repeat(64),
       evidence_manifest_sha256: "b".repeat(64),
@@ -321,7 +327,7 @@ test("final-zero rejects a candidate PR head used as the merge commit", async (t
   const fixture = await fixtures(t);
   fixture.matrix.merge_commit = fixture.repository.candidateCommit;
   await writeJson(fixture.paths.root, "standing-matrix.json", fixture.matrix);
-  await assert.rejects(verifyFinalZero(inputMap(fixture)), /candidate commit must differ from merge commit/u);
+  await assert.rejects(verifyFinalZero(inputMap(fixture)), /candidate commit must differ from merge commit|matrix merge commit does not match the canonical source/u);
 });
 
 test("final-zero rejects a wrong merge tree or merge parent", async (t) => {

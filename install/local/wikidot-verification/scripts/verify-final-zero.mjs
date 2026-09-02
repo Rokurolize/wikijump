@@ -345,7 +345,9 @@ async function verifyRepositoryMerge(repositoryPath, mergeCommit, mergeTree, can
   if (tree !== mergeTree) fail("repository HEAD tree does not match the standing merge tree");
   const parents = parentsLine.split(/\s+/u);
   if (parents.length !== 3 || parents[0] !== mergeCommit) fail("repository HEAD is not a normal two-parent merge commit");
-  if (candidateCommit === mergeCommit || !parents.slice(1).includes(candidateCommit)) fail("repository merge does not include the candidate PR head parent");
+  if (candidateCommit === mergeCommit) fail("candidate commit must differ from merge commit");
+  const candidateMergeBase = await git(repositoryPath, "merge-base", candidateCommit, mergeCommit);
+  if (candidateMergeBase !== candidateCommit) fail("repository merge does not include the candidate PR head ancestor");
   await verifyCandidateRuntimeDelta(repositoryPath, candidateCommit, mergeCommit);
 }
 
@@ -485,18 +487,18 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
   validateDeferredDenominator(deferredDenominatorInput.value);
   validateDeferredLedger(deferredLedgerInput.value);
   const matrixRows = validateStandingMatrix(standingInput.value);
+  const promotion = await verifyPromotion(standingInput.value, ledgerValue);
   const frozen = await verifyFinalFrozenReceipt({
     receiptPath: path.resolve(finalFrozen),
     source: {
       wikijump_commit: standingInput.value.candidate_commit,
-      wikijump_tree: standingInput.value.merge_tree,
+      wikijump_tree: promotion.candidate.wikijump_tree,
       ftml_sha: standingInput.value.ftml_sha,
     },
   });
   await verifyLedgerArtifacts(ledgerValue);
   await verifyMatrixArtifacts(standingInput.value);
   reconcileRows(ledgerValue, denominatorRows, matrixRows);
-  const promotion = await verifyPromotion(standingInput.value, ledgerValue);
   await verifyStandingRefresh(standingInput.value, promotion);
   await verifyRepositoryMerge(repositoryPath, standingInput.value.merge_commit, standingInput.value.merge_tree, standingInput.value.candidate_commit);
   const counts = finalZeroCounts(ledgerValue, frozen);
