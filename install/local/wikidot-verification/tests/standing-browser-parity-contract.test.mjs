@@ -106,6 +106,31 @@ test("external request-failure parity ignores browser-specific error text", () =
   assert.equal(result.classified_failures[0].classification, "parity_matched");
 });
 
+test("standing chrome scope delegates page-body geometry and DOM distance", () => {
+  const geometry = {
+    "#header": { count: 1, rect: { x: 0, y: 0, width: 1, height: 1 } },
+    "#header h1 a": { count: 1, rect: { x: 0, y: 0, width: 1, height: 1 } },
+  };
+  const result = compareCaptures(
+    capture({ geometry, dom_signatures: ["div"] }),
+    capture({
+      input_url: "https://scp-wiki.wikidot.com/scp-9506",
+      final_url: "https://scp-wiki.wikidot.com/scp-9506",
+      geometry,
+      dom_signatures: ["span", "span", "span", "span"],
+    }),
+    DEFAULT_THRESHOLDS,
+    [],
+    { comparison_scope: "standing-chrome", first_paint_geometry_selectors: [] },
+  );
+  assert.equal(result.status, "pass");
+  assert.deepEqual(result.geometry, [
+    { selector: "#header", status: "pass", local: geometry["#header"].rect, live: geometry["#header"].rect, delta: { x: 0, y: 0, width: 0, height: 0 } },
+    { selector: "#header h1 a", status: "pass", local: geometry["#header h1 a"].rect, live: geometry["#header h1 a"].rect, delta: { x: 0, y: 0, width: 0, height: 0 } },
+  ]);
+  assert.equal(result.dom_multiset_distance.ratio, 1);
+});
+
 test("immediate theme properties fail before a settled state can conceal a flash", () => {
   const expectations = canaryForUrl(
     "https://scp-wiki.wikidot.com/scp-9506",
