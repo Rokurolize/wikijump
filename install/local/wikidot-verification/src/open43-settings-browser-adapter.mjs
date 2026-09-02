@@ -150,18 +150,21 @@ function browserSemanticSnapshot() {
 const INITIAL_PROBE = `globalThis.__open43DocumentIdentity=globalThis.crypto?.randomUUID?.()??String(Date.now())+"-"+String(Math.random());globalThis.__open43SemanticSnapshot=${browserSemanticSnapshot.toString()};document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43InitialObservation=globalThis.__open43SemanticSnapshot()},{once:true});`;
 const CREATE_PROBE = `document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43CreateFirstPaint={title:document.querySelector("#page-title")?.textContent?.trim()??"",content:document.querySelector("#page-content")?.textContent?.trim()??""}},{once:true});`;
 
-async function activateClientNavigation(page, href = null) {
+async function installClientNavigationLink(page, href) {
   await page.evaluate((targetHref) => {
-    let link = document.querySelector("#open43-client-navigation");
-    if (!(link instanceof HTMLAnchorElement)) {
-      if (targetHref === null || !document.body) throw new Error("settings client navigation link is missing");
-      link = document.createElement("a");
-      link.id = "open43-client-navigation";
-      link.href = targetHref;
-      document.body.append(link);
-    }
-    link.click();
+    const link = document.createElement("a");
+    link.id = "open43-client-navigation";
+    link.href = targetHref;
+    document.body.append(link);
   }, href);
+}
+
+async function activateClientNavigation(page) {
+  await page.evaluate(() => {
+    const link = document.querySelector("#open43-client-navigation");
+    if (!(link instanceof HTMLAnchorElement)) throw new Error("settings client navigation link is missing");
+    link.click();
+  });
 }
 
 export class Open43SettingsBrowserAdapter {
@@ -241,17 +244,12 @@ export class Open43SettingsBrowserAdapter {
       const sourceDocumentIdentity = await page.evaluate(() => globalThis.__open43DocumentIdentity);
       const clientUrl = new URL(navigationFromUrl === null ? page.url() : url);
       if (navigationFromUrl === null) clientUrl.searchParams.set("open43-client-navigation", label.toLowerCase());
-      await page.evaluate((href) => {
-        const link = document.createElement("a");
-        link.id = "open43-client-navigation";
-        link.href = href;
-        document.body.append(link);
-      }, clientUrl.href);
       let clientImmediate = null;
       let clientTransitionCapture = null;
       let clientResourceCompletion = null;
       if (navigationFromUrl === null && beforeClientNavigation === null) {
         await this.#browserContexts.setActiveFixture(`${label}_INITIAL`);
+        await installClientNavigationLink(page, clientUrl.href);
         await activateClientNavigation(page);
         await page.waitForURL(clientUrl.href, { timeout: CAPTURE_TIMEOUT_MS });
         clientImmediate = await page.evaluate(() => ({
@@ -267,7 +265,7 @@ export class Open43SettingsBrowserAdapter {
           label: "settings-client-transition",
           index, contract, viewport, timeoutMs: CAPTURE_TIMEOUT_MS, settleMs: 0,
           navigate: async () => {
-            await activateClientNavigation(page, clientUrl.href);
+            await activateClientNavigation(page);
             await page.waitForURL(clientUrl.href, { timeout: CAPTURE_TIMEOUT_MS });
             clientImmediate = await page.evaluate(() => ({
               document_identity: globalThis.__open43DocumentIdentity,
@@ -277,9 +275,10 @@ export class Open43SettingsBrowserAdapter {
           },
           onPhase: async (phase) => {
             await this.#browserContexts.setActiveFixture(phase === "settled" ? `${label}_SETTLED` : `${label}_INITIAL`);
+            if (phase === "domcontentloaded_immediate_observation") await installClientNavigationLink(page, clientUrl.href);
           },
         });
-        if (clientTransitionCapture.capture_error || clientTransitionCapture.navigation_status !== 200) throw new Error(`${label} client transition capture failed: ${JSON.stringify(clientTransitionCapture.capture_error ?? { navigation_status: clientTransitionCapture.navigation_status })}`);
+        if (clientTransitionCapture.capture_error || clientTransitionCapture.navigation_status !== 200) throw new Error(`${label} client transition capture failed`);
         clientResourceCompletion = clientTransitionCapture.document.resource_completion;
       }
       if (typeof sourceDocumentIdentity !== "string" || sourceDocumentIdentity !== clientImmediate.document_identity) {
