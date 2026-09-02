@@ -100,6 +100,12 @@ test("compatibility candidate input producer binds the retained Wikidot favicon 
   assert.match(source, /update page set from_wikidot=true where page_id=\$\{prior\.page_id\}/u);
 });
 
+test("compatibility candidate input producer seeds the SearchAll saved-page fixture", () => {
+  const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
+  assert.match(source, /slug: "search:all"[\s\S]*?wikitext: "\[\[module SearchAll\]\]"/u);
+  assert.match(source, /page\(Q807_SEARCH_ALL_SOURCE\.slug, Q807_SEARCH_ALL_SOURCE\.title, Q807_SEARCH_ALL_SOURCE\.wikitext, \{ siteId: standardSiteId, imported: true \}\)/u);
+});
+
 test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {
   assert.deepEqual(Q778_WIKIDOT_AUTHOR, {
     user_id: 20_000_013,
