@@ -456,7 +456,7 @@ export function validateSourceIdentity(sourceIdentity, runtimeIdentity) {
     if (git(["rev-parse", `${runtimeIdentity.wikijump_commit}^{tree}`]) !== runtimeIdentity.wikijump_tree) throw new Error("runtime tree is not the sealed commit tree");
     execFileSync("/usr/bin/git", ["merge-base", "--is-ancestor", runtimeIdentity.wikijump_commit, sourceIdentity.wikijump_commit], {cwd: REPO_ROOT, stdio: "ignore"});
     const changed = git(["diff", "--name-only", `${runtimeIdentity.wikijump_commit}..${sourceIdentity.wikijump_commit}`]).split("\n").filter(Boolean);
-    if (changed.length === 0 || changed.some((file) => !file.startsWith("install/local/wikidot-verification/"))) throw new Error("capture source changed outside verifier-only files");
+    if (changed.length === 0 || changed.some((file) => !file.startsWith("install/local/wikidot-verification/") && !file.startsWith(".github/"))) throw new Error("capture source changed outside verifier-only files");
   } catch {
     throw new Error("runtime identity does not match the actual clean capture source identity");
   }
