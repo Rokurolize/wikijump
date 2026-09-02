@@ -145,7 +145,7 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
       }
       if (manifest.schema !== RESPONSE_CACHE_STORE_SCHEMA || manifest.identity !== persistentIdentity || !Array.isArray(manifest.entries)) throw new Error(`browser response cache identity or schema mismatch: ${persistentPath}`);
       for (const entry of manifest.entries) {
-        if (typeof entry?.key !== "string" || !/^https?:\/\//u.test(entry.key) || entry.status !== 200 || typeof entry.headers !== "object" || entry.headers === null || typeof entry.body_base64 !== "string") throw new Error(`browser response cache entry is malformed: ${persistentPath}`);
+        if (typeof entry?.key !== "string" || !/^https?:\/\//u.test(entry.key) || !isCacheableResponseStatus(entry.status) || typeof entry.headers !== "object" || entry.headers === null || typeof entry.body_base64 !== "string") throw new Error(`browser response cache entry is malformed: ${persistentPath}`);
         const body = Buffer.from(entry.body_base64, "base64");
         if (body.toString("base64") !== entry.body_base64 || body.length > maxEntryBytes || entries.has(entry.key)) throw new Error(`browser response cache entry exceeds limits or is duplicated: ${persistentPath}`);
         entries.set(entry.key, {status: entry.status, headers: entry.headers, body});
@@ -512,8 +512,12 @@ function requestCanUseResponseCache(request, responseCache) {
   return headers.range === undefined && headers.authorization === undefined;
 }
 
+function isCacheableResponseStatus(status) {
+  return status === 200 || (status >= 400 && status < 500);
+}
+
 function responseCanBeCached(response, cache) {
-  if (response.status() !== 200) return false;
+  if (!isCacheableResponseStatus(response.status())) return false;
   const headers = response.headers();
   const cacheControl = headers["cache-control"]?.toLowerCase() ?? "";
   const cacheDirectives = new Map(
