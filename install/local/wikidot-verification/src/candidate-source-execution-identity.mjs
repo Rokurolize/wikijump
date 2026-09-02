@@ -15,7 +15,11 @@ import {
 const execFileAsync = promisify(execFile);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const GIT_OBJECT = /^[0-9a-f]{40}$/u;
-const VERIFICATION_ONLY_PREFIXES = [".github/", "install/local/wikidot-verification/"];
+const VERIFICATION_ONLY_PREFIXES = [
+  ".github/",
+  "docs/development/candidate-case-set-manifest.json",
+  "install/local/wikidot-verification/",
+];
 
 export const CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA =
   "wikijump.candidate_source_execution_identity.v1";
