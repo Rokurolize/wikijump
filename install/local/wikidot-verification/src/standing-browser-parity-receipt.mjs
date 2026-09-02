@@ -521,7 +521,7 @@ function validateComparison(value, contract = null) {
       );
       requireCompletePassRows(
         comparison.domcontentloaded_immediate_geometry,
-        contract.geometry_selectors,
+        contract.first_paint_geometry_selectors ?? [],
         "selector",
         "DOMContentLoaded geometry selector",
       );
