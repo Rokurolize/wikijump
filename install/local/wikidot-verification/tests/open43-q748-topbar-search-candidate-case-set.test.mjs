@@ -80,6 +80,31 @@ function candidateIdentity() {
   };
 }
 
+function fakeCandidateSession() {
+  const pages = new Map();
+  return {
+    editorUserId: 10,
+    pageOrigin: PAGE_ORIGIN,
+    privateInputIdentity: { editor_user_id: 10 },
+    requiredServiceBindings: [],
+    async rpc(method, params = {}) {
+      if (method === "site_get") return { site_id: 7 };
+      if (method === "page_get") return pages.get(params.page) ?? null;
+      if (method === "page_create") {
+        const page = { page_id: 1, revision_id: 2, slug: params.slug, title: params.title, wikitext: params.wikitext };
+        pages.set(params.slug, page);
+        return page;
+      }
+      if (method === "page_delete") {
+        for (const [slug, page] of pages) if (page.page_id === params.page) pages.delete(slug);
+        return { page_id: params.page };
+      }
+      throw new Error(`unexpected RPC ${method}`);
+    },
+    async pageRequest() { return { status: 404, body_base64: "" }; },
+  };
+}
+
 const FORM_MODEL = {
   id: "search-top-box-form",
   action: "dummy",
@@ -123,21 +148,21 @@ function fakeBrowserOwner() {
     async evaluate() {
       return { form: { ...FORM_MODEL }, result: { content, url: currentUrl } };
     },
-    locator() {
+    locator(selector) {
       return {
         async focus() {},
-        async fill(value) {
-          filledQuery = value;
-        },
-        async click() {
-          currentUrl = new URL(`/search:site/q/${encodeURIComponent(filledQuery)}`, PAGE_ORIGIN).href;
-          content = SEARCH_ERROR;
-          fire("request");
-          fire("framenavigated");
-          if (pendingNavigation && pendingNavigation.expected === currentUrl) {
-            const resolve = pendingNavigation.resolve;
-            pendingNavigation = null;
-            resolve();
+        async evaluate(_callback, value) {
+          if (selector === "#search-top-box-input") filledQuery = value;
+          else {
+            currentUrl = new URL(`/search:site/q/${encodeURIComponent(filledQuery)}`, PAGE_ORIGIN).href;
+            content = SEARCH_ERROR;
+            fire("request");
+            fire("framenavigated");
+            if (pendingNavigation && pendingNavigation.expected === currentUrl) {
+              const resolve = pendingNavigation.resolve;
+              pendingNavigation = null;
+              resolve();
+            }
           }
         },
       };
@@ -148,6 +173,7 @@ function fakeBrowserOwner() {
         pendingNavigation = { expected, resolve };
       });
     },
+    async waitForTimeout() {},
     async close() {
       events.push("page-close");
     },
@@ -205,7 +231,7 @@ test("Q748 candidate set executes both submission rows over fake browser boundar
     "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT",
     "Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION",
   ]);
-  const caseSet = createOpen43Q748TopBarSearchCandidateCaseSet();
+  const caseSet = createOpen43Q748TopBarSearchCandidateCaseSet({ sessionFactory: () => fakeCandidateSession() });
   const browser = fakeBrowserOwner();
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "open43-q748-case-"));
   const outputDir = path.join(tempRoot, "evidence");
@@ -245,7 +271,7 @@ test("Q748 candidate set executes both submission rows over fake browser boundar
 });
 
 test("Q748 prepare is side-effect-free and reaches only the exact non-standing host", async () => {
-  const caseSet = createOpen43Q748TopBarSearchCandidateCaseSet();
+  const caseSet = createOpen43Q748TopBarSearchCandidateCaseSet({ sessionFactory: () => fakeCandidateSession() });
   const prepared = await caseSet.prepareRun({
     runId: "candidate-case-0123456789ab",
     candidateIdentity: candidateIdentity(),
@@ -282,7 +308,7 @@ test("Q748 prepare is side-effect-free and reaches only the exact non-standing h
 });
 
 test("Q748 verification rejects trimmed whitespace, dummy navigation, and missing boundaries", async () => {
-  const prepared = await createOpen43Q748TopBarSearchCandidateCaseSet().prepareRun({
+  const prepared = await createOpen43Q748TopBarSearchCandidateCaseSet({ sessionFactory: () => fakeCandidateSession() }).prepareRun({
     runId: "candidate-case-0123456789ab",
     candidateIdentity: candidateIdentity(),
     candidateIdentitySha256: REAL_SHA256.identity,

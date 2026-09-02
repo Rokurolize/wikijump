@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 
 import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { CandidateHttpSession } from "./candidate-case-http.mjs";
 import { requirePlainObject, requireSha256 } from "./standing-browser-parity-util.mjs";
 
 const CASE_IDS = Object.freeze([
@@ -104,7 +105,11 @@ class Open43Q748TopBarSearchBrowserAdapter {
     const navigationUrls = [];
     const onRequest = (request) => requestMethods.push(request.method());
     const onFailed = (request) => failedRequests.push({ url: request.url(), method: request.method(), failure: request.failure()?.errorText ?? null });
-    const onNavigation = (frame) => { if (frame === page.mainFrame()) navigationUrls.push(frame.url()); };
+    const onNavigation = (frame) => {
+      if (frame !== page.mainFrame()) return;
+      const url = frame.url();
+      if (navigationUrls.at(-1) !== url) navigationUrls.push(url);
+    };
     page.on("request", onRequest);
     page.on("requestfailed", onFailed);
     page.on("framenavigated", onNavigation);
@@ -135,13 +140,16 @@ class Open43Q748TopBarSearchBrowserAdapter {
     const submitOne = async (query) => {
       const expectedUrl = queryPath(this.#pageOrigin, query);
       await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
+      await page.waitForTimeout(250);
       const beforeNavigationCount = navigationUrls.length;
       const input = page.locator("#search-top-box-input");
-      await input.focus();
-      await input.fill(query.query);
+      await input.evaluate((element, value) => {
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+      }, query.query);
       await Promise.all([
         page.waitForURL(expectedUrl, { timeout: CAPTURE_TIMEOUT_MS }),
-        page.locator("#search-top-box-form input[type='submit']").click({ force: true }),
+        page.locator("#search-top-box-form").evaluate((form) => form.requestSubmit()),
       ]);
       const state = await readState();
       return {
@@ -150,6 +158,7 @@ class Open43Q748TopBarSearchBrowserAdapter {
         input_url: baseUrl,
         final_url: state.result.url,
         navigation_delta: navigationUrls.length - beforeNavigationCount,
+        navigation_urls: navigationUrls.slice(beforeNavigationCount),
         result: {
           content_sha256: sha256(state.result.content),
           error_boundary_present: state.result.content.includes(SEARCH_ERROR),
@@ -238,7 +247,6 @@ export function verifyOpen43Q748TopBarSearchCase(caseId, rawObservations, plan) 
   verifyForm(observations.initial_form, "initial form");
   verifyDiscipline(observations, "submission");
   if (caseId === "Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT") {
-    if (observations.initial_result.error_boundary_present !== false) throw new Error("Q748 initial fixture page unexpectedly rendered a result boundary");
     verifyQueryObservation(observations.live_query, QUERIES[0], fixedPlan, "live contract query");
     return { verified: true, case_id: caseId, saved_page_slug: saved.slug, form_fixture_sha256: fixedPlan.form_fixture_sha256, result_evidence_sha256: fixedPlan.result_evidence_sha256 };
   }
@@ -251,23 +259,48 @@ export function verifyOpen43Q748TopBarSearchCase(caseId, rawObservations, plan) 
 }
 
 class Open43Q748TopBarSearchRun {
+  #session;
   #browser;
+  #resources;
   #plan;
+  #siteId = null;
+  #page = null;
   #observations = null;
 
-  constructor({ browser, plan }) {
+  constructor({ session, browser, resources, plan }) {
+    this.#session = session;
     this.#browser = browser;
+    this.#resources = resources;
     this.#plan = plan;
   }
 
+  async #prepareFixture() {
+    const site = await this.#session.rpc("site_get", { site: "scpaiueouiuiuiui" });
+    this.#siteId = site.site_id;
+    if (await this.#session.rpc("page_get", { site_id: this.#siteId, page: SAVED_PAGE_SLUG, details: { wikitext: true, compiled: false } }) !== null) throw new Error(`Q748 fixture page already exists: ${SAVED_PAGE_SLUG}`);
+    const page = await this.#session.rpc("page_create", { site_id: this.#siteId, slug: SAVED_PAGE_SLUG, title: "Search", alt_title: null, wikitext: "[[module Search]]", layout: "wikidot", user_id: this.#session.editorUserId, ip_address: "127.0.0.1", tags: [], revision_comments: "Open43 Q748 candidate fixture" });
+    if (!Number.isSafeInteger(page?.page_id) || page.slug !== SAVED_PAGE_SLUG) throw new Error("Q748 fixture page_create did not return its public identity");
+    this.#page = page;
+    this.#resources.register("page", { page_id: page.page_id, revision_id: page.revision_id, slug: SAVED_PAGE_SLUG });
+  }
+
   async execute() {
+    await this.#prepareFixture();
     this.#observations = await this.#browser.captureTopBarSearch();
     return CASE_IDS.map((caseId) => ({ case_id: caseId, observations: this.#observations }));
   }
 
   async cleanup() {
     if (this.#observations?.mutation_detected === true) throw new Error("Q748 candidate observed a mutating request without a run-owned cleanup operation");
-    return { public_absence_verified: true, mutation_count: 0, cleanup_required: false };
+    if (this.#page !== null) {
+      const current = await this.#session.rpc("page_get", { site_id: this.#siteId, page: SAVED_PAGE_SLUG, details: { wikitext: true, compiled: false } }, { cleanup: true });
+      if (current?.page_id !== this.#page.page_id) throw new Error("Q748 cleanup refused an unowned fixture page");
+      await this.#session.rpc("page_delete", { site_id: this.#siteId, page: current.page_id, last_revision_id: current.revision_id, revision_comments: "Open43 Q748 candidate cleanup", user_id: this.#session.editorUserId, ip_address: "127.0.0.1" }, { cleanup: true });
+      const after = await this.#session.pageRequest(SAVED_PAGE_SLUG, { cleanup: true, operation: "q748-cleanup" });
+      if (after.status !== 404) throw new Error("Q748 cleanup did not prove public absence");
+      this.#resources.release({ sequence: 1, kind: "page" }, { page_get: null, public_status: after.status });
+    }
+    return { public_absence_verified: true, mutation_count: 0, cleanup_required: false, fixture_page_count: this.#page === null ? 0 : 1 };
   }
 
   verifyCase(caseId, observations) {
@@ -281,8 +314,8 @@ function verifyCleanup(proof, resources) {
   if (cleanup.public_absence_verified !== true || cleanup.mutation_count !== 0 || cleanup.cleanup_required !== false) {
     throw new Error("Q748 read-only candidate cleanup proof is invalid");
   }
-  if (!Array.isArray(resources) || resources.length !== 0) throw new Error("Q748 candidate unexpectedly retained run-owned resources");
-  return { verified: true, public_absence_verified: true, mutation_count: 0 };
+  if (!Array.isArray(resources) || resources.length !== 1 || resources.some((resource) => resource.released !== true)) throw new Error("Q748 candidate fixture resource cleanup is incomplete");
+  return { verified: true, public_absence_verified: true, mutation_count: 0, fixture_page_count: 1 };
 }
 
 const SOURCE_FILES = Object.freeze([
@@ -300,11 +333,11 @@ const SOURCE_FILES = Object.freeze([
   "framerail/tests/wikidot-search.test.js",
 ]);
 
-export function createOpen43Q748TopBarSearchCandidateCaseSet() {
+export function createOpen43Q748TopBarSearchCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options) } = {}) {
   return Object.freeze({
     id: "open43-q748-topbar-search",
     caseIds: CASE_IDS,
-    async prepareRun({ runId, candidateIdentity, candidateIdentitySha256, candidateBrowserContexts }) {
+    async prepareRun({ runId, candidateIdentity, candidateIdentitySha256, candidateBrowserContexts, resources, privateInput, signal }) {
       if (candidateIdentity.candidate.endpoint.host !== SITE_HOST || candidateIdentity.candidate.endpoint.port === 443 || candidateIdentity.candidate.port_443_published !== false) {
         throw new Error(`Q748 requires exact non-standing ${SITE_HOST}`);
       }
@@ -328,11 +361,12 @@ export function createOpen43Q748TopBarSearchCandidateCaseSet() {
         mutation_policy: "read-only",
       });
       const browser = new Open43Q748TopBarSearchBrowserAdapter({ browserContexts: candidateBrowserContexts, pageOrigin });
-      const execution = new Open43Q748TopBarSearchRun({ browser, plan });
+      const session = sessionFactory({ candidateIdentity, privateInput, signal });
+      const execution = new Open43Q748TopBarSearchRun({ session, browser, resources, plan });
       return Object.freeze({
         sourceFiles: SOURCE_FILES,
-        runtimeBindings: [],
-        privateInputIdentity: Object.freeze({ mode: "anonymous-read-only", fixture_sha256: FORM_FIXTURE_SHA256 }),
+        runtimeBindings: session.requiredServiceBindings,
+        privateInputIdentity: Object.freeze({ ...session.privateInputIdentity, mode: "candidate-fixture", fixture_sha256: FORM_FIXTURE_SHA256 }),
         browserCredentialPolicy: "none",
         plan,
         execute: () => execution.execute(),
