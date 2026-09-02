@@ -272,12 +272,12 @@ test("a source response cache serves repeated cacheable assets without another g
   });
 });
 
-test("candidate cache misses abort without an external request or gate grant", async () => {
+test("candidate cache misses for unsupported scripts abort without an external request or gate grant", async () => {
   const gate = createBrowserRequestGate({intervalMs: 4_000});
   const responseCache = createBrowserResponseCache();
   const context = createContext();
   await installBrowserRequestGate(context, {gate, responseCache, cacheOnly: true});
-  const miss = createRoute("https://rsms.me/inter/inter.css", {resourceType: "stylesheet"});
+  const miss = createRoute("https://rsms.me/inter/inter.js", {resourceType: "script"});
 
   await context.routes[0].handler(miss);
 
