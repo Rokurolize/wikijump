@@ -15,7 +15,7 @@ import {
 const execFileAsync = promisify(execFile);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const GIT_OBJECT = /^[0-9a-f]{40}$/u;
-const VERIFICATION_ONLY_PREFIX = "install/local/wikidot-verification/";
+const VERIFICATION_ONLY_PREFIXES = [".github/", "install/local/wikidot-verification/"];
 
 export const CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA =
   "wikijump.candidate_source_execution_identity.v1";
@@ -90,7 +90,7 @@ async function assertCandidateRuntimeUnchanged(candidateCommit, head) {
   if (candidateCommit === head) return;
   await git(["merge-base", "--is-ancestor", candidateCommit, head]);
   const changed = (await git(["diff", "--name-only", `${candidateCommit}..${head}`])).split("\n").filter(Boolean);
-  if (changed.length === 0 || changed.some((file) => !file.startsWith(VERIFICATION_ONLY_PREFIX))) {
+  if (changed.length === 0 || changed.some((file) => !VERIFICATION_ONLY_PREFIXES.some((prefix) => file.startsWith(prefix)))) {
     throw new Error("candidate source execution identity does not bind the sealed candidate runtime");
   }
 }
