@@ -98,7 +98,7 @@ function fakeSections(categories) {
   return Object.fromEntries([
     ["default", false],
     ["true_quoted", true],
-    ["false_quoted", false],
+    ["false_quoted", true],
     ["upper_attr", false],
     ["bare", false],
   ].map(([name, includeHidden]) => {
