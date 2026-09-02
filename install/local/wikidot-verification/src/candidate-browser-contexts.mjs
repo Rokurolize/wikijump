@@ -70,8 +70,7 @@ export function createCandidateBrowserContexts({
       if (credentialPolicy === "none" && storageState !== null) {
         throw new Error("candidate browser credential policy forbids storage state");
       }
-      if (credentialPolicy !== "none") {
-        if (storageState === null) throw new Error("credentialed candidate browser context requires storage state");
+      if (credentialPolicy !== "none" && storageState !== null) {
         if (credentialedContextCount >= credentialPolicy.storage_state_count) throw new Error("candidate browser credential context count exceeds policy");
         credentialedContextCount += 1;
       }
