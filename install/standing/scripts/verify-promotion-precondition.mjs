@@ -209,6 +209,7 @@ export function validateStandingPromotionPrecondition(value) {
       "verified_at",
       "admission",
       "candidate",
+      "final_frozen_receipt",
       "build",
       "staging_home",
     ],
@@ -256,6 +257,18 @@ export function validateStandingPromotionPrecondition(value) {
   requireGitObject(value.candidate.ftml_sha, "promotion precondition candidate FTML SHA");
   requireNonEmptyString(value.candidate.compose_project, "promotion precondition candidate compose project");
   requireNonEmptyString(value.candidate.expires_at, "promotion precondition candidate expiry");
+  exactObjectKeys(
+    value.final_frozen_receipt,
+    ["path", "sha256"],
+    "promotion precondition.final_frozen_receipt",
+  );
+  if (!path.isAbsolute(value.final_frozen_receipt.path)) {
+    throw new Error("promotion precondition final frozen receipt path must be absolute");
+  }
+  requireSha256(
+    value.final_frozen_receipt.sha256,
+    "promotion precondition final frozen receipt SHA-256",
+  );
   exactObjectKeys(
     value.build,
     [
