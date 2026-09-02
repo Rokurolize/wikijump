@@ -10,6 +10,7 @@ VERIFICATION_ONLY_PREFIXES = (
     ".github/",
     "docs/development/candidate-case-set-manifest.json",
     "install/local/wikidot-verification/",
+    "install/standing/",
 )
 
 
