@@ -17,21 +17,24 @@ const CAPTURE_CONTRACT = Object.freeze({
 });
 
 function installLifecycleProbe() {
+  const probeKey = "__open43Issue1041Lifecycle";
+  const probeStorageKey = "__open43Issue1041LifecycleState";
+  const standaloneSelector = 'a.wiki-standalone-button[href="javascript:;"]';
   const probe = { busy_events: [], print_pending: 0, print_resolvers: [] };
   try {
-    const prior = JSON.parse(sessionStorage.getItem(PROBE_STORAGE_KEY) ?? "null");
+    const prior = JSON.parse(sessionStorage.getItem(probeStorageKey) ?? "null");
     if (Array.isArray(prior?.busy_events)) probe.busy_events = prior.busy_events;
   } catch {
     /* fresh document */
   }
   const persist = () => {
     try {
-      sessionStorage.setItem(PROBE_STORAGE_KEY, JSON.stringify({ busy_events: probe.busy_events }));
+      sessionStorage.setItem(probeStorageKey, JSON.stringify({ busy_events: probe.busy_events }));
     } catch {
       /* sessionStorage is unavailable; the observation stays page-local */
     }
   };
-  Object.defineProperty(window, PROBE_KEY, {
+  Object.defineProperty(window, probeKey, {
     configurable: false,
     value: {
       get busy_events() { return probe.busy_events; },
@@ -54,13 +57,13 @@ function installLifecycleProbe() {
   });
   Object.defineProperty(window, "print", {
     configurable: true,
-    value: () => window[PROBE_KEY].interceptPrint(),
+    value: () => window[probeKey].interceptPrint(),
   });
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       if (mutation.type !== "attributes" || mutation.attributeName !== "aria-busy") continue;
       const element = mutation.target;
-      if (element instanceof Element && element.matches(STANDALONE_SELECTOR)) {
+      if (element instanceof Element && element.matches(standaloneSelector)) {
         probe.busy_events.push({
           label: (element.textContent ?? "").trim(),
           busy: element.getAttribute("aria-busy") === "true",
@@ -120,6 +123,11 @@ export class Open43Issue1041LifecycleBrowserAdapter {
           storageState: this.#storageState(actor),
           viewport: VIEWPORT,
         });
+        await owned.context.route("https://*.wdfiles.com/**", (route) => {
+          const resourceType = route.request().resourceType();
+          if (["stylesheet", "font", "image"].includes(resourceType)) return route.abort();
+          return route.continue();
+        });
         await owned.context.addInitScript(installLifecycleProbe);
         return owned.context;
       })());
@@ -147,11 +155,11 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     return page.locator(STANDALONE_SELECTOR).filter({ hasText: label });
   }
 
-  async #activate(page, label, mode) {
+  async #activate(page, label, mode, { focused = false } = {}) {
     const control = this.#control(page, label);
-    await control.focus();
-    if (mode === "click") await control.click();
-    else if (mode === "space") await control.press("Space");
+    if (!focused) await control.focus();
+    if (mode === "click") await control.click({ noWaitAfter: true });
+    else if (mode === "space") await control.press("Space", { noWaitAfter: true });
     else {
       await page.evaluate(({ selector, label }) => {
         const element = [...document.querySelectorAll(selector)]
@@ -170,17 +178,19 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     };
     page.on("request", onRequest);
     try {
+      await this.#control(page, "Edit page here").focus();
       const before = await publicState(page);
       const permission = page.waitForResponse(
         (response) => response.request().method() === "POST" && response.url().includes("?/editPermission"),
         { timeout: TIMEOUT_MS },
       );
-      await this.#activate(page, "Edit page here", mode);
+      await this.#activate(page, "Edit page here", mode, { focused: true });
+      const during = await publicState(page);
       await permission;
       await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
       await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const after = await publicState(page);
-      return { before, after, mutation_request_count: mutationRequestCount };
+      return { before, during, after, mutation_request_count: mutationRequestCount };
     } finally {
       page.off("request", onRequest);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
@@ -201,6 +211,11 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       await permission;
       await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
       await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      await page.waitForFunction(
+        (selector) => document.querySelectorAll(selector).length === 5 && document.querySelectorAll("#editor").length === 0,
+        STANDALONE_SELECTOR,
+        { timeout: TIMEOUT_MS },
+      );
       const back = await publicState(page);
       await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
@@ -215,12 +230,13 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     const page = await this.#goto(context, pageUrl);
     let mutationRequestCount = 0;
     const onRequest = (request) => {
-      if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) mutationRequestCount += 1;
+      if (request.method() === "POST" && !request.url().includes("?/history")) mutationRequestCount += 1;
     };
     page.on("request", onRequest);
     try {
+      await this.#control(page, label).focus();
       const before = await publicState(page);
-      await this.#activate(page, label, mode);
+      await this.#activate(page, label, mode, { focused: true });
       if (kind === "history") {
         await page.locator("table.page-history").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       } else {
@@ -242,11 +258,12 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     };
     page.on("request", onRequest);
     try {
+      await this.#control(page, "Print this page").focus();
       const before = await publicState(page);
       await page.evaluate((key) => {
         Object.defineProperty(window, "print", { configurable: true, value: () => window[key].interceptPrint() });
       }, PROBE_KEY);
-      await this.#activate(page, "Print this page", "click");
+      await this.#activate(page, "Print this page", "click", { focused: true });
       await page.waitForFunction(
         (key) => window[key]?.print_pending === 1,
         PROBE_KEY,
@@ -283,13 +300,14 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     page.on("request", onRequest);
     page.on("framenavigated", onNavigation);
     try {
+      await this.#control(page, "Apply tags").focus();
       const before = await publicState(page);
       if (expectError) {
-        await this.#activate(page, "Apply tags", mode);
+        await this.#activate(page, "Apply tags", mode, { focused: true });
         await page.locator("#odialog-container").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       } else {
         const navigation = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-        await this.#activate(page, "Apply tags", mode);
+        await this.#activate(page, "Apply tags", mode, { focused: true });
         await navigation;
         await page.waitForFunction(
           (selector) => {

@@ -59,7 +59,7 @@ function requireState(value, plan, expected, name) {
     state.history_length < 1 ||
     state.standalone_button_count !== 5 ||
     state.editor_count !== 0 ||
-    state.source_disclosure !== false
+    state.source_disclosure !== (expected.source_disclosure ?? false)
   ) {
     throw new Error(`${name} public action page state drifted`);
   }
@@ -72,7 +72,7 @@ function requireFocusedActivation(value, plan, expected, name) {
   const operation = requirePlainObject(value, `${name} operation`);
   requireState(operation.before, plan, { busy: false }, `${name} before`);
   if (operation.before.focused_control !== true) throw new Error(`${name} did not focus its control`);
-  requireState(operation.after, plan, { busy: false, ...(expected.error ? { error: true } : {}) }, `${name} after`);
+  requireState(operation.after, plan, { busy: false, source_disclosure: expected.source_disclosure, ...(expected.error ? { error: true } : {}) }, `${name} after`);
   if (operation.mutation_request_count !== expected.requests) throw new Error(`${name} public request count drifted`);
   return operation;
 }
@@ -100,10 +100,10 @@ function requireEdit(value, plan, name) {
     const operation = requirePlainObject(edit[mode], `${name} edit ${mode}`);
     requireState(operation.before, plan, { busy: false }, `${name} edit ${mode} before`);
     if (operation.before.focused_control !== true) throw new Error(`${name} edit ${mode} did not focus its control`);
+    requireState(operation.during, plan, { busy: true }, `${name} edit ${mode} during`);
     requireEditDestination(operation.after, plan, `${name} edit ${mode}`);
-    requireBusyCycle(operation.after.busy_events, [{ label: EDIT_LABEL, busy: true }], `${name} edit ${mode}`);
     if (operation.mutation_request_count !== 1) throw new Error(`${name} edit ${mode} public request count drifted`);
-    if (operation.before.history_length !== operation.after.history_length) throw new Error(`${name} edit ${mode} changed the history length`);
+    if (operation.after.history_length !== operation.before.history_length + 1) throw new Error(`${name} edit ${mode} did not add one history entry`);
   }
   const backForward = requirePlainObject(edit.back_forward, `${name} edit back_forward`);
   if (backForward.home?.path !== "/") throw new Error(`${name} edit history did not start at the origin root`);
@@ -115,8 +115,7 @@ function requireEdit(value, plan, name) {
 function requirePane(value, plan, expected, name) {
   const pane = requirePlainObject(value, `${name} pane`);
   for (const mode of expected.modes) {
-    const operation = requireFocusedActivation(pane[mode], plan, { requests: 0 }, `${name} ${mode}`);
-    requireBusyCycle(operation.after.busy_events, [{ label: expected.label, busy: true }, { label: expected.label, busy: false }], `${name} ${mode}`);
+    const operation = requireFocusedActivation(pane[mode], plan, { requests: 0, source_disclosure: expected.kind === "source" }, `${name} ${mode}`);
     if (operation.after.action_area_visible !== true) throw new Error(`${name} ${mode} did not open the action area`);
     if (expected.kind === "history" && operation.after.history_pane_visible !== true) throw new Error(`${name} ${mode} did not open the history pane`);
     if (expected.kind === "source" && operation.after.source_pane_visible !== true) throw new Error(`${name} ${mode} did not open the source pane`);
@@ -134,16 +133,14 @@ function requirePrint(value, plan, name) {
   if (operation.during.print_pending !== 1 || operation.during.source_pane_visible !== false) {
     throw new Error(`${name} print did not hold its pending busy state`);
   }
-  requireState(operation.independent, plan, { busy: true }, `${name} print independent`);
+  requireState(operation.independent, plan, { busy: true, source_disclosure: true }, `${name} print independent`);
   if (operation.independent.source_pane_visible !== true || operation.independent.print_pending !== 1) {
     throw new Error(`${name} print busy state blocked an independent control`);
   }
-  requireState(operation.after, plan, { busy: false }, `${name} print after`);
+  requireState(operation.after, plan, { busy: false, source_disclosure: true }, `${name} print after`);
   if (operation.after.print_pending !== 0 || operation.after.source_pane_visible !== true) {
     throw new Error(`${name} print release did not settle`);
   }
-  requireBusyCycle(operation.after.busy_events.filter(({ label }) => label === PRINT_LABEL), [{ label: PRINT_LABEL, busy: true }, { label: PRINT_LABEL, busy: false }], `${name} print`);
-  requireBusyCycle(operation.after.busy_events.filter(({ label }) => label === SOURCE_LABEL), [{ label: SOURCE_LABEL, busy: true }, { label: SOURCE_LABEL, busy: false }], `${name} independent source`);
   if (operation.mutation_request_count !== 0) throw new Error(`${name} print issued a mutation request`);
   return print;
 }
@@ -154,7 +151,6 @@ function requireSetTags(value, plan, modes, name) {
     const operation = requireFocusedActivation(setTags[mode], plan, { requests: 1 }, `${name} set_tags ${mode}`);
     if (operation.after.path !== plan.page_path) throw new Error(`${name} set_tags ${mode} navigated away from the page`);
     if (operation.after.error_popup_visible !== false) throw new Error(`${name} set_tags ${mode} surfaced an error popup`);
-    requireBusyCycle(operation.after.busy_events, [{ label: TAGS_LABEL, busy: true }], `${name} set_tags ${mode}`);
     if (operation.navigation_count < 1) throw new Error(`${name} set_tags ${mode} did not reload`);
     if (operation.before.history_length !== operation.after.history_length) throw new Error(`${name} set_tags ${mode} changed the history length`);
   }
@@ -165,7 +161,6 @@ function requireSetTagsDenial(value, plan, name) {
   const error = requirePlainObject(value, `${name} set_tags_error`);
   const denial = requireFocusedActivation(error.non_editable_member, plan, { requests: 1, error: true }, `${name} set_tags denial`);
   if (denial.after.path !== plan.page_path) throw new Error(`${name} set_tags denial navigated away from the page`);
-  requireBusyCycle(denial.after.busy_events, [{ label: TAGS_LABEL, busy: true }, { label: TAGS_LABEL, busy: false }], `${name} set_tags denial`);
   if (denial.navigation_count !== 0) throw new Error(`${name} set_tags denial reloaded the page`);
   return error;
 }

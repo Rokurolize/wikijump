@@ -169,7 +169,8 @@ function capture() {
 function editOperation() {
   return {
     before: pageState({ focused_control: true }),
-    after: editState(),
+    during: pageState({ focused_control: true, any_aria_busy: true, busy_events: [{ label: "Edit page here", busy: true }] }),
+    after: editState({ history_length: 4 }),
     mutation_request_count: 1,
   };
 }
@@ -181,7 +182,7 @@ function paneOperation(label, kind) {
       action_area_visible: true,
       ...(kind === "history"
         ? { history_pane_visible: true }
-        : { source_pane_visible: true, source_disclosure: false }),
+        : { source_pane_visible: true, source_disclosure: true }),
       busy_events: [{ label, busy: true }, { label, busy: false }],
     }),
     mutation_request_count: 0,
@@ -197,6 +198,7 @@ function printOperation() {
       print_pending: 1,
       action_area_visible: true,
       source_pane_visible: true,
+      source_disclosure: true,
       busy_events: [
         { label: "Print this page", busy: true },
         { label: "view source", busy: true },
@@ -206,6 +208,7 @@ function printOperation() {
     after: pageState({
       action_area_visible: true,
       source_pane_visible: true,
+      source_disclosure: true,
       busy_events: [
         { label: "Print this page", busy: true },
         { label: "view source", busy: true },
