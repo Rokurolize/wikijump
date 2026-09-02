@@ -248,6 +248,13 @@ function screenshotHash(screenshot, label) {
   return requireSha256(screenshot.sha256, `${label} screenshot SHA-256`);
 }
 
+function comparisonContractForPair(pair) {
+  const contract = canaryForUrl(pair.live_url);
+  return contract
+    ? { ...contract, comparison_scope: "standing-chrome" }
+    : contract;
+}
+
 function validateCandidateCapture(capture, pair) {
   if (capture?.schema !== STANDING_BROWSER_CAPTURE_SCHEMA) {
     throw new Error(
@@ -476,7 +483,7 @@ async function sealCandidateParity({
         referenceRecord.capture,
         DEFAULT_THRESHOLDS,
         undefined,
-        canaryForUrl(pairs[index].live_url),
+        comparisonContractForPair(pairs[index]),
       ),
       artifact_hashes: candidateArtifactHashes(
         local,

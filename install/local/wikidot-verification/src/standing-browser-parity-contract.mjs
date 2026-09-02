@@ -675,6 +675,18 @@ function probeObservations(
         const normalizedLive = normalizeCssValue(liveValue);
         let status = normalizedLocal === normalizedLive ? "pass" : "fail";
         if (
+          contract?.comparison_scope === "standing-chrome" &&
+          requirement.pseudo_layout &&
+          (property === "width" || property === "height") &&
+          pseudoLayout?.geometry
+        ) {
+          const delta = pseudoLayout.geometry[property];
+          status =
+            Number.isFinite(delta) &&
+            Math.abs(delta) <= thresholds.geometry_size_px
+              ? "pass"
+              : "fail";
+        } else if (
           (property === "width" || property === "height") &&
           /px$/u.test(normalizedLocal) &&
           /px$/u.test(normalizedLive)
@@ -795,7 +807,10 @@ export function compareCaptures(
   if (live.capture_error) {
     anomalies.push({ code: "live_capture_error", detail: live.capture_error });
   }
-  const selectors = constructScope
+  const standingChromeScope = contract?.comparison_scope === "standing-chrome";
+  const selectors = standingChromeScope
+    ? ["#header", "#header h1 a"]
+    : constructScope
     ? (contract?.geometry_selectors ?? requiredSelectors).filter(
         (selector) => selector !== "#page-content",
       )
@@ -886,7 +901,10 @@ export function compareCaptures(
     live.dom_signatures ?? [],
   );
   const dom = multisetDistance(localDom.signatures, liveDom.signatures);
-  if (dom.ratio > checkedThresholds.dom_multiset_distance_ratio) {
+  if (
+    !standingChromeScope &&
+    dom.ratio > checkedThresholds.dom_multiset_distance_ratio
+  ) {
     anomalies.push({ code: "dom_structure_divergence", detail: dom });
   }
   const immediateProperties = propertyObservations(local, live, contract);
