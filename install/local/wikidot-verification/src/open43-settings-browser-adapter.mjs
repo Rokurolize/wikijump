@@ -264,6 +264,7 @@ export class Open43SettingsBrowserAdapter {
           context: await this.#context(actor), page, url,
           label: "settings-client-transition",
           index, contract, viewport, timeoutMs: CAPTURE_TIMEOUT_MS, settleMs: 0,
+          resetSuppliedPage: false,
           navigate: async () => {
             await activateClientNavigation(page);
             await page.waitForURL(clientUrl.href, { timeout: CAPTURE_TIMEOUT_MS });
