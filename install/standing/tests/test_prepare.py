@@ -42,9 +42,7 @@ def promotion_precondition(
 @contextmanager
 def merged_candidate(identity: dict[str, str], candidate_commit: str = "9" * 40):
     original_command = PREPARE.command
-    PREPARE.command = lambda *args, cwd, capture=True: " ".join(
-        (identity["wikijump_sha"], "8" * 40, candidate_commit)
-    )
+    PREPARE.command = lambda *args, cwd, capture=True: candidate_commit if args[1] == "merge-base" else " ".join((identity["wikijump_sha"], "8" * 40, candidate_commit))
     try:
         yield
     finally:
@@ -52,7 +50,7 @@ def merged_candidate(identity: dict[str, str], candidate_commit: str = "9" * 40)
 
 
 class PrepareStandingImagesTest(unittest.TestCase):
-    def test_promotion_precondition_accepts_only_the_candidate_parent_of_the_merged_tree(self) -> None:
+    def test_promotion_precondition_accepts_a_candidate_ancestor_of_the_merged_tree(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
             identity = {
@@ -69,9 +67,7 @@ class PrepareStandingImagesTest(unittest.TestCase):
             proof_ref = promotion_precondition(root, identity, candidate)
             original_command = PREPARE.command
             try:
-                PREPARE.command = lambda *args, cwd, capture=True: " ".join(
-                    (identity["wikijump_sha"], "6" * 40, candidate["wikijump_sha"])
-                )
+                PREPARE.command = lambda *args, cwd, capture=True: candidate["wikijump_sha"] if args[1] == "merge-base" else " ".join((identity["wikijump_sha"], "6" * 40, candidate["wikijump_sha"]))
                 proof, actual_ref = PREPARE.load_promotion_precondition(
                     Path(proof_ref["path"]), root, identity
                 )
@@ -82,7 +78,7 @@ class PrepareStandingImagesTest(unittest.TestCase):
             finally:
                 PREPARE.command = original_command
 
-    def test_promotion_precondition_rejects_a_candidate_that_is_not_a_merge_parent(self) -> None:
+    def test_promotion_precondition_rejects_a_candidate_that_is_not_an_ancestor(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
             root = Path(temporary_dir)
             identity = {
@@ -99,10 +95,8 @@ class PrepareStandingImagesTest(unittest.TestCase):
             proof_ref = promotion_precondition(root, identity, candidate)
             original_command = PREPARE.command
             try:
-                PREPARE.command = lambda *args, cwd, capture=True: " ".join(
-                    (identity["wikijump_sha"], "6" * 40, "7" * 40)
-                )
-                with self.assertRaisesRegex(ValueError, "candidate parent"):
+                PREPARE.command = lambda *args, cwd, capture=True: "7" * 40 if args[1] == "merge-base" else " ".join((identity["wikijump_sha"], "6" * 40, "7" * 40))
+                with self.assertRaisesRegex(ValueError, "candidate is not an ancestor"):
                     PREPARE.load_promotion_precondition(
                         Path(proof_ref["path"]), root, identity
                     )
