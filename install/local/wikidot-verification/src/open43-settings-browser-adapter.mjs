@@ -172,7 +172,8 @@ export class Open43SettingsBrowserAdapter {
 
   async #context(actor) {
     if (!this.#contexts.has(actor)) {
-      this.#contexts.set(actor, this.#browserContexts.newCandidateContext({ storageState: this.#storageState(actor), viewport: DEFAULT_VIEWPORT }));
+      const storageState = this.#storageState(actor);
+      this.#contexts.set(actor, this.#browserContexts.newCandidateContext({ storageState: actor === "anonymous" ? null : storageState, viewport: DEFAULT_VIEWPORT }));
     }
     return (await this.#contexts.get(actor)).context;
   }

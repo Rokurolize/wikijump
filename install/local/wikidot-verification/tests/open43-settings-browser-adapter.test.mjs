@@ -70,7 +70,7 @@ test("the settings adapter changes gate attribution between immediate and settle
   const context = { async newPage() { return page; } };
   let captureCount = 0;
   const browserContexts = {
-    async newCandidateContext({ storageState }) { requestedActors.push(storageState.actor); return { context, environment: {} }; },
+    async newCandidateContext({ storageState }) { requestedActors.push(storageState); return { context, environment: {} }; },
     async setActiveFixture(fixtureId) { events.push(`fixture:${fixtureId}`); },
     async captureCandidateObservation(options) {
       events.push("capture:start");
@@ -123,7 +123,7 @@ test("the settings adapter changes gate attribution between immediate and settle
   assert.ok(pair.client_transition_capture);
   assert.notEqual(pair.client_transition_capture.first_paint.screenshot.path, pair.client_transition_capture.settled_viewport_screenshot.path);
   assert.notEqual(pair.capture.first_paint.screenshot.sha256, pair.capture.settled_viewport_screenshot.sha256);
-  assert.deepEqual(requestedActors, ["anonymous"]);
+  assert.deepEqual(requestedActors, [null]);
 });
 
 test("the settings adapter cannot repair a missing initial CSP header with a later response", async () => {
