@@ -176,6 +176,8 @@ export function parseStandingBrowserParityArgs(argv) {
   if (args.sourceResponseCacheDir !== null && args.sourceResponseCacheIdentity === null) throw new Error("--source-response-cache-identity is required with --source-response-cache-dir");
   if (args.sourceResponseCacheDir === null && args.sourceResponseCacheIdentity !== null) throw new Error("--source-response-cache-dir is required with --source-response-cache-identity");
   if (args.sourceResponseCacheDocuments && args.sourceResponseCacheDir === null) throw new Error("--cache-source-documents requires --source-response-cache-dir");
+  if (args.mode === "live-reference" && args.sourceResponseCacheDir === null) throw new Error("live-reference mode requires --source-response-cache-dir");
+  if (args.mode === "live-reference" && !args.sourceResponseCacheDocuments) throw new Error("live-reference mode requires --cache-source-documents");
   if (args.mode !== "live-reference" && (args.sourceResponseCacheDir !== null || args.sourceResponseCacheIdentity !== null || args.sourceResponseCacheDocuments)) throw new Error("source response cache is available only in live-reference mode");
   if (args.mode === "candidate") {
     for (const [flag, value] of [
@@ -605,6 +607,7 @@ export async function runStandingBrowserParity(args) {
       controls,
       local: args.mode === "candidate",
       viewport: args.viewport,
+      responseCache: controls.responseCache,
     });
     browserEnvironment = browser.environment;
     capture =
