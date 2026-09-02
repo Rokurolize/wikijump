@@ -11,6 +11,15 @@ const DEFAULT_RESPONSE_CACHE_MAX_ENTRIES = 512;
 const DEFAULT_RESPONSE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES = 8 * 1024 * 1024;
 const RESPONSE_CACHE_STORE_SCHEMA = "wikijump_full_parity.browser_response_cache_store.v1";
+
+function responseCacheKey(value) {
+  const url = new URL(value);
+  if (url.hostname === "www.wikidot.com" && url.pathname === "/avatar.php") {
+    url.searchParams.delete("timestamp");
+    url.searchParams.delete("amp;timestamp");
+  }
+  return url.href;
+}
 const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
 const STATE_CONFIRMATIONS = new Set(["pending", "sealed"]);
@@ -166,13 +175,14 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
     },
     get(key) {
       if (!loaded) throw new Error("persistent browser response cache must be loaded before lookup");
-      const entry = entries.get(key);
+      const cacheKey = responseCacheKey(key);
+      const entry = entries.get(cacheKey);
       if (!entry) {
         misses += 1;
         return null;
       }
-      entries.delete(key);
-      entries.set(key, entry);
+      entries.delete(cacheKey);
+      entries.set(cacheKey, entry);
       hits += 1;
       return entry;
     },
@@ -182,7 +192,8 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         bypasses += 1;
         return false;
       }
-      const existing = entries.get(key);
+      const cacheKey = responseCacheKey(key);
+      const existing = entries.get(cacheKey);
       if (existing) {
         entries.delete(key);
         bytes -= existing.body.length;
@@ -195,7 +206,7 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         bytes -= oldest.body.length;
         evictions += 1;
       }
-      entries.set(key, entry);
+      entries.set(cacheKey, entry);
       bytes += entry.body.length;
       stores += 1;
       if (persistentPath !== null) dirty = true;
