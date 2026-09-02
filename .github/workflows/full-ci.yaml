@@ -28,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
+      CI: "true"
       WIKIJUMP_CI_OFFLINE_EGRESS: "1"
       WIKIDOT_LIVE_PROBES: "disabled"
     steps:

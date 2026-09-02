@@ -17,6 +17,7 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     env:
+      CI: "true"
       DEEPWELL_RPC_TOKEN: "0000000000000000000000000000000000000000000000000000000000000000"
       WIKIJUMP_CI_OFFLINE_EGRESS: "1"
       WIKIDOT_LIVE_PROBES: "disabled"
