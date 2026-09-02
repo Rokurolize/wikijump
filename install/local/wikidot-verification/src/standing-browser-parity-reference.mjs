@@ -472,13 +472,17 @@ export async function loadSealedLiveReference({
     throw new Error("live reference is not sealed");
   }
   requireNonEmptyString(reference.generated_at, "live reference generated_at");
+  const recordsInput = (reference.records ?? []).map((entry) => ({
+    ...entry,
+    live: normalizeRetainedCapture(entry.live),
+  }));
   const checkedRequestGate = validateRequestGate(reference.request_gate, {
-    minimumPublicRequests: Array.isArray(reference.records)
-      ? reference.records.length
+    minimumPublicRequests: Array.isArray(recordsInput)
+      ? recordsInput.length
       : 0,
   });
   assertRequestGateAbortAccounting(
-    (reference.records ?? []).map((record) => record?.live),
+    recordsInput.map((record) => record?.live),
     checkedRequestGate,
   );
   const checkedPolicy = validateLiveCompletionPolicy(policy);
@@ -539,17 +543,14 @@ export async function loadSealedLiveReference({
   }
   const expectedPairs = pairs.map(normalizedPair);
   const seen = new Map();
-  for (const entry of reference.records ?? []) {
+  for (const entry of recordsInput) {
     const input = normalizedPair(entry.input);
     if (seen.has(input.live_url)) {
       throw new Error(
         `live reference contains duplicate URL: ${input.live_url}`,
       );
     }
-    seen.set(input.live_url, {
-      ...entry,
-      live: normalizeRetainedCapture(entry.live),
-    });
+    seen.set(input.live_url, entry);
   }
   if (seen.size !== expectedPairs.length) {
     throw new Error(
