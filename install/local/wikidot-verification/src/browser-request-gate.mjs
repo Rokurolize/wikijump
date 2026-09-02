@@ -13,12 +13,8 @@ const DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES = 8 * 1024 * 1024;
 const RESPONSE_CACHE_STORE_SCHEMA = "wikijump_full_parity.browser_response_cache_store.v1";
 
 function responseCacheKey(value) {
-  const url = new URL(value);
-  if (url.hostname === "www.wikidot.com" && url.pathname === "/avatar.php") {
-    url.searchParams.delete("timestamp");
-    url.searchParams.delete("amp;timestamp");
-  }
-  return url.href;
+  if (/^https:\/\/www\.wikidot\.com\/avatar\.php\?/u.test(value)) return value.replace(/(?:&amp;|&)timestamp=[^&]*/u, "");
+  return value;
 }
 const LOCK_SCHEMA = "wikijump_full_parity.browser_capture_lock.v1";
 const STATE_SCHEMA = "wikijump_full_parity.browser_request_gate_state.v1";
