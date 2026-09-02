@@ -3,7 +3,7 @@ import {
   STANDING_BROWSER_CANARIES,
 } from "./standing-browser-canaries.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
-import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { candidateSitePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import {
   requirePlainObject,
   requireSha256,
@@ -700,7 +700,7 @@ export function createOpen43B689TabviewCandidateCaseSet() {
     caseIds: OPEN43_B689_CASE_IDS,
     prepareRun({ candidateIdentity, privateInput, candidateBrowserContexts }) {
       const fixture = exactFixture(privateInput);
-      const pageOrigin = candidatePageOrigin(candidateIdentity);
+      const pageOrigin = candidateSitePageOrigin(candidateIdentity, "scp-wiki");
       return {
         sourceFiles: SOURCE_FILES,
         runtimeBindings: [],

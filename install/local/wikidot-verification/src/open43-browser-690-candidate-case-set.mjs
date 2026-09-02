@@ -4,7 +4,7 @@ import {
 } from "./standing-browser-canaries.mjs";
 import { STANDING_BROWSER_EXECUTION_MODULES } from "./standing-browser-execution-identity.mjs";
 import { compareFirstDivergenceTraces } from "./first-divergent-element.mjs";
-import { candidatePageOrigin } from "./standing-browser-parity-receipt.mjs";
+import { candidateSitePageOrigin } from "./standing-browser-parity-receipt.mjs";
 import { loadSealedLiveReference } from "./standing-browser-parity-reference.mjs";
 import {
   DEFAULT_THRESHOLDS,
@@ -643,7 +643,7 @@ export function createOpen43B690GeometryCandidateCaseSet() {
       const liveRecords = liveRecordBySlug(liveReference);
       const liveInitialDocuments = liveDocumentBySlug(liveRecords, "initial");
       const liveSettledDocuments = liveDocumentBySlug(liveRecords, "settled");
-      const pageOrigin = candidatePageOrigin(candidateIdentity);
+      const pageOrigin = candidateSitePageOrigin(candidateIdentity, "scp-wiki");
       const plan = {
         schema: "wikijump.open43_b690_geometry_candidate_plan.v3",
         case_ids: [
