@@ -119,7 +119,6 @@ async function verifyCleanupReceipt(receiptPath, receipt) {
 async function verifyCaseSetReceipt({
   receiptPath,
   expected,
-  runId,
   candidateIdentitySha256Set,
 }) {
   const input = await readJson(receiptPath, `candidate aggregate ${expected.name}`);
@@ -128,7 +127,7 @@ async function verifyCaseSetReceipt({
     receipt?.schema !== CANDIDATE_CASE_AGGREGATE_SCHEMA ||
     receipt.status !== "pass" ||
     receipt.candidate_case_set !== expected.name ||
-    receipt.run_id !== runId ||
+    !RUN_ID.test(receipt.run_id ?? "") ||
     !candidateIdentitySha256Set.has(receipt.candidate_identity_sha256)
   ) {
     fail(`candidate aggregate ${expected.name} is not bound to the campaign identity`);
@@ -163,7 +162,7 @@ async function verifyCaseSetReceipt({
   const cases = [];
   for (const reference of receipt.cases) {
     const verified = await verifyCaseArtifact(reference, {
-      runId,
+      runId: receipt.run_id,
       caseSet: expected.name,
       candidateIdentitySha256,
     });
@@ -244,7 +243,7 @@ export async function aggregateCandidateCaseCampaign({
   }
 
   const seen = new Map();
-  let runId = null;
+  const runIds = new Set();
   for (const receiptPath of receiptPaths) {
     const input = await readJson(receiptPath, "candidate campaign case-set receipt");
     const name = input.value?.candidate_case_set;
@@ -252,8 +251,7 @@ export async function aggregateCandidateCaseCampaign({
       fail(`candidate campaign has an unknown or duplicate case-set receipt: ${name}`);
     }
     if (!RUN_ID.test(input.value?.run_id ?? "")) fail("candidate campaign run ID is invalid");
-    if (runId === null) runId = input.value.run_id;
-    if (input.value.run_id !== runId) fail("candidate campaign case-set receipts use different run IDs");
+    runIds.add(input.value.run_id);
     seen.set(name, path.resolve(receiptPath));
   }
   for (const name of expected.keys()) {
@@ -266,7 +264,6 @@ export async function aggregateCandidateCaseCampaign({
       await verifyCaseSetReceipt({
         receiptPath: seen.get(row.name),
         expected: row,
-        runId,
         candidateIdentitySha256Set,
       }),
     );
@@ -280,7 +277,8 @@ export async function aggregateCandidateCaseCampaign({
   return {
     schema: CANDIDATE_CAMPAIGN_AGGREGATE_SCHEMA,
     status: "pass",
-    run_id: runId,
+    run_id: `candidate-run-${sha256Value([...receiptPaths].sort()).slice(0, 12)}`,
+    case_set_run_ids: [...runIds].sort(),
     candidate_identity: identityInput.reference,
     candidate_identity_projections: identityInputs.map(({reference}) => reference),
     candidate: {
