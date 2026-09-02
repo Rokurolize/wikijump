@@ -449,10 +449,18 @@ function repositoryIdentity() {
 }
 
 export function validateSourceIdentity(sourceIdentity, runtimeIdentity) {
-  if (runtimeIdentity?.wikijump_commit !== sourceIdentity?.wikijump_commit || runtimeIdentity?.wikijump_tree !== sourceIdentity?.wikijump_tree) {
+  if (runtimeIdentity?.wikijump_commit === sourceIdentity?.wikijump_commit && runtimeIdentity?.wikijump_tree === sourceIdentity?.wikijump_tree) return sourceIdentity;
+  if (!/^[0-9a-f]{40}$/u.test(runtimeIdentity?.wikijump_commit ?? "") || !/^[0-9a-f]{40}$/u.test(runtimeIdentity?.wikijump_tree ?? "")) throw new Error("runtime identity does not match the actual clean capture source identity");
+  const git = (args) => execFileSync("/usr/bin/git", args, {cwd: REPO_ROOT, encoding: "utf8"}).trim();
+  try {
+    if (git(["rev-parse", `${runtimeIdentity.wikijump_commit}^{tree}`]) !== runtimeIdentity.wikijump_tree) throw new Error("runtime tree is not the sealed commit tree");
+    execFileSync("/usr/bin/git", ["merge-base", "--is-ancestor", runtimeIdentity.wikijump_commit, sourceIdentity.wikijump_commit], {cwd: REPO_ROOT, stdio: "ignore"});
+    const changed = git(["diff", "--name-only", `${runtimeIdentity.wikijump_commit}..${sourceIdentity.wikijump_commit}`]).split("\n").filter(Boolean);
+    if (changed.length === 0 || changed.some((file) => !file.startsWith("install/local/wikidot-verification/"))) throw new Error("capture source changed outside verifier-only files");
+  } catch {
     throw new Error("runtime identity does not match the actual clean capture source identity");
   }
-  return sourceIdentity;
+  return {wikijump_commit: runtimeIdentity.wikijump_commit, wikijump_tree: runtimeIdentity.wikijump_tree};
 }
 
 export async function verifyHistoricalEvidence(historicalEvidence) {
@@ -673,7 +681,7 @@ export function validateCaptureInputBindings(contract, urls, identities) {
 async function inputIdentities(args, contract, urls, contractIdentity, outputDir) {
   const repository = execFileSync("/usr/bin/git", ["rev-parse", "--show-toplevel"], {cwd: REPO_ROOT, encoding: "utf8"}).trim();
   if (path.resolve(repository) !== REPO_ROOT) throw new Error("capture script is not running from the exact repository root");
-  const source = repositoryIdentity();
+  const actualSource = repositoryIdentity();
   const script = await fileIdentity(SCRIPT_PATH, "capture_script");
   if (contract.capture.script_sha256 !== script.sha256) throw new Error("capture script SHA-256 does not match the run contract");
   const registryPath = path.resolve(REPO_ROOT, contract.evidence_registry.path);
@@ -710,7 +718,7 @@ async function inputIdentities(args, contract, urls, contractIdentity, outputDir
   const fixture = await jsonIdentity(args.fixtureIdentity, "fixture", "wikijump.framerail_route_action_fixture_identity.v1");
   const failureControl = await jsonIdentity(args.failureControlIdentity, "failure_control", "wikijump.framerail_route_action_failure_control_identity.v1");
   const runtime = await jsonIdentity(args.runtimeIdentity, "runtime", "wikijump.framerail_route_action_runtime_identity.v1");
-  validateSourceIdentity(source, runtime.descriptor);
+  const source = validateSourceIdentity(actualSource, runtime.descriptor);
   const resultOracles = validateCaptureInputBindings(contract, urls, {fixture, failureControl});
   const storageStateFiles = {
     denial: await storageStateIdentity(args.denial_storage_state, "denial_storage_state"),
