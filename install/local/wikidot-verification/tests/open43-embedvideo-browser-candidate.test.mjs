@@ -152,7 +152,7 @@ test("issue 1042 verifies both browser intervals and the fail-closed request bou
         initial_frame: negativeFrame,
         settled_frame: negativeFrame,
       },
-      navigation: { from: positiveUrl, to: negativeUrl, preserved_document: true },
+      navigation: { from: positiveUrl, to: negativeUrl, replaced_document: true },
       csp_header_sha256: "e".repeat(64),
       csp_frame_sources: [
         "'self'",

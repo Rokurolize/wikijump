@@ -66,6 +66,24 @@ test("live reference capture requires a policy before a browser can be opened", 
   assert.equal(args.mode, "live-reference");
   assert.deepEqual(args.viewport, { width: 1440, height: 960 });
   assert.equal(args.timeoutMs, 900_000);
+  assert.equal(args.sourceResponseCacheDir, null);
+  const cached = parseStandingBrowserParityArgs([
+    "node",
+    "runner",
+    "--mode",
+    "live-reference",
+    "--output-dir",
+    "/tmp/standing-reference-cached",
+    "--live-completion-policy",
+    policy,
+    "--source-response-cache-dir",
+    "/tmp/standing-source-cache",
+    "--source-response-cache-identity",
+    "scp-wiki:chromium-149:policy-v1",
+    "--cache-source-documents",
+  ]);
+  assert.equal(cached.sourceResponseCacheDocuments, true);
+  assert.equal(cached.sourceResponseCacheIdentity, "scp-wiki:chromium-149:policy-v1");
   assert.throws(
     () =>
       parseStandingBrowserParityArgs([
@@ -77,6 +95,14 @@ test("live reference capture requires a policy before a browser can be opened", 
         "/tmp/standing-reference",
       ]),
     /live-completion-policy/u,
+  );
+  assert.throws(
+    () => parseStandingBrowserParityArgs([
+      "node", "runner", "--mode", "candidate", "--output-dir", "/tmp/candidate",
+      "--live-completion-policy", policy, "--source-response-cache-dir", "/tmp/cache",
+      "--source-response-cache-identity", "identity",
+    ]),
+    /only in live-reference mode/u,
   );
 });
 

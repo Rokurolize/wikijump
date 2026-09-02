@@ -451,9 +451,10 @@ export async function createParityBrowserControls({
         const finalGateSnapshot = failure
           ? null
           : {
-              ...gate.snapshot(),
-              execution_mode: executionMode,
-              config_sha256: configSeal.sha256,
+          ...gate.snapshot(),
+          execution_mode: executionMode,
+          config_sha256: configSeal.sha256,
+          response_cache: responseCache?.snapshot() ?? null,
             };
         if (!failure) {
           await lock.confirmState().catch((error) => {

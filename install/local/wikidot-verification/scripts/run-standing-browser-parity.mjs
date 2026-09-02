@@ -10,10 +10,10 @@ import {
 
 export function usage() {
   return `Usage:
-  run-standing-browser-parity.mjs --mode live-reference --output-dir DIR --live-completion-policy POLICY.json [--browser-root DIR] [--browser-executable PATH] [--viewport WIDTHxHEIGHT] [--timeout-ms N] [--settle-ms N]
+  run-standing-browser-parity.mjs --mode live-reference --output-dir DIR --live-completion-policy POLICY.json [--source-response-cache-dir DIR --source-response-cache-identity ID --cache-source-documents] [--browser-root DIR] [--browser-executable PATH] [--viewport WIDTHxHEIGHT] [--timeout-ms N] [--settle-ms N]
   run-standing-browser-parity.mjs --mode candidate --output-dir DIR --live-completion-policy POLICY.json --candidate-identity IDENTITY.json --live-reference-ledger REFERENCE.json --live-reference-sha256 SHA256 [--browser-root DIR] [--browser-executable PATH] [--viewport WIDTHxHEIGHT] [--timeout-ms N] [--settle-ms N]
 
-The live-reference mode is read-only and begins at 0.25 requests per second. Candidate mode requires an exact non-443 identity, binds local screenshots to it, and writes a receipt accepted by the standing promotion controller only when every canary passes. DOMContentLoaded capture is an immediate DOM/CSS observation, not a compositor-filmstrip assertion.`;
+The live-reference mode is read-only and begins at 0.25 requests per second. An explicitly identity-bound source response cache replays previously captured exact URLs, including documents when --cache-source-documents is given, so a repeated test does not request the same live resource again. Candidate mode requires an exact non-443 identity, binds local screenshots to it, and writes a receipt accepted by the standing promotion controller only when every canary passes. DOMContentLoaded capture is an immediate DOM/CSS observation, not a compositor-filmstrip assertion.`;
 }
 
 export async function main(argv, {
