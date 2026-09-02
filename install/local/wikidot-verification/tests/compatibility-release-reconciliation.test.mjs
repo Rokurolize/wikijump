@@ -142,7 +142,7 @@ test("standing matrix binds the post-merge runtime to the exact candidate tree a
   wrongTree.wikijump_tree = "6".repeat(40);
   assert.throws(
     () => buildCompatibilityStandingMatrix({denominator, ledger, promotion, promotionReference: refresh.promotion_precondition, refresh: wrongTree, refreshReference: {path: "/tmp/refresh.json", sha256: "c".repeat(64)}}),
-    /standing merge tree does not match the candidate tree/u,
+    /standing refresh does not match the post-merge canonical ledger source/u,
   );
 });
 
@@ -206,7 +206,7 @@ test("final ledger reconciliation consumes semantic, candidate, standing, owner,
   const standingMatrix = {
     schema: "wikijump.compatibility_standing_matrix.v2",
     status: "pass",
-    run_id: "candidate-run-abcdef123456",
+    run_id: "standing-refresh-abcdef123456",
     merge_commit: "4".repeat(40),
     merge_tree: "2".repeat(40),
     ftml_sha: "3".repeat(40),
