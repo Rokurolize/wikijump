@@ -92,6 +92,20 @@ test("request-gate parity does not depend on Chromium error suffix text", () => 
   );
 });
 
+test("external request-failure parity ignores browser-specific error text", () => {
+  const local = capture({
+    failures: [{ kind: "request_failed", url: "https://cdn.example.test/font.css", resource_type: "stylesheet", error: "net::ERR_ABORTED" }],
+  });
+  const live = capture({
+    input_url: "https://scp-wiki.wikidot.com/scp-9506",
+    final_url: "https://scp-wiki.wikidot.com/scp-9506",
+    failures: [{ kind: "request_failed", url: "https://cdn.example.test/font.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" }],
+  });
+  const result = compareCaptures(local, live, DEFAULT_THRESHOLDS, [], null);
+  assert.equal(result.status, "pass");
+  assert.equal(result.classified_failures[0].classification, "parity_matched");
+});
+
 test("immediate theme properties fail before a settled state can conceal a flash", () => {
   const expectations = canaryForUrl(
     "https://scp-wiki.wikidot.com/scp-9506",
