@@ -75,6 +75,15 @@ function failureKey(failure) {
   ]);
 }
 
+function failureParityKey(failure) {
+  return JSON.stringify([
+    failure?.kind ?? null,
+    failure?.url ?? null,
+    failure?.status ?? null,
+    failure?.resource_type ?? null,
+  ]);
+}
+
 function requestGateAbortKey(abort) {
   return JSON.stringify([
     abort?.kind ?? null,
@@ -724,12 +733,12 @@ export function compareCaptures(
   const liveFailureKeys = new Set(
     (live.failures ?? [])
       .filter((failure) => isExternalFailure(failure, live))
-      .map(failureKey),
+      .map(failureParityKey),
   );
   const classifiedFailures = (local.failures ?? []).map((failure) => {
     const classification =
       isExternalFailure(failure, local) &&
-      liveFailureKeys.has(failureKey(failure))
+      liveFailureKeys.has(failureParityKey(failure))
         ? "parity_matched"
         : "local_only";
     if (classification === "local_only") {
@@ -740,10 +749,10 @@ export function compareCaptures(
   const localFailureKeys = new Set(
     (local.failures ?? [])
       .filter((failure) => isExternalFailure(failure, local))
-      .map(failureKey),
+      .map(failureParityKey),
   );
   const liveOnlyFailures = (live.failures ?? []).filter(
-    (failure) => !localFailureKeys.has(failureKey(failure)),
+    (failure) => !localFailureKeys.has(failureParityKey(failure)),
   );
   const liveGateAbortKeys = new Set(
     (live.request_gate_aborts ?? []).map(requestGateAbortKey),
@@ -791,13 +800,14 @@ export function compareCaptures(
         (selector) => selector !== "#page-content",
       )
     : (contract?.geometry_selectors ?? requiredSelectors);
-  const pageChromeSkeleton = contract?.page_chrome_skeleton
+  const pageChromeSkeleton = contract?.page_chrome_skeleton &&
+    !(live.legacy_capture && !live.page_chrome_skeleton)
     ? comparePageChromeSkeleton(
         local.page_chrome_skeleton,
         live.page_chrome_skeleton,
         contract.page_chrome_skeleton,
       )
-    : { status: "pass", links: [], anomalies: [] };
+    : { status: live.legacy_capture ? "unavailable_legacy" : "pass", links: [], anomalies: [] };
   anomalies.push(...pageChromeSkeleton.anomalies);
   const settledGeometry = compareGeometry(
     local,
