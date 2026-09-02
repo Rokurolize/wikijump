@@ -124,6 +124,7 @@ export class Open43Issue775EditBrowserAdapter {
         editable ? pageUrl : new URL("/", this.#pageOrigin).href,
         { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS },
       );
+      await page.locator(editable ? "#editor" : "#odialog-container").waitFor({ state: "detached", timeout: TIMEOUT_MS });
       const back = await publicState(page);
       await page.evaluate(() => history.forward());
       await page.waitForURL(
