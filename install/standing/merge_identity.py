@@ -6,6 +6,33 @@ from typing import Callable
 
 
 GIT_OBJECT = re.compile(r"[0-9a-f]{40}")
+VERIFICATION_ONLY_PREFIXES = (
+    ".github/",
+    "docs/development/candidate-case-set-manifest.json",
+    "install/local/wikidot-verification/",
+)
+
+
+def validate_runtime_tree_delta(
+    source_root: Path,
+    candidate_commit: str,
+    merged_commit: str,
+    command: Callable[..., str],
+) -> None:
+    if candidate_commit == merged_commit:
+        raise ValueError("promotion candidate is not a pre-merge source")
+    changed = command(
+        "git",
+        "diff",
+        "--name-only",
+        f"{candidate_commit}..{merged_commit}",
+        cwd=source_root,
+    ).splitlines()
+    if not changed or any(
+        not any(path.startswith(prefix) for prefix in VERIFICATION_ONLY_PREFIXES)
+        for path in changed
+    ):
+        raise ValueError("promotion source changed runtime inputs after candidate proof")
 
 
 def validate_candidate_merge(
@@ -28,8 +55,11 @@ def validate_candidate_merge(
                 f"promotion precondition build {key} does not match the candidate"
             )
     if candidate["wikijump_tree"] != identity["wikijump_tree"]:
-        raise ValueError(
-            "promotion precondition candidate tree does not match the merged source"
+        validate_runtime_tree_delta(
+            source_root,
+            candidate["wikijump_commit"],
+            identity["wikijump_sha"],
+            command,
         )
     if candidate["ftml_sha"] != identity["ftml_sha"]:
         raise ValueError(

@@ -328,6 +328,13 @@ async function git(repositoryPath, ...arguments_) {
   }
 }
 
+async function verifyCandidateRuntimeDelta(repositoryPath, candidateCommit, mergeCommit) {
+  if (candidateCommit === mergeCommit) fail("candidate commit must differ from merge commit");
+  const changed = (await git(repositoryPath, "diff", "--name-only", `${candidateCommit}..${mergeCommit}`)).split("\n").filter(Boolean);
+  const allowed = [".github/", "docs/development/candidate-case-set-manifest.json", "install/local/wikidot-verification/"];
+  if (changed.length === 0 || changed.some((file) => !allowed.some((prefix) => file.startsWith(prefix)))) fail("merged source changed runtime inputs after candidate proof");
+}
+
 async function verifyRepositoryMerge(repositoryPath, mergeCommit, mergeTree, candidateCommit) {
   const [head, tree, parentsLine] = await Promise.all([
     git(repositoryPath, "rev-parse", "HEAD^{commit}"),
@@ -339,6 +346,7 @@ async function verifyRepositoryMerge(repositoryPath, mergeCommit, mergeTree, can
   const parents = parentsLine.split(/\s+/u);
   if (parents.length !== 3 || parents[0] !== mergeCommit) fail("repository HEAD is not a normal two-parent merge commit");
   if (candidateCommit === mergeCommit || !parents.slice(1).includes(candidateCommit)) fail("repository merge does not include the candidate PR head parent");
+  await verifyCandidateRuntimeDelta(repositoryPath, candidateCommit, mergeCommit);
 }
 
 async function verifyLedgerArtifacts(ledger) {
@@ -380,7 +388,6 @@ function reconcileRows(ledger, denominatorRows, matrixRows) {
 async function verifyPromotion(matrix, ledger) {
   const input = await verifyArtifactReference(matrix.promotion_precondition, "standing promotion precondition", true);
   const promotion = validateStandingPromotionPrecondition(input.value);
-  if (matrix.candidate_commit === matrix.merge_commit) fail("candidate commit must differ from merge commit");
   for (const [actual, expected, name] of [
     [promotion.run_id, matrix.run_id, "promotion run id"],
     [matrix.merge_commit, ledger.inputs.wikijump.commit, "matrix merge commit"],
@@ -388,10 +395,8 @@ async function verifyPromotion(matrix, ledger) {
     [matrix.ftml_sha, ledger.inputs.ftml.commit, "matrix FTML commit"],
     [matrix.ftml_tree, ledger.inputs.ftml.tree, "matrix FTML tree"],
     [promotion.candidate.wikijump_commit, matrix.candidate_commit, "promotion candidate PR head"],
-    [promotion.candidate.wikijump_tree, matrix.merge_tree, "promotion candidate Wikijump tree"],
     [promotion.candidate.ftml_sha, matrix.ftml_sha, "promotion candidate FTML commit"],
     [promotion.build.wikijump_commit, matrix.candidate_commit, "promotion build candidate PR head"],
-    [promotion.build.wikijump_tree, matrix.merge_tree, "promotion build Wikijump tree"],
     [promotion.build.ftml_sha, ledger.inputs.ftml.commit, "promotion build FTML commit"],
     [promotion.candidate.artifact_key, matrix.candidate_artifact_key, "candidate artifact_key"],
   ]) if (actual !== expected) fail(`${name} does not match the canonical source`);

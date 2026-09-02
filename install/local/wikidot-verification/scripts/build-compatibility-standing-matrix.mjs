@@ -110,9 +110,6 @@ export function buildCompatibilityStandingMatrix({
   if (JSON.stringify(refresh.promotion_precondition) !== JSON.stringify(promotionArtifact)) {
     fail("standing refresh is not bound to the selected promotion precondition");
   }
-  if (promotion.candidate?.wikijump_tree !== refresh.wikijump_tree) {
-    fail("standing merge tree does not match the candidate tree");
-  }
   if (
     promotion.candidate?.ftml_sha !== refresh.ftml_sha ||
     promotion.build?.wikijump_commit !== promotion.candidate?.wikijump_commit ||
