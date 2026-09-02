@@ -134,11 +134,21 @@ test("live reference capture requires an identity-bound persistent document cach
       ]),
     /live-completion-policy/u,
   );
+  const candidateCache = parseStandingBrowserParityArgs([
+    "node", "runner", "--mode", "candidate", "--output-dir", "/tmp/candidate",
+    "--live-completion-policy", policy, "--source-response-cache-dir", "/tmp/cache",
+    "--source-response-cache-identity", "identity", "--candidate-identity", "/tmp/candidate.json",
+    "--live-reference-ledger", "/tmp/reference.json", "--live-reference-sha256", "a".repeat(64),
+  ]);
+  assert.equal(candidateCache.sourceResponseCacheDir, "/tmp/cache");
+  assert.equal(candidateCache.sourceResponseCacheIdentity, "identity");
   assert.throws(
     () => parseStandingBrowserParityArgs([
       "node", "runner", "--mode", "candidate", "--output-dir", "/tmp/candidate",
       "--live-completion-policy", policy, "--source-response-cache-dir", "/tmp/cache",
-      "--source-response-cache-identity", "identity",
+      "--source-response-cache-identity", "identity", "--cache-source-documents",
+      "--candidate-identity", "/tmp/candidate.json", "--live-reference-ledger", "/tmp/reference.json",
+      "--live-reference-sha256", "a".repeat(64),
     ]),
     /only in live-reference mode/u,
   );

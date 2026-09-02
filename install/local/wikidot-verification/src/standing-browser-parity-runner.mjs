@@ -178,7 +178,7 @@ export function parseStandingBrowserParityArgs(argv) {
   if (args.sourceResponseCacheDocuments && args.sourceResponseCacheDir === null) throw new Error("--cache-source-documents requires --source-response-cache-dir");
   if (args.mode === "live-reference" && args.sourceResponseCacheDir === null) throw new Error("live-reference mode requires --source-response-cache-dir");
   if (args.mode === "live-reference" && !args.sourceResponseCacheDocuments) throw new Error("live-reference mode requires --cache-source-documents");
-  if (args.mode !== "live-reference" && (args.sourceResponseCacheDir !== null || args.sourceResponseCacheIdentity !== null || args.sourceResponseCacheDocuments)) throw new Error("source response cache is available only in live-reference mode");
+  if (args.mode === "candidate" && args.sourceResponseCacheDocuments) throw new Error("--cache-source-documents is available only in live-reference mode");
   if (args.mode === "candidate") {
     for (const [flag, value] of [
       ["--candidate-identity", args.candidateIdentity],
