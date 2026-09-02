@@ -150,18 +150,12 @@ function browserSemanticSnapshot() {
 const INITIAL_PROBE = `globalThis.__open43DocumentIdentity=globalThis.crypto?.randomUUID?.()??String(Date.now())+"-"+String(Math.random());globalThis.__open43SemanticSnapshot=${browserSemanticSnapshot.toString()};document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43InitialObservation=globalThis.__open43SemanticSnapshot()},{once:true});`;
 const CREATE_PROBE = `document.addEventListener("DOMContentLoaded",()=>{globalThis.__open43CreateFirstPaint={title:document.querySelector("#page-title")?.textContent?.trim()??"",content:document.querySelector("#page-content")?.textContent?.trim()??""}},{once:true});`;
 
-async function activateClientNavigation(page, href = null) {
-  await page.evaluate((targetHref) => {
-    let link = document.querySelector("#open43-client-navigation");
-    if (!(link instanceof HTMLAnchorElement)) {
-      if (targetHref === null || !document.body) throw new Error("settings client navigation link is missing");
-      link = document.createElement("a");
-      link.id = "open43-client-navigation";
-      link.href = targetHref;
-      document.body.append(link);
-    }
+async function activateClientNavigation(page) {
+  await page.evaluate(() => {
+    const link = document.querySelector("#open43-client-navigation");
+    if (!(link instanceof HTMLAnchorElement)) throw new Error("settings client navigation link is missing");
     link.click();
-  }, href);
+  });
 }
 
 export class Open43SettingsBrowserAdapter {
@@ -234,6 +228,8 @@ export class Open43SettingsBrowserAdapter {
         const sourceResponse = await page.goto(navigationFromUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
         if (sourceResponse?.status() !== 200) throw new Error(`${label} navigation source failed`);
         navigationSource = await page.evaluate(() => globalThis.__open43SemanticSnapshot());
+        await waitForBrowserParitySettledResources(page, CAPTURE_TIMEOUT_MS);
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       }
       if (beforeClientNavigation !== null) await beforeClientNavigation();
       const sourceDocumentIdentity = await page.evaluate(() => globalThis.__open43DocumentIdentity);
@@ -265,7 +261,7 @@ export class Open43SettingsBrowserAdapter {
           label: "settings-client-transition",
           index, contract, viewport, timeoutMs: CAPTURE_TIMEOUT_MS, settleMs: 0,
           navigate: async () => {
-            await activateClientNavigation(page, clientUrl.href);
+            await activateClientNavigation(page);
             await page.waitForURL(clientUrl.href, { timeout: CAPTURE_TIMEOUT_MS });
             clientImmediate = await page.evaluate(() => ({
               document_identity: globalThis.__open43DocumentIdentity,
