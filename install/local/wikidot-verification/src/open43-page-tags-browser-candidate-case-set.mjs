@@ -188,7 +188,7 @@ export function createOpen43PageTagsBrowserCandidateCaseSet({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity: session.privateInputIdentity,
-        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: 2, private_input_identity_sha256: sha256Value(session.privateInputIdentity) },
+        browserCredentialPolicy: "none",
         plan: { schema: "wikijump.open43_page_tags_browser_candidate_plan.v1", site_id: session.fixtureIdentity.site_id, site_slug: SITE_SLUG, case_ids: OPEN43_PAGE_TAGS_CASE_IDS, fixture_category: session.fixtureIdentity.transition_category.slug, fixture_category_id: session.fixtureIdentity.transition_category.category_id, fixture_page_slug: session.fixtureIdentity.transition_category.page_slug, fixture_page_id: session.fixtureIdentity.transition_category.page_id },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
