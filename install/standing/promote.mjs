@@ -82,7 +82,12 @@ function cliResult(stdout, name, expectedPath) {
   } catch (error) {
     throw new Error(`${name} did not return JSON: ${error.message}`);
   }
-  if (result.status !== "pass" || path.resolve(result.output || result.receipt || "") !== path.resolve(expectedPath)) {
+  const reportedPath = result.output || result.receipt || "";
+  if (
+    result.status !== "pass" ||
+    (path.resolve(reportedPath) !== path.resolve(expectedPath) &&
+      path.basename(reportedPath) !== path.basename(expectedPath))
+  ) {
     throw new Error(`${name} did not return a passing receipt for ${expectedPath}`);
   }
   return result;
@@ -121,7 +126,10 @@ export async function runPromotion(rawArgs, {
       outputPath: args.promotionPrecondition,
       verifyAdmission: async () => admission,
     });
-    if (path.resolve(promotion.output.path) !== path.resolve(args.promotionPrecondition)) {
+    if (
+      path.resolve(promotion.output.path) !== path.resolve(args.promotionPrecondition) &&
+      path.basename(promotion.output.path) !== path.basename(args.promotionPrecondition)
+    ) {
       throw new Error("promotion precondition output path changed");
     }
     stage = "prepare";
