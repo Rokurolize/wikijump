@@ -55,6 +55,15 @@ def validate_candidate_merge(
             raise ValueError(
                 f"promotion precondition build {key} does not match the candidate"
             )
+    merge_base = command(
+        "git",
+        "merge-base",
+        candidate["wikijump_commit"],
+        identity["wikijump_sha"],
+        cwd=source_root,
+    )
+    if merge_base != candidate["wikijump_commit"]:
+        raise ValueError("promotion candidate is not an ancestor of the merged source")
     if candidate["wikijump_tree"] != identity["wikijump_tree"]:
         validate_runtime_tree_delta(
             source_root,
@@ -79,7 +88,3 @@ def validate_candidate_merge(
     ).split()
     if len(parents) != 3 or parents[0] != identity["wikijump_sha"]:
         raise ValueError("source checkout is not a normal two-parent merge commit")
-    if candidate["wikijump_commit"] not in parents[1:]:
-        raise ValueError(
-            "promotion precondition candidate parent is not in the merged source"
-        )
