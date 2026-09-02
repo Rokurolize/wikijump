@@ -287,6 +287,21 @@ test("candidate cache misses abort without an external request or gate grant", a
   assert.equal(responseCache.snapshot().misses, 1);
 });
 
+test("candidate cache misses for explicit provider origins use the metered network", async () => {
+  const gate = createBrowserRequestGate({intervalMs: 0});
+  const responseCache = createBrowserResponseCache();
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, responseCache, cacheOnly: true, cacheOnlyAllowedOrigins: ["https://www.youtube.com"]});
+  const miss = createRoute("https://www.youtube.com/embed/example", {resourceType: "stylesheet"});
+
+  await context.routes[0].handler(miss);
+
+  assert.deepEqual(miss.actions, [{type: "continue"}]);
+  assert.equal(gate.snapshot().public_requests, 1);
+  assert.equal(gate.snapshot().enforcement_failed, false);
+  assert.equal(responseCache.snapshot().misses, 1);
+});
+
 test("an explicitly identified persistent source cache reuses documents without a second Wikidot request", async (t) => {
   const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-response-cache-"));
   t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));

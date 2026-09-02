@@ -618,12 +618,13 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false})
  *   publicOriginPredicate?: ((value: string, resourceType: string, method: string) => boolean) | null
  * }} [options]
  */
-export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null, cacheOnly = false} = {}) {
+export async function installBrowserRequestGate(context, {gate, exemptOrigins = [], responseCache = null, publicOriginPredicate = null, cacheOnly = false, cacheOnlyAllowedOrigins = []} = {}) {
   if (!gate || typeof gate.acquire !== "function" || typeof gate.deferForRetryAfter !== "function" || typeof gate.failClosed !== "function" || typeof gate.recordLocalExempt !== "function" || typeof gate.recordUnsupportedRequestBlocked !== "function" || typeof gate.recordWebSocketBlocked !== "function") throw new Error("browser request gate is malformed");
   if (!context || typeof context.route !== "function" || typeof context.routeWebSocket !== "function" || typeof context.on !== "function") throw new Error("browser context cannot enforce request-level capture controls");
   if (responseCache !== null && (typeof responseCache.get !== "function" || typeof responseCache.store !== "function" || typeof responseCache.recordBypass !== "function" || typeof responseCache.snapshot !== "function")) throw new Error("browser response cache is malformed");
   if (publicOriginPredicate !== null && typeof publicOriginPredicate !== "function") throw new Error("browser request-gate public origin predicate is malformed");
   const exempt = normalizedOrigins(exemptOrigins);
+  const cacheOnlyAllowed = normalizedOrigins(cacheOnlyAllowedOrigins);
   const attributedAborts = new WeakMap();
   if (exempt.size > 0) {
     context.on("request", (request) => {
@@ -675,6 +676,22 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
       }
       await servePublicRoute(route, {gate, responseCache, cacheOnly});
     } catch (error) {
+      let cacheOnlyAllowedMiss = false;
+      try {
+        cacheOnlyAllowedMiss = cacheOnly && /^candidate response cache (?:cannot serve |miss: )/u.test(error?.message ?? "") && cacheOnlyAllowed.has(new URL(route.request().url()).origin);
+      } catch {
+        cacheOnlyAllowedMiss = false;
+      }
+      if (cacheOnlyAllowedMiss) {
+        try {
+          await gate.acquire();
+          await route.continue();
+        } catch (continueError) {
+          gate.failClosed(continueError);
+          await abortRoute(route);
+        }
+        return;
+      }
       gate.failClosed(error);
       await abortRoute(route);
     }
