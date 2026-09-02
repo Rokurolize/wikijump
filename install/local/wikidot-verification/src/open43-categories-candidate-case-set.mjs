@@ -278,7 +278,7 @@ class Open43CategoriesRun {
       if (view.capture?.navigation_status !== 200 || view.capture?.failures?.length !== 0 || view.capture?.capture_error) throw new Error(`Q1028 ${actor} capture was not a clean HTTP 200`);
       const expectedActorAll = actor === "administrator" ? expectedAll : expectedAll.filter(({ slug }) => !restricted.has(slug));
       for (const [name, section] of Object.entries(view.sections)) {
-        const includeHidden = ["true_quoted", "false_quoted"].includes(name);
+        const includeHidden = name === "true_quoted";
         const expected = includeHidden ? expectedActorAll : expectedActorAll.filter(({ slug }) => slug === "_default" || !slug.startsWith("_"));
         if (JSON.stringify(section.headings) !== JSON.stringify(expected.map(({ slug }) => slug))) throw new Error(`Q1028 ${actor} ${name} category order or visibility is wrong`);
         if (section.blocks.length !== expected.length || section.blocks.some((children) => JSON.stringify(children) !== JSON.stringify(["H3", "A", "DIV", "DIV"]))) throw new Error(`Q1028 ${actor} ${name} wrapper shape is wrong`);
