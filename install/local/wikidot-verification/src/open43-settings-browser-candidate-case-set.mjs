@@ -581,7 +581,7 @@ export function createOpen43SettingsGroupCandidateCaseSet({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,
         privateInputIdentity,
-        browserCredentialPolicy: { mode: "private-actor-storage-states", storage_state_count: group === "all" || group === "admin" ? 2 : 1, private_input_identity_sha256: sha256Value(privateInputIdentity) },
+        browserCredentialPolicy: group === "theme" || group === "toolbar" ? "none" : { mode: "private-actor-storage-states", storage_state_count: group === "all" || group === "admin" ? 2 : 1, private_input_identity_sha256: sha256Value(privateInputIdentity) },
         plan: { schema: "wikijump.open43_settings_browser_candidate_plan.v1", group, site_slug: SITE_SLUG, page_origin: session.pageOrigin, case_ids: caseIds, fixture_identity_sha256: privateInputIdentity.fixture_identity_sha256, analytics_profile: fixedPlan.analytics_profile, theme_marker: fixedPlan.theme_marker, toolbar_top: true, matrix_order: ["anonymous", "non_admin", "cross_site", "stale_revision", "wrong_origin", "expired_session", "administrator"] },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),

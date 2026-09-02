@@ -336,14 +336,16 @@ function dependencies(events, sourceFilesSeen) {
     assertStableRuntimeIdentity(before, after) { assert.equal(before.identity, after.identity); },
     now: () => "2026-08-10T00:00:00.000Z",
     createBrowserContexts(options) {
-      assert.equal(options.credentialPolicy.mode, "private-actor-storage-states");
-      assert.equal(JSON.stringify(options.credentialPolicy).includes(ADMIN_TOKEN), false);
+      if (options.credentialPolicy !== "none") {
+        assert.equal(options.credentialPolicy.mode, "private-actor-storage-states");
+        assert.equal(JSON.stringify(options.credentialPolicy).includes(ADMIN_TOKEN), false);
+      }
       const contexts = new WeakSet();
       let contextCount = 0;
       return {
         setActiveFixture(fixtureId) { events.push({ seam: "gate", fixtureId }); },
         async newCandidateContext({ storageState }) {
-          assert.equal(storageState.cookies.length === 0 || [ADMIN_TOKEN, NON_ADMIN_TOKEN].includes(storageState.cookies[0].value), true);
+          assert.equal(storageState === null || storageState.cookies.length === 0 || [ADMIN_TOKEN, NON_ADMIN_TOKEN].includes(storageState.cookies[0].value), true);
           const context = {};
           contexts.add(context);
           contextCount += 1;
