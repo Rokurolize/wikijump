@@ -110,6 +110,9 @@ export function parseStandingBrowserParityArgs(argv) {
     timeoutMs: DEFAULT_TIMEOUT_MS,
     settleMs: DEFAULT_SETTLE_MS,
     liveOrigin: DEFAULT_LIVE_ORIGIN,
+    sourceResponseCacheDir: null,
+    sourceResponseCacheIdentity: null,
+    sourceResponseCacheDocuments: false,
   };
   for (let index = 2; index < argv.length; index += 1) {
     const flag = argv[index];
@@ -137,6 +140,14 @@ export function parseStandingBrowserParityArgs(argv) {
     } else if (flag === "--live-origin") {
       args.liveOrigin = exactHttpOrigin(nextArgument(argv, index, flag), flag);
       index += 1;
+    } else if (flag === "--source-response-cache-dir") {
+      args.sourceResponseCacheDir = path.resolve(nextArgument(argv, index, flag));
+      index += 1;
+    } else if (flag === "--source-response-cache-identity") {
+      args.sourceResponseCacheIdentity = nextArgument(argv, index, flag);
+      index += 1;
+    } else if (flag === "--cache-source-documents") {
+      args.sourceResponseCacheDocuments = true;
     } else if (flag === "--live-completion-policy") {
       args.liveCompletionPolicy = path.resolve(nextArgument(argv, index, flag));
       index += 1;
@@ -162,6 +173,10 @@ export function parseStandingBrowserParityArgs(argv) {
       "--live-completion-policy is required before any browser request",
     );
   }
+  if (args.sourceResponseCacheDir !== null && args.sourceResponseCacheIdentity === null) throw new Error("--source-response-cache-identity is required with --source-response-cache-dir");
+  if (args.sourceResponseCacheDir === null && args.sourceResponseCacheIdentity !== null) throw new Error("--source-response-cache-dir is required with --source-response-cache-identity");
+  if (args.sourceResponseCacheDocuments && args.sourceResponseCacheDir === null) throw new Error("--cache-source-documents requires --source-response-cache-dir");
+  if (args.mode !== "live-reference" && (args.sourceResponseCacheDir !== null || args.sourceResponseCacheIdentity !== null || args.sourceResponseCacheDocuments)) throw new Error("source response cache is available only in live-reference mode");
   if (args.mode === "candidate") {
     for (const [flag, value] of [
       ["--candidate-identity", args.candidateIdentity],
@@ -572,6 +587,11 @@ export async function runStandingBrowserParity(args) {
       outputDir: args.outputDir,
       policy,
       candidate: candidateIdentity?.value ?? null,
+      responseCacheOptions: args.sourceResponseCacheDir === null ? null : {
+        persistentDir: args.sourceResponseCacheDir,
+        persistentIdentity: args.sourceResponseCacheIdentity,
+        cacheDocuments: args.sourceResponseCacheDocuments,
+      },
     });
     if (candidateIdentity) {
       runtimeIdentityBefore = await observeCandidateRuntimeIdentity({

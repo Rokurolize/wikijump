@@ -358,7 +358,7 @@ async function browserLifecycle(browser, pageOrigin, positive, negative, plan) {
       navigation: {
         from: positiveUrl,
         to: negativeUrl,
-        preserved_document: documentIdentity === finalDocumentIdentity,
+        replaced_document: documentIdentity !== finalDocumentIdentity,
       },
       csp_header_sha256: sha256(String(cspHeader ?? "")),
       csp_frame_sources: cspFrameSources(cspHeader),
@@ -481,7 +481,7 @@ export function verifyOpen43EmbedVideoBrowserCase(observations) {
     !Number.isFinite(positiveNarrow.frames[1]?.rect?.width) ||
     positiveNarrow.frames[1].rect.width >= positiveSettled.frames[1].rect.width ||
     value.browser.positive.focused_frame.active_element !== "iframe" ||
-    value.browser.navigation?.preserved_document !== true ||
+    value.browser.navigation?.replaced_document !== true ||
     value.browser.cleanup?.page_closed !== true ||
     value.browser.csp_violations?.length !== 0 ||
     !Array.isArray(cspFrameSources) ||
