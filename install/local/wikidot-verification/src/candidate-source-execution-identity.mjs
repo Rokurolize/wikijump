@@ -15,6 +15,7 @@ import {
 const execFileAsync = promisify(execFile);
 const REPOSITORY_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const GIT_OBJECT = /^[0-9a-f]{40}$/u;
+const VERIFICATION_ONLY_PREFIX = "install/local/wikidot-verification/";
 
 export const CANDIDATE_SOURCE_EXECUTION_IDENTITY_SCHEMA =
   "wikijump.candidate_source_execution_identity.v1";
@@ -85,6 +86,15 @@ async function git(args) {
   return stdout.trim();
 }
 
+async function assertCandidateRuntimeUnchanged(candidateCommit, head) {
+  if (candidateCommit === head) return;
+  await git(["merge-base", "--is-ancestor", candidateCommit, head]);
+  const changed = (await git(["diff", "--name-only", `${candidateCommit}..${head}`])).split("\n").filter(Boolean);
+  if (changed.length === 0 || changed.some((file) => !file.startsWith(VERIFICATION_ONLY_PREFIX))) {
+    throw new Error("candidate source execution identity does not bind the sealed candidate runtime");
+  }
+}
+
 export async function collectCandidateSourceExecutionIdentity(candidateIdentity, files, options = {}) {
   const sourceFiles = sourceManifest(files);
   const [status, head, tree, lockContents] = await Promise.all([
@@ -93,6 +103,7 @@ export async function collectCandidateSourceExecutionIdentity(candidateIdentity,
     git(["rev-parse", "HEAD^{tree}"]),
     fs.readFile(path.join(REPOSITORY_ROOT, "deepwell", "Cargo.lock"), "utf8"),
   ]);
+  await assertCandidateRuntimeUnchanged(candidateIdentity.candidate.wikijump_commit, head);
   if (status !== "") throw new Error("candidate source execution checkout must be clean");
   const manifest = [];
   for (const relativePath of sourceFiles) {
