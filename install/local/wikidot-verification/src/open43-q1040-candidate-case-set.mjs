@@ -75,15 +75,17 @@ class Q1040Run {
   #session;
   #browserContexts;
   #resources;
+  #authorName;
   #siteId = null;
   #pages;
   #pageResources = new Map();
 
-  constructor({ session, browserContexts, resources, runId }) {
+  constructor({ session, browserContexts, resources, runId, authorName }) {
     const fixtureId = runId.slice("candidate-run-".length);
     this.#session = session;
     this.#browserContexts = browserContexts;
     this.#resources = resources;
+    this.#authorName = authorName;
     this.#pages = [
       { role: "previous", slug: pageSlug(runId, "previous"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} A previous`, wikitext: "Q1040 previous" },
       { role: "current", slug: pageSlug(runId, "current"), title: `zzzzzzzzzzzz Q1040 ${fixtureId} B current`, wikitext: "Q1040_CURRENT\nQ1040_DEFAULT_START\n[[module NextPage by=\"title\"]]\n[[/module]]\nQ1040_DEFAULT_END\nQ1040_NEXT_START\n[[module NextPage by=\"title\"]]\nNEXT=%%linked_title%%|%%title%%\n[[/module]]\nQ1040_NEXT_END\n[[module PreviousPage]]\nPREVIOUS=%%linked_title%%|%%title%%\n[[/module]]" },
@@ -278,25 +280,14 @@ class Q1040Run {
     const previous = this.#pages[0];
     const capture = observations.capture;
     if (capture?.navigation_status !== 200 || capture?.capture_error || !Array.isArray(capture?.failures)) throw new Error("Q1040 served capture was not a clean HTTP 200");
-    const blockedPrintuserImages = capture.failures.map((failure) => {
-      let url;
-      try { url = new URL(failure.url); } catch { return null; }
-      return failure.kind === "request_failed"
-        && failure.resource_type === "image"
-        && failure.error === "csp"
-        && url.hostname === "www.wikidot.com"
-        && ["/avatar.php", "/userkarma.php"].includes(url.pathname)
-        ? url.pathname
-        : null;
-    });
-    if (capture.failures.length !== 2 || JSON.stringify(blockedPrintuserImages.sort()) !== JSON.stringify(["/avatar.php", "/userkarma.php"])) throw new Error("Q1040 served capture did not retain the exact CSP-blocked Wikidot printuser image boundary");
+    if (capture.failures.length !== 0 || (Array.isArray(capture.request_gate_aborts) && capture.request_gate_aborts.length !== 0)) throw new Error("Q1040 served capture observed unexpected browser request failures");
     const defaultRow = observations.default_row;
     if (
       typeof defaultRow !== "string" ||
       !defaultRow.startsWith('<div class="list-pages-box">') ||
       !defaultRow.includes('<div class="list-pages-item">') ||
       !defaultRow.includes(`<h1><span><a href="/${next.slug}">${next.title}</a></span></h1>`) ||
-      !defaultRow.includes('<p>by <span class="printuser avatarhover">') ||
+      !defaultRow.includes(`<p>by ${this.#authorName} <span class="odate`) ||
       !/<span class="odate time_-?\d+ format_[^"]+">[^<]+<\/span>/u.test(defaultRow) ||
       !defaultRow.includes("Q1040 next") ||
       defaultRow.includes("data-wikijump-compat-") ||
@@ -336,7 +327,9 @@ export function createOpen43Q1040CandidateCaseSet({ sessionFactory = (options) =
       requireCandidateSite(candidateIdentity);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
       if (session.pageOrigin !== candidatePageOrigin(candidateIdentity)) throw new Error("Q1040 session did not bind the sealed candidate origin");
-      const execution = new Q1040Run({ session, browserContexts: candidateBrowserContexts, resources, runId });
+      const authorName = privateInput?.actors?.editor?.name;
+      if (typeof authorName !== "string" || authorName.length === 0) throw new Error("Q1040 editor actor name is missing");
+      const execution = new Q1040Run({ session, browserContexts: candidateBrowserContexts, resources, runId, authorName });
       return Object.freeze({
         sourceFiles: SOURCE_FILES,
         runtimeBindings: session.requiredServiceBindings,

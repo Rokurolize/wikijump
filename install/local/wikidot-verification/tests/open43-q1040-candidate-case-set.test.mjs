@@ -11,10 +11,7 @@ import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const CASE_ID = "Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE";
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
-const PRINTUSER_CSP_FAILURES = Object.freeze([
-  { kind: "request_failed", url: "https://www.wikidot.com/avatar.php?userid=10", resource_type: "image", error: "csp" },
-  { kind: "request_failed", url: "https://www.wikidot.com/userkarma.php?u=10", resource_type: "image", error: "csp" },
-]);
+const PRINTUSER_CSP_FAILURES = Object.freeze([]);
 const hash = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(32);
 const git = (character) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(20);
 
@@ -62,7 +59,7 @@ function fakeCandidateSession() {
       .filter((page) => !page.deleted && page.slug !== current.slug && page.title > current.title)
       .sort((left, right) => left.title.localeCompare(right.title))[0];
     const row = next
-      ? `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by <span class="printuser avatarhover">editor</span> <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`
+      ? `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by editor <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`
       : '<div class="list-pages-box">\n</div>';
     const custom = next
       ? `<div class="list-pages-box"><div class="list-pages-item">NEXT=<a href="/${next.slug}">${next.title}</a>|${next.title}</div></div>`
@@ -144,7 +141,7 @@ function fakeBrowserContexts(state) {
           const next = pages.find((candidate) => candidate.slug.endsWith("-next"));
           return {
             links: pages.filter((candidate) => candidate.slug.endsWith("-next") || candidate.slug.endsWith("-previous")).map((candidate) => ({ href: `/${candidate.slug}`, text: candidate.title })),
-            default_row: `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by <span class="printuser avatarhover">editor</span> <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`,
+            default_row: `<div class="list-pages-box"><div class="list-pages-item"><h1><span><a href="/${next.slug}">${next.title}</a></span></h1><p>by editor <span class="odate time_1 format_%25O">10 Aug 2026 00:00</span></p><p>Q1040 next</p></div></div>`,
             list_pages_box_count: 3,
           };
         },
@@ -170,7 +167,7 @@ test("Q1040 has one executable candidate case through the canonical runner", asy
   const receipt = await runCandidateCaseSet({
     candidateIdentity: identity,
     candidateIdentitySha256: sha256Value(identity),
-    privateInput: {},
+    privateInput: { actors: { editor: { user_id: 10, name: "editor", session_token: "fixture-session" } } },
     privateInputSha256: hash("e"),
     outputDir: path.join(root, "evidence"),
     caseSet,
@@ -198,7 +195,7 @@ test("Q1040 rejects directional links without the default NextPage row", () => {
   const run = createOpen43Q1040CandidateCaseSet({ sessionFactory: () => session }).prepareRun({
     runId: "candidate-run-0123456789ab",
     candidateIdentity: candidateIdentity(),
-    privateInput: {},
+    privateInput: { actors: { editor: { user_id: 10, name: "editor", session_token: "fixture-session" } } },
     signal: null,
     resources: {},
     candidateBrowserContexts: {},
