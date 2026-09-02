@@ -342,7 +342,6 @@ def restore_parked_containers(
             entry["parked_name"],
             entry["original_name"],
             cwd=runtime_home,
-            capture=False,
         )
         if entry["was_running"]:
             command(
@@ -350,7 +349,6 @@ def restore_parked_containers(
                 "start",
                 entry["original_name"],
                 cwd=runtime_home,
-                capture=False,
             )
         after = container_identity(entry["original_name"], runtime_home)
         if (
@@ -381,7 +379,6 @@ def park_containers(
                 old["container_id"],
                 parked_name,
                 cwd=runtime_home,
-                capture=False,
             )
             renamed = container_identity(parked_name, runtime_home)
             if renamed["container_id"] != old["container_id"]:
@@ -394,7 +391,7 @@ def park_containers(
                 "container": renamed,
             }
             if old["running"]:
-                command("docker", "stop", parked_name, cwd=runtime_home, capture=False)
+                command("docker", "stop", parked_name, cwd=runtime_home)
             parked[service]["container"] = container_identity(parked_name, runtime_home)
             if parked[service]["container"]["running"]:
                 raise RuntimeError(f"parked container is still running for {service}")
@@ -420,9 +417,7 @@ def remove_candidate_resources(
     removed_containers = []
     for service in SERVICES:
         container_id = candidate[service]["container_id"]
-        command(
-            "docker", "rm", "--force", container_id, cwd=runtime_home, capture=False
-        )
+        command("docker", "rm", "--force", container_id, cwd=runtime_home)
         if resource_exists("container", container_id, runtime_home):
             raise RuntimeError(
                 f"candidate container remains after cleanup for {service}"
@@ -446,7 +441,7 @@ def remove_candidate_resources(
                 }
             )
             continue
-        command("docker", "image", "rm", image_id, cwd=runtime_home, capture=False)
+        command("docker", "image", "rm", image_id, cwd=runtime_home)
         if resource_exists("image", image_id, runtime_home):
             raise RuntimeError(f"candidate image remains after cleanup for {service}")
         removed_images.append({"service": service, "image_id": image_id})
