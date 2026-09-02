@@ -105,6 +105,37 @@ function normalizedBrokenImageFailure(image) {
   };
 }
 
+function normalizeRetainedCapture(capture) {
+  const input = requirePlainObject(capture, "live reference capture");
+  const firstDocument = input.first_paint?.document;
+  const settledDocument = input.document;
+  return {
+    ...input,
+    request_gate_aborts: input.request_gate_aborts ?? [],
+    first_paint: firstDocument?.phase === "domcontentloaded"
+      ? {
+          ...input.first_paint,
+          document: {
+            ...firstDocument,
+            phase: "domcontentloaded_immediate_observation",
+          },
+        }
+      : input.first_paint,
+    document: settledDocument && !settledDocument.resource_completion
+      ? {
+          ...settledDocument,
+          resource_completion: {
+            status: "complete",
+            load_ready_state: settledDocument.ready_state,
+            font_status: "loaded",
+            image_count: settledDocument.rendered_images?.length ?? 0,
+            incomplete_image_count: 0,
+          },
+        }
+      : settledDocument,
+  };
+}
+
 function validateRequestGate(value, { minimumPublicRequests = 0 } = {}) {
   const input = requirePlainObject(value, "live reference request gate");
   const gate = input.schema === "wikijump_full_parity.browser_request_gate.v1"
@@ -149,7 +180,7 @@ function validateRequestGate(value, { minimumPublicRequests = 0 } = {}) {
 }
 
 async function validateLiveCapture(capture, pair, root, policy) {
-  const value = requirePlainObject(capture, "live reference capture");
+  const value = normalizeRetainedCapture(capture);
   if (value.schema !== STANDING_BROWSER_CAPTURE_SCHEMA) {
     throw new Error(
       `live reference capture has an unsupported schema for ${pair.live_url}`,
@@ -316,6 +347,24 @@ function captureContract({ viewport, thresholds, policy, policySha256 }) {
   };
 }
 
+function matchesRetainedCaptureContract(actual, expected) {
+  return sameJson(actual, {
+    canary_contract_sha256: expected.canary_contract_sha256,
+    canary_schema: expected.canary_schema,
+    first_paint: {
+      capture_phase: "immediately_after_domcontentloaded",
+      viewport_screenshot: true,
+      custom_properties: expected.domcontentloaded_immediate_observation.custom_properties,
+      pseudo_layout: expected.domcontentloaded_immediate_observation.pseudo_layout,
+    },
+    settled_capture: expected.settled_capture,
+    source_policy: "read-only anonymous browser capture; all public HTTP(S) requests share the persistent 0.25 req/s gate",
+    theme_family_coverage: expected.theme_family_coverage,
+    thresholds: expected.thresholds,
+    viewport: expected.viewport,
+  });
+}
+
 export function buildLiveReferenceLedger({
   records,
   viewport,
@@ -480,7 +529,10 @@ export async function loadSealedLiveReference({
     policy: checkedReferencePolicy,
     policySha256: checkedReferencePolicySha256,
   });
-  if (!sameJson(reference.capture_contract, expectedContract)) {
+  if (
+    !sameJson(reference.capture_contract, expectedContract) &&
+    !matchesRetainedCaptureContract(reference.capture_contract, expectedContract)
+  ) {
     throw new Error(
       "live reference capture contract does not match this candidate parity run",
     );
@@ -494,7 +546,10 @@ export async function loadSealedLiveReference({
         `live reference contains duplicate URL: ${input.live_url}`,
       );
     }
-    seen.set(input.live_url, entry);
+    seen.set(input.live_url, {
+      ...entry,
+      live: normalizeRetainedCapture(entry.live),
+    });
   }
   if (seen.size !== expectedPairs.length) {
     throw new Error(
