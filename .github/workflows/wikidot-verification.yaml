@@ -1,7 +1,6 @@
 name: '[wikidot] Verification tests'
 
-# Wikidot is currently unavailable. Keep this live/candidate-dependent suite
-# manual so normal development does not produce outage failures or retries.
+# Live Wikidot capture is never a CI operation; this manual workflow runs offline against retained identity-bound evidence.
 on:
   workflow_dispatch:
 

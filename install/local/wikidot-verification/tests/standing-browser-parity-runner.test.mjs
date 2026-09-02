@@ -50,7 +50,39 @@ test("parity browser cleanup attempts every resource and reports every failure",
   assert.deepEqual(attempts, ["context", "browser"]);
 });
 
-test("live reference capture requires a policy before a browser can be opened", () => {
+test("live reference capture requires an identity-bound persistent document cache", () => {
+  assert.throws(
+    () =>
+      parseStandingBrowserParityArgs([
+        "node",
+        "runner",
+        "--mode",
+        "live-reference",
+        "--output-dir",
+        "/tmp/standing-reference",
+        "--live-completion-policy",
+        policy,
+      ]),
+    /--source-response-cache-dir/u,
+  );
+  assert.throws(
+    () =>
+      parseStandingBrowserParityArgs([
+        "node",
+        "runner",
+        "--mode",
+        "live-reference",
+        "--output-dir",
+        "/tmp/standing-reference",
+        "--live-completion-policy",
+        policy,
+        "--source-response-cache-dir",
+        "/tmp/standing-source-cache",
+        "--source-response-cache-identity",
+        "scp-wiki:chromium-149:policy-v1",
+      ]),
+    /--cache-source-documents/u,
+  );
   const args = parseStandingBrowserParityArgs([
     "node",
     "runner",
@@ -60,13 +92,19 @@ test("live reference capture requires a policy before a browser can be opened", 
     "/tmp/standing-reference",
     "--live-completion-policy",
     policy,
+    "--source-response-cache-dir",
+    "/tmp/standing-source-cache",
+    "--source-response-cache-identity",
+    "scp-wiki:chromium-149:policy-v1",
+    "--cache-source-documents",
     "--viewport",
     "1440x960",
   ]);
   assert.equal(args.mode, "live-reference");
   assert.deepEqual(args.viewport, { width: 1440, height: 960 });
   assert.equal(args.timeoutMs, 900_000);
-  assert.equal(args.sourceResponseCacheDir, null);
+  assert.equal(args.sourceResponseCacheDir, "/tmp/standing-source-cache");
+  assert.equal(args.sourceResponseCacheDocuments, true);
   const cached = parseStandingBrowserParityArgs([
     "node",
     "runner",

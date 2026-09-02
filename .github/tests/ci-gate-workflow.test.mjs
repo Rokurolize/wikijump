@@ -193,6 +193,10 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
     assert.match(source, /unshare --net --mount-proc bash -c/u)
     assert.match(source, /ip link set lo up/u)
   }
+  for (const [name, source] of [["ci-gate.yaml", centralWorkflow], ["full-ci.yaml", browserWorkflow], ["wikidot-verification.yaml", verificationWorkflow]]) {
+    assert.match(source, /WIKIDOT_LIVE_PROBES: "disabled"/u, `${name}: live probes must stay disabled`)
+    assert.match(source, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/u, `${name}: offline egress must stay enabled`)
+  }
   const framerail = stepBlock(jobBlock(centralWorkflow, "framerail"), "Validate draft")
   assert.match(framerail.join("\n"), /unshare --net --mount-proc bash -c/u)
   assert.match(framerail.join("\n"), /ip link set lo up/u)
