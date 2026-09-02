@@ -25,6 +25,12 @@ const candidateIdentity = {
       host: "candidate.wikijump.localhost",
       port: 18443,
     },
+    site_origins: {
+      "scp-wiki": {
+        page: "https://scp-wiki.wikijump.localhost:18443",
+        files: "https://scp-wiki.wjfiles.localhost:18443",
+      },
+    },
   },
 };
 
