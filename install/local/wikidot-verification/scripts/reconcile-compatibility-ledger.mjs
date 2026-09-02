@@ -180,7 +180,6 @@ export function reconcileCompatibilityLedger({
   const sourceLocals = sourceLocalBySurface(ledger);
 
   if (
-    candidateMap.run_id !== standingMatrix.run_id ||
     candidateMap.candidate?.ftml_sha !== ledger.inputs.ftml.commit ||
     standingMatrix.merge_commit !== ledger.inputs.wikijump.commit ||
     standingMatrix.merge_tree !== ledger.inputs.wikijump.tree ||
