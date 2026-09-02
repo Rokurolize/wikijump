@@ -106,7 +106,17 @@ function normalizedBrokenImageFailure(image) {
 }
 
 function validateRequestGate(value, { minimumPublicRequests = 0 } = {}) {
-  const gate = requirePlainObject(value, "live reference request gate");
+  const input = requirePlainObject(value, "live reference request gate");
+  const gate = input.schema === "wikijump_full_parity.browser_request_gate.v1"
+    ? input
+    : input.snapshot?.schema === "wikijump_full_parity.browser_request_gate.v1"
+      ? {
+          ...input.snapshot,
+          config_path: input.config_path,
+          config_sha256: input.config_sha256,
+          public_requests: input.snapshot.public_requests ?? input.snapshot.grants?.length ?? 0,
+        }
+      : input;
   if (gate.schema !== "wikijump_full_parity.browser_request_gate.v1") {
     throw new Error("live reference request gate has an unsupported schema");
   }
