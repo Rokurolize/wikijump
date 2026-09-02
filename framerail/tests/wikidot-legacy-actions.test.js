@@ -90,6 +90,34 @@ test("custom-class standalone print controls use the typed browser action", asyn
   assert.equal(printCalls, 1)
 })
 
+test("standalone actions activate from Space and Enter keyboard events", async () => {
+  const selector = 'a[href="javascript:;"]'
+  const action = actionElement()
+  const listeners = new Map()
+  const root = {
+    addEventListener: (name, listener) => listeners.set(name, listener),
+    removeEventListener: () => {},
+    querySelectorAll: (query) => (query === selector ? [action] : [])
+  }
+  action.parentElement = root
+  let calls = 0
+
+  wikidotLegacyActions(root, {
+    actions: [{ type: "source" }],
+    runtime: { source: () => (calls += 1) }
+  })
+
+  for (const key of [" ", "Spacebar", "Space", "Enter"]) {
+    await listeners.get("keydown")({
+      target: action,
+      key,
+      preventDefault: () => {},
+      stopPropagation: () => {}
+    })
+  }
+  assert.equal(calls, 4)
+})
+
 test("standalone edit clicks use the exact control set and fail closed on extras", async () => {
   const selector = 'a[href="javascript:;"]'
   const exact = actionElement()
