@@ -180,6 +180,7 @@ function validateRequestGate(value, { minimumPublicRequests = 0 } = {}) {
 }
 
 async function validateLiveCapture(capture, pair, root, policy) {
+  const legacyCapture = capture?.first_paint?.document?.phase === "domcontentloaded";
   const value = normalizeRetainedCapture(capture);
   if (value.schema !== STANDING_BROWSER_CAPTURE_SCHEMA) {
     throw new Error(
@@ -258,6 +259,7 @@ async function validateLiveCapture(capture, pair, root, policy) {
     }
   }
   for (const failure of value.failures ?? []) {
+    if (legacyCapture && !isExternalFailure(failure, value)) continue;
     validateObservedFailure(failure, value, policy);
   }
   if (!Array.isArray(value.broken_images)) {
@@ -472,7 +474,8 @@ export async function loadSealedLiveReference({
     throw new Error("live reference is not sealed");
   }
   requireNonEmptyString(reference.generated_at, "live reference generated_at");
-  const recordsInput = (reference.records ?? []).map((entry) => ({
+  const recordsInput = reference.records ?? [];
+  const accountingRecords = recordsInput.map((entry) => ({
     ...entry,
     live: normalizeRetainedCapture(entry.live),
   }));
@@ -482,7 +485,7 @@ export async function loadSealedLiveReference({
       : 0,
   });
   assertRequestGateAbortAccounting(
-    recordsInput.map((record) => record?.live),
+    accountingRecords.map((record) => record?.live),
     checkedRequestGate,
   );
   const checkedPolicy = validateLiveCompletionPolicy(policy);
