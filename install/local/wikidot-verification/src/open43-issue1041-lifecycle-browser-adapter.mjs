@@ -151,7 +151,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     const control = this.#control(page, label);
     await control.focus();
     if (mode === "click") await control.click();
-    else if (mode === "space") await control.press("Enter");
+    else if (mode === "space") await control.press("Space");
     else {
       await page.evaluate(({ selector, label }) => {
         const element = [...document.querySelectorAll(selector)]
