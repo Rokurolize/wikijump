@@ -232,6 +232,7 @@ async fn find_viewable_render_page_rows(
         }
     }
 
+    pages.truncate(target_count);
     Ok(ViewableCountPagesRows {
         pages: FoundPages { pages },
         metadata: metadata.unwrap_or_default(),
