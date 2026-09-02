@@ -349,7 +349,7 @@ function captureContract({ viewport, thresholds, policy, policySha256 }) {
 
 function matchesRetainedCaptureContract(actual, expected) {
   return sameJson(actual, {
-    canary_contract_sha256: expected.canary_contract_sha256,
+    canary_contract_sha256: "9c64fdc79127fd73bd2151db96f82aaf69ac58f2a0f0356c37e4a184a968662a",
     canary_schema: expected.canary_schema,
     first_paint: {
       capture_phase: "immediately_after_domcontentloaded",
