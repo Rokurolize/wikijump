@@ -107,6 +107,7 @@ function normalizedBrokenImageFailure(image) {
 
 function normalizeRetainedCapture(capture) {
   const input = requirePlainObject(capture, "live reference capture");
+  const legacyCapture = input.first_paint?.document?.phase === "domcontentloaded";
   const firstDocument = input.first_paint?.document;
   const settledDocument = input.document;
   return {
@@ -131,8 +132,9 @@ function normalizeRetainedCapture(capture) {
             image_count: settledDocument.rendered_images?.length ?? 0,
             incomplete_image_count: 0,
           },
-        }
+      }
       : settledDocument,
+    ...(legacyCapture ? { legacy_capture: true } : {}),
   };
 }
 
