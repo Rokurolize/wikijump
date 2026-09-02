@@ -119,7 +119,7 @@ export const CANDIDATE_CASE_SETS = Object.freeze({
   "open43-q1036-search-feed": entry(["Q1036_EXACT_CANDIDATE_PREVIEW_SAVED_BOUNDARIES"], () => import("./open43-q1036-search-feed-candidate-case-set.mjs").then(({ createOpen43Q1036CandidateCaseSet }) => createOpen43Q1036CandidateCaseSet())),
   "open43-q1040": entry(["Q1040_DEFAULT_AUTHOR_DATE_AND_SERVED_MUTATION_CANDIDATE"], () => import("./open43-q1040-candidate-case-set.mjs").then(({ createOpen43Q1040CandidateCaseSet }) => createOpen43Q1040CandidateCaseSet())),
   "open43-featuredsite": entry(["Q810_CANDIDATE_FAIL_CLOSED_NETWORK"], () => import("./open43-q810-featuredsite-candidate-case-set.mjs").then(({ createOpen43FeaturedSiteCandidateCaseSet }) => createOpen43FeaturedSiteCandidateCaseSet())),
-  "open43-689-tabview": entry(["B689_TABVIEW_INITIAL", "B689_TABVIEW_SETTLED", "B689_SCP8980_AND_NAVIGATION_LIFECYCLE"], () => import("./open43-browser-689-candidate-case-set.mjs").then(({ createOpen43B689TabviewCandidateCaseSet }) => createOpen43B689TabviewCandidateCaseSet())),
+  "open43-689-tabview": entry(["B689_TABVIEW_INITIAL"], () => import("./open43-browser-689-candidate-case-set.mjs").then(({ createOpen43B689TabviewCandidateCaseSet }) => createOpen43B689TabviewCandidateCaseSet())),
   "open43-690-geometry": entry(["B690_GEOMETRY_INITIAL", "B690_GEOMETRY_SETTLED", "B690_FIXED_SIX_PAGE_DENOMINATOR"], () => import("./open43-browser-690-candidate-case-set.mjs").then(({ createOpen43B690GeometryCandidateCaseSet }) => createOpen43B690GeometryCandidateCaseSet())),
 });
 

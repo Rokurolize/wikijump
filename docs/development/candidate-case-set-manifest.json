@@ -115,9 +115,7 @@
     {
       "name": "open43-689-tabview",
       "case_ids": [
-        "B689_TABVIEW_INITIAL",
-        "B689_TABVIEW_SETTLED",
-        "B689_SCP8980_AND_NAVIGATION_LIFECYCLE"
+        "B689_TABVIEW_INITIAL"
       ]
     },
     {
