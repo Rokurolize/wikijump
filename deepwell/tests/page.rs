@@ -22915,6 +22915,153 @@ async fn categories_module_lists_active_categories_and_honors_include_hidden() {
 }
 
 #[tokio::test]
+async fn categories_module_refreshes_inventory_after_category_pages_come_and_go() {
+    const CATEGORY_AAA: &str = "fixture-categories-lifecycle-aaa";
+    const CATEGORY_ZZZ: &str = "fixture-categories-lifecycle-zzz";
+    const PAGE_AAA: &str = "fixture-categories-lifecycle-aaa-page";
+    const PAGE_ZZZ: &str = "fixture-categories-lifecycle-zzz-page";
+    const INDEX_PAGE: &str = "fixture-categories-lifecycle-index";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (page_slug, category_slug) in [(PAGE_AAA, CATEGORY_AAA), (PAGE_ZZZ, CATEGORY_ZZZ)]
+    {
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            page_slug,
+            page_slug,
+            "lifecycle category page",
+        )
+        .await;
+        let category =
+            CategoryService::get_or_create(runner.context(), site_id, category_slug)
+                .await
+                .expect("lifecycle category should be created");
+        let page = PageTable::find()
+            .filter(
+                sea_orm::Condition::all()
+                    .add(page::Column::SiteId.eq(site_id))
+                    .add(page::Column::Slug.eq(page_slug)),
+            )
+            .one(runner.context().transaction())
+            .await
+            .expect("lifecycle page lookup should not fail")
+            .expect("lifecycle page should exist");
+        let mut page = page.into_active_model();
+        page.page_category_id = Set(category.category_id);
+        page.update(runner.context().transaction())
+            .await
+            .expect("lifecycle page should move categories");
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_PAGE,
+        "Fixture Categories Lifecycle Index",
+        "LIFECYCLE_START\n[[module Categories]]\nLIFECYCLE_END",
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_PAGE,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("Categories lifecycle index should exist");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+    for category in [CATEGORY_AAA, CATEGORY_ZZZ] {
+        assert!(
+            html.contains(&format!("<h3>{category}</h3>")),
+            "a newly populated category should render:\n{html}",
+        );
+    }
+    assert!(
+        html.find(CATEGORY_AAA).expect("aaa category should render")
+            < html.find(CATEGORY_ZZZ).expect("zzz category should render"),
+        "lifecycle categories should render in canonical order:\n{html}",
+    );
+
+    for page_slug in [PAGE_AAA, PAGE_ZZZ] {
+        let page = run_endpoint!(
+            runner,
+            page_get,
+            json!({"site_id": site_id, "page": page_slug}),
+        )
+        .expect("lifecycle page should exist before deletion");
+        set_mutation_request_context(
+            &mut runner,
+            ADMIN_USER_ID,
+            site_id,
+            Reference::Id(page.page_id),
+        );
+        run_endpoint!(
+            runner,
+            page_delete,
+            json!({
+                "site_id": site_id,
+                "page": page.page_id,
+                "last_revision_id": page.revision_id,
+                "revision_comments": "remove lifecycle category page",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+    }
+    let index = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": INDEX_PAGE}),
+    )
+    .expect("Categories lifecycle index should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": index.page_category_id,
+            "page_id": index.page_id,
+        }),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": INDEX_PAGE,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("Categories lifecycle index should exist after deletions");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+    for category in [CATEGORY_AAA, CATEGORY_ZZZ] {
+        assert!(
+            !html.contains(&format!("<h3>{category}</h3>")),
+            "an emptied category must leave the inventory, not render empty:\n{html}",
+        );
+    }
+    assert!(
+        html.contains("<h3>_default</h3>"),
+        "the surrounding inventory must survive the lifecycle:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn page_tree_module_renders_current_page_hierarchy_with_live_depth_dom() {
     const ROOT: &str = "fixture-pagetree-root";
     const ALPHA: &str = "fixture-pagetree-alpha";
