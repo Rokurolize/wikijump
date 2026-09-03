@@ -428,4 +428,32 @@ mod tests {
         let bare = preview_flickr("[[module FlickrGallery]]");
         assert!(bare.contains("Sorry, no photos."), "{bare}");
     }
+
+    #[test]
+    fn flickr_gallery_documented_limits_stay_literal_without_provider_fetch() {
+        // Retained #1039 contract: the spec documents perPage 1-100,
+        // tagMode any/all, 7 sort values, 4 size values, 7 contentType
+        // values, and their defaults. Out-of-range, non-numeric, unknown
+        // enum, and unknown-attribute invocations stay byte-literal so no
+        // provider is fetched and no photos are fabricated.
+        for source in [
+            "[[module FlickrGallery perPage=\"0\"]]",
+            "[[module FlickrGallery perPage=\"101\"]]",
+            "[[module FlickrGallery perPage=\"abc\"]]",
+            "[[module FlickrGallery tagMode=\"bogus\"]]",
+            "[[module FlickrGallery sort=\"bogus\"]]",
+            "[[module FlickrGallery size=\"bogus\"]]",
+            "[[module FlickrGallery contentType=\"bogus\"]]",
+            "[[module FlickrGallery limitPages=\"0\"]]",
+            "[[module FlickrGallery foo=\"bar\"]]",
+        ] {
+            let rendered = preview_flickr(source);
+            assert_eq!(rendered, source, "{source}");
+            assert!(!rendered.contains("flickr-gallery-box"), "{source}");
+            assert!(!rendered.contains("No such module"), "{source}");
+        }
+
+        let bare = preview_flickr("[[module FlickrGallery]]");
+        assert!(bare.contains("Sorry, no photos."), "{bare}");
+    }
 }
