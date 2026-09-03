@@ -287,4 +287,50 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn star_registry_rejects_cross_index_fingerprint_reuse() {
+        // A forged browser request must not reuse one star control's
+        // fingerprint at another index: the mutation gate resolves the exact
+        // index/fingerprint pair or writes nothing. Values 1-5 follow the
+        // retained live star widget semantics.
+        let registry = RateActionRegistry::for_rendered_modules(1, PageRatingType::Stars);
+        let body =
+            crate::services::render::rate_module::render_read_only_star_rate_module(
+                ftml::data::ScoreValue::Integer(0),
+                Some(0),
+                "",
+            );
+        let browser = registry
+            .browser_registry_for_wikidot_html(&body, 7, 42, 91, None)
+            .expect("the exact star renderer output should receive a sidecar");
+        let fingerprints: Vec<&str> = browser
+            .actions
+            .iter()
+            .map(|action| match action {
+                RateBrowserAction::Rate { fingerprint, .. }
+                | RateBrowserAction::RateCancel { fingerprint, .. } => {
+                    fingerprint.as_str()
+                }
+            })
+            .collect();
+        assert_eq!(fingerprints.len(), 5);
+        for (index, fingerprint) in fingerprints.iter().enumerate() {
+            assert!(
+                registry.resolve(index, fingerprint).is_some(),
+                "the exact pair at index {index} must resolve",
+            );
+            let other = (index + 1) % fingerprints.len();
+            assert!(
+                registry.resolve(other, fingerprint).is_none(),
+                "the fingerprint at index {index} must not resolve at index {other}",
+            );
+        }
+        assert!(
+            registry
+                .resolve(fingerprints.len(), fingerprints[0])
+                .is_none(),
+            "an out-of-range index must not resolve",
+        );
+    }
 }
