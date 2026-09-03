@@ -21236,6 +21236,128 @@ async fn backlinks_module_renders_current_page_incoming_links() {
 }
 
 #[tokio::test]
+async fn backlinks_module_forgets_removed_links_and_collapses_duplicate_linkers() {
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+    let target_slug = "fixture-backlinks-unlink-target";
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        target_slug,
+        "Fixture Backlinks Unlink Target",
+        "UNLINK_START\n[[module Backlinks]]\nUNLINK_END",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-linker-delta",
+        "Fixture Backlinks Linker Delta",
+        &format!(
+            "[[[{target_slug}|first target link]]] middle [[[{target_slug}|second target link]]]"
+        ),
+    )
+    .await;
+    let echo_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "fixture-backlinks-linker-echo",
+        "Fixture Backlinks Linker Echo",
+        &format!("[[[{target_slug}|echo target link]]]"),
+    )
+    .await;
+
+    let target = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": target_slug}),
+    )
+    .expect("Backlinks unlink target should exist");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": target.page_category_id,
+            "page_id": target.page_id,
+        }),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": target_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("Backlinks target should exist after rerender");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+    assert_eq!(
+        html.matches("Fixture Backlinks Linker Delta").count(),
+        1,
+        "a double-linking source must collapse to one backlink row:\n{html}",
+    );
+    assert!(
+        html.contains("Fixture Backlinks Linker Echo"),
+        "both linkers should render before the unlink edit:\n{html}",
+    );
+
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": "fixture-backlinks-linker-echo",
+            "last_revision_id": echo_revision,
+            "revision_comments": "remove backlink for unlink freshness",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": "This page no longer links to the backlinks target.",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("unlink edit should create a revision");
+    run_endpoint!(
+        runner,
+        page_rerender,
+        json!({
+            "site_id": site_id,
+            "category_id": target.page_category_id,
+            "page_id": target.page_id,
+        }),
+    );
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": target_slug,
+            "details": {
+                "compiled": true
+            },
+        }),
+    )
+    .expect("Backlinks target should exist after unlink rerender");
+    let html = page
+        .compiled_body_html
+        .expect("compiled body should be included in page_get details");
+    assert!(
+        !html.contains("Fixture Backlinks Linker Echo"),
+        "a removed inbound link must disappear on the next render:\n{html}",
+    );
+    assert!(
+        html.contains("Fixture Backlinks Linker Delta"),
+        "the remaining linker must survive the unlink edit:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn backlinks_module_page_preview_renders_current_page_incoming_links() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
