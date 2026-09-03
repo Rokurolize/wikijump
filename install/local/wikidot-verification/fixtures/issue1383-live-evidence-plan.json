@@ -22,7 +22,7 @@
     "public_regression_commit": "ce9f61a66a711165cfe0a1e608a7870b1f4ff901",
     "public_regression_tree": "7598f5dee9f2f775ad585a987126841e557d1f18",
     "test_path": "deepwell/tests/page.rs",
-    "test_sha256": "90343f11fbe66793b5ecefbb1c7a872268c264b84b61c1d77cc1e669f24a1820",
+    "test_sha256": "49ec038c8b1827a472efde8f153cbee5f124850ae3a43e85eae86bb088756e53",
     "test_anchor": "listpages_generated_html_preview_saved_section_controls",
     "test_body_sha256": "650187fc93f4b6a653d38b3756eaf6f6e4fb377e37f86345e831fa4267871561"
   },
