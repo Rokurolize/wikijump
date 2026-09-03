@@ -8,6 +8,9 @@ const request = (form, options = {}) =>
     method: options.method ?? "POST",
     headers: {
       "content-type": "application/x-www-form-urlencoded",
+      ...(form.wikidot_token7 !== undefined
+        ? { cookie: `wikidot_token7=${form.wikidot_token7}` }
+        : {}),
       ...(options.headers ?? {})
     },
     body: options.method === "GET" ? undefined : new URLSearchParams(form)
@@ -123,15 +126,21 @@ test("ListPages keeps the later URL-form value for duplicate scalar fields", asy
     return { body: input.moduleBody }
   }
   const forms = [
-    "moduleName=list%2FListPagesModule&module_body=first&module_body=second&category=one&category=two&wikidot_token7=first-token&wikidot_token7=second-token",
-    "moduleName=list%2FListPagesModule&module_body=second&module_body=first&category=two&category=one&wikidot_token7=second-token&wikidot_token7=first-token"
+    {
+      body: "moduleName=list%2FListPagesModule&module_body=first&module_body=second&category=one&category=two&wikidot_token7=first-token&wikidot_token7=second-token",
+      cookie: "wikidot_token7=second-token"
+    },
+    {
+      body: "moduleName=list%2FListPagesModule&module_body=second&module_body=first&category=two&category=one&wikidot_token7=second-token&wikidot_token7=first-token",
+      cookie: "wikidot_token7=first-token"
+    }
   ]
 
-  for (const form of forms) {
+  for (const { body: form, cookie } of forms) {
     const response = await handleAjaxModuleConnectorRequest(
       new Request("http://scp-wiki.local/ajax-module-connector.php", {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: { "content-type": "application/x-www-form-urlencoded", cookie },
         body: form
       }),
       { siteId: 6000006, renderListPages }
@@ -157,16 +166,181 @@ test("ListPages keeps the later URL-form value for duplicate scalar fields", asy
   ])
 })
 
-test("ListPages ignores callback and token controls regardless of form order", async () => {
+test("ListPages rejects a mismatched public token with wrong_token7", async () => {
   const calls = []
-  for (const body of [
-    "callbackIndex=17&wikidot_token7=client-token&name=scp-173&moduleName=list%2FListPagesModule&module_body=%%fullname%%",
-    "module_body=%%fullname%%&moduleName=list%2FListPagesModule&name=scp-173&wikidot_token7=other-token&callbackIndex=91"
+  for (const { body, cookie } of [
+    {
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=999999",
+      cookie: "wikidot_token7=123456"
+    },
+    {
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=123456",
+      cookie: "wikidot_token7=777777"
+    },
+    {
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=999999",
+      cookie: "other-cookie=1"
+    },
+    {
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=999999",
+      cookie: null
+    }
+  ]) {
+    const headers = { "content-type": "application/x-www-form-urlencoded" }
+    if (cookie !== null) headers.cookie = cookie
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers,
+        body
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "rows" }
+        }
+      }
+    )
+    assert.equal(response.status, 200)
+    const payload = await response.json()
+    assert.equal(payload.status, "wrong_token7")
+    assert.equal(payload.message, "no")
+    assert.equal(payload.callbackIndex, null)
+    assert.equal(typeof payload.CURRENT_TIMESTAMP, "number")
+  }
+  assert.equal(calls.length, 0)
+})
+
+test("ListPages keeps the accepted contract for an omitted public token", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=123456"
+      },
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        calls.push(input)
+        return { body: "rows" }
+      }
+    }
+  )
+  assert.deepEqual(await response.json(), { status: "ok", body: "rows" })
+  assert.equal(calls.length, 1)
+})
+
+test("ListPages accepts any echoed public token without an allowlist", async () => {
+  const calls = []
+  for (const token of ["123456", "777777"]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          cookie: `wikidot_token7=${token}`
+        },
+        body: `moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=${token}`
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async (input) => {
+          calls.push(input)
+          return { body: "rows" }
+        }
+      }
+    )
+    assert.equal(response.status, 200)
+    assert.deepEqual(await response.json(), { status: "ok", body: "rows" })
+  }
+  assert.equal(calls.length, 2)
+})
+
+test("ListPages validates the selected duplicate public token", async () => {
+  const calls = []
+  const mismatched = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=123456"
+      },
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=123456&wikidot_token7=999999"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        calls.push(input)
+        return { body: "rows" }
+      }
+    }
+  )
+  assert.equal((await mismatched.json()).status, "wrong_token7")
+
+  const matched = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=123456"
+      },
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=999999&wikidot_token7=123456"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        calls.push(input)
+        return { body: "rows" }
+      }
+    }
+  )
+  assert.deepEqual(await matched.json(), { status: "ok", body: "rows" })
+  assert.equal(calls.length, 1)
+})
+
+test("ListPages echoes callbackIndex on the wrong_token7 envelope", async () => {
+  const response = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=123456"
+      },
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=999999&callbackIndex=42"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render on token mismatch")
+    }
+  )
+  const payload = await response.json()
+  assert.equal(payload.status, "wrong_token7")
+  assert.equal(payload.message, "no")
+  assert.equal(payload.callbackIndex, "42")
+  assert.equal(typeof payload.CURRENT_TIMESTAMP, "number")
+})
+
+test("ListPages validates the public token but excludes controls from render parameters", async () => {
+  const calls = []
+  for (const { body, cookie } of [
+    {
+      body: "callbackIndex=17&wikidot_token7=client-token&name=scp-173&moduleName=list%2FListPagesModule&module_body=%%fullname%%",
+      cookie: "wikidot_token7=client-token"
+    },
+    {
+      body: "module_body=%%fullname%%&moduleName=list%2FListPagesModule&name=scp-173&wikidot_token7=other-token&callbackIndex=91",
+      cookie: "wikidot_token7=other-token"
+    }
   ]) {
     const response = await handleAjaxModuleConnectorRequest(
       new Request("http://scp-wiki.local/ajax-module-connector.php", {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: { "content-type": "application/x-www-form-urlencoded", cookie },
         body
       }),
       {

@@ -393,6 +393,30 @@ const readUrlEncodedForm = async (request) => {
  */
 const fieldValue = (fields, name) => fields.get(name) ?? ""
 
+/**
+ * Selected public token from the request cookie jar. Live Wikidot binds
+ * the ListPages `wikidot_token7` form field to the presented cookie by
+ * exact echo: any echoed value is accepted and any mismatch fails with
+ * `wrong_token7`, without a server-issued allowlist. Duplicate cookie
+ * names keep the last value, matching the form decoder below; that
+ * composition is unobserved live and follows the evidenced last-wins rule
+ * by analogy.
+ *
+ * @param {Request} request
+ */
+const requestWikidotTokenCookie = (request) => {
+  const header = request.headers.get("cookie")
+  if (header === null) return undefined
+  let selected
+  for (const part of header.split(";")) {
+    const separator = part.indexOf("=")
+    if (separator === -1) continue
+    if (part.slice(0, separator).trim() !== "wikidot_token7") continue
+    selected = part.slice(separator + 1).trim()
+  }
+  return selected
+}
+
 /** @param {string} value */
 const isCanonicalPositiveDecimal = (value) => /^[1-9][0-9]*$/u.test(value)
 
@@ -1557,6 +1581,25 @@ export const handleAjaxModuleConnectorRequest = async (
       continue
     }
     parameters[key] = value
+  }
+
+  // Live Wikidot validates the selected (last) public token against the
+  // presented cookie by exact echo before rendering ListPages rows: a
+  // mismatch, including a form token without its cookie, fails with
+  // `wrong_token7`, while any echoed value is accepted. An omitted form
+  // token keeps the longstanding accepted contract: no live observation
+  // covers a truly absent form field, and the pinned default-row behavior
+  // for tokenless requests stands until one does.
+  const formToken = fields.get("wikidot_token7")
+  if (formToken !== undefined && formToken !== requestWikidotTokenCookie(request)) {
+    return jsonResponse({
+      status: "wrong_token7",
+      message: "no",
+      CURRENT_TIMESTAMP: Math.floor(Date.now() / 1000),
+      callbackIndex: fields.has("callbackIndex")
+        ? fieldValue(fields, "callbackIndex")
+        : null
+    })
   }
 
   try {
