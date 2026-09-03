@@ -375,3 +375,57 @@ fn render_flickr_no_photos(source: &str, title: &str) -> String {
         title = escape_list_pages_html_text(title),
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::compat::CompatHtmlFragments;
+    use super::expand_flickr_gallery_preview_modules;
+    use ftml::data::{PageInfo, ScoreValue};
+    use ftml::layout::Layout;
+    use ftml::settings::{WikitextMode, WikitextSettings};
+    use std::borrow::Cow;
+
+    fn preview_flickr(source: &str) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("flickr-fixture"),
+            category: None,
+            site: Cow::Borrowed("flickr-fixture"),
+            title: Cow::Borrowed("Flickr fixture"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let expanded = expand_flickr_gallery_preview_modules(
+            source.to_owned(),
+            &page_info,
+            &settings,
+            Some(1),
+            None,
+            &mut compat_html,
+        );
+        compat_html.restore(&expanded)
+    }
+
+    #[test]
+    fn flickr_gallery_with_arguments_stays_literal_without_provider_fetch() {
+        // Retained #1039 contract: only the bare documented opener renders
+        // the preview no-photos diagnostics. Argument-bearing invocations
+        // (e.g. the spec's tags/tagMode example) stay literal so no provider
+        // is fetched and no photos are fabricated.
+        for source in [
+            "[[module FlickrGallery tags=\"linux,sun\" tagMode=\"all\"]]",
+            "[[module FlickrGallery userName=\"fixture\" perPage=\"5\"]]",
+        ] {
+            let rendered = preview_flickr(source);
+            assert_eq!(rendered, source, "{source}");
+            assert!(!rendered.contains("flickr-gallery-box"), "{source}");
+            assert!(!rendered.contains("No such module"), "{source}");
+        }
+
+        let bare = preview_flickr("[[module FlickrGallery]]");
+        assert!(bare.contains("Sorry, no photos."), "{bare}");
+    }
+}
