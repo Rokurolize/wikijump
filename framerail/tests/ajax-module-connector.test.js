@@ -919,46 +919,46 @@ test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikido
   }
 })
 
-test("SiteChanges browser family accepts single-quoted all via canonical forwarding", async () => {
-  let received
-  const response = await handleAjaxModuleConnectorRequest(
-    request({
-      moduleName: "changes/SiteChangesListModule",
+test("SiteChanges browser family accepts single-quoted all/source/files via canonical forwarding", async () => {
+  for (const { options, expected } of [
+    { options: "{'all':true}", expected: '{"all":true}' },
+    { options: "{'source':true}", expected: '{"source":true}' },
+    { options: "{'files':true}", expected: '{"files":true}' }
+  ]) {
+    let received
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        moduleName: "changes/SiteChangesListModule",
+        page: "1",
+        perpage: "20",
+        pageId: "74503778",
+        categoryId: "",
+        options,
+        callbackIndex: "5",
+        wikidot_token7: "client-token"
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderSiteChangesModule: async (input) => {
+          received = input
+          return { status: "ok", body: '<div class="pager">page 1</div>' }
+        }
+      }
+    )
+
+    assert.equal((await response.json()).status, "ok")
+    assert.deepEqual(received, {
+      siteId: 6000006,
+      pageId: "74503778",
       page: "1",
       perpage: "20",
-      pageId: "74503778",
       categoryId: "",
-      options: "{'all':true}",
-      callbackIndex: "5",
-      wikidot_token7: "client-token"
-    }),
-    {
-      siteId: 6000006,
-      renderListPages: async () => assert.fail("must not render ListPages"),
-      renderSiteChangesModule: async (input) => {
-        received = input
-        return { status: "ok", body: '<div class="pager">page 1</div>' }
-      }
-    }
-  )
+      options: expected
+    })
+  }
 
-  assert.equal((await response.json()).status, "ok")
-  assert.deepEqual(received, {
-    siteId: 6000006,
-    pageId: "74503778",
-    page: "1",
-    perpage: "20",
-    categoryId: "",
-    options: '{"all":true}'
-  })
-
-  for (const options of [
-    "{'source':true}",
-    "{'files':true}",
-    '{"title":true}',
-    "{'title':true}",
-    '{"unlisted":true}'
-  ]) {
+  for (const options of ['{"title":true}', "{'title':true}", '{"unlisted":true}']) {
     const rejected = await handleAjaxModuleConnectorRequest(
       request({
         moduleName: "changes/SiteChangesListModule",
