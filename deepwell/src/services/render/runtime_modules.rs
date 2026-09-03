@@ -3168,6 +3168,58 @@ mod membership_by_password_tests {
 }
 
 #[cfg(test)]
+mod membership_apply_tests {
+    use super::RenderService;
+    use crate::services::render::compat::CompatHtmlFragments;
+    use ftml::layout::Layout;
+    use ftml::settings::{WikitextMode, WikitextSettings};
+
+    fn preview_membership_apply(source: &str, viewer_user_id: Option<i64>) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let expanded = RenderService::expand_membership_apply_modules(
+            source.to_owned(),
+            &settings,
+            viewer_user_id,
+            &mut compat_html,
+        );
+        compat_html.restore(&expanded)
+    }
+
+    #[test]
+    fn membership_apply_argument_bearing_preview_stays_literal_without_prompt() {
+        // Retained #1033 contract: the spec requires no attributes and the
+        // live anonymous probe covers only the bare opener, so the bare
+        // opener renders the sign-in prompt while argument-bearing
+        // invocations stay byte-literal (later unknown-module) for every
+        // actor instead of rendering a prompt or an apply control.
+        let bare_anonymous = preview_membership_apply("[[module MembershipApply]]", None);
+        assert!(
+            bare_anonymous.contains(
+                "You need to have a Wikidot.com account and be signed to apply for membership.",
+            ),
+            "bare MembershipApply must keep the live anonymous prompt:\n{bare_anonymous}",
+        );
+
+        for source in [
+            "[[module MembershipApply foo=\"bar\"]]",
+            "[[module MembershipApply limit=\"5\"]]",
+        ] {
+            for viewer in [None, Some(1)] {
+                let rendered = preview_membership_apply(source, viewer);
+                assert_eq!(rendered, source, "{source} for {viewer:?}");
+            }
+        }
+
+        let bare_member = preview_membership_apply("[[module MembershipApply]]", Some(1));
+        assert!(
+            !bare_member.contains("You need to have a Wikidot.com account and be signed"),
+            "the anonymous prompt must not leak to signed-in viewers:\n{bare_member}",
+        );
+    }
+}
+
+#[cfg(test)]
 mod page_calendar_tests {
     use std::cell::Cell;
 
