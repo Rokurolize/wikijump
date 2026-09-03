@@ -16,13 +16,13 @@
   },
   "source": {
     "owner_path": "deepwell/src/services/render/list_pages/delayed.rs",
-    "owner_commit": "447cc94d8ba5ac9c49f7606ef610e83a696d32c9",
-    "owner_tree": "c951600d5dfa2a5e3b52272e1c21697f14faf9e9",
-    "owner_blob_sha1": "bf9b2348fcd7293dba1d39a6f50d7d967d620a4a",
-    "public_regression_commit": "447cc94d8ba5ac9c49f7606ef610e83a696d32c9",
-    "public_regression_tree": "c951600d5dfa2a5e3b52272e1c21697f14faf9e9",
+    "owner_commit": "ce9f61a66a711165cfe0a1e608a7870b1f4ff901",
+    "owner_tree": "7598f5dee9f2f775ad585a987126841e557d1f18",
+    "owner_blob_sha1": "893ceaf56afca5d4ae68e49fcfe48e0606bb0324",
+    "public_regression_commit": "ce9f61a66a711165cfe0a1e608a7870b1f4ff901",
+    "public_regression_tree": "7598f5dee9f2f775ad585a987126841e557d1f18",
     "test_path": "deepwell/tests/page.rs",
-    "test_sha256": "849008a2e994a6eeabe69a4d05dea65f491ab9115f0c45c2a9acc149455d9025",
+    "test_sha256": "90343f11fbe66793b5ecefbb1c7a872268c264b84b61c1d77cc1e669f24a1820",
     "test_anchor": "listpages_generated_html_preview_saved_section_controls",
     "test_body_sha256": "650187fc93f4b6a653d38b3756eaf6f6e4fb377e37f86345e831fa4267871561"
   },
@@ -39,7 +39,7 @@
     "specifications": [
       {
         "path": "docs/wikidot-specifications/specifications/module/module-listpages.md",
-        "sha256": "e50150ff7354c7789da478351adaefe4e9d7f738abfd76e0563edea71e68d40a"
+        "sha256": "6dea7e23865592158a10b87eca4a59e0246ec828e04cc90c7fbe5213fe4c874d"
       },
       {
         "path": "docs/wikidot-specifications/specifications/wiki-syntax/syntax-html-blocks.md",
@@ -48,11 +48,11 @@
     ],
     "catalog": {
       "path": "docs/wikidot-specifications/catalog.json",
-      "sha256": "f79aee6963a4c4428261b1bb0b4b8f0411a39cebc9d944f064f1b118153e5090"
+      "sha256": "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1"
     },
     "ledger": {
       "path": "docs/wikidot-specifications/implementation-ledger.json",
-      "sha256": "b10372a22729932a1b02b372e7803eac2ba23de7bfabcfb097528b9446569f0d"
+      "sha256": "aff2be57fd75d27fb54e88103635b2b058f8fa4d2318af79fa3d1aad40058aa9"
     },
     "denominator": {
       "source": "plan.cases[].case_id",
@@ -75,10 +75,10 @@
     "requirements_lock_path": "install/local/wikidot-verification/requirements.lock",
     "requirements_lock_sha256": "8f2ec862f6f0358b5f0aea8ca6edd40c1ef043c2f0391701217fd907c2ae82e1",
     "cargo_manifest_path": "deepwell/Cargo.toml",
-    "cargo_manifest_sha256": "070648109d761b9b3e1327bcce4bb8e93d3d6bbde60fc04181823fff2f032c68",
+    "cargo_manifest_sha256": "279b0569b3fabfffc3c3d903e0999591a6380dcc91142689be24160997128643",
     "cargo_lock_path": "deepwell/Cargo.lock",
-    "cargo_lock_sha256": "5cd87070bb5c8f646b93cb85507d05bc605743d7a833fb7634733ef6ecb1fe21",
-    "ftml_revision": "324ac373ed0a3ee8dc46dbad5aa1d91688be95d6",
+    "cargo_lock_sha256": "b764550a9326cb23ffd6b4a1e463b365659c580cd9ab733a2ecac5e740ff0f49",
+    "ftml_revision": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
     "ftml_tree": "fc1856286c81ea2a5b5a2c0f73ce68d09fb7d4b4",
     "node_executable": "/home/roku/.nvm/versions/node/v24.18.0/bin/node",
     "node_executable_sha256": "41a74efb34cbde5c7632cdac0cf8bd1a14d0b8d73dc1e82755014d9a9ce70f5c",
@@ -161,9 +161,9 @@
   "browser": {
     "root": "framerail",
     "package_path": "framerail/package.json",
-    "package_sha256": "930b902b4ebed09c4114f6b8db87311a639e612183a4371ca19884dac8349082",
+    "package_sha256": "a8b42ab68ef5a0ac388dbdb502a08a8f4f946ce972ce8a56fbd2ec08dcae6936",
     "lock_path": "framerail/pnpm-lock.yaml",
-    "lock_sha256": "3201f9677cc2d900633da9b2fd59b7ee0b1211e757929dc858f8a1158ffd1406",
+    "lock_sha256": "70f57bbddfaaaa09085156ef9089c5128577291347b5364019d57f7df9983a5d",
     "executable_path": "/opt/google/chrome/google-chrome",
     "executable_sha256": "aea09d69ce7f24d5901f6bfb15dd44d0c856e793e0a498f8d8393ec7d2c308ec",
     "version": "151.0.7922.108",
