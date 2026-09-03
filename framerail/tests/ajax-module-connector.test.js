@@ -955,6 +955,40 @@ test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikido
   }
 })
 
+test("SiteChanges browser family forwards perpage 10 like the observed perpage 20 shape", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      page: "1",
+      perpage: "10",
+      pageId: "74503778",
+      categoryId: "",
+      options: '{"all":true}',
+      callbackIndex: "5",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: '<div class="pager">page 1</div>' }
+      }
+    }
+  )
+
+  assert.equal((await response.json()).status, "ok")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    pageId: "74503778",
+    page: "1",
+    perpage: "10",
+    categoryId: "",
+    options: '{"all":true}'
+  })
+})
+
 test("SiteChanges browser family accepts single-quoted all/source/files via canonical forwarding", async () => {
   for (const { options, expected } of [
     { options: "{'all':true}", expected: '{"all":true}' },
@@ -1258,7 +1292,6 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     { page: "-1" },
     { page: "1.0" },
     { page: "9007199254740993" },
-    { perpage: "10" },
     { pageId: "" },
     { pageId: "-1" },
     { pageId: "9007199254740993" },

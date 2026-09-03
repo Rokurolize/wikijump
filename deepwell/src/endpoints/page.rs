@@ -360,9 +360,11 @@ pub async fn wikidot_site_changes_module(
             let Some(page_id) = wikidot_positive_decimal::<i64>(&page_id) else {
                 return Ok(not_ok());
             };
-            if input.perpage != "20" {
-                return Ok(not_ok());
-            }
+            let rows_per_page = match input.perpage.as_str() {
+                "20" => 20,
+                "10" => 10,
+                _ => return Ok(not_ok()),
+            };
             let category_id = if category_id.is_empty() {
                 None
             } else {
@@ -413,7 +415,7 @@ pub async fn wikidot_site_changes_module(
             if !can_view_host {
                 return Ok(not_ok());
             }
-            (20, category_id, filter)
+            (rows_per_page, category_id, filter)
         }
         (None, None) => {
             let rows_per_page = match input.perpage.as_str() {

@@ -76,7 +76,7 @@ export const classifyWikidotSiteChangesRequest = (fields) => {
             : rawOptions
     if (
       isPositiveSafeDecimal(page) &&
-      perpage === "20" &&
+      (perpage === "20" || perpage === "10") &&
       isPositiveSafeDecimal(pageId) &&
       (categoryId === "" || isPositiveSafeDecimal(categoryId)) &&
       options !== undefined &&

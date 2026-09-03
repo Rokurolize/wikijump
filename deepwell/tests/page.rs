@@ -11278,10 +11278,29 @@ async fn wikidot_site_changes_ajax_endpoint_filters_before_pagination_and_matche
         assert_eq!(output.body, "Sorry, no revisions matching your criteria.");
     }
 
+    let perpage_ten = run_endpoint!(
+        runner,
+        wikidot_site_changes_module,
+        json!({
+            "site_id": site_id,
+            "page_id": holder.page_id.to_string(),
+            "page": "1",
+            "perpage": "10",
+            "category_id": "",
+            "options": "{\"all\":true}",
+        }),
+    );
+    assert_eq!(perpage_ten.status, "ok");
+    assert!(perpage_ten.body.contains("(rev. 2105)"));
+    assert!(
+        !perpage_ten.body.contains("(rev. 2085)"),
+        "perpage 10 page one must hold only the first ten rows:\n{}",
+        perpage_ten.body,
+    );
+
     for invalid in [
         json!({"page_id": "0", "page": "1", "perpage": "20", "category_id": "", "options": "{\"all\":true}"}),
         json!({"page_id": holder.page_id.to_string(), "page": "0", "perpage": "20", "category_id": "", "options": "{\"all\":true}"}),
-        json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "10", "category_id": "", "options": "{\"all\":true}"}),
         json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "20", "category_id": "missing", "options": "{\"all\":true}"}),
         json!({"page_id": holder.page_id.to_string(), "page": "1", "perpage": "20", "category_id": "", "options": "{\"all\":false}"}),
     ] {
