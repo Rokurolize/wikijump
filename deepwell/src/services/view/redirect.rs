@@ -238,7 +238,11 @@ fn wikidot_redirect_notice_html(destination: &str) -> String {
     )
 }
 
-fn escape_wikidot_html_text(value: &str) -> String {
+/// Shared canonical escaper for the redirect notice destination.
+///
+/// Reused by the render residual path so preview and noredirect views emit
+/// byte-identical notice text for the same destination.
+pub(crate) fn escape_wikidot_html_text(value: &str) -> String {
     let mut escaped = String::with_capacity(value.len());
 
     for character in value.chars() {
