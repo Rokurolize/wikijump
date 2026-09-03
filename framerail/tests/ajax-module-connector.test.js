@@ -212,7 +212,7 @@ test("ListPages rejects a mismatched public token with wrong_token7", async () =
   assert.equal(calls.length, 0)
 })
 
-test("ListPages keeps the accepted contract for an omitted public token", async () => {
+test("ListPages rejects an omitted public token with wrong_token7 when cookie is present", async () => {
   const calls = []
   const response = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
@@ -231,8 +231,13 @@ test("ListPages keeps the accepted contract for an omitted public token", async 
       }
     }
   )
-  assert.deepEqual(await response.json(), { status: "ok", body: "rows" })
-  assert.equal(calls.length, 1)
+  assert.equal(response.status, 200)
+  const payload = await response.json()
+  assert.equal(payload.status, "wrong_token7")
+  assert.equal(payload.message, "no")
+  assert.equal(payload.callbackIndex, null)
+  assert.equal(typeof payload.CURRENT_TIMESTAMP, "number")
+  assert.equal(calls.length, 0)
 })
 
 test("ListPages accepts any echoed public token without an allowlist", async () => {
