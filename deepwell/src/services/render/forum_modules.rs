@@ -1281,4 +1281,51 @@ mod tests {
         );
         assert!(next_module_boundary_is_closer(comments, opener.end()));
     }
+
+    #[test]
+    fn missing_context_errors_route_only_to_their_live_kinds() {
+        // Retained #1034 live own-line contracts: each missing-context error
+        // routes to exactly its module kinds. Comments, ForumStart,
+        // RecentPosts, and RecentThreads have distinct live outputs and must
+        // never receive another module's error text.
+        for name in [
+            "Comments",
+            "FrontForum",
+            "ForumCategory",
+            "ForumNewThread",
+            "ForumStart",
+            "ForumThread",
+            "RecentPosts",
+            "RecentThreads",
+            "frontforum",
+            "FORUMTHREAD",
+        ] {
+            let kind = module_kind(name);
+            let expected = if name.eq_ignore_ascii_case("FrontForum") {
+                Some(concat!(
+                    "<div class=\"error-block\">No forum category has been specified. ",
+                    "Please use attribute category=\"id\" where id is the index number of the category.</div>",
+                ))
+            } else if name.eq_ignore_ascii_case("ForumCategory")
+                || name.eq_ignore_ascii_case("ForumNewThread")
+            {
+                Some(
+                    "<div class=\"error-block\">No forum category has been specified.</div>",
+                )
+            } else if name.eq_ignore_ascii_case("ForumThread") {
+                Some(concat!(
+                    "<div class=\"error-block\">No thread to show - click Back once or twice ",
+                    "and try again</div>",
+                ))
+            } else {
+                None
+            };
+            assert_eq!(missing_context_html(kind), expected, "{name}");
+        }
+
+        assert_eq!(module_kind("Comments"), ForumModuleKind::Comments);
+        assert_eq!(module_kind("ForumStart"), ForumModuleKind::ForumStart);
+        assert_eq!(module_kind("RecentPosts"), ForumModuleKind::RecentPosts);
+        assert_eq!(module_kind("RecentThreads"), ForumModuleKind::RecentThreads);
+    }
 }
