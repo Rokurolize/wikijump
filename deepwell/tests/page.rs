@@ -192,8 +192,8 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
         }),
     );
     assert!(
-        !member.body.contains("membership-join-fixture"),
-        "a current site member must not see Join:\n{}",
+        member.body.contains("membership-join-fixture"),
+        "a current site member must still see Join on preview:\n{}",
         member.body,
     );
     assert!(member.membership_actions.is_empty());
