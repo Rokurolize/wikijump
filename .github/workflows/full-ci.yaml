@@ -60,6 +60,7 @@ jobs:
           sudo -n env \
             "PATH=$PATH" \
             "HOME=$HOME" \
+            "CI=$CI" \
             "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
             "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
             unshare --net --mount-proc bash -c '
@@ -73,6 +74,7 @@ jobs:
           sudo -n env \
             "PATH=$PATH" \
             "HOME=$HOME" \
+            "CI=$CI" \
             "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
             "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
             unshare --net --mount-proc bash -c '
