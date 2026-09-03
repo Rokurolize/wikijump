@@ -2218,7 +2218,46 @@ fn build_revision_diff(from: &str, to: &str) -> Result<Vec<PageRevisionDiffLine>
 
 #[cfg(test)]
 mod revision_diff_tests {
+    use super::PageRevisionDiffLineKind;
     use super::build_revision_diff;
+
+    fn kinds(
+        lines: &[super::PageRevisionDiffLine],
+    ) -> Vec<(PageRevisionDiffLineKind, &str)> {
+        lines
+            .iter()
+            .map(|line| (line.kind, line.text.as_str()))
+            .collect()
+    }
+
+    #[test]
+    fn empty_sources_produce_exact_typed_empty_edges() {
+        // #1063 diff boundary: empty inputs must reduce to exact typed
+        // edges (no lines, or only unchanged) without errors, so an empty
+        // revision pair never fabricates added/removed lines. No live claim
+        // is made for empty revisions beyond this local typed contract.
+        use PageRevisionDiffLineKind::{Added, Removed, Unchanged};
+
+        let both_empty = build_revision_diff("", "").expect("empty diff should build");
+        assert!(
+            both_empty.iter().all(|line| line.kind == Unchanged),
+            "empty/empty must not fabricate changes: {:?}",
+            kinds(&both_empty),
+        );
+
+        assert_eq!(
+            kinds(
+                &build_revision_diff("", "alpha").expect("one-sided diff should build")
+            ),
+            [(Added, "alpha")],
+        );
+        assert_eq!(
+            kinds(
+                &build_revision_diff("alpha", "").expect("one-sided diff should build")
+            ),
+            [(Removed, "alpha")],
+        );
+    }
 
     #[test]
     fn rejects_expensive_long_line_comparisons_before_diff() {
