@@ -957,8 +957,10 @@ fn wikidot_data_form_custom_layout_source_from_prefix(prefix: &str) -> Option<&s
 /// a custom data-form layout before normal Wikidot parsing.
 ///
 /// Only field types whose current create/edit scalar contract is established
-/// are expanded here. Unsupported field types remain literal rather than
-/// acquiring guessed display semantics.
+/// are expanded here. A file field expands only via `form_raw`, which is the
+/// documented image/value seam; `form_data` for a file field and other
+/// unsupported field types remain literal rather than acquiring guessed
+/// display semantics.
 pub fn substitute_wikidot_data_form_layout_variables(
     layout: &str,
     definition: &DataFormDefinition,
@@ -1004,6 +1006,9 @@ pub fn substitute_wikidot_data_form_layout_variables_with_display(
         let replacement = definition
             .field(field_name)
             .filter(|field| {
+                if field.field_type.as_deref() == Some("file") {
+                    return raw;
+                }
                 matches!(
                     field.field_type.as_deref(),
                     Some(
@@ -1849,6 +1854,27 @@ fields:
                 "[*http://example.com/alpha http://example.com/alpha]|missing-target|",
                 "%%form_data{unknown}%%|%%form_bad{target}%%",
             ),
+        );
+    }
+
+    #[test]
+    fn file_field_form_raw_substitutes_raw_value_only() {
+        let definition = parse_wikidot_data_form_definition(
+            "[[form]]\nfields:\n  attachment:\n    label: Attachment\n    type: file\n[[/form]]",
+        )
+        .expect("data form");
+        let values = BTreeMap::from([(
+            "attachment".to_owned(),
+            "file:storage/Project.pdf".to_owned(),
+        )]);
+
+        assert_eq!(
+            substitute_wikidot_data_form_layout_variables(
+                "%%form_raw{attachment}%%|%%form_data{attachment}%%|%%form_data{unknown}%%",
+                &definition,
+                &values,
+            ),
+            "file:storage/Project.pdf|%%form_data{attachment}%%|%%form_data{unknown}%%",
         );
     }
 
