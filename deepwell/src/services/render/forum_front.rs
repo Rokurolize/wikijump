@@ -326,13 +326,35 @@ pub(super) fn render(items: &[FrontForumItem]) -> String {
 }
 
 static FRONT_FORUM_VARIABLE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    // Custom date formats pass through opaquely: any nonempty format without
+    // a double-percent sequence is accepted and echoed percent-encoded into
+    // the odate class, matching live behavior for observed formats such as
+    // %e %b %Y, %H:%M, and unknown %Q%Q alike. An empty format or a %%
+    // sequence keeps the variable literal (fail closed).
     Regex::new(concat!(
         r"%%(?P<name>title|linked_title|title_linked|link|author|date|comments|category|",
         r"description|short|summary|content|text|long|body)",
-        r"(?:\|(?P<format>%Y-%m-%d))?%%",
+        r"(?:\|(?P<format>(?:[^%]|%[^%])+))?%%",
     ))
     .expect("FrontForum variable expression is valid")
 });
+
+/// Percent-encode a custom date format for the odate class exactly as live
+/// Wikidot does: ASCII alphanumerics and `-_.~` pass through, every other
+/// byte becomes uppercase `%XX`. The encoded value cannot break out of the
+/// class attribute.
+fn encode_forum_date_format_class(format: &str) -> String {
+    let mut class = String::with_capacity("format_".len() + format.len());
+    class.push_str("format_");
+    for byte in format.bytes() {
+        if byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b'~') {
+            class.push(byte as char);
+        } else {
+            class.push_str(&format!("%{byte:02X}"));
+        }
+    }
+    class
+}
 
 fn thread_path(item: &FrontForumItem) -> String {
     format!(
@@ -373,14 +395,14 @@ fn render_custom_variable(
             compat_html.push_html(render_forum_user(&item.user, avatar_timestamp))
         }
         "date" => {
-            let format_class = if format == Some("%Y-%m-%d") {
-                "format_%25Y-%25m-%25d"
-            } else {
-                "format_%25O%20ago%20%28%25e%20%25b%20%25Y%2C%20%25H%3A%25M%29"
+            let format_class = match format {
+                Some(custom) => encode_forum_date_format_class(custom),
+                None => "format_%25O%20ago%20%28%25e%20%25b%20%25Y%2C%20%25H%3A%25M%29"
+                    .to_owned(),
             };
             compat_html.push_html(render_forum_date(
                 item.created_at,
-                format_class,
+                &format_class,
                 "%e %b %Y %H:%M",
             ))
         }
@@ -599,6 +621,61 @@ mod tests {
             render_owned_source(source, &[item("Title", "Summary", "<p>Body</p>")]);
 
         assert!(rendered.contains("%%unknown%%"));
+    }
+
+    #[test]
+    fn frontforum_custom_body_date_formats_match_live_odate_classes() {
+        // Live sandbox probes honor custom strftime formats opaquely: the
+        // odate class echoes the requested format percent-encoded while the
+        // server text stays the fallback rendering. Unknown formats pass
+        // through the same way (no validation); an empty format and a format
+        // on a non-date variable stay literal.
+        let rendered = render_owned_source(
+            concat!(
+                "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n",
+                "[[div class=\"day\"]]\n%%date|%e %b %Y%%\n[[/div]]\n",
+                "[[div class=\"clock\"]]\n%%date|%H:%M%%\n[[/div]]\n",
+                "[[div class=\"mystery\"]]\n%%date|%Q%Q%%\n[[/div]]\n",
+                "[[/module]]",
+            ),
+            &[item("Title", "Summary", "<p>Body</p>")],
+        );
+        for expected in [
+            "format_%25e%20%25b%20%25Y",
+            "format_%25H%3A%25M",
+            "format_%25Q%25Q",
+        ] {
+            assert!(
+                rendered.contains(expected),
+                "custom date format should echo {expected:?}:\n{rendered}",
+            );
+        }
+        // Fail-closed boundaries: an empty format and a format on a
+        // non-date variable stay literal. A double-percent sequence ends
+        // the honored prefix compositionally (the evidenced %e renders,
+        // the unestablished remainder stays literal) rather than
+        // suppressing the whole variable.
+        let literal = render_owned_source(
+            concat!(
+                "[[module FrontForum category=\"8503559\" limit=\"1\"]]\n",
+                "[[div class=\"empty\"]]\n%%date|%%\n[[/div]]\n",
+                "[[div class=\"doubled\"]]\n%%date|%e%%Y%%\n[[/div]]\n",
+                "[[div class=\"titled\"]]\n%%title|%e %b %Y%%\n[[/div]]\n",
+                "[[/module]]",
+            ),
+            &[item("Title", "Summary", "<p>Body</p>")],
+        );
+        for expected in ["%%date|%%", "%%title|%e %b %Y%%"] {
+            assert!(
+                literal.contains(expected),
+                "unestablished date shape should stay literal ({expected:?}):\n{literal}",
+            );
+        }
+        assert!(
+            literal.contains("format_%25e") && literal.contains("Y%%"),
+            "doubled percent should split honored prefix from literal remainder:\n{literal}",
+        );
+        assert!(!literal.contains("format_%25e%25Y"));
     }
 
     #[test]
