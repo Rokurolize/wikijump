@@ -65,7 +65,8 @@ export const classifyWikidotSiteChangesRequest = (fields) => {
     const perpage = parameters.get("perpage")
     const pageId = parameters.get("pageId")
     const categoryId = parameters.get("categoryId")
-    const options = parameters.get("options")
+    const rawOptions = parameters.get("options")
+    const options = rawOptions === "{'all':true}" ? '{"all":true}' : rawOptions
     if (
       isPositiveSafeDecimal(page) &&
       perpage === "20" &&
