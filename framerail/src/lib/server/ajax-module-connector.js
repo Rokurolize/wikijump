@@ -1595,13 +1595,10 @@ export const handleAjaxModuleConnectorRequest = async (
 
   // Live Wikidot validates the selected (last) public token against the
   // presented cookie by exact echo before rendering ListPages rows: a
-  // mismatch, including an omitted form token when its cookie is present,
-  // fails with `wrong_token7`, while any echoed value is accepted. A fully
-  // tokenless request (absent form and absent cookie) keeps the longstanding
-  // accepted contract: no live observation covers that cell, and the pinned
-  // default-row behavior for tokenless requests stands until one does.
+  // mismatch, including a missing form token or a missing cookie, fails
+  // with `wrong_token7`, while equal present tokens are accepted.
   const formToken = fields.get("wikidot_token7")
-  if (formToken !== requestWikidotTokenCookie(request)) {
+  if (formToken === undefined || formToken !== requestWikidotTokenCookie(request)) {
     return jsonResponse({
       status: "wrong_token7",
       message: "no",

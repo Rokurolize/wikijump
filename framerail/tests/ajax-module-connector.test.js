@@ -63,8 +63,11 @@ test("ListPages omits module_body for Deepwell's default row template", async ()
   const response = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=list%2FListPagesModule"
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=client-token"
+      },
+      body: "moduleName=list%2FListPagesModule&wikidot_token7=client-token"
     }),
     {
       siteId: 6000006,
@@ -90,15 +93,18 @@ test("ListPages omits module_body for Deepwell's default row template", async ()
 test("ListPages ignores unknown non-data-form selectors while recognized selectors apply", async () => {
   const calls = []
   const forms = [
-    "moduleName=list%2FListPagesModule&module_body=body&category=one&unsupported_future_selector=ignored",
-    "moduleName=list%2FListPagesModule&module_body=body&unsupported_future_selector=ignored&category=one"
+    "moduleName=list%2FListPagesModule&module_body=body&category=one&unsupported_future_selector=ignored&wikidot_token7=client-token",
+    "moduleName=list%2FListPagesModule&module_body=body&unsupported_future_selector=ignored&category=one&wikidot_token7=client-token"
   ]
 
   for (const form of forms) {
     const response = await handleAjaxModuleConnectorRequest(
       new Request("http://scp-wiki.local/ajax-module-connector.php", {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          cookie: "wikidot_token7=client-token"
+        },
         body: form
       }),
       {
@@ -221,6 +227,31 @@ test("ListPages rejects an omitted public token with wrong_token7 when cookie is
         "content-type": "application/x-www-form-urlencoded",
         cookie: "wikidot_token7=123456"
       },
+      body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async (input) => {
+        calls.push(input)
+        return { body: "rows" }
+      }
+    }
+  )
+  assert.equal(response.status, 200)
+  const payload = await response.json()
+  assert.equal(payload.status, "wrong_token7")
+  assert.equal(payload.message, "no")
+  assert.equal(payload.callbackIndex, null)
+  assert.equal(typeof payload.CURRENT_TIMESTAMP, "number")
+  assert.equal(calls.length, 0)
+})
+
+test("ListPages rejects a fully tokenless request with wrong_token7", async () => {
+  const calls = []
+  const response = await handleAjaxModuleConnectorRequest(
+    new Request("http://scp-wiki.local/ajax-module-connector.php", {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
       body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%"
     }),
     {
@@ -1293,8 +1324,11 @@ test("ListPages keeps later module names while other modules reject duplicates",
   const unknownThenListPages = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: "moduleName=not-a-real-module&moduleName=list%2FListPagesModule&module_body=x"
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=client-token"
+      },
+      body: "moduleName=not-a-real-module&moduleName=list%2FListPagesModule&module_body=x&wikidot_token7=client-token"
     }),
     {
       siteId: 6000006,
@@ -1636,7 +1670,8 @@ test("converts Deepwell failures to a stable Wikidot error envelope", async () =
       request({
         moduleName: "list/ListPagesModule",
         module_body: "%%fullname%%",
-        name: "="
+        name: "=",
+        wikidot_token7: "client-token"
       }),
       {
         siteId: 6000006,
