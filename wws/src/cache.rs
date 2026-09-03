@@ -40,6 +40,9 @@ macro_rules! redis_key {
     (site_domain => $site_id:expr $(,)?) => {
         format!("site_domain:{}", $site_id)
     };
+    (user_avatar => $user_id:expr $(,)?) => {
+        format!("user_avatar:{}", $user_id)
+    };
 }
 
 macro_rules! set {
@@ -76,6 +79,19 @@ impl Cache {
         let mut conn = get_connection!(self.client);
         let key = redis_key!(site_domain => site_id);
         set!(conn, key, preferred_domain);
+        Ok(())
+    }
+
+    pub async fn get_avatar(&self, user_id: i64) -> Result<Option<String>> {
+        let mut conn = get_connection!(self.client);
+        let key = redis_key!(user_avatar => user_id);
+        Ok(conn.get(key).await?)
+    }
+
+    pub async fn set_avatar(&self, user_id: i64, avatar_s3_hash: &str) -> Result<()> {
+        let mut conn = get_connection!(self.client);
+        let key = redis_key!(user_avatar => user_id);
+        set!(conn, key, avatar_s3_hash);
         Ok(())
     }
 }

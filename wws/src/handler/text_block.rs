@@ -412,7 +412,10 @@ async fn serve_text_block(
         raw_body.extend_from_slice(&chunk);
     }
     if let Some(expected_sha1) = expected_sha1 {
-        let actual_sha1 = format!("{:x}", Sha1::digest(&raw_body));
+        let actual_sha1: String = Sha1::digest(&raw_body)
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect();
         if actual_sha1 != expected_sha1 {
             error!(
                 page_id,
