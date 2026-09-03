@@ -1652,6 +1652,7 @@ impl RenderService {
         wikitext = Self::finalize_runtime_module_residuals(
             wikitext,
             settings,
+            page_preview,
             &mut wikidot_compat_text,
             &mut wikidot_compat_html,
         );

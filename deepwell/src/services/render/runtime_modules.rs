@@ -58,6 +58,7 @@ use crate::services::relation::GetSiteMember;
 use crate::services::score::ScoreValue;
 use crate::services::settings::PageRatingType;
 use crate::services::user::User;
+use crate::services::view::redirect::escape_wikidot_html_text as escape_redirect_notice_text;
 use crate::services::{
     PageRevisionService, PageService, RelationService, ServiceContext, SiteService,
     UserService,
@@ -1394,6 +1395,31 @@ fn is_literal_runtime_module_residual(name: &str) -> bool {
         .any(|candidate| name.eq_ignore_ascii_case(candidate))
 }
 
+/// Preview-only redirect notice for an evidenced double-quoted destination.
+///
+/// Live PagePreview renders the redirect notice for exact
+/// `destination="..."` heads with a nonempty value; an empty destination
+/// renders the missing-destination error instead. Every other shape
+/// (single quotes, extra arguments, duplicates) stays literal, and saved
+/// renders keep the unobserved shape literal as well.
+fn redirect_preview_destination_notice(head: &str) -> Option<String> {
+    let destination = head
+        .trim()
+        .strip_prefix("destination=\"")?
+        .strip_suffix('"')?;
+    (!destination.is_empty()).then(|| {
+        format!(
+            concat!(
+                "<div class=\"error-block\">\n",
+                "\tThis is the Redirect module that redirects the browser ",
+                "directly to the &quot;{}&quot; page.\n",
+                "</div>",
+            ),
+            escape_redirect_notice_text(destination),
+        )
+    })
+}
+
 fn render_unavailable_page_module(name: &str) -> String {
     format!(
         concat!(
@@ -1409,6 +1435,7 @@ impl RenderService {
     pub(super) fn finalize_runtime_module_residuals(
         wikitext: String,
         settings: &WikitextSettings,
+        page_preview: bool,
         compat_text: &mut CompatTextFragments,
         compat_html: &mut CompatHtmlFragments,
     ) -> String {
@@ -1435,11 +1462,18 @@ impl RenderService {
                 .as_str();
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
             let replacement = if name.eq_ignore_ascii_case("Redirect")
-                && head.trim().is_empty()
+                && (head.trim().is_empty() || head.trim() == "destination=\"\"")
             {
                 compat_html.push_block_html(REDIRECT_MISSING_DESTINATION_HTML.to_owned())
             } else if is_literal_runtime_module_residual(name) {
-                compat_text.push_escaped_html_text(matched.as_str())
+                if page_preview {
+                    match redirect_preview_destination_notice(head) {
+                        Some(notice) => compat_html.push_block_html(notice),
+                        None => compat_text.push_escaped_html_text(matched.as_str()),
+                    }
+                } else {
+                    compat_text.push_escaped_html_text(matched.as_str())
+                }
             } else if head.trim().is_empty() {
                 compat_html.push_block_html(render_unavailable_page_module(name))
             } else {
@@ -3170,13 +3204,82 @@ mod page_calendar_tests {
 mod runtime_module_residual_tests {
     use std::borrow::Cow;
 
-    use super::RenderService;
+    use super::{REDIRECT_MISSING_DESTINATION_HTML, RenderService};
     use crate::services::render::compat::CompatHtmlFragments;
     use crate::services::render::compat::text_fragments::CompatTextFragments;
     use ftml::data::{PageInfo, ScoreValue};
     use ftml::layout::Layout;
     use ftml::render::{Render, html::HtmlRender};
     use ftml::settings::{WikitextMode, WikitextSettings};
+
+    fn render_finalized(source: &str, page_preview: bool) -> String {
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let page_info = PageInfo {
+            page: Cow::Borrowed("page"),
+            category: None,
+            site: Cow::Borrowed("site"),
+            title: Cow::Borrowed("Page"),
+            alt_title: None,
+            score: ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let mut compat_text = CompatTextFragments::new(source);
+        let mut compat_html = CompatHtmlFragments::new(source);
+        let mut protected = RenderService::finalize_runtime_module_residuals(
+            source.to_owned(),
+            &settings,
+            page_preview,
+            &mut compat_text,
+            &mut compat_html,
+        );
+        ftml::preprocess_for_layout(&mut protected, settings.layout);
+        let tokens = ftml::tokenize(&protected);
+        let (tree, errors) = ftml::parse(&tokens, &page_info, &settings).into();
+        assert!(errors.is_empty(), "{errors:#?}");
+        let rendered = HtmlRender.render(&tree, &page_info, &settings).body;
+        let rendered = compat_html.restore(&rendered);
+        compat_text.restore(&rendered)
+    }
+
+    #[test]
+    fn redirect_preview_renders_destination_notice_and_empty_error() {
+        // Live PagePreview observations (sandbox-for-codex, anonymous):
+        // a double-quoted non-empty destination renders the redirect
+        // notice, while an empty destination renders the same
+        // missing-destination error as an absent one. Saved renders keep
+        // destination-bearing modules literal (unobserved live).
+        let notice =
+            render_finalized("[[module Redirect destination=\"start\"]]\n", true);
+        assert!(
+            notice.contains(concat!(
+                "<div class=\"error-block\">\n",
+                "\tThis is the Redirect module that redirects the browser ",
+                "directly to the &quot;start&quot; page.\n",
+                "</div>",
+            )),
+            "preview must render the live redirect notice:\n{notice}",
+        );
+        let url_notice = render_finalized(
+            "[[module Redirect destination=\"http://example.test/target\"]]\n",
+            true,
+        );
+        assert!(
+            url_notice.contains("&quot;http://example.test/target&quot; page."),
+            "preview must echo URL destinations as text:\n{url_notice}",
+        );
+        let empty = render_finalized("[[module Redirect destination=\"\"]]\n", true);
+        assert!(
+            empty.contains(REDIRECT_MISSING_DESTINATION_HTML),
+            "preview must treat an empty destination as unspecified:\n{empty}",
+        );
+        let saved =
+            render_finalized("[[module Redirect destination=\"start\"]]\n", false);
+        assert!(
+            saved.contains("[[module Redirect destination=&quot;start&quot;]]"),
+            "saved renders keep the unobserved shape literal:\n{saved}",
+        );
+    }
 
     #[test]
     fn finalizes_only_deepwell_owned_residual_modules() {
@@ -3205,6 +3308,7 @@ mod runtime_module_residual_tests {
         let mut protected = RenderService::finalize_runtime_module_residuals(
             source.to_owned(),
             &settings,
+            false,
             &mut compat_text,
             &mut compat_html,
         );
