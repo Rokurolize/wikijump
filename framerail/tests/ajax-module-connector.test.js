@@ -919,6 +919,66 @@ test("dispatches the sealed SiteChanges control-browser-shape matrix with Wikido
   }
 })
 
+test("SiteChanges browser family accepts single-quoted all via canonical forwarding", async () => {
+  let received
+  const response = await handleAjaxModuleConnectorRequest(
+    request({
+      moduleName: "changes/SiteChangesListModule",
+      page: "1",
+      perpage: "20",
+      pageId: "74503778",
+      categoryId: "",
+      options: "{'all':true}",
+      callbackIndex: "5",
+      wikidot_token7: "client-token"
+    }),
+    {
+      siteId: 6000006,
+      renderListPages: async () => assert.fail("must not render ListPages"),
+      renderSiteChangesModule: async (input) => {
+        received = input
+        return { status: "ok", body: '<div class="pager">page 1</div>' }
+      }
+    }
+  )
+
+  assert.equal((await response.json()).status, "ok")
+  assert.deepEqual(received, {
+    siteId: 6000006,
+    pageId: "74503778",
+    page: "1",
+    perpage: "20",
+    categoryId: "",
+    options: '{"all":true}'
+  })
+
+  for (const options of [
+    "{'source':true}",
+    "{'files':true}",
+    '{"title":true}',
+    "{'title':true}",
+    '{"unlisted":true}'
+  ]) {
+    const rejected = await handleAjaxModuleConnectorRequest(
+      request({
+        moduleName: "changes/SiteChangesListModule",
+        page: "1",
+        perpage: "20",
+        pageId: "74503778",
+        categoryId: "",
+        options
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderSiteChangesModule: async () =>
+          assert.fail(`unobserved browser options must fail before Deepwell: ${options}`)
+      }
+    )
+    assert.equal((await rejected.json()).status, "not_ok")
+  }
+})
+
 test("SiteChanges accepts wikidot.py client-page-one-default without browser host fields", async () => {
   let received
   const response = await handleAjaxModuleConnectorRequest(
