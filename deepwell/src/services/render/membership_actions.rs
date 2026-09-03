@@ -122,4 +122,60 @@ mod tests {
         assert!(!registry.resolve(0, fingerprint));
         assert!(!registry.resolve(*index, "00000000000000000000000000000000"));
     }
+
+    #[test]
+    fn join_render_argument_matrix_counts_each_live_variant_as_one_action() {
+        // Fixture-backed residual for the A1029_JOIN_RENDER_ARGUMENT_MATRIX
+        // gap: every V7 matrix variant renders a Join control live, so the
+        // registry must count exactly one action each. The inline/block line
+        // boundary row is excluded here because FTML owns module line syntax;
+        // Deepwell only binds the registry matches the renderer expands.
+        // No captured page text or user identity is used below.
+        for source in [
+            "[[module Join]]\n",
+            "[[module JOIN]]\n",
+            "[[module Join v7ws=\"alpha\tbeta gamma\"]]\n",
+            "[[module Join v7ser=\"serialized body\"]]\n",
+            "[[module Join v7text=\"visible text\"]]\n",
+            "[[module Join button=\"one\" button=\"two\"]]\n",
+            "[[module Join button=\"\"]]\n",
+            "[[module Join v7UnknownArgument=\"x\"]]\n",
+            "[[module Join button='single quoted' data-v7=unquoted]]\n",
+            "[[module Join style=\"background:url(javascript:alert(1))\"]]\n",
+            "[[module Join style=\"https://example.test/%6a%61vascript%3aalert(1)\"]]\n",
+            "[[module Join style=\"https:\\\\example.test\\path\"]]\n",
+        ] {
+            let registry = MembershipActionRegistry::from_wikidot_source(source);
+            assert_eq!(
+                registry.join_count, 1,
+                "matrix variant should bind one Join action: {source:?}",
+            );
+            assert!(
+                !registry.authored_join_listener,
+                "matrix variant must not look authored: {source:?}",
+            );
+        }
+    }
+
+    #[test]
+    fn join_registry_stays_fail_closed_for_unknown_names() {
+        for source in [
+            "",
+            "[[module JoinNow]]\n",
+            "[[module Rate]]\n",
+            "[[module MembershipApply]]\n",
+        ] {
+            assert!(
+                MembershipActionRegistry::from_wikidot_source(source)
+                    .browser_actions_for_saved_wikidot_html(
+                        "<div class=\"join-box\"><a href=\"javascript:;\" \
+                         onclick=\"WIKIDOT.page.listeners.join(event, 'unified')\">Join</a></div>",
+                        42,
+                        90,
+                    )
+                    .is_empty(),
+                "unknown module should bind no Join action: {source:?}",
+            );
+        }
+    }
 }
