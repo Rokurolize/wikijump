@@ -329,6 +329,7 @@ pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
+    pub(super) page_preview: bool,
     pub(super) url: UrlArguments<'a>,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
 }
@@ -1608,6 +1609,7 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         viewer_user_id: Option<i64>,
+        preview: bool,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax {
@@ -1618,8 +1620,11 @@ impl RenderService {
         };
         let actor_state =
             MembershipService::actor_state(ctx, site_id, viewer_user_id).await?;
-        let show =
-            MembershipService::join_module_state(actor_state) == JoinModuleState::Show;
+        let show = if preview {
+            MembershipService::join_module_preview_state(actor_state)
+        } else {
+            MembershipService::join_module_state(actor_state)
+        } == JoinModuleState::Show;
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
         let mut output = String::with_capacity(wikitext.len());
@@ -2396,6 +2401,7 @@ impl RenderService {
             settings,
             options.current_site_id,
             options.viewer_user_id,
+            options.page_preview,
             compat_html,
         )
         .await
