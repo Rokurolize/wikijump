@@ -94,11 +94,16 @@ export const classifyWikidotSiteChangesRequest = (fields) => {
     const perpage = parameters.get("perpage")
     const options = parameters.get("options")
     const normalizedOptions =
-      options === undefined || options === "{}" || options === "{'all':true}"
+      options === undefined ||
+      options === "{}" ||
+      options === "{'all':true}" ||
+      options === '{"all":true}'
         ? '{"all":true}'
-        : options === "{'source':true}"
+        : options === "{'source':true}" || options === '{"source":true}'
           ? '{"source":true}'
-          : null
+          : options === '{"files":true}' || options === "{'files':true}"
+            ? '{"files":true}'
+            : null
     const normalizedPage = normalizeWikidotPyPage(page)
     const normalizedPerpage = normalizeWikidotPyPerPage(perpage)
     if (
