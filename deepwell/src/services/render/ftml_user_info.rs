@@ -35,42 +35,35 @@ use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Default)]
 pub(super) struct UserInfoSnapshot {
-    users_by_id: BTreeMap<i64, UserInfo<'static>>,
     users_by_name: BTreeMap<String, UserInfo<'static>>,
 }
 
 impl UserInfoSnapshot {
     pub(super) async fn load(ctx: &ServiceContext<'_>, names: &[String]) -> Result<Self> {
-        let (slugs, user_ids) = user_reference_sets(names);
-        if slugs.is_empty() && user_ids.is_empty() {
+        let slugs = user_reference_sets(names);
+        if slugs.is_empty() {
             return Ok(Self::default());
         }
 
-        let users = load_visible_wikidot_users(ctx, &slugs, &user_ids).await?;
-        let mut users_by_id = BTreeMap::new();
+        let users = load_visible_wikidot_users(ctx, &slugs, &BTreeSet::new()).await?;
         let mut users_by_name = BTreeMap::new();
         let mut collisions = BTreeSet::new();
         for user in users {
             let Some(info) = wikidot_user_info(user) else {
                 continue;
             };
-            index_user_info(&mut users_by_id, &mut users_by_name, &mut collisions, info);
+            index_user_info(&mut users_by_name, &mut collisions, info);
         }
 
-        Ok(Self {
-            users_by_id,
-            users_by_name,
-        })
+        Ok(Self { users_by_name })
     }
 }
 
 fn index_user_info(
-    users_by_id: &mut BTreeMap<i64, UserInfo<'static>>,
     users_by_name: &mut BTreeMap<String, UserInfo<'static>>,
     collisions: &mut BTreeSet<String>,
     info: UserInfo<'static>,
 ) {
-    users_by_id.insert(info.user_id, info.clone());
     let keys = [
         normalize_wikidot_author_name(&info.user_slug),
         normalize_wikidot_author_name(&info.user_name),
@@ -92,31 +85,21 @@ fn index_user_info(
     }
 }
 
-fn numeric_user_reference(value: &str) -> Option<i64> {
-    let normalized = normalize_wikidot_author_name(value);
-    if !normalized.is_empty() && normalized.bytes().all(|byte| byte.is_ascii_digit()) {
-        normalized.parse().ok()
-    } else {
-        None
-    }
-}
-
-fn user_reference_sets(names: &[String]) -> (BTreeSet<String>, BTreeSet<i32>) {
+/// Split authored `[[user]]` lookup text into normalized name keys.
+///
+/// Live treats the complete positional text as a name key, including text
+/// that happens to be numeric, so every key resolves through the shared
+/// slug/display-name namespace. There is deliberately no identifier
+/// namespace: pure-digit input must error like any unknown name.
+fn user_reference_sets(names: &[String]) -> BTreeSet<String> {
     let mut slugs = BTreeSet::new();
-    let mut user_ids = BTreeSet::new();
     for name in names {
-        if let Some(user_id) = numeric_user_reference(name) {
-            if let Ok(user_id) = i32::try_from(user_id) {
-                user_ids.insert(user_id);
-            }
-            continue;
-        }
         let slug = normalize_wikidot_author_name(name);
         if !slug.is_empty() {
             slugs.insert(slug);
         }
     }
-    (slugs, user_ids)
+    slugs
 }
 
 pub(super) async fn load_wikidot_user_info_by_ids(
@@ -184,9 +167,6 @@ fn wikidot_user_info(user: WikidotUserModel) -> Option<UserInfo<'static>> {
 
 impl UserInfoResolver for UserInfoSnapshot {
     fn user_info(&self, name: &str) -> Option<UserInfo<'static>> {
-        if let Some(user_id) = numeric_user_reference(name) {
-            return self.users_by_id.get(&user_id).cloned();
-        }
         self.users_by_name
             .get(&normalize_wikidot_author_name(name))
             .cloned()
@@ -212,7 +192,6 @@ mod tests {
             user_profile_url: Cow::Borrowed("http://www.wikidot.com/user:info/system"),
         };
         let snapshot = UserInfoSnapshot {
-            users_by_id: BTreeMap::from([(122357, canonical.clone())]),
             users_by_name: BTreeMap::from([("system".to_owned(), canonical.clone())]),
         };
 
@@ -223,19 +202,10 @@ mod tests {
     #[test]
     fn snapshot_indexes_normalized_slug_and_display_name() {
         let user = test_user(1, "display-slug", "Display Name");
-        let mut users_by_id = BTreeMap::new();
         let mut users_by_name = BTreeMap::new();
         let mut collisions = BTreeSet::new();
-        index_user_info(
-            &mut users_by_id,
-            &mut users_by_name,
-            &mut collisions,
-            user.clone(),
-        );
-        let snapshot = UserInfoSnapshot {
-            users_by_id,
-            users_by_name,
-        };
+        index_user_info(&mut users_by_name, &mut collisions, user.clone());
+        let snapshot = UserInfoSnapshot { users_by_name };
 
         assert_eq!(snapshot.user_info("DISPLAY SLUG"), Some(user.clone()));
         assert_eq!(snapshot.user_info(" display_name "), Some(user));
@@ -248,26 +218,16 @@ mod tests {
         let third = test_user(3, "third-user", "Shared Name");
 
         let snapshot = |users_to_load: Vec<UserInfo<'static>>| {
-            let mut users_by_id = BTreeMap::new();
             let mut users_by_name = BTreeMap::new();
             let mut collisions = BTreeSet::new();
             for user in users_to_load {
-                index_user_info(
-                    &mut users_by_id,
-                    &mut users_by_name,
-                    &mut collisions,
-                    user,
-                );
+                index_user_info(&mut users_by_name, &mut collisions, user);
             }
-            UserInfoSnapshot {
-                users_by_id,
-                users_by_name,
-            }
+            UserInfoSnapshot { users_by_name }
         };
         let forward = snapshot(vec![first.clone(), second.clone(), third.clone()]);
         let reverse = snapshot(vec![third.clone(), second.clone(), first.clone()]);
 
-        assert_eq!(forward.users_by_id, reverse.users_by_id);
         assert_eq!(forward.users_by_name, reverse.users_by_name);
         assert!(forward.user_info("shared-name").is_none());
         assert_eq!(forward.user_info("first-user"), Some(first));
@@ -276,40 +236,29 @@ mod tests {
     }
 
     #[test]
-    fn numeric_user_references_do_not_fall_through_to_the_slug_namespace() {
+    fn digit_lookup_keys_stay_in_the_name_namespace() {
+        // Live treats pure-digit positional text as a name key: real
+        // numeric identities error instead of linking by ID.
         let references = [" 122357 ".to_owned(), "System User".to_owned()];
-        let (slugs, user_ids) = user_reference_sets(&references);
 
-        assert_eq!(slugs, BTreeSet::from(["system-user".to_owned()]));
-        assert_eq!(user_ids, BTreeSet::from([122357]));
+        assert_eq!(
+            user_reference_sets(&references),
+            BTreeSet::from(["122357".to_owned(), "system-user".to_owned()])
+        );
     }
 
     #[test]
-    fn numeric_id_namespace_survives_a_numeric_display_name() {
+    fn digit_lookup_key_prefers_display_name_over_identifier() {
         let numeric = test_user(2, "numeric-target", "Numeric Target");
         let display = test_user(3, "display-two", "2");
-        let mut users_by_id = BTreeMap::new();
         let mut users_by_name = BTreeMap::new();
         let mut collisions = BTreeSet::new();
-        index_user_info(
-            &mut users_by_id,
-            &mut users_by_name,
-            &mut collisions,
-            numeric.clone(),
-        );
-        index_user_info(
-            &mut users_by_id,
-            &mut users_by_name,
-            &mut collisions,
-            display.clone(),
-        );
-        let snapshot = UserInfoSnapshot {
-            users_by_id,
-            users_by_name,
-        };
+        index_user_info(&mut users_by_name, &mut collisions, numeric.clone());
+        index_user_info(&mut users_by_name, &mut collisions, display.clone());
+        let snapshot = UserInfoSnapshot { users_by_name };
 
-        assert_eq!(snapshot.user_info("2"), Some(numeric));
-        assert_eq!(snapshot.user_info("display-two"), Some(display));
+        assert_eq!(snapshot.user_info("2"), Some(display));
+        assert_eq!(snapshot.user_info("numeric-target"), Some(numeric));
     }
 
     fn test_user(
