@@ -677,6 +677,27 @@ test("rejects noncanonical forum numeric scalars before Deepwell", async () => {
   assert.equal(calls, 0)
 })
 
+test("rejects unobserved ForumStart hidden values before Deepwell", async () => {
+  let renders = 0
+  for (const hidden of ["false", ""]) {
+    const response = await handleAjaxModuleConnectorRequest(
+      request({ moduleName: "forum/ForumStartModule", hidden }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderForumModule: async () => {
+          renders += 1
+          return { status: "ok", body: "must not render" }
+        }
+      }
+    )
+    const body = await response.json()
+    assert.equal(body.status, "not_ok", `hidden=${hidden}`)
+    assert.match(body.message, /Unsupported AJAX module shape/u)
+  }
+  assert.equal(renders, 0)
+})
+
 test("dispatches the sealed page comments reads without adding mutation authority", async () => {
   const cases = [
     {
