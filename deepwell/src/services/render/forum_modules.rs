@@ -1328,4 +1328,38 @@ mod tests {
         assert_eq!(module_kind("RecentPosts"), ForumModuleKind::RecentPosts);
         assert_eq!(module_kind("RecentThreads"), ForumModuleKind::RecentThreads);
     }
+
+    #[test]
+    fn comments_hideform_matrix_parses_only_observed_double_quoted_values() {
+        // Retained #1367/r7 contract: omitted and exact double-quoted false
+        // keep the form path open, while exact double-quoted true/yes close
+        // it. Every other spelling fails closed instead of inferring hidden
+        // form behavior from an unobserved source shape.
+        for (head, hide_form) in [
+            ("", false),
+            ("hideForm=\"false\"", false),
+            ("hideForm=\"true\"", true),
+            ("hideForm=\"yes\"", true),
+        ] {
+            let arguments = comments_arguments(head);
+            assert!(arguments.query_safe, "{head:?} must stay query-safe");
+            assert_eq!(arguments.hide_form, hide_form, "{head:?}");
+        }
+        for head in [
+            "hideForm='true'",
+            "hideForm=true",
+            "hideForm",
+            "hideForm=\"True\"",
+            "hideForm=\"YES\"",
+            "hideForm=\"\"",
+            "hideForm=\"no\"",
+            "hideForm=\"true\" hideForm=\"false\"",
+            "unknown=\"x\"",
+        ] {
+            assert!(
+                !comments_arguments(head).query_safe,
+                "{head:?} must fail closed",
+            );
+        }
+    }
 }
