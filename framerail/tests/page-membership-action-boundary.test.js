@@ -113,3 +113,56 @@ test("root and slug page routes bind actor-verified membership Join", async () =
     ])
   )
 })
+
+test("malformed and unauthenticated membership Join requests fail without mutation", async () => {
+  const calls = []
+  client.request = async (method, params, context) => {
+    calls.push({ method, params, context })
+    throw new Error(`Unexpected Deepwell method ${method}`)
+  }
+
+  const joinEvent = (body, sessionToken = "membership-session") => ({
+    request: new Request("https://wikijump.test/?/membershipJoin", {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "content-type": "application/json",
+        "X-Wikijump-Site-Id": "17",
+        "X-Wikijump-Site-Slug": "test"
+      }
+    }),
+    params: { slug: "main" },
+    cookies: { get: () => sessionToken },
+    locals: {
+      requestContext: {
+        siteId: 17,
+        page: "main",
+        sessionToken
+      }
+    }
+  })
+
+  const fingerprint = "0123456789abcdef0123456789abcdef"
+  for (const body of [
+    { pageId: 42, lastRevisionId: 90, actionIndex: -1, actionFingerprint: fingerprint },
+    { pageId: 42, lastRevisionId: 90, actionIndex: 3 },
+    { pageId: 42, lastRevisionId: 90, actionIndex: 1.5, actionFingerprint: fingerprint }
+  ]) {
+    const result = await rootActions.membershipJoin(joinEvent(body))
+    assert.equal(result.status, 400)
+  }
+
+  const missingSession = await rootActions.membershipJoin(
+    joinEvent(
+      { pageId: 42, lastRevisionId: 90, actionIndex: 3, actionFingerprint: fingerprint },
+      null
+    )
+  )
+  assert.equal(missingSession.status, 401)
+
+  assert.deepEqual(
+    calls.filter(({ method }) => method === "membership_join"),
+    [],
+    "validation failures must not reach the mutation endpoint"
+  )
+})
