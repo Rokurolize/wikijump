@@ -123,6 +123,18 @@ mod tests {
     }
 
     #[test]
+    fn section_zero_is_empty_and_missing_section_is_passthrough() {
+        // Basis of the generated section-zero composition (#1383): the
+        // %%content{0}%% opener substitutes empty content, while a missing
+        // section selector leaves the source whole. Synthetic separator
+        // source only; no captured page content.
+        let source = "first\n=====\nsecond\n";
+        assert_eq!(wikidot_content_section(source, Some(0)), "");
+        assert_eq!(wikidot_content_section("", Some(0)), "");
+        assert_eq!(wikidot_content_section(source, None), source);
+    }
+
+    #[test]
     fn rejects_literal_context_crossing_a_section_boundary() {
         for source in [
             "[!--\n=====\n[[include component:cell]]\n--]\n",
