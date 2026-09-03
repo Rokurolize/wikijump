@@ -324,6 +324,84 @@ mod tests {
         );
     }
 
+    /// Live PagePreview controls for standalone buttons (sandbox-for-codex,
+    /// identical for anonymous, member, and non-member actors): exact labels,
+    /// classes, listener hooks, safe style passthrough, and exact error
+    /// blocks for the missing-text and unknown-action shapes. The styled
+    /// source row asserts attributes without order because FTML emits style
+    /// after onclick while live emits it before href; order is cosmetic and
+    /// owned by the FTML renderer.
+    #[test]
+    fn standalone_button_preview_matches_live_control_dom() {
+        fn render(source: &str) -> String {
+            let mut source = source.to_owned();
+            let page_info = PageInfo {
+                page: Cow::Borrowed("legacy-action"),
+                category: None,
+                site: Cow::Borrowed("legacy-action"),
+                title: Cow::Borrowed("Legacy action"),
+                alt_title: None,
+                score: ScoreValue::Integer(0),
+                tags: Vec::new(),
+                language: Cow::Borrowed("en"),
+            };
+            let settings =
+                WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+            ftml::preprocess_for_layout(&mut source, settings.layout);
+            let tokens = ftml::tokenize(&source);
+            let (tree, _) = ftml::parse(&tokens, &page_info, &settings).into();
+            HtmlRender.render(&tree, &page_info, &settings).body
+        }
+
+        assert!(render("[[button history]]").contains(
+            r#"<a class="wiki-standalone-button" href="javascript:;" onclick="WIKIDOT.page.listeners.historyClick(event)">history</a>"#
+        ));
+        assert!(render("[[button edit text=\"Create\"]]").contains(
+            r#"<a class="wiki-standalone-button" href="javascript:;" onclick="WIKIDOT.page.listeners.editClick(event)">Create</a>"#
+        ));
+        let styled = render("[[button source style=\"color: #444\"]]");
+        for expected in [
+            r#"class="wiki-standalone-button""#,
+            r#"style="color: #444""#,
+            r#"href="javascript:;""#,
+            r#"onclick="WIKIDOT.page.listeners.viewSourceClick(event)""#,
+            ">view source</a>",
+        ] {
+            assert!(
+                styled.contains(expected),
+                "styled source control should contain {expected:?}:\n{styled}",
+            );
+        }
+        assert!(render("[[button set-tags +tag1 -tag2]]").contains(
+            r#"<div class="error-block">You need to set text for set-tags button.</div>"#
+        ));
+        assert!(render("[[button frobnicate]]").contains(
+            r#"<div class="error-block"><em>frobnicate</em> is not a valid button type</div>"#
+        ));
+        assert!(render("[[button edit text=\"A\" text=\"B\"]]").contains(">B</a>"));
+        assert!(render("[[button print]]").contains(
+            r#"<a class="wiki-standalone-button" href="javascript:;" onclick="WIKIDOT.page.listeners.printClick(event)">print</a>"#
+        ));
+        // Live emits raw single quotes around the alterations while FTML
+        // HTML-escapes them as &#39;; both parse to the identical DOM
+        // string, so the pin covers hook, order, content, label, and class
+        // while the cosmetic escaping delta stays an FTML-owned residual
+        // (same for the style-attribute order covered above).
+        let set_tags = render("[[button set-tags +tag1 -tag2 text=\"Change tags\"]]");
+        for expected in [
+            r#"class="wiki-standalone-button""#,
+            r#"href="javascript:;""#,
+            "WIKIDOT.page.listeners.updateTagsByButton(event,",
+            "+tag1 -tag2",
+            ">Change tags</a>",
+        ] {
+            assert!(
+                set_tags.contains(expected),
+                "set-tags control should contain {expected:?}:\n{set_tags}",
+            );
+        }
+    }
+
     #[test]
     fn wikidot_html_keeps_exact_control_shape_without_private_identifiers() {
         let mut body = r#"<p><a class="g07-print-class" id="wj-button-abc" href="javascript:;">print</a></p>"#.to_owned();
