@@ -9180,10 +9180,10 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             "{label} should use the shared Unicode whitespace and case normalization contract:\n{output}",
         );
         assert!(
-            output.contains("http://www.wikidot.com/user:info/numeric-target")
-                && output.contains("WIKIDOT.page.listeners.userInfo(2); return false;")
-                && output.contains(">Numeric Target</a>"),
-            "{label} numeric ID lookup must survive a display name normalized as 2:\n{output}",
+            !output.contains("http://www.wikidot.com/user:info/numeric-target")
+                && !output.contains("WIKIDOT.page.listeners.userInfo(2); return false;")
+                && !output.contains(">Numeric Target</a>"),
+            "{label} digit lookup keys must resolve by name, never by numeric ID:\n{output}",
         );
         assert!(
             output.contains("http://www.wikidot.com/user:info/display-two")
@@ -9199,8 +9199,8 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             "WIKIDOT.page.listeners.userInfo({EXTANT_USER_ID})"
         ))
         .count(),
-        3,
-        "a plain user has one profile link and a starred user has avatar and name links:\n{html}",
+        1,
+        "only the plain extant row links the imported identity; numeric identity text is a name key, never an ID link:\n{html}",
     );
     // Sealed anonymous PagePreview cases 1421 and 1423-1428 in
     // /mnt/oracle-store/wjlab/issue-scout-20260731/v7-full-syntax/comparison.json
@@ -9253,16 +9253,27 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
                 "{label} must keep the exact live missing-user text inside span.error-inline:\n{output}",
             );
         }
+        let numeric_identity_fragment = format!(
+            "<span class=\"error-inline\"><em>{EXTANT_USER_ID}</em> does not match any existing user name</span>",
+        );
+        assert!(
+            output.contains(&numeric_identity_fragment),
+            "{label} must keep the exact live missing-user text for numeric identity text:\n{output}",
+        );
         assert_eq!(
             output
                 .matches("does not match any existing user name")
                 .count(),
-            10,
-            "{label} must fail closed for the deleted identity, colliding name, starred unknown, and seven unknown lookup keys:\n{output}",
+            11,
+            "{label} must fail closed for the deleted identity, colliding name, starred unknown, seven unknown lookup keys, and numeric identity text:\n{output}",
         );
         assert!(
             !output.contains("user:info/deleted-user"),
             "{label} must not expose a profile URL for the deleted identity:\n{output}",
+        );
+        assert!(
+            !output.contains(&format!("user:info/{EXTANT_USER_ID}")),
+            "{label} must not expose a profile URL for numeric identity text:\n{output}",
         );
         assert!(
             output.contains(concat!(
@@ -9283,6 +9294,7 @@ async fn wikidot_user_blocks_match_live_preview_and_saved_page_identity_boundari
             "DELETED=",
             "COLLISION=",
             "UNKNOWN_AVATAR=",
+            "ID=",
             "A=",
             "B=",
             "C=",
