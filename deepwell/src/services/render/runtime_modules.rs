@@ -3441,6 +3441,59 @@ mod runtime_module_residual_tests {
             );
         }
     }
+
+    #[test]
+    fn dashboard_and_themepreviewer_argument_bearing_preview_stays_literal() {
+        // Retained #1038 contract: only the bare openers render the live
+        // Dashboard/ThemePreviewer errors. The documented ThemePreviewer
+        // noUi attribute and unknown attributes have no observed output, so
+        // the static preview expansion leaves them byte-literal (later
+        // unknown-module) instead of rendering an error branch or fetching
+        // an author-supplied theme URL. Static expansion is actor- and
+        // page-free by construction.
+        fn preview_static(source: &str) -> String {
+            let settings =
+                WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+            let mut compat_html = CompatHtmlFragments::new(source);
+            let expanded = RenderService::expand_static_account_modules(
+                source.to_owned(),
+                &settings,
+                &mut compat_html,
+            );
+            compat_html.restore(&expanded)
+        }
+
+        let dashboard = preview_static("[[module Dashboard]]");
+        assert!(
+            dashboard.contains("Not allowed. Error."),
+            "bare Dashboard must keep the live error boundary:\n{dashboard}",
+        );
+        assert!(
+            !dashboard.contains("[[module Dashboard"),
+            "bare Dashboard must be consumed, not leaked:\n{dashboard}",
+        );
+
+        let previewer = preview_static("[[module ThemePreviewer]]");
+        assert!(
+            previewer.contains(
+                "Preview mode error: please contact Wikidot.com for a better error message",
+            ),
+            "bare ThemePreviewer must keep the live error boundary:\n{previewer}",
+        );
+        assert!(
+            !previewer.contains("[[module ThemePreviewer"),
+            "bare ThemePreviewer must be consumed, not leaked:\n{previewer}",
+        );
+
+        for source in [
+            "[[module Dashboard foo=\"bar\"]]",
+            "[[module ThemePreviewer noUi=\"true\"]]",
+            "[[module ThemePreviewer foo=\"bar\"]]",
+        ] {
+            let rendered = preview_static(source);
+            assert_eq!(rendered, source, "{source}");
+        }
+    }
 }
 
 #[cfg(test)]
