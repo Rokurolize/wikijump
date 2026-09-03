@@ -116,6 +116,7 @@ impl WikidotSiteChangesFilter {
         match options {
             "{}" | "{\"all\":true}" => Some(Self::All),
             "{\"source\":true}" => Some(Self::Source),
+            "{\"files\":true}" => Some(Self::Files),
             _ => None,
         }
     }
@@ -786,7 +787,7 @@ mod tests {
         );
         assert_eq!(
             WikidotSiteChangesFilter::from_wikidot_py_options("{\"files\":true}"),
-            None,
+            Some(WikidotSiteChangesFilter::Files),
         );
     }
 }

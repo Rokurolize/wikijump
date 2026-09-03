@@ -965,7 +965,11 @@ test("SiteChanges preserves control-empty-options control-source-options and con
   const cases = [
     { options: undefined, expected: '{"all":true}' },
     { options: "{}", expected: '{"all":true}' },
-    { options: "{'source':true}", expected: '{"source":true}' }
+    { options: "{'source':true}", expected: '{"source":true}' },
+    { options: '{"all":true}', expected: '{"all":true}' },
+    { options: '{"source":true}', expected: '{"source":true}' },
+    { options: '{"files":true}', expected: '{"files":true}' },
+    { options: "{'files':true}", expected: '{"files":true}' }
   ]
 
   for (const { options, expected } of cases) {
@@ -1098,8 +1102,6 @@ test("SiteChanges wikidot.py family fails closed for mixed and unobserved scalar
     { page: "1tail" },
     { page: "9007199254740993" },
     { perpage: "10" },
-    { options: "{'files':true}" },
-    { options: '{"all":true}' },
     { pageId: "74503778" },
     { categoryId: "" },
     { module_body: "" },
