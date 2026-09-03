@@ -223,4 +223,22 @@ mod tests {
             "before [[module Search]] after\nbefore [[module Feed]] after",
         );
     }
+
+    #[test]
+    fn feed_inaccessible_source_error_escapes_the_source_url() {
+        // Normative #1036 correction: a recognized but unreadable source
+        // renders the processing error with the escaped source URL, so a
+        // hostile query string cannot break out of the error block. The
+        // inaccessible path never fetches; no network is involved.
+        let rendered =
+            expand("[[module Feed src=\"https://example.com/feed?a=1&b=<x>\"]]");
+        assert!(
+            rendered.contains("\"https://example.com/feed?a=1&amp;b=&lt;x&gt;\"",),
+            "special characters must be escaped:\n{rendered}",
+        );
+        assert!(
+            !rendered.contains("&b=<x>"),
+            "no raw markup may reach the error block:\n{rendered}",
+        );
+    }
 }
