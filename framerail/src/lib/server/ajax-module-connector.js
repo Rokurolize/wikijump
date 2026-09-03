@@ -1523,6 +1523,16 @@ export const handleAjaxModuleConnectorRequest = async (
         message: `Unsupported AJAX module shape: ${moduleName}`
       })
     }
+    if (
+      moduleName === "forum/ForumStartModule" &&
+      parameters.hidden !== undefined &&
+      parameters.hidden !== "true"
+    ) {
+      return jsonResponse({
+        status: "not_ok",
+        message: `Unsupported AJAX module shape: ${moduleName}`
+      })
+    }
     if (!forumNumericParametersAreCanonical(parameters)) {
       return jsonResponse({
         status: "not_ok",
