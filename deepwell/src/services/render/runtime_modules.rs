@@ -3494,6 +3494,30 @@ mod runtime_module_residual_tests {
             assert_eq!(rendered, source, "{source}");
         }
     }
+
+    #[test]
+    fn www_counter_groups_thousands_with_spaces_like_live() {
+        // Retained #1508 live www front-special stats: large counters use
+        // space-separated thousands groups. Pin the general grouping rule
+        // (multi-group positives plus sub-thousand, zero, and clamped
+        // negative controls) without replaying any captured population.
+        for (value, expected) in [
+            (106_410_870_i64, "106 410 870"),
+            (31_444_i64, "31 444"),
+            (10_514_050_i64, "10 514 050"),
+            (749_i64, "749"),
+            (1_000_i64, "1 000"),
+            (999_i64, "999"),
+            (0_i64, "0"),
+            (-42_i64, "0"),
+        ] {
+            assert_eq!(
+                RenderService::format_www_counter(value),
+                expected,
+                "{value}"
+            );
+        }
+    }
 }
 
 #[cfg(test)]
