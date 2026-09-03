@@ -3346,6 +3346,49 @@ mod runtime_module_residual_tests {
             "{rendered}",
         );
     }
+
+    #[test]
+    fn watchers_argument_bearing_preview_stays_literal_without_watcher_list() {
+        // Retained #1032 contract: only the bare opener renders the live
+        // empty Watchers block. The documented noActions attribute and
+        // unknown attributes have no observed output, so the static preview
+        // expansion leaves them byte-literal (later unknown-module) instead
+        // of fabricating a watcher list or collapsing to the empty block.
+        // Static expansion is actor- and page-free by construction.
+        fn preview_static(source: &str) -> String {
+            let settings =
+                WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+            let mut compat_html = CompatHtmlFragments::new(source);
+            let expanded = RenderService::expand_static_account_modules(
+                source.to_owned(),
+                &settings,
+                &mut compat_html,
+            );
+            compat_html.restore(&expanded)
+        }
+
+        let bare = preview_static("[[module Watchers]]");
+        assert!(
+            bare.contains("<p>\n\n\n\n\n</p>"),
+            "bare Watchers must keep the live empty block boundary:\n{bare}",
+        );
+        assert!(
+            !bare.contains("[[module Watchers"),
+            "bare Watchers must be consumed, not leaked:\n{bare}",
+        );
+
+        for source in [
+            "[[module Watchers noActions=\"true\"]]",
+            "[[module Watchers foo=\"bar\"]]",
+        ] {
+            let rendered = preview_static(source);
+            assert_eq!(rendered, source, "{source}");
+            assert!(
+                !rendered.contains("<p>\n\n\n\n\n</p>"),
+                "{source} must not collapse to the empty block:\n{rendered}",
+            );
+        }
+    }
 }
 
 #[cfg(test)]
