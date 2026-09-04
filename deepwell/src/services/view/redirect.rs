@@ -40,10 +40,8 @@ static REDIRECT_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     .expect("Redirect module regular expression should compile")
 });
 static REDIRECT_ARGUMENT_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(
-        r#"(?i)(?P<key>[a-z][a-z0-9_-]*)[ \t]*=[ \t]*(?:"(?P<double>[^"]*)"|'(?P<single>[^']*)')"#,
-    )
-    .expect("Redirect argument regular expression should compile")
+    Regex::new(r#"(?i)(?P<key>[a-z][a-z0-9_-]*)[ \t]*=[ \t]*"(?P<double>[^"]*)""#)
+        .expect("Redirect argument regular expression should compile")
 });
 
 pub(super) fn wikidot_redirect_location(
@@ -128,10 +126,7 @@ fn parse_destination_argument(head: &str) -> Option<String> {
         if !captures["key"].eq_ignore_ascii_case("destination") || destination.is_some() {
             return None;
         }
-        let value = captures
-            .name("double")
-            .or_else(|| captures.name("single"))?
-            .as_str();
+        let value = captures.name("double")?.as_str();
         destination = Some(value.to_owned());
     }
 
@@ -333,6 +328,14 @@ mod tests {
             let source = format!("[[module Redirect destination=\"{destination}\"]]");
             assert_eq!(wikidot_redirect_location(&source, "source", false), None);
         }
+        assert_eq!(
+            wikidot_redirect_location(
+                "[[module Redirect destination='http://example.test/target']]",
+                "source",
+                false,
+            ),
+            None,
+        );
     }
 
     #[test]

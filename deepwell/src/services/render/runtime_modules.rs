@@ -247,6 +247,10 @@ static RUNTIME_MODULE_RESIDUAL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     )
     .expect("runtime module residual expression is valid")
 });
+static REDIRECT_SINGLE_QUOTED_DESTINATION_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?i)^[ \t]*destination[ \t]*=[ \t]*'[^']*'[ \t]*$"#)
+        .expect("single-quoted Redirect destination expression is valid")
+});
 
 #[derive(Default)]
 struct MembershipByPasswordResultCache {
@@ -1399,9 +1403,8 @@ fn is_literal_runtime_module_residual(name: &str) -> bool {
 ///
 /// Live PagePreview renders the redirect notice for exact
 /// `destination="..."` heads with a nonempty value; an empty destination
-/// renders the missing-destination error instead. Every other shape
-/// (single quotes, extra arguments, duplicates) stays literal, and saved
-/// renders keep the unobserved shape literal as well.
+/// renders the missing-destination error instead. Single quotes stay literal
+/// in preview and use the missing-destination error in saved renders.
 fn redirect_preview_destination_notice(head: &str) -> Option<String> {
     let destination = head
         .trim()
@@ -1462,7 +1465,10 @@ impl RenderService {
                 .as_str();
             let head = captures.name("head").map_or("", |mtch| mtch.as_str());
             let replacement = if name.eq_ignore_ascii_case("Redirect")
-                && (head.trim().is_empty() || head.trim() == "destination=\"\"")
+                && (head.trim().is_empty()
+                    || head.trim() == "destination=\"\""
+                    || (!page_preview
+                        && REDIRECT_SINGLE_QUOTED_DESTINATION_REGEX.is_match(head)))
             {
                 compat_html.push_block_html(REDIRECT_MISSING_DESTINATION_HTML.to_owned())
             } else if is_literal_runtime_module_residual(name) {
@@ -3299,8 +3305,8 @@ mod runtime_module_residual_tests {
         // Live PagePreview observations (sandbox-for-codex, anonymous):
         // a double-quoted non-empty destination renders the redirect
         // notice, while an empty destination renders the same
-        // missing-destination error as an absent one. Saved renders keep
-        // destination-bearing modules literal (unobserved live).
+        // missing-destination error as an absent one. Single-quoted saved
+        // destinations use the same missing-destination error.
         let notice =
             render_finalized("[[module Redirect destination=\"start\"]]\n", true);
         assert!(
@@ -3330,6 +3336,24 @@ mod runtime_module_residual_tests {
         assert!(
             saved.contains("[[module Redirect destination=&quot;start&quot;]]"),
             "saved renders keep the unobserved shape literal:\n{saved}",
+        );
+        let saved_single_quoted = render_finalized(
+            "[[module Redirect destination='http://example.test/target']]\n",
+            false,
+        );
+        assert!(
+            saved_single_quoted.contains(REDIRECT_MISSING_DESTINATION_HTML),
+            "saved single-quoted destinations must use the missing-destination error:\n{saved_single_quoted}",
+        );
+        let preview_single_quoted = render_finalized(
+            "[[module Redirect destination='http://example.test/target']]\n",
+            true,
+        );
+        assert!(
+            preview_single_quoted.contains(
+                "[[module Redirect destination=&#39;http://example.test/target&#39;]]"
+            ),
+            "preview single-quoted destinations must remain literal:\n{preview_single_quoted}",
         );
     }
 
