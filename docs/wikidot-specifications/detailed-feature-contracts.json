@@ -86,7 +86,8 @@
           "Form recognition occurs from the category _template source. Comment wrappers MUST NOT be treated as an instruction to erase an otherwise recognized form unless live parser behavior specifically establishes that boundary."
         ],
         "P3": [
-          "Removing the form definition changes subsequent create/edit behavior but MUST NOT silently delete existing page data. Existing page source remains page content until an explicit page mutation changes it."
+          "Removing the form definition changes subsequent create/edit behavior but MUST NOT silently delete existing page data. Existing page source remains page content until an explicit page mutation changes it.",
+          "Restoring a recognized [[form]] on the same category _template page re-enables data-form interpretation for pages created before removal and for pages created while the form was absent; current live evidence establishes no persistent page-level form-era binding."
         ],
         "P4": [
           "Only actors already authorized to edit the category template may change whether the category has a form; viewing or editing an ordinary page does not grant template mutation authority."
@@ -95,13 +96,13 @@
           "Deleting the form definition has no independent query pagination or ordering rule. Existing structured page values remain subject to their normal query behavior."
         ],
         "P6": [
-          "After the template no longer contains a recognized form, create/edit routes MUST follow the ordinary page editor behavior rather than exposing the generated data-form editor."
+          "After the template no longer contains a recognized form, create/edit routes MUST follow the ordinary page editor behavior rather than exposing the generated data-form editor. Restoring a recognized form returns those routes to the generated data-form editor, including for pages that existed through the form-free interval."
         ],
         "P7": [
-          "The generated form UI MUST disappear when the category template no longer defines a form. No migration UI or automatic field cleanup is specified."
+          "The generated form UI MUST disappear when the category template no longer defines a form and MUST reappear after a recognized form is restored. No migration UI, page-era marker, or automatic field cleanup is specified."
         ],
         "P8": [
-          "The transition MUST be atomic at template-revision boundaries: a request observes either a form-defining template revision or a non-form revision, never a partially removed field schema."
+          "Browser editor selection follows the current category template, while anonymous saved-page rendering may lag a template edit or removal for several seconds because of cache convergence. After convergence the current template wins; implementations MUST NOT freeze a page to a historical form era or expose a partially mixed field schema."
         ]
       }
     },

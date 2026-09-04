@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.wikidot_implementation_ledger.v2",
-  "updated_at": "2026-08-17",
-  "catalog_sha256": "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1",
+  "updated_at": "2026-09-05",
+  "catalog_sha256": "b69d218353c988c479c0af977240a7fa273f38918c57156dc3dae171c57f023c",
   "campaign": {
     "name": "Parallel Wikidot compatibility campaign",
     "requested_scope": [
@@ -454,14 +454,34 @@
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-deleting-form": {
-      "status": "pending",
-      "confirmed_public_seams": [],
-      "tests": [],
-      "implementation_files": [],
-      "documentation_evidence": [
-        "specifications/data-forms/data-forms-deleting-form.md"
+      "status": "implemented",
+      "confirmed_public_seams": [
+        "Authenticated live Wikidot browser lifecycle on one category _template identity across form edit, removal, ordinary creation, and form restoration",
+        "Deepwell public found-page and missing-page page_view data-form selection from the current category template"
       ],
-      "live_oracle_evidence": [],
+      "tests": [
+        {
+          "path": "deepwell/tests/page_template_assignment.rs",
+          "name": "data_form_template_deletion_requires_actual_form_removal",
+          "scope": "public page_view verifies active, commented, removed, form-free creation, and same-template restoration behavior without a persistent page-era binding"
+        },
+        {
+          "path": "install/local/wikidot-verification/tests/issue1391-data-form-ui-era-artifact.test.mjs",
+          "name": "issue 1391 retained lifecycle evidence",
+          "scope": "retained browser evidence pins one template identity across form edit/removal/restoration, form and ordinary create paths, cache convergence, redaction, and cleanup"
+        }
+      ],
+      "implementation_files": [
+        "deepwell/src/services/data_form.rs",
+        "deepwell/src/services/view/service.rs"
+      ],
+      "documentation_evidence": [
+        "specifications/data-forms/data-forms-deleting-form.md",
+        "live-observations.json"
+      ],
+      "live_oracle_evidence": [
+        "install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json"
+      ],
       "unresolved_ambiguities_or_blockers": []
     },
     "data-forms-displaying": {
@@ -5202,10 +5222,23 @@
   },
   "data-forms-deleting-form": {
     "issue_scope": {
-      "status": "unresolved",
-      "references": []
+      "status": "resolved",
+      "references": [
+        1391
+      ]
     },
-    "owners": []
+    "owners": [
+      {
+        "owner": "wikijump.deepwell",
+        "source_references": [
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/view/service.rs"
+        ],
+        "test_references": [
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal"
+        ]
+      }
+    ]
   },
   "data-forms-displaying": {
     "issue_scope": {
