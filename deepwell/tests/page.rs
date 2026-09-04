@@ -13272,15 +13272,13 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
         json!({
             "site_id": site_id,
             "title": "front-forum-unobserved-arguments",
-            "wikitext": r#"[[module FrontForum category="1" feed="news"]]"#,
+            "wikitext": r#"[[module FrontForum category="9223372036854775807" feed="news"]]"#,
         }),
     );
-    assert!(
-        unsupported.body.contains("No such module")
-            && !unsupported.body.contains("forum-start-box")
-            && !unsupported.body.contains("forum-recent-posts-box"),
-        "an unobserved FrontForum query must fail closed: {}",
+    assert_eq!(
         unsupported.body,
+        r#"<div class="error-block">Requested forum category does not exist.</div>"#,
+        "an unobserved FrontForum query with a missing category must fail closed",
     );
 
     let unsupported_malformed_category = run_endpoint!(
@@ -13293,13 +13291,10 @@ async fn forum_modules_match_live_missing_context_and_owner_boundaries() {
         }),
     );
     assert!(
-        unsupported_malformed_category
-            .body
-            .contains("No such module")
-            && !unsupported_malformed_category
-                .body
-                .contains("Problem parsing attribute"),
-        "an unobserved FrontForum argument must take precedence over scalar parsing: {}",
+        unsupported_malformed_category.body.contains(
+            r#"<div class="error-block">Problem parsing attribute "category".</div>"#
+        ),
+        "a malformed FrontForum category must retain the documented parser error: {}",
         unsupported_malformed_category.body,
     );
 
