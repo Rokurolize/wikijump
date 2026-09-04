@@ -1,0 +1,48 @@
+{
+  "schema": "wikijump.listdrafts_live_lifecycle_summary.v1",
+  "captured_at": "2026-09-04T15:00:48.791Z",
+  "site": "sandbox-for-codex",
+  "surface": "edit/PagePreviewModule plus WikiPageAction draft lifecycle",
+  "source_receipt": {
+    "path": "/home/roku/wjlab/evidence/issue1035-listdrafts-20260904d/artifact-pageid-rule-fix.json",
+    "sha256": "19d150f1a1bec588b9c2ea6fd00c8e210fd4fa4fdd334009eaae28fa256caead",
+    "mode": "0600"
+  },
+  "page_edit_module_js_sha256": "37925e3facb05aded9f84954d030f609cc64946724b0a625a21d7960237e31af",
+  "actors": [
+    "administrator",
+    "anonymous",
+    "member",
+    "moderator"
+  ],
+  "run_owned_drafts": {
+    "existing_page": "run-owned:q1035-fw21-existing-20260810",
+    "nonexisting_page": "run-owned:q1035-fw21-nonexisting-20260810",
+    "existing_page_identity_sent_to_synchronize": true,
+    "existing_page_published_revision_unchanged": true,
+    "nonexisting_page_absent_during_draft": true
+  },
+  "observed_rule": {
+    "omitted": ["existing_page", "nonexisting_page"],
+    "pageType_double_quoted_exists": ["existing_page"],
+    "pageType_double_quoted_notexists": ["existing_page", "nonexisting_page"],
+    "pageType_empty": ["existing_page", "nonexisting_page"],
+    "actor_matrix_identical_for_run_owned_rows": true
+  },
+  "cases": [
+    {"case_id": "existing-and-nonexisting-run-owned-drafts"},
+    {"case_id": "exists-selects-existing-only"},
+    {"case_id": "notexists-behaves-like-omission"},
+    {"case_id": "four-actor-row-selection-matrix"},
+    {"case_id": "draft-lifecycle-cleanup"}
+  ],
+  "promoted_rule_status": "observed",
+  "supersedes_inference": "The 2026-07-29 observation inferred that pageType=\"notexists\" filtered to non-existing-page drafts from a fixture that contained only a non-existing-page draft. The controlled two-draft lifecycle disproves that inference: notexists behaves like omission for the observed matrix, while exact double-quoted exists is the observed filter.",
+  "cleanup": {
+    "both_drafts_discarded": true,
+    "published_page_deleted": true,
+    "holder_page_deleted": true,
+    "foreign_baseline_restored": true,
+    "remaining_run_owned_objects": []
+  }
+}
