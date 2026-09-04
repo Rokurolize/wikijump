@@ -177,8 +177,21 @@ async fn public_membership_module_states_are_distinct_and_opaque() {
         "PagePreview must render exact Join DOM without issuing a saved-page mutation binding",
     );
 
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id: site.site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+    )
+    .await
+    .expect("membership preview fixture actor should become a member");
     runner.set_request_context(RequestContext {
-        user_id: Some(ADMIN_USER_ID),
+        user_id: Some(SAMPLE_USER_ID),
         site_id: Some(site.site_id),
         ..Default::default()
     });
