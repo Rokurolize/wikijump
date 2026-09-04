@@ -35,7 +35,7 @@ missing Wikidot behavior.
 Evidence basis:
 
 - `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
-- `category-template-lifecycle` -> `install/local/wikidot-verification/artifacts/category-template-lifecycle-live-20260730.json` (SHA-256 `e58aa2a56d352c83fdc5795b12d086265bd744477b8e5d438707bbeb689d94f7`)
+- `category-template-lifecycle` -> `install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json` (SHA-256 `2dafcce0043a0dcca9a354c275adfe9c20c5b3cd1bd30225a2cd6f7509ec7e42`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -48,6 +48,7 @@ Evidence basis:
 ### P3 - lifecycle, persistence, import, and round trips
 
 - Removing the form definition changes subsequent create/edit behavior but MUST NOT silently delete existing page data. Existing page source remains page content until an explicit page mutation changes it.
+- Restoring a recognized [[form]] on the same category _template page re-enables data-form interpretation for pages created before removal and for pages created while the form was absent; current live evidence establishes no persistent page-level form-era binding.
 
 ### P4 - actors, permissions, visibility, and privacy
 
@@ -59,15 +60,41 @@ Evidence basis:
 
 ### P6 - HTTP, API, URL, Ajax, feed, and navigation contracts
 
-- After the template no longer contains a recognized form, create/edit routes MUST follow the ordinary page editor behavior rather than exposing the generated data-form editor.
+- After the template no longer contains a recognized form, create/edit routes MUST follow the ordinary page editor behavior rather than exposing the generated data-form editor. Restoring a recognized form returns those routes to the generated data-form editor, including for pages that existed through the form-free interval.
 
 ### P7 - DOM, CSS, resources, interaction, and geometry
 
-- The generated form UI MUST disappear when the category template no longer defines a form. No migration UI or automatic field cleanup is specified.
+- The generated form UI MUST disappear when the category template no longer defines a form and MUST reappear after a recognized form is restored. No migration UI, page-era marker, or automatic field cleanup is specified.
 
 ### P8 - temporal behavior, failure atomicity, limits, and resource bounds
 
-- The transition MUST be atomic at template-revision boundaries: a request observes either a form-defining template revision or a non-form revision, never a partially removed field schema.
+- Browser editor selection follows the current category template, while anonymous saved-page rendering may lag a template edit or removal for several seconds because of cache convergence. After convergence the current template wins; implementations MUST NOT freeze a page to a historical form era or expose a partially mixed field schema.
+
+## Live-Wikidot behavioral corrections
+
+The observations in this section are normative and override conflicting or
+incomplete documentation-derived evidence below.
+
+### Data-form removal and restoration follow the current category template without a persistent page era
+
+- Observation ID: `data-form-template-removal-recreation-current-template-20260905`
+- Classification: `documentation-correction`
+- Observed at: `2026-09-05`
+- Analysis: A fresh authenticated browser lifecycle on sandbox-for-codex held one run-owned category _template page identity constant while changing its source from form A to form B, then to a form-free revision, then to form C. A page created through the generated form UI used form-use=true and form-fields=name. Removing the form switched both saved rendering and editing to ordinary-page behavior without deleting the page source. A second page was created while the form was absent. Restoring form C on the same template page made both the pre-removal form-created page and the page created during the form-free interval use the current data-form rendering/editor after cache convergence. This supersedes the earlier retained interpretation that pre-recreation pages remain permanently ordinary; no durable page-level form-era binding was observed. Every run-owned page was identity-checked, deleted, and verified absent after capture.
+
+Normative behavior:
+
+- The current category _template source determines whether an existing or missing page uses the generated data-form editor; no persistent page-level form-era binding was observed.
+- Removing the recognized form makes existing pages and pages created during that interval use ordinary page behavior while preserving their stored source.
+- Restoring a recognized form on the same _template page re-enables current-form interpretation for pages created before removal and for pages created while the form was absent.
+- The observed generated-form create request carries form-use=true and form-fields=name; the ordinary create request during the form-free interval does not carry those data-form fields.
+- Anonymous saved-page output may lag an in-place template edit or form removal for several seconds because of cache convergence. After convergence the current template controls rendering; a historical form era must not be frozen into page identity.
+- The earlier retained claim that pages existing before form deletion/recreation remain permanently ordinary is superseded by this same-template browser lifecycle.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json` (SHA-256 `2dafcce0043a0dcca9a354c275adfe9c20c5b3cd1bd30225a2cd6f7509ec7e42`), cases: none
+
 
 
 ## Suggested public TDD seams

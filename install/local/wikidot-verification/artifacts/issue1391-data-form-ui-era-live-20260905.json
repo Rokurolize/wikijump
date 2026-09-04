@@ -1,0 +1,304 @@
+{
+  "schema": "wikijump.issue1391.data_form_ui_era_live.v1",
+  "captured_at": "2026-09-04T15:51:42.262Z",
+  "status": "observed",
+  "issue": 1391,
+  "site": "sandbox-for-codex",
+  "run_id": "issue1391-data-form-ui-era-20260904-fd0b58c0",
+  "interfaces": [
+    "authenticated browser missing-page create",
+    "edit/PageEditModule",
+    "WikiPageAction/savePage",
+    "WikiPageAction/deletePage",
+    "anonymous saved-page GET"
+  ],
+  "lifecycle": {
+    "template_a": {
+      "page_id": 1469274132,
+      "source_sha256": "e6a4ab7771470f8e62e2c3ac9e3e58f2199ae932f1b6dd69e76588e491e6cf02",
+      "create_editor_convergence": {
+        "attempt": 1,
+        "shape": {
+          "data_form": true,
+          "ordinary_textarea": false,
+          "form_fields": "name",
+          "body_sha256": "bac6b8dcf79edebeabdd57fded2fa685c4c996f07af06cf02e5680284361e7e4"
+        }
+      }
+    },
+    "before_created_with_form_a": {
+      "browser_create": {
+        "page_id": 1469274133,
+        "source": "name: 'Before value'",
+        "source_sha256": "84827d851afeea832bf219c14a83ca8345ad9aad528c4cb508a7f5547971088e",
+        "editor": {
+          "data_form": true,
+          "ordinary_textarea": false
+        },
+        "request": {
+          "page_id": "",
+          "recaptcha_challenge_field": "",
+          "recaptcha_response_field": "",
+          "form-use": "true",
+          "form-fields": "name",
+          "form-file-still-uploading": "0",
+          "title": "Before",
+          "field-name": "Before value",
+          "action": "WikiPageAction",
+          "event": "savePage",
+          "mode": "page",
+          "wiki_page": "runowned1391ui-fd0b58c0:before",
+          "revision_id": "",
+          "moduleName": "Empty",
+          "callbackIndex": "2"
+        },
+        "response": {
+          "http_status": 200,
+          "status": "ok"
+        }
+      },
+      "view": {
+        "status": 200,
+        "page_id": 1469274133,
+        "contains_field_a": true,
+        "contains_field_b": false,
+        "contains_field_c": false,
+        "contains_formless_value": false,
+        "text_sha256": "ce471b33fc86227198d71821e8a749ad366aa70c9fdba46372ff6746488ece95"
+      },
+      "edit": {
+        "data_form": true,
+        "ordinary_textarea": false,
+        "form_fields": "name",
+        "body_sha256": "51377221cac334784461573f9a34e1fed99c0924f8b4550415e1ad78273aa461"
+      }
+    },
+    "after_in_place_template_edit": {
+      "template_page_id": 1469274132,
+      "view_convergence": {
+        "attempt": 20,
+        "observation": {
+          "status": 200,
+          "page_id": 1469274133,
+          "contains_field_a": false,
+          "contains_field_b": true,
+          "contains_field_c": false,
+          "contains_formless_value": false,
+          "text_sha256": "11d64948fa9ed3c9d3da0c84c0b2c705828682d35fdce7e3acfb96a347f8f330"
+        }
+      },
+      "edit": {
+        "data_form": true,
+        "ordinary_textarea": false,
+        "form_fields": "name",
+        "body_sha256": "57ceb8eda7ade05a30397a1054ad7f4975e4962a1fcf2cb24b66d9295b319627"
+      }
+    },
+    "after_form_removal": {
+      "template_page_id": 1469274132,
+      "same_template_identity": true,
+      "new_page_editor_convergence": {
+        "attempt": 1,
+        "shape": {
+          "data_form": false,
+          "ordinary_textarea": true,
+          "form_fields": null,
+          "body_sha256": "62935d26a8f39ad50e74b1869b743233e003adcc31547f153387d2115102fb7f"
+        }
+      },
+      "before_view_convergence": {
+        "attempt": 11,
+        "observation": {
+          "status": 200,
+          "page_id": 1469274133,
+          "contains_field_a": false,
+          "contains_field_b": false,
+          "contains_field_c": false,
+          "contains_formless_value": false,
+          "text_sha256": "5fb70c1839282a02aaa1c14c71c699de93d19e172a1bec9bc126d77f3d680917"
+        }
+      },
+      "before_edit": {
+        "data_form": false,
+        "ordinary_textarea": true,
+        "form_fields": null,
+        "body_sha256": "8e5e4c46199f44a22898aabb1fd9dc372227afa99583b286466e5e1b46e15311"
+      }
+    },
+    "formless_created": {
+      "browser_create": {
+        "page_id": 1469274135,
+        "source": "",
+        "source_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "editor": {
+          "data_form": false,
+          "ordinary_textarea": true
+        },
+        "request": {
+          "page_id": "",
+          "recaptcha_challenge_field": "",
+          "recaptcha_response_field": "",
+          "title": "Formless",
+          "theme": "",
+          "source": "",
+          "comments": "",
+          "action": "WikiPageAction",
+          "event": "savePage",
+          "mode": "page",
+          "wiki_page": "runowned1391ui-fd0b58c0:formless",
+          "revision_id": "",
+          "moduleName": "Empty",
+          "callbackIndex": "3"
+        },
+        "response": {
+          "http_status": 200,
+          "status": "ok"
+        }
+      },
+      "view": {
+        "status": 200,
+        "page_id": 1469274135,
+        "contains_field_a": false,
+        "contains_field_b": false,
+        "contains_field_c": false,
+        "contains_formless_value": false,
+        "text_sha256": "606331d4a1480e63502ef87b856282e99ebe4ae531eadfad7679c69e05470dd1"
+      },
+      "edit": {
+        "data_form": false,
+        "ordinary_textarea": true,
+        "form_fields": null,
+        "body_sha256": "7295bedce74e5c9c06a5992a81485669b576a286edc346df9fdb4db1612701c5"
+      }
+    },
+    "template_c": {
+      "page_id": 1469274132,
+      "source_sha256": "a2db365b2004dc234325e4c52ee03afca467826c6f4a42fe83192c2651486be2",
+      "same_identity_as_a": true,
+      "create_editor_convergence": {
+        "attempt": 1,
+        "shape": {
+          "data_form": true,
+          "ordinary_textarea": false,
+          "form_fields": "name",
+          "body_sha256": "cfa078dda36b569a57300304f24798412f13d0e91af8deedcbfa5496681e6c28"
+        }
+      }
+    },
+    "after_created_with_form_c": {
+      "browser_create": {
+        "page_id": 1469274136,
+        "source": "name: 'After value'",
+        "source_sha256": "9215e07c0c4221671339b4629a7c836d2869bca2956ad69ff34989196229d289",
+        "editor": {
+          "data_form": true,
+          "ordinary_textarea": false
+        },
+        "request": {
+          "page_id": "",
+          "recaptcha_challenge_field": "",
+          "recaptcha_response_field": "",
+          "form-use": "true",
+          "form-fields": "name",
+          "form-file-still-uploading": "0",
+          "title": "After",
+          "field-name": "After value",
+          "action": "WikiPageAction",
+          "event": "savePage",
+          "mode": "page",
+          "wiki_page": "runowned1391ui-fd0b58c0:after",
+          "revision_id": "",
+          "moduleName": "Empty",
+          "callbackIndex": "2"
+        },
+        "response": {
+          "http_status": 200,
+          "status": "ok"
+        }
+      },
+      "view": {
+        "status": 200,
+        "page_id": 1469274136,
+        "contains_field_a": false,
+        "contains_field_b": false,
+        "contains_field_c": true,
+        "contains_formless_value": false,
+        "text_sha256": "80ab09d7df2ba5aeb28ac7bcd93056dba46bcf8d5ee28dca7aeefa5fbb2e1008"
+      },
+      "edit": {
+        "data_form": true,
+        "ordinary_textarea": false,
+        "form_fields": "name",
+        "body_sha256": "7bb32d9f5e4698a7503e9868bd9ef6f9dc458297878edc992547419e200b9d19"
+      }
+    },
+    "after_form_recreation_existing_pages": {
+      "before_view_convergence": {
+        "attempt": 1,
+        "observation": {
+          "status": 200,
+          "page_id": 1469274133,
+          "contains_field_a": false,
+          "contains_field_b": false,
+          "contains_field_c": true,
+          "contains_formless_value": false,
+          "text_sha256": "0ab8b0d8850e1d84ecf46ccb2d58714562072e630557424dccb3de79050167a7"
+        }
+      },
+      "before_edit": {
+        "data_form": true,
+        "ordinary_textarea": false,
+        "form_fields": "name",
+        "body_sha256": "b7824af97c5f7edf0d74b9e826e6ccec18cf61175577db9313c8c276497301b7"
+      },
+      "formless_view_convergence": {
+        "attempt": 1,
+        "observation": {
+          "status": 200,
+          "page_id": 1469274135,
+          "contains_field_a": false,
+          "contains_field_b": false,
+          "contains_field_c": true,
+          "contains_formless_value": false,
+          "text_sha256": "62e7a73f3f9fc5b434295e6cd7e35cc35a0a3ffe0f60035b3acceb2f0c3068c0"
+        }
+      },
+      "formless_edit": {
+        "data_form": true,
+        "ordinary_textarea": false,
+        "form_fields": "name",
+        "body_sha256": "ec3e4e92741a964b3d8fb7d3eeb9ccbf29c263a1c70a211696dbc81418ad5067"
+      }
+    }
+  },
+  "cleanup": {
+    "operations": [
+      {
+        "slug": "runowned1391ui-fd0b58c0:after",
+        "status": "deleted"
+      },
+      {
+        "slug": "runowned1391ui-fd0b58c0:formless",
+        "status": "deleted"
+      },
+      {
+        "slug": "runowned1391ui-fd0b58c0:before",
+        "status": "deleted"
+      },
+      {
+        "slug": "runowned1391ui-fd0b58c0:_template",
+        "status": "deleted"
+      }
+    ],
+    "remaining_run_owned_objects": [],
+    "verified": true
+  },
+  "blocked": null,
+  "redactions": [
+    "credentials",
+    "session cookie",
+    "wikidot_token7",
+    "edit lock id",
+    "edit lock secret"
+  ]
+}

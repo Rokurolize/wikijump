@@ -1088,7 +1088,9 @@ async fn data_form_template_deletion_requires_actual_form_removal() {
     const CATEGORY: &str = "data-form-template-deletion";
     const TEMPLATE_SLUG: &str = "data-form-template-deletion:_template";
     const PAGE_SLUG: &str = "data-form-template-deletion:saved";
+    const FORMLESS_PAGE_SLUG: &str = "data-form-template-deletion:formless";
     const SAVED_SOURCE: &str = "name: 'Retained value'";
+    const FORMLESS_SOURCE: &str = "name: 'Formless value'";
     const ACTIVE_TEMPLATE_SOURCE: &str = concat!(
         "[[form]]\n",
         "fields:\n",
@@ -1114,6 +1116,14 @@ async fn data_form_template_deletion_requires_actual_form_removal() {
         "    label: Retained label\n",
         "    type: text\n",
         "[[/x-form]]",
+    );
+    const RESTORED_TEMPLATE_SOURCE: &str = concat!(
+        "[[form]]\n",
+        "fields:\n",
+        "  name:\n",
+        "    label: Restored label\n",
+        "    type: text\n",
+        "[[/form]]",
     );
 
     let mut runner = TestRunner::setup().await;
@@ -1217,7 +1227,7 @@ async fn data_form_template_deletion_requires_actual_form_removal() {
     }
 
     set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
-    run_endpoint!(
+    let removed = run_endpoint!(
         runner,
         page_edit,
         json!({
@@ -1267,6 +1277,92 @@ async fn data_form_template_deletion_requires_actual_form_removal() {
         other => {
             panic!("renamed [[form]] must disable the generated create editor: {other:?}")
         }
+    }
+
+    create_page(&mut runner, site_id, FORMLESS_PAGE_SLUG, FORMLESS_SOURCE).await;
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": FORMLESS_PAGE_SLUG, "extra": "/edit" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Found {
+            data_form: None,
+            wikitext,
+            ..
+        } => assert_eq!(wikitext, FORMLESS_SOURCE),
+        other => panic!(
+            "a page created while the form is absent must use the ordinary editor: {other:?}"
+        ),
+    }
+
+    set_page_actor(&mut runner, site_id, TEMPLATE_SLUG);
+    run_endpoint!(
+        runner,
+        page_edit,
+        json!({
+            "site_id": site_id,
+            "page": TEMPLATE_SLUG,
+            "last_revision_id": removed.revision_id,
+            "revision_comments": "restore data-form construct on the same template page",
+            "user_id": ADMIN_USER_ID,
+            "wikitext": RESTORED_TEMPLATE_SOURCE,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    )
+    .expect("restored template edit should create a revision");
+
+    for (slug, expected_value) in [
+        (PAGE_SLUG, "Retained value"),
+        (FORMLESS_PAGE_SLUG, "Formless value"),
+    ] {
+        match run_endpoint!(
+            runner,
+            page_view,
+            json!({
+                "site_id": site_id,
+                "session_token": session_token,
+                "route": { "slug": slug, "extra": "/edit" },
+                "locales": ["en-US", "en"],
+            }),
+        ) {
+            GetPageViewOutput::Found {
+                data_form: Some(data_form),
+                ..
+            } => assert_eq!(data_form.values["name"], expected_value),
+            other => panic!(
+                "restoring [[form]] on the same template page must re-enable the generated editor for {slug}: {other:?}"
+            ),
+        }
+    }
+
+    match run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": session_token,
+            "route": { "slug": "data-form-template-deletion:restored-new", "extra": "/edit/true" },
+            "locales": ["en-US", "en"],
+        }),
+    ) {
+        GetPageViewOutput::Missing {
+            data_form: Some(data_form),
+            ..
+        } => assert_eq!(
+            data_form
+                .definition
+                .field("name")
+                .map(|field| field.label.as_str()),
+            Some("Restored label"),
+        ),
+        other => panic!(
+            "restored [[form]] must re-enable the generated create editor: {other:?}"
+        ),
     }
 }
 

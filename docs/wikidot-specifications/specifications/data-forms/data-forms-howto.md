@@ -36,7 +36,7 @@ Evidence basis:
 
 - `current-www-source` -> `/home/roku/wjlab/evidence/spec-hardening-20260816/live-www-source-pages.jsonl` (SHA-256 `53ffba0adb068777ad023eb46dabb59756223fc13ab10d7c9b4a82042b276ffc`): All 46 current www.wikidot.com source pages referenced by the 57 hardened features were found and all 46 source hashes matched the frozen documentation corpus.
 - `data-form-create-edit` -> `install/local/wikidot-verification/artifacts/data-form-create-edit-live.json` (SHA-256 `12a85fc671c52b036d5fe648e63ff5cbfc7d28a8cd0d88e662de614cd6772a8b`)
-- `category-template-lifecycle` -> `install/local/wikidot-verification/artifacts/category-template-lifecycle-live-20260730.json` (SHA-256 `e58aa2a56d352c83fdc5795b12d086265bd744477b8e5d438707bbeb689d94f7`)
+- `category-template-lifecycle` -> `install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json` (SHA-256 `2dafcce0043a0dcca9a354c275adfe9c20c5b3cd1bd30225a2cd6f7509ec7e42`)
 
 ### P1 - invocation grammar and scalar interpretation
 
@@ -103,6 +103,26 @@ Normative behavior:
 Evidence:
 
 - `install/local/wikidot-verification/artifacts/data-form-create-edit-live.json` (SHA-256 `12a85fc671c52b036d5fe648e63ff5cbfc7d28a8cd0d88e662de614cd6772a8b`), cases: `anonymous-direct-missing-page`, `authenticated-direct-missing-page`, `authenticated-create-form`, `authenticated-save`, `authenticated-edit-form`
+
+### Data-form removal and restoration follow the current category template without a persistent page era
+
+- Observation ID: `data-form-template-removal-recreation-current-template-20260905`
+- Classification: `documentation-correction`
+- Observed at: `2026-09-05`
+- Analysis: A fresh authenticated browser lifecycle on sandbox-for-codex held one run-owned category _template page identity constant while changing its source from form A to form B, then to a form-free revision, then to form C. A page created through the generated form UI used form-use=true and form-fields=name. Removing the form switched both saved rendering and editing to ordinary-page behavior without deleting the page source. A second page was created while the form was absent. Restoring form C on the same template page made both the pre-removal form-created page and the page created during the form-free interval use the current data-form rendering/editor after cache convergence. This supersedes the earlier retained interpretation that pre-recreation pages remain permanently ordinary; no durable page-level form-era binding was observed. Every run-owned page was identity-checked, deleted, and verified absent after capture.
+
+Normative behavior:
+
+- The current category _template source determines whether an existing or missing page uses the generated data-form editor; no persistent page-level form-era binding was observed.
+- Removing the recognized form makes existing pages and pages created during that interval use ordinary page behavior while preserving their stored source.
+- Restoring a recognized form on the same _template page re-enables current-form interpretation for pages created before removal and for pages created while the form was absent.
+- The observed generated-form create request carries form-use=true and form-fields=name; the ordinary create request during the form-free interval does not carry those data-form fields.
+- Anonymous saved-page output may lag an in-place template edit or form removal for several seconds because of cache convergence. After convergence the current template controls rendering; a historical form era must not be frozen into page identity.
+- The earlier retained claim that pages existing before form deletion/recreation remain permanently ordinary is superseded by this same-template browser lifecycle.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json` (SHA-256 `2dafcce0043a0dcca9a354c275adfe9c20c5b3cd1bd30225a2cd6f7509ec7e42`), cases: none
 
 
 
