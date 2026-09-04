@@ -495,21 +495,6 @@ where
     value.parse().ok()
 }
 
-#[cfg(test)]
-mod tests {
-    use super::site_changes_browser_rows_per_page;
-
-    #[test]
-    fn site_changes_browser_perpage_accepts_only_observed_positive_values() {
-        for (value, expected) in [("1", 1), ("10", 10), ("20", 20), ("100", 100)] {
-            assert_eq!(site_changes_browser_rows_per_page(value), Some(expected));
-        }
-        for value in ["0", "-1", "1.5", "5001", "9007199254740993", "not-a-number"] {
-            assert_eq!(site_changes_browser_rows_per_page(value), None);
-        }
-    }
-}
-
 pub async fn wikidot_forum_module(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
@@ -1747,4 +1732,19 @@ async fn build_page_file_output(
         revision_comments: revision.comments,
         hidden_fields: revision.hidden,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::site_changes_browser_rows_per_page;
+
+    #[test]
+    fn site_changes_browser_perpage_accepts_only_observed_positive_values() {
+        for (value, expected) in [("1", 1), ("10", 10), ("20", 20), ("100", 100)] {
+            assert_eq!(site_changes_browser_rows_per_page(value), Some(expected));
+        }
+        for value in ["0", "-1", "1.5", "5001", "9007199254740993", "not-a-number"] {
+            assert_eq!(site_changes_browser_rows_per_page(value), None);
+        }
+    }
 }
