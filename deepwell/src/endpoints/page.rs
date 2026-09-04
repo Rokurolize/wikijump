@@ -360,7 +360,8 @@ pub async fn wikidot_site_changes_module(
             let Some(page_id) = wikidot_positive_decimal::<i64>(&page_id) else {
                 return Ok(not_ok());
             };
-            let Some(rows_per_page) = site_changes_browser_rows_per_page(&input.perpage) else {
+            let Some(rows_per_page) = site_changes_browser_rows_per_page(&input.perpage)
+            else {
                 return Ok(not_ok());
             };
             let category_id = if category_id.is_empty() {
@@ -503,14 +504,7 @@ mod tests {
         for (value, expected) in [("1", 1), ("10", 10), ("20", 20), ("100", 100)] {
             assert_eq!(site_changes_browser_rows_per_page(value), Some(expected));
         }
-        for value in [
-            "0",
-            "-1",
-            "1.5",
-            "5001",
-            "9007199254740993",
-            "not-a-number",
-        ] {
+        for value in ["0", "-1", "1.5", "5001", "9007199254740993", "not-a-number"] {
             assert_eq!(site_changes_browser_rows_per_page(value), None);
         }
     }
