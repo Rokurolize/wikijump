@@ -17,6 +17,14 @@ function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
+function configuredUserId(label) {
+  const value = process.env[`WIKIDOT_${label}_USER_ID`];
+  if (!/^\d+$/u.test(value ?? "")) throw new Error(`account ${label} public user ID is required through the environment`);
+  const userId = Number(value);
+  if (!Number.isSafeInteger(userId) || userId <= 0) throw new Error(`account ${label} public user ID is invalid`);
+  return userId;
+}
+
 function parseArgs(argv) {
   const args = {cases: defaultCases, output: defaultOutput};
   for (let index = 2; index < argv.length; index += 1) {
@@ -272,12 +280,13 @@ async function main(argv) {
 
   const credentials = {};
   for (const label of ["A", "B", "C"]) {
-    credentials[label] = {username: process.env[`WIKIDOT_${label}_USERNAME`], password: process.env[`WIKIDOT_${label}_PASSWORD`]};
+    credentials[label] = {username: process.env[`WIKIDOT_${label}_USERNAME`], password: process.env[`WIKIDOT_${label}_PASSWORD`], userId: configuredUserId(label)};
     delete process.env[`WIKIDOT_${label}_USERNAME`];
     delete process.env[`WIKIDOT_${label}_PASSWORD`];
     delete process.env[`WIKIDOT_${label}_EMAIL`];
     if (!credentials[label].username || !credentials[label].password) throw new Error(`account ${label} credentials are required through the environment`);
   }
+  const publicUserIds = Object.fromEntries(Object.entries(credentials).map(([label, value]) => [label, value.userId]));
 
   const owner = new WikidotSession("owner");
   const anonymous = new WikidotSession("anonymous");
@@ -347,10 +356,10 @@ async function main(argv) {
     if (!preflight.discard_verification_route_established) throw new Error("public discard verification route did not prove absence");
 
     const identities = {};
-    for (const [actorId, session] of [["owner", owner], ["second-account", second], ["third-account", third]]) {
+    for (const [actorId, session, accountLabel] of [["owner", owner, "A"], ["second-account", second, "B"], ["third-account", third, "C"]]) {
       const {result} = await session.preview("[[module ListDrafts pageType=\"exists\"]]");
-      if (!Number.isSafeInteger(result.account?.id)) throw new Error(`public actor identity unavailable for ${actorId}`);
-      identities[actorId] = result.account.id;
+      if (result.account?.id !== undefined && result.account.id !== publicUserIds[accountLabel]) throw new Error(`public actor identity drifted for ${actorId}`);
+      identities[actorId] = publicUserIds[accountLabel];
     }
     actorMatrix = await Promise.all(actorMatrix.map(async (actor) => actor.actor_id === "anonymous" ? actor : ({...actor, observed_role_category: await roleCategory(owner, identities[actor.actor_id])})));
 
