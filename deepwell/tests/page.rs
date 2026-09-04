@@ -11565,9 +11565,9 @@ async fn syntax_links_match_frozen_live_semantics_with_documented_security_diver
 
     for expected in [
         r#"<a class="newpage" href="/some-page">custom text</a>"#,
-        // Issue #1388 owns the extra rel attribute as a security divergence
-        // from Wikidot's otherwise identical new-window anchor.
-        r#"<a href="https://example.com/" target="_blank" rel="noopener noreferrer">Example</a>"#,
+        // Issue #1388 owns the Wikijump-only rel hardening; Wikidot layout
+        // intentionally keeps this new-window anchor without rel.
+        r#"<a href="https://example.com/" target="_blank">Example</a>"#,
         r#"<a href="javascript:;">empty link</a>"#,
         r#"<span class="wiki-email">moc.elpmaxe|troppus#em liame</span>"#,
         r#"<a href="http://en.wikipedia.org/wiki/Albert_Einstein" onclick="window.open(this.href, '_blank'); return false;">Albert</a>"#,
