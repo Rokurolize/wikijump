@@ -989,6 +989,50 @@ test("SiteChanges browser family forwards perpage 10 like the observed perpage 2
   })
 })
 
+test("SiteChanges browser family forwards the observed positive perpage values", async () => {
+  for (const { perpage, expectedBody } of [
+    { perpage: "1", expectedBody: "1 row" },
+    { perpage: "100", expectedBody: "100 rows" }
+  ]) {
+    let received
+    const response = await handleAjaxModuleConnectorRequest(
+      request({
+        moduleName: "changes/SiteChangesListModule",
+        page: "1",
+        perpage,
+        pageId: "74503778",
+        categoryId: "",
+        options: '{"all":true}'
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => assert.fail("must not render ListPages"),
+        renderSiteChangesModule: async (input) => {
+          received = input
+          return { status: "ok", body: expectedBody }
+        }
+      }
+    )
+
+    assert.equal(response.status, 200)
+    const body = await response.json()
+    assert.equal(body.status, "ok")
+    assert.equal(body.body, expectedBody)
+    assert.equal(body.callbackIndex, null)
+    assert.equal(typeof body.CURRENT_TIMESTAMP, "number")
+    assert.deepEqual(body.cssInclude, [])
+    assert.deepEqual(body.jsInclude, [])
+    assert.deepEqual(received, {
+      siteId: 6000006,
+      pageId: "74503778",
+      page: "1",
+      perpage,
+      categoryId: "",
+      options: '{"all":true}'
+    })
+  }
+})
+
 test("SiteChanges browser family accepts single-quoted all/source/files via canonical forwarding", async () => {
   for (const { options, expected } of [
     { options: "{'all':true}", expected: '{"all":true}' },
@@ -1295,6 +1339,12 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     { pageId: "" },
     { pageId: "-1" },
     { pageId: "9007199254740993" },
+    { perpage: "1.5" },
+    { perpage: "0" },
+    { perpage: "-1" },
+    { perpage: "5001" },
+    { perpage: "9007199254740993" },
+    { perpage: "-9007199254740993" },
     { categoryId: "missing" },
     { options: '{"all":false}' },
     { options: '{"source":true,"files":true}' },
