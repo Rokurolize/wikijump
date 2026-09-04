@@ -264,11 +264,6 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
         ),
         ("math", "[[math]]\nx^2\n[[/math]]", "[[math]]"),
         (
-            "notes",
-            "[[note]]\nPublic preview note marker\n[[/note]]",
-            "[[note]]",
-        ),
-        (
             "table-of-contents",
             "[[toc]]\n+ Public preview toc heading",
             "[[toc]]",
@@ -301,6 +296,18 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
             preview.body,
         );
     }
+
+    let note = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site.site_id,
+            "title": "Public syntax preview note",
+            "wikitext": "[[note]]\nPublic preview note marker\n[[/note]]",
+        }),
+    );
+    assert!(note.body.contains("[[note]]"));
+    assert!(note.body.contains("[[/note]]"));
 
     let paragraphs = run_endpoint!(
         runner,
