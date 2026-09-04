@@ -65,6 +65,7 @@ use crate::services::{
 };
 use crate::types::Reference;
 use crate::types::{Action, Permission, Resource};
+use crate::utils::now;
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
 
@@ -94,7 +95,7 @@ const THEME_PREVIEWER_PREVIEW_ERROR_HTML: &str = r#"<div class="error-block">Pre
 const WWW_DELETE_ACCOUNT_INVALID_CODE_HTML: &str = r#"<div class="error-block">Invalid verification code. If you are terminating your account, please start again</div>"#;
 const WWW_CREATE_ACCOUNT_ANONYMOUS_HTML: &str = concat!(
     r#"<div class="col-md-5 col-md-offset-7 create-account-col create-account-form"><div class="login-paths"><div class="path with-wikidot"><div class="ca-form"><h1>Create account</h1>"#,
-    r#"<form action="/-/register" method="get" name="caform"><input name="fromFrontPage" type="hidden" value="true">"#,
+    r#"<form action="/-/register" method="get" name="caform"><input name="fromFrontPage" type="hidden" value="true"><input name="time" type="hidden" value="{}">"#,
     r#"<div class="form-group"><div class="input-group"><span class="input-group-addon"><i class="icon-user"></i></span><input class="text form-control" maxlength="50" name="name" placeholder="username" size="25" type="text" value=""></div></div>"#,
     r#"<div class="form-group"><div class="input-group"><span class="input-group-addon"><i class="icon-envelope"></i></span><input class="text form-control" maxlength="50" name="email" placeholder="email address" size="25" type="text" value=""></div></div>"#,
     r#"<div class="form-group"><div class="input-group"><span class="input-group-addon"><i class="icon-key"></i></span><input class="text form-control" maxlength="64" name="password" placeholder="password" size="15" type="password"></div></div>"#,
@@ -2172,6 +2173,11 @@ impl RenderService {
         }
     }
 
+    fn render_www_create_account_anonymous() -> String {
+        WWW_CREATE_ACCOUNT_ANONYMOUS_HTML
+            .replace("{}", &now().unix_timestamp().to_string())
+    }
+
     fn format_www_counter(value: i64) -> String {
         let digits = value.max(0).to_string();
         let mut output = String::with_capacity(digits.len() + digits.len() / 3);
@@ -2322,13 +2328,13 @@ impl RenderService {
         }
         debug_assert!(name.eq_ignore_ascii_case("CreateAccount"));
         let Some(viewer_user_id) = viewer_user_id else {
-            return Ok(Some(WWW_CREATE_ACCOUNT_ANONYMOUS_HTML.to_owned()));
+            return Ok(Some(Self::render_www_create_account_anonymous()));
         };
         let identity = UserService::get(ctx, Reference::Id(viewer_user_id))
             .await?
             .into_public_identity();
         let Some(identity) = identity else {
-            return Ok(Some(WWW_CREATE_ACCOUNT_ANONYMOUS_HTML.to_owned()));
+            return Ok(Some(Self::render_www_create_account_anonymous()));
         };
         Ok(Some(format!(
             concat!(
@@ -3541,6 +3547,37 @@ mod runtime_module_residual_tests {
                 "{value}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod www_special_module_tests {
+    use super::{
+        RenderService, WWW_DELETE_ACCOUNT_INVALID_CODE_HTML, WWW_NEW_SITE_ANONYMOUS_HTML,
+    };
+    use crate::utils::now;
+
+    #[test]
+    fn anonymous_create_account_form_has_time_hidden_input() {
+        let before = now().unix_timestamp();
+        let html = RenderService::render_www_create_account_anonymous();
+        let after = now().unix_timestamp();
+        let time_input = r#"<input name="time" type="hidden" value=""#;
+        let value_start =
+            html.find(time_input).expect("CreateAccount time input") + time_input.len();
+        let value_end = html[value_start..]
+            .find("\">")
+            .expect("CreateAccount time input value terminator");
+        let value = html[value_start..value_start + value_end]
+            .parse::<i64>()
+            .expect("CreateAccount time input should be Unix seconds");
+        assert_eq!(html.matches(time_input).count(), 1);
+        assert!(
+            value >= before && value <= after,
+            "CreateAccount time input {value} should be rendered from the current clock [{before}, {after}]",
+        );
+        assert!(!WWW_DELETE_ACCOUNT_INVALID_CODE_HTML.contains(time_input));
+        assert!(!WWW_NEW_SITE_ANONYMOUS_HTML.contains(time_input));
     }
 }
 
