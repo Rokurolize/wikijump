@@ -112,9 +112,9 @@ function siteChangesRpc(currentFixture, params, actor) {
   if (page_id !== undefined) {
     if (page_id === String(currentFixture.private_host_page_id) && actor !== "editor") return notOk();
     if (page_id !== String(currentFixture.pages.sitechanges_holder.page_id)) return notOk();
-    if (perpage !== "20" || !BROWSER_OPTIONS.has(options) || !/^[1-9][0-9]*$/u.test(page)) return notOk();
+    if (!["-1", "0", "1", "10", "20", "100"].includes(perpage) || !BROWSER_OPTIONS.has(options) || !/^[1-9][0-9]*$/u.test(page)) return notOk();
     const pageNumber = Number.parseInt(page, 10);
-    if (pageNumber === 999999 || category_id === "999999999") return { status: "ok", body: SITECHANGES_EMPTY };
+    if (pageNumber === 999999 || category_id === "999999999" || perpage === "0" || perpage === "-1") return { status: "ok", body: SITECHANGES_EMPTY };
     if (pageNumber < 1 || pageNumber > 3) return notOk();
     return { status: "ok", body: `${siteChangesBody(currentFixture, { page, perpage, options }, actor)}${pager(pageNumber)}` };
   }
@@ -147,13 +147,13 @@ function classifySiteChangesAjax(currentFixture, fields) {
   const keys = Object.keys(parameters).sort().join(",");
   const browserValid =
     keys === "categoryId,options,page,pageId,perpage" &&
-    parameters.perpage === "20" &&
+    ["-1", "0", "1", "10", "20", "100"].includes(parameters.perpage) &&
     BROWSER_OPTIONS.has(parameters.options) &&
     /^[1-9][0-9]*$/u.test(parameters.page) &&
     /^[1-9][0-9]*$/u.test(parameters.pageId) &&
     (parameters.categoryId === "" || /^[1-9][0-9]*$/u.test(parameters.categoryId));
   if (browserValid) {
-    return siteChangesRpc(currentFixture, { page_id: parameters.pageId, page: parameters.page, perpage: "20", category_id: parameters.categoryId, options: parameters.options }, "anonymous");
+    return siteChangesRpc(currentFixture, { page_id: parameters.pageId, page: parameters.page, perpage: parameters.perpage, category_id: parameters.categoryId, options: parameters.options }, "anonymous");
   }
   const extras = Object.keys(parameters).filter((name) => !["page", "perpage", "options"].includes(name));
   const supportedExtra = extras.length === 0 ||
@@ -258,6 +258,9 @@ test("Q1035 runs all four served SiteChanges and ListDrafts rows through the can
   assert.deepEqual(receipt.denominator.case_ids, OPEN43_Q1035_CASE_IDS);
   const siteChangesAjax = session.calls.filter(({ seam }) => seam === "ajax").filter(({ fields }) => fields.moduleName === "changes/SiteChangesListModule");
   assert.equal(siteChangesAjax.filter(({ fields }) => fields.page === "1" && fields.perpage === "20").length >= 1, true);
+  for (const perpage of ["-1", "0", "1", "10", "100"]) {
+    assert.equal(siteChangesAjax.some(({ fields }) => fields.page === "1" && fields.perpage === perpage), true);
+  }
   assert.equal(siteChangesAjax.some(({ fields }) => fields.page === "1" && fields.perpage === "1000"), true);
   assert.equal(siteChangesAjax.some(({ fields }) => fields.unknown !== undefined), true);
   assert.equal(siteChangesAjax.some(({ fields }) => fields.action !== undefined), true);

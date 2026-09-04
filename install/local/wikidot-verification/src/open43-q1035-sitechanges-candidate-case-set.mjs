@@ -93,6 +93,14 @@ const SITECHANGES_BROWSER_SHAPES = Object.freeze([
   Object.freeze({ label: "missing-category", page: "1", categoryId: "999999999", options: '{"all":true}', kind: "empty" }),
 ]);
 
+const SITECHANGES_BROWSER_PERPAGE_SHAPES = Object.freeze([
+  Object.freeze({ label: "perpage-one", page: "1", perpage: "1", categoryId: "", options: '{"all":true}', expected_rows: 1 }),
+  Object.freeze({ label: "perpage-ten", page: "1", perpage: "10", categoryId: "", options: '{"all":true}', expected_rows: 10 }),
+  Object.freeze({ label: "perpage-hundred", page: "1", perpage: "100", categoryId: "", options: '{"all":true}', expected_rows: 100 }),
+  Object.freeze({ label: "perpage-zero", page: "1", perpage: "0", categoryId: "", options: '{"all":true}', expected_rows: 0 }),
+  Object.freeze({ label: "perpage-negative-one", page: "1", perpage: "-1", categoryId: "", options: '{"all":true}', expected_rows: 0 }),
+]);
+
 const SITECHANGES_WIKIDOT_PY_SHAPES = Object.freeze([
   Object.freeze({ label: "client-page-one-default", page: "1", perpage: "1000", options: "{'all':true}" }),
   Object.freeze({ label: "client-later-page", page: "2", perpage: "1000", options: "{'all':true}" }),
@@ -103,7 +111,6 @@ const SITECHANGES_BROWSER_UNSUPPORTED = Object.freeze([
   Object.freeze({ page: "-1" }),
   Object.freeze({ page: "1.0" }),
   Object.freeze({ page: "9007199254740993" }),
-  Object.freeze({ perpage: "10" }),
   Object.freeze({ pageId: "" }),
   Object.freeze({ pageId: "-1" }),
   Object.freeze({ pageId: "9007199254740993" }),
@@ -274,7 +281,7 @@ class Open43Q1035Run {
       site_id: this.#fixture.site_id,
       page_id: String(this.#fixture.pages.sitechanges_holder.page_id),
       page: shape.page,
-      perpage: "20",
+      perpage: shape.perpage ?? "20",
       category_id: shape.categoryId,
       options: shape.options,
     };
@@ -323,6 +330,23 @@ class Open43Q1035Run {
     return Object.freeze({ label: spec.label, contract_sha256: sha256Value(spec), status, body_size: Buffer.byteLength(body), body_sha256: sha256Text(body), verified: true });
   }
 
+  #observeBrowserPerpageBody(spec, result, fixture, label) {
+    const status = requireNonEmptyString(result.status, `${label} status`);
+    const body = result.body ?? "";
+    expect(typeof body === "string" && status === "ok", `${label} returned ${status} without a body`);
+    if (spec.expected_rows === 0) {
+      expect(body === SITECHANGES_EMPTY, `${label} did not preserve the observed empty response`);
+    } else {
+      requireNoForbidden(body, fixture.forbidden_markers, label);
+      const markers = fixture.row_markers.slice(0, spec.expected_rows);
+      expect(markers.length === spec.expected_rows, `${label} fixture does not cover its row boundary`);
+      expect(body.includes(markers[0]) && body.includes(markers.at(-1)), `${label} lost its ${spec.expected_rows}-row boundary`);
+      const outside = fixture.row_markers[spec.expected_rows];
+      if (outside !== undefined) expect(!body.includes(outside), `${label} crossed its ${spec.expected_rows}-row boundary`);
+    }
+    return Object.freeze({ label: spec.label, contract_sha256: sha256Value(spec), status, body_size: Buffer.byteLength(body), body_sha256: sha256Text(body), verified: true });
+  }
+
   #observeWikidotPyBody(spec, result, fixture, label) {
     const status = requireNonEmptyString(result.status, `${label} status`);
     const body = result.body ?? "";
@@ -343,7 +367,7 @@ class Open43Q1035Run {
     return {
       moduleName: "changes/SiteChangesListModule",
       page: shape.page,
-      perpage: "20",
+      perpage: shape.perpage ?? "20",
       pageId: String(this.#fixture.pages.sitechanges_holder.page_id),
       categoryId: shape.categoryId,
       options: shape.options,
@@ -391,6 +415,11 @@ class Open43Q1035Run {
       const result = await this.#siteChangesRpc(this.#browserRpcParams(spec), "anonymous");
       pages.push(this.#observeSiteChangesBody(spec, result, this.#fixture, `Q1035 SiteChanges ${spec.label} RPC`));
     }
+    const browserPerpage = [];
+    for (const spec of SITECHANGES_BROWSER_PERPAGE_SHAPES) {
+      const result = await this.#siteChangesRpc(this.#browserRpcParams(spec), "anonymous");
+      browserPerpage.push(this.#observeBrowserPerpageBody(spec, result, this.#fixture, `Q1035 SiteChanges ${spec.label} RPC`));
+    }
     const wikidotPy = [];
     for (const spec of SITECHANGES_WIKIDOT_PY_SHAPES) {
       const result = await this.#siteChangesRpc({ site_id: this.#fixture.site_id, page: spec.page, perpage: spec.perpage, options: '{"all":true}' }, "anonymous");
@@ -430,6 +459,14 @@ class Open43Q1035Run {
       if (spec.label === "page-one") expect(payload.body === rpcPageOne.body, "SiteChanges page-one Ajax body diverged from the RPC body");
       if (spec.label === "files-filter") expect(payload.body === rpcFiles.body, "SiteChanges files Ajax body diverged from the RPC body");
       ajax.push({ ...row, response_body_sha256: response.response_body_sha256 });
+    }
+    const browserPerpageAjax = [];
+    for (const [index, spec] of SITECHANGES_BROWSER_PERPAGE_SHAPES.entries()) {
+      const response = await this.#session.ajaxModuleRequest(this.#ajaxBrowserFields(spec), { actor: "anonymous" });
+      const payload = requireSiteChangesMetadata(response, `Q1035 SiteChanges ${spec.label} Ajax`);
+      const row = this.#observeBrowserPerpageBody(spec, payload, this.#fixture, `Q1035 SiteChanges ${spec.label} Ajax`);
+      expect(row.body_sha256 === browserPerpage[index].body_sha256, `Q1035 SiteChanges ${spec.label} Ajax body diverged from the RPC body`);
+      browserPerpageAjax.push({ ...row, response_body_sha256: response.response_body_sha256 });
     }
     const wikidotPyAjax = [];
     for (const spec of SITECHANGES_WIKIDOT_PY_SHAPES) {
@@ -497,8 +534,8 @@ class Open43Q1035Run {
 
     return [
       { case_id: OPEN43_Q1035_CASE_IDS[0], observations: { anonymous: anonymousSnapshot, editor: editorSnapshot } },
-      { case_id: OPEN43_Q1035_CASE_IDS[1], observations: { pages, wikidot_py: wikidotPy, editor_page_two: editorPageTwo, host_denial: { status: hostDenial.status }, site_mismatch: siteMismatch } },
-      { case_id: OPEN43_Q1035_CASE_IDS[2], observations: { ajax, wikidot_py_ajax: wikidotPyAjax, unsupported_browser: unsupportedBrowser, unsupported_wikidot_py: unsupportedWikidotPy, parity: { page_one: true, files: true, wikidot_py_page_one: true } } },
+      { case_id: OPEN43_Q1035_CASE_IDS[1], observations: { pages, browser_perpage: browserPerpage, wikidot_py: wikidotPy, editor_page_two: editorPageTwo, host_denial: { status: hostDenial.status }, site_mismatch: siteMismatch } },
+      { case_id: OPEN43_Q1035_CASE_IDS[2], observations: { ajax, browser_perpage_ajax: browserPerpageAjax, wikidot_py_ajax: wikidotPyAjax, unsupported_browser: unsupportedBrowser, unsupported_wikidot_py: unsupportedWikidotPy, parity: { page_one: true, files: true, browser_perpage: true, wikidot_py_page_one: true } } },
       { case_id: OPEN43_Q1035_CASE_IDS[3], observations: { previews, saved_view: savedListDrafts, amc: listDraftsAmc, amc_unsupported: amcUnsupported } },
     ];
   }
@@ -515,18 +552,20 @@ function verifyCase(caseId, observations, fixture) {
   }
   if (caseId === OPEN43_Q1035_CASE_IDS[1]) {
     verifyMatrix(observations.pages, SITECHANGES_BROWSER_SHAPES, "Q1035 SiteChanges RPC matrix");
+    verifyMatrix(observations.browser_perpage, SITECHANGES_BROWSER_PERPAGE_SHAPES, "Q1035 browser perpage RPC matrix");
     verifyMatrix(observations.wikidot_py, SITECHANGES_WIKIDOT_PY_SHAPES, "Q1035 wikidot.py matrix");
     expect(observations.editor_page_two?.verified === true, "Q1035 authorized read denominator changed");
     expect(observations.host_denial?.status === "not_ok", "Q1035 host-page denial denominator changed");
     expect(observations.site_mismatch?.error_code !== null, "Q1035 site-mismatch denial denominator changed");
-    return { verified: true, permission_before_limit: true, browser_page_boundary: SITECHANGES_BROWSER_ROWS_PER_PAGE, host_page_visibility_denied: true, site_mismatch_rejected: true };
+    return { verified: true, permission_before_limit: true, browser_page_boundary: SITECHANGES_BROWSER_ROWS_PER_PAGE, browser_perpage_values: SITECHANGES_BROWSER_PERPAGE_SHAPES.map(({ perpage }) => perpage), host_page_visibility_denied: true, site_mismatch_rejected: true };
   }
   if (caseId === OPEN43_Q1035_CASE_IDS[2]) {
     verifyMatrix(observations.ajax, SITECHANGES_BROWSER_SHAPES, "Q1035 SiteChanges Ajax matrix");
+    verifyMatrix(observations.browser_perpage_ajax, SITECHANGES_BROWSER_PERPAGE_SHAPES, "Q1035 browser perpage Ajax matrix");
     verifyMatrix(observations.wikidot_py_ajax, SITECHANGES_WIKIDOT_PY_SHAPES, "Q1035 wikidot.py Ajax matrix");
     expect(Array.isArray(observations.unsupported_browser) && observations.unsupported_browser.length === SITECHANGES_BROWSER_UNSUPPORTED.length && observations.unsupported_browser.every(({ status }) => status === "not_ok"), "Q1035 unsupported browser Ajax denominator changed");
     expect(Array.isArray(observations.unsupported_wikidot_py) && observations.unsupported_wikidot_py.length === SITECHANGES_WIKIDOT_PY_UNSUPPORTED.length && observations.unsupported_wikidot_py.every(({ status }) => status === "not_ok"), "Q1035 unsupported wikidot.py Ajax denominator changed");
-    expect(observations.parity?.page_one === true && observations.parity.files === true && observations.parity.wikidot_py_page_one === true, "Q1035 Ajax and RPC bodies diverged");
+    expect(observations.parity?.page_one === true && observations.parity.files === true && observations.parity.browser_perpage === true && observations.parity.wikidot_py_page_one === true, "Q1035 Ajax and RPC bodies diverged");
     return { verified: true, ajax_case_count: observations.ajax.length, unsupported_browser_case_count: observations.unsupported_browser.length, unsupported_wikidot_py_case_count: observations.unsupported_wikidot_py.length, exact_metadata: true, rpc_ajax_parity: true, remote_js_loaded: false };
   }
   if (caseId === OPEN43_Q1035_CASE_IDS[3]) {
@@ -570,6 +609,7 @@ export function createOpen43Q1035SiteChangesCandidateCaseSet({ sessionFactory = 
           evidence: LIVE_EVIDENCE,
           public_seams: ["Deepwell JSON-RPC", "Framerail Ajax Module Connector"],
           browser_page_boundary: SITECHANGES_BROWSER_ROWS_PER_PAGE,
+          browser_perpage_values: SITECHANGES_BROWSER_PERPAGE_SHAPES.map(({ perpage }) => perpage),
           wikidot_py_page_boundary: WIKIDOT_PY_ROWS_PER_PAGE,
           listdrafts_preview_case_ids: LISTDRAFTS_PREVIEW_CASES.map(({ case_id }) => case_id),
           mutation_policy: "read-only",
@@ -578,7 +618,7 @@ export function createOpen43Q1035SiteChangesCandidateCaseSet({ sessionFactory = 
             "permission-filtered rows interleave inside the second 1000-row wikidot.py window",
             "the private host page is unviewable by the anonymous actor",
           ],
-          excluded_claims: ["sitechanges-file-metadata-mutations", "sitechanges-delete-restore-rows", "listdrafts-nonempty-draft-state", "browser-lifecycle", "alternative-perpage-values"],
+          excluded_claims: ["sitechanges-file-metadata-mutations", "sitechanges-delete-restore-rows", "listdrafts-nonempty-draft-state", "browser-lifecycle"],
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
