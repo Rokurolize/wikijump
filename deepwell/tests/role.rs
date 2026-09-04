@@ -56,6 +56,8 @@ static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
 #[tokio::test]
 async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let join_slug = format!("system:join-{n}");
     let editable = run_endpoint!(runner, site_get, json!({"site": "scpaiueouiuiuiui"}),)
         .expect("seeded editable site should exist")
         .site;
@@ -65,7 +67,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     if PageService::get_optional(
         runner.context(),
         editable.site_id,
-        Reference::Slug(Cow::Borrowed("system:join")),
+        Reference::Slug(Cow::Owned(join_slug.clone())),
     )
     .await
     .expect("self-join fixture lookup should succeed")
@@ -79,7 +81,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
                 title: "Join this site".to_owned(),
                 alt_title: None,
                 tags: Vec::new(),
-                slug: "system:join".to_owned(),
+                slug: join_slug.clone(),
                 layout: None,
                 revision_comments: "Create self-join test fixture".to_owned(),
                 user_id: SYSTEM_USER_ID,
@@ -90,7 +92,6 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         .await
         .expect("self-join fixture should be created");
     }
-    let n = next_n();
     let user_id = create_test_user(&runner, n, "self-join").await;
     let pending_user_id = create_test_user(&runner, n, "pending").await;
     let banned_user_id = create_test_user(&runner, n, "banned").await;
@@ -140,7 +141,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         json!({
             "site_id": editable.site_id,
             "session_token": user_session_token.clone(),
-            "route": {"slug": "system:join", "extra": ""},
+            "route": {"slug": join_slug.clone(), "extra": ""},
             "locales": ["en-US", "en"],
         }),
     );
@@ -174,7 +175,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         json!({
             "site_id": editable.site_id,
             "session_token": null,
-            "route": {"slug": "system:join", "extra": ""},
+            "route": {"slug": join_slug.clone(), "extra": ""},
             "locales": ["en-US", "en"],
         }),
     );
@@ -235,7 +236,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     runner.set_request_context(RequestContext {
         user_id: Some(user_id),
         site_id: Some(editable.site_id),
-        page_reference: Some(Reference::Slug(Cow::Borrowed("system:join"))),
+        page_reference: Some(Reference::Slug(Cow::Owned(join_slug.clone()))),
         ..Default::default()
     });
     let join_request = json!({
@@ -324,7 +325,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
         json!({
             "site_id": editable.site_id,
             "session_token": user_session_token,
-            "route": {"slug": "system:join", "extra": ""},
+            "route": {"slug": join_slug.clone(), "extra": ""},
             "locales": ["en-US", "en"],
         }),
     );
@@ -342,7 +343,7 @@ async fn ordinary_user_joins_only_the_editable_site_then_creates_a_page() {
     runner.set_request_context(RequestContext {
         user_id: Some(user_id),
         site_id: Some(mirror.site_id),
-        page_reference: Some(Reference::Slug(Cow::Borrowed("system:join"))),
+        page_reference: Some(Reference::Slug(Cow::Owned(join_slug.clone()))),
         ..Default::default()
     });
     let mirror_error = run_endpoint_err!(runner, membership_join, join_request,);
