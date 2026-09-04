@@ -398,9 +398,8 @@ const fieldValue = (fields, name) => fields.get(name) ?? ""
  * the ListPages `wikidot_token7` form field to the presented cookie by
  * exact echo: any echoed value is accepted and any mismatch fails with
  * `wrong_token7`, without a server-issued allowlist. Duplicate cookie
- * names keep the last value, matching the form decoder below; that
- * composition is unobserved live and follows the evidenced last-wins rule
- * by analogy.
+ * names keep the first value, matching the observed Wikidot cookie
+ * parser.
  *
  * @param {Request} request
  */
@@ -412,7 +411,7 @@ const requestWikidotTokenCookie = (request) => {
     const separator = part.indexOf("=")
     if (separator === -1) continue
     if (part.slice(0, separator).trim() !== "wikidot_token7") continue
-    selected = part.slice(separator + 1).trim()
+    if (selected === undefined) selected = part.slice(separator + 1).trim()
   }
   return selected
 }
