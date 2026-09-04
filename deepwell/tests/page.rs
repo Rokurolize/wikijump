@@ -34268,6 +34268,8 @@ async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
 
     let events = AuditLogTable::find()
         .filter(AuditLogColumn::EventType.eq("file.create"))
+        .filter(AuditLogColumn::ExtraId1.eq(created.file_id))
+        .filter(AuditLogColumn::ExtraId2.eq(created.file_revision_id))
         .all(runner.context().transaction())
         .await
         .expect("file-create audit lookup should succeed");
@@ -34280,6 +34282,11 @@ async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
     assert_eq!(event.extra_id_2, Some(created.file_revision_id));
     assert_eq!(event.ip_address, supplied_ip.to_string());
 
+    let event_count_before_denial = AuditLogTable::find()
+        .filter(AuditLogColumn::EventType.eq("file.create"))
+        .count(runner.context().transaction())
+        .await
+        .expect("file-create audit count before denial should succeed");
     set_mutation_request_context(
         &mut runner,
         UNKNOWN_USER_ID,
@@ -34305,7 +34312,10 @@ async fn file_create_public_endpoint_audits_success_once_and_not_denial() {
         .count(runner.context().transaction())
         .await
         .expect("file-create audit count after denial should succeed");
-    assert_eq!(event_count, 1, "denied file create should not be audited");
+    assert_eq!(
+        event_count, event_count_before_denial,
+        "denied file create should not be audited",
+    );
 }
 
 #[tokio::test]
