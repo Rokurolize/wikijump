@@ -11798,9 +11798,13 @@ async fn featuredsite_fails_closed_without_a_local_featured_site_authority() {
 
     assert!(
         html.contains(
-            r#"[[module <em>FeaturedSite</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank" rel="noopener noreferrer">check available modules</a> and fix this page."#,
+            r#"[[module <em>FeaturedSite</em>]] No such module, please <a href="https://www.wikidot.com/doc:modules" target="_blank">check available modules</a> and fix this page."#,
         ),
         "a module backed only by Wikidot's global rotation must use the established unavailable-module result:\n{html}",
+    );
+    assert!(
+        !html.contains("target=\"_blank\" rel=\"noopener noreferrer\""),
+        "Wikidot layout must not add Wikijump-only rel hardening to unavailable-module links:\n{html}",
     );
     for forbidden in [
         "featured-site-box",
