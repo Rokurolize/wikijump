@@ -25,26 +25,27 @@ If the documentation is silent or contradictory, the implementation MUST fail cl
 The observations in this section are normative and override conflicting or
 incomplete documentation-derived evidence below.
 
-### ListDrafts renders a draft-list wrapper and filters only exact double-quoted pageType values
+### ListDrafts renders a draft-list wrapper and only observed pageType="exists" narrows the draft set
 
 - Observation ID: `listdrafts-live-preview-filtering-and-empty-wrapper`
 - Classification: `documentation-clarification`
-- Observed at: `2026-07-29`
-- Analysis: The ListDrafts documentation names pageType=exists and pageType=notexists but omits output markup, attribute parsing quirks, standalone-module behavior, and permission/viewer effects. Live PagePreviewModule probes against sandbox-for-codex show the module renders a list-drafts-box wrapper even when empty; exact lowercase double-quoted pageType values filter the draft set; unsupported, empty, bare, single-quoted, and uppercase-argument values behave like omission. The sandbox had one run-owned not-existing-page draft from a prior NewPage probe, so non-empty all/notexists output was observed, but Wikijump currently has no page-draft persistence model to query.
+- Observed at: `2026-09-04`
+- Analysis: The ListDrafts documentation names pageType=exists and pageType=notexists but omits output markup, attribute parsing quirks, standalone-module behavior, and permission/viewer effects. The 2026-07-29 probe contained only a non-existing-page draft and therefore could not distinguish pageType="notexists" from omission. A controlled 2026-09-04 lifecycle created one draft for a published page and one draft for an absent page, preserved the published page ID in the synchronize action, updated both drafts twice, and compared administrator, anonymous, member, and moderator views. Exact lowercase double-quoted pageType="exists" selected only the published-page draft. pageType="notexists" returned both run-owned drafts, the same as omission and pageType="". The earlier inference that notexists filters to absent-page drafts is superseded. Wikijump still has no page-draft persistence model to query.
 
 Normative behavior:
 
 - ListDrafts is a standalone opener module: [[module ListDrafts ...]] is consumed, but a following [[/module]] is rendered literally.
 - The rendered wrapper is div.list-drafts-box. Empty results render the wrapper with no list-drafts-item children.
 - Each observed draft row renders as div.list-drafts-item containing a p with an a link to the draft page path and link text equal to the draft page title/name.
-- pageType="exists" filters to drafts for existing pages; pageType="notexists" filters to drafts for non-existing pages; an omitted pageType lists all drafts.
+- pageType="exists" filters to drafts whose target page exists. In the controlled two-draft observation, pageType="notexists" behaved like omission and listed both the existing-page and absent-page drafts.
 - pageType="", unsupported values such as pageType="other", single-quoted pageType, bare pageType, and uppercase PAGETYPE are treated as omitted in observed output.
 - The module name is case-insensitive in observed output.
-- Anonymous and authenticated account-A PagePreviewModule output was identical for the observed cases.
+- Administrator, anonymous, member, and moderator PagePreviewModule output had the same run-owned row selection for the controlled lifecycle matrix.
 
 Evidence:
 
 - `install/local/wikidot-verification/artifacts/listdrafts-module-live-preview.json` (SHA-256 `67a6233f996f2429a30b7dff4b329a0a37bcb016dbc2d22f83b068be63ca43f6`), cases: `anonymous-exists-empty-wrapper`, `anonymous-omitted-all-drafts`, `anonymous-notexists-drafts`, `anonymous-invalid-pagetype-all-drafts`, `anonymous-empty-pagetype-all-drafts`, `anonymous-single-quoted-pagetype-all-drafts`, `anonymous-bare-pagetype-all-drafts`, `anonymous-uppercase-name-exists-empty-wrapper`, `anonymous-uppercase-arg-all-drafts`, `anonymous-with-closing-body-literal`, `account-a-exists-empty-wrapper`
+- `install/local/wikidot-verification/artifacts/listdrafts-module-live-lifecycle-20260904.json` (SHA-256 `a96c1caf57c957e11339a3615ec0f1a99691deda0a561d539280240a76974232`), cases: `existing-and-nonexisting-run-owned-drafts`, `exists-selects-existing-only`, `notexists-behaves-like-omission`, `four-actor-row-selection-matrix`, `draft-lifecycle-cleanup`
 
 
 

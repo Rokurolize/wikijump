@@ -33,25 +33,24 @@
   ],
   "promoted_rule_contracts": [
     {
-      "rule_id": "exact-page-type-filter-separates-existing-and-nonexisting-drafts",
+      "rule_id": "exact-double-quoted-exists-filters-to-existing-page-drafts",
       "positive_control_ids": [
-        "both-exists-includes-existing",
-        "both-notexists-includes-nonexisting"
+        "both-exists-includes-existing"
       ],
       "negative_control_ids": [
-        "both-exists-excludes-nonexisting",
-        "both-notexists-excludes-existing"
+        "both-exists-excludes-nonexisting"
       ]
     },
     {
-      "rule_id": "omitted-and-empty-page-type-list-both-run-owned-drafts",
+      "rule_id": "notexists-omitted-and-empty-page-type-list-both-run-owned-drafts",
       "positive_control_ids": [
+        "both-notexists-includes-existing",
+        "both-notexists-includes-nonexisting",
         "both-omitted-includes-both",
         "both-empty-includes-both"
       ],
       "negative_control_ids": [
-        "both-exists-excludes-nonexisting",
-        "both-notexists-excludes-existing"
+        "both-exists-excludes-nonexisting"
       ]
     }
   ]

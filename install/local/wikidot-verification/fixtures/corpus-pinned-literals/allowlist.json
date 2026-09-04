@@ -21,6 +21,15 @@
         "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#account-a-membershipemailinvitation-no-token",
         "install/local/wikidot-verification/artifacts/static-account-modules-live-preview-and-pageview.json#anonymous-pageview-membershipemailinvitation-no-token"
       ]
+    },
+    {
+      "file": "deepwell/src/services/render/runtime_modules.rs",
+      "literal_sha256": "5fdd8d4fd447f86e33b959258874767ba82cd99bb8bbdccb36f11031e1fc0f8f",
+      "reason": "FrontSpecialMini is the exact Wikidot system-module identifier observed on the www special page and rejected by ordinary PagePreview; the literal identifies the module contract rather than captured page content.",
+      "live_evidence": [
+        "/home/roku/wjlab/evidence/spec-hardening-20260816/module-preview-references.jsonl#FrontSpecialMini",
+        "/home/roku/wjlab/evidence/spec-hardening-20260816/module-special-page-summary.json#FrontSpecialMini"
+      ]
     }
   ]
 }

@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {cleanupPageIfRunOwned} from "../scripts/capture-open43-q1035-listdrafts-nonempty.mjs";
+import {cleanupPageIfRunOwned, pageIdentityFields} from "../scripts/capture-open43-q1035-listdrafts-nonempty.mjs";
+
+test("draft lifecycle keeps the known existing-page identity when PageEditModule omits it", () => {
+  assert.deepEqual(pageIdentityFields({page_id: 17}, 23), {page_id: "17"});
+  assert.deepEqual(pageIdentityFields({}, 23), {page_id: "23"});
+  assert.deepEqual(pageIdentityFields({}, null), {});
+});
 
 test("cleanup never deletes a page that this run did not create", async () => {
   let removeCalls = 0;

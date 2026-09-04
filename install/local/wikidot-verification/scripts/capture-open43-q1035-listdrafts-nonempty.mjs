@@ -25,6 +25,14 @@ function configuredUserId(label) {
   return userId;
 }
 
+export function pageIdentityFields(edit, knownPageId = null) {
+  const rawPageId = edit?.page_id ?? knownPageId;
+  if (rawPageId === null || rawPageId === undefined || rawPageId === "") return {};
+  const pageId = Number(rawPageId);
+  if (!Number.isSafeInteger(pageId) || pageId <= 0) throw new Error("draft lifecycle page identity is invalid");
+  return {page_id: String(pageId)};
+}
+
 function parseArgs(argv) {
   const args = {cases: defaultCases, output: defaultOutput};
   for (let index = 2; index < argv.length; index += 1) {
@@ -164,7 +172,7 @@ class WikidotSession {
     return saved;
   }
 
-  async saveDraft(slug, title, source, edit) {
+  async saveDraft(slug, title, source, edit, knownPageId = null) {
     const result = await this.amc({
       moduleName: "Empty",
       action: "WikiPageAction",
@@ -174,7 +182,7 @@ class WikidotSession {
       lock_id: String(edit.lock_id),
       lock_secret: String(edit.lock_secret),
       revision_id: String(edit.page_revision_id ?? ""),
-      ...(edit.page_id ? {page_id: String(edit.page_id)} : {}),
+      ...pageIdentityFields(edit, knownPageId),
       source,
       title,
       comments: "Q1035 FW21 draft evidence",
@@ -184,14 +192,14 @@ class WikidotSession {
     return {status: result.status, saved_draft: true, title_sha256: sha256(title), source_sha256: sha256(source)};
   }
 
-  async checkDraft(slug, edit, title = "", source = "") {
+  async checkDraft(slug, edit, title = "", source = "", knownPageId = null) {
     const result = await this.amc({
       moduleName: "Empty",
       action: "WikiPageAction",
       event: "checkDraftExists",
       wiki_page: slug,
       lock_id: String(edit.lock_id),
-      ...(edit.page_id ? {page_id: String(edit.page_id)} : {}),
+      ...pageIdentityFields(edit, knownPageId),
       title,
       source,
     });
@@ -199,7 +207,7 @@ class WikidotSession {
     return result.draftExists;
   }
 
-  async closeEdit(slug, edit, leaveDraft) {
+  async closeEdit(slug, edit, leaveDraft, knownPageId = null) {
     const result = await this.amc({
       moduleName: "Empty",
       action: "WikiPageAction",
@@ -207,7 +215,7 @@ class WikidotSession {
       wiki_page: slug,
       lock_id: String(edit.lock_id),
       lock_secret: String(edit.lock_secret),
-      ...(edit.page_id ? {page_id: String(edit.page_id)} : {}),
+      ...pageIdentityFields(edit, knownPageId),
       leave_draft: leaveDraft ? "true" : "false",
     });
     if (result.status !== "ok") throw new Error(`removePageEditLock failed for ${slug}: ${result.status ?? "missing-status"}`);
@@ -215,9 +223,10 @@ class WikidotSession {
   }
 
   async verifyDraftAbsent(slug) {
+    const knownPageId = (await this.source(slug))?.id ?? null;
     const edit = await this.edit(slug, true);
-    const exists = await this.checkDraft(slug, edit);
-    await this.closeEdit(slug, edit, false);
+    const exists = await this.checkDraft(slug, edit, "", "", knownPageId);
+    await this.closeEdit(slug, edit, false, knownPageId);
     return !exists;
   }
 
@@ -302,6 +311,7 @@ async function main(argv) {
   let baselineRows = null;
   let finalRows = null;
   let savedHolder = null;
+  let publishedPageId = null;
   let publishedRevisionBefore = null;
   let publishedRevisionAfter = null;
   let primaryError = null;
@@ -363,33 +373,34 @@ async function main(argv) {
     }
     actorMatrix = await Promise.all(actorMatrix.map(async (actor) => actor.actor_id === "anonymous" ? actor : ({...actor, observed_role_category: await roleCategory(owner, identities[actor.actor_id])})));
 
-    await owner.savePage(existingPage, "Q1035 FW21 published page", publishedSource);
+    const publishedPage = await owner.savePage(existingPage, "Q1035 FW21 published page", publishedSource);
+    publishedPageId = publishedPage.id;
     publishedCreated = true;
     await owner.savePage(holderPage, "Q1035 FW21 ListDrafts holder", holderSource);
     holderCreated = true;
     const publishedBaselineEdit = await owner.edit(existingPage);
     publishedRevisionBefore = String(publishedBaselineEdit.page_revision_id ?? "");
-    await owner.closeEdit(existingPage, publishedBaselineEdit, false);
+    await owner.closeEdit(existingPage, publishedBaselineEdit, false, publishedPageId);
 
     baselineRows = await previewMatrix(owner, fixture.listdrafts_cases);
     lifecycle.empty_baseline = summarizeStage("empty-baseline-before-run-owned-draft-creation", baselineRows);
 
     const existingEdit = await owner.edit(existingPage);
-    draftLocks.set(existingPage, existingEdit);
-    const existingSaveOne = await owner.saveDraft(existingPage, existingTitleV1, "Q1035 existing draft body v1", existingEdit);
-    if (!await owner.checkDraft(existingPage, existingEdit, existingTitleV1, "Q1035 existing draft body v1")) throw new Error("existing-page draft was not publicly detectable after synchronize");
+    draftLocks.set(existingPage, {edit: existingEdit, pageId: publishedPageId});
+    const existingSaveOne = await owner.saveDraft(existingPage, existingTitleV1, "Q1035 existing draft body v1", existingEdit, publishedPageId);
+    if (!await owner.checkDraft(existingPage, existingEdit, existingTitleV1, "Q1035 existing draft body v1", publishedPageId)) throw new Error("existing-page draft was not publicly detectable after synchronize");
     const existingOnly = await previewMatrix(owner, fixture.listdrafts_cases);
     const publishedDuringExisting = await owner.source(existingPage);
     lifecycle.existing_only = {...summarizeStage("existing-draft-only", existingOnly), draft_save: existingSaveOne, existing_published_unchanged: publishedDuringExisting?.source === publishedSource};
 
     const nonexistingEdit = await owner.edit(nonexistingPage);
-    draftLocks.set(nonexistingPage, nonexistingEdit);
+    draftLocks.set(nonexistingPage, {edit: nonexistingEdit, pageId: null});
     const nonexistingSaveOne = await owner.saveDraft(nonexistingPage, nonexistingTitleV1, "Q1035 nonexisting draft body v1", nonexistingEdit);
     if (!await owner.checkDraft(nonexistingPage, nonexistingEdit, nonexistingTitleV1, "Q1035 nonexisting draft body v1")) throw new Error("nonexisting-page draft was not publicly detectable after synchronize");
     const bothDrafts = await previewMatrix(owner, fixture.listdrafts_cases);
     lifecycle.both_drafts = {...summarizeStage("existing-plus-nonexisting-drafts", bothDrafts), draft_save: nonexistingSaveOne, existing_published_unchanged: (await owner.source(existingPage))?.source === publishedSource, nonexisting_target_absent: (await owner.source(nonexistingPage)) === null};
 
-    const existingSaveTwo = await owner.saveDraft(existingPage, existingTitleV2, "Q1035 existing draft body v2", existingEdit);
+    const existingSaveTwo = await owner.saveDraft(existingPage, existingTitleV2, "Q1035 existing draft body v2", existingEdit, publishedPageId);
     const existingUpdated = await previewMatrix(owner, fixture.listdrafts_cases);
     const existingUpdatedRow = findRow(existingUpdated.find(({case_id}) => case_id === "exists"), existingPage);
     lifecycle.existing_updated = {...summarizeStage("existing-draft-updated-second-time", existingUpdated), draft_save: existingSaveTwo, update_verified: existingUpdatedRow?.text === existingTitleV2};
@@ -405,7 +416,7 @@ async function main(argv) {
     if (anonymousHolder.status !== 200) throw new Error(`saved holder returned HTTP ${anonymousHolder.status}`);
     savedHolder = {...selectedListDraftsDom(anonymousHolder.html, "saved-holder-anonymous-GET"), http_status: anonymousHolder.status, saved_source: (await owner.source(holderPage))?.source ?? null};
 
-    await owner.closeEdit(existingPage, existingEdit, false);
+    await owner.closeEdit(existingPage, existingEdit, false, publishedPageId);
     draftLocks.delete(existingPage);
     const existingAbsent = await owner.verifyDraftAbsent(existingPage);
     const afterExistingDiscard = await previewMatrix(owner, fixture.listdrafts_cases);
@@ -433,13 +444,13 @@ async function main(argv) {
 
     const finalPublishedEdit = await owner.edit(existingPage);
     publishedRevisionAfter = String(finalPublishedEdit.page_revision_id ?? "");
-    await owner.closeEdit(existingPage, finalPublishedEdit, false);
+    await owner.closeEdit(existingPage, finalPublishedEdit, false, publishedPageId);
   } catch (error) {
     primaryError = error;
   } finally {
-    for (const [slug, edit] of [...draftLocks.entries()].reverse()) {
+    for (const [slug, {edit, pageId}] of [...draftLocks.entries()].reverse()) {
       try {
-        await owner.closeEdit(slug, edit, false);
+        await owner.closeEdit(slug, edit, false, pageId);
         cleanupOperations.push({object: `draft:${slug}`, status: "discarded-after-error"});
       } catch (error) {
         cleanupOperations.push({object: `draft:${slug}`, status: "cleanup-failed", failure: error.message});
@@ -477,9 +488,9 @@ async function main(argv) {
   const emptyCase = ownerMatrix.find(({case_id}) => case_id === "empty");
   const controls = {
     "both-exists-includes-existing": Boolean(existsCase && findRow(existsCase, existingPage)),
+    "both-notexists-includes-existing": Boolean(notexistsCase && findRow(notexistsCase, existingPage)),
     "both-notexists-includes-nonexisting": Boolean(notexistsCase && findRow(notexistsCase, nonexistingPage)),
     "both-exists-excludes-nonexisting": Boolean(existsCase && !findRow(existsCase, nonexistingPage)),
-    "both-notexists-excludes-existing": Boolean(notexistsCase && !findRow(notexistsCase, existingPage)),
     "both-omitted-includes-both": Boolean(omittedCase && findRow(omittedCase, existingPage) && findRow(omittedCase, nonexistingPage)),
     "both-empty-includes-both": Boolean(emptyCase && findRow(emptyCase, existingPage) && findRow(emptyCase, nonexistingPage)),
   };
