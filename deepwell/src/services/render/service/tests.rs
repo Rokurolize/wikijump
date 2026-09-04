@@ -2035,26 +2035,33 @@ fn capped_random_scan_remains_literal_for_privacy() {
 }
 
 #[test]
-fn list_pages_scan_target_skips_full_inventory_without_a_pager() {
-    assert_eq!(list_pages_row_scan_target(100, None, None, 0, false), 100);
-    assert_eq!(list_pages_row_scan_target(100, None, None, 25, true), 126,);
+fn list_pages_scan_target_covers_requested_page_within_the_safety_ceiling() {
+    assert_eq!(list_pages_row_scan_target(100, Some(100), 0, 0, false), 100);
+    assert_eq!(list_pages_row_scan_target(100, Some(100), 25, 0, true), 126);
     assert_eq!(
-        list_pages_row_scan_target(250, None, Some(250), 0, false),
-        250,
-        "an unbounded paginated ListPages module must keep its scan bounded by the page size",
+        list_pages_row_scan_target(250, None, 0, 0, false),
+        u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
+        "an unbounded paginated ListPages module needs the bounded safety window to determine pager totals",
     );
     assert_eq!(
-        list_pages_row_scan_target(250, Some(1_000), Some(250), 250, false),
-        1_250,
+        list_pages_row_scan_target(250, Some(1_000), 0, 250, false),
+        500,
+        "page 2 must extend the explicit-limit scan through the requested page window",
     );
     assert_eq!(
-        list_pages_row_scan_target(1, Some(5_000), Some(1), 0, false),
-        5_000,
+        list_pages_row_scan_target(250, Some(1_000), 0, 750, false),
+        1_000,
+        "the requested page window must not exceed the module's explicit overall limit",
     );
     assert_eq!(
-        list_pages_row_scan_target(1, None, Some(1), 0, false),
+        list_pages_row_scan_target(1, Some(5_000), 0, 0, false),
         1,
-        "a one-row page must not scan the whole site without an overall limit",
+        "an explicit overall limit must not force scans beyond the requested page window",
+    );
+    assert_eq!(
+        list_pages_row_scan_target(1, None, 0, 0, false),
+        u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS),
+        "an unbounded pager uses the existing safety ceiling even for a one-row page",
     );
 }
 
