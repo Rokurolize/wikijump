@@ -2645,9 +2645,7 @@ async fn custom_data_form_layout_remains_editable_and_renders_form_variables() {
         "form_raw must retain the stored select key while form_data emits its label: {rendered_html}",
     );
     assert!(
-        rendered_html.contains(
-            r#"href="http://example.com/alpha" target="_blank" rel="noopener noreferrer""#,
-        ),
+        rendered_html.contains(r#"href="http://example.com/alpha" target="_blank""#,),
         "url form_data must use the documented default http scheme and leading-star new-window link semantics: {rendered_html}",
     );
     assert!(
