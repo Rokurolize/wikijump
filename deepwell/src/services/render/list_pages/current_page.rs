@@ -68,13 +68,17 @@ pub(in crate::services::render) fn count_pages_scan_requires_preservation(
 pub(in crate::services::render) fn list_pages_row_scan_target(
     requested_limit: u64,
     overall_limit: Option<u64>,
-    _per_page: Option<u64>,
     offset: u32,
+    page_skip: u64,
     exclude_current_page: bool,
 ) -> u64 {
-    // The page size is the bounded render window. An explicit overall limit
-    // may enlarge the scan, but an unbounded pager must not scan the site.
-    let rows = overall_limit.unwrap_or(requested_limit);
+    // An unbounded ListPages query needs the bounded scan window to determine
+    // whether a pager exists. An explicit overall limit keeps the scan to the
+    // rows the module can expose.
+    let page_window = page_skip.saturating_add(requested_limit);
+    let rows = overall_limit.map_or(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS), |limit| {
+        limit.min(page_window)
+    });
     rows.saturating_add(u64::from(offset))
         .saturating_add(u64::from(exclude_current_page))
         .min(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
