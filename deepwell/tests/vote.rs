@@ -14,14 +14,20 @@
 mod common;
 
 use self::common::TestRunner;
-use deepwell::constants::ADMIN_USER_ID;
+use deepwell::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
 use deepwell::error::prelude::*;
+use deepwell::license::License;
 use deepwell::services::RequestContext;
 use deepwell::services::job::{JOB_QUEUE_NAME, Job};
 use deepwell::services::page_revision::{PageRevisionService, RerenderType};
+use deepwell::services::permission::PermissionService;
 use deepwell::services::public_cache::PublicContentCache;
+use deepwell::services::role::{
+    GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
+};
+use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::view::GetPageViewOutput;
-use deepwell::types::{Reference, RerenderDepth};
+use deepwell::types::{Action, Permission, Reference, RerenderDepth, Resource};
 use futures::FutureExt;
 use redis::AsyncCommands;
 use rsmq_async::RsmqConnection;
@@ -58,9 +64,85 @@ async fn create_registered_rate_page(
     rating_type: &str,
     source: &str,
 ) -> (i64, String, i64, i64) {
-    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
-        .expect("seeded SCP Wiki site should exist");
-    let site_id = site.site.site_id;
+    let site_id = SiteService::create(
+        runner.context(),
+        CreateSite {
+            slug: format!("rate-test-{}", Uuid::new_v4().simple()),
+            name: "Rate test site".to_owned(),
+            tagline: String::new(),
+            description: "Rate test site".to_owned(),
+            default_page: None,
+            layout: None,
+            license: License::CcBySa40,
+            locale: "en".to_owned(),
+            ip_address: common::IP_ADDRESS,
+        },
+        Some(ADMIN_USER_ID),
+    )
+    .await
+    .expect("Rate test site should be created")
+    .site_id;
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: "guest".to_owned(),
+            description: None,
+            is_virtual: true,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Rate test role should be created");
+    PermissionService::update_permissions_for_role(
+        runner.context(),
+        UpdateRolePermissionsInput {
+            site_id,
+            role_reference: Reference::Id(role.role_id),
+            new_permissions: vec![
+                Permission {
+                    resource_type: Resource::Site,
+                    resource_category: None,
+                    action: Action::Edit,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::Create,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::Edit,
+                },
+                Permission {
+                    resource_type: Resource::Page,
+                    resource_category: None,
+                    action: Action::View,
+                },
+            ],
+            cascade_removals: false,
+            updating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Rate test role permissions should be set");
+    RoleService::grant_role_to_user(
+        runner.context(),
+        GrantUserRoleInput {
+            site_id,
+            user_id: ADMIN_USER_ID,
+            role_id: role.role_id,
+            assigning_user_id: SYSTEM_USER_ID,
+            expires_at: None,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Rate test administrator role should be granted");
     let slug = format!("{category}:holder");
     runner.set_request_context(RequestContext {
         session: None,
