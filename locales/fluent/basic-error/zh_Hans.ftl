@@ -23,9 +23,7 @@ basic-error-site-custom = <h1>该网址不存在 { -service-name } 站点</h1>
     .title = 站点不存在 - { -service-name }
 
 basic-error-page-slug = <h1>此页面并不存在</h1>
-    <p>
-      页面 <a href="https://{ $domain }/{ $page_slug }"><code>{ $domain }/{ $page_slug }</code></a> 并不存在。
-    </p>
+    <p>请求的页面并不存在。</p>
 
     <p>
       返回<a href="https://{ $domain }/">网站主页面</a>。
