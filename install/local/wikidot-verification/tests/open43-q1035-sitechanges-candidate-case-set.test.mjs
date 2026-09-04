@@ -118,8 +118,9 @@ function siteChangesRpc(currentFixture, params, actor) {
     if (pageNumber < 1 || pageNumber > 3) return notOk();
     return { status: "ok", body: `${siteChangesBody(currentFixture, { page, perpage, options }, actor)}${pager(pageNumber)}` };
   }
+  if (perpage === "not-a-number") return { status: "ok", body: SITECHANGES_EMPTY };
   const pageNumber = Number.parseInt(page, 10);
-  if (![20, 1000].includes(Number.parseInt(perpage, 10)) || !["{}", '{"all":true}', '{"source":true}'].includes(options) || !Number.isSafeInteger(pageNumber) || pageNumber < 1 || pageNumber > 2) return notOk();
+  if (![20, 1000].includes(Number.parseInt(perpage, 10)) || !['{"all":true}', '{"source":true}', '{"files":true}'].includes(options) || !Number.isSafeInteger(pageNumber) || pageNumber < 1 || pageNumber > 2) return notOk();
   return { status: "ok", body: siteChangesBody(currentFixture, { page, perpage, options }, actor) };
 }
 
@@ -162,7 +163,7 @@ function classifySiteChangesAjax(currentFixture, fields) {
       /^[A-Za-z][A-Za-z0-9_-]{0,63}$/u.test(extras[0]) && parameters[extras[0]].length <= 256);
   const normalizePage = (value) => (/^[1-9][0-9]*$/u.test(value ?? "") ? value : value !== undefined && /^[A-Za-z-]{1,64}$/u.test(value) ? "1" : null);
   const normalizePerPage = (value) => (["20", "1000"].includes(value) ? value : value !== undefined && /^[A-Za-z-]{1,64}$/u.test(value) ? value : null);
-  const normalizeOptions = (value) => (value === undefined || value === "{}" || value === "{'all':true}" ? '{"all":true}' : value === "{'source':true}" ? '{"source":true}' : null);
+  const normalizeOptions = (value) => (value === undefined || value === "{}" || value === "{'all':true}" || value === '{"all":true}' ? '{"all":true}' : value === "{'source':true}" || value === '{"source":true}' ? '{"source":true}' : value === "{'files':true}" || value === '{"files":true}' ? '{"files":true}' : null);
   if (Object.hasOwn(parameters, "page") && Object.hasOwn(parameters, "perpage") && supportedExtra) {
     const page = normalizePage(parameters.page);
     const perpage = normalizePerPage(parameters.perpage);

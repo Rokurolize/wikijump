@@ -106,6 +106,19 @@ const SITECHANGES_WIKIDOT_PY_SHAPES = Object.freeze([
   Object.freeze({ label: "client-later-page", page: "2", perpage: "1000", options: "{'all':true}" }),
 ]);
 
+const SITECHANGES_WIKIDOT_PY_CONTROL_SHAPES = Object.freeze([
+  Object.freeze({ label: "missing-options", omit_options: true, request: {}, rpc: { page: "1", perpage: "20", options: '{"all":true}' } }),
+  Object.freeze({ label: "empty-options", request: { options: "{}" }, rpc: { page: "1", perpage: "20", options: '{"all":true}' } }),
+  Object.freeze({ label: "single-source", request: { options: "{'source':true}" }, rpc: { page: "1", perpage: "20", options: '{"source":true}' } }),
+  Object.freeze({ label: "double-all", request: { options: '{"all":true}' }, rpc: { page: "1", perpage: "20", options: '{"all":true}' } }),
+  Object.freeze({ label: "double-source", request: { options: '{"source":true}' }, rpc: { page: "1", perpage: "20", options: '{"source":true}' } }),
+  Object.freeze({ label: "double-files", request: { options: '{"files":true}' }, rpc: { page: "1", perpage: "20", options: '{"files":true}' } }),
+  Object.freeze({ label: "single-files", request: { options: "{'files':true}" }, rpc: { page: "1", perpage: "20", options: '{"files":true}' } }),
+  Object.freeze({ label: "bounded-page", request: { page: "not-a-page" }, rpc: { page: "1", perpage: "20", options: '{"all":true}' } }),
+  Object.freeze({ label: "bounded-perpage", request: { perpage: "not-a-number" }, rpc: { page: "1", perpage: "not-a-number", options: '{"all":true}' } }),
+  Object.freeze({ label: "single-unknown-field", request: { unknownField: "control" }, rpc: { page: "1", perpage: "20", options: '{"all":true}' } }),
+]);
+
 const SITECHANGES_BROWSER_UNSUPPORTED = Object.freeze([
   Object.freeze({ page: "0" }),
   Object.freeze({ page: "-1" }),
@@ -129,8 +142,6 @@ const SITECHANGES_WIKIDOT_PY_UNSUPPORTED = Object.freeze([
   Object.freeze({ page: "1tail" }),
   Object.freeze({ page: "9007199254740993" }),
   Object.freeze({ perpage: "10" }),
-  Object.freeze({ options: "{'files':true}" }),
-  Object.freeze({ options: '{"all":true}' }),
   Object.freeze({ pageId: "74503778" }),
   Object.freeze({ categoryId: "" }),
   Object.freeze({ module_body: "" }),
@@ -483,6 +494,24 @@ class Open43Q1035Run {
       if (spec.label === "client-page-one-default") expect(payload.body === rpcWikidotPyPageOne.body, "SiteChanges wikidot.py page-one Ajax body diverged from the RPC body");
       wikidotPyAjax.push({ ...row, response_body_sha256: response.response_body_sha256 });
     }
+    const wikidotPyControls = [];
+    for (const spec of SITECHANGES_WIKIDOT_PY_CONTROL_SHAPES) {
+      const expected = await this.#siteChangesRpc({ site_id: this.#fixture.site_id, ...spec.rpc }, "anonymous");
+      const fields = {
+        moduleName: "changes/SiteChangesListModule",
+        page: "1",
+        perpage: "20",
+        options: "{'all':true}",
+        callbackIndex: "5",
+        wikidot_token7: "candidate-read-only",
+        ...spec.request,
+      };
+      if (spec.omit_options === true) delete fields.options;
+      const response = await this.#session.ajaxModuleRequest(fields, { actor: "anonymous" });
+      const payload = requireSiteChangesMetadata(response, `Q1035 SiteChanges ${spec.label} Ajax`);
+      expect(payload.status === expected.status && payload.body === expected.body, `Q1035 SiteChanges ${spec.label} Ajax diverged from its normalized RPC request`);
+      wikidotPyControls.push({ label: spec.label, contract_sha256: sha256Value(spec), status: payload.status, body_sha256: sha256Text(payload.body ?? ""), response_body_sha256: requireSha256(response.response_body_sha256, `Q1035 SiteChanges ${spec.label} Ajax response SHA-256`), verified: true });
+    }
     const unsupportedBrowser = [];
     for (const override of SITECHANGES_BROWSER_UNSUPPORTED) {
       const response = await this.#session.ajaxModuleRequest({ ...this.#ajaxBrowserFields(SITECHANGES_BROWSER_SHAPES[0]), ...override }, { actor: "anonymous" });
@@ -535,7 +564,7 @@ class Open43Q1035Run {
     return [
       { case_id: OPEN43_Q1035_CASE_IDS[0], observations: { anonymous: anonymousSnapshot, editor: editorSnapshot } },
       { case_id: OPEN43_Q1035_CASE_IDS[1], observations: { pages, browser_perpage: browserPerpage, wikidot_py: wikidotPy, editor_page_two: editorPageTwo, host_denial: { status: hostDenial.status }, site_mismatch: siteMismatch } },
-      { case_id: OPEN43_Q1035_CASE_IDS[2], observations: { ajax, browser_perpage_ajax: browserPerpageAjax, wikidot_py_ajax: wikidotPyAjax, unsupported_browser: unsupportedBrowser, unsupported_wikidot_py: unsupportedWikidotPy, parity: { page_one: true, files: true, browser_perpage: true, wikidot_py_page_one: true } } },
+      { case_id: OPEN43_Q1035_CASE_IDS[2], observations: { ajax, browser_perpage_ajax: browserPerpageAjax, wikidot_py_ajax: wikidotPyAjax, wikidot_py_controls: wikidotPyControls, unsupported_browser: unsupportedBrowser, unsupported_wikidot_py: unsupportedWikidotPy, parity: { page_one: true, files: true, browser_perpage: true, wikidot_py_page_one: true } } },
       { case_id: OPEN43_Q1035_CASE_IDS[3], observations: { previews, saved_view: savedListDrafts, amc: listDraftsAmc, amc_unsupported: amcUnsupported } },
     ];
   }
@@ -563,10 +592,11 @@ function verifyCase(caseId, observations, fixture) {
     verifyMatrix(observations.ajax, SITECHANGES_BROWSER_SHAPES, "Q1035 SiteChanges Ajax matrix");
     verifyMatrix(observations.browser_perpage_ajax, SITECHANGES_BROWSER_PERPAGE_SHAPES, "Q1035 browser perpage Ajax matrix");
     verifyMatrix(observations.wikidot_py_ajax, SITECHANGES_WIKIDOT_PY_SHAPES, "Q1035 wikidot.py Ajax matrix");
+    verifyMatrix(observations.wikidot_py_controls, SITECHANGES_WIKIDOT_PY_CONTROL_SHAPES, "Q1035 wikidot.py control Ajax matrix");
     expect(Array.isArray(observations.unsupported_browser) && observations.unsupported_browser.length === SITECHANGES_BROWSER_UNSUPPORTED.length && observations.unsupported_browser.every(({ status }) => status === "not_ok"), "Q1035 unsupported browser Ajax denominator changed");
     expect(Array.isArray(observations.unsupported_wikidot_py) && observations.unsupported_wikidot_py.length === SITECHANGES_WIKIDOT_PY_UNSUPPORTED.length && observations.unsupported_wikidot_py.every(({ status }) => status === "not_ok"), "Q1035 unsupported wikidot.py Ajax denominator changed");
     expect(observations.parity?.page_one === true && observations.parity.files === true && observations.parity.browser_perpage === true && observations.parity.wikidot_py_page_one === true, "Q1035 Ajax and RPC bodies diverged");
-    return { verified: true, ajax_case_count: observations.ajax.length, unsupported_browser_case_count: observations.unsupported_browser.length, unsupported_wikidot_py_case_count: observations.unsupported_wikidot_py.length, exact_metadata: true, rpc_ajax_parity: true, remote_js_loaded: false };
+    return { verified: true, ajax_case_count: observations.ajax.length, wikidot_py_control_case_count: observations.wikidot_py_controls.length, unsupported_browser_case_count: observations.unsupported_browser.length, unsupported_wikidot_py_case_count: observations.unsupported_wikidot_py.length, exact_metadata: true, rpc_ajax_parity: true, remote_js_loaded: false };
   }
   if (caseId === OPEN43_Q1035_CASE_IDS[3]) {
     expect(Array.isArray(observations.previews) && observations.previews.length === LISTDRAFTS_PREVIEW_CASES.length, "Q1035 ListDrafts preview denominator changed");
