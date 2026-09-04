@@ -40,7 +40,7 @@ use crate::services::render::{
     WikidotForumModuleRequest, WikidotForumModuleResponse, WikidotListPagesFeedInput,
     WikidotListPagesFeedOutput, WikidotMembersListModuleResponse,
     WikidotSiteChangesFilter, WikidotSiteChangesModuleRequest,
-    WikidotSiteChangesModuleResponse,
+    WikidotSiteChangesModuleResponse, wikidot_site_changes_empty_response,
 };
 use crate::services::settings::PageRatingVisibility;
 use crate::services::{MutationAuthorization, SettingsService, TextService};
@@ -360,8 +360,7 @@ pub async fn wikidot_site_changes_module(
             let Some(page_id) = wikidot_positive_decimal::<i64>(&page_id) else {
                 return Ok(not_ok());
             };
-            let Some(rows_per_page) = site_changes_browser_rows_per_page(&input.perpage)
-            else {
+            let Some(perpage) = site_changes_browser_perpage(&input.perpage) else {
                 return Ok(not_ok());
             };
             let category_id = if category_id.is_empty() {
@@ -414,6 +413,9 @@ pub async fn wikidot_site_changes_module(
             if !can_view_host {
                 return Ok(not_ok());
             }
+            let SiteChangesBrowserPerpage::Rows(rows_per_page) = perpage else {
+                return Ok(wikidot_site_changes_empty_response());
+            };
             (rows_per_page, category_id, filter)
         }
         (None, None) => {
@@ -472,12 +474,19 @@ fn wikidot_bounded_word_scalar(value: &str) -> bool {
             .all(|byte| byte.is_ascii_alphabetic() || byte == b'-')
 }
 
-fn site_changes_browser_rows_per_page(value: &str) -> Option<usize> {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum SiteChangesBrowserPerpage {
+    Empty,
+    Rows(usize),
+}
+
+fn site_changes_browser_perpage(value: &str) -> Option<SiteChangesBrowserPerpage> {
     match value {
-        "1" => Some(1),
-        "10" => Some(10),
-        "20" => Some(20),
-        "100" => Some(100),
+        "0" | "-1" => Some(SiteChangesBrowserPerpage::Empty),
+        "1" => Some(SiteChangesBrowserPerpage::Rows(1)),
+        "10" => Some(SiteChangesBrowserPerpage::Rows(10)),
+        "20" => Some(SiteChangesBrowserPerpage::Rows(20)),
+        "100" => Some(SiteChangesBrowserPerpage::Rows(100)),
         _ => None,
     }
 }
@@ -1736,15 +1745,33 @@ async fn build_page_file_output(
 
 #[cfg(test)]
 mod tests {
-    use super::site_changes_browser_rows_per_page;
+    use super::{SiteChangesBrowserPerpage, site_changes_browser_perpage};
+    use crate::services::render::wikidot_site_changes_empty_response;
 
     #[test]
     fn site_changes_browser_perpage_accepts_only_observed_positive_values() {
         for (value, expected) in [("1", 1), ("10", 10), ("20", 20), ("100", 100)] {
-            assert_eq!(site_changes_browser_rows_per_page(value), Some(expected));
+            assert_eq!(
+                site_changes_browser_perpage(value),
+                Some(SiteChangesBrowserPerpage::Rows(expected))
+            );
         }
-        for value in ["0", "-1", "1.5", "5001", "9007199254740993", "not-a-number"] {
-            assert_eq!(site_changes_browser_rows_per_page(value), None);
+        for value in ["1.5", "5001", "9007199254740993", "not-a-number"] {
+            assert_eq!(site_changes_browser_perpage(value), None);
         }
+    }
+
+    #[test]
+    fn site_changes_browser_perpage_uses_existing_empty_response_for_zero_and_minus_one()
+    {
+        for value in ["0", "-1"] {
+            assert_eq!(
+                site_changes_browser_perpage(value),
+                Some(SiteChangesBrowserPerpage::Empty)
+            );
+        }
+        let response = wikidot_site_changes_empty_response();
+        assert_eq!(response.status, "ok");
+        assert_eq!(response.body, "Sorry, no revisions matching your criteria.");
     }
 }

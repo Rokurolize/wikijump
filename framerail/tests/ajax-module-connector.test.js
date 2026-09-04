@@ -989,10 +989,12 @@ test("SiteChanges browser family forwards perpage 10 like the observed perpage 2
   })
 })
 
-test("SiteChanges browser family forwards the observed positive perpage values", async () => {
+test("SiteChanges browser family forwards the observed perpage values", async () => {
   for (const { perpage, expectedBody } of [
     { perpage: "1", expectedBody: "1 row" },
-    { perpage: "100", expectedBody: "100 rows" }
+    { perpage: "100", expectedBody: "100 rows" },
+    { perpage: "0", expectedBody: "Sorry, no revisions matching your criteria." },
+    { perpage: "-1", expectedBody: "Sorry, no revisions matching your criteria." }
   ]) {
     let received
     const response = await handleAjaxModuleConnectorRequest(
@@ -1340,8 +1342,6 @@ test("fails closed for unobserved SiteChanges shapes before Deepwell", async () 
     { pageId: "-1" },
     { pageId: "9007199254740993" },
     { perpage: "1.5" },
-    { perpage: "0" },
-    { perpage: "-1" },
     { perpage: "5001" },
     { perpage: "9007199254740993" },
     { perpage: "-9007199254740993" },
