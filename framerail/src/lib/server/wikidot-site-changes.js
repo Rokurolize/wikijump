@@ -5,7 +5,7 @@ const BROWSER_OPTIONS = new Set([
   '{"source":true}',
   '{"files":true}'
 ])
-const BROWSER_PERPAGE = new Set(["1", "10", "20", "100"])
+const BROWSER_PERPAGE = new Set(["-1", "0", "1", "10", "20", "100"])
 const CONTROL_FIELDS = new Set([
   "moduleName",
   "wikidot_token7",

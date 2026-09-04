@@ -144,6 +144,13 @@ pub struct WikidotSiteChangesModuleResponse {
     pub body: String,
 }
 
+pub(crate) fn wikidot_site_changes_empty_response() -> WikidotSiteChangesModuleResponse {
+    WikidotSiteChangesModuleResponse {
+        status: "ok".to_owned(),
+        body: SITE_CHANGES_EMPTY.to_owned(),
+    }
+}
+
 pub(super) async fn expand_site_changes_modules(
     ctx: &ServiceContext<'_>,
     wikitext: String,
