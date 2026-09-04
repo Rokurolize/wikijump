@@ -360,10 +360,9 @@ pub async fn wikidot_site_changes_module(
             let Some(page_id) = wikidot_positive_decimal::<i64>(&page_id) else {
                 return Ok(not_ok());
             };
-            let rows_per_page = match input.perpage.as_str() {
-                "20" => 20,
-                "10" => 10,
-                _ => return Ok(not_ok()),
+            let Some(rows_per_page) = site_changes_browser_rows_per_page(&input.perpage)
+            else {
+                return Ok(not_ok());
             };
             let category_id = if category_id.is_empty() {
                 None
@@ -471,6 +470,16 @@ fn wikidot_bounded_word_scalar(value: &str) -> bool {
         && value
             .bytes()
             .all(|byte| byte.is_ascii_alphabetic() || byte == b'-')
+}
+
+fn site_changes_browser_rows_per_page(value: &str) -> Option<usize> {
+    match value {
+        "1" => Some(1),
+        "10" => Some(10),
+        "20" => Some(20),
+        "100" => Some(100),
+        _ => None,
+    }
 }
 
 fn wikidot_positive_decimal<T>(value: &str) -> Option<T>
@@ -1723,4 +1732,19 @@ async fn build_page_file_output(
         revision_comments: revision.comments,
         hidden_fields: revision.hidden,
     }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::site_changes_browser_rows_per_page;
+
+    #[test]
+    fn site_changes_browser_perpage_accepts_only_observed_positive_values() {
+        for (value, expected) in [("1", 1), ("10", 10), ("20", 20), ("100", 100)] {
+            assert_eq!(site_changes_browser_rows_per_page(value), Some(expected));
+        }
+        for value in ["0", "-1", "1.5", "5001", "9007199254740993", "not-a-number"] {
+            assert_eq!(site_changes_browser_rows_per_page(value), None);
+        }
+    }
 }

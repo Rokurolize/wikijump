@@ -5,6 +5,7 @@ const BROWSER_OPTIONS = new Set([
   '{"source":true}',
   '{"files":true}'
 ])
+const BROWSER_PERPAGE = new Set(["1", "10", "20", "100"])
 const CONTROL_FIELDS = new Set([
   "moduleName",
   "wikidot_token7",
@@ -76,7 +77,7 @@ export const classifyWikidotSiteChangesRequest = (fields) => {
             : rawOptions
     if (
       isPositiveSafeDecimal(page) &&
-      (perpage === "20" || perpage === "10") &&
+      BROWSER_PERPAGE.has(perpage) &&
       isPositiveSafeDecimal(pageId) &&
       (categoryId === "" || isPositiveSafeDecimal(categoryId)) &&
       options !== undefined &&
