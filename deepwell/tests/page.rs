@@ -44529,6 +44529,7 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
     let destination_slug = format!("{destination_category}:target");
     let destination_template_slug = format!("{destination_category}:_template");
     let component_slug = format!("component:page-move-rollback-{run_id}");
+    let join_slug = format!("system:join-{run_id}");
     let include_line = format!("[[include {component_slug}]]\n");
     let source_wikitext = include_line.repeat(200);
     let destination_template_wikitext =
@@ -44567,6 +44568,38 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
             .as_i64()
             .expect("seeded editable site ID should be present");
         cleanup.site_id = Some(site_id);
+        let join_transaction = state
+            .database
+            .begin()
+            .await
+            .expect("page move Join fixture transaction should start");
+        let join_page = {
+            let join_context = ServiceContext::new(&state, &join_transaction);
+            PageService::create(
+                &join_context,
+                CreatePage {
+                    site_id,
+                    wikitext: "[[module Join]]".to_owned(),
+                    title: "Join this site".to_owned(),
+                    alt_title: None,
+                    tags: Vec::new(),
+                    slug: join_slug.clone(),
+                    layout: None,
+                    revision_comments: "Create page move Join fixture".to_owned(),
+                    user_id: SYSTEM_USER_ID,
+                    bypass_filter: true,
+                    ip_address: common::IP_ADDRESS,
+                },
+            )
+            .await
+            .expect("page move Join fixture should be created")
+        };
+        join_transaction
+            .commit()
+            .await
+            .expect("page move Join fixture transaction should commit");
+        cleanup.page_ids.push(join_page.page_id);
+        cleanup.revision_ids.push(join_page.revision_id);
         let user = page_move_rpc_result(
             page_move_rpc_request(
                 &client,
@@ -44632,12 +44665,12 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
                 address,
                 Some(&session_token),
                 Some(site_id),
-                Some("system:join"),
+                Some(&join_slug),
                 "page_view",
                 json!({
                     "site_id": site_id,
                     "session_token": session_token,
-                    "route": {"slug": "system:join", "extra": ""},
+                    "route": {"slug": join_slug.clone(), "extra": ""},
                     "locales": ["en-US", "en"],
                 }),
             )
@@ -44658,7 +44691,7 @@ async fn page_move_render_failure_rolls_back_destination_identity() {
                 address,
                 Some(&session_token),
                 Some(site_id),
-                Some("system:join"),
+                Some(&join_slug),
                 "membership_join",
                 json!({
                     "page_id": join_action["page_id"],
