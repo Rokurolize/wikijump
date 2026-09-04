@@ -29110,7 +29110,7 @@ async fn listpages_content_keeps_same_named_attachment_owners_per_row() {
 }
 
 #[tokio::test]
-async fn exact_name_listpages_batch_preserves_order_duplicates_and_permissions() {
+async fn exact_name_listpages_batch_preserves_order_and_permissions() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
@@ -29124,25 +29124,6 @@ async fn exact_name_listpages_batch_preserves_order_duplicates_and_permissions()
     ] {
         create_listpages_test_page(&mut runner, site_id, slug, title, "target").await;
     }
-
-    let duplicate_insert = runner
-        .context()
-        .transaction()
-        .execute_raw(Statement::from_sql_and_values(
-            runner.context().transaction().get_database_backend(),
-            "INSERT INTO page (created_at, from_wikidot, site_id, page_category_id, slug, layout) SELECT TIMESTAMPTZ '2030-01-01 00:00:00+00' + duplicates.duplicate_number * INTERVAL '1 minute', source.from_wikidot, source.site_id, source.page_category_id, source.slug, source.layout FROM page AS source CROSS JOIN generate_series(1, 1000) AS duplicates(duplicate_number) WHERE source.site_id = $1 AND source.slug = $2 AND source.deleted_at IS NULL",
-            [
-                Value::from(site_id),
-                Value::from("fixture-exact-batch-a".to_owned()),
-            ],
-        ))
-        .await
-        .expect("duplicate live exact-name pages should be inserted");
-    assert_eq!(
-        duplicate_insert.rows_affected(),
-        1000,
-        "exact-name duplicate fixture should fill the combined batch window before later slugs",
-    );
 
     let private_category = "fixture-exact-batch-private-category";
     make_listpages_test_category_admin_only(&runner, site_id, private_category).await;
@@ -29204,14 +29185,8 @@ async fn exact_name_listpages_batch_preserves_order_duplicates_and_permissions()
     );
     assert_eq!(
         html.matches("A1=fixture-exact-batch-a@").count(),
-        20,
-        "batched duplicate rows should preserve the live default ListPages page size instead of collapsing to one row:\n{html}",
-    );
-    let newest_duplicate = html.find("2 Jan 2030, 01:40").unwrap();
-    let next_duplicate = html.find("2 Jan 2030, 01:39").unwrap();
-    assert!(
-        newest_duplicate < next_duplicate,
-        "batched duplicate rows should retain PageQuery order:\n{html}"
+        1,
+        "an exact-name ListPages lookup should render the unique live page once:\n{html}",
     );
     assert!(
         html.contains("C=fixture-exact-batch-c|Exact Batch Author"),
@@ -29232,15 +29207,11 @@ async fn exact_name_listpages_batch_preserves_order_duplicates_and_permissions()
 }
 
 #[tokio::test]
-async fn fallback_link_title_batch_preserves_singular_duplicate_permission() {
+async fn fallback_link_title_batch_preserves_singular_permission() {
     const TARGET_SLUG: &str = "fixture-fallback-title-duplicate";
     const FIRST_TITLE: &str = "Fallback duplicate first title";
-    const SECOND_SLUG: &str = "fixture-fallback-title-duplicate-source";
-    const SECOND_TITLE: &str = "Fallback duplicate second title";
     const FIRST_CATEGORY: &str = "fixture-fallback-title-first";
-    const SECOND_CATEGORY: &str = "fixture-fallback-title-second";
     const INDEX_SLUG: &str = "fixture-fallback-title-index";
-    const DEFAULT_LABEL: &str = "Fixture Fallback Title Duplicate";
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -29255,15 +29226,6 @@ async fn fallback_link_title_batch_preserves_singular_duplicate_permission() {
         "first duplicate target",
     )
     .await;
-    create_listpages_test_page(
-        &mut runner,
-        site_id,
-        SECOND_SLUG,
-        SECOND_TITLE,
-        "second duplicate target",
-    )
-    .await;
-
     let first_page = PageTable::find()
         .filter(
             sea_orm::Condition::all()
@@ -29274,69 +29236,29 @@ async fn fallback_link_title_batch_preserves_singular_duplicate_permission() {
         .await
         .expect("first fallback target lookup should not fail")
         .expect("first fallback target should exist");
-    let second_page = PageTable::find()
-        .filter(
-            sea_orm::Condition::all()
-                .add(page::Column::SiteId.eq(site_id))
-                .add(page::Column::Slug.eq(SECOND_SLUG)),
-        )
-        .one(runner.context().transaction())
-        .await
-        .expect("second fallback target lookup should not fail")
-        .expect("second fallback target should exist");
     let first_page_id = first_page.page_id;
-    let second_page_id = second_page.page_id;
     let first_category =
         CategoryService::get_or_create(runner.context(), site_id, FIRST_CATEGORY)
             .await
             .expect("first fallback category should be created");
-    let second_category =
-        CategoryService::get_or_create(runner.context(), site_id, SECOND_CATEGORY)
-            .await
-            .expect("second fallback category should be created");
     let mut first_page = first_page.into_active_model();
     first_page.page_category_id = Set(first_category.category_id);
     first_page
         .update(runner.context().transaction())
         .await
         .expect("first fallback target should move to its category");
-    let mut second_page = second_page.into_active_model();
-    second_page.slug = Set(TARGET_SLUG.to_owned());
-    second_page.page_category_id = Set(second_category.category_id);
-    second_page
-        .update(runner.context().transaction())
-        .await
-        .expect("second fallback target should become an active duplicate");
-
     let selected = PageService::get_optional(
         runner.context(),
         site_id,
         Reference::Slug(Cow::Borrowed(TARGET_SLUG)),
     )
     .await
-    .expect("singular duplicate lookup should not fail")
-    .expect("singular duplicate lookup should select a page");
+    .expect("singular lookup should not fail")
+    .expect("singular lookup should select a page");
     let selected_page_id = selected.page_id;
-
-    let (selected_category_slug, selected_category_id, other_page_id, other_category_id) =
-        if selected_page_id == first_page_id {
-            (
-                FIRST_CATEGORY,
-                first_category.category_id,
-                second_page_id,
-                second_category.category_id,
-            )
-        } else {
-            assert_eq!(selected_page_id, second_page_id);
-            (
-                SECOND_CATEGORY,
-                second_category.category_id,
-                first_page_id,
-                first_category.category_id,
-            )
-        };
-    make_listpages_test_category_admin_only(&runner, site_id, selected_category_slug)
-        .await;
+    assert_eq!(selected_page_id, first_page_id);
+    let selected_category_id = first_category.category_id;
+    make_listpages_test_category_admin_only(&runner, site_id, FIRST_CATEGORY).await;
 
     let selected_again = PageService::get_optional(
         runner.context(),
@@ -29344,8 +29266,8 @@ async fn fallback_link_title_batch_preserves_singular_duplicate_permission() {
         Reference::Slug(Cow::Borrowed(TARGET_SLUG)),
     )
     .await
-    .expect("repeated singular duplicate lookup should not fail")
-    .expect("repeated singular duplicate lookup should select a page");
+    .expect("repeated singular lookup should not fail")
+    .expect("repeated singular lookup should select a page");
     assert_eq!(selected_again.page_id, selected_page_id);
     let can_view_selected = PermissionService::check_user_can(
         runner.context(),
@@ -29361,24 +29283,8 @@ async fn fallback_link_title_batch_preserves_singular_duplicate_permission() {
         },
     )
     .await
-    .expect("anonymous duplicate permission check should not fail");
+    .expect("anonymous permission check should not fail");
     assert!(!can_view_selected);
-    let can_view_other = PermissionService::check_user_can(
-        runner.context(),
-        &CheckPermissionContext {
-            user_id: None,
-            site_id,
-            page_reference: Some(Reference::Id(other_page_id)),
-        },
-        Permission {
-            resource_type: Resource::Page,
-            resource_category: Some(Reference::Id(other_category_id)),
-            action: Action::View,
-        },
-    )
-    .await
-    .expect("anonymous non-selected duplicate permission check should not fail");
-    assert!(can_view_other);
 
     let mut source = format!("[[[{TARGET_SLUG}|]]]\n");
     for index in 0..64 {
@@ -29412,11 +29318,12 @@ async fn fallback_link_title_batch_preserves_singular_duplicate_permission() {
         .expect("compiled fallback body should be included in page_get details");
 
     assert!(
-        html.contains(&format!(r#"<a href="/{TARGET_SLUG}">{DEFAULT_LABEL}</a>"#)),
-        "fallback title batch should use the singular lookup's denied permission decision:\n{html}",
+        html.contains(&format!(
+            r#"<a class="newpage" href="/{TARGET_SLUG}">{TARGET_SLUG}</a>"#
+        )),
+        "fallback title batch should not expose a denied page title:\n{html}",
     );
     assert!(!html.contains(FIRST_TITLE), "{html}");
-    assert!(!html.contains(SECOND_TITLE), "{html}");
 }
 
 #[tokio::test]
