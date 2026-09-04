@@ -339,6 +339,30 @@ test("ListPages validates the selected duplicate public token", async () => {
   assert.equal(calls.length, 1)
 })
 
+test("ListPages selects the first public token from a duplicate cookie header", async () => {
+  const cases = [
+    { cookie: "wikidot_token7=123456; wikidot_token7=invalid", status: "ok" },
+    { cookie: "wikidot_token7=invalid; wikidot_token7=123456", status: "wrong_token7" }
+  ]
+  for (const { cookie, status } of cases) {
+    const response = await handleAjaxModuleConnectorRequest(
+      new Request("http://scp-wiki.local/ajax-module-connector.php", {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          cookie
+        },
+        body: "moduleName=list%2FListPagesModule&module_body=%%fullname%%&wikidot_token7=123456"
+      }),
+      {
+        siteId: 6000006,
+        renderListPages: async () => ({ body: "rows" })
+      }
+    )
+    assert.equal((await response.json()).status, status)
+  }
+})
+
 test("ListPages echoes callbackIndex on the wrong_token7 envelope", async () => {
   const response = await handleAjaxModuleConnectorRequest(
     new Request("http://scp-wiki.local/ajax-module-connector.php", {
