@@ -10,7 +10,10 @@ import {
   OPEN43_ISSUE1041_CASE_IDS,
   createOpen43Issue1041LifecycleCandidateCaseSet,
 } from "../src/open43-issue1041-lifecycle-candidate-case-set.mjs";
-import { waitForIssue1041ActionPageStable } from "../src/open43-issue1041-lifecycle-browser-adapter.mjs";
+import {
+  isIssue1041PageDataResponse,
+  waitForIssue1041ActionPageStable,
+} from "../src/open43-issue1041-lifecycle-browser-adapter.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -26,10 +29,11 @@ const runId = () => `candidate-run-${digest("open43-issue1041-run").slice(0, 12)
 
 test("issue 1041 action-page settling rejects a transient editor disappearance", async () => {
   const previousDocument = globalThis.document;
+  const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
   let frame = 0;
   let attempts = 0;
-  const editorCounts = [1, 1, 1, 0, 1, 0, 0, 0];
-  const normalRouteMarkers = [0, 0, 0, 1, 0, 1, 1, 1];
+  const editorCounts = [1, 1, 1, 0, 1, 0, 0, 0, 0];
+  const normalRouteMarkers = [0, 0, 0, 1, 0, 1, 1, 1, 1];
   globalThis.document = {
     querySelectorAll(selector) {
       if (selector === 'a.wiki-standalone-button[href="javascript:;"]') return Array.from({ length: 5 });
@@ -38,28 +42,39 @@ test("issue 1041 action-page settling rejects a transient editor disappearance",
       return [];
     },
   };
+  globalThis.requestAnimationFrame = (callback) => {
+    frame += 1;
+    callback(frame * 16);
+  };
   const page = {
     async waitForFunction(callback, argument) {
       for (let retry = 0; retry < 12; retry += 1) {
         attempts += 1;
-        if (retry === 0) {
-          frame = 3;
-          setTimeout(() => { frame = 4; }, 0);
-        } else {
-          frame = 5;
-        }
+        if (retry === 0) frame = 3;
+        else frame = 5;
         if (await callback(argument)) return;
       }
       throw new Error("fake waitForFunction never observed stable state");
     },
   };
   try {
-    await waitForIssue1041ActionPageStable(page, 1_000, 1);
+    await waitForIssue1041ActionPageStable(page, 1_000);
     assert.ok(attempts > 1, "the transient editor disappearance before the normal-route marker must not satisfy the settling predicate");
-    assert.equal(frame, 5, "the stable normal-route state must be observed after the transient edit state returns");
+    assert.ok(frame >= 8, "the stable normal-route state must survive three animation frames");
   } finally {
     globalThis.document = previousDocument;
+    globalThis.requestAnimationFrame = previousRequestAnimationFrame;
   }
+});
+
+test("issue 1041 back navigation binds the exact normal-page Svelte data response", () => {
+  const response = (url, method = "GET") => ({
+    url: () => url,
+    request: () => ({ method: () => method }),
+  });
+  assert.equal(isIssue1041PageDataResponse(response(`${PAGE_URL}/__data.json?x-sveltekit-invalidated=01`), PAGE_PATH), true);
+  assert.equal(isIssue1041PageDataResponse(response(`${EDIT_URL}/__data.json?x-sveltekit-invalidated=01`), PAGE_PATH), false);
+  assert.equal(isIssue1041PageDataResponse(response(`${PAGE_URL}/__data.json`, "POST"), PAGE_PATH), false);
 });
 
 function candidateIdentity() {

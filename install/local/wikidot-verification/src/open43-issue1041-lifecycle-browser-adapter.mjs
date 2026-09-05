@@ -104,18 +104,30 @@ async function publicState(page) {
   }, { selector: STANDALONE_SELECTOR, key: PROBE_KEY });
 }
 
-export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT_MS, settleMs = 250) {
+export function isIssue1041PageDataResponse(response, pagePath) {
+  if (response.request().method() !== "GET") return false;
+  try {
+    return new URL(response.url()).pathname === `${pagePath}/__data.json`;
+  } catch {
+    return false;
+  }
+}
+
+export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT_MS) {
   await page.waitForFunction(
-    async ({ selector, settleMs: requiredSettleMs }) => {
+    async (selector) => {
       const ready = () =>
         document.querySelectorAll(selector).length === 5 &&
         document.querySelectorAll("#editor").length === 0 &&
         document.querySelectorAll("#page-options-bottom").length === 1;
       if (!ready()) return false;
-      await new Promise((resolve) => setTimeout(resolve, requiredSettleMs));
-      return ready();
+      for (let index = 0; index < 3; index += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        if (!ready()) return false;
+      }
+      return true;
     },
-    { selector: STANDALONE_SELECTOR, settleMs },
+    STANDALONE_SELECTOR,
     { timeout: timeoutMs },
   );
 }
@@ -215,30 +227,6 @@ export class Open43Issue1041LifecycleBrowserAdapter {
 
   async #backForward(context, pageUrl, pagePath) {
     const page = await this.#goto(context, pageUrl);
-    const startedAt = Date.now();
-    const navigationTrace = [];
-    const record = (kind, url, extra = {}) => {
-      let parsed;
-      try { parsed = new URL(url); } catch { return; }
-      if (!parsed.hostname.endsWith(".wikijump.localhost")) return;
-      navigationTrace.push({ kind, elapsed_ms: Date.now() - startedAt, url, ...extra });
-    };
-    const onRequest = (request) => {
-      if (["document", "fetch"].includes(request.resourceType())) {
-        record("request", request.url(), { method: request.method(), resource_type: request.resourceType() });
-      }
-    };
-    const onResponse = (response) => {
-      if (["document", "fetch"].includes(response.request().resourceType())) {
-        record("response", response.url(), { status: response.status(), resource_type: response.request().resourceType() });
-      }
-    };
-    const onFrameNavigated = (frame) => {
-      if (frame === page.mainFrame()) record("main-frame", frame.url());
-    };
-    page.on("request", onRequest);
-    page.on("response", onResponse);
-    page.on("framenavigated", onFrameNavigated);
     try {
       await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const home = await page.evaluate(() => ({ path: location.pathname }));
@@ -250,26 +238,20 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       await this.#activate(page, "Edit page here", "click");
       await permission;
       await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
+      const backDataResponse = page.waitForResponse(
+        (response) => isIssue1041PageDataResponse(response, pagePath),
+        { timeout: TIMEOUT_MS },
+      );
       await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      const backData = await backDataResponse;
+      if (backData.status() !== 200) throw new Error("issue 1041 back navigation page data failed");
       await waitForIssue1041ActionPageStable(page);
       const back = await publicState(page);
-      if (back.editor_count !== 0) {
-        const browser = await page.evaluate(() => ({
-          history_state: history.state,
-          resources: performance.getEntriesByType("resource")
-            .filter((entry) => entry.name.includes("__data.json"))
-            .map((entry) => ({ name: entry.name, start_time: entry.startTime, duration: entry.duration, response_end: entry.responseEnd })),
-        }));
-        throw new Error(`issue 1041 back diagnostic: ${JSON.stringify({ back, navigation_trace: navigationTrace, browser })}`);
-      }
       await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const forward = await publicState(page);
       return { home, back, forward };
     } finally {
-      page.off("request", onRequest);
-      page.off("response", onResponse);
-      page.off("framenavigated", onFrameNavigated);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }
