@@ -219,11 +219,14 @@ export async function startCaptureEgressProxy({
   server.on("connect", async (request, client, head) => {
     let upstream;
     let tunnelTimer = null;
-    const closeTunnel = () => {
+    const clearTunnelTimeout = () => {
       if (tunnelTimer !== null) {
         clearTimeout(tunnelTimer);
         tunnelTimer = null;
       }
+    };
+    const closeTunnel = () => {
+      clearTunnelTimeout();
       client.destroy();
       upstream?.destroy();
     };
@@ -234,7 +237,10 @@ export async function startCaptureEgressProxy({
     client.on("data", resetTunnelTimeout);
     resetTunnelTimeout();
     client.on("error", closeTunnel);
-    client.on("close", () => upstream?.destroy());
+    client.on("close", () => {
+      clearTunnelTimeout();
+      upstream?.destroy();
+    });
     try {
       const { hostname, port } = parseAuthority(request.url, 443);
       if (denyWikidotTargets && isWikidotTarget(hostname) && !allowedTargets.has(targetKey("https:", hostname, port))) {

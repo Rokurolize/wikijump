@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
 import net from "node:net";
@@ -309,6 +310,70 @@ test("an aborted CONNECT tunnel does not crash the proxy", async () => {
   } finally {
     await proxy.close();
     await new Promise((resolve) => upstream.close(resolve));
+  }
+});
+
+test("a normally closed CONNECT tunnel does not retain the request timeout after proxy cleanup", async () => {
+  const childSource = String.raw`
+    import net from "node:net";
+    import { startCaptureEgressProxy } from "./install/local/wikidot-verification/src/capture-egress-proxy.mjs";
+
+    const upstream = net.createServer((socket) => socket.on("error", () => {}));
+    await new Promise((resolve) => upstream.listen(0, "127.0.0.1", resolve));
+    const upstreamPort = upstream.address().port;
+    const proxy = await startCaptureEgressProxy({
+      allowedLocalOrigins: ["https://fixture.test:" + upstreamPort],
+      lookup: async () => [{address: "127.0.0.1"}],
+      requestTimeoutMs: 60_000,
+    });
+    const proxyUrl = new URL(proxy.url);
+    const socket = net.connect(Number(proxyUrl.port), proxyUrl.hostname, () =>
+      socket.write("CONNECT fixture.test:" + upstreamPort + " HTTP/1.1\r\nHost: fixture.test\r\n\r\n"),
+    );
+    socket.on("error", () => {});
+    await new Promise((resolve, reject) => {
+      socket.once("data", (data) => {
+        try {
+          if (!data.toString().startsWith("HTTP/1.1 200")) throw new Error("CONNECT did not succeed");
+          socket.end();
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
+      });
+      socket.once("error", reject);
+    });
+    await new Promise((resolve) => socket.once("close", resolve));
+    await proxy.close();
+    await new Promise((resolve) => upstream.close(resolve));
+    console.log("done");
+  `;
+  const child = spawn(process.execPath, ["--input-type=module", "--eval", childSource], {
+    cwd: repoRoot,
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let stdout = "";
+  let stderr = "";
+  child.stdout.setEncoding("utf8").on("data", (chunk) => { stdout += chunk; });
+  child.stderr.setEncoding("utf8").on("data", (chunk) => { stderr += chunk; });
+  const exit = new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code, signal) => resolve({code, signal}));
+  });
+  let timer = null;
+  try {
+    const result = await Promise.race([
+      exit,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error("CONNECT timeout handle kept the child process alive after cleanup")), 1_000);
+      }),
+    ]);
+    assert.deepEqual(result, {code: 0, signal: null}, stderr);
+    assert.equal(stdout.trim(), "done");
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+    if (child.exitCode === null && child.signalCode === null) child.kill("SIGKILL");
+    await exit;
   }
 });
 
