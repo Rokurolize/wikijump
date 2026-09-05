@@ -93,7 +93,18 @@ function createFetchResponse({status = 200, headers = {}, body = "asset"} = {}) 
   };
 }
 
-test("shared gate admits concurrent public requests one per four seconds", async () => {
+test("default shared gate has no fixed delay", async () => {
+  const clock = createClock();
+  const gate = createBrowserRequestGate({now: clock.now, sleep: clock.sleep});
+
+  const grants = await Promise.all([gate.acquire(), gate.acquire(), gate.acquire()]);
+
+  assert.deepEqual(grants.map((grant) => grant.released_at_epoch_ms), [0, 0, 0]);
+  assert.deepEqual(clock.sleeps, []);
+  assert.equal(gate.snapshot().interval_ms, 0);
+});
+
+test("shared gate can still enforce an explicit four-second interval", async () => {
   const clock = createClock();
   const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
 
@@ -320,19 +331,31 @@ test("candidate cache misses for unsupported scripts abort without an external r
   assert.equal(responseCache.snapshot().misses, 1);
 });
 
-test("candidate cache misses for explicit provider origins use the metered network", async () => {
+test("candidate cache misses for explicit provider origins fetch once and reuse the cached response", async () => {
   const gate = createBrowserRequestGate({intervalMs: 0});
   const responseCache = createBrowserResponseCache();
   const context = createContext();
   await installBrowserRequestGate(context, {gate, responseCache, cacheOnly: true, cacheOnlyAllowedOrigins: ["https://www.youtube.com"]});
-  const miss = createRoute("https://www.youtube.com/embed/example", {resourceType: "stylesheet"});
+  const url = "https://www.youtube.com/embed/example";
+  const miss = createRoute(url, {
+    resourceType: "stylesheet",
+    fetchResponse: createFetchResponse({headers: {"cache-control": "public, max-age=600"}, body: "cached-provider-asset"}),
+  });
 
   await context.routes[0].handler(miss);
+  const hit = createRoute(url, {resourceType: "stylesheet"});
+  await context.routes[0].handler(hit);
 
-  assert.deepEqual(miss.actions, [{type: "continue"}]);
+  assert.deepEqual(miss.actions, [
+    {type: "fetch", options: {maxRedirects: 0}},
+    {type: "fulfill", status: 200},
+  ]);
+  assert.deepEqual(hit.actions, [{type: "fulfill", status: 200}]);
   assert.equal(gate.snapshot().public_requests, 1);
   assert.equal(gate.snapshot().enforcement_failed, false);
   assert.equal(responseCache.snapshot().misses, 1);
+  assert.equal(responseCache.snapshot().hits, 1);
+  assert.equal(responseCache.snapshot().stores, 1);
 });
 
 test("an explicitly identified persistent source cache reuses documents without a second Wikidot request", async (t) => {

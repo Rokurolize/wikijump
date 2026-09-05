@@ -1223,7 +1223,7 @@ export async function runTemporalCapture(args) {
   const contract = contractFile.descriptor;
   const executionMode = args.executionMode ?? "live";
   const requestIntervalMs = args.requestIntervalMs ?? DEFAULT_REQUEST_INTERVAL_MS;
-  if (!["candidate", "live"].includes(executionMode) || !Number.isSafeInteger(requestIntervalMs) || requestIntervalMs < 0 || (executionMode === "candidate" && requestIntervalMs !== 0) || (executionMode === "live" && requestIntervalMs < DEFAULT_REQUEST_INTERVAL_MS)) {
+  if (!["candidate", "live"].includes(executionMode) || !Number.isSafeInteger(requestIntervalMs) || requestIntervalMs !== 0) {
     throw new Error("temporal capture execution mode and request interval are incompatible");
   }
   const {scenarios: contractScenarios} = validateTemporalRunContract(contract);

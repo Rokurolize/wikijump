@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import {isWikidotResourceHost} from "./resource-manifest.mjs";
 
-export const DEFAULT_REQUEST_INTERVAL_MS = 4_000;
+export const DEFAULT_REQUEST_INTERVAL_MS = 0;
 export const DEFAULT_BROWSER_CAPTURE_LOCK = "/var/tmp/wikijump-wikidot-browser-capture.lock";
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRIES = 512;
 const DEFAULT_RESPONSE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
@@ -699,8 +699,27 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
       }
       if (cacheOnlyAllowedMiss) {
         try {
+          const request = route.request();
           await gate.acquire();
-          await route.continue();
+          const response = await route.fetch({maxRedirects: 0});
+          if (
+            responseCache !== null &&
+            requestCanUseResponseCache(request, responseCache) &&
+            responseCanBeCached(response, responseCache)
+          ) {
+            const body = await response.body();
+            const entry = {
+              status: response.status(),
+              headers: reusableResponseHeaders(response),
+              body,
+            };
+            if (body.length <= responseCache.maxEntryBytes && responseCache.store(request.url(), entry)) {
+              await route.fulfill(entry);
+              return;
+            }
+          }
+          responseCache?.recordBypass();
+          await route.fulfill({response});
         } catch (continueError) {
           gate.failClosed(continueError);
           await abortRoute(route);
