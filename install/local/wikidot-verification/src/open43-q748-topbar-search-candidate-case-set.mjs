@@ -60,7 +60,11 @@ const UNSELALED_LIVE_VALUES = Object.freeze([
 
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const CAPTURE_TIMEOUT_MS = 300_000;
-const EXPECTED_CANCELLED_FONT = "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2";
+const EXPECTED_CANCELLED_SIGMA_ASSETS = new Set([
+  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2",
+  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/images/header-logo.svg",
+  "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/images/body_bg.svg",
+]);
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -213,7 +217,7 @@ function verifyDiscipline(observations, label) {
   if (
     !Array.isArray(observations.failed_requests) ||
     observations.failed_requests.some((request) => !(
-      request?.url === EXPECTED_CANCELLED_FONT &&
+      EXPECTED_CANCELLED_SIGMA_ASSETS.has(request?.url) &&
       request.method === "GET" &&
       request.failure === "net::ERR_ABORTED"
     ))

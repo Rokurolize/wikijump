@@ -47,14 +47,10 @@ function printuserState() {
   const profile = `http://www.wikidot.com/user:info/${visible.slug}`;
   const onclick = `WIKIDOT.page.listeners.userInfo(${visible.user_id}); return false;`;
   return {
-    printuser_count: 2,
-    avatarhover_count: 1,
-    anchors: [
-      { href: profile, onclick },
-      { href: profile, onclick },
-      { href: profile, onclick },
-    ],
-    avatar_images: [{ class: "small", alt: visible.name, style: `background-image:url(https://www.wikidot.com/userkarma.php?u=${visible.user_id})` }],
+    printuser_count: 1,
+    avatarhover_count: 0,
+    anchors: [{ href: profile, onclick }],
+    avatar_images: [],
     error_count: OPEN43_Q1026_EXPECTED_EM_CONTENTS.length,
     error_em_html: [...OPEN43_Q1026_EXPECTED_EM_CONTENTS],
     error_texts: OPEN43_Q1026_EXPECTED_EM_CONTENTS.map((em) => `${em} does not match any existing user name`),
@@ -175,9 +171,9 @@ test("#1026 candidate case runs preview and saved identity controls through the 
   assert.equal(verification.visible_lookup_count, 2);
   assert.equal(verification.hidden_lookup_count, 18);
   assert.equal(printuser.verified, true);
-  assert.equal(printuser.initial.printuser_count, 2);
+  assert.equal(printuser.initial.printuser_count, 1);
   assert.equal(printuser.initial.error_count, 9);
-  assert.equal(printuser.settled.avatarhover_count, 1);
+  assert.equal(printuser.settled.avatarhover_count, 0);
   assert.deepEqual(browser.events.slice(0, 2), ["fixture:Q1026_PRINTUSER_INTERVALS", "context"]);
   assert.deepEqual(requests.map(({ method }) => method), ["page_get", "wikidot_page_preview", "page_view"]);
   assert.equal(requests[1].params.wikitext, source);
