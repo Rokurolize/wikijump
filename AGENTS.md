@@ -12,6 +12,7 @@
 
 - Use the `wikidot-sandbox-access` and `wikidot-py-operations` skills for live probes. Prefer anonymous `edit/PagePreviewModule`, `list/ListPagesModule`, or an existing public page before creating sandbox state.
 - External-evidence tests are cache-first: reuse identity-bound retained responses from `wikidot.com`, `wdfiles.com`, and other public providers instead of requesting them again. On a genuine cache miss, fetch once, persist the response for reuse, and use a 0 ms fixed inter-request interval; still honor an explicit server `Retry-After` response.
+- CI runs only offline verifier unit/fixture/retained-artifact tests. Live external acquisition, capture, probe, and `live-reference` entrypoints remain local campaign operations and must not be invoked by CI workflows; CI network isolation remains a second fail-closed boundary.
 - Real EN/JP Wikidot sites are read-only unless the user explicitly authorizes a run-owned sandbox mutation. Never expose credentials or session cookies.
 - Browser-visible behavior includes intermediate paints and transitions as well as the settled page. A final screenshot or final DOM match does not prove compatibility when users can see stale themes, layout shifts, loading states, or transient controls.
 - Do not hide meaningful differences through broad normalization, CSS masking, source surgery, or validator shortcuts. Record attempted observation routes when live behavior cannot be captured.

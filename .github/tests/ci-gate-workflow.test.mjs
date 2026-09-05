@@ -214,6 +214,18 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
   }
 })
 
+test("Wikidot verification CI runs only offline unit and retained-evidence tests", () => {
+  const verificationWorkflow = workflow("wikidot-verification.yaml")
+  const verificationPackage = JSON.parse(read("install/local/wikidot-verification/package.json"))
+
+  assert.equal(verificationPackage.scripts["test:ci"], "node --test tests/*.test.mjs")
+  assert.match(verificationWorkflow, /pnpm --dir install\/local\/wikidot-verification test:ci/u)
+  assert.doesNotMatch(
+    verificationWorkflow,
+    /(?:capture-[\w-]+|live-reference|candidate-cases|sandbox-oracle-capture|listpages-live-fixture|WIKIDOT_USERNAME|WIKIDOT_PASSWORD)/u,
+  )
+})
+
 test("documentation is cheap and unknown paths fail closed", () => {
   const docs = classifyChanges(["README.md", "AGENTS.md", "docs/development.md"])
   for (const group of GROUPS) assert.equal(docs[group], false, group)

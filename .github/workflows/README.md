@@ -53,7 +53,7 @@ all delegating to `docker-build-template.yaml` so the build logic exists once.
 
 ## Narrowly scoped
 
-`wikidot-verification.yaml` runs the verification tooling's own tests for changes to the tooling, standing promotion checks, verification artifacts, the generated Wikidot data and its generators, or `docs/wikidot-specifications/**`. It does not attempt live Wikidot capture: that needs credentials and mutates a sandbox, so it stays a local operation with human authorization. Pull request runs use PR-scoped concurrency so a newer push cancels the obsolete run.
+`wikidot-verification.yaml` runs only the verifier's offline unit/fixture/retained-evidence tests plus standing promotion-precondition tests. It never invokes live external acquisition, capture, probe, candidate-case, or `live-reference` entrypoints; those remain local campaign operations where identity-bound caches can be retained and reused. The CI job also runs in an isolated network namespace as a second fail-closed boundary. Pull request runs use PR-scoped concurrency so a newer push cancels the obsolete run.
 
 `codex-cloud.yaml` validates the Codex cloud environment scripts, path-filtered
 to those scripts and their documentation.

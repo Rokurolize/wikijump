@@ -101,7 +101,7 @@ jobs:
             unshare --net --mount-proc bash -c '
               set -euo pipefail
               ip link set lo up
-              exec pnpm --dir install/local/wikidot-verification test
+              exec pnpm --dir install/local/wikidot-verification test:ci
             '
 
       - name: Test standing promotion precondition
