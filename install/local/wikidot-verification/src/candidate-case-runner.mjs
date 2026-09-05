@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 
 import { collectCandidateSourceExecutionIdentity } from "./candidate-source-execution-identity.mjs";
@@ -19,6 +20,37 @@ export const CANDIDATE_CASE_TERMINAL_SCHEMA = "wikijump.candidate_case_terminal_
 
 const CASE_ID = /^[A-Z][A-Z0-9_]+$/u;
 const RUN_ID = /^candidate-run-[0-9a-f]{12}$/u;
+const DEFAULT_CANDIDATE_RESPONSE_CACHE_IDENTITY = "wikijump-candidate-public-evidence-cache-v1";
+const DEFAULT_CANDIDATE_RESPONSE_CACHE_MAX_ENTRIES = 8192;
+const DEFAULT_CANDIDATE_RESPONSE_CACHE_MAX_BYTES = 512 * 1024 * 1024;
+const DEFAULT_CANDIDATE_RESPONSE_CACHE_MAX_ENTRY_BYTES = 32 * 1024 * 1024;
+
+export function defaultCandidateResponseCacheOptions({
+  environment = process.env,
+  homeDirectory = os.homedir(),
+} = {}) {
+  const xdgCacheHome = environment.XDG_CACHE_HOME;
+  if (xdgCacheHome !== undefined && (typeof xdgCacheHome !== "string" || !path.isAbsolute(xdgCacheHome))) {
+    throw new Error("XDG_CACHE_HOME must be an absolute path when set");
+  }
+  if (typeof homeDirectory !== "string" || !path.isAbsolute(homeDirectory)) {
+    throw new Error("candidate response cache home directory must be absolute");
+  }
+  const cacheHome = xdgCacheHome ?? path.join(homeDirectory, ".cache");
+  return {
+    persistentDir: path.join(
+      cacheHome,
+      "wikijump-verification",
+      "candidate-public-evidence-v1",
+    ),
+    persistentIdentity: DEFAULT_CANDIDATE_RESPONSE_CACHE_IDENTITY,
+    cacheDocuments: true,
+    evidenceReplay: true,
+    maxEntries: DEFAULT_CANDIDATE_RESPONSE_CACHE_MAX_ENTRIES,
+    maxBytes: DEFAULT_CANDIDATE_RESPONSE_CACHE_MAX_BYTES,
+    maxEntryBytes: DEFAULT_CANDIDATE_RESPONSE_CACHE_MAX_ENTRY_BYTES,
+  };
+}
 
 function validateCaseSet(value) {
   const caseSet = requirePlainObject(value, "CandidateCaseSet");
@@ -177,6 +209,11 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
   if ((responseCacheDirectory === undefined) !== (responseCacheIdentity === undefined)) {
     throw new Error("candidate response cache directory and identity must be configured together");
   }
+  const responseCacheOptions = defaultCandidateResponseCacheOptions();
+  if (responseCacheDirectory !== undefined) {
+    responseCacheOptions.persistentDir = path.resolve(responseCacheDirectory);
+    responseCacheOptions.persistentIdentity = responseCacheIdentity;
+  }
   browserOwnerOptions = {
     candidateIdentity: identity,
     outputDir: output,
@@ -184,12 +221,7 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     credentialPolicy: run.browserCredentialPolicy ?? "none",
     privateInputIdentitySha256: sha256Value(run.privateInputIdentity),
     publicOrigins: browserPublicOrigins,
-    responseCacheOptions: {
-      persistentDir: responseCacheDirectory ?? path.join(evidenceRoot, "source-response-cache"),
-      persistentIdentity: responseCacheIdentity ?? "wikijump-candidate-public-evidence-cache-v1",
-      cacheDocuments: true,
-      evidenceReplay: true,
-    },
+    responseCacheOptions,
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
   const denominator = { count: caseSet.caseIds.length, case_ids: [...caseSet.caseIds], sha256: sha256Value(caseSet.caseIds) };

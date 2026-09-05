@@ -327,6 +327,8 @@ export function createBrowserRequestGate({
   const grants = [];
   const counters = {
     public_requests: 0,
+    external_network_requests: 0,
+    synthetic_public_admissions: 0,
     local_exempt_requests: 0,
     unsupported_requests_blocked: 0,
     websocket_connections_blocked: 0,
@@ -369,6 +371,7 @@ export function createBrowserRequestGate({
     const turn = queue.then(async () => {
       await ensurePersistence();
       counters.public_requests += 1;
+      counters.external_network_requests += 1;
       for (;;) {
         if (enforcementFailure) throw enforcementFailure;
         if (persistenceFailure) throw persistenceFailure;
@@ -409,6 +412,17 @@ export function createBrowserRequestGate({
     },
     async flush() {
       await ensurePersistence();
+    },
+    recordSyntheticPublicAdmission(count = 1) {
+      if (!Number.isSafeInteger(count) || count <= 0) {
+        throw new Error("synthetic public admission count must be a positive safe integer");
+      }
+      const current = finiteNonNegative(now(), "request gate clock result");
+      counters.public_requests += count;
+      counters.synthetic_public_admissions += count;
+      for (let index = 0; index < count; index += 1) {
+        grants.push({ sequence: ++sequence, released_at_epoch_ms: current });
+      }
     },
     recordLocalExempt() {
       counters.local_exempt_requests += 1;
