@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 
@@ -22,6 +23,7 @@ if (JSON.stringify(OPEN43_MEDIA_BROWSER_CASE_IDS) !== JSON.stringify([
 ])) throw new Error("Open43 media browser audit denominator drifted");
 
 const SITE_SLUG = "scpaiueouiuiuiui";
+const DOCKER = "/usr/bin/docker";
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const RESPONSIVE_VIEWPORT = Object.freeze({ width: 479, height: 900 });
 const MAX_CENTER_DELTA = 0.5;
@@ -38,6 +40,50 @@ const EVIDENCE_BY_CASE = Object.freeze({
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 const object = (value, name) => requirePlainObject(value, name);
+
+function docker(args) {
+  const result = spawnSync(DOCKER, args, {
+    encoding: "utf8",
+    env: Object.fromEntries(Object.entries(process.env).filter(([key]) => !["DOCKER_CONTEXT", "DOCKER_HOST"].includes(key))),
+  });
+  if (result.error || result.status !== 0) throw new Error("media browser candidate Docker operation failed");
+  return result.stdout.trim();
+}
+
+function databaseContainer(project) {
+  const ids = docker([
+    "ps",
+    "--filter", `label=com.docker.compose.project=${project}`,
+    "--filter", "label=com.docker.compose.service=database",
+    "--format", "{{.ID}}",
+  ]).split(/\s+/u).filter(Boolean);
+  if (ids.length !== 1 || !/^[0-9a-f]{12,64}$/u.test(ids[0])) throw new Error("media browser candidate database container is not unique");
+  return ids[0];
+}
+
+function databaseQuery(project, sql) {
+  return docker([
+    "exec", "-e", "PGPASSWORD=wikijump", databaseContainer(project),
+    "psql", "-h", "127.0.0.1", "-U", "wikijump", "-d", "wikijump", "-Atc", sql,
+  ]);
+}
+
+function sqlValue(value) {
+  if (value === null) return "NULL";
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+export function restoreMediaBrowserSiteIcons({ project, siteId, before, databaseQueryImpl = databaseQuery }) {
+  requireNonEmptyString(project, "media browser candidate compose project");
+  if (!Number.isSafeInteger(siteId) || siteId <= 0) throw new Error("media browser candidate site ID is invalid");
+  const snapshot = object(before, "media browser pre-run site icon snapshot");
+  for (const field of ["favicon_source", "ios_icon_source", "windows_tile_source"]) {
+    if (snapshot[field] !== null && typeof snapshot[field] !== "string") throw new Error(`media browser pre-run ${field} is invalid`);
+  }
+  if (!Number.isSafeInteger(snapshot.settings_revision) || snapshot.settings_revision < 0) throw new Error("media browser pre-run settings revision is invalid");
+  const result = databaseQueryImpl(project, `UPDATE site SET favicon_source = ${sqlValue(snapshot.favicon_source)}, ios_icon_source = ${sqlValue(snapshot.ios_icon_source)}, windows_tile_source = ${sqlValue(snapshot.windows_tile_source)}, settings_revision = ${snapshot.settings_revision} WHERE site_id = ${siteId};`);
+  if (result !== "UPDATE 1") throw new Error("media browser site icon rollback did not update exactly one site");
+}
 
 function evidenceRegistryEntry(evidenceId) {
   const entry = object(AUDIT.evidence_registry?.[evidenceId], `${evidenceId} audit evidence`);
@@ -266,6 +312,7 @@ async function browserIconFetch(context, pageOrigin) {
 }
 
 class Open43MediaBrowserRun {
+  #candidateIdentity;
   #session;
   #browser;
   #resources;
@@ -274,13 +321,16 @@ class Open43MediaBrowserRun {
   #siteId = null;
   #pages = [];
   #siteIconsBefore = null;
+  #siteIconRestorer;
 
-  constructor({ session, browser, resources, runId, casePlans }) {
+  constructor({ candidateIdentity, session, browser, resources, runId, casePlans, siteIconRestorer }) {
+    this.#candidateIdentity = candidateIdentity;
     this.#session = session;
     this.#browser = browser;
     this.#resources = resources;
     this.#runId = runId;
     this.#casePlans = casePlans;
+    this.#siteIconRestorer = siteIconRestorer;
   }
 
   async #rpc(method, params = {}, { cleanup = false } = {}) {
@@ -347,7 +397,7 @@ class Open43MediaBrowserRun {
   async #setFaviconSource(source) {
     const site = await this.#rpc("site_get", { site: SITE_SLUG });
     if (!Number.isSafeInteger(site?.settings_revision)) throw new Error("media browser site settings revision is missing");
-    this.#siteIconsBefore ??= { favicon_source: site.favicon_source ?? null, ios_icon_source: site.ios_icon_source ?? null, windows_tile_source: site.windows_tile_source ?? null };
+    this.#siteIconsBefore ??= { favicon_source: site.favicon_source ?? null, ios_icon_source: site.ios_icon_source ?? null, windows_tile_source: site.windows_tile_source ?? null, settings_revision: site.settings_revision };
     return await this.#rpc("site_update", {
       site: this.#siteId,
       expected_settings_revision: site.settings_revision,
@@ -601,14 +651,15 @@ class Open43MediaBrowserRun {
     const failures = [];
     if (this.#siteId !== null && this.#siteIconsBefore !== null) {
       try {
-        const site = await this.#rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
-        await this.#rpc("site_update", {
-          site: this.#siteId,
-          expected_settings_revision: site.settings_revision,
-          user_id: this.#session.editorUserId,
-          ...this.#siteIconsBefore,
-          ip_address: "127.0.0.1",
-        }, { cleanup: true });
+        await this.#siteIconRestorer({
+          project: this.#candidateIdentity.candidate.compose_project,
+          siteId: this.#siteId,
+          before: this.#siteIconsBefore,
+        });
+        const restored = await this.#rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
+        for (const field of ["favicon_source", "ios_icon_source", "windows_tile_source", "settings_revision"]) {
+          if ((restored?.[field] ?? null) !== this.#siteIconsBefore[field]) throw new Error(`media browser ${field} rollback did not round-trip`);
+        }
       } catch (error) { failures.push(error); }
     }
     const absent = [];
@@ -737,7 +788,10 @@ function verifyCleanup(proof, resources) {
   return { verified: true, public_absence_verified: true, page_count: value.page_count };
 }
 
-export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (options) => new CandidateHttpSession(options) } = {}) {
+export function createOpen43MediaBrowserCandidateCaseSet({
+  sessionFactory = (options) => new CandidateHttpSession(options),
+  siteIconRestorer = restoreMediaBrowserSiteIcons,
+} = {}) {
   return Object.freeze({
     id: "open43-media-browser",
     caseIds: OPEN43_MEDIA_BROWSER_CASE_IDS,
@@ -745,7 +799,7 @@ export function createOpen43MediaBrowserCandidateCaseSet({ sessionFactory = (opt
       if (candidateIdentity.candidate.endpoint.host !== `${SITE_SLUG}.wikijump.localhost` || candidateIdentity.candidate.endpoint.port === 443) throw new Error(`Open43 media browser cases require the exact non-standing ${SITE_SLUG} candidate`);
       const casePlans = mediaBrowserInput(privateInput);
       const session = sessionFactory({ candidateIdentity, privateInput, signal });
-      const execution = new Open43MediaBrowserRun({ session, browser: candidateBrowserContexts, resources, runId, casePlans });
+      const execution = new Open43MediaBrowserRun({ candidateIdentity, session, browser: candidateBrowserContexts, resources, runId, casePlans, siteIconRestorer });
       return Object.freeze({
         sourceFiles: Object.freeze([...new Set([...STANDING_BROWSER_EXECUTION_MODULES, "docs/development/open43-m-closure-audit.json", "framerail/src/lib/wikidot/wikidot-gallery-lightbox.js", "framerail/src/routes/[slug]/[...extra]/FileUploadPanel.svelte", "wws/src/handler/resized_image.rs", "install/local/wikidot-verification/src/open43-media-browser-candidate.mjs"])]),
         runtimeBindings: session.requiredServiceBindings,

@@ -4,7 +4,11 @@ import fs from "node:fs";
 import test from "node:test";
 
 import { candidateCaseSet, candidateCaseUsage } from "../src/candidate-case-command.mjs";
-import { OPEN43_MEDIA_BROWSER_CASE_IDS, verifyOpen43MediaBrowserCase } from "../src/open43-media-browser-candidate.mjs";
+import {
+  OPEN43_MEDIA_BROWSER_CASE_IDS,
+  restoreMediaBrowserSiteIcons,
+  verifyOpen43MediaBrowserCase,
+} from "../src/open43-media-browser-candidate.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const root = new URL("../../../../", import.meta.url);
@@ -122,6 +126,32 @@ test("the Playwright file is collection-only and the case set owns candidate rec
 test("media browser natural geometry is pinned to the WWS medium resize contract", () => {
   const wws = read("wws/src/handler/resized_image.rs");
   assert.match(wws, /Self::Medium => 500/u);
+});
+
+test("media browser cleanup can exactly restore a producer-seeded legacy favicon snapshot", () => {
+  const calls = [];
+  const before = {
+    favicon_source: "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+    ios_icon_source: null,
+    windows_tile_source: "/local--files/site/tile.png",
+    settings_revision: 17,
+  };
+  restoreMediaBrowserSiteIcons({
+    project: "candidate-project",
+    siteId: 6000003,
+    before,
+    databaseQueryImpl(project, sql) {
+      calls.push({ project, sql });
+      return "UPDATE 1";
+    },
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].project, "candidate-project");
+  assert.match(calls[0].sql, /favicon_source = 'https:\/\/scp-wiki\.wdfiles\.com\/local--files\/site\/favicon\.gif'/u);
+  assert.match(calls[0].sql, /ios_icon_source = NULL/u);
+  assert.match(calls[0].sql, /windows_tile_source = '\/local--files\/site\/tile\.png'/u);
+  assert.match(calls[0].sql, /settings_revision = 17/u);
+  assert.match(calls[0].sql, /WHERE site_id = 6000003/u);
 });
 
 test("M806 enforces centered width, exact local routes, and whitespace ownership at both viewports", () => {
