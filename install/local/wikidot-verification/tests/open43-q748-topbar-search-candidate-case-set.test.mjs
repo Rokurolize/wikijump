@@ -352,13 +352,15 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", base, plan).verified, true);
   assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT", base, plan).verified, true);
 
-  const cancelledFont = structuredClone(base);
-  cancelledFont.failed_requests = [{
-    url: "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2",
-    method: "GET",
-    failure: "net::ERR_ABORTED",
-  }];
-  assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", cancelledFont, plan).verified, true);
+  for (const url of [
+    "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2",
+    "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/images/header-logo.svg",
+    "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/images/body_bg.svg",
+  ]) {
+    const cancelledAsset = structuredClone(base);
+    cancelledAsset.failed_requests = [{ url, method: "GET", failure: "net::ERR_ABORTED" }];
+    assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", cancelledAsset, plan).verified, true);
+  }
 
   const unexpectedFailure = structuredClone(base);
   unexpectedFailure.failed_requests = [{ url: "https://example.test/app.js", method: "GET", failure: "net::ERR_FAILED" }];

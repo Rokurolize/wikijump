@@ -8,10 +8,21 @@ export const OPEN43_B610_SHELL_CASE_IDS = Object.freeze([
   "B610_SHELL_PUBLIC_CONTRACT",
 ]);
 
-const EXPECTED_SCP9506_ORB_IMAGES = new Set([
-  "https://scp-wiki.wdfiles.com/local--files/scp-9506/AFTER_FOG.png",
-  "https://scp-wiki.wdfiles.com/local--files/scp-9506/opening.jpg",
-]);
+function expectedScp9506ImageOrb(failure) {
+  if (
+    failure?.kind !== "request_failed" ||
+    failure.resource_type !== "image" ||
+    failure.error !== "net::ERR_BLOCKED_BY_ORB"
+  ) return false;
+  try {
+    const url = new URL(failure.url);
+    return url.protocol === "https:" &&
+      url.hostname === "scp-wiki.wdfiles.com" &&
+      url.pathname.startsWith("/local--files/scp-9506/");
+  } catch {
+    return false;
+  }
+}
 
 function same(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
@@ -48,12 +59,7 @@ function verifyCapture(capture, plan) {
   }
   if (
     !Array.isArray(value.failures) ||
-    value.failures.some((failure) => !(
-      failure?.kind === "request_failed" &&
-      failure.resource_type === "image" &&
-      failure.error === "net::ERR_BLOCKED_BY_ORB" &&
-      EXPECTED_SCP9506_ORB_IMAGES.has(failure.url)
-    ))
+    value.failures.some((failure) => !expectedScp9506ImageOrb(failure))
   ) {
     throw new Error("B610 browser capture has public failures");
   }

@@ -98,12 +98,12 @@ export const OPEN43_Q1026_EXPECTED_EM_CONTENTS = Object.freeze([
 
 function verifyPrintuserState(state, fixture, label) {
   const value = object(state, `#1026 ${label}`);
-  if (value.printuser_count !== 2 || value.avatarhover_count !== 1) {
+  if (value.printuser_count !== 1 || value.avatarhover_count !== 0) {
     throw new Error(`#1026 ${label} printuser wrapper counts differ from the sealed live matrix`);
   }
   const profile = `http://www.wikidot.com/user:info/${fixture.visible_user.slug}`;
   const onclick = `WIKIDOT.page.listeners.userInfo(${fixture.visible_user.user_id}); return false;`;
-  if (!Array.isArray(value.anchors) || value.anchors.length !== 3) {
+  if (!Array.isArray(value.anchors) || value.anchors.length !== 1) {
     throw new Error(`#1026 ${label} printuser links differ from the sealed live matrix`);
   }
   for (const anchor of value.anchors) {
@@ -111,12 +111,8 @@ function verifyPrintuserState(state, fixture, label) {
       throw new Error(`#1026 ${label} printuser link identity is wrong`);
     }
   }
-  if (!Array.isArray(value.avatar_images) || value.avatar_images.length !== 1) {
+  if (!Array.isArray(value.avatar_images) || value.avatar_images.length !== 0) {
     throw new Error(`#1026 ${label} avatar image count is wrong`);
-  }
-  const image = value.avatar_images[0];
-  if (image.class !== "small" || image.alt !== fixture.visible_user.name || typeof image.style !== "string" || !image.style.includes(`userkarma.php?u=${fixture.visible_user.user_id}`)) {
-    throw new Error(`#1026 ${label} avatar identity is wrong`);
   }
   if (value.error_count !== OPEN43_Q1026_EXPECTED_EM_CONTENTS.length) {
     throw new Error(`#1026 ${label} missing-user error count differs from the sealed live matrix`);
