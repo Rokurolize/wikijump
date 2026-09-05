@@ -105,8 +105,13 @@ function renderedBody() {
   const profile = `http://www.wikidot.com/user:info/${visible.slug}`;
   const onclick = `WIKIDOT.page.listeners.userInfo(${visible.user_id}); return false;`;
   const good = `<span class="printuser"><a href="${profile}" onclick="${onclick}">${visible.name}</a></span>`;
-  const bad = `<span class="error-inline"><em>${deleted.name}</em> does not match any existing user name</span>`;
-  return `NAME=${good}\nID=${good}\nDELETED=${bad}\nA=${bad}\nB=${bad}\nC=${bad}\nD=${bad}\nE=${bad}\nF=${bad}\nG=${bad}`;
+  const bad = (name) => `<span class="error-inline"><em>${name}</em> does not match any existing user name</span>`;
+  return [
+    `NAME=${good}`,
+    `ID=${bad(visible.user_id)}`,
+    `DELETED=${bad(deleted.name)}`,
+    ...OPEN43_Q1026_EXPECTED_EM_CONTENTS.slice(2).map((name, index) => `${String.fromCharCode(65 + index)}=${bad(name)}`),
+  ].join("\n");
 }
 
 function response(id, result) {
@@ -167,11 +172,11 @@ test("#1026 candidate case runs preview and saved identity controls through the 
   assert.deepEqual(caseSet.caseIds, ["Q1026_EXACT_CANDIDATE_PREVIEW_SAVED_IDENTITY", "Q1026_BROWSER_PRINTUSER_INTERVALS"]);
   assert.deepEqual(rows.map(({ case_id }) => case_id), caseSet.caseIds);
   assert.equal(verification.verified, true);
-  assert.equal(verification.visible_lookup_count, 4);
-  assert.equal(verification.hidden_lookup_count, 16);
+  assert.equal(verification.visible_lookup_count, 2);
+  assert.equal(verification.hidden_lookup_count, 18);
   assert.equal(printuser.verified, true);
   assert.equal(printuser.initial.printuser_count, 2);
-  assert.equal(printuser.initial.error_count, 8);
+  assert.equal(printuser.initial.error_count, 9);
   assert.equal(printuser.settled.avatarhover_count, 1);
   assert.deepEqual(browser.events.slice(0, 2), ["fixture:Q1026_PRINTUSER_INTERVALS", "context"]);
   assert.deepEqual(requests.map(({ method }) => method), ["page_get", "wikidot_page_preview", "page_view"]);
@@ -188,6 +193,11 @@ test("#1026 candidate case runs preview and saved identity controls through the 
     }),
     /leaked a link or avatar authority/u,
   );
+});
+
+test("#1026 numeric identity text remains an exact fail-closed name lookup", () => {
+  assert.deepEqual(OPEN43_Q1026_EXPECTED_EM_CONTENTS.slice(0, 2), [String(visible.user_id), deleted.name]);
+  assert.equal(OPEN43_Q1026_EXPECTED_EM_CONTENTS.length, 9);
 });
 
 test("#1026 browser row requires the exact non-standing public origin", async () => {

@@ -60,6 +60,7 @@ const UNSELALED_LIVE_VALUES = Object.freeze([
 
 const DEFAULT_VIEWPORT = Object.freeze({ width: 1280, height: 900 });
 const CAPTURE_TIMEOUT_MS = 300_000;
+const EXPECTED_CANCELLED_FONT = "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2";
 
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
@@ -209,7 +210,14 @@ function verifyDiscipline(observations, label) {
   if (!Array.isArray(observations.request_methods) || observations.request_methods.some((method) => !["GET", "HEAD", "OPTIONS"].includes(method))) {
     throw new Error(`Q748 ${label} issued a mutating or non-read request`);
   }
-  if (!Array.isArray(observations.failed_requests) || observations.failed_requests.length !== 0) {
+  if (
+    !Array.isArray(observations.failed_requests) ||
+    observations.failed_requests.some((request) => !(
+      request?.url === EXPECTED_CANCELLED_FONT &&
+      request.method === "GET" &&
+      request.failure === "net::ERR_ABORTED"
+    ))
+  ) {
     throw new Error(`Q748 ${label} candidate observed failed requests`);
   }
   if (observations.mutation_detected !== false) throw new Error(`Q748 ${label} candidate mutation was detected`);

@@ -352,6 +352,21 @@ test("Q748 verification rejects trimmed whitespace, dummy navigation, and missin
   assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", base, plan).verified, true);
   assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_LIVE_TOPBAR_SUBMISSION_CONTRACT", base, plan).verified, true);
 
+  const cancelledFont = structuredClone(base);
+  cancelledFont.failed_requests = [{
+    url: "https://scp-wiki-cdn.nyc3.cdn.digitaloceanspaces.com/theme/en/sigma/fonts/Sans-Normalcy.woff2",
+    method: "GET",
+    failure: "net::ERR_ABORTED",
+  }];
+  assert.equal(verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", cancelledFont, plan).verified, true);
+
+  const unexpectedFailure = structuredClone(base);
+  unexpectedFailure.failed_requests = [{ url: "https://example.test/app.js", method: "GET", failure: "net::ERR_FAILED" }];
+  assert.throws(
+    () => verifyOpen43Q748TopBarSearchCase("Q748_EXACT_CANDIDATE_BROWSER_SUBMISSION", unexpectedFailure, plan),
+    /observed failed requests/u,
+  );
+
   const trimmed = structuredClone(base);
   trimmed.exact_query.query = "a/b? c";
   trimmed.exact_query.encoded_path = "a%2Fb%3F%20c";
