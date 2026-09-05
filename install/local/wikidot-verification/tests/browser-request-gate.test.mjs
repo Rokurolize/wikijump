@@ -482,6 +482,122 @@ test("an evidence replay cache reuses public responses even when HTTP cache head
   }
 });
 
+test("redirect responses are replayed only in evidence mode and retain their Location header across persistent reloads", async (t) => {
+  const replayableStatuses = [301, 302, 303, 307, 308];
+  const nonReplayableStatuses = [300, 304, 305, 306, 500, 503];
+
+  await t.test("normal response caching still bypasses redirects", async () => {
+    const gate = createBrowserRequestGate({intervalMs: 0});
+    const responseCache = createBrowserResponseCache();
+    const context = createContext();
+    await installBrowserRequestGate(context, {gate, responseCache});
+    const handler = context.routes[0].handler;
+    const url = "https://cdn.example.test/normal-redirect.css";
+    const response = createFetchResponse({status: 302, headers: {location: "https://assets.example.test/final.css"}, body: "redirect"});
+    const first = createRoute(url, {resourceType: "stylesheet", fetchResponse: response});
+    const second = createRoute(url, {resourceType: "stylesheet", fetchResponse: response});
+
+    await handler(first);
+    await handler(second);
+
+    assert.deepEqual(first.actions, [
+      {type: "fetch", options: {maxRedirects: 0}},
+      {type: "fulfill", status: 302},
+    ]);
+    assert.deepEqual(second.actions, [
+      {type: "fetch", options: {maxRedirects: 0}},
+      {type: "fulfill", status: 302},
+    ]);
+    assert.equal(responseCache.snapshot().stores, 0);
+    assert.equal(responseCache.snapshot().bypasses, 2);
+  });
+
+  const cacheDir = await fs.mkdtemp(path.join(os.tmpdir(), "wikijump-browser-redirect-replay-"));
+  t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
+  const persistentIdentity = "evidence-replay:redirect-status-matrix";
+  const gate = createBrowserRequestGate({intervalMs: 0});
+  const responseCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity, evidenceReplay: true});
+  await responseCache.load();
+  const context = createContext();
+  await installBrowserRequestGate(context, {gate, responseCache});
+  const handler = context.routes[0].handler;
+
+  for (const status of replayableStatuses) {
+    const url = `https://cdn.example.test/replay-${status}.css`;
+    const location = `https://assets.example.test/final-${status}.css`;
+    const first = createRoute(url, {resourceType: "stylesheet", fetchResponse: createFetchResponse({status, headers: {location}, body: `redirect-${status}`})});
+    const second = createRoute(url, {resourceType: "stylesheet", fetchResponse: createFetchResponse({status: 599, body: "must not refetch"})});
+
+    await handler(first);
+    await handler(second);
+
+    assert.deepEqual(first.actions, [
+      {type: "fetch", options: {maxRedirects: 0}},
+      {type: "fulfill", status},
+    ]);
+    assert.deepEqual(second.actions, [{type: "fulfill", status}]);
+    const retained = responseCache.get(url);
+    assert.equal(retained.status, status);
+    assert.equal(retained.headers.location, location);
+  }
+
+  for (const status of nonReplayableStatuses) {
+    const url = `https://cdn.example.test/no-replay-${status}.css`;
+    const response = createFetchResponse({status, headers: {location: "https://assets.example.test/ignored.css"}, body: `status-${status}`});
+    const first = createRoute(url, {resourceType: "stylesheet", fetchResponse: response});
+    const second = createRoute(url, {resourceType: "stylesheet", fetchResponse: response});
+
+    await handler(first);
+    await handler(second);
+
+    assert.deepEqual(first.actions, [
+      {type: "fetch", options: {maxRedirects: 0}},
+      {type: "fulfill", status},
+    ]);
+    assert.deepEqual(second.actions, [
+      {type: "fetch", options: {maxRedirects: 0}},
+      {type: "fulfill", status},
+    ]);
+    assert.equal(responseCache.get(url), null);
+  }
+
+  await responseCache.flush();
+  const reloaded = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity, evidenceReplay: true});
+  await reloaded.load();
+  assert.equal(reloaded.snapshot().persistent_entries_loaded, replayableStatuses.length);
+  for (const status of replayableStatuses) {
+    const retained = reloaded.get(`https://cdn.example.test/replay-${status}.css`);
+    assert.equal(retained.status, status);
+    assert.equal(retained.headers.location, `https://assets.example.test/final-${status}.css`);
+  }
+});
+
+test("evidence replay never URL-caches requests carrying credentials", async (t) => {
+  for (const [name, headers] of [
+    ["authorization", {authorization: "Bearer secret"}],
+    ["cookie", {cookie: "session=secret"}],
+  ]) {
+    await t.test(name, async () => {
+      const gate = createBrowserRequestGate({intervalMs: 0});
+      const responseCache = createBrowserResponseCache({evidenceReplay: true});
+      const context = createContext();
+      await installBrowserRequestGate(context, {gate, responseCache});
+      const route = createRoute(`https://cdn.example.test/${name}.css`, {
+        resourceType: "stylesheet",
+        headers,
+        fetchResponse: createFetchResponse({status: 302, headers: {location: "https://assets.example.test/final.css"}}),
+      });
+
+      await context.routes[0].handler(route);
+
+      assert.deepEqual(route.actions, [{type: "continue"}]);
+      assert.equal(responseCache.snapshot().entries, 0);
+      assert.equal(responseCache.snapshot().stores, 0);
+      assert.equal(responseCache.snapshot().bypasses, 1);
+    });
+  }
+});
+
 test("documents and no-store assets keep using the unchanged request gate", async () => {
   const clock = createClock();
   const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
