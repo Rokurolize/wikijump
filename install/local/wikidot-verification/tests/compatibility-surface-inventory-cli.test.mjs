@@ -1057,7 +1057,7 @@ test("CLI emits the pinned FTML raw manifest without changing the public denomin
 
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
-  assert.equal(inventory.counts.total, 926)
+  assert.equal(inventory.counts.total, 932)
   assert.deepEqual(inventory.ftml_raw_surface_manifest.counts, {
     lexer_rules: 62,
     parser_functions: 3,
@@ -1205,12 +1205,12 @@ test("CLI projects the current Deepwell contract evidence without promoting sour
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   const rows = inventory.surfaces.filter((record) => record.kind === "deepwell_jsonrpc_method")
-  assert.equal(rows.length, 164)
+  assert.equal(rows.length, 167)
   assert.equal(rows.every(({ evidence }) => evidence.status === "available"), true)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/deepwell-jsonrpc-contract-manifest.json")
   ), true)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 164)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 167)
   assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.deepEqual(
     rows.find(({ surface_id: surfaceId }) => surfaceId === "deepwell-jsonrpc:authorization_token_issue")
@@ -1251,10 +1251,10 @@ test("CLI projects WWS route-contract evidence while keeping hash-domain evidenc
   assert.equal(result.status, 0, result.stderr)
   const inventory = JSON.parse(await fs.readFile(outputPath, "utf8"))
   const rows = inventory.surfaces.filter((record) => record.kind === "wws_route")
-  assert.equal(rows.length, 47)
-  assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 44)
+  assert.equal(rows.length, 50)
+  assert.equal(rows.filter(({ evidence }) => evidence.status === "available").length, 47)
   assert.equal(rows.filter(({ evidence }) => evidence.status === "partial").length, 3)
-  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 47)
+  assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length > 0).length, 50)
   assert.equal(rows.filter(({ existing_refs: existingRefs }) => existingRefs.tests.length === 0).length, 0)
   assert.equal(rows.every(({ evidence }) =>
     evidence.references.includes("docs/development/wws-route-registration-denominator.json")
@@ -1537,7 +1537,7 @@ test("CLI emits closed owner keys and typed edges without double-counting FTML r
     inventory.ftml_raw_surface_manifest.records.map(({ surface_id: surfaceId }) => surfaceId)
   )
   assert.ok([...rawIds].every((surfaceId) => !publicIds.has(surfaceId)))
-  assert.equal(inventory.counts.total, 926)
+  assert.equal(inventory.counts.total, 932)
   assert.equal(
     inventory.relationship_edges.filter(({ type }) => type === "alias").length,
     47
@@ -1655,7 +1655,7 @@ test("CLI keeps cited data-form owners and fills only audited ownerless rows", a
     Object.values(canonicalLedger.implementation_owner_records).filter(({ issue_scope }) =>
       issue_scope.status === "unresolved" && issue_scope.references.length === 0
     ).length,
-    112
+    111
   )
 })
 

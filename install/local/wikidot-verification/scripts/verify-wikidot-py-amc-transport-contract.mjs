@@ -3,7 +3,6 @@
 import { spawnSync } from "node:child_process"
 import { createHash } from "node:crypto"
 import fs from "node:fs/promises"
-import os from "node:os"
 import path from "node:path"
 import process from "node:process"
 import { fileURLToPath } from "node:url"
@@ -155,7 +154,7 @@ function parseArgs(argv) {
   let contract = path.join(repositoryRoot, "docs/development/wikidot-py-amc-transport-contract.json")
   let sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(repositoryRoot, "../wikidot.py")
   let evidenceRoot = repositoryRoot
-  let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? path.join(os.homedir(), ".codex/skills/wikidot-py-operations/scripts/wikidot-python")
+  let wrapper = process.env.WIKIDOT_PY_WRAPPER ?? path.join(repositoryRoot, "install/local/wikidot-verification/fixtures/wikidot-python-wrapper.sh")
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--contract") contract = path.resolve(argv[++index] ?? "")
     else if (argv[index] === "--source-root") sourceRoot = path.resolve(argv[++index] ?? "")

@@ -2933,6 +2933,11 @@
       "target": "wikijump.deepwell"
     },
     {
+      "source": "deepwell-jsonrpc:basic_error_blob_fetch",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
       "source": "deepwell-jsonrpc:basic_error_file_fetch",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
@@ -2969,6 +2974,16 @@
     },
     {
       "source": "deepwell-jsonrpc:basic_error_text_block",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:basic_error_user_avatar",
+      "type": "implemented_by",
+      "target": "wikijump.deepwell"
+    },
+    {
+      "source": "deepwell-jsonrpc:basic_error_user_fetch",
       "type": "implemented_by",
       "target": "wikijump.deepwell"
     },
@@ -6688,6 +6703,11 @@
       "target": "wikijump.wws"
     },
     {
+      "source": "wws-route:FALLBACK:/-/avatar/{user_id}",
+      "type": "implemented_by",
+      "target": "wikijump.wws"
+    },
+    {
       "source": "wws-route:FALLBACK:/-/basic-error/{error_code}",
       "type": "implemented_by",
       "target": "wikijump.wws"
@@ -6724,6 +6744,11 @@
     },
     {
       "source": "wws-route:FALLBACK:/local--resized-images/{page_slug}/{filename}/{variant}",
+      "type": "implemented_by",
+      "target": "wikijump.wws"
+    },
+    {
+      "source": "wws-route:GET:/-/avatar/{user_id}",
       "type": "implemented_by",
       "target": "wikijump.wws"
     },
@@ -6794,6 +6819,11 @@
     },
     {
       "source": "wws-route:GET:/robots.txt",
+      "type": "implemented_by",
+      "target": "wikijump.wws"
+    },
+    {
+      "source": "wws-route:HEAD:/-/avatar/{user_id}",
       "type": "implemented_by",
       "target": "wikijump.wws"
     },
@@ -11171,8 +11201,8 @@
   },
   "provenance": {
     "wikijump": {
-      "commit": "8017e86de44c3bd33e3e852e67de30134d141589",
-      "tree": "d54ea96733ca39c7663ba58e06463421336669db"
+      "commit": "92f5d546d36fdb787591ea8fe435a3c238992096",
+      "tree": "a1f233f7e5a9fb24d9381cd0c74614126b695f9d"
     },
     "ftml": {
       "commit": "7ce4f22bcd9d7c0fffb901b5c0967987b2daa0d5",
@@ -11181,15 +11211,15 @@
     "registries": [
       {
         "path": "deepwell/Cargo.lock",
-        "sha256": "e10110551003ee32474de932ed4c61358aab8561ef0195e473d842feb7a67409"
+        "sha256": "b764550a9326cb23ffd6b4a1e463b365659c580cd9ab733a2ecac5e740ff0f49"
       },
       {
         "path": "deepwell/Cargo.toml",
-        "sha256": "2092a09868bfc8feee48acb8fdb289536d435571860a0db7f6f7235995f75265"
+        "sha256": "279b0569b3fabfffc3c3d903e0999591a6380dcc91142689be24160997128643"
       },
       {
         "path": "deepwell/src/api.rs",
-        "sha256": "40c7d49a174fa4015816819c56fa0608ab2f6a2260a1d5dfd43fa521ce31986e"
+        "sha256": "0644bf0531be22b911006a21d93746e886104d5a49ac456347a23c6a5d71c364"
       },
       {
         "path": "deepwell/src/endpoints/auth.rs",
@@ -11197,7 +11227,7 @@
       },
       {
         "path": "deepwell/src/endpoints/basic_error.rs",
-        "sha256": "2f4106d531570d4984a6564a76fcfd5a69d1fd815f7eb9b2dc357f1ccb9bbbc0"
+        "sha256": "3bff87d7258f1a758f29cc640e547b120ef2f3973af7c14269af2824adb90454"
       },
       {
         "path": "deepwell/src/endpoints/blob.rs",
@@ -11273,7 +11303,7 @@
       },
       {
         "path": "deepwell/src/endpoints/page.rs",
-        "sha256": "27205abfc5494397f0db040ed16b628b7cf93cbe41a946cedb3ea2800d715cbc"
+        "sha256": "d2416304cb98c201a9404e5827ab422fcc6e6a00a304505e298b56a352e9e333"
       },
       {
         "path": "deepwell/src/endpoints/parent.rs",
@@ -11329,7 +11359,7 @@
       },
       {
         "path": "docs/development/deepwell-jsonrpc-contract-manifest.json",
-        "sha256": "2cb9e001318de014f62654bbfab858f930ded9da9dc57ee9c902990a284b7960"
+        "sha256": "7da3d8c2491ed0459aa4939e6487caed5777ac8490c7c2d58fe3026d502d00b8"
       },
       {
         "path": "docs/development/framerail-amc-wire-contracts.json",
@@ -11389,19 +11419,19 @@
       },
       {
         "path": "docs/development/wws-route-registration-denominator.json",
-        "sha256": "cc6c79a737aa89c8596b156a17f28aa070702cdfa954686b1a47e733f66ba53c"
+        "sha256": "f07957d6ee4db21e7b58b160382378eb3eab2017c06de680575523bdbad2dcf5"
       },
       {
         "path": "docs/wikidot-specifications/catalog.json",
-        "sha256": "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1"
+        "sha256": "b69d218353c988c479c0af977240a7fa273f38918c57156dc3dae171c57f023c"
       },
       {
         "path": "docs/wikidot-specifications/implementation-ledger.json",
-        "sha256": "aff2be57fd75d27fb54e88103635b2b058f8fa4d2318af79fa3d1aad40058aa9"
+        "sha256": "80f5ddbc2ba2524e3e8a0599950972899c19197c7f1ed9d7f4589a3f9d35f3fe"
       },
       {
         "path": "docs/wikidot-specifications/live-observations.json",
-        "sha256": "5284438814c7d7bc833b5fee720b4c1c14ba8ee1560f02662438d163b4481262"
+        "sha256": "34bb5734a034b137a82def2e5313ea15db5e769ad58e5e4de7aedae0d49a9022"
       },
       {
         "path": "docs/wikidot-specifications/source-coverage.json",
@@ -11409,7 +11439,7 @@
       },
       {
         "path": "framerail/src/lib/server/ajax-module-connector.js",
-        "sha256": "c4896b174259374ae2accde17e4721418857a05eaf72a031bee3084cc27f55ad"
+        "sha256": "3ec7458841fb0a2b082192d8402be692092037400adc79f381bf357ce9000f7d"
       },
       {
         "path": "framerail/src/lib/server/load/page/page-actions.ts",
@@ -11421,7 +11451,7 @@
       },
       {
         "path": "framerail/src/lib/server/wikidot-site-changes.js",
-        "sha256": "369ec920aa73ac85c9072c3ce0e3422598e404e34fe3ce431188974b5e1ce070"
+        "sha256": "f32cc924612ba4231fc07de1808324bb27e8a3ecafd56d249a42cd8011834092"
       },
       {
         "path": "framerail/src/lib/server/xmlrpc/methods.ts",
@@ -11617,15 +11647,15 @@
       },
       {
         "path": "install/local/wikidot-verification/scripts/build-wws-route-registration-denominator.mjs",
-        "sha256": "445c0e313c98ad37ef05e58aef412ebac6a0a53fba23b2a54ad4b726336bb7d4"
+        "sha256": "c1faa664d8ed269a08f6ea5fa08192b4bc65554fe29308025cc2eeba05482642"
       },
       {
         "path": "scripts/data/wikidot-implementation-ledger.json",
-        "sha256": "aff2be57fd75d27fb54e88103635b2b058f8fa4d2318af79fa3d1aad40058aa9"
+        "sha256": "80f5ddbc2ba2524e3e8a0599950972899c19197c7f1ed9d7f4589a3f9d35f3fe"
       },
       {
         "path": "wws/src/route.rs",
-        "sha256": "44588f64fe87b50a322d9406e33081439efea664ecb907c161a5d66d6b3e59ee"
+        "sha256": "f7a65bbc577e5e465fb45a58b8a64e53fb700eaa71931cb59528253a96cf4d06"
       }
     ]
   },
@@ -11712,10 +11742,10 @@
     ]
   },
   "counts": {
-    "total": 926,
+    "total": 932,
     "by_kind": {
       "catalog_feature": 210,
-      "deepwell_jsonrpc_method": 164,
+      "deepwell_jsonrpc_method": 167,
       "framerail_amc_action_shape": 2,
       "framerail_amc_module_shape": 27,
       "framerail_route": 28,
@@ -11725,7 +11755,7 @@
       "open43_audit_case": 285,
       "page_action": 25,
       "wikidot_py_amc_module_shape": 22,
-      "wws_route": 47
+      "wws_route": 50
     }
   },
   "surfaces": [
@@ -13004,23 +13034,28 @@
       ],
       "existing_refs": {
         "issues": [
-          1387
+          1391
         ],
         "cases": [],
         "tests": [
-          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal"
+          "deepwell/tests/page_template_assignment.rs#data_form_template_deletion_requires_actual_form_removal",
+          "install/local/wikidot-verification/tests/issue1391-data-form-ui-era-artifact.test.mjs#issue 1391 retained lifecycle evidence"
         ]
       },
       "evidence": {
         "status": "available",
         "references": [
-          "docs/wikidot-specifications/specifications/data-forms/data-forms-deleting-form.md"
+          "docs/wikidot-specifications/live-observations.json",
+          "docs/wikidot-specifications/specifications/data-forms/data-forms-deleting-form.md",
+          "install/local/wikidot-verification/artifacts/issue1391-data-form-ui-era-live-20260905.json"
         ]
       },
       "source": {
         "status": "implemented",
         "references": [
-          "deepwell/src/services/data_form.rs#fn wikidot_data_form_comment_wrapper("
+          "deepwell/src/services/data_form.rs",
+          "deepwell/src/services/data_form.rs#fn wikidot_data_form_comment_wrapper(",
+          "deepwell/src/services/view/service.rs"
         ]
       },
       "candidate": {
@@ -22131,6 +22166,51 @@
       ]
     },
     {
+      "surface_id": "deepwell-jsonrpc:basic_error_blob_fetch",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:basic_error_blob_fetch",
+        "deepwell/src/endpoints/basic_error.rs#basic_error_blob_fetch"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/basic_error.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
       "surface_id": "deepwell-jsonrpc:basic_error_file_fetch",
       "kind": "deepwell_jsonrpc_method",
       "public_reference": [
@@ -22459,6 +22539,96 @@
         "cases": [],
         "tests": [
           "deepwell/tests/basic_error.rs#basic_error_endpoints_generate_localized_html"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/basic_error.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:basic_error_user_avatar",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:basic_error_user_avatar",
+        "deepwell/src/endpoints/basic_error.rs#basic_error_user_avatar"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/deepwell-jsonrpc-contract-manifest.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": [
+          "deepwell/src/endpoints/basic_error.rs"
+        ]
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:deepwell-jsonrpc",
+      "implementation_owners": [
+        "wikijump.deepwell"
+      ]
+    },
+    {
+      "surface_id": "deepwell-jsonrpc:basic_error_user_fetch",
+      "kind": "deepwell_jsonrpc_method",
+      "public_reference": [
+        "deepwell/src/api.rs#register:basic_error_user_fetch",
+        "deepwell/src/endpoints/basic_error.rs#basic_error_user_fetch"
+      ],
+      "existing_refs": {
+        "issues": [
+          1368
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/deepwell-jsonrpc-contract-manifest.test.mjs#Deepwell JSON-RPC manifest exactly covers the current registered contract"
         ]
       },
       "evidence": {
@@ -29988,7 +30158,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/ajax-module-connector.test.js#ListPages ignores callback and token controls regardless of form order"
+          "framerail/tests/ajax-module-connector.test.js#ListPages validates the public token but excludes controls from render parameters"
         ]
       },
       "evidence": {
@@ -30030,7 +30200,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/ajax-module-connector.test.js#ListPages ignores callback and token controls regardless of form order"
+          "framerail/tests/ajax-module-connector.test.js#ListPages validates the public token but excludes controls from render parameters"
         ]
       },
       "evidence": {
@@ -30157,7 +30327,7 @@
         ],
         "cases": [],
         "tests": [
-          "framerail/tests/ajax-module-connector.test.js#ListPages ignores callback and token controls regardless of form order"
+          "framerail/tests/ajax-module-connector.test.js#ListPages validates the public token but excludes controls from render parameters"
         ]
       },
       "evidence": {
@@ -40411,7 +40581,9 @@
         "cases": [
           "B689_SCP8980_AND_NAVIGATION_LIFECYCLE"
         ],
-        "tests": []
+        "tests": [
+          "install/local/wikidot-verification/src/open43-browser-689-candidate-case-set.mjs"
+        ]
       },
       "evidence": {
         "status": "available",
@@ -40495,6 +40667,7 @@
           "B689_TABVIEW_SETTLED"
         ],
         "tests": [
+          "install/local/wikidot-verification/src/open43-browser-689-candidate-case-set.mjs",
           "install/local/wikidot-verification/tests/standing-browser-parity-contract.test.mjs"
         ]
       },
@@ -50549,7 +50722,7 @@
         ],
         "cases": [],
         "tests": [
-          "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 32-registration WWS denominator with source ownership"
+          "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 34-registration WWS denominator with source ownership"
         ]
       },
       "evidence": {
@@ -50967,6 +51140,48 @@
       ]
     },
     {
+      "surface_id": "wws-route:FALLBACK:/-/avatar/{user_id}",
+      "kind": "wws_route",
+      "public_reference": [
+        "wws/src/route.rs#any:/-/avatar/{user_id}:handle_invalid_method"
+      ],
+      "existing_refs": {
+        "issues": [
+          1369
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 34-registration WWS denominator with source ownership"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
+          "docs/development/wws-route-registration-denominator.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:wws-route",
+      "implementation_owners": [
+        "wikijump.wws"
+      ]
+    },
+    {
       "surface_id": "wws-route:FALLBACK:/-/basic-error/{error_code}",
       "kind": "wws_route",
       "public_reference": [
@@ -51287,6 +51502,48 @@
         "status": "available",
         "references": [
           "docs/development/wws-cache-head-live-observations-20260815.md",
+          "docs/development/wws-route-registration-denominator.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:wws-route",
+      "implementation_owners": [
+        "wikijump.wws"
+      ]
+    },
+    {
+      "surface_id": "wws-route:GET:/-/avatar/{user_id}",
+      "kind": "wws_route",
+      "public_reference": [
+        "wws/src/route.rs#get:/-/avatar/{user_id}:handle_user_avatar"
+      ],
+      "existing_refs": {
+        "issues": [
+          1369
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 34-registration WWS denominator with source ownership"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
@@ -51889,6 +52146,48 @@
         "status": "available",
         "references": [
           "docs/development/wws-cache-head-live-observations-20260815.md",
+          "docs/development/wws-route-registration-denominator.json"
+        ]
+      },
+      "source": {
+        "status": "implemented",
+        "references": []
+      },
+      "candidate": {
+        "status": "pending",
+        "references": []
+      },
+      "standing": {
+        "status": "pending",
+        "references": []
+      },
+      "closure": {
+        "status": "open",
+        "references": []
+      },
+      "specification_owner": "wikijump.registry:wws-route",
+      "implementation_owners": [
+        "wikijump.wws"
+      ]
+    },
+    {
+      "surface_id": "wws-route:HEAD:/-/avatar/{user_id}",
+      "kind": "wws_route",
+      "public_reference": [
+        "wws/src/route.rs#get:/-/avatar/{user_id}:handle_user_avatar:implicit-head"
+      ],
+      "existing_refs": {
+        "issues": [
+          1369
+        ],
+        "cases": [],
+        "tests": [
+          "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 34-registration WWS denominator with source ownership"
+        ]
+      },
+      "evidence": {
+        "status": "available",
+        "references": [
           "docs/development/wws-route-registration-denominator.json"
         ]
       },
