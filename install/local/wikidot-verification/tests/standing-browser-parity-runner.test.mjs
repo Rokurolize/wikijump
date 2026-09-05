@@ -50,6 +50,38 @@ test("parity browser cleanup attempts every resource and reports every failure",
   assert.deepEqual(attempts, ["context", "browser"]);
 });
 
+test("parity browser cleanup bounds a stalled close and still attempts every resource", async () => {
+  const attempts = [];
+  const never = new Promise(() => {});
+  const context = {
+    close() {
+      attempts.push("context");
+      return never;
+    },
+  };
+  const browser = {
+    close() {
+      attempts.push("browser");
+      return never;
+    },
+  };
+
+  await assert.rejects(
+    Promise.race([
+      closeParityBrowserResources(context, browser, { timeoutMs: 10 }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error("cleanup remained unbounded")), 100)),
+    ]),
+    (error) => {
+      assert(error instanceof AggregateError);
+      assert.equal(error.errors.length, 2);
+      assert.match(error.errors[0].message, /context close exceeded 10ms/u);
+      assert.match(error.errors[1].message, /browser close exceeded 10ms/u);
+      return true;
+    },
+  );
+  assert.deepEqual(attempts, ["context", "browser"]);
+});
+
 test("live reference capture requires an identity-bound persistent document cache", () => {
   assert.throws(
     () =>
