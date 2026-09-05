@@ -13,6 +13,7 @@ import re
 import subprocess
 import tempfile
 import time
+import tomllib
 
 from merge_identity import validate_candidate_merge
 
@@ -140,6 +141,58 @@ def compose_command(
         command.extend(("--file", str(override_file)))
     command.extend(args)
     return command
+
+
+def expected_compiled_generator(source_root: Path) -> str:
+    lock = tomllib.loads((source_root / "deepwell" / "Cargo.lock").read_text(encoding="utf-8"))
+    packages = [
+        package
+        for package in lock.get("package", [])
+        if isinstance(package, dict) and package.get("name") == "ftml"
+    ]
+    versions = {package.get("version") for package in packages}
+    if len(versions) != 1 or not all(isinstance(version, str) and version for version in versions):
+        raise ValueError("deepwell/Cargo.lock must contain exactly one FTML package version")
+    source = (
+        source_root / "deepwell" / "src" / "services" / "render" / "generator.rs"
+    ).read_text(encoding="utf-8")
+    epochs = set(
+        re.findall(r"DEEPWELL_RENDERER_EPOCH:\s*u32\s*=\s*([0-9]+)", source)
+    )
+    if len(epochs) != 1:
+        raise ValueError("Deepwell renderer source must contain exactly one renderer epoch")
+    return f"ftml v{versions.pop()}; deepwell-render/v{epochs.pop()}"
+
+
+def standing_stale_saved_pages(
+    runtime_home: Path, source_root: Path
+) -> tuple[int, str]:
+    expected = expected_compiled_generator(source_root)
+    sql_expected = expected.replace("'", "''")
+    sql = (
+        "SELECT count(*) FROM page p "
+        "JOIN page_revision pr ON pr.revision_id=p.latest_revision_id "
+        "WHERE p.deleted_at IS NULL "
+        f"AND pr.compiled_generator <> '{sql_expected}';"
+    )
+    output = command(
+        "docker",
+        "exec",
+        "wikijump-standing-database-1",
+        "sh",
+        "-lc",
+        'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -h 127.0.0.1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1 -c "$1"',
+        "sh",
+        sql,
+        cwd=runtime_home,
+    )
+    try:
+        stale = int(output)
+    except ValueError as error:
+        raise RuntimeError("standing stale saved-page count is not an integer") from error
+    if stale < 0:
+        raise RuntimeError("standing stale saved-page count is negative")
+    return stale, expected
 
 
 def wait_for_health(
@@ -768,6 +821,18 @@ def main() -> int:
             runtime_home, override_file, args.health_timeout_seconds
         )
         health_completed = time.monotonic()
+        stale_pages_remaining, expected_generator = standing_stale_saved_pages(
+            runtime_home, source_root
+        )
+        if stale_pages_remaining != 0:
+            raise RuntimeError(
+                f"standing contains stale saved-page renders: {stale_pages_remaining}"
+            )
+        saved_page_render_freshness = {
+            "status": "pass",
+            "expected_compiled_generator": expected_generator,
+            "stale_pages_remaining": stale_pages_remaining,
+        }
         canary_started = time.monotonic()
         body = command(
             "curl",
@@ -839,6 +904,7 @@ def main() -> int:
                 "identity": differential_identity,
             },
             "health": health,
+            "saved_page_render_freshness": saved_page_render_freshness,
             "canary": {
                 "url": CANARY_URL,
                 "status": "pass",
