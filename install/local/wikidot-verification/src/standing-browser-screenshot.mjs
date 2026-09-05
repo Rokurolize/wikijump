@@ -34,10 +34,17 @@ export async function capturePng(page, destination, { fullPage = false } = {}) {
     return { path: destination, bytes: bytes.length, full_page: fullPage };
   } finally {
     if (client !== undefined) {
-      await Promise.race([
-        client.detach().catch(() => {}),
-        new Promise((resolve) => setTimeout(resolve, 5000)),
-      ]);
+      let detachTimer = null;
+      try {
+        await Promise.race([
+          client.detach().catch(() => {}),
+          new Promise((resolve) => {
+            detachTimer = setTimeout(resolve, 5000);
+          }),
+        ]);
+      } finally {
+        if (detachTimer !== null) clearTimeout(detachTimer);
+      }
     }
   }
 }
