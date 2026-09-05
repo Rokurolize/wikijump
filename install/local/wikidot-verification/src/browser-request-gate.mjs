@@ -692,8 +692,10 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
         const request = route.request();
         const url = new URL(request.url());
         const cacheMiss = /^candidate response cache (?:cannot serve |miss: )/u.test(error?.message ?? "");
-        const nonWikidotDependency = isCaptureDependencyResourceType(request.resourceType()) && !isWikidotCapturePublicOrigin(url, request.resourceType(), request.method());
-        cacheOnlyAllowedMiss = cacheOnly && cacheMiss && (cacheOnlyAllowed.has(url.origin) || nonWikidotDependency);
+        const initiatorUrl = typeof request.frame === "function" ? request.frame()?.url() : null;
+        const wikidotPublicOrigin = isWikidotCapturePublicOrigin(url, request.resourceType(), request.method(), initiatorUrl);
+        const nonWikidotDependency = isCaptureDependencyResourceType(request.resourceType()) && !wikidotPublicOrigin;
+        cacheOnlyAllowedMiss = cacheOnly && cacheMiss && (cacheOnlyAllowed.has(url.origin) || wikidotPublicOrigin || nonWikidotDependency);
       } catch {
         cacheOnlyAllowedMiss = false;
       }

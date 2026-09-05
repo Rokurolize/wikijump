@@ -187,7 +187,7 @@ export async function runCandidateCaseSet({ candidateIdentity: rawIdentity, cand
     responseCacheOptions: {
       persistentDir: responseCacheDirectory ?? path.join(evidenceRoot, "source-response-cache"),
       persistentIdentity: responseCacheIdentity ?? "wikijump-candidate-public-evidence-cache-v1",
-      cacheDocuments: false,
+      cacheDocuments: true,
     },
   };
   const executionIdentity = await dependencies.collectExecutionIdentity(identity, run.sourceFiles);
