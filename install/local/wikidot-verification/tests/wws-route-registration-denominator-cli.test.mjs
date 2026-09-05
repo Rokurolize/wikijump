@@ -12,6 +12,7 @@ const repositoryRoot = path.resolve(toolRoot, "../../..")
 const cliPath = path.join(toolRoot, "scripts/build-wws-route-registration-denominator.mjs")
 
 const expectedRegistrations = [
+  ["ANY", "/-/avatar/{user_id}", "handle_invalid_method", "wws/src/handler/misc.rs"],
   ["ANY", "/-/basic-error/{error_code}", "handle_invalid_method", "wws/src/handler/misc.rs"],
   ["ANY", "/-/code/{page_slug}/{index}", "handle_invalid_method", "wws/src/handler/misc.rs"],
   ["ANY", "/-/download/{page_slug}/{filename}", "handle_invalid_method", "wws/src/handler/misc.rs"],
@@ -30,6 +31,7 @@ const expectedRegistrations = [
   ["ANY", "/{page_slug}/download/{filename}", "handle_download_redirect", "wws/src/handler/redirect.rs"],
   ["ANY", "/{page_slug}/file/{filename}", "handle_file_redirect", "wws/src/handler/redirect.rs"],
   ["ANY", "/{page_slug}/html/{filename}", "handle_html_redirect", "wws/src/handler/redirect.rs"],
+  ["GET", "/-/avatar/{user_id}", "handle_user_avatar", "wws/src/handler/avatar.rs"],
   ["GET", "/-/basic-error/{error_code}", "handle_basic_error", "wws/src/handler/basic_error.rs"],
   ["GET", "/-/code/{page_slug}/{index}", "handle_code_block", "wws/src/handler/text_block.rs"],
   ["GET", "/-/download/{page_slug}/{filename}", "handle_file_download", "wws/src/handler/file.rs"],
@@ -134,7 +136,7 @@ async function writeCommittedProductionFixture(root) {
 
 async function writeNonProductionHandlerFixture(root, symbol, handlerSource) {
   const routes = Array.from(
-    { length: 32 },
+    { length: 34 },
     (_, index) => `.route("/fixture-${index}", any(${symbol}))`
   ).join("\n")
   await writeRouteSource(root, `pub fn build_router() { Router::new()${routes} }\n`)
@@ -150,7 +152,7 @@ async function writeNonProductionHandlerFixture(root, symbol, handlerSource) {
   runGit(root, "commit", "--quiet", "-m", "fixture")
 }
 
-test("CLI writes the exact current 32-registration WWS denominator with source ownership", async (t) => {
+test("CLI writes the exact current 34-registration WWS denominator with source ownership", async (t) => {
   const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-denominator-"))
   t.after(() => fs.rm(temporaryDirectory, { recursive: true, force: true }))
   const output = path.join(temporaryDirectory, "denominator.json")
@@ -158,7 +160,7 @@ test("CLI writes the exact current 32-registration WWS denominator with source o
   const result = runCli(repositoryRoot, output)
 
   assert.equal(result.status, 0, result.stderr)
-  assert.equal(result.stdout, `wrote 32 WWS route registrations to ${output}\n`)
+  assert.equal(result.stdout, `wrote 34 WWS route registrations to ${output}\n`)
   const manifest = JSON.parse(await fs.readFile(output, "utf8"))
   assert.equal(manifest.schema, "wikijump.wws_route_registration_denominator.v2")
   assert.deepEqual(manifest.historical_artifact, {
@@ -172,11 +174,11 @@ test("CLI writes the exact current 32-registration WWS denominator with source o
   assert.equal(manifest.source.identity, "git_blob_and_sha256_per_captured_input")
   assert.deepEqual(Object.keys(manifest.source).sort(), ["identity", "inputs"])
   assert.deepEqual(manifest.counts, {
-    registrations: 32,
-    by_declared_method_class: { ANY: 18, GET: 14 },
-    primary_handler_owners: 32,
+    registrations: 34,
+    by_declared_method_class: { ANY: 19, GET: 15 },
+    primary_handler_owners: 34,
     fallback_handler_owners: 1,
-    handler_owner_bindings: 33,
+    handler_owner_bindings: 35,
     duplicate_registration_ids: 0
   })
   assert.deepEqual(
@@ -188,7 +190,7 @@ test("CLI writes the exact current 32-registration WWS denominator with source o
     ]),
     expectedRegistrations
   )
-  assert.equal(new Set(manifest.registrations.map(({ registration_id }) => registration_id)).size, 32)
+  assert.equal(new Set(manifest.registrations.map(({ registration_id }) => registration_id)).size, 34)
   assert.deepEqual(
     manifest.registrations
       .filter(({ fallback_handler_symbol: symbol }) => symbol !== null)
@@ -241,7 +243,7 @@ test("CLI reproduces and verifies the exact committed denominator", async (t) =>
   assert.equal(verifyResult.status, 0, verifyResult.stderr)
   assert.equal(
     verifyResult.stdout,
-    "verified 32 WWS route registrations in docs/development/wws-route-registration-denominator.json\n"
+    "verified 34 WWS route registrations in docs/development/wws-route-registration-denominator.json\n"
   )
   assert.deepEqual(
     await fs.readFile(output),
@@ -373,7 +375,7 @@ test("CLI does not reread a source pathname after capturing its bytes", async (t
   const status = await exit
 
   assert.equal(status, 0, stderr)
-  assert.equal(stdout, `wrote 32 WWS route registrations to denominator.json\n`)
+  assert.equal(stdout, `wrote 34 WWS route registrations to denominator.json\n`)
   const manifest = JSON.parse(await fs.readFile(output, "utf8"))
   const routeInput = manifest.source.inputs.find(({ path: inputPath }) => inputPath === "wws/src/route.rs")
   assert.equal(routeInput.sha256, createHash("sha256").update(originalRouteSource).digest("hex"))
@@ -402,7 +404,7 @@ test("CLI rejects duplicate registrations with equivalent reordered method filte
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "wws-route-duplicate-"))
   t.after(() => fs.rm(root, { recursive: true, force: true }))
   const filler = Array.from(
-    { length: 30 },
+    { length: 32 },
     (_, index) => `.route("/filler-${index}", any(handle_filler_${index}))`
   ).join("\n")
   await writeRouteSource(

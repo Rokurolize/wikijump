@@ -17,6 +17,7 @@ import {
   fakeDockerSource,
   requiredArgs,
   runtimeArgs,
+  runtimeIdentityForInspections,
   runtimeInspections,
   startFakeRuntimeServer,
   TEST_RUNTIME_IDENTITY,
@@ -188,7 +189,7 @@ if (sql.includes("'active_files', count(*)")) {
   });
 
   assert.notEqual(replayed.status, 0);
-  assert.match(replayed.stderr, /standing runtime binding changed/u);
+  assert.match(replayed.stderr, /Runtime service configuration does not match the sealed runtime identity/u);
 });
 
 test('standing descriptor backfill rescans every descriptor and active latest revision before completion', async (t) => {
@@ -197,8 +198,12 @@ test('standing descriptor backfill rescans every descriptor and active latest re
   const corpus = writeCompleteCorpus(root, bytes);
   const runtimeServer = await startFakeRuntimeServer(root, bytes);
   t.after(() => runtimeServer.child.kill('SIGTERM'));
+  const inspections = runtimeInspections({
+    deepwellHostPort: runtimeServer.ports.deepwell,
+    filesHostPort: runtimeServer.ports.files,
+  });
   const identityPath = path.join(root, 'runtime-identity.json');
-  fs.writeFileSync(identityPath, `${JSON.stringify(TEST_RUNTIME_IDENTITY)}\n`);
+  fs.writeFileSync(identityPath, `${JSON.stringify(runtimeIdentityForInspections(inspections))}\n`);
   const binRoot = path.join(root, 'bin');
   const statePath = path.join(root, 'docker-state.json');
   const receipt = path.join(root, 'receipt.json');
@@ -280,10 +285,7 @@ if (sql.includes('planned_attachments')) {
   const environment = {
     ...process.env,
     PATH: `${binRoot}:${process.env.PATH}`,
-    FAKE_DOCKER_INSPECTIONS: JSON.stringify(runtimeInspections({
-      deepwellHostPort: runtimeServer.ports.deepwell,
-      filesHostPort: runtimeServer.ports.files,
-    })),
+    FAKE_DOCKER_INSPECTIONS: JSON.stringify(inspections),
     FAKE_DOCKER_STATE: statePath,
     FAKE_INVENTORY_ROW: JSON.stringify(inventoryRow),
     S3_FILES_BUCKET: 'wikijump-files',

@@ -21,11 +21,20 @@ const requirements = await fs.readFile(
 )
 
 const targetResponse = async (origin, requestExample) => {
+  const requestFields = { ...requestExample }
+  const headers = { "content-type": "application/x-www-form-urlencoded" }
+  if (requestExample.moduleName === "list/ListPagesModule") {
+    const token = requestExample.wikidot_token7 ?? "fixture-token"
+    requestFields.wikidot_token7 = token
+    headers.cookie = `wikidot_token7=${token}`
+  } else if (requestExample.wikidot_token7 !== undefined) {
+    headers.cookie = `wikidot_token7=${requestExample.wikidot_token7}`
+  }
   const response = await handleAjaxModuleConnectorRequest(
     new Request(`${origin}/ajax-module-connector.php`, {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams(requestExample)
+      headers,
+      body: new URLSearchParams(requestFields)
     }),
     {
       siteId: 6000006,
@@ -171,10 +180,14 @@ test("ListPages ignores unknown non-data-form parameters outside the compatibili
   const response = await handleAjaxModuleConnectorRequest(
     new Request("https://scp-wiki.wikijump.localhost/ajax-module-connector.php", {
       method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded" },
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        cookie: "wikidot_token7=fixture-token"
+      },
       body: new URLSearchParams({
         moduleName: "list/ListPagesModule",
         module_body: "%%fullname%%",
+        wikidot_token7: "fixture-token",
         arbitrary_future_selector: "widened"
       })
     }),

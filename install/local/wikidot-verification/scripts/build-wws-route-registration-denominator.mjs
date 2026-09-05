@@ -16,7 +16,7 @@ const HANDLER_DIRECTORY = "wws/src/handler"
 const LIVE_OBSERVATION_NOTE = "docs/development/wws-cache-head-live-observations-20260815.md"
 const HISTORICAL_ARTIFACT = "install/local/wikidot-verification/artifacts/pr1334-wws-route-attribution-no-thumbnails-20260810.json"
 const HISTORICAL_FIXTURE = "install/local/wikidot-verification/fixtures/pr1334-wws-route-attribution-no-thumbnails.json"
-const EXPECTED_REGISTRATION_COUNT = 32
+const EXPECTED_REGISTRATION_COUNT = 34
 const EXPECTED_BEHAVIOR_IDS = new Set([
   "wws-behavior:code-redirect",
   "wws-behavior:common-javascript-fallback",

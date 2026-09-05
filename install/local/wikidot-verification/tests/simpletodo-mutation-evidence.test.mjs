@@ -5,13 +5,12 @@ import test from "node:test"
 
 const fixtureUrl = new URL("../fixtures/simpletodo-mutation-evidence-fixture.json", import.meta.url)
 const artifactUrl = new URL("../artifacts/simpletodo-mutation-live-20260810.json", import.meta.url)
-const scriptUrl = new URL("../scripts/capture_wikidot_simpletodo_mutation.py", import.meta.url)
+const captureScriptSha256 = "6b4a0b910a5f522a1919faa8feec3593d679c3c1c1f1a0d8ab1a0acf5a72feb7"
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
 
 test("the frozen SimpleToDo mutation authority artifact is bounded and non-closing", async () => {
   const fixtureBytes = await readFile(fixtureUrl)
-  const scriptBytes = await readFile(scriptUrl)
   const artifact = JSON.parse(await readFile(artifactUrl, "utf8"))
   const fixture = JSON.parse(fixtureBytes)
 
@@ -23,7 +22,11 @@ test("the frozen SimpleToDo mutation authority artifact is bounded and non-closi
   assert.equal(artifact.status, "blocked")
   assert.equal(artifact.closure, "not_closed")
   assert.equal(artifact.fixture_sha256, sha256(fixtureBytes))
-  assert.equal(artifact.script_sha256, sha256(scriptBytes))
+  // This is a frozen 2026-08-10 observation. The capture script was hardened
+  // afterward to pin the sandbox origin, so bind the artifact to the exact
+  // historical script digest instead of silently rebinding old evidence to
+  // current verifier bytes.
+  assert.equal(artifact.script_sha256, captureScriptSha256)
   assert.equal(artifact.mutation_attempt_count, 0)
   assert.equal(artifact.run_task_count_created, 0)
   assert.equal(artifact.unexpected_duplicate_count, 0)
