@@ -11,8 +11,10 @@ import {
   acquireBrowserCaptureLock,
   createPersistentBrowserRequestGate,
   createBrowserResponseCache,
+  evidenceReplaySubresourceFulfillment,
   isWikidotCapturePublicOrigin,
   installBrowserRequestGate,
+  resolveEvidenceReplaySubresourceRedirect,
 } from "./browser-request-gate.mjs";
 import { startCaptureEgressProxy } from "./capture-egress-proxy.mjs";
 import {
@@ -190,25 +192,28 @@ export async function installCandidateFilePortRoute(
         replayedResponse = true;
       }
     }
+    const responseHeaders =
+      typeof response.headers === "function" ? response.headers() : response.headers;
+    const location = REDIRECT_STATUSES.has(responseStatus)
+      ? responseHeaders.location
+      : null;
+    const redirectUrl = location ? new URL(location, requestUrl) : null;
+    const returnsGatedPublicRedirect =
+      redirectUrl !== null &&
+      !new Set([canonicalFilesOrigin, files.origin]).has(
+        redirectUrl.origin,
+      ) &&
+      isWikidotCapturePublicOrigin(
+        redirectUrl,
+        route.request().resourceType?.() ?? "other",
+        "GET",
+      );
+
     if (
       sourceRequestGate !== null &&
       isSourceFileAuthority &&
       route.request().method?.() === "GET"
     ) {
-      const location = REDIRECT_STATUSES.has(responseStatus)
-        ? (typeof response.headers === "function" ? response.headers() : response.headers).location
-        : null;
-      const redirectUrl = location ? new URL(location, requestUrl) : null;
-      const returnsGatedPublicRedirect =
-        redirectUrl !== null &&
-        !new Set([canonicalFilesOrigin, files.origin]).has(
-          redirectUrl.origin,
-        ) &&
-        isWikidotCapturePublicOrigin(
-          redirectUrl,
-          route.request().resourceType?.() ?? "other",
-          "GET",
-        );
 
       if (sourcePath.startsWith("/local--files/")) {
         // Wikidot-rendered page-owned file URLs first hit
@@ -228,6 +233,38 @@ export async function installCandidateFilePortRoute(
         // Wikidot. A successful local mirror therefore represents one public
         // source request. A fallback public redirect is already gated normally.
         await sourceRequestGate.acquire();
+      }
+    }
+    if (
+      sourceRequestGate !== null &&
+      responseCache?.evidenceReplay === true &&
+      route.request().method?.() === "GET" &&
+      returnsGatedPublicRedirect
+    ) {
+      const resolved = await resolveEvidenceReplaySubresourceRedirect({
+        route,
+        gate: sourceRequestGate,
+        responseCache,
+        resourceType: route.request().resourceType?.() ?? "other",
+        sourceUrl: requestUrl.href,
+        entry: {
+          status: responseStatus,
+          headers: responseHeaders,
+          body: Buffer.alloc(0),
+        },
+      });
+      if (resolved?.entry) {
+        await route.fulfill(
+          evidenceReplaySubresourceFulfillment(
+            route.request().resourceType?.() ?? "other",
+            resolved,
+          ),
+        );
+        return;
+      }
+      if (resolved?.response) {
+        await route.fulfill({ response: resolved.response });
+        return;
       }
     }
     await route.fulfill(

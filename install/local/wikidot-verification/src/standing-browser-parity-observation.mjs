@@ -531,6 +531,90 @@ export async function waitForBrowserParitySettledResources(page, timeoutMs) {
   }, remaining("font and image completion"));
 }
 
+export async function waitForBrowserParityLayoutStable(
+  page,
+  {
+    rootSelector = "#page-content",
+    stableFrames = 3,
+    timeoutMs = 5_000,
+    tolerancePx = 0.25,
+  } = {},
+) {
+  if (typeof rootSelector !== "string" || rootSelector === "") {
+    throw new Error("browser layout stability root selector is invalid");
+  }
+  if (!Number.isSafeInteger(stableFrames) || stableFrames < 1) {
+    throw new Error("browser layout stability frame count is invalid");
+  }
+  if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
+    throw new Error("browser layout stability timeout is invalid");
+  }
+  if (!Number.isFinite(tolerancePx) || tolerancePx < 0) {
+    throw new Error("browser layout stability tolerance is invalid");
+  }
+  return await page.evaluate(
+    async ({ rootSelector: selector, stableFrames: requiredStableFrames, timeoutMs: limit, tolerancePx: tolerance }) => {
+      const root = document.querySelector(selector);
+      if (!root) throw new Error(`browser layout stability root is missing: ${selector}`);
+      const coordinates = (element) => {
+        const box = element.getBoundingClientRect();
+        return [
+          box.x + window.scrollX,
+          box.y + window.scrollY,
+          box.width,
+          box.height,
+        ];
+      };
+      const sample = () => [root, ...root.querySelectorAll("*")].map(coordinates);
+      const maxDelta = (left, right) => {
+        if (left.length !== right.length) return Number.POSITIVE_INFINITY;
+        let maximum = 0;
+        for (let index = 0; index < left.length; index += 1) {
+          for (let coordinate = 0; coordinate < 4; coordinate += 1) {
+            maximum = Math.max(
+              maximum,
+              Math.abs(left[index][coordinate] - right[index][coordinate]),
+            );
+          }
+        }
+        return maximum;
+      };
+      const nextFrame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+      const startedAt = performance.now();
+      let previous = sample();
+      let stable = 0;
+      let samples = 1;
+      let observedMaximumDelta = 0;
+      while (performance.now() - startedAt <= limit) {
+        await nextFrame();
+        const current = sample();
+        samples += 1;
+        const delta = maxDelta(previous, current);
+        observedMaximumDelta = Math.max(observedMaximumDelta, delta);
+        if (delta <= tolerance) stable += 1;
+        else stable = 0;
+        if (stable >= requiredStableFrames) {
+          return {
+            status: "stable",
+            root_selector: selector,
+            stable_frames: stable,
+            samples,
+            tolerance_px: tolerance,
+            observed_maximum_delta_px: Number.isFinite(observedMaximumDelta)
+              ? Math.round(observedMaximumDelta * 100) / 100
+              : null,
+          };
+        }
+        previous = current;
+      }
+      throw new Error(
+        `browser layout did not stabilize within ${limit} ms for ${selector}`,
+      );
+    },
+    { rootSelector, stableFrames, timeoutMs, tolerancePx },
+  );
+}
+
 export function isExpectedExternalAssetFailure(event) {
   if (event?.error !== "net::ERR_BLOCKED_BY_ORB" && event?.error !== "net::ERR_TIMED_OUT" && event?.error !== "net::ERR_TUNNEL_CONNECTION_FAILED") return false;
   try {
@@ -671,12 +755,14 @@ export async function captureBrowserParityObservation({
     // browser-visible settled state without an expensive full-page capture.
     await prewarmBrowserParityLazyImages(page);
     const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
+    const layoutStability = await waitForBrowserParityLayoutStable(page);
     document = await captureDocumentObservation(page, {
       contract,
       phase: "settled",
       viewport,
     });
     document.resource_completion = resourceCompletion;
+    document.layout_stability = layoutStability;
     await capturePng(page, viewportPath);
     await capturePng(page, fullPagePath, { fullPage: true });
     failures.sort((left, right) =>

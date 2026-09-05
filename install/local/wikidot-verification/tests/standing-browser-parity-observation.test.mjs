@@ -6,6 +6,7 @@ import {
   isExpectedExternalAssetFailure,
   observationArtifactName,
   prewarmBrowserParityLazyImages,
+  waitForBrowserParityLayoutStable,
 } from "../src/standing-browser-parity-observation.mjs";
 
 test("lazy-image prewarming restores scroll synchronously on smooth pages", async () => {
@@ -24,6 +25,52 @@ test("lazy-image prewarming restores scroll synchronously on smooth pages", asyn
     globalThis.document = previousDocument;
   }
   assert.deepEqual(calls, [{ left: 0, top: 646, behavior: "instant" }]);
+});
+
+test("settled browser geometry waits through a post-resource layout shift", async () => {
+  const previous = {
+    document: globalThis.document,
+    performance: globalThis.performance,
+    requestAnimationFrame: globalThis.requestAnimationFrame,
+    window: globalThis.window,
+  };
+  let frame = 0;
+  const child = {
+    getBoundingClientRect: () => ({
+      x: 0,
+      y: frame === 0 ? 0 : 20,
+      width: 100,
+      height: 20,
+    }),
+  };
+  const root = {
+    getBoundingClientRect: () => ({ x: 0, y: 0, width: 100, height: 100 }),
+    querySelectorAll: () => [child],
+  };
+  globalThis.document = {
+    querySelector: (selector) => (selector === "#page-content" ? root : null),
+  };
+  globalThis.performance = { now: () => frame * 16 };
+  globalThis.requestAnimationFrame = (callback) => {
+    frame += 1;
+    callback();
+  };
+  globalThis.window = { scrollX: 0, scrollY: 0 };
+  try {
+    const result = await waitForBrowserParityLayoutStable({
+      evaluate: async (callback, argument) => callback(argument),
+    }, {
+      rootSelector: "#page-content",
+      stableFrames: 2,
+      timeoutMs: 1_000,
+      tolerancePx: 0.25,
+    });
+    assert.equal(result.status, "stable");
+    assert.equal(result.stable_frames, 2);
+    assert.ok(frame >= 3, "the delayed shift must be observed before stability is accepted");
+  } finally {
+    Object.assign(globalThis, previous);
+  }
 });
 
 test("external wdfiles stylesheet ORB failures remain separately attributable", () => {
