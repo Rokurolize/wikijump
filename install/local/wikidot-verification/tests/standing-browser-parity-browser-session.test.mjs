@@ -204,7 +204,10 @@ test("candidate file routing also gates an already-localized sealed-port file re
     {
       sourceRequestGate: {
         async acquire() {
-          admissions += 1;
+          admissions += 1000;
+        },
+        recordSyntheticPublicAdmission(count = 1) {
+          admissions += count;
         },
       },
     },
@@ -334,7 +337,8 @@ test("candidate file routing resolves public image redirects through evidence re
     },
   };
   const responseCache = createBrowserResponseCache({ evidenceReplay: true });
-  let admissions = 0;
+  let externalAdmissions = 0;
+  let syntheticAdmissions = 0;
   await installCandidateFilePortRoute(
     context,
     [
@@ -345,7 +349,10 @@ test("candidate file routing resolves public image redirects through evidence re
       responseCache,
       sourceRequestGate: {
         async acquire() {
-          admissions += 1;
+          externalAdmissions += 1;
+        },
+        recordSyntheticPublicAdmission(count = 1) {
+          syntheticAdmissions += count;
         },
       },
     },
@@ -389,7 +396,8 @@ test("candidate file routing resolves public image redirects through evidence re
     },
     { url: targetUrl, maxRedirects: 0 },
   ]);
-  assert.equal(admissions, 2);
+  assert.equal(externalAdmissions, 1);
+  assert.equal(syntheticAdmissions, 1);
   assert.equal(responseCache.get(targetUrl)?.status, 200);
   assert.deepEqual(fulfillment, {
     status: 200,
@@ -415,7 +423,10 @@ test("candidate file routing preserves the live public admission before a Wikido
     {
       sourceRequestGate: {
         async acquire() {
-          admissions += 1;
+          admissions += 1000;
+        },
+        recordSyntheticPublicAdmission(count = 1) {
+          admissions += count;
         },
       },
     },
@@ -467,7 +478,10 @@ test("candidate file routing preserves both Wikidot local-file admissions on a m
     {
       sourceRequestGate: {
         async acquire() {
-          admissions += 1;
+          admissions += 1000;
+        },
+        recordSyntheticPublicAdmission(count = 1) {
+          admissions += count;
         },
       },
     },
@@ -509,7 +523,10 @@ test("candidate file routing preserves one direct wdfiles admission on a local-c
     {
       sourceRequestGate: {
         async acquire() {
-          admissions += 1;
+          admissions += 1000;
+        },
+        recordSyntheticPublicAdmission(count = 1) {
+          admissions += count;
         },
       },
     },
@@ -621,7 +638,10 @@ test("candidate file routing preserves collapsed source admissions when a redire
     {
       sourceRequestGate: {
         async acquire() {
-          admissions += 1;
+          admissions += 1000;
+        },
+        recordSyntheticPublicAdmission(count = 1) {
+          admissions += count;
         },
       },
     },

@@ -5,11 +5,33 @@ import path from "node:path";
 import test from "node:test";
 
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
-import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
+import { defaultCandidateResponseCacheOptions, runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 
 const mixedHex = (character, length) => (character + "0123456789abcdef".replace(character, "")[0]).repeat(length / 2);
 const hash = (character) => mixedHex(character, 64);
 const git = (character) => mixedHex(character, 40);
+
+test("candidate response cache defaults to one cross-campaign user cache", () => {
+  assert.deepEqual(
+    defaultCandidateResponseCacheOptions({
+      environment: { XDG_CACHE_HOME: "/tmp/wikijump-xdg-cache" },
+      homeDirectory: "/home/fixture",
+    }),
+    {
+      persistentDir: "/tmp/wikijump-xdg-cache/wikijump-verification/candidate-public-evidence-v1",
+      persistentIdentity: "wikijump-candidate-public-evidence-cache-v1",
+      cacheDocuments: true,
+      evidenceReplay: true,
+      maxEntries: 8192,
+      maxBytes: 512 * 1024 * 1024,
+      maxEntryBytes: 32 * 1024 * 1024,
+    },
+  );
+  assert.equal(
+    defaultCandidateResponseCacheOptions({ environment: {}, homeDirectory: "/home/fixture" }).persistentDir,
+    "/home/fixture/.cache/wikijump-verification/candidate-public-evidence-v1",
+  );
+});
 
 function candidateIdentity() {
   return {
@@ -401,10 +423,17 @@ test("CandidateCaseRunner owns and closes its lazy browser contexts", async (t) 
         assert.equal(options.privateInputIdentitySha256, sha256Value({ editor_session_sha256: hash("8") }));
         assert.deepEqual(options.publicOrigins, ["https://www.youtube.com"]);
         assert.deepEqual(options.responseCacheOptions, {
-          persistentDir: path.join(path.dirname(options.outputDir), "source-response-cache"),
+          persistentDir: path.join(
+            process.env.XDG_CACHE_HOME ?? path.join(os.homedir(), ".cache"),
+            "wikijump-verification",
+            "candidate-public-evidence-v1",
+          ),
           persistentIdentity: "wikijump-candidate-public-evidence-cache-v1",
           cacheDocuments: true,
           evidenceReplay: true,
+          maxEntries: 8192,
+          maxBytes: 512 * 1024 * 1024,
+          maxEntryBytes: 32 * 1024 * 1024,
         });
         return candidateBrowserContexts;
       },

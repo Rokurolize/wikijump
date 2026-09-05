@@ -104,6 +104,22 @@ test("default shared gate has no fixed delay", async () => {
   assert.equal(gate.snapshot().interval_ms, 0);
 });
 
+test("synthetic local-source admissions never wait for public throttling or Retry-After", async () => {
+  const clock = createClock();
+  const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
+
+  await gate.acquire();
+  clock.set(100);
+  assert.equal(await gate.deferForRetryAfter("5"), true);
+  gate.recordSyntheticPublicAdmission(2);
+
+  assert.deepEqual(clock.sleeps, []);
+  assert.equal(gate.snapshot().public_requests, 3);
+  assert.equal(gate.snapshot().external_network_requests, 1);
+  assert.equal(gate.snapshot().synthetic_public_admissions, 2);
+  assert.deepEqual(gate.snapshot().grants.map(({ released_at_epoch_ms }) => released_at_epoch_ms), [0, 100, 100]);
+});
+
 test("shared gate can still enforce an explicit four-second interval", async () => {
   const clock = createClock();
   const gate = createBrowserRequestGate({intervalMs: 4_000, now: clock.now, sleep: clock.sleep});
@@ -309,6 +325,8 @@ test("a persistent response cache replays a stable external 404 without another 
 
   assert.deepEqual(second.actions, [{type: "fulfill", status: 404}]);
   assert.equal(secondGate.snapshot().public_requests, 0);
+  assert.equal(secondGate.snapshot().external_network_requests, 0);
+  assert.equal(secondGate.snapshot().synthetic_public_admissions, 0);
   assert.equal(secondCache.snapshot().persistent_entries_loaded, 1);
 
   const timestamped = createRoute("https://www.wikidot.com/avatar.php?userid=19102600&amp;size=small&amp;timestamp=1788341729", {resourceType: "image"});

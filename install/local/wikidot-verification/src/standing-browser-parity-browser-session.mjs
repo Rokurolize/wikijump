@@ -219,20 +219,23 @@ export async function installCandidateFilePortRoute(
         // Wikidot-rendered page-owned file URLs first hit
         // <site>.wikidot.com/local--files/... and then the corresponding
         // wdfiles authority. The local candidate mirror collapses those public
-        // stages into one exempt wjfiles request. Preserve the two source-side
-        // admissions before exposing a mirror hit to Chromium. If the mirror
-        // falls back to a public redirect, only synthesize the first stage; the
+        // stages into one exempt wjfiles request. Record the two source-side
+        // admissions without waiting on the external throttle/Retry-After state
+        // before exposing a mirror hit to Chromium. If the mirror falls back to
+        // a public redirect, only synthesize the first stage; the actual
         // redirected public request consumes the second admission normally.
-        await sourceRequestGate.acquire();
-        if (!returnsGatedPublicRedirect) await sourceRequestGate.acquire();
+        sourceRequestGate.recordSyntheticPublicAdmission(
+          returnsGatedPublicRedirect ? 1 : 2,
+        );
       } else if (
         sourcePath.startsWith("/local--code/") &&
         !returnsGatedPublicRedirect
       ) {
         // Authored/generated local-code URLs are direct wdfiles requests on
-        // Wikidot. A successful local mirror therefore represents one public
-        // source request. A fallback public redirect is already gated normally.
-        await sourceRequestGate.acquire();
+        // Wikidot. A successful local mirror therefore records one synthetic
+        // public admission without delaying the local request. A fallback
+        // public redirect is already gated normally as an actual network request.
+        sourceRequestGate.recordSyntheticPublicAdmission();
       }
     }
     if (
