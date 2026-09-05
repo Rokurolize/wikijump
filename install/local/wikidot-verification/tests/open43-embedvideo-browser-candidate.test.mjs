@@ -49,11 +49,15 @@ test("issue 1042 plan owns both allowed providers and one unsafe boundary", () =
   assert.equal(run.plan.case_ids[0], "M1042_BROWSER_LIFECYCLE");
   assert.equal(run.plan.source_sha256.positive.length, 64);
   assert.deepEqual(run.browserCredentialPolicy, "none");
-  assert.deepEqual(run.browserPublicOrigins, [
+  assert.deepEqual(run.browserPublicOrigins, []);
+  assert.deepEqual(run.plan.provider_origins, [
     "https://www.youtube.com",
     "https://embed.acast.com",
   ]);
-  assert.deepEqual(run.plan.provider_origins, run.browserPublicOrigins);
+  assert.equal(
+    run.plan.provider_network_policy,
+    "observe exact iframe request and fail closed before external network",
+  );
   assert.equal(run.plan.fixture_provenance.evidence.E_FOCUSED_CORPUS.sha256.length, 64);
   assert.equal(run.plan.required_request_url_sha256.length, 2);
   assert.equal(run.plan.forbidden_request_url_sha256.length, 1);

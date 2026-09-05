@@ -712,7 +712,7 @@ export function createOpen43EmbedVideoBrowserCandidateCaseSet({
           }),
         },
         browserCredentialPolicy: "none",
-        browserPublicOrigins: PROVIDER_ORIGINS,
+        browserPublicOrigins: [],
         plan: {
           schema: "wikijump.open43_embedvideo_browser_candidate_plan.v1",
           site_slug: SITE_SLUG,
@@ -724,6 +724,8 @@ export function createOpen43EmbedVideoBrowserCandidateCaseSet({
           capture_contract: plan.capture_contract,
           fixture_provenance: plan.fixture_provenance,
           provider_origins: PROVIDER_ORIGINS,
+          provider_network_policy:
+            "observe exact iframe request and fail closed before external network",
           required_request_url_sha256: plan.required_request_url_sha256,
           forbidden_request_url_sha256: plan.forbidden_request_url_sha256,
         },
