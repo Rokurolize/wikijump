@@ -765,7 +765,7 @@ export async function captureBrowserParityObservation({
     await prewarmBrowserParityLazyImages(page);
     const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
     const layoutStability = await waitForBrowserParityLayoutStable(page, {
-      fallbackRootSelectors: contract.geometry_selectors ?? [],
+      fallbackRootSelectors: contract?.geometry_selectors ?? [],
     });
     document = await captureDocumentObservation(page, {
       contract,
