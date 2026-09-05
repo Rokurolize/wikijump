@@ -117,7 +117,7 @@ async function writePrivateCacheManifest(filePath, value) {
   }
 }
 
-export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_MAX_ENTRIES, maxBytes = DEFAULT_RESPONSE_CACHE_MAX_BYTES, maxEntryBytes = DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES, persistentDir = null, persistentIdentity = null, cacheDocuments = false} = {}) {
+export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_MAX_ENTRIES, maxBytes = DEFAULT_RESPONSE_CACHE_MAX_BYTES, maxEntryBytes = DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES, persistentDir = null, persistentIdentity = null, cacheDocuments = false, evidenceReplay = false} = {}) {
   positiveSafeInteger(maxEntries, "maxEntries");
   positiveSafeInteger(maxBytes, "maxBytes");
   positiveSafeInteger(maxEntryBytes, "maxEntryBytes");
@@ -140,6 +140,7 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
   return {
     maxEntryBytes,
     cacheDocuments,
+    evidenceReplay,
     async load() {
       if (loaded) return;
       await ensurePrivateCacheDirectory(path.dirname(persistentPath));
@@ -227,6 +228,7 @@ export function createBrowserResponseCache({maxEntries = DEFAULT_RESPONSE_CACHE_
         lookup_key: "exact_url",
         lifetime: persistentPath === null ? "browser_context" : "persistent",
         documents_cached: cacheDocuments,
+        evidence_replay: evidenceReplay,
         ...(persistentPath === null ? {} : {persistent_identity: persistentIdentity, persistent_entries_loaded: loadedEntries}),
       };
     },
@@ -526,6 +528,9 @@ function isCacheableResponseStatus(status) {
 function responseCanBeCached(response, cache) {
   if (!isCacheableResponseStatus(response.status())) return false;
   const headers = response.headers();
+  const contentLength = headers["content-length"];
+  if (contentLength !== undefined && (!/^\d+$/u.test(contentLength) || Number(contentLength) > cache.maxEntryBytes)) return false;
+  if (cache.evidenceReplay) return true;
   const cacheControl = headers["cache-control"]?.toLowerCase() ?? "";
   const cacheDirectives = new Map(
     cacheControl
@@ -557,8 +562,7 @@ function responseCanBeCached(response, cache) {
       .map((header) => header.trim())
       .some(Boolean) ?? false;
   if (headers["set-cookie"] !== undefined || variesByRequestHeader) return false;
-  const contentLength = headers["content-length"];
-  return contentLength === undefined || (/^\d+$/u.test(contentLength) && Number(contentLength) <= cache.maxEntryBytes);
+  return true;
 }
 
 function reusableResponseHeaders(response) {

@@ -280,6 +280,7 @@ test("a source response cache serves repeated cacheable assets without another g
     lookup_key: "exact_url",
     lifetime: "browser_context",
     documents_cached: false,
+    evidence_replay: false,
   });
 });
 
@@ -437,6 +438,46 @@ test("a URL-only source response cache bypasses revalidation and request-context
       assert.equal(responseCache.snapshot().entries, 0);
       assert.equal(responseCache.snapshot().stores, 0);
       assert.equal(responseCache.snapshot().bypasses, 2);
+    });
+  }
+});
+
+test("an evidence replay cache reuses public responses even when HTTP cache headers forbid browser caching", async (t) => {
+  const cases = [
+    ["no-cache", {"cache-control": "no-cache"}],
+    ["private", {"cache-control": "private, max-age=600"}],
+    ["max-age zero", {"cache-control": "public, max-age=0"}],
+    ["must-revalidate", {"cache-control": "public, max-age=600, must-revalidate"}],
+    ["cookie variance", {"cache-control": "public, max-age=600", vary: "Cookie"}],
+    ["language variance", {"cache-control": "public, max-age=600", vary: "Accept-Language"}],
+    ["response cookie", {"cache-control": "public, max-age=600", "set-cookie": "session=secret"}],
+  ];
+
+  for (const [name, responseHeaders] of cases) {
+    await t.test(name, async () => {
+      const gate = createBrowserRequestGate({intervalMs: 0});
+      const responseCache = createBrowserResponseCache({evidenceReplay: true});
+      const context = createContext();
+      await installBrowserRequestGate(context, {gate, responseCache});
+      const handler = context.routes[0].handler;
+      const url = `https://cdn.example.test/${encodeURIComponent(name)}.css`;
+      const first = createRoute(url, {resourceType: "stylesheet", fetchResponse: createFetchResponse({headers: responseHeaders, body: "retained"})});
+      const second = createRoute(url, {resourceType: "stylesheet", fetchResponse: createFetchResponse({headers: responseHeaders, body: "should-not-refetch"})});
+
+      await handler(first);
+      await handler(second);
+
+      assert.deepEqual(first.actions, [
+        {type: "fetch", options: {maxRedirects: 0}},
+        {type: "fulfill", status: 200},
+      ]);
+      assert.deepEqual(second.actions, [{type: "fulfill", status: 200}]);
+      assert.equal(gate.snapshot().public_requests, 1);
+      assert.equal(responseCache.snapshot().entries, 1);
+      assert.equal(responseCache.snapshot().stores, 1);
+      assert.equal(responseCache.snapshot().hits, 1);
+      assert.equal(responseCache.snapshot().bypasses, 0);
+      assert.equal(responseCache.snapshot().evidence_replay, true);
     });
   }
 });

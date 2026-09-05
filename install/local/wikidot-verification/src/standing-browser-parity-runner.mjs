@@ -603,6 +603,7 @@ export async function runStandingBrowserParity(args) {
         persistentDir: args.sourceResponseCacheDir,
         persistentIdentity: args.sourceResponseCacheIdentity,
         cacheDocuments: args.sourceResponseCacheDocuments,
+        evidenceReplay: true,
       },
     });
     if (candidateIdentity) {
