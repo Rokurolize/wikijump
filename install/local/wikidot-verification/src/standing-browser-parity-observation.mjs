@@ -550,7 +550,7 @@ export async function waitForBrowserParityLayoutStable(
   ) {
     throw new Error("browser layout stability fallback root selectors are invalid");
   }
-  const rootSelectors = [...new Set([rootSelector, ...fallbackRootSelectors])];
+  const rootSelectors = [...new Set([rootSelector, ...fallbackRootSelectors, "body"])];
   if (!Number.isSafeInteger(stableFrames) || stableFrames < 1) {
     throw new Error("browser layout stability frame count is invalid");
   }
