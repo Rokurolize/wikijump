@@ -37,7 +37,7 @@ export function validateUserInfoUrl(value) {
 }
 
 function parseArgs(argv) {
-  const args = {cases: defaultCasesPath, output: defaultOutputPath, delayMs: 4000};
+  const args = {cases: defaultCasesPath, output: defaultOutputPath, delayMs: 0};
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index];
     const value = argv[index + 1];

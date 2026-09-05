@@ -396,7 +396,7 @@ test("live reference refuses a capture whose load, font, or image completion was
   );
 });
 
-test("live reference requires a clean 0.25 req/s gate to admit each live navigation", async (context) => {
+test("live reference requires a clean request gate to admit each live navigation", async (context) => {
   const directory = await fs.mkdtemp(
     path.join(os.tmpdir(), "standing-browser-live-reference-"),
   );

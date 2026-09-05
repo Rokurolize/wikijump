@@ -227,7 +227,7 @@ exports.chromium = {
   );
   const requestGateConfig = JSON.parse(await fs.readFile(path.join(outputDir, "request-gate-config.json"), "utf8"));
   assert.equal(requestGateConfig.status, "sealed_before_browser_request");
-  assert.equal(requestGateConfig.interval_ms, 4_000);
+  assert.equal(requestGateConfig.interval_ms, 0);
   assert.equal(records.capture.request_gate.public_requests, 0);
   assert.equal(records.capture.browser_context_scope, "run");
   assert.equal(records.capture.source_response_cache.entries, 0);

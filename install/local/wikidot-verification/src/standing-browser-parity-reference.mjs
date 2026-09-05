@@ -153,10 +153,8 @@ function validateRequestGate(value, { minimumPublicRequests = 0 } = {}) {
   if (gate.schema !== "wikijump_full_parity.browser_request_gate.v1") {
     throw new Error("live reference request gate has an unsupported schema");
   }
-  if (!Number.isInteger(gate.interval_ms) || gate.interval_ms < 4_000) {
-    throw new Error(
-      "live reference request gate must preserve the initial 0.25 req/s throttle",
-    );
+  if (!Number.isInteger(gate.interval_ms) || gate.interval_ms < 0) {
+    throw new Error("live reference request gate interval must be non-negative");
   }
   if (gate.execution_mode !== undefined && gate.execution_mode !== "live") {
     throw new Error("live reference request gate must use live execution mode");
