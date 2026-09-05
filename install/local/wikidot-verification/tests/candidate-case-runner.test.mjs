@@ -404,6 +404,7 @@ test("CandidateCaseRunner owns and closes its lazy browser contexts", async (t) 
           persistentDir: path.join(path.dirname(options.outputDir), "source-response-cache"),
           persistentIdentity: "wikijump-candidate-public-evidence-cache-v1",
           cacheDocuments: true,
+          evidenceReplay: true,
         });
         return candidateBrowserContexts;
       },
