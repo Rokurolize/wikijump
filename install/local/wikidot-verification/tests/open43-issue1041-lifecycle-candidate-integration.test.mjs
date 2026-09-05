@@ -26,11 +26,10 @@ const runId = () => `candidate-run-${digest("open43-issue1041-run").slice(0, 12)
 
 test("issue 1041 action-page settling rejects a transient editor disappearance", async () => {
   const previousDocument = globalThis.document;
-  const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
   let frame = 0;
   let attempts = 0;
-  const editorCounts = [0, 1, 1, 0, 0, 0, 0, 0];
-  const normalRouteMarkers = [0, 0, 0, 1, 1, 1, 1, 1];
+  const editorCounts = [1, 1, 1, 0, 1, 0, 0, 0];
+  const normalRouteMarkers = [0, 0, 0, 1, 0, 1, 1, 1];
   globalThis.document = {
     querySelectorAll(selector) {
       if (selector === 'a.wiki-standalone-button[href="javascript:;"]') return Array.from({ length: 5 });
@@ -39,27 +38,27 @@ test("issue 1041 action-page settling rejects a transient editor disappearance",
       return [];
     },
   };
-  globalThis.requestAnimationFrame = (callback) => {
-    frame += 1;
-    callback(frame * 16);
-  };
   const page = {
     async waitForFunction(callback, argument) {
       for (let retry = 0; retry < 12; retry += 1) {
         attempts += 1;
+        if (retry === 0) {
+          frame = 3;
+          setTimeout(() => { frame = 4; }, 0);
+        } else {
+          frame = 5;
+        }
         if (await callback(argument)) return;
-        frame += 1;
       }
       throw new Error("fake waitForFunction never observed stable state");
     },
   };
   try {
-    await waitForIssue1041ActionPageStable(page, 1_000);
+    await waitForIssue1041ActionPageStable(page, 1_000, 1);
     assert.ok(attempts > 1, "the transient editor disappearance before the normal-route marker must not satisfy the settling predicate");
-    assert.ok(frame >= 6, "the stable state must survive three consecutive animation frames");
+    assert.equal(frame, 5, "the stable normal-route state must be observed after the transient edit state returns");
   } finally {
     globalThis.document = previousDocument;
-    globalThis.requestAnimationFrame = previousRequestAnimationFrame;
   }
 });
 

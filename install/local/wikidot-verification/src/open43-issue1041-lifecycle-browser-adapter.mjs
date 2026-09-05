@@ -104,21 +104,18 @@ async function publicState(page) {
   }, { selector: STANDALONE_SELECTOR, key: PROBE_KEY });
 }
 
-export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT_MS) {
+export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT_MS, settleMs = 250) {
   await page.waitForFunction(
-    async (selector) => {
+    async ({ selector, settleMs: requiredSettleMs }) => {
       const ready = () =>
         document.querySelectorAll(selector).length === 5 &&
         document.querySelectorAll("#editor").length === 0 &&
         document.querySelectorAll("#page-options-bottom").length === 1;
       if (!ready()) return false;
-      for (let index = 0; index < 3; index += 1) {
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-        if (!ready()) return false;
-      }
-      return true;
+      await new Promise((resolve) => setTimeout(resolve, requiredSettleMs));
+      return ready();
     },
-    STANDALONE_SELECTOR,
+    { selector: STANDALONE_SELECTOR, settleMs },
     { timeout: timeoutMs },
   );
 }
@@ -158,7 +155,11 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     const page = await context.newPage();
     try {
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await waitForIssue1041ActionPageStable(page);
+      await page.waitForFunction(
+        (selector) => document.querySelectorAll(selector).length === 5,
+        STANDALONE_SELECTOR,
+        { timeout: TIMEOUT_MS },
+      );
       return page;
     } catch (error) {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
