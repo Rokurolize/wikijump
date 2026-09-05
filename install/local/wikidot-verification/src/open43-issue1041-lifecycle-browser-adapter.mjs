@@ -109,7 +109,8 @@ export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT
     async (selector) => {
       const ready = () =>
         document.querySelectorAll(selector).length === 5 &&
-        document.querySelectorAll("#editor").length === 0;
+        document.querySelectorAll("#editor").length === 0 &&
+        document.querySelectorAll("#page-options-bottom").length === 1;
       if (!ready()) return false;
       for (let index = 0; index < 3; index += 1) {
         await new Promise((resolve) => requestAnimationFrame(resolve));

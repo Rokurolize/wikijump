@@ -30,10 +30,12 @@ test("issue 1041 action-page settling rejects a transient editor disappearance",
   let frame = 0;
   let attempts = 0;
   const editorCounts = [0, 1, 1, 0, 0, 0, 0, 0];
+  const normalRouteMarkers = [0, 0, 0, 1, 1, 1, 1, 1];
   globalThis.document = {
     querySelectorAll(selector) {
       if (selector === 'a.wiki-standalone-button[href="javascript:;"]') return Array.from({ length: 5 });
       if (selector === "#editor") return Array.from({ length: editorCounts[Math.min(frame, editorCounts.length - 1)] });
+      if (selector === "#page-options-bottom") return Array.from({ length: normalRouteMarkers[Math.min(frame, normalRouteMarkers.length - 1)] });
       return [];
     },
   };
@@ -53,7 +55,7 @@ test("issue 1041 action-page settling rejects a transient editor disappearance",
   };
   try {
     await waitForIssue1041ActionPageStable(page, 1_000);
-    assert.ok(attempts > 1, "the transient editor disappearance must not satisfy the settling predicate");
+    assert.ok(attempts > 1, "the transient editor disappearance before the normal-route marker must not satisfy the settling predicate");
     assert.ok(frame >= 6, "the stable state must survive three consecutive animation frames");
   } finally {
     globalThis.document = previousDocument;
