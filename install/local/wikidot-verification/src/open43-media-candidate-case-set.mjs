@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 
 import { CandidateHttpSession } from "./candidate-case-http.mjs";
@@ -28,8 +29,102 @@ const REVISION_BYTES = Buffer.from(
   "base64",
 );
 const RESIZED_VARIANT = "medium";
+const DOCKER = "/usr/bin/docker";
+
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex");
+}
+
+function docker(args) {
+  const result = spawnSync(DOCKER, args, {
+    encoding: "utf8",
+    env: Object.fromEntries(
+      Object.entries(process.env).filter(
+        ([key]) => !["DOCKER_CONTEXT", "DOCKER_HOST"].includes(key),
+      ),
+    ),
+  });
+  if (result.error || result.status !== 0) {
+    throw new Error("media candidate Docker operation failed");
+  }
+  return result.stdout.trim();
+}
+
+function databaseContainer(project) {
+  const ids = docker([
+    "ps",
+    "--filter", `label=com.docker.compose.project=${project}`,
+    "--filter", "label=com.docker.compose.service=database",
+    "--format", "{{.ID}}",
+  ])
+    .split(/\s+/u)
+    .filter(Boolean);
+  if (ids.length !== 1 || !/^[0-9a-f]{12,64}$/u.test(ids[0])) {
+    throw new Error("media candidate database container is not unique");
+  }
+  return ids[0];
+}
+
+function databaseQuery(project, sql) {
+  return docker([
+    "exec",
+    "-e",
+    "PGPASSWORD=wikijump",
+    databaseContainer(project),
+    "psql",
+    "-h",
+    "127.0.0.1",
+    "-U",
+    "wikijump",
+    "-d",
+    "wikijump",
+    "-Atc",
+    sql,
+  ]);
+}
+
+function sqlValue(value) {
+  if (value === null) return "NULL";
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+export function restoreMediaCandidateSiteIcons({
+  project,
+  siteId,
+  before,
+  databaseQueryImpl = databaseQuery,
+}) {
+  if (typeof project !== "string" || project.length === 0) {
+    throw new Error("media candidate compose project is invalid");
+  }
+  if (!Number.isSafeInteger(siteId) || siteId <= 0) {
+    throw new Error("media candidate site ID is invalid");
+  }
+  if (before === null || typeof before !== "object" || Array.isArray(before)) {
+    throw new Error("media candidate pre-run site icon snapshot is invalid");
+  }
+  for (const field of [
+    "favicon_source",
+    "ios_icon_source",
+    "windows_tile_source",
+  ]) {
+    if (before[field] !== null && typeof before[field] !== "string") {
+      throw new Error(`media candidate pre-run ${field} is invalid`);
+    }
+  }
+  if (
+    !Number.isSafeInteger(before.settings_revision) ||
+    before.settings_revision < 0
+  ) {
+    throw new Error("media candidate pre-run settings revision is invalid");
+  }
+  const result = databaseQueryImpl(
+    project,
+    `UPDATE site SET favicon_source = ${sqlValue(before.favicon_source)}, ios_icon_source = ${sqlValue(before.ios_icon_source)}, windows_tile_source = ${sqlValue(before.windows_tile_source)}, settings_revision = ${before.settings_revision} WHERE site_id = ${siteId};`,
+  );
+  if (result !== "UPDATE 1") {
+    throw new Error("media candidate site icon rollback did not update exactly one site");
+  }
 }
 
 const INPUTS = Object.freeze({
@@ -103,12 +198,16 @@ class Open43MediaRun {
   #pageResource = null;
   #pending = new Map();
   #siteIconsBefore = null;
+  #project;
+  #restoreSiteIcons;
 
-  constructor({ session, resources, pageSlug }) {
+  constructor({ session, resources, pageSlug, project, restoreSiteIcons }) {
     this.#session = session;
     this.#resources = resources;
     this.#pageSlug = pageSlug;
     this.#ownershipMarker = `candidate-case-owner:${pageSlug}`;
+    this.#project = project;
+    this.#restoreSiteIcons = restoreSiteIcons;
   }
 
   async #rpc(method, params = {}, { actor = "editor", cleanup = false } = {}) {
@@ -211,7 +310,14 @@ class Open43MediaRun {
   async #setFaviconSource(source) {
     const before = await this.#session.rpc("site_get", { site: SITE_SLUG });
     if (!Number.isSafeInteger(before?.settings_revision)) throw new Error("media candidate site settings revision is missing");
-    if (this.#siteIconsBefore === null) this.#siteIconsBefore = { favicon_source: before.favicon_source ?? null, ios_icon_source: before.ios_icon_source ?? null, windows_tile_source: before.windows_tile_source ?? null };
+    if (this.#siteIconsBefore === null) {
+      this.#siteIconsBefore = {
+        favicon_source: before.favicon_source ?? null,
+        ios_icon_source: before.ios_icon_source ?? null,
+        windows_tile_source: before.windows_tile_source ?? null,
+        settings_revision: before.settings_revision,
+      };
+    }
     return await this.#session.rpc("site_update", {
       site: this.#siteId,
       expected_settings_revision: before.settings_revision,
@@ -576,16 +682,22 @@ class Open43MediaRun {
     let page = null;
     try {
       if (this.#siteId !== null && this.#siteIconsBefore !== null) {
-        const currentSite = await this.#session.rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
-        await this.#session.rpc("site_update", {
-          site: this.#siteId,
-          expected_settings_revision: currentSite.settings_revision,
-          user_id: this.#session.editorUserId,
-          ...this.#siteIconsBefore,
-          ip_address: "127.0.0.1",
-        }, { siteId: this.#siteId, cleanup: true });
+        this.#restoreSiteIcons({
+          project: this.#project,
+          siteId: this.#siteId,
+          before: this.#siteIconsBefore,
+        });
         const restored = await this.#session.rpc("site_get", { site: SITE_SLUG }, { cleanup: true });
-        if (restored.favicon_source !== this.#siteIconsBefore.favicon_source || restored.ios_icon_source !== this.#siteIconsBefore.ios_icon_source || restored.windows_tile_source !== this.#siteIconsBefore.windows_tile_source) throw new Error("media cleanup did not restore site icon settings");
+        for (const field of [
+          "favicon_source",
+          "ios_icon_source",
+          "windows_tile_source",
+          "settings_revision",
+        ]) {
+          if ((restored?.[field] ?? null) !== this.#siteIconsBefore[field]) {
+            throw new Error(`media cleanup did not restore site icon ${field}`);
+          }
+        }
       }
       if (this.#siteId !== null) page = await this.#getPage({ cleanup: true, wikitext: true });
       if (this.#matchesOwnedPage(page)) {
@@ -682,6 +794,7 @@ function verifyCleanup(proof, resources) {
 
 export function createOpen43MediaCandidateCaseSet({
   sessionFactory = (options) => new CandidateHttpSession(options),
+  restoreSiteIcons = restoreMediaCandidateSiteIcons,
 } = {}) {
   const plan = Object.freeze({
     site_slug: SITE_SLUG,
@@ -721,7 +834,13 @@ export function createOpen43MediaCandidateCaseSet({
       if (session?.editorUserId !== plan.editor_user_id) throw new Error("candidate session does not bind the fixed media editor");
       const pageSlug = runPageSlug(runId);
       const runPlan = Object.freeze({ ...plan, page_slug: pageSlug });
-      const execution = new Open43MediaRun({ session, resources, pageSlug });
+      const execution = new Open43MediaRun({
+        session,
+        resources,
+        pageSlug,
+        project: candidateIdentity.candidate.compose_project,
+        restoreSiteIcons,
+      });
       return Object.freeze({
         sourceFiles,
         runtimeBindings: session.requiredServiceBindings,

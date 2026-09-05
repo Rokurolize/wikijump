@@ -14,6 +14,7 @@ import { runCandidateCaseSet } from "../src/candidate-case-runner.mjs";
 import {
   OPEN43_MEDIA_CASE_IDS,
   createOpen43MediaCandidateCaseSet,
+  restoreMediaCandidateSiteIcons,
 } from "../src/open43-media-candidate-case-set.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
@@ -480,6 +481,12 @@ function caseSetFor(candidate, sessionOptions = {}) {
         new CandidateHttpSession({ ...options, requestImpl }),
         sessionOptions,
       ),
+    restoreSiteIcons: ({ before }) => {
+      candidate.state.site.favicon_source = before.favicon_source;
+      candidate.state.site.ios_icon_source = before.ios_icon_source;
+      candidate.state.site.windows_tile_source = before.windows_tile_source;
+      candidate.state.site.settings_revision = before.settings_revision;
+    },
   });
 }
 
@@ -519,6 +526,29 @@ async function runFixture(
     },
   });
 }
+
+test("media files cleanup can exactly restore a producer-seeded legacy favicon snapshot", () => {
+  const calls = [];
+  const before = {
+    favicon_source: "https://scp-wiki.wdfiles.com/local--files/site/favicon.gif",
+    ios_icon_source: null,
+    windows_tile_source: "/local--files/site/tile.png",
+    settings_revision: 17,
+  };
+  restoreMediaCandidateSiteIcons({
+    project: "candidate-project",
+    siteId: 6000003,
+    before,
+    databaseQueryImpl(project, sql) { calls.push({ project, sql }); return "UPDATE 1"; },
+  });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].project, "candidate-project");
+  assert.match(calls[0].sql, /favicon_source = 'https:\/\/scp-wiki\.wdfiles\.com\/local--files\/site\/favicon\.gif'/u);
+  assert.match(calls[0].sql, /ios_icon_source = NULL/u);
+  assert.match(calls[0].sql, /windows_tile_source = '\/local--files\/site\/tile\.png'/u);
+  assert.match(calls[0].sql, /settings_revision = 17/u);
+  assert.match(calls[0].sql, /WHERE site_id = 6000003/u);
+});
 
 test("the source-owned media CandidateCaseSet fixes the runtime media denominator", () => {
   const caseSet = createOpen43MediaCandidateCaseSet();
