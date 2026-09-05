@@ -103,7 +103,8 @@ test("compatibility candidate input producer binds the retained Wikidot favicon 
 test("compatibility candidate input producer seeds the SearchAll saved-page fixture", () => {
   const source = readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../src/compatibility-candidate-input-producer.mjs"), "utf8");
   assert.match(source, /slug: "search:all"[\s\S]*?wikitext: "\[\[module SearchAll\]\]"/u);
-  assert.match(source, /page\(Q807_SEARCH_ALL_SOURCE\.slug, Q807_SEARCH_ALL_SOURCE\.title, Q807_SEARCH_ALL_SOURCE\.wikitext, \{ siteId: standardSiteId, imported: true \}\)/u);
+  assert.match(source, /page\(Q807_SEARCH_ALL_SOURCE\.slug, Q807_SEARCH_ALL_SOURCE\.title, Q807_SEARCH_ALL_SOURCE\.wikitext, \{ imported: true \}\)/u);
+  assert.doesNotMatch(source, /page\(Q807_SEARCH_ALL_SOURCE\.slug, Q807_SEARCH_ALL_SOURCE\.title, Q807_SEARCH_ALL_SOURCE\.wikitext, \{ siteId: standardSiteId/u);
 });
 
 test("compatibility candidate input producer owns a dedicated Wikidot Q778 author identity", () => {
