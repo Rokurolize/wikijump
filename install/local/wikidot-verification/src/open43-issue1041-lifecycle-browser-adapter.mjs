@@ -104,6 +104,34 @@ async function publicState(page) {
   }, { selector: STANDALONE_SELECTOR, key: PROBE_KEY });
 }
 
+export function isIssue1041PageDataResponse(response, pagePath) {
+  if (response.request().method() !== "GET") return false;
+  try {
+    return new URL(response.url()).pathname === `${pagePath}/__data.json`;
+  } catch {
+    return false;
+  }
+}
+
+export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT_MS) {
+  await page.waitForFunction(
+    async (selector) => {
+      const ready = () =>
+        document.querySelectorAll(selector).length === 5 &&
+        document.querySelectorAll("#editor").length === 0 &&
+        document.querySelectorAll("#page-options-bottom").length === 1;
+      if (!ready()) return false;
+      for (let index = 0; index < 3; index += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        if (!ready()) return false;
+      }
+      return true;
+    },
+    STANDALONE_SELECTOR,
+    { timeout: timeoutMs },
+  );
+}
+
 export class Open43Issue1041LifecycleBrowserAdapter {
   #browserContexts;
   #pageOrigin;
@@ -210,12 +238,14 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       await this.#activate(page, "Edit page here", "click");
       await permission;
       await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
-      await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await page.waitForFunction(
-        (selector) => document.querySelectorAll(selector).length === 5 && document.querySelectorAll("#editor").length === 0,
-        STANDALONE_SELECTOR,
+      const backDataResponse = page.waitForResponse(
+        (response) => isIssue1041PageDataResponse(response, pagePath),
         { timeout: TIMEOUT_MS },
       );
+      await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
+      const backData = await backDataResponse;
+      if (backData.status() !== 200) throw new Error("issue 1041 back navigation page data failed");
+      await waitForIssue1041ActionPageStable(page);
       const back = await publicState(page);
       await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });

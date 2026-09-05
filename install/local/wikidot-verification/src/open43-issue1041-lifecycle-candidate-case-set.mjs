@@ -61,7 +61,21 @@ function requireState(value, plan, expected, name) {
     state.editor_count !== 0 ||
     state.source_disclosure !== (expected.source_disclosure ?? false)
   ) {
-    throw new Error(`${name} public action page state drifted`);
+    throw new Error(`${name} public action page state drifted: ${JSON.stringify({
+      actual: {
+        url: state.url,
+        path: state.path,
+        history_length: state.history_length,
+        standalone_button_count: state.standalone_button_count,
+        editor_count: state.editor_count,
+        source_disclosure: state.source_disclosure,
+      },
+      expected: {
+        url: plan.page_url,
+        path: plan.page_path,
+        source_disclosure: expected.source_disclosure ?? false,
+      },
+    })}`);
   }
   if (state.any_aria_busy !== (expected.busy ?? false)) throw new Error(`${name} busy state drifted`);
   if (state.error_popup_visible !== (expected.error ?? false)) throw new Error(`${name} error popup visibility drifted`);
