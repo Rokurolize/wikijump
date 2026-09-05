@@ -215,6 +215,30 @@ export class Open43Issue1041LifecycleBrowserAdapter {
 
   async #backForward(context, pageUrl, pagePath) {
     const page = await this.#goto(context, pageUrl);
+    const startedAt = Date.now();
+    const navigationTrace = [];
+    const record = (kind, url, extra = {}) => {
+      let parsed;
+      try { parsed = new URL(url); } catch { return; }
+      if (!parsed.hostname.endsWith(".wikijump.localhost")) return;
+      navigationTrace.push({ kind, elapsed_ms: Date.now() - startedAt, url, ...extra });
+    };
+    const onRequest = (request) => {
+      if (["document", "fetch"].includes(request.resourceType())) {
+        record("request", request.url(), { method: request.method(), resource_type: request.resourceType() });
+      }
+    };
+    const onResponse = (response) => {
+      if (["document", "fetch"].includes(response.request().resourceType())) {
+        record("response", response.url(), { status: response.status(), resource_type: response.request().resourceType() });
+      }
+    };
+    const onFrameNavigated = (frame) => {
+      if (frame === page.mainFrame()) record("main-frame", frame.url());
+    };
+    page.on("request", onRequest);
+    page.on("response", onResponse);
+    page.on("framenavigated", onFrameNavigated);
     try {
       await page.goto(new URL("/", this.#pageOrigin).href, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       const home = await page.evaluate(() => ({ path: location.pathname }));
@@ -229,11 +253,23 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await waitForIssue1041ActionPageStable(page);
       const back = await publicState(page);
+      if (back.editor_count !== 0) {
+        const browser = await page.evaluate(() => ({
+          history_state: history.state,
+          resources: performance.getEntriesByType("resource")
+            .filter((entry) => entry.name.includes("__data.json"))
+            .map((entry) => ({ name: entry.name, start_time: entry.startTime, duration: entry.duration, response_end: entry.responseEnd })),
+        }));
+        throw new Error(`issue 1041 back diagnostic: ${JSON.stringify({ back, navigation_trace: navigationTrace, browser })}`);
+      }
       await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });
       const forward = await publicState(page);
       return { home, back, forward };
     } finally {
+      page.off("request", onRequest);
+      page.off("response", onResponse);
+      page.off("framenavigated", onFrameNavigated);
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
     }
   }
