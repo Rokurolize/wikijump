@@ -22,13 +22,22 @@ SPEC.loader.exec_module(REFRESH)
 @contextmanager
 def merged_candidate(identity: dict[str, str], candidate_commit: str = "9" * 40):
     original_command = REFRESH.command
-    REFRESH.command = lambda *args, cwd, capture=True: " ".join(
-        (identity["wikijump_sha"], "8" * 40, candidate_commit)
-    )
+
+    def fake_command(*args: str, cwd: Path, capture: bool = True) -> str:
+        if args[:2] == ("git", "merge-base"):
+            return candidate_commit
+        if args[:3] == ("git", "diff", "--name-only"):
+            return "install/standing/refresh.py"
+        if args[:3] == ("git", "rev-list", "--parents"):
+            return " ".join((identity["wikijump_sha"], "8" * 40, candidate_commit))
+        raise AssertionError(args)
+
+    REFRESH.command = fake_command
     try:
         yield
     finally:
         REFRESH.command = original_command
+
 
 
 class RefreshStandingTest(unittest.TestCase):
@@ -384,6 +393,38 @@ class RefreshStandingTest(unittest.TestCase):
         self.assertIn("cargo watch", wws_start)
         self.assertIn("pnpm dev", framerail_start)
 
+    def test_refresh_checks_saved_page_generator_freshness_before_canary(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("stale_pages_remaining", source)
+        self.assertIn("saved_page_render_freshness", source)
+        call = source.rindex("standing_stale_saved_pages(")
+        self.assertLess(call, source.index('body = command('))
+
+    def test_refresh_requires_zero_stale_saved_pages(self) -> None:
+        source = SCRIPT.read_text(encoding="utf-8")
+        self.assertIn("stale_pages_remaining", source)
+        self.assertIn("standing contains stale saved-page renders", source)
+
+    def test_expected_compiled_generator_is_source_derived(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_dir:
+            root = Path(temporary_dir)
+            cargo = root / "deepwell" / "Cargo.lock"
+            cargo.parent.mkdir(parents=True)
+            cargo.write_text(
+                '[[package]]\nname = "ftml"\nversion = "1.2.3+test"\n',
+                encoding="utf-8",
+            )
+            generator = root / "deepwell" / "src" / "services" / "render" / "generator.rs"
+            generator.parent.mkdir(parents=True)
+            generator.write_text(
+                "pub(crate) const DEEPWELL_RENDERER_EPOCH: u32 = 17;\n",
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                REFRESH.expected_compiled_generator(root),
+                "ftml v1.2.3+test; deepwell-render/v17",
+            )
+
     def test_standing_deepwell_migrations_are_explicit_in_the_image(self) -> None:
         dockerfile = (SCRIPT.parents[1] / "prod/deepwell/Dockerfile").read_text(
             encoding="utf-8"
@@ -440,11 +481,7 @@ class RefreshStandingTest(unittest.TestCase):
             proof_ref["sha256"] = hashlib.sha256(proof_path.read_bytes()).hexdigest()
             path = root / "prepared.json"
             path.write_text(json.dumps(receipt), encoding="utf-8")
-            original_command = REFRESH.command
-            try:
-                REFRESH.command = lambda *args, cwd, capture=True: " ".join(
-                    (identity["wikijump_sha"], "8" * 40, candidate_commit)
-                )
+            with merged_candidate(identity, candidate_commit):
                 loaded, _, loaded_proof = REFRESH.load_prepared_receipt(
                     path, root, identity
                 )
@@ -452,8 +489,6 @@ class RefreshStandingTest(unittest.TestCase):
                 self.assertEqual(
                     loaded_proof["candidate"]["wikijump_commit"], candidate_commit
                 )
-            finally:
-                REFRESH.command = original_command
 
     def test_prepared_receipt_binds_the_promotion_precondition_run_id(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_dir:
