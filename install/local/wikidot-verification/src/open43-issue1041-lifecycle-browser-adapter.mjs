@@ -104,6 +104,24 @@ async function publicState(page) {
   }, { selector: STANDALONE_SELECTOR, key: PROBE_KEY });
 }
 
+export async function waitForIssue1041ActionPageStable(page, timeoutMs = TIMEOUT_MS) {
+  await page.waitForFunction(
+    async (selector) => {
+      const ready = () =>
+        document.querySelectorAll(selector).length === 5 &&
+        document.querySelectorAll("#editor").length === 0;
+      if (!ready()) return false;
+      for (let index = 0; index < 3; index += 1) {
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+        if (!ready()) return false;
+      }
+      return true;
+    },
+    STANDALONE_SELECTOR,
+    { timeout: timeoutMs },
+  );
+}
+
 export class Open43Issue1041LifecycleBrowserAdapter {
   #browserContexts;
   #pageOrigin;
@@ -139,11 +157,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
     const page = await context.newPage();
     try {
       await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await page.waitForFunction(
-        (selector) => document.querySelectorAll(selector).length === 5,
-        STANDALONE_SELECTOR,
-        { timeout: TIMEOUT_MS },
-      );
+      await waitForIssue1041ActionPageStable(page);
       return page;
     } catch (error) {
       await page.close({ runBeforeUnload: false, timeout: 10_000 }).catch(() => undefined);
@@ -211,11 +225,7 @@ export class Open43Issue1041LifecycleBrowserAdapter {
       await permission;
       await page.waitForURL(new URL(`${pagePath}/edit`, this.#pageOrigin).href, { timeout: TIMEOUT_MS });
       await page.goBack({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
-      await page.waitForFunction(
-        (selector) => document.querySelectorAll(selector).length === 5 && document.querySelectorAll("#editor").length === 0,
-        STANDALONE_SELECTOR,
-        { timeout: TIMEOUT_MS },
-      );
+      await waitForIssue1041ActionPageStable(page);
       const back = await publicState(page);
       await page.goForward({ waitUntil: "domcontentloaded", timeout: TIMEOUT_MS });
       await page.locator("#editor").waitFor({ state: "visible", timeout: TIMEOUT_MS });

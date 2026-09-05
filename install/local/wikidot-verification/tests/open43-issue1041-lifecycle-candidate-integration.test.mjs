@@ -10,6 +10,7 @@ import {
   OPEN43_ISSUE1041_CASE_IDS,
   createOpen43Issue1041LifecycleCandidateCaseSet,
 } from "../src/open43-issue1041-lifecycle-candidate-case-set.mjs";
+import { waitForIssue1041ActionPageStable } from "../src/open43-issue1041-lifecycle-browser-adapter.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -22,6 +23,43 @@ const EDIT_URL = `${PAGE_ORIGIN}${EDIT_PATH}`;
 const hash = (character) => digest(`open43-issue1041-${character}-fixture`);
 const git = (character) => digest(`open43-issue1041-${character}-git`).slice(0, 40);
 const runId = () => `candidate-run-${digest("open43-issue1041-run").slice(0, 12)}`;
+
+test("issue 1041 action-page settling rejects a transient editor disappearance", async () => {
+  const previousDocument = globalThis.document;
+  const previousRequestAnimationFrame = globalThis.requestAnimationFrame;
+  let frame = 0;
+  let attempts = 0;
+  const editorCounts = [0, 1, 1, 0, 0, 0, 0, 0];
+  globalThis.document = {
+    querySelectorAll(selector) {
+      if (selector === 'a.wiki-standalone-button[href="javascript:;"]') return Array.from({ length: 5 });
+      if (selector === "#editor") return Array.from({ length: editorCounts[Math.min(frame, editorCounts.length - 1)] });
+      return [];
+    },
+  };
+  globalThis.requestAnimationFrame = (callback) => {
+    frame += 1;
+    callback(frame * 16);
+  };
+  const page = {
+    async waitForFunction(callback, argument) {
+      for (let retry = 0; retry < 12; retry += 1) {
+        attempts += 1;
+        if (await callback(argument)) return;
+        frame += 1;
+      }
+      throw new Error("fake waitForFunction never observed stable state");
+    },
+  };
+  try {
+    await waitForIssue1041ActionPageStable(page, 1_000);
+    assert.ok(attempts > 1, "the transient editor disappearance must not satisfy the settling predicate");
+    assert.ok(frame >= 6, "the stable state must survive three consecutive animation frames");
+  } finally {
+    globalThis.document = previousDocument;
+    globalThis.requestAnimationFrame = previousRequestAnimationFrame;
+  }
+});
 
 function candidateIdentity() {
   return {
