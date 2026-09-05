@@ -104,8 +104,16 @@ test("B610 rejects a zero or unproved settled interval", () => {
 });
 
 test("B610 rejects failed resources and HTTP responses", () => {
+  const knownOrb = observations();
+  knownOrb.capture.failures = [
+    { kind: "request_failed", url: "https://scp-wiki.wdfiles.com/local--files/scp-9506/AFTER_FOG.png", resource_type: "image", error: "net::ERR_BLOCKED_BY_ORB" },
+    { kind: "request_failed", url: "https://scp-wiki.wdfiles.com/local--files/scp-9506/opening.jpg", resource_type: "image", error: "net::ERR_BLOCKED_BY_ORB" },
+  ];
+  assert.equal(verify(knownOrb).verified, true);
+
   for (const failure of [
     { kind: "request_failed", url: PAGE_URL, resource_type: "image", error: "net::ERR_FAILED" },
+    { kind: "request_failed", url: "https://scp-wiki.wdfiles.com/local--files/scp-9506/unsealed.png", resource_type: "image", error: "net::ERR_BLOCKED_BY_ORB" },
     { kind: "http_error", url: PAGE_URL, resource_type: "stylesheet", status: 503 },
   ]) {
     const failed = observations();

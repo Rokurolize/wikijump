@@ -5,7 +5,7 @@ import {
   sha256Value,
 } from "./standing-browser-parity-util.mjs";
 
-const VISIBLE_MARKERS = Object.freeze(["NAME", "ID"]);
+const VISIBLE_MARKERS = Object.freeze(["NAME"]);
 const NO_IDENTITY_MARKUP = Object.freeze(["<a", "onclick=", "printuser", "avatar"]);
 
 function object(value, name) {
@@ -21,9 +21,17 @@ function verifyVisible(body, marker, user, surface) {
   return { marker, profile, onclick };
 }
 
-function verifyHidden(body, user, surface) {
+function verifyHidden(body, fixture, surface) {
+  const user = fixture.deleted_user;
   const fragments = [...body.matchAll(/<span class="error-inline">[\s\S]*?<\/span>/gu)].map(([output]) => output);
-  if (fragments.length !== 8 || !body.includes(`${user.name}`) || !body.includes("does not match any existing user name") || body.includes(`user:info/${user.slug}`)) {
+  if (
+    fragments.length !== OPEN43_Q1026_EXPECTED_EM_CONTENTS.length ||
+    !body.includes(`<em>${fixture.visible_user.user_id}</em> does not match any existing user name`) ||
+    !body.includes(`${user.name}`) ||
+    !body.includes("does not match any existing user name") ||
+    body.includes(`user:info/${user.slug}`) ||
+    body.includes(`user:info/${fixture.visible_user.user_id}`)
+  ) {
     throw new Error(`${surface} deleted and unknown lookups did not preserve the fixed fail-closed boundary`);
   }
   for (const forbidden of NO_IDENTITY_MARKUP) {
@@ -35,7 +43,7 @@ function verifyHidden(body, user, surface) {
 function verifySurface(body, fixture, surface) {
   const html = requireNonEmptyString(body, `${surface} HTML`);
   const visible = VISIBLE_MARKERS.map((marker) => verifyVisible(html, marker, fixture.visible_user, surface));
-  const hidden = verifyHidden(html, fixture.deleted_user, surface);
+  const hidden = verifyHidden(html, fixture, surface);
   return { html_sha256: sha256Value(html), visible, hidden };
 }
 
@@ -77,6 +85,7 @@ export function verifyOpen43Q1026UserIdentityCleanup(proof, resources) {
 }
 
 export const OPEN43_Q1026_EXPECTED_EM_CONTENTS = Object.freeze([
+  "19102600",
   "Deleted User",
   "v7ws=\"alpha beta\u00a0gamma\"",
   "v7ser=\"serialized body\"",
