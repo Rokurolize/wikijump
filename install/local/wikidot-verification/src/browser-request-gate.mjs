@@ -11,6 +11,8 @@ const DEFAULT_RESPONSE_CACHE_MAX_ENTRIES = 512;
 const DEFAULT_RESPONSE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 const DEFAULT_RESPONSE_CACHE_MAX_ENTRY_BYTES = 8 * 1024 * 1024;
 const RESPONSE_CACHE_STORE_SCHEMA = "wikijump_full_parity.browser_response_cache_store.v1";
+const RESPONSE_CACHE_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+const MAX_RESPONSE_CACHE_REDIRECTS = 10;
 
 function responseCacheKey(value) {
   if (/^https:\/\/www\.wikidot\.com\/avatar\.php\?/u.test(value)) return value.replace(/(?:&amp;|&)timestamp=[^&]*/u, "");
@@ -523,7 +525,7 @@ function requestCanUseResponseCache(request, responseCache) {
 
 function isCacheableResponseStatus(status, {evidenceReplay = false} = {}) {
   if (status === 200 || (status >= 400 && status < 500)) return true;
-  return evidenceReplay && new Set([301, 302, 303, 307, 308]).has(status);
+  return evidenceReplay && RESPONSE_CACHE_REDIRECT_STATUSES.has(status);
 }
 
 function responseCanBeCached(response, cache) {
@@ -574,6 +576,123 @@ function reusableResponseHeaders(response) {
   return headers;
 }
 
+function redirectTarget(entry, baseUrl) {
+  if (!RESPONSE_CACHE_REDIRECT_STATUSES.has(entry?.status)) return null;
+  const location = entry?.headers?.location;
+  if (typeof location !== "string" || location === "") return null;
+  const target = new URL(location, baseUrl);
+  if (
+    !new Set(["http:", "https:"]).has(target.protocol) ||
+    target.username ||
+    target.password
+  ) {
+    throw new Error(`browser response cache redirect target is unsupported: ${target.href}`);
+  }
+  return target;
+}
+
+async function retainedEntryFromResponse(responseCache, key, response) {
+  if (!responseCanBeCached(response, responseCache)) return null;
+  const body = await response.body();
+  if (body.length > responseCache.maxEntryBytes) return null;
+  const entry = {
+    status: response.status(),
+    headers: reusableResponseHeaders(response),
+    body,
+  };
+  return responseCache.store(key, entry) ? entry : null;
+}
+
+export async function resolveEvidenceReplaySubresourceRedirect({
+  route,
+  gate,
+  responseCache,
+  resourceType,
+  sourceUrl,
+  entry,
+}) {
+  if (
+    !responseCache?.evidenceReplay ||
+    !isCaptureDependencyResourceType(resourceType) ||
+    !RESPONSE_CACHE_REDIRECT_STATUSES.has(entry?.status)
+  ) {
+    return null;
+  }
+
+  const visited = new Set([sourceUrl]);
+  let currentUrl = sourceUrl;
+  let currentEntry = entry;
+  for (let redirects = 0; redirects < MAX_RESPONSE_CACHE_REDIRECTS; redirects += 1) {
+    const target = redirectTarget(currentEntry, currentUrl);
+    if (target === null) return null;
+    if (visited.has(target.href)) {
+      throw new Error("browser response cache redirect cycle detected");
+    }
+    visited.add(target.href);
+
+    let targetEntry = responseCache.get(target.href);
+    if (targetEntry === null) {
+      await gate.acquire();
+      const response = await route.fetch({ url: target.href, maxRedirects: 0 });
+      targetEntry = await retainedEntryFromResponse(responseCache, target.href, response);
+      if (targetEntry === null) {
+        if (RESPONSE_CACHE_REDIRECT_STATUSES.has(response.status())) {
+          responseCache.recordBypass();
+          throw new Error(`browser response cache could not retain redirect target: ${target.href}`);
+        }
+        responseCache.recordBypass();
+        return { finalUrl: target.href, entry: null, response };
+      }
+    }
+
+    currentUrl = target.href;
+    currentEntry = targetEntry;
+    if (!RESPONSE_CACHE_REDIRECT_STATUSES.has(currentEntry.status)) {
+      return { finalUrl: currentUrl, entry: currentEntry, response: null };
+    }
+  }
+  throw new Error("browser response cache redirect limit exceeded");
+}
+
+export function evidenceReplaySubresourceFulfillment(resourceType, resolved) {
+  if (!resolved?.entry) return null;
+  if (resourceType === "stylesheet" && resolved.entry.status === 200) {
+    const body = Buffer.from(`@import url(${JSON.stringify(resolved.finalUrl)});\n`);
+    return {
+      status: 200,
+      headers: { "content-type": "text/css; charset=utf-8" },
+      body,
+    };
+  }
+  return {
+    status: resolved.entry.status,
+    headers: resolved.entry.headers,
+    body: resolved.entry.body,
+  };
+}
+
+async function fulfillRetainedEntry(route, { gate, responseCache, request, entry }) {
+  const resolved = await resolveEvidenceReplaySubresourceRedirect({
+    route,
+    gate,
+    responseCache,
+    resourceType: request.resourceType(),
+    sourceUrl: request.url(),
+    entry,
+  });
+  if (resolved === null) {
+    await route.fulfill(entry);
+    return;
+  }
+  if (resolved.entry !== null) {
+    await route.fulfill(
+      evidenceReplaySubresourceFulfillment(request.resourceType(), resolved),
+    );
+    return;
+  }
+  await route.fulfill({ response: resolved.response });
+}
+
 async function servePublicRoute(route, {gate, responseCache, cacheOnly = false}) {
   const request = route.request();
   if (cacheOnly) {
@@ -583,7 +702,7 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false})
     }
     const cached = responseCache.get(request.url());
     if (cached === null) throw new Error(`candidate response cache miss: ${request.url()}`);
-    await route.fulfill(cached);
+    await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached });
     return;
   }
   if (!responseCache || !requestCanUseResponseCache(request, responseCache)) {
@@ -596,7 +715,7 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false})
   const cacheKey = request.url();
   const cached = responseCache.get(cacheKey);
   if (cached) {
-    await route.fulfill(cached);
+    await fulfillRetainedEntry(route, { gate, responseCache, request, entry: cached });
     return;
   }
 
@@ -622,7 +741,7 @@ async function servePublicRoute(route, {gate, responseCache, cacheOnly = false})
     await route.fulfill({response});
     return;
   }
-  await route.fulfill(entry);
+  await fulfillRetainedEntry(route, { gate, responseCache, request, entry });
 }
 
 /**
@@ -714,14 +833,18 @@ export async function installBrowserRequestGate(context, {gate, exemptOrigins = 
             requestCanUseResponseCache(request, responseCache) &&
             responseCanBeCached(response, responseCache)
           ) {
-            const body = await response.body();
-            const entry = {
-              status: response.status(),
-              headers: reusableResponseHeaders(response),
-              body,
-            };
-            if (body.length <= responseCache.maxEntryBytes && responseCache.store(request.url(), entry)) {
-              await route.fulfill(entry);
+            const entry = await retainedEntryFromResponse(
+              responseCache,
+              request.url(),
+              response,
+            );
+            if (entry !== null) {
+              await fulfillRetainedEntry(route, {
+                gate,
+                responseCache,
+                request,
+                entry,
+              });
               return;
             }
           }

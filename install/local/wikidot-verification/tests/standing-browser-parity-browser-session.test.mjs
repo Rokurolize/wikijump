@@ -4,6 +4,8 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 
+import { createBrowserResponseCache } from "../src/browser-request-gate.mjs";
+
 import {
   candidateLocalOriginSets,
   createParityBrowserControls,
@@ -322,6 +324,78 @@ test("candidate file routing returns public redirects to Chromium for gate enfor
 
   assert.equal(fetchCount, 1);
   assert.deepEqual(fulfillment, { response: redirect });
+});
+
+test("candidate file routing resolves public image redirects through evidence replay before Chromium can bypass routing", async () => {
+  let handler;
+  const context = {
+    async route(_value, callback) {
+      handler = callback;
+    },
+  };
+  const responseCache = createBrowserResponseCache({ evidenceReplay: true });
+  let admissions = 0;
+  await installCandidateFilePortRoute(
+    context,
+    [
+      "https://scp-wiki.wikijump.localhost:18449",
+      "https://scp-wiki.wjfiles.localhost:18449",
+    ],
+    {
+      responseCache,
+      sourceRequestGate: {
+        async acquire() {
+          admissions += 1;
+        },
+      },
+    },
+  );
+
+  const targetUrl =
+    "https://scp-wiki.wdfiles.com/local--files/theme%3Abasalt/logo.svg";
+  const redirect = {
+    status: () => 302,
+    headers: () => ({ location: targetUrl }),
+  };
+  const target = {
+    status: () => 200,
+    headers: () => ({ "content-type": "image/svg+xml" }),
+    body: async () => Buffer.from("<svg/>") ,
+  };
+  const fetches = [];
+  let fulfillment;
+  await handler({
+    request() {
+      return {
+        method: () => "GET",
+        resourceType: () => "image",
+        url: () =>
+          "https://scp-wiki.wjfiles.localhost/local--files/theme%3Abasalt/logo.svg",
+      };
+    },
+    async fetch(options) {
+      fetches.push(options);
+      return fetches.length === 1 ? redirect : target;
+    },
+    async fulfill(options) {
+      fulfillment = options;
+    },
+  });
+
+  assert.deepEqual(fetches, [
+    {
+      url: "https://scp-wiki.wjfiles.localhost:18449/local--files/theme%3Abasalt/logo.svg",
+      maxRedirects: 0,
+    },
+    { url: targetUrl, maxRedirects: 0 },
+  ]);
+  assert.equal(admissions, 2);
+  assert.equal(responseCache.get(targetUrl)?.status, 200);
+  assert.deepEqual(fulfillment, {
+    status: 200,
+    headers: { "content-type": "image/svg+xml" },
+    body: Buffer.from("<svg/>"),
+  });
 });
 
 test("candidate file routing preserves the live public admission before a Wikidot fallback redirect", async () => {

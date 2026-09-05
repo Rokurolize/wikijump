@@ -516,7 +516,7 @@ test("redirect responses are replayed only in evidence mode and retain their Loc
   t.after(() => fs.rm(cacheDir, {recursive: true, force: true}));
   const persistentIdentity = "evidence-replay:redirect-status-matrix";
   const gate = createBrowserRequestGate({intervalMs: 0});
-  const responseCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity, evidenceReplay: true});
+  const responseCache = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity, evidenceReplay: true, cacheDocuments: true});
   await responseCache.load();
   const context = createContext();
   await installBrowserRequestGate(context, {gate, responseCache});
@@ -525,8 +525,8 @@ test("redirect responses are replayed only in evidence mode and retain their Loc
   for (const status of replayableStatuses) {
     const url = `https://cdn.example.test/replay-${status}.css`;
     const location = `https://assets.example.test/final-${status}.css`;
-    const first = createRoute(url, {resourceType: "stylesheet", fetchResponse: createFetchResponse({status, headers: {location}, body: `redirect-${status}`})});
-    const second = createRoute(url, {resourceType: "stylesheet", fetchResponse: createFetchResponse({status: 599, body: "must not refetch"})});
+    const first = createRoute(url, {resourceType: "document", fetchResponse: createFetchResponse({status, headers: {location}, body: `redirect-${status}`})});
+    const second = createRoute(url, {resourceType: "document", fetchResponse: createFetchResponse({status: 599, body: "must not refetch"})});
 
     await handler(first);
     await handler(second);
@@ -544,8 +544,8 @@ test("redirect responses are replayed only in evidence mode and retain their Loc
   for (const status of nonReplayableStatuses) {
     const url = `https://cdn.example.test/no-replay-${status}.css`;
     const response = createFetchResponse({status, headers: {location: "https://assets.example.test/ignored.css"}, body: `status-${status}`});
-    const first = createRoute(url, {resourceType: "stylesheet", fetchResponse: response});
-    const second = createRoute(url, {resourceType: "stylesheet", fetchResponse: response});
+    const first = createRoute(url, {resourceType: "document", fetchResponse: response});
+    const second = createRoute(url, {resourceType: "document", fetchResponse: response});
 
     await handler(first);
     await handler(second);
@@ -562,13 +562,56 @@ test("redirect responses are replayed only in evidence mode and retain their Loc
   }
 
   await responseCache.flush();
-  const reloaded = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity, evidenceReplay: true});
+  const reloaded = createBrowserResponseCache({persistentDir: cacheDir, persistentIdentity, evidenceReplay: true, cacheDocuments: true});
   await reloaded.load();
   assert.equal(reloaded.snapshot().persistent_entries_loaded, replayableStatuses.length);
   for (const status of replayableStatuses) {
     const retained = reloaded.get(`https://cdn.example.test/replay-${status}.css`);
     assert.equal(retained.status, status);
     assert.equal(retained.headers.location, `https://assets.example.test/final-${status}.css`);
+  }
+});
+
+test("candidate evidence replay resolves cached subresource redirects before Chromium can bypass routing", async (t) => {
+  for (const resourceType of ["stylesheet", "image", "font"]) {
+    await t.test(resourceType, async () => {
+      const gate = createBrowserRequestGate({intervalMs: 0});
+      const responseCache = createBrowserResponseCache({evidenceReplay: true});
+      const sourceUrl = `https://cdn.example.test/${resourceType}/source`;
+      const targetUrl = `https://assets.example.test/${resourceType}/final`;
+      responseCache.store(sourceUrl, {
+        status: 301,
+        headers: {location: targetUrl},
+        body: Buffer.alloc(0),
+      });
+      const context = createContext();
+      await installBrowserRequestGate(context, {
+        gate,
+        responseCache,
+        cacheOnly: true,
+      });
+      const first = createRoute(sourceUrl, {
+        resourceType,
+        fetchResponse: createFetchResponse({
+          headers: {"content-type": resourceType === "stylesheet" ? "text/css" : "application/octet-stream"},
+          body: resourceType === "stylesheet" ? ".target { display: block }" : "retained-target",
+        }),
+      });
+
+      await context.routes[0].handler(first);
+
+      assert.deepEqual(first.actions, [
+        {type: "fetch", options: {url: targetUrl, maxRedirects: 0}},
+        {type: "fulfill", status: 200},
+      ]);
+      assert.equal(gate.snapshot().public_requests, 1);
+      assert.equal(responseCache.get(targetUrl)?.status, 200);
+
+      const second = createRoute(sourceUrl, {resourceType});
+      await context.routes[0].handler(second);
+      assert.deepEqual(second.actions, [{type: "fulfill", status: 200}]);
+      assert.equal(gate.snapshot().public_requests, 1);
+    });
   }
 });
 
