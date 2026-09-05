@@ -543,7 +543,7 @@ export async function prepareCompatibilityCandidateInputs(args) {
     const standardSiteId = standardSite.site_id;
     const b610Page = await rpc("page_get", { site_id: standardSiteId, page: "scp-9506", details: { wikitext: false, compiled: false } }, { siteId: standardSiteId });
     if (!b610Page) throw new Error("fresh candidate is missing the maintained SCP-9506 shell fixture");
-    await page(Q807_SEARCH_ALL_SOURCE.slug, Q807_SEARCH_ALL_SOURCE.title, Q807_SEARCH_ALL_SOURCE.wikitext, { siteId: standardSiteId, imported: true });
+    await page(Q807_SEARCH_ALL_SOURCE.slug, Q807_SEARCH_ALL_SOURCE.title, Q807_SEARCH_ALL_SOURCE.wikitext, { imported: true });
     sql(database, `update site set from_wikidot=true,favicon_source='https://scp-wiki.wdfiles.com/local--files/site/favicon.gif' where site_id=${standardSiteId}; update page set from_wikidot=true where page_id=${b610Page.page_id}; update page_revision set from_wikidot=true where revision_id=${b610Page.revision_id};`);
     sql(database, `insert into wikidot_corpus_import_run(site_id,source_branch,source_site,manifest_sha256,manifest_row_count,complete_inventory,state,finished_at,summary) values(${standardSiteId},'master','scp-wiki',decode(md5('B689 candidate graph')||md5('B689 candidate graph'),'hex'),0,true,'done',now(),'{}'::jsonb);`);
     for (const dependency of B689_NAVIGATION_DEPENDENCIES) {
