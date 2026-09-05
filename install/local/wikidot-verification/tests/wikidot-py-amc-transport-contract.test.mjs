@@ -13,7 +13,7 @@ const evidencePath = path.join(root, "install/local/wikidot-verification/artifac
 const localControlsEvidencePath = path.join(root, "install/local/wikidot-verification/artifacts/issue1374-amc-local-controls-20260815.json")
 const localControlsTestPath = path.join(root, "install/local/wikidot-verification/tests/test_wikidot_py_amc_local_controls.py")
 const sourceRoot = process.env.WIKIDOT_PY_CHECKOUT ?? path.resolve(root, "../wikidot.py")
-const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? path.join(os.homedir(), ".codex/skills/wikidot-py-operations/scripts/wikidot-python")
+const wrapperPath = process.env.WIKIDOT_PY_WRAPPER ?? path.join(root, "install/local/wikidot-verification/fixtures/wikidot-python-wrapper.sh")
 const gitEnvironment = {
   GIT_CONFIG_GLOBAL: "/dev/null",
   GIT_CONFIG_NOSYSTEM: "1",

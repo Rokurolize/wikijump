@@ -93,7 +93,11 @@ async function git(args) {
 
 async function assertCandidateRuntimeUnchanged(candidateCommit, head) {
   if (candidateCommit === head) return;
-  await git(["merge-base", "--is-ancestor", candidateCommit, head]);
+  try {
+    await git(["merge-base", "--is-ancestor", candidateCommit, head]);
+  } catch {
+    throw new Error("candidate source execution identity does not bind the sealed candidate source identity");
+  }
   const changed = (await git(["diff", "--name-only", `${candidateCommit}..${head}`])).split("\n").filter(Boolean);
   if (changed.length === 0 || changed.some((file) => !VERIFICATION_ONLY_PREFIXES.some((prefix) => file.startsWith(prefix)))) {
     throw new Error("candidate source execution identity does not bind the sealed candidate runtime");

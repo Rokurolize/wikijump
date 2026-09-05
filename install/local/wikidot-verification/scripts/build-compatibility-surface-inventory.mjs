@@ -97,30 +97,30 @@ const AUDITED_OWNERSHIP_REPORTS = Object.freeze([
     sha256: "ef87c37c9bd2ebf661d003c361f386c5d979b30aeebb18a6b44c307124f0636c"
   }
 ])
-const AUDITED_CATALOG_SHA256 = "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1"
+const AUDITED_CATALOG_SHA256 = "b69d218353c988c479c0af977240a7fa273f38918c57156dc3dae171c57f023c"
 const AUDITED_CATALOG_FALLBACK = Object.freeze({
-  count: 93,
-  surface_ids_sha256: "d1e98c8dcef3d61aa32f48d5bb34e9a143b84abdded2a8d8a623f8f7b63645a4",
-  mapping_sha256: "e38a15957d6e2a9f6c96b6e8f608a055412d2a6c713f7193b7b4ae11c8a9adc6"
+  count: 92,
+  surface_ids_sha256: "08a6222562288778e1b0eb705a0281401424f514aeb542bedbabf37a0261a95e",
+  mapping_sha256: "840583979a874ed9b9189b446f39d4932cf043c1e89235db1b443c2fd3572190"
 })
 const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   count: 195,
   surface_ids_sha256: "3a2cf09c168b37eb4539336cca7807f06585ece006a3327c2b2093b327424377",
-  mapping_sha256: "87ca9411bd9b04ab79745cfafe48da32a8c42467c9f808e8730521ba52ae32f7",
+  mapping_sha256: "653e7b54d1a801ea7ca1f193ff678b4c9064da27324947bc3e0944e94e1d74b4",
   fallback_issue: 1387,
-  fallback_count: 171,
-  fallback_surface_ids_sha256: "c92320dff28fcdfc0e73850926f756e43d60cfa9816d08c122e80b073a3f7c71",
-  fallback_mapping_sha256: "98a01e1926458f278a963a8d81706f6906387cc8cc3f88ac643119b43afb2d77"
+  fallback_count: 170,
+  fallback_surface_ids_sha256: "6bdb2e81e2065583a88dddca509e3b734c3c527ee28ad81d1fe100e3223e3acb",
+  fallback_mapping_sha256: "d75c3762dc5eafbf0dc57a622a02722be314367f2faf7277c894b58c02c2d92b"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
-  deepwell_jsonrpc_method: Object.freeze({ count: 164, surface_ids_sha256: "c7c1f277e1a28071da3ed07aeb7cadeb1565cacfcb887c20442a5bf2317ee8c5", mapping_sha256: "92d800f498329e63daa897b2c34e7706ecc9f15d39173881ee575e3f6cd4cb28" }),
+  deepwell_jsonrpc_method: Object.freeze({ count: 167, surface_ids_sha256: "aa5de1edfe523bc181082f65888db2d16ac5359f2d22e7fedc9a612a737dedb5", mapping_sha256: "cc2723e21bc7dfadb3fd233dfe4ae4b1a0f303b00966d12e2b6e79c77a74c38a" }),
   framerail_route: Object.freeze({ count: 28, surface_ids_sha256: "df0699905bb6b1c0a333c910f934d96d9ef1914a0d71e00659522d6be17280cc", mapping_sha256: "51b480159bbc424faf3199e75f50650b1f23d9a3eea0bdee1682ae89adc47a3d" }),
   framerail_server_action: Object.freeze({ count: 97, surface_ids_sha256: "f1d6baa4652c07e181839c8efb90709c35c76154e95f0b71f15c94c0cd9f2dfc", mapping_sha256: "3cc1f313532c1664c989c02e121b4476f25642b48f55a6f5958fc92c97d513a3" }),
   framerail_amc_action_shape: Object.freeze({ count: 2, surface_ids_sha256: "69e643ef40a7efffbcc2cea03dc0f864aa0fb62d51ab8fd0c6062c74af9bee49", mapping_sha256: "945b06829bdf00f44c78040b1b2a4f793bb3e67325c98a94cffee4079c008646" }),
   framerail_amc_module_shape: Object.freeze({ count: 27, surface_ids_sha256: "4f2f2705c525444287f6d2f2835903263953f78d8d2d830f46b296e139de8b13", mapping_sha256: "90c279280479e68e0227a8c4d26ececa5a74b0f0ef8937abeac548dcffc89b61" }),
   page_action: Object.freeze({ count: 25, surface_ids_sha256: "7650ecd18142446eb1c4f557ad13bc525cdd541b31dcbc982ea1f92288f0e206", mapping_sha256: "98ebacfd535793c5c4996797ea2c206f3edea85852520705b01a3f9dd03faad6" }),
   framerail_xmlrpc_method: Object.freeze({ count: 17, surface_ids_sha256: "862b1daa07ba126424e6021d306854f2c431073c024e1497a0ed5ab65b0d118d", mapping_sha256: "8862712f0d5acc1e73ff31f873d4ed8a8e7d2c01afc74ce988894e38508f9a34" }),
-  wws_route: Object.freeze({ count: 47, surface_ids_sha256: "ab5f11a51af87a193c5f3b032a3b79c2e0c3ea1f787c35bb8c9d4d1c474569ab", mapping_sha256: "3cbd7115f9f7a4463abca2965c29a44418dd28013df29c5f396c52a562841bfa" }),
+  wws_route: Object.freeze({ count: 50, surface_ids_sha256: "b83d044571891e697ad1a14ad5c36ce0ef034dedbb3ffca0702f7d00f0cd18b3", mapping_sha256: "b2d851904f7d8e1d9b4399a11dd954760a102142ae7f9676b29b487c63940c88" }),
   wikidot_py_amc_module_shape: Object.freeze({ count: 22, surface_ids_sha256: "4af71683f0059a07403b6cba86cb1d8961e9b9b4c1b2f3be158b2e7bd2918123", mapping_sha256: "a7cd9e3f642420977c413a97231131d38f56e0374e3440955e081b417e3ac48f" })
 })
 const FTML_PUBLIC_PREVIEW_TEST_FEATURES = new Set([
@@ -199,6 +199,7 @@ const PAGE_ACTION_ISSUES = new Map([
 ])
 const CATALOG_FEATURE_ISSUE_EXCEPTIONS = new Map([
   ["catalog-feature:community-site-directory", 1508],
+  ["catalog-feature:data-forms-deleting-form", 1391],
   ["catalog-feature:data-forms-file-field", 1504],
   ["catalog-feature:data-forms-images", 1504],
   ["catalog-feature:forum-signatures", 1506],
@@ -2189,11 +2190,11 @@ const FRAMERAIL_AMC_TESTS = new Map([
   ],
   [
     "framerail-amc-module:list/ListPagesModule:authentication=cookies_ignored;wikidot_token7_accepted_ignored",
-    ["ListPages ignores callback and token controls regardless of form order"]
+    ["ListPages validates the public token but excludes controls from render parameters"]
   ],
   [
     "framerail-amc-module:list/ListPagesModule:callback-index=accepted_ignored",
-    ["ListPages ignores callback and token controls regardless of form order"]
+    ["ListPages validates the public token but excludes controls from render parameters"]
   ],
   [
     "framerail-amc-module:list/ListPagesModule:failure-envelopes=render_failure:status=not_ok;message=Unable to render ListPages module",
@@ -2201,7 +2202,7 @@ const FRAMERAIL_AMC_TESTS = new Map([
   ],
   [
     "framerail-amc-module:list/ListPagesModule:parameter-order=insignificant",
-    ["ListPages ignores callback and token controls regardless of form order"]
+    ["ListPages validates the public token but excludes controls from render parameters"]
   ],
   [
     "framerail-amc-module:list/ListPagesModule:parameters=category,created_at,created_by,createdat,createdby,full_slug,fullname,fullslug,limit,name,offset,order,p,page-type,page_type,pagetype,parent,per_page,perpage,range,rating,rss,rssdescription,rsshome,rsslimit,rssonly,rsstitle,score,separate,tag,tags,updated_at,updatedat,wrapper;module_body=optional_default_template",
@@ -3081,7 +3082,7 @@ async function applyWwsContractEvidence(root, records, sourceRevision) {
           behaviors.length > 0
             ? behaviors.map(({ public_test: publicTest }) => publicTest)
             : [
-                "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 32-registration WWS denominator with source ownership"
+                "install/local/wikidot-verification/tests/wws-route-registration-denominator-cli.test.mjs#CLI writes the exact current 34-registration WWS denominator with source ownership"
               ]
         )
       },

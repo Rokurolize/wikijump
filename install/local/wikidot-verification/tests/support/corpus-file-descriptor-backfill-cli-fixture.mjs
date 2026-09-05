@@ -3,13 +3,14 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export const TEST_RUNTIME_IDENTITY = Object.freeze({
+import { effectiveRuntimeServicesSha256 } from '../../src/standing-browser-runtime-identity.mjs';
+
+const TEST_RUNTIME_IDENTITY_BASE = Object.freeze({
   schema: 'wikijump_syntax_differential.wikijump_runtime_identity.v1',
   wikijump_sha: '1'.repeat(40),
   ftml_sha: '2'.repeat(40),
   dependency_lock_sha256: '3'.repeat(64),
   executable_sha256: '4'.repeat(64),
-  runtime_config_sha256: '5'.repeat(64),
 });
 
 export function requiredArgs(extra = [], { runtimeIdentity = '/srv/runtime-identity.json' } = {}) {
@@ -27,15 +28,15 @@ export function runtimeInspections({
   databaseContainer = 'fake-database',
   deepwellContainer = 'fake-deepwell',
   filesContainer = 'fake-files',
-  deepwellImage = `sha256:${TEST_RUNTIME_IDENTITY.executable_sha256}`,
+  deepwellImage = `sha256:${TEST_RUNTIME_IDENTITY_BASE.executable_sha256}`,
   deepwellHostPort = 12747,
   filesHostPort = 19000,
 } = {}) {
   const labels = (role) => ({
     'com.docker.compose.project': 'wikijump-standing',
     'com.rokurolize.wikijump.role': role,
-    'com.rokurolize.wikijump.sha': TEST_RUNTIME_IDENTITY.wikijump_sha,
-    'com.rokurolize.wikijump.ftml_sha': TEST_RUNTIME_IDENTITY.ftml_sha,
+    'com.rokurolize.wikijump.sha': TEST_RUNTIME_IDENTITY_BASE.wikijump_sha,
+    'com.rokurolize.wikijump.ftml_sha': TEST_RUNTIME_IDENTITY_BASE.ftml_sha,
   });
   const inspection = ({ name, role, id, image, port, hostPort, mounts = [] }) => ({
     Id: id.repeat(64),
@@ -103,6 +104,15 @@ export function runtimeInspections({
     }),
   };
 }
+
+export function runtimeIdentityForInspections(inspections) {
+  return Object.freeze({
+    ...TEST_RUNTIME_IDENTITY_BASE,
+    runtime_config_sha256: effectiveRuntimeServicesSha256(Object.values(inspections)),
+  });
+}
+
+export const TEST_RUNTIME_IDENTITY = runtimeIdentityForInspections(runtimeInspections());
 
 export function runtimeArgs(identityPath, { deepwellHostPort = 12747, filesHostPort = 19000 } = {}) {
   return [

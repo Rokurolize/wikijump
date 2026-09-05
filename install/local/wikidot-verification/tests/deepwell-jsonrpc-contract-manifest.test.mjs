@@ -38,13 +38,13 @@ async function writeSourceFixture(root) {
   }
 }
 
-test("Deepwell JSON-RPC manifest exactly covers the current registered contract", async () => {
+test("Deepwell JSON-RPC manifest exactly covers the current registered contract", async (t) => {
   const result = runCli(cliPath, ["--root", repositoryRoot, "--verify"])
 
   assert.equal(result.status, 0, result.stderr)
   const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"))
   assert.equal(manifest.schema, "wikijump.deepwell_jsonrpc_contract_manifest.v1")
-  assert.equal(manifest.method_count, 164)
+  assert.equal(manifest.method_count, 167)
   assert.equal(manifest.methods.length, manifest.method_count)
   assert.equal(new Set(manifest.methods.map(({ method }) => method)).size, manifest.method_count)
   for (const method of manifest.methods) {
@@ -109,7 +109,8 @@ test("Deepwell JSON-RPC manifest exactly covers the current registered contract"
     assert.equal(typeof test_witness.coverage_gap.reason, "string")
   }
 
-  const outputDirectory = await fs.mkdtemp(path.join(os.tmpdir(), "deepwell-contract-inventory-"))
+  const outputDirectory = await fs.mkdtemp(path.join(repositoryRoot, ".deepwell-contract-inventory-"))
+  t.after(() => fs.rm(outputDirectory, { recursive: true, force: true }))
   const inventoryPath = path.join(outputDirectory, "inventory.json")
   const inventoryResult = runCli(inventoryCliPath, [
     "--root", repositoryRoot,
