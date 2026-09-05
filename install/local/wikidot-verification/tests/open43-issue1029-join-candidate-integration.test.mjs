@@ -10,6 +10,7 @@ import {
   OPEN43_ISSUE1029_CASE_IDS,
   createOpen43Issue1029JoinCandidateCaseSet,
 } from "../src/open43-issue1029-join-candidate-case-set.mjs";
+import { Open43Issue1029JoinBrowserAdapter } from "../src/open43-issue1029-join-browser-adapter.mjs";
 import { sha256Value } from "../src/standing-browser-parity-util.mjs";
 
 const PAGE_ORIGIN = "https://scpaiueouiuiuiui.wikijump.localhost:18443";
@@ -203,4 +204,163 @@ test("issue 1029 executes the exact Join transitions and cleans its membership",
   assert.equal(receipt.verification.authored_join_calls, 0);
   assert.equal(receipt.verification.joined_state_hidden, true);
   assert.equal(receipt.cleanup.membership_absent, true);
+});
+
+class FakeIssue1029BrowserPage {
+  #actor;
+  #requestHandlers = new Set();
+  #routeHandler = null;
+  #url = PAGE_URL;
+  #path = JOIN_PATH;
+  #joinControlCount = 1;
+  #focused = false;
+  #ariaBusy = false;
+  #busyEvents = [];
+
+  constructor(actor) {
+    this.#actor = actor;
+  }
+
+  async goto(url) {
+    this.#url = url;
+    this.#path = new URL(url).pathname;
+  }
+
+  locator() {
+    return {
+      waitFor: async () => {},
+      count: async () => this.#joinControlCount,
+      focus: async () => { this.#focused = true; },
+      click: async () => await this.#activate(),
+      press: async () => await this.#activate(),
+    };
+  }
+
+  async evaluate(fn) {
+    const source = fn.toString();
+    if (source.includes("history.back")) {
+      this.#path = "/";
+      this.#url = `${PAGE_ORIGIN}/`;
+      return;
+    }
+    if (source.includes("history.forward")) {
+      this.#path = JOIN_PATH;
+      this.#url = PAGE_URL;
+      return;
+    }
+    if (source.includes("element?.click()")) {
+      await this.#activate();
+      await this.#activate();
+      return;
+    }
+    return {
+      url: this.#url,
+      path: this.#path,
+      history_length: 2,
+      join_control_count: this.#joinControlCount,
+      focused_control: this.#focused,
+      aria_busy: this.#ariaBusy,
+      busy_events: [...this.#busyEvents],
+      authored_join_calls: 0,
+      source_disclosure: false,
+    };
+  }
+
+  on(event, handler) {
+    if (event === "request") this.#requestHandlers.add(handler);
+  }
+
+  off(event, handler) {
+    if (event === "request") this.#requestHandlers.delete(handler);
+  }
+
+  async route(_matcher, handler) {
+    this.#routeHandler = handler;
+  }
+
+  async unroute() {
+    this.#routeHandler = null;
+  }
+
+  async waitForTimeout() {}
+
+  async waitForFunction() {
+    assert.equal(this.#joinControlCount, 0);
+  }
+
+  async waitForURL() {}
+
+  async close() {}
+
+  async #activate() {
+    if (this.#actor === "anonymous" || this.#joinControlCount === 0) return;
+    const request = {
+      method: () => "POST",
+      url: () => `${PAGE_URL}?/membershipJoin`,
+    };
+    for (const handler of this.#requestHandlers) handler(request);
+    this.#ariaBusy = true;
+    this.#busyEvents.push(true);
+    if (this.#routeHandler !== null) {
+      await this.#routeHandler({
+        continue: async () => {
+          this.#joinControlCount = 0;
+          this.#ariaBusy = false;
+        },
+      });
+    }
+  }
+}
+
+function fakeIssue1029BrowserContexts() {
+  return {
+    async setActiveFixture() {},
+    async newCandidateContext({ storageState }) {
+      const actor = storageState?.cookies?.length > 0 ? "eligible" : "anonymous";
+      return {
+        context: {
+          async newPage() {
+            return new FakeIssue1029BrowserPage(actor);
+          },
+        },
+      };
+    },
+    async captureCandidateObservation() {
+      return capture();
+    },
+  };
+}
+
+test("successful issue 1029 request observation releases its bounded timeout", async () => {
+  const nativeSetTimeout = globalThis.setTimeout;
+  const nativeClearTimeout = globalThis.clearTimeout;
+  const tracked = new Set();
+  globalThis.setTimeout = (callback, milliseconds, ...args) => {
+    let timer;
+    const wrapped = (...callbackArgs) => {
+      tracked.delete(timer);
+      return callback(...callbackArgs);
+    };
+    timer = nativeSetTimeout(wrapped, milliseconds, ...args);
+    if (milliseconds === 300_000) tracked.add(timer);
+    return timer;
+  };
+  globalThis.clearTimeout = (timer) => {
+    tracked.delete(timer);
+    return nativeClearTimeout(timer);
+  };
+  try {
+    const adapter = new Open43Issue1029JoinBrowserAdapter({
+      browserContexts: fakeIssue1029BrowserContexts(),
+      storageState: () => ({cookies: [{name: "actor", value: "eligible"}], origins: []}),
+    });
+    const result = await adapter.run({pageUrl: PAGE_URL, pagePath: JOIN_PATH, reset: async () => {}});
+    assert.equal(result.operations.click.mutation_request_count, 1);
+    assert.equal(result.operations.repeated.mutation_request_count, 1);
+    assert.equal(tracked.size, 0, "successful request observation left a 300-second timeout active");
+  } finally {
+    globalThis.setTimeout = nativeSetTimeout;
+    globalThis.clearTimeout = nativeClearTimeout;
+    for (const timer of tracked) nativeClearTimeout(timer);
+  }
 });

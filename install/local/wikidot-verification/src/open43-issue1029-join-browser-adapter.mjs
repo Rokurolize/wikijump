@@ -170,10 +170,20 @@ export class Open43Issue1029JoinBrowserAdapter {
           element?.click();
           element?.click();
         }, JOIN_SELECTOR);
-      await Promise.race([
-        intercepted,
-        new Promise((_, reject) => setTimeout(() => reject(new Error("issue 1029 Join request was not observed")), TIMEOUT_MS)),
-      ]);
+      let observationTimer = null;
+      try {
+        await Promise.race([
+          intercepted,
+          new Promise((_, reject) => {
+            observationTimer = setTimeout(
+              () => reject(new Error("issue 1029 Join request was not observed")),
+              TIMEOUT_MS,
+            );
+          }),
+        ]);
+      } finally {
+        if (observationTimer !== null) clearTimeout(observationTimer);
+      }
       const busy = await publicState(page);
       release();
       await activation;
