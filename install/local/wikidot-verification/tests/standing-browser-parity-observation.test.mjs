@@ -73,6 +73,31 @@ test("settled browser geometry waits through a post-resource layout shift", asyn
   }
 });
 
+test("layout stability falls back to a contract selector when page-content is absent", async () => {
+  const previous = { document: globalThis.document, performance: globalThis.performance, requestAnimationFrame: globalThis.requestAnimationFrame, window: globalThis.window };
+  let frame = 0;
+  const settingsRoot = {
+    getBoundingClientRect: () => ({ x: 128, y: frame === 0 ? 320 : 330, width: 640, height: 360 }),
+    querySelectorAll: () => [],
+  };
+  globalThis.document = { querySelector: (selector) => selector === "#user-settings-form" ? settingsRoot : null };
+  globalThis.performance = { now: () => frame * 16 };
+  globalThis.requestAnimationFrame = (callback) => { frame += 1; callback(); };
+  globalThis.window = { scrollX: 0, scrollY: 0 };
+  try {
+    const result = await waitForBrowserParityLayoutStable({ evaluate: async (callback, argument) => callback(argument) }, {
+      rootSelector: "#page-content",
+      fallbackRootSelectors: ["#user-settings-form"],
+      stableFrames: 2,
+      timeoutMs: 1_000,
+      tolerancePx: 0.25,
+    });
+    assert.equal(result.status, "stable");
+    assert.equal(result.root_selector, "#user-settings-form");
+    assert.ok(frame >= 3);
+  } finally { Object.assign(globalThis, previous); }
+});
+
 test("external wdfiles stylesheet ORB failures remain separately attributable", () => {
   assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_BLOCKED_BY_ORB" }), true);
   assert.equal(isExpectedExternalAssetFailure({ url: "https://scp-wiki.wdfiles.com/theme.css", resource_type: "stylesheet", error: "net::ERR_TIMED_OUT" }), true);

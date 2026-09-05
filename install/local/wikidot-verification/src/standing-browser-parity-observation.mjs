@@ -535,6 +535,7 @@ export async function waitForBrowserParityLayoutStable(
   page,
   {
     rootSelector = "#page-content",
+    fallbackRootSelectors = [],
     stableFrames = 3,
     timeoutMs = 5_000,
     tolerancePx = 0.25,
@@ -543,6 +544,13 @@ export async function waitForBrowserParityLayoutStable(
   if (typeof rootSelector !== "string" || rootSelector === "") {
     throw new Error("browser layout stability root selector is invalid");
   }
+  if (
+    !Array.isArray(fallbackRootSelectors) ||
+    fallbackRootSelectors.some((selector) => typeof selector !== "string" || selector === "")
+  ) {
+    throw new Error("browser layout stability fallback root selectors are invalid");
+  }
+  const rootSelectors = [...new Set([rootSelector, ...fallbackRootSelectors])];
   if (!Number.isSafeInteger(stableFrames) || stableFrames < 1) {
     throw new Error("browser layout stability frame count is invalid");
   }
@@ -553,9 +561,10 @@ export async function waitForBrowserParityLayoutStable(
     throw new Error("browser layout stability tolerance is invalid");
   }
   return await page.evaluate(
-    async ({ rootSelector: selector, stableFrames: requiredStableFrames, timeoutMs: limit, tolerancePx: tolerance }) => {
+    async ({ rootSelectors: selectors, stableFrames: requiredStableFrames, timeoutMs: limit, tolerancePx: tolerance }) => {
+      const selector = selectors.find((candidate) => document.querySelector(candidate));
+      if (!selector) throw new Error(`browser layout stability root is missing: ${selectors.join(", ")}`);
       const root = document.querySelector(selector);
-      if (!root) throw new Error(`browser layout stability root is missing: ${selector}`);
       const coordinates = (element) => {
         const box = element.getBoundingClientRect();
         return [
@@ -611,7 +620,7 @@ export async function waitForBrowserParityLayoutStable(
         `browser layout did not stabilize within ${limit} ms for ${selector}`,
       );
     },
-    { rootSelector, stableFrames, timeoutMs, tolerancePx },
+    { rootSelectors, stableFrames, timeoutMs, tolerancePx },
   );
 }
 
@@ -755,7 +764,9 @@ export async function captureBrowserParityObservation({
     // browser-visible settled state without an expensive full-page capture.
     await prewarmBrowserParityLazyImages(page);
     const resourceCompletion = await waitForBrowserParitySettledResources(page, timeoutMs);
-    const layoutStability = await waitForBrowserParityLayoutStable(page);
+    const layoutStability = await waitForBrowserParityLayoutStable(page, {
+      fallbackRootSelectors: contract.geometry_selectors ?? [],
+    });
     document = await captureDocumentObservation(page, {
       contract,
       phase: "settled",
