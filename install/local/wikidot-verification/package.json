@@ -9,6 +9,7 @@
   "packageManager": "pnpm@11.10.0",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
+    "test:ci": "node --test tests/*.test.mjs",
     "completion": "node scripts/run-completion-controller.mjs",
     "compatibility-inventory": "node scripts/build-compatibility-surface-inventory.mjs",
     "compatibility-ledger": "node scripts/build-compatibility-ledger.mjs",
