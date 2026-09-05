@@ -566,12 +566,41 @@ export async function launchParityBrowser({
   }
 }
 
-export async function closeParityBrowserResources(context, browser) {
+async function boundedBrowserClose(close, timeoutMs, label) {
+  let timer = null;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(close),
+      new Promise((_, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`${label} close exceeded ${timeoutMs}ms`)),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+  }
+}
+
+export async function closeParityBrowserResources(
+  context,
+  browser,
+  { timeoutMs = 10_000 } = {},
+) {
   const failures = [];
   if (context !== null) {
-    await context.close().catch((error) => failures.push(error));
+    await boundedBrowserClose(
+      () => context.close(),
+      timeoutMs,
+      "context",
+    ).catch((error) => failures.push(error));
   }
-  await browser.close().catch((error) => failures.push(error));
+  await boundedBrowserClose(
+    () => browser.close(),
+    timeoutMs,
+    "browser",
+  ).catch((error) => failures.push(error));
   if (failures.length > 0) {
     throw new AggregateError(
       failures,
