@@ -611,7 +611,6 @@ mod tests {
     #[test]
     fn gallery_requirement_limits_keep_ordinary_and_corpus_boundaries_separate() {
         assert_eq!(MAX_GALLERY_REQUIREMENTS, 32);
-        assert!(MAX_CORPUS_GALLERY_REQUIREMENTS >= 100);
         assert_eq!(MAX_CORPUS_GALLERY_REQUIREMENTS, 128);
     }
 
