@@ -352,7 +352,9 @@ impl RenderService {
             for line_end in ["\r\n", "\n"] {
                 let suffix = format!("{close}<br>{line_end}");
                 if output.ends_with(&suffix) {
-                    output.truncate(output.len() - "<br>".len() - line_end.len());
+                    output.truncate(output.len() - suffix.len());
+                    output.push_str(close);
+                    output.push_str(line_end);
                     return;
                 }
             }

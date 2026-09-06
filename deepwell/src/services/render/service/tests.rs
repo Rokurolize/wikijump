@@ -8708,7 +8708,7 @@ fn skips_generic_includes_inside_wikidot_comments() {
     )
     .to_owned();
 
-    RenderService::mask_wikidot_comment_include_markers(&mut wikitext);
+    RenderService::mask_wikidot_literal_include_markers(&mut wikitext);
     let mut includes = Vec::new();
     ftml::include(
         &wikitext,
@@ -8719,7 +8719,7 @@ fn skips_generic_includes_inside_wikidot_comments() {
         include_error,
     )
     .expect("include collection should skip comment-hidden usage examples");
-    RenderService::unmask_wikidot_comment_include_markers(&mut wikitext);
+    RenderService::unmask_wikidot_literal_include_markers(&mut wikitext);
 
     assert_eq!(includes.len(), 1);
     assert_eq!(
@@ -8727,6 +8727,42 @@ fn skips_generic_includes_inside_wikidot_comments() {
         &PageRef::page_only("component:live")
     );
     assert!(wikitext.contains("[[include :scp-wiki:component:interwiki-style"));
+}
+
+#[test]
+fn skips_generic_includes_inside_wikidot_literal_regions() {
+    let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+    let mut wikitext = concat!(
+        "[[code]]\n",
+        "[[include component:code-example]]\n",
+        "[[/code]]\n",
+        "[[span class=\"code-cell\"]] @@ [[include component:raw-example]] @@ [[/span]]\n",
+        "[!-- [[include component:comment-example]] --]\n",
+        "[[include component:live]]\n",
+    )
+    .to_owned();
+
+    RenderService::mask_wikidot_literal_include_markers(&mut wikitext);
+    let mut includes = Vec::new();
+    ftml::include(
+        &wikitext,
+        &settings,
+        CollectingIncluder {
+            includes: &mut includes,
+        },
+        include_error,
+    )
+    .expect("include collection should skip literal usage examples");
+    RenderService::unmask_wikidot_literal_include_markers(&mut wikitext);
+
+    assert_eq!(includes.len(), 1);
+    assert_eq!(
+        includes[0].page_ref(),
+        &PageRef::page_only("component:live")
+    );
+    assert!(wikitext.contains("[[include component:code-example]]"));
+    assert!(wikitext.contains("[[include component:raw-example]]"));
+    assert!(wikitext.contains("[[include component:comment-example]]"));
 }
 
 #[test]
@@ -8746,7 +8782,7 @@ fn strips_included_comment_usage_examples_after_expansion() {
     )
     .to_owned();
 
-    RenderService::mask_wikidot_comment_include_markers(&mut component_source);
+    RenderService::mask_wikidot_literal_include_markers(&mut component_source);
     let mut nested_includes = Vec::new();
     ftml::include(
         &component_source,
@@ -8757,7 +8793,7 @@ fn strips_included_comment_usage_examples_after_expansion() {
         include_error,
     )
     .expect("comment usage examples should not request nested pages");
-    RenderService::unmask_wikidot_comment_include_markers(&mut component_source);
+    RenderService::unmask_wikidot_literal_include_markers(&mut component_source);
 
     let (mut expanded, included_pages) = ftml::include(
         "[[include :scp-wiki:component:interwiki-style]]\n",
@@ -8801,7 +8837,7 @@ fn keeps_selected_comment_branch_includes_collectable() {
     )
     .to_owned();
 
-    RenderService::mask_wikidot_comment_include_markers(&mut wikitext);
+    RenderService::mask_wikidot_literal_include_markers(&mut wikitext);
     let mut includes = Vec::new();
     ftml::include(
         &wikitext,
@@ -8812,7 +8848,7 @@ fn keeps_selected_comment_branch_includes_collectable() {
         include_error,
     )
     .expect("include collection should keep selected branch includes");
-    RenderService::unmask_wikidot_comment_include_markers(&mut wikitext);
+    RenderService::unmask_wikidot_literal_include_markers(&mut wikitext);
 
     assert_eq!(includes.len(), 1);
     assert_eq!(

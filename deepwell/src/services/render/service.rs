@@ -438,7 +438,7 @@ pub(super) const MIN_URL_OFFSET_LISTPAGES_CONTENT_BYTES: usize = 100_000;
 pub(super) const MIN_URL_OFFSET_LISTPAGES_RENDER_TIMEOUT_SECS: u64 = 10;
 pub(super) const INCLUDE_VARIABLE_OPEN_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_OPEN__";
 pub(super) const INCLUDE_VARIABLE_CLOSE_SENTINEL: &str = "__WIKIJUMP_INCLUDE_VAR_CLOSE__";
-const WIKIDOT_COMMENT_INCLUDE_SENTINEL: &str = "__WIKIJUMP_COMMENT_INCLUDE__";
+const WIKIDOT_LITERAL_INCLUDE_SENTINEL: &str = "__WIKIJUMP_LITERAL_INCLUDE__";
 pub(super) const WIKIDOT_COMPAT_HTML_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATHTML";
 pub(super) const WIKIDOT_COMPAT_LINK_SENTINEL_PREFIX: &str = "WIKIJUMPWIKIDOTCOMPATLINK";
 pub(super) const WIKIDOT_WIKIPEDIA_LINK_SENTINEL_PREFIX: &str =
@@ -635,8 +635,8 @@ static WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX: LazyLock<Regex> = LazyLock::new(
     ))
     .unwrap()
 });
-static WIKIDOT_INCLUDE_OPEN_LINE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?im)^\[\[\s*(?P<keyword>include)(?P<after>\s+)").unwrap()
+static WIKIDOT_INCLUDE_OPEN_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?i)\[\[\s*(?P<keyword>include)(?P<after>\s+|\[!--)").unwrap()
 });
 pub(super) static WIKIDOT_COMPAT_STYLE_BLOCK_REGEX: LazyLock<Regex> =
     LazyLock::new(|| {
@@ -1933,6 +1933,8 @@ impl RenderService {
             persist_compiled_text,
             url,
         } = options;
+        let trusted_corpus_render =
+            max_include_expansions == MAX_CORPUS_INCLUDE_EXPANSION_TOTAL;
         let list_pages_pager_route = render_context.list_pages_pager_route();
         let RenderContext {
             current_site_id,
@@ -2003,6 +2005,7 @@ impl RenderService {
             current_site,
             trace,
             persist_compiled_text,
+            trusted_corpus_render,
         ))
         .await
     }
@@ -2038,6 +2041,7 @@ impl RenderService {
             Some(current_site),
             None,
             false,
+            false,
         )
         .await
     }
@@ -2057,6 +2061,7 @@ impl RenderService {
         current_site: Option<SiteModel>,
         trace: Option<(&CorpusRenderTrace, CorpusRenderScope)>,
         persist_compiled_text: bool,
+        trusted_corpus_render: bool,
     ) -> Result<RenderInnerOutput> {
         let config = ctx.config();
         let make_error =
@@ -2241,6 +2246,7 @@ impl RenderService {
                 current_page_id,
                 viewer_user_id,
                 current_site.as_ref(),
+                trusted_corpus_render,
             )
             .await?
             {
@@ -2615,6 +2621,7 @@ impl RenderService {
             current_page_id,
             viewer_user_id,
             current_site.as_ref(),
+            trusted_corpus_render,
         )
         .await?
         {
@@ -3660,30 +3667,31 @@ impl RenderService {
         }
     }
 
-    fn mask_wikidot_comment_include_markers(wikitext: &mut String) {
-        if !wikitext.contains("[!--") {
+    fn mask_wikidot_literal_include_markers(wikitext: &mut String) {
+        if !has_include_opening_candidate(wikitext) {
             return;
         }
         let source = wikitext.clone();
+        let literal_regions = LiteralRegionIndex::new_wikidot_syntax(&source);
         let mut replacements = Vec::new();
 
-        for captures in WIKIDOT_INCLUDE_OPEN_LINE_REGEX.captures_iter(&source) {
+        for captures in WIKIDOT_INCLUDE_OPEN_REGEX.captures_iter(&source) {
             let keyword = captures
                 .name("keyword")
                 .expect("include keyword capture exists");
-            if Self::is_inside_wikidot_comment(&source, keyword.start()) {
+            if literal_regions.contains(keyword.start()) {
                 replacements.push(keyword.range());
             }
         }
 
         for range in replacements.into_iter().rev() {
-            wikitext.replace_range(range, WIKIDOT_COMMENT_INCLUDE_SENTINEL);
+            wikitext.replace_range(range, WIKIDOT_LITERAL_INCLUDE_SENTINEL);
         }
     }
 
-    fn unmask_wikidot_comment_include_markers(wikitext: &mut String) {
-        if wikitext.contains(WIKIDOT_COMMENT_INCLUDE_SENTINEL) {
-            *wikitext = wikitext.replace(WIKIDOT_COMMENT_INCLUDE_SENTINEL, "include");
+    fn unmask_wikidot_literal_include_markers(wikitext: &mut String) {
+        if wikitext.contains(WIKIDOT_LITERAL_INCLUDE_SENTINEL) {
+            *wikitext = wikitext.replace(WIKIDOT_LITERAL_INCLUDE_SENTINEL, "include");
         }
     }
 
@@ -4055,7 +4063,7 @@ impl RenderService {
                     depth,
                 );
             }
-            Self::mask_wikidot_comment_include_markers(&mut wikitext);
+            Self::mask_wikidot_literal_include_markers(&mut wikitext);
             let image_block_included_pages = if expansion_context
                 .expand_wikidot_image_blocks
                 && expansion_context.current_site_slug
@@ -4074,7 +4082,7 @@ impl RenderService {
             };
 
             if !has_include_opening_candidate(&wikitext) {
-                Self::unmask_wikidot_comment_include_markers(&mut wikitext);
+                Self::unmask_wikidot_literal_include_markers(&mut wikitext);
                 protect_include_variables(&mut wikitext);
                 return Ok(IncludeExpansion {
                     wikitext,
@@ -4096,7 +4104,7 @@ impl RenderService {
 
             if includes.is_empty() {
                 let mut wikitext = wikitext;
-                Self::unmask_wikidot_comment_include_markers(&mut wikitext);
+                Self::unmask_wikidot_literal_include_markers(&mut wikitext);
                 protect_include_variables(&mut wikitext);
                 return Ok(IncludeExpansion {
                     wikitext,
@@ -4254,7 +4262,7 @@ impl RenderService {
                 include_error,
             )?;
 
-            Self::unmask_wikidot_comment_include_markers(&mut expanded);
+            Self::unmask_wikidot_literal_include_markers(&mut expanded);
             protect_include_variables(&mut expanded);
 
             let mut included_pages = image_block_included_pages;

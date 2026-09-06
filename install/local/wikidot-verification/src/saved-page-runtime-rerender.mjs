@@ -8,7 +8,7 @@ import {
 
 const SITE_SLUG = "scp-wiki";
 const IP_ADDRESS = "127.0.0.1";
-const DEEPWELL_RENDERER_EPOCH = 10;
+const DEEPWELL_RENDERER_EPOCH = 11;
 export const RERENDER_RECEIPT_SCHEMA =
   "wikijump_syntax_differential.saved_page_runtime_rerender_receipt.v1";
 
