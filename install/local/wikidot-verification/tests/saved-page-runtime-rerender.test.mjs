@@ -61,7 +61,7 @@ function page(generator, source = "saved source") {
 }
 
 class FakeRpc {
-  constructor({after = page("ftml [22222222]; deepwell-render/v10")} = {}) {
+  constructor({after = page("ftml [22222222]; deepwell-render/v11")} = {}) {
     this.after = after;
     this.calls = [];
     this.rerendered = false;
@@ -97,7 +97,7 @@ test("saved-page rerender preserves source and revision while updating the compi
   });
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.pages[0].before.revision_id, receipt.pages[0].after.revision_id);
-  assert.equal(receipt.pages[0].after.compiled_generator, "ftml [22222222]; deepwell-render/v10");
+  assert.equal(receipt.pages[0].after.compiled_generator, "ftml [22222222]; deepwell-render/v11");
   assert.deepEqual(
     rpc.calls.find((call) => call.method === "page_rerender").params,
     {site_id: 13, category_id: 11, page_id: 10},
@@ -137,7 +137,7 @@ test("saved-page rerender rejects a stale compiler after rerender", async () => 
       runtimeIdentity,
       administratorEmail: "admin@example.test",
       administratorPassword: "secret",
-      rpcClient: new FakeRpc({after: page("ftml [11111111]; deepwell-render/v10")}),
+      rpcClient: new FakeRpc({after: page("ftml [11111111]; deepwell-render/v11")}),
     }),
     /was not compiled by FTML 22222222/u,
   );

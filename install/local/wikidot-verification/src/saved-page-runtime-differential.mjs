@@ -112,7 +112,7 @@ function classCheck(html, requiredTokens) {
   return {status: matching ? "match" : "mismatch", required_tokens: requiredTokens};
 }
 
-const DEEPWELL_RENDERER_EPOCH = 10;
+const DEEPWELL_RENDERER_EPOCH = 11;
 
 export function compiledGeneratorCheck(documentHtml, ftmlSha) {
   const observed = Array.from(

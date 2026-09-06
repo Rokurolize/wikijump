@@ -38,6 +38,10 @@ const WIKIDOT_GALLERY_EMPTY_ERROR: &str = r#"<div class="error-block">Sorry, we 
 const MAX_GALLERY_FILES: u64 = 500;
 const MAX_GALLERY_ENTRIES: usize = 500;
 const MAX_GALLERY_REQUIREMENTS: usize = 32;
+// The frozen EN corpus contains art archive pages with 100 distinct Gallery
+// blocks. Only trusted corpus finalizer renders receive the larger ceiling;
+// ordinary renders retain the bound above.
+const MAX_CORPUS_GALLERY_REQUIREMENTS: usize = 128;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum GallerySize {
@@ -226,6 +230,7 @@ impl RenderService {
         current_page_id: Option<i64>,
         viewer_user_id: Option<i64>,
         current_site: Option<&SiteModel>,
+        trusted_corpus_render: bool,
     ) -> Result<bool> {
         let mut requirement_ids = HashSet::new();
         let mut requirements = Vec::new();
@@ -249,7 +254,12 @@ impl RenderService {
         let context = current_site_id
             .zip(current_site)
             .filter(|(site_id, site)| *site_id == site.site_id);
-        if requirements.len() > MAX_GALLERY_REQUIREMENTS {
+        let max_requirements = if trusted_corpus_render {
+            MAX_CORPUS_GALLERY_REQUIREMENTS
+        } else {
+            MAX_GALLERY_REQUIREMENTS
+        };
+        if requirements.len() > max_requirements {
             return Ok(false);
         }
         let mut loader = context.map(|(site_id, site)| {
@@ -597,6 +607,12 @@ fn render_gallery_dom(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn gallery_requirement_limits_keep_ordinary_and_corpus_boundaries_separate() {
+        assert_eq!(MAX_GALLERY_REQUIREMENTS, 32);
+        assert_eq!(MAX_CORPUS_GALLERY_REQUIREMENTS, 128);
+    }
 
     #[test]
     fn gallery_dom_matches_the_frozen_static_thumbnail_shape_without_scripts() {
