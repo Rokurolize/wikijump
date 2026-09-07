@@ -48,6 +48,24 @@ Evidence:
 
 - `/mnt/oracle-store/wjlab/sandbox-oracle-20260722/site-settings-scope-v1/mutations/locale/verdict.json` (SHA-256 `45d07066f84d8990b768817a522a53c3b2d260f9baac8bc040527c6c70462275`), cases: none
 
+### Current standard saved pages do not automatically render parent breadcrumbs
+
+- Observation ID: `parent-relations-standard-layout-no-automatic-breadcrumbs-20260908`
+- Classification: `documentation-correction`
+- Observed at: `2026-09-08`
+- Analysis: Legacy Wikidot documentation says that assigning a parent places breadcrumb navigation at the top of the page and lists div#breadcrumbs in the default page layout. Current live Wikidot contradicts that automatic standard-layout presentation. A reversible sandbox-for-codex lifecycle created a root-to-parent-to-child chain, successfully mutated parent relations, renamed the parent, exercised no-parent, deleted-parent, cyclic, and independent controls, and observed no #breadcrumbs element in any saved-page response. Independently, the synchronized www corpus records doc:site-structure with parent_fullname doc:start, while a current HTTP 200 read of that exact documentation page also contains no #breadcrumbs. The parent relationship remains authoritative for structural queries and other consumers. The separately documented Pro custom-layout [[breadcrumbs]] element was not observed and must not be inferred from this standard-layout correction.
+
+Normative behavior:
+
+- Persist and expose parent relationships according to the documented site-structure contract; this observation changes only automatic standard saved-page presentation.
+- A standard saved page must not synthesize div#breadcrumbs solely because one or more parent relationships are available.
+- Missing, deleted, renamed, or cyclic parent state must not cause the standard saved-page shell to invent breadcrumb markup.
+- The Pro custom-layout [[breadcrumbs]] element remains a separate documented surface and is not redefined by this observation.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/issue1063-parent-breadcrumb-live-20260908.json` (SHA-256 `5c68a8df37651e4fc0753860ca2aac2e6a8abac637665a1ff7fd8253852ae444`), cases: `issue1063-parent-chain-standard-layout-no-breadcrumbs`, `issue1063-renamed-parent-standard-layout-no-breadcrumbs`, `issue1063-no-parent-standard-layout-control`, `issue1063-deleted-parent-standard-layout-control`, `issue1063-cycle-standard-layout-control`, `issue1063-independent-standard-layout-control`, `issue1063-current-parented-documentation-page-no-breadcrumbs`
+
 
 
 ## Suggested public TDD seams
