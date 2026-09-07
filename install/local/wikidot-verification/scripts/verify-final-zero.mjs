@@ -22,6 +22,8 @@ const CURRENT_DENOMINATOR_SCHEMA = "wikijump.compatibility_final_zero_denominato
 const DEFERRED_DENOMINATOR_SCHEMA = "wikijump.compatibility_deferred_denominator.v1";
 const DEFERRED_LEDGER_SCHEMA = "wikijump.compatibility_deferred_ledger.v1";
 const STANDING_MATRIX_SCHEMA = "wikijump.compatibility_standing_matrix.v2";
+const CURRENT_OPEN_ISSUES_SCHEMA = "wikijump.current_open_issues.v1";
+const TRACKING_ISSUE = 1089;
 const LEDGER_FIELDS = ["schema", "counts", "inputs", "source_manifests", "raw_source_records", "source_local_identities", "surface_assignments", "relationships", "deferred_exclusions", "rows"];
 const LEDGER_COUNT_FIELDS = ["raw_records", "public_inventory_records", "canonical_surfaces", "input_alias_edges", "deduplication_relationships"];
 const LEDGER_INPUT_FIELDS = ["inventory", "wikijump", "ftml"];
@@ -298,6 +300,27 @@ function completeLedger(ledger) {
   return ledger;
 }
 
+function validateCurrentOpenIssues(value) {
+  exactKeys(value, ["schema", "repository", "captured_at", "tracking_issue", "issues"], "current open issues");
+  if (value.schema !== CURRENT_OPEN_ISSUES_SCHEMA) fail("current open issues has unsupported schema");
+  if (value.repository !== "Rokurolize/wikijump") fail("current open issues is for the wrong repository");
+  if (value.tracking_issue !== TRACKING_ISSUE) fail("current open issues has the wrong tracking issue");
+  requireNonEmptyString(value.captured_at, "current open issues captured_at");
+  if (!Array.isArray(value.issues)) fail("current open issues issues must be an array");
+  const numbers = new Set();
+  for (const issue of value.issues) {
+    exactKeys(issue, ["number", "title", "url"], "current open issue");
+    if (!Number.isSafeInteger(issue.number) || issue.number <= 0 || numbers.has(issue.number)) {
+      fail("current open issues contains a missing or duplicate issue number");
+    }
+    numbers.add(issue.number);
+    requireNonEmptyString(issue.title, `current open issue ${issue.number} title`);
+    requireNonEmptyString(issue.url, `current open issue ${issue.number} url`);
+  }
+  if (!numbers.has(TRACKING_ISSUE)) fail("current open issues does not contain the tracking issue");
+  return value.issues;
+}
+
 function validateStandingMatrix(value) {
   exactKeys(value, MATRIX_FIELDS, "standing matrix");
   if (value.schema !== STANDING_MATRIX_SCHEMA || value.status !== "pass" || typeof value.run_id !== "string" || value.run_id === "" || !HEX40.test(value.merge_commit ?? "") || !HEX40.test(value.merge_tree ?? "") || !HEX40.test(value.ftml_sha ?? "") || !HEX40.test(value.ftml_tree ?? "") || !HEX40.test(value.candidate_commit ?? "") || !HEX64.test(value.candidate_artifact_key ?? "")) fail("standing matrix is not a sealed passing matrix");
@@ -434,11 +457,16 @@ async function verifyStandingRefresh(matrix, promotion) {
   return refresh;
 }
 
-function finalZeroCounts(ledger, finalFrozen) {
+function finalZeroCounts(ledger, finalFrozen, openIssues) {
   const rows = ledger.rows;
   const count = (predicate) => rows.reduce((total, row) => total + (predicate(row) ? 1 : 0), 0);
+  const ownedIssueNumbers = new Set(rows.flatMap((row) => row.issues.numbers ?? []));
+  const openProductIssues = openIssues.filter(({number}) => number !== TRACKING_ISSUE);
+  const unownedOpenProductIssues = openProductIssues.filter(({number}) => !ownedIssueNumbers.has(number));
   const counts = {
-    complete_product_rows_open_or_unreconciled: count((row) => row.closure.state !== "closed" || row.issues.state !== "present" || row.blockers.state !== "none"),
+    complete_product_rows_open_or_unreconciled:
+      count((row) => row.closure.state !== "closed" || row.issues.state !== "present" || row.blockers.state !== "none") +
+      openProductIssues.length,
     duplicate_or_ambiguous_canonical_identities: 0,
     missing_independent_standards_or_spec_reviews: finalFrozen?.receipt?.reviews ? 0 : rows.length,
     missing_or_failing_candidate_proofs: count((row) => row.candidate.state !== "pass"),
@@ -447,7 +475,9 @@ function finalZeroCounts(ledger, finalFrozen) {
     missing_public_surfaces: count((row) => typeof row.surface_id !== "string" || row.surface_id === ""),
     unimplemented_source_required_rows: count((row) => row.source.state !== "present"),
     unknown_owners_or_untyped_edges: count((row) => row.owners.state !== "present"),
-    unrepresented_charter_requirements: count((row) => row.issues.state !== "present" || row.tests.state !== "present"),
+    unrepresented_charter_requirements:
+      count((row) => row.issues.state !== "present" || row.tests.state !== "present") +
+      unownedOpenProductIssues.length,
     unresolved_wikidot_evidence_requirements: count((row) => row.evidence.state !== "present"),
   };
   if (JSON.stringify(Object.keys(counts).sort()) !== JSON.stringify([...FINAL_ZERO_CLASSES].sort())) fail("final-zero count classes do not match the campaign contract");
@@ -455,7 +485,7 @@ function finalZeroCounts(ledger, finalFrozen) {
 }
 
 export function parseArgs(argv) {
-  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "final-frozen", "repository", "output"]);
+  const names = new Set(["ledger", "denominator", "deferred-denominator", "deferred-ledger", "standing-matrix", "final-frozen", "open-issues", "repository", "output"]);
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const flag = argv[index];
@@ -470,23 +500,25 @@ export function parseArgs(argv) {
 }
 
 export function usage() {
-  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --final-frozen FILE --repository DIRECTORY --output FILE";
+  return "Usage: verify-final-zero.mjs --ledger FILE --denominator FILE --deferred-denominator FILE --deferred-ledger FILE --standing-matrix FILE --final-frozen FILE --open-issues FILE --repository DIRECTORY --output FILE";
 }
 
-export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, finalFrozen, repository}) {
+export async function verifyFinalZero({ledger, denominator, deferredDenominator, deferredLedger, standingMatrix, finalFrozen, openIssues, repository}) {
   const repositoryPath = await requireRepository(repository);
-  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput] = await Promise.all([
+  const [ledgerInput, denominatorInput, deferredDenominatorInput, deferredLedgerInput, standingInput, openIssuesInput] = await Promise.all([
     readJsonInput(ledger, "canonical compatibility ledger"),
     readJsonInput(denominator, "current denominator"),
     readJsonInput(deferredDenominator, "deferred denominator"),
     readJsonInput(deferredLedger, "deferred ledger"),
     readJsonInput(standingMatrix, "standing compatibility matrix"),
+    readJsonInput(openIssues, "current open issues"),
   ]);
   const ledgerValue = completeLedger(ledgerInput.value);
   const denominatorRows = validateCurrentDenominator(denominatorInput.value);
   validateDeferredDenominator(deferredDenominatorInput.value);
   validateDeferredLedger(deferredLedgerInput.value);
   const matrixRows = validateStandingMatrix(standingInput.value);
+  const currentOpenIssues = validateCurrentOpenIssues(openIssuesInput.value);
   const promotion = await verifyPromotion(standingInput.value, ledgerValue);
   const frozen = await verifyFinalFrozenReceipt({
     receiptPath: path.resolve(finalFrozen),
@@ -501,7 +533,7 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
   reconcileRows(ledgerValue, denominatorRows, matrixRows);
   await verifyStandingRefresh(standingInput.value, promotion);
   await verifyRepositoryMerge(repositoryPath, standingInput.value.merge_commit, standingInput.value.merge_tree, standingInput.value.candidate_commit);
-  const counts = finalZeroCounts(ledgerValue, frozen);
+  const counts = finalZeroCounts(ledgerValue, frozen, currentOpenIssues);
   const nonzero = Object.entries(counts).filter(([, value]) => value !== 0);
   if (nonzero.length > 0) fail(`final-zero check failed: ${nonzero.map(([name, value]) => `${name}=${value}`).join(", ")}`);
   return {
@@ -517,6 +549,7 @@ export async function verifyFinalZero({ledger, denominator, deferredDenominator,
       standing_matrix: standingInput.reference,
       standing_refresh: standingInput.value.standing_refresh,
       final_frozen: {path: frozen.path, sha256: frozen.sha256},
+      open_issues: openIssuesInput.reference,
       repository: repositoryPath,
     },
   };
@@ -528,7 +561,7 @@ export async function main(argv, {stdout = console.log} = {}) {
     stdout(usage());
     return 0;
   }
-  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], finalFrozen: args["final-frozen"], repository: args.repository});
+  const receipt = await verifyFinalZero({ledger: args.ledger, denominator: args.denominator, deferredDenominator: args["deferred-denominator"], deferredLedger: args["deferred-ledger"], standingMatrix: args["standing-matrix"], finalFrozen: args["final-frozen"], openIssues: args["open-issues"], repository: args.repository});
   const sealed = await sealJsonNoReplace(args.output, receipt);
   stdout(JSON.stringify({schema: receipt.schema, status: receipt.status, output: sealed.path, sha256: sealed.sha256}));
   return 0;
