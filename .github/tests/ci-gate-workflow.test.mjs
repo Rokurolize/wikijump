@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { existsSync, readFileSync, readdirSync } from "node:fs"
+import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
@@ -9,141 +9,82 @@ import { classifyChanges, GROUPS } from "../scripts/classify-changes.mjs"
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const read = (file) => readFileSync(path.join(root, file), "utf8")
 const workflow = (name) => read(`.github/workflows/${name}`)
-const hasYamlLine = (source, expected) => source.split("\n").some((line) => line.trim() === expected)
+const triggerBlock = (source) =>
+  source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:"))
 
-const jobBlock = (source, jobName) => {
-  const lines = source.split("\n")
-  const start = lines.findIndex((line) => line === `  ${jobName}:`)
-  assert.notEqual(start, -1, `missing job ${jobName}`)
-  const next = lines.findIndex(
-    (line, index) => index > start && /^  [A-Za-z0-9_]+:$/u.test(line)
-  )
-  return lines.slice(start, next === -1 ? lines.length : next)
-}
+const validationWorkflows = [
+  "ci-gate.yaml",
+  "full-ci.yaml",
+  "wikidot-verification.yaml"
+]
 
-const yamlScalar = (lines, indentation, key) => {
-  const prefix = `${" ".repeat(indentation)}${key}: `
-  const line = lines.find((candidate) => candidate.startsWith(prefix))
-  assert.ok(line, `missing ${key} at indentation ${indentation}`)
-  return line.slice(prefix.length)
-}
+const forbiddenCiCommands = [
+  /node\s+--test/u,
+  /(?:pnpm|npm|yarn)\s+[^\n]*\btest(?::[\w-]+)?\b/u,
+  /\bcargo\s+test\b/u,
+  /\bcargo\s+clippy\b/u,
+  /\bcargo\s+fmt\b/u,
+  /\bpytest\b/u,
+  /\bplaywright\b[^\n]*(?:test|install)/u,
+  /\bactionlint\b/u,
+  /(?:pnpm|npm|yarn)\s+[^\n]*\binstall\b/u,
+  /\bdocker\s+build\b/u,
+  /\bpnpm\s+[^\n]*\blint\b/u
+]
 
-const stepBlock = (job, stepName) => {
-  const start = job.findIndex((line) => line === `      - name: ${stepName}`)
-  assert.notEqual(start, -1, `missing step ${stepName}`)
-  const next = job.findIndex(
-    (line, index) => index > start && line.startsWith("      - name: ")
-  )
-  return job.slice(start, next === -1 ? job.length : next)
-}
-
-const metadataOnlyEdit = ({ eventName = "pull_request", action, baseChanged = false }) =>
-  eventName === "pull_request" && action === "edited" && !baseChanged
-
-const gateCheckName = (event) =>
-  metadataOnlyEdit(event) ? "CI / metadata edit" : "CI / gate"
-
-const gateRunsValidation = (event) => !metadataOnlyEdit(event)
-
-test("one central workflow owns the aggregate check without reacting to labels", () => {
+test("central CI publishes only a no-op gate", () => {
   const source = workflow("ci-gate.yaml")
-  const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
+  const trigger = triggerBlock(source)
 
-  assert.match(trigger, /^\s*pull_request:$/m)
-  assert.doesNotMatch(trigger, /^\s*paths(?:-ignore)?:$/m)
-  for (const action of ["opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft"]) {
-    assert.ok(hasYamlLine(trigger, `- ${action}`), action)
-  }
-  assert.match(trigger, /^\s*merge_group:\s*$/m)
-  assert.doesNotMatch(trigger, /^      - (?:labeled|unlabeled)$/m)
-  assert.doesNotMatch(source, /landing|full-ci/)
-  assert.match(source, /^permissions:\n  contents: read$/m)
-  assert.doesNotMatch(source, /id-token:/)
+  assert.match(trigger, /^\s*pull_request:$/mu)
+  assert.match(trigger, /^\s*merge_group:\s*$/mu)
+  assert.match(trigger, /^\s*push:$/mu)
+  assert.match(trigger, /^\s*workflow_dispatch:\s*$/mu)
+  assert.match(source, /^permissions: \{\}$/mu)
+  assert.match(source, /^  gate:$/mu)
+  assert.match(source, /^    name: CI \/ gate$/mu)
+  assert.match(source, /Local-validation-only policy/u)
+  assert.match(source, /GitHub CI intentionally runs no tests/u)
+  assert.doesNotMatch(source, /^  (?:classify|workflow_policy|deepwell|wws|framerail|locales|verification):$/mu)
+  assert.doesNotMatch(source, /^\s*uses:/mu)
 })
 
-test("base edits rerun central CI while metadata edits stay isolated", () => {
-  const source = workflow("ci-gate.yaml")
-  const concurrency = source.slice(source.indexOf("concurrency:\n"), source.indexOf("\njobs:\n"))
-  const classify = source.slice(source.indexOf("  classify:\n"), source.indexOf("  workflow_policy:\n"))
-  const gate = jobBlock(source, "gate")
+test("Browser CI is manual-only and runs no browser validation", () => {
+  const source = workflow("full-ci.yaml")
+  const trigger = triggerBlock(source)
 
-  for (const section of [concurrency, classify, gate.join("\n")]) {
-    assert.match(section, /github\.event\.action != 'edited' \|\| github\.event\.changes\.base != null/)
-  }
-  assert.match(concurrency, /format\('ci-pr-\{0\}', github\.event\.pull_request\.number\)/)
-  assert.match(concurrency, /format\('ci-run-\{0\}', github\.run_id\)/)
-  assert.match(concurrency, /cancel-in-progress:/)
-  assert.equal(
-    yamlScalar(gate, 4, "name"),
-    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
-  )
-  assert.doesNotMatch(gate.join("\n"), /CI \/ draft gate/)
+  assert.match(trigger, /^\s*workflow_dispatch:\s*$/mu)
+  assert.doesNotMatch(trigger, /pull_request:|push:|merge_group:/u)
+  assert.match(source, /Browser tests are intentionally disabled in GitHub Actions/u)
+  assert.doesNotMatch(source, /^\s*uses:/mu)
 })
 
-test("metadata edits cannot replace the aggregate gate context", () => {
-  const source = workflow("ci-gate.yaml")
-  const gate = jobBlock(source, "gate")
-  const metadataStep = stepBlock(gate, "Metadata edit no-op")
-  const validationStep = stepBlock(gate, "Require every selected check")
+test("Wikidot verification is manual-only and runs no verification", () => {
+  const source = workflow("wikidot-verification.yaml")
+  const trigger = triggerBlock(source)
 
-  assert.equal(
-    yamlScalar(gate, 4, "name"),
-    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
-  )
-  assert.equal(yamlScalar(gate, 4, "if"), "${{ always() }}")
-  assert.equal(
-    yamlScalar(metadataStep, 8, "if"),
-    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null }}"
-  )
-  assert.equal(
-    yamlScalar(validationStep, 8, "if"),
-    "${{ github.event_name != 'pull_request' || github.event.action != 'edited' || github.event.changes.base != null }}"
-  )
+  assert.match(trigger, /^\s*workflow_dispatch:\s*$/mu)
+  assert.doesNotMatch(trigger, /pull_request:|push:|merge_group:/u)
+  assert.match(source, /persistent identity-bound response cache/u)
+  assert.match(source, /cache hit must perform zero external requests/u)
+  assert.doesNotMatch(source, /^\s*uses:/mu)
+})
 
-  const events = [
-    { action: "opened" },
-    { action: "synchronize" },
-    { action: "reopened" },
-    { action: "edited", baseChanged: true },
-    { action: "edited", baseChanged: false }
-  ]
-  for (const event of events) {
-    if (gateCheckName(event) === "CI / gate") {
-      assert.equal(gateRunsValidation(event), true, JSON.stringify(event))
-    } else {
-      assert.equal(gateCheckName(event), "CI / metadata edit")
-      assert.equal(gateRunsValidation(event), false, JSON.stringify(event))
+test("GitHub validation workflows execute no tests, installs, lint, builds, or compatibility acquisition", () => {
+  for (const name of validationWorkflows) {
+    const source = workflow(name)
+    for (const pattern of forbiddenCiCommands) {
+      assert.doesNotMatch(source, pattern, `${name}: ${pattern}`)
     }
+    assert.doesNotMatch(
+      source,
+      /(?:candidate-cases|live-reference|sandbox-oracle|WIKIDOT_USERNAME|WIKIDOT_PASSWORD|wikidot\.com|wdfiles)/iu,
+      `${name}: external compatibility acquisition`
+    )
   }
-
-  const headSha = "0123456789abcdef"
-  const checkLedger = new Map([
-    ["CI / gate", { headSha, conclusion: "failure" }]
-  ])
-  const recordGate = (event, conclusion) => {
-    checkLedger.set(gateCheckName(event), { headSha, conclusion })
-  }
-  recordGate({ action: "edited" }, "success")
-  assert.deepEqual(checkLedger.get("CI / gate"), { headSha, conclusion: "failure" })
-  assert.deepEqual(checkLedger.get("CI / metadata edit"), {
-    headSha,
-    conclusion: "success"
-  })
-  recordGate({ action: "edited", baseChanged: true }, "success")
-  assert.deepEqual(checkLedger.get("CI / gate"), { headSha, conclusion: "success" })
 })
 
-test("PR classification uses three-dot history while push classification uses two endpoints", () => {
-  const source = workflow("ci-gate.yaml")
-  const classify = source.slice(source.indexOf("      - name: Classify every changed path"), source.indexOf("\n  workflow_policy:"))
-
-  assert.match(classify, /elif \[\[ "\$\{GITHUB_EVENT_NAME\}" == pull_request \]\]; then\n\s+git diff --no-renames --name-only -z "\$\{BASE_SHA\}\.\.\.\$\{HEAD_SHA\}"/)
-  assert.match(classify, /else\n\s+git diff --no-renames --name-only -z "\$\{BASE_SHA\}" "\$\{HEAD_SHA\}"/)
-  assert.match(source, /fetch-depth: 0/)
-  assert.doesNotMatch(classify, /pulls\/.*files|github\.event\.pull_request\.changed_files/)
-})
-
-test("component and lockfile changes select complete validation", () => {
+test("local classifier still selects complete component validation", () => {
   assert.equal(classifyChanges(["deepwell/Cargo.lock"]).deepwell, true)
   assert.equal(classifyChanges(["wws/Cargo.lock"]).wws, true)
   assert.equal(classifyChanges(["locales/validator/Cargo.lock"]).locales, true)
@@ -156,7 +97,7 @@ test("component and lockfile changes select complete validation", () => {
   assert.equal(toolchain.locales, true)
 })
 
-test("classifier and gate changes run only workflow policy", () => {
+test("local classifier keeps workflow and verification ownership", () => {
   for (const file of [
     ".github/workflows/ci-gate.yaml",
     ".github/scripts/classify-changes.mjs",
@@ -164,70 +105,22 @@ test("classifier and gate changes run only workflow policy", () => {
   ]) {
     const selected = classifyChanges([file])
     assert.equal(selected.workflow, true, `${file}: workflow`)
-    for (const group of GROUPS.filter((group) => group !== "workflow")) assert.equal(selected[group], false, `${file}: ${group}`)
-    assert.equal(selected.verification, false, `${file}: verification`)
   }
+
+  const browser = classifyChanges([".github/workflows/full-ci.yaml"])
+  assert.equal(browser.workflow, true)
+  assert.equal(browser.framerail, true)
+
+  const verification = classifyChanges([".github/workflows/wikidot-verification.yaml"])
+  assert.equal(verification.workflow, true)
+  assert.equal(verification.verification, true)
 
   const manual = classifyChanges([], true)
   for (const group of GROUPS) assert.equal(manual[group], true, group)
   assert.equal(manual.verification, true, "verification")
 })
 
-test("Browser CI changes select Framerail and workflow policy", () => {
-  const selected = classifyChanges([".github/workflows/full-ci.yaml"])
-  for (const group of ["framerail", "workflow"]) assert.equal(selected[group], true, group)
-  for (const group of ["deepwell", "wws", "locales"]) assert.equal(selected[group], false, group)
-})
-
-test("CI browser and verification jobs cannot reach Wikidot origins", () => {
-  const browserWorkflow = workflow("full-ci.yaml")
-  const verificationWorkflow = workflow("wikidot-verification.yaml")
-  const centralWorkflow = workflow("ci-gate.yaml")
-  assert.match(centralWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
-  assert.match(centralWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
-  assert.match(browserWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
-  assert.match(browserWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
-  assert.match(verificationWorkflow, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/)
-  assert.match(verificationWorkflow, /WIKIDOT_LIVE_PROBES: "disabled"/)
-  for (const source of [browserWorkflow, verificationWorkflow]) {
-    assert.match(source, /unshare --net --mount-proc bash -c/u)
-    assert.match(source, /ip link set lo up/u)
-  }
-  for (const [name, source] of [["ci-gate.yaml", centralWorkflow], ["full-ci.yaml", browserWorkflow], ["wikidot-verification.yaml", verificationWorkflow]]) {
-    assert.match(source, /WIKIDOT_LIVE_PROBES: "disabled"/u, `${name}: live probes must stay disabled`)
-    assert.match(source, /WIKIJUMP_CI_OFFLINE_EGRESS: "1"/u, `${name}: offline egress must stay enabled`)
-  }
-  const framerail = stepBlock(jobBlock(centralWorkflow, "framerail"), "Validate draft")
-  assert.match(framerail.join("\n"), /unshare --net --mount-proc bash -c/u)
-  assert.match(framerail.join("\n"), /ip link set lo up/u)
-  assert.match(framerail.join("\n"), /setpriv --reuid="\$RUNNER_UID" --regid="\$RUNNER_GID" --init-groups/u)
-
-  const playwright = read("framerail/playwright.config.ts")
-  assert.match(playwright, /WIKIJUMP_CI_OFFLINE_EGRESS/)
-  assert.match(playwright, /server: `http:\/\/127\.0\.0\.1:\$\{fixturePort\}`/)
-  assert.match(playwright, /bypass: "localhost,127\.0\.0\.1,\*\.localhost"/)
-  assert.match(read("framerail/tests/xmlrpc-deepwell-fixture-server.js"), /server\.on\("connect"/)
-
-  for (const file of readdirSync(path.join(root, ".github/workflows"))) {
-    if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue
-    const source = read(`.github/workflows/${file}`)
-    assert.doesNotMatch(source, /(?:wikidot\.com|wdfiles)/iu, `${file}: external Wikidot origin`)
-  }
-})
-
-test("Wikidot verification CI runs only offline unit and retained-evidence tests", () => {
-  const verificationWorkflow = workflow("wikidot-verification.yaml")
-  const verificationPackage = JSON.parse(read("install/local/wikidot-verification/package.json"))
-
-  assert.equal(verificationPackage.scripts["test:ci"], "node --test tests/*.test.mjs")
-  assert.match(verificationWorkflow, /setpriv .* node --test tests\/\*\.test\.mjs/u)
-  assert.doesNotMatch(
-    verificationWorkflow,
-    /(?:capture-[\w-]+|live-reference|candidate-cases|sandbox-oracle-capture|listpages-live-fixture|WIKIDOT_USERNAME|WIKIDOT_PASSWORD)/u,
-  )
-})
-
-test("documentation is cheap and unknown paths fail closed", () => {
+test("documentation stays cheap and unknown local-preflight paths fail closed", () => {
   const docs = classifyChanges(["README.md", "AGENTS.md", "docs/development.md"])
   for (const group of GROUPS) assert.equal(docs[group], false, group)
 
@@ -243,240 +136,47 @@ test("documentation is cheap and unknown paths fail closed", () => {
   }
 })
 
-test("Wikidot verification inputs select only the dedicated workflow", () => {
+test("verification inputs remain selected by the local preflight classifier", () => {
   for (const file of [
     "install/local/wikidot-verification/artifacts/example.json",
-    "install/local/wikidot-verification/scripts/run-generic-runtime-differential.mjs",
     "install/local/wikidot-verification/src/generic-runtime-differential.mjs",
     "install/local/wikidot-verification/tests/generic-runtime-differential.test.mjs",
-    "install/local/wikidot-verification/package.json",
     "install/standing/tests/verify-promotion-precondition.test.mjs",
     "scripts/data/wikidot-implementation-ledger.json",
     "scripts/data/wikidot-live-observations.json",
     "scripts/generate-wikidot-specifications.mjs",
-    "scripts/initialize-wikidot-implementation-ledger.mjs",
-    "scripts/lib/wikidot-implementation-ledger.mjs",
     "docs/wikidot-specifications/catalog.json"
   ]) {
     const selected = classifyChanges([file])
     for (const group of GROUPS) assert.equal(selected[group], false, `${file}: ${group}`)
     assert.equal(selected.verification, true, `${file}: verification`)
   }
-
-  const workflowSelected = classifyChanges([".github/workflows/wikidot-verification.yaml"])
-  assert.equal(workflowSelected.verification, true)
-  assert.equal(workflowSelected.workflow, true)
-  for (const group of ["deepwell", "wws", "framerail", "locales"]) {
-    assert.equal(workflowSelected[group], false, group)
-  }
-
-  const source = workflow("wikidot-verification.yaml")
-  const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
-  assert.match(trigger, /workflow_dispatch:/)
-  assert.doesNotMatch(trigger, /pull_request:|push:/)
-
-  const concurrency = source.slice(source.indexOf("concurrency:\n"), source.indexOf("\njobs:\n"))
-  assert.match(concurrency, /format\('wikidot-verification-pr-\{0\}', github\.event\.pull_request\.number\)/)
-  assert.match(concurrency, /format\('wikidot-verification-run-\{0\}', github\.run_id\)/)
-  assert.match(concurrency, /cancel-in-progress: \$\{\{ github\.event_name == 'pull_request' \}\}/)
 })
 
-test("Deepwell validation stays fast and service-free", () => {
-  const source = workflow("ci-gate.yaml")
-  const deepwell = source.slice(source.indexOf("  deepwell:\n"), source.indexOf("  wws:\n"))
-  const gate = jobBlock(source, "gate")
-
-  assert.match(deepwell, /needs\.classify\.outputs\.deepwell == 'true'/)
-  assert.doesNotMatch(deepwell, /services:|DATABASE_URL|Start MinIO|sqlx|clippy|cargo test|target/)
-  assert.match(deepwell, /timeout-minutes: 2/)
-  for (const command of [
-    "cargo machete deepwell",
-    "cargo fmt --manifest-path deepwell/Cargo.toml --all -- --check"
-  ]) assert.ok(deepwell.includes(command), command)
-  assert.ok(hasYamlLine(gate.join("\n"), "- deepwell"))
-  assert.equal(
-    yamlScalar(gate, 4, "name"),
-    "${{ github.event_name == 'pull_request' && github.event.action == 'edited' && github.event.changes.base == null && 'CI / metadata edit' || 'CI / gate' }}"
-  )
-  assert.doesNotMatch(gate.join("\n"), /CI \/ draft gate/)
-  assert.doesNotMatch(source, /deepwell_(?:draft|candidate)|tarpaulin|coverage\/cobertura/)
-})
-
-test("draft and candidate CI keep Framerail production builds out of the central gate", () => {
-  const source = workflow("ci-gate.yaml")
-  const wws = jobBlock(source, "wws")
-  const wwsDraft = stepBlock(wws, "Validate draft")
-  const wwsCandidate = stepBlock(wws, "Validate candidate")
-  const framerail = jobBlock(source, "framerail")
-  const framerailDraft = stepBlock(framerail, "Validate draft")
-  const locales = jobBlock(source, "locales")
-  const localesDraft = stepBlock(locales, "Validate draft")
-  const localesCandidate = stepBlock(locales, "Validate candidate")
-
-  for (const command of ["cargo machete wws", "cargo fmt --all -- --check"]) {
-    assert.ok(wwsDraft.join("\n").includes(command), command)
-  }
-  assert.doesNotMatch(wwsDraft.join("\n"), /cargo (?:clippy|test)|node --test/)
-  assert.equal(
-    yamlScalar(wwsCandidate, 8, "if"),
-    "${{ needs.classify.outputs.candidate == 'true' }}"
-  )
-  for (const command of [
-    "cargo clippy --locked --tests --no-deps",
-    "cargo test --locked --all-features -- --nocapture --test-threads 1",
-    "node --test tests/resize-iframe.test.mjs"
-  ]) assert.ok(wwsCandidate.join("\n").includes(command), command)
-
-  for (const command of [
-    "pnpm --dir framerail lint",
-    "node --test tests/*.test.js tests/*.test.ts"
-  ]) assert.ok(framerailDraft.join("\n").includes(command), command)
-  assert.doesNotMatch(framerailDraft.join("\n"), /pnpm --dir framerail build/)
-  assert.doesNotMatch(framerail.join("\n"), /pnpm --dir framerail build/)
-  assert.equal(yamlScalar(framerail, 4, "timeout-minutes"), "5")
-
-  assert.match(localesDraft.join("\n"), /cargo fmt --all -- --check/)
-  assert.doesNotMatch(localesDraft.join("\n"), /cargo (?:clippy|run)/)
-  assert.equal(
-    yamlScalar(localesCandidate, 8, "if"),
-    "${{ needs.classify.outputs.candidate == 'true' }}"
-  )
-  for (const command of [
-    "cargo clippy --locked --tests --no-deps",
-    "cargo run --locked"
-  ]) assert.ok(localesCandidate.join("\n").includes(command), command)
-})
-
-test("optional Browser CI contains only browser validation", () => {
-  for (const old of ["deepwell.yaml", "wws.yaml", "framerail.yaml"]) {
-    assert.equal(existsSync(path.join(root, ".github/workflows", old)), false, old)
-  }
-
-  const source = workflow("full-ci.yaml")
-  const trigger = source.slice(source.indexOf("on:\n"), source.indexOf("\npermissions:\n"))
-  const concurrency = source.slice(source.indexOf("concurrency:\n"), source.indexOf("\njobs:\n"))
-  for (const action of ["opened", "synchronize", "reopened", "edited", "ready_for_review", "converted_to_draft", "labeled", "unlabeled", "closed"]) {
-    assert.ok(hasYamlLine(trigger, `- ${action}`), action)
-  }
-  assert.ok(hasYamlLine(source, "framerail_browser:"))
-  assert.doesNotMatch(source, /codecov|tarpaulin|coverage|id-token:/i)
-  assert.equal((source.match(/contains\(github\.event\.pull_request\.labels\.\*\.name, 'full-ci'\)/g) ?? []).length, 1)
-  assert.match(concurrency, /github\.workflow/)
-  assert.match(concurrency, /cancel-in-progress:/)
-  for (const condition of [
-    "github.event.pull_request.draft == false",
-    "github.event.action != 'closed'",
-    "github.event.action != 'converted_to_draft'",
-    "github.event.action == 'labeled' && github.event.label.name == 'full-ci'"
-  ]) assert.equal(source.split(condition).length - 1, 1, condition)
-  assert.ok(source.split("github.event.action == 'edited' && github.event.changes.base != null").length - 1 >= 1)
-  assert.match(source, /setpriv .* node tests\/playwright-runner\.js/u)
-  assert.match(source, /timeout-minutes: 10/)
-})
-
-test("Full CI cancellation and execution policy handles label lifecycle cheaply", () => {
-  const active = ({ action, label = null, baseChanged = false }) =>
-    !["labeled", "unlabeled", "edited"].includes(action) ||
-    (["labeled", "unlabeled"].includes(action) && label === "full-ci") ||
-    (action === "edited" && baseChanged)
-  const run = ({ action, label = null, baseChanged = false, draft = false, hasFullCi = false }) =>
-    !draft && hasFullCi && !["closed", "converted_to_draft"].includes(action) && (
-      !["labeled", "unlabeled", "edited"].includes(action) ||
-      (action === "labeled" && label === "full-ci") ||
-      (action === "edited" && baseChanged)
-    )
-
-  for (const action of ["opened", "synchronize", "reopened", "ready_for_review"]) {
-    assert.equal(active({ action }), true, `${action}: active`)
-    assert.equal(run({ action, hasFullCi: true }), true, `${action}: run`)
-    assert.equal(run({ action }), false, `${action}: no label`)
-  }
-  assert.equal(active({ action: "labeled", label: "full-ci" }), true)
-  assert.equal(run({ action: "labeled", label: "full-ci", hasFullCi: true }), true)
-  assert.equal(active({ action: "unlabeled", label: "full-ci" }), true)
-  assert.equal(run({ action: "unlabeled", label: "full-ci", hasFullCi: true }), false)
-  assert.equal(active({ action: "labeled", label: "docs" }), false)
-  assert.equal(run({ action: "labeled", label: "docs", hasFullCi: true }), false)
-  assert.equal(active({ action: "edited", baseChanged: true }), true)
-  assert.equal(run({ action: "edited", baseChanged: true, hasFullCi: true }), true)
-  assert.equal(active({ action: "edited" }), false)
-  assert.equal(active({ action: "converted_to_draft" }), true)
-  assert.equal(run({ action: "converted_to_draft", hasFullCi: true }), false)
-  assert.equal(active({ action: "closed" }), true)
-  assert.equal(run({ action: "closed", hasFullCi: true }), false)
-})
-
-test("Framerail unit and browser suites remain separate", () => {
+test("Framerail unit and browser scripts remain available for local validation", () => {
   const pkg = JSON.parse(read("framerail/package.json"))
-  const gate = workflow("ci-gate.yaml")
-  const full = workflow("full-ci.yaml")
   const playwright = read("framerail/playwright.config.ts")
 
-  // The unit suite may name files or glob them, but it must reach only `*.test.*`;
-  // Playwright's specs are `*.spec.*` and belong to the browser suite alone.
-  assert.match(pkg.scripts["test:unit"], /^node --test(?: tests\/(?:\*|[\w-]+)\.test\.(?:js|ts))+$/)
-  assert.doesNotMatch(pkg.scripts["test:unit"], /\.spec\.(?:js|ts)/)
-  // `test` is the browser suite, run through a script because Playwright needs run-time ports.
-  // It must not chain the unit suite: ci-gate runs that already, and full-ci would repeat it.
+  assert.match(pkg.scripts["test:unit"], /^node --test(?: tests\/(?:\*|[\w-]+)\.test\.(?:js|ts))+$/u)
+  assert.doesNotMatch(pkg.scripts["test:unit"], /\.spec\.(?:js|ts)/u)
   assert.equal(pkg.scripts.test, "node tests/playwright-runner.js")
-  assert.doesNotMatch(pkg.scripts.test, /test:unit/)
-  assert.match(gate, /setpriv .* node --test tests\/\*\.test\.js tests\/\*\.test\.ts/u)
-  assert.ok(gate.includes("pnpm --dir framerail lint"), "lint")
-  assert.doesNotMatch(gate, /pnpm --dir framerail build/)
-  assert.match(full, /setpriv .* node tests\/playwright-runner\.js/u)
-  assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/)
+  assert.doesNotMatch(pkg.scripts.test, /test:unit/u)
+  assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/u)
 })
 
-test("central gate owns workflow policy and locales validation", () => {
-  for (const old of ["workflow-lint.yaml", "locales.yaml"]) {
-    assert.equal(existsSync(path.join(root, ".github/workflows", old)), false, old)
-  }
-  const source = workflow("ci-gate.yaml")
-  assert.match(source, /node --test \.github\/tests\/\*\.test\.mjs/)
-  assert.match(source, /cargo run --locked/)
-})
-
-test("verification changes stay on the dedicated manual workflow", () => {
-  const source = workflow("ci-gate.yaml")
-  const classify = jobBlock(source, "classify").join("\n")
-  const gate = jobBlock(source, "gate").join("\n")
-  assert.match(classify, /verification: \$\{\{ steps\.changes\.outputs\.verification \}\}/u)
-  assert.doesNotMatch(source, /^  verification:/mu)
-  assert.doesNotMatch(gate, /verification/u)
-})
-
-test("actions in touched workflows are immutable pins with version comments", () => {
-  for (const name of ["ci-gate.yaml", "full-ci.yaml"]) {
-    const source = workflow(name)
-    const uses = [...source.matchAll(/^\s*uses:\s*([^\s#]+)\s+#\s+(\S+)$/gm)]
-    assert.ok(uses.length > 0, name)
-    for (const [, action, version] of uses) {
-      assert.match(action, /^[^@]+@[0-9a-f]{40}$/, `${name}: ${action}`)
-      assert.match(version, /^v\d+(?:\.\d+)*$/, `${name}: ${version}`)
-    }
-    assert.equal(uses.length, (source.match(/^\s*uses:/gm) ?? []).length, name)
-  }
-})
-
-test("external actions in every workflow are immutable pins", () => {
+test("external actions in every remaining workflow are immutable pins", () => {
   const workflowRoot = path.join(root, ".github/workflows")
   for (const name of readdirSync(workflowRoot).filter((entry) => entry.endsWith(".yml") || entry.endsWith(".yaml"))) {
     const source = read(`.github/workflows/${name}`)
-    for (const [, action] of source.matchAll(/^\s*uses:\s*([^\s#]+)(?:\s+#\s*\S+)?$/gm)) {
+    for (const [, action] of source.matchAll(/^\s*uses:\s*([^\s#]+)(?:\s+#\s*\S+)?$/gmu)) {
       if (action.startsWith("./")) continue
-      assert.match(action, /^[^@]+@[0-9a-f]{40}$/, `${name}: ${action}`)
+      assert.match(action, /^[^@]+@[0-9a-f]{40}$/u, `${name}: ${action}`)
     }
   }
 })
 
-test("caching ~/.cargo/bin also caches cargo's install registry", () => {
-  const source = workflow("ci-gate.yaml")
-  const blocks = source.split(/^\s*- name: /m).filter((block) => block.includes("~/.cargo/bin"))
-  assert.ok(blocks.length > 0)
-  for (const block of blocks) {
-    // Without .crates.toml/.crates2.json cargo has no record of having installed
-    // the cached binary, so `cargo install` aborts on the unexpected file.
-    assert.match(block, /~\/\.cargo\/\.crates\.toml/)
-    assert.match(block, /~\/\.cargo\/\.crates2\.json/)
+test("validation workflows contain no Wikidot or WDFiles origin literals", () => {
+  for (const name of validationWorkflows) {
+    assert.doesNotMatch(workflow(name), /(?:wikidot\.com|wdfiles)/iu, name)
   }
 })

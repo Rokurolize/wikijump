@@ -14,7 +14,7 @@ Security-sensitive output is still a parity question first. Reproduce evidenced 
 
 External acquisition is cache-first. Reuse identity-bound retained responses from Wikidot, WDFiles, public providers, and other external origins. A genuine miss fetches once, persists the complete reusable response, uses a 0 ms fixed inter-request interval, and still honors explicit `Retry-After`. Repeated candidate or standing runs should replay the same external response rather than hit the server again.
 
-CI does not acquire live evidence. CI may validate offline units, fixtures, retained artifacts, and replay behavior under network isolation. Live acquisition and `live-reference` production are local campaign operations.
+CI does not run compatibility tests at all. Offline units, fixtures, retained-artifact checks, replay behavior, live acquisition, candidate parity, and `live-reference` production are local WSL operations. This keeps repeated runs on the same persistent identity-bound caches instead of recreating acquisition state on disposable CI runners.
 
 For browser parity against a retained live reference, bind the browser executable identity as evidence too. Host Chrome can update underneath a campaign; use the same retained browser binary and SHA when the comparison contract requires exact browser identity. A run that silently changes Chrome version can create ORB, font, layout, and resource-policy differences unrelated to the product.
 

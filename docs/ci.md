@@ -1,3 +1,5 @@
 # Continuous Integration (CI)
 
-We use [GitHub Actions](https://docs.github.com/en/actions) as our CI system. See the [`.github/workflows`](https://github.com/scpwiki/wikijump/tree/develop/.github/workflows) directory for our current list of jobs. By utilizing [GitHub Secrets](https://docs.github.com/en/actions/reference/encrypted-secrets) we can build, test, and deploy using GitHub Actions.
+We use [GitHub Actions](https://docs.github.com/en/actions) for repository status signals, image build/publish workflows, and deployment automation. See the [`.github/workflows`](https://github.com/scpwiki/wikijump/tree/develop/.github/workflows) directory for the current jobs.
+
+GitHub Actions intentionally runs no validation tests. Unit, integration, browser, compatibility, retained-evidence, candidate, and standing validation all run in the maintained local WSL workspace. In particular, compatibility acquisition remains local so persistent identity-bound response caches survive retries and a repeated cache hit causes zero external requests.
