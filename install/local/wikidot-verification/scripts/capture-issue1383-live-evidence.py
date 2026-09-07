@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -1705,7 +1706,7 @@ def capture(args: argparse.Namespace) -> dict[str, Any]:
         executable_input = Path(args.browser_executable)
         executable_stat = executable_input.lstat()
         browser_executable = executable_input.resolve()
-        if not executable_stat.is_file() or executable_input.is_symlink() or sha256_bytes(browser_executable.read_bytes()) != browser_plan["executable_sha256"]:
+        if not stat.S_ISREG(executable_stat.st_mode) or executable_input.is_symlink() or sha256_bytes(browser_executable.read_bytes()) != browser_plan["executable_sha256"]:
             raise RuntimeError("issue 1383 browser executable does not match the planned identity")
     budget_check(usage, budgets, started)
     target_slug = f"run-owned:issue-1383-{run_id}-target"
