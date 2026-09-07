@@ -13,6 +13,14 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CaptureIssue1383LiveEvidenceTest(unittest.TestCase):
+    def test_mutating_capture_is_scoped_to_the_task_owned_disposable_site(self):
+        import json
+
+        self.assertEqual(MODULE.SITE, "wjc260907a1f7")
+        self.assertEqual(MODULE.DOMAIN, "wjc260907a1f7.wikidot.com")
+        plan = json.loads((Path(__file__).parents[1] / "fixtures" / "issue1383-live-evidence-plan.json").read_text(encoding="utf-8"))
+        self.assertEqual(plan["site"], MODULE.SITE)
+
     def test_run_owned_target_uses_exact_fullname_filter(self):
         source = MODULE.source_for(
             {

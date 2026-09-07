@@ -24,7 +24,7 @@ from capture_wikidot_preview_references import preview_body
 
 PLAN_SCHEMA = "wikijump.listpages_section_zero_generated_html_live_run_plan.v1"
 ARTIFACT_SCHEMA = "wikijump.listpages_section_zero_generated_html_live_run.v1"
-SITE = "sandbox-for-codex"
+SITE = "wjc260907a1f7"
 DOMAIN = f"{SITE}.wikidot.com"
 ORIGIN = f"http://{DOMAIN}"
 REPO_ROOT = Path(__file__).resolve().parents[4]

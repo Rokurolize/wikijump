@@ -1,7 +1,7 @@
 {
   "schema": "wikijump.listpages_section_zero_generated_html_live_run_plan.v1",
   "issue": "Rokurolize/wikijump#1383",
-  "site": "sandbox-for-codex",
+  "site": "wjc260907a1f7",
   "current_result": {
     "status": "ready",
     "reason": "scanner results and the installed browser dependency tree are retained; complete live/browser capture is required"
