@@ -48,11 +48,11 @@
     ],
     "catalog": {
       "path": "docs/wikidot-specifications/catalog.json",
-      "sha256": "c63c9c990ab3e4942cff33c43dee493bd888cd1b986ebaad77d28d5c3cb13de1"
+      "sha256": "b69d218353c988c479c0af977240a7fa273f38918c57156dc3dae171c57f023c"
     },
     "ledger": {
       "path": "docs/wikidot-specifications/implementation-ledger.json",
-      "sha256": "aff2be57fd75d27fb54e88103635b2b058f8fa4d2318af79fa3d1aad40058aa9"
+      "sha256": "80f5ddbc2ba2524e3e8a0599950972899c19197c7f1ed9d7f4589a3f9d35f3fe"
     },
     "denominator": {
       "source": "plan.cases[].case_id",
