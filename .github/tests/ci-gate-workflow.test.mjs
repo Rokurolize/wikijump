@@ -14,6 +14,7 @@ const triggerBlock = (source) =>
 
 const validationWorkflows = [
   "ci-gate.yaml",
+  "codex-cloud.yaml",
   "full-ci.yaml",
   "wikidot-verification.yaml"
 ]
@@ -67,6 +68,14 @@ test("Wikidot verification is manual-only and runs no verification", () => {
   assert.doesNotMatch(trigger, /pull_request:|push:|merge_group:/u)
   assert.match(source, /persistent identity-bound response cache/u)
   assert.match(source, /cache hit must perform zero external requests/u)
+  assert.doesNotMatch(source, /^\s*uses:/mu)
+})
+
+test("Codex Cloud validation publishes no CI-side tests or lint", () => {
+  const source = workflow("codex-cloud.yaml")
+
+  assert.match(source, /Codex Cloud script validation is intentionally disabled in GitHub Actions/u)
+  assert.match(source, /Run Bash syntax, ShellCheck, and regression tests in the maintained local workspace/u)
   assert.doesNotMatch(source, /^\s*uses:/mu)
 })
 
