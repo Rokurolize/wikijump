@@ -13,6 +13,23 @@ SPEC.loader.exec_module(MODULE)
 
 
 class CaptureIssue1383LiveEvidenceTest(unittest.TestCase):
+    def test_run_owned_target_uses_exact_fullname_filter(self):
+        source = MODULE.source_for(
+            {
+                "label": "section-zero",
+                "section": 0,
+                "opener": "html",
+                "marker": "SECTION_ZERO_HTML",
+            },
+            "run-owned:issue-1383-example-target",
+        )
+
+        self.assertIn(
+            '[[module ListPages fullname="run-owned:issue-1383-example-target" separate="no" wrapper="no"]]',
+            source,
+        )
+        self.assertNotIn('ListPages name="run-owned:', source)
+
     def test_preview_only_receipt_marks_non_preview_surfaces_unresolved(self):
         rows = MODULE.preview_only_unresolved_rows(False, False)
 

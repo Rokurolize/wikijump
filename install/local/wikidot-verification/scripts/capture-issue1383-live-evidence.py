@@ -270,7 +270,7 @@ def page_plan(key: str, fullname: str, title: str, source: str) -> dict[str, Any
 def source_for(case: dict[str, Any], target_slug: str) -> str:
     return (
         f'[[div class="issue1383-case issue1383-{case["label"]}"]]\n'
-        f'[[module ListPages name="{target_slug}" separate="no" wrapper="no"]]\n'
+        f'[[module ListPages fullname="{target_slug}" separate="no" wrapper="no"]]\n'
         "ROW_EVALUATED:%%title%%\n"
         f'[[%%content{{{case["section"]}}}%%{case["opener"]}]]\n'
         f'<b>{case["marker"]}</b>\n'
