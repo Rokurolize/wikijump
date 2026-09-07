@@ -106,11 +106,11 @@ const AUDITED_CATALOG_FALLBACK = Object.freeze({
 const AUDITED_CURRENT_CATALOG_ISSUES = Object.freeze({
   count: 195,
   surface_ids_sha256: "3a2cf09c168b37eb4539336cca7807f06585ece006a3327c2b2093b327424377",
-  mapping_sha256: "653e7b54d1a801ea7ca1f193ff678b4c9064da27324947bc3e0944e94e1d74b4",
+  mapping_sha256: "3b5f692daf4475775187ac9b5a452844b2330cbadb9ea94aa92ee9c3d9319c30",
   fallback_issue: 1387,
-  fallback_count: 170,
-  fallback_surface_ids_sha256: "6bdb2e81e2065583a88dddca509e3b734c3c527ee28ad81d1fe100e3223e3acb",
-  fallback_mapping_sha256: "d75c3762dc5eafbf0dc57a622a02722be314367f2faf7277c894b58c02c2d92b"
+  fallback_count: 168,
+  fallback_surface_ids_sha256: "a69ba8bc0a841c3092fb6cab2b1d2efcea8044b25ddb9dcad52669db66867820",
+  fallback_mapping_sha256: "9a7489f1083ef9a114f95221997194afcb6eb1b957ad36f307e309a3a3668ff7"
 })
 const AUDITED_ISSUE_GROUPS = Object.freeze({
   deepwell_jsonrpc_method: Object.freeze({ count: 167, surface_ids_sha256: "aa5de1edfe523bc181082f65888db2d16ac5359f2d22e7fedc9a612a737dedb5", mapping_sha256: "cc2723e21bc7dfadb3fd233dfe4ae4b1a0f303b00966d12e2b6e79c77a74c38a" }),
@@ -198,6 +198,7 @@ const PAGE_ACTION_ISSUES = new Map([
   ["page-action:watchers", 1032]
 ])
 const CATALOG_FEATURE_ISSUE_EXCEPTIONS = new Map([
+  ["catalog-feature:avatars", 1392],
   ["catalog-feature:community-site-directory", 1508],
   ["catalog-feature:data-forms-deleting-form", 1391],
   ["catalog-feature:data-forms-file-field", 1504],
@@ -213,6 +214,7 @@ const CATALOG_FEATURE_ISSUE_EXCEPTIONS = new Map([
   ["catalog-feature:module-forumthread", 1034],
   ["catalog-feature:module-frontforum", 1034],
   ["catalog-feature:module-frontspecialmini", 1389],
+  ["catalog-feature:module-listpages", 1383],
   ["catalog-feature:module-managesite", 1038],
   ["catalog-feature:module-members", 1032],
   ["catalog-feature:module-newsite", 1505],
