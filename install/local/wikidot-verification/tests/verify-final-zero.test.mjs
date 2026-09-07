@@ -165,7 +165,7 @@ async function fixtures(t) {
   const prepared = await writeJson(root, "prepared-receipt.json", {schema_version: 1, kind: "standing-image-preparation", status: "pass", run_id: runId, wikijump_sha: wikijumpCommit, wikijump_tree: wikijumpTree, ftml_sha: ftmlCommit, dependency_lock_sha256: "8".repeat(64), promotion_precondition: promotionArtifact, images: activeImages});
   const runtimeIdentityValue = {schema: "wikijump_syntax_differential.wikijump_runtime_identity.v1", wikijump_sha: wikijumpCommit, ftml_sha: ftmlCommit, dependency_lock_sha256: "8".repeat(64), executable_sha256: "1".repeat(64), runtime_config_sha256: "9".repeat(64)};
   const runtimeIdentity = await writeJson(root, "runtime-identity.json", runtimeIdentityValue);
-  const standingRefresh = await writeJson(root, "standing-refresh.json", {schema_version: 1, kind: "standing-promotion", status: "pass", run_id: runId, started_at: "2026-08-15T00:00:00.000Z", completed_at: "2026-08-15T00:01:00.000Z", activation_duration_seconds: 0, image_verification_duration_seconds: 0, compose_activation_duration_seconds: 0, health_duration_seconds: 0, canary_duration_seconds: 0, wikijump_sha: wikijumpCommit, wikijump_tree: wikijumpTree, ftml_sha: ftmlCommit, dependency_lock_sha256: "8".repeat(64), promotion_precondition: promotionArtifact, runtime_home: "/tmp/wikijump-standing", prepared_receipt: prepared, project_name: "wikijump-standing", network_name: "wikijump-standing_default", images: activeImages, rollback_images: rollbackImages, protected_volumes: ["runtime50x-postgres-data", "runtime50x-files-data"], runtime_differential_identity: {path: runtimeIdentity.path, sha256: runtimeIdentity.sha256, identity: runtimeIdentityValue}, health: {deepwell: "healthy", framerail: "healthy", wws: "healthy"}, canary: {url: "http://scp-wiki.wikijump.localhost/scp-9506", status: "pass", required_markers: ["scp-9506", "page-content"]}, cleanup: {status: "pass", candidate_receipt: prepared, receipt: prepared, superseded_images: []}, resource_disposition: {active: Object.fromEntries(Object.entries(activeImages).map(([service, image]) => [service, {owner: "standing-runtime", keep_until: "2026-08-16T00:00:00+00:00", id: image.id}])), rollback: Object.fromEntries(Object.entries(rollbackImages).map(([service, image]) => [service, {owner: "standing-runtime-rollback", keep_until: "2026-08-16T00:00:00+00:00", id: image.id}])), volumes: "protected-and-untouched", worktrees: "none created", target_directories: "none created"}});
+  const standingRefresh = await writeJson(root, "standing-refresh.json", {schema_version: 1, kind: "standing-promotion", status: "pass", run_id: runId, started_at: "2026-08-15T00:00:00.000Z", completed_at: "2026-08-15T00:01:00.000Z", activation_duration_seconds: 0, image_verification_duration_seconds: 0, compose_activation_duration_seconds: 0, health_duration_seconds: 0, canary_duration_seconds: 0, wikijump_sha: wikijumpCommit, wikijump_tree: wikijumpTree, ftml_sha: ftmlCommit, dependency_lock_sha256: "8".repeat(64), promotion_precondition: promotionArtifact, runtime_home: "/tmp/wikijump-standing", prepared_receipt: prepared, project_name: "wikijump-standing", network_name: "wikijump-standing_default", images: activeImages, rollback_images: rollbackImages, protected_volumes: ["runtime50x-postgres-data", "runtime50x-files-data"], saved_page_render_freshness: {status: "pass", expected_compiled_generator: "ftml v1.0.0; deepwell-render/v1", stale_pages_remaining: 0}, runtime_differential_identity: {path: runtimeIdentity.path, sha256: runtimeIdentity.sha256, identity: runtimeIdentityValue}, health: {deepwell: "healthy", framerail: "healthy", wws: "healthy"}, canary: {url: "http://scp-wiki.wikijump.localhost/scp-9506", status: "pass", required_markers: ["scp-9506", "page-content"]}, cleanup: {status: "pass", candidate_receipt: prepared, receipt: prepared, superseded_images: []}, resource_disposition: {active: Object.fromEntries(Object.entries(activeImages).map(([service, image]) => [service, {owner: "standing-runtime", keep_until: "2026-08-16T00:00:00+00:00", id: image.id}])), rollback: Object.fromEntries(Object.entries(rollbackImages).map(([service, image]) => [service, {owner: "standing-runtime-rollback", keep_until: "2026-08-16T00:00:00+00:00", id: image.id}])), volumes: "protected-and-untouched", worktrees: "none created", target_directories: "none created"}});
   const records = deferredRecords();
   const surfaceId = "surface:00000001";
   const sourceLocalId = "catalog-feature:module-example";
@@ -347,6 +347,19 @@ test("final-zero rejects a standing matrix without its digest-bound standing ref
   delete fixture.matrix.standing_refresh;
   await writeJson(fixture.paths.root, "standing-matrix.json", fixture.matrix);
   await assert.rejects(verifyFinalZero(inputMap(fixture)), /standing matrix has missing or unknown fields/u);
+});
+
+test("final-zero rejects a standing refresh with stale saved pages", async (t) => {
+  const fixture = await fixtures(t);
+  const refresh = JSON.parse(await fs.readFile(fixture.matrix.standing_refresh.path, "utf8"));
+  refresh.saved_page_render_freshness.stale_pages_remaining = 1;
+  const changed = await writeJson(fixture.paths.root, "standing-refresh.json", refresh);
+  fixture.matrix.standing_refresh = changed;
+  await writeJson(fixture.paths.root, "standing-matrix.json", fixture.matrix);
+  await assert.rejects(
+    verifyFinalZero(inputMap(fixture)),
+    /standing refresh saved page render freshness is not passing/u,
+  );
 });
 
 test("final-zero rejects symlinked input and artifact paths", async (t) => {

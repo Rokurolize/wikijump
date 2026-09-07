@@ -129,6 +129,7 @@ export function validateStandingRefreshReceipt(value) {
       "images",
       "rollback_images",
       "protected_volumes",
+      "saved_page_render_freshness",
       "runtime_differential_identity",
       "health",
       "canary",
@@ -162,6 +163,23 @@ export function validateStandingRefreshReceipt(value) {
   requireNonEmptyString(value.network_name, "standing refresh.network_name");
   if (JSON.stringify(value.protected_volumes) !== JSON.stringify(PROTECTED_VOLUMES)) {
     throw new Error("standing refresh protected volumes are not canonical");
+  }
+
+  exactKeys(
+    value.saved_page_render_freshness,
+    ["expected_compiled_generator", "stale_pages_remaining", "status"],
+    "standing refresh saved page render freshness",
+  );
+  requireNonEmptyString(
+    value.saved_page_render_freshness.expected_compiled_generator,
+    "standing refresh saved page render freshness.expected_compiled_generator",
+  );
+  if (
+    value.saved_page_render_freshness.status !== "pass" ||
+    !Number.isSafeInteger(value.saved_page_render_freshness.stale_pages_remaining) ||
+    value.saved_page_render_freshness.stale_pages_remaining !== 0
+  ) {
+    throw new Error("standing refresh saved page render freshness is not passing");
   }
 
   validateImages(value.images, "standing refresh.images");
