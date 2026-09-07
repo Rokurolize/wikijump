@@ -481,10 +481,10 @@ def validate_plan(plan: dict[str, Any], plan_path: Path, runner_path: Path) -> t
     if plan.get("schema") != PLAN_SCHEMA or plan.get("site") != SITE:
         raise RuntimeError("issue 1383 plan schema or site is unsupported")
     if plan.get("current_result") != {
-        "status": "unavailable",
-        "reason": "scanner results are not retained and the installed browser dependency tree is unavailable",
+        "status": "ready",
+        "reason": "scanner results and the installed browser dependency tree are retained; complete live/browser capture is required",
     }:
-        raise RuntimeError("issue 1383 current result must remain unavailable")
+        raise RuntimeError("issue 1383 current result must describe a ready complete capture")
     source = plan.get("source")
     cases = plan.get("cases")
     if not isinstance(source, dict) or not isinstance(cases, list) or len(cases) != 4:

@@ -94,6 +94,33 @@ class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
         }
         self.assertEqual(actual, expected)
 
+    def test_plan_is_ready_only_with_retained_scanners_and_browser_tree(self):
+        import json
+
+        repo_root = Path(__file__).parents[4]
+        plan = json.loads(
+            (
+                repo_root
+                / "install/local/wikidot-verification/fixtures/issue1383-live-evidence-plan.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        self.assertEqual(
+            plan["current_result"],
+            {
+                "status": "ready",
+                "reason": "scanner results and the installed browser dependency tree are retained; complete live/browser capture is required",
+            },
+        )
+        self.assertEqual(
+            [item["status"] for item in plan["scanner_checks"]],
+            ["captured", "captured"],
+        )
+        self.assertEqual(
+            plan["browser"]["installed_dependency_tree"]["status"],
+            "captured",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

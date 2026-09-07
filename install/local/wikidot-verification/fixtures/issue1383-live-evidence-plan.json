@@ -3,8 +3,8 @@
   "issue": "Rokurolize/wikijump#1383",
   "site": "sandbox-for-codex",
   "current_result": {
-    "status": "unavailable",
-    "reason": "scanner results are not retained and the installed browser dependency tree is unavailable"
+    "status": "ready",
+    "reason": "scanner results and the installed browser dependency tree are retained; complete live/browser capture is required"
   },
   "repository": {
     "reviewed_commit": "4cff29b2ecc6cc53c434ada93d5ab6df817344cb",
@@ -22,7 +22,7 @@
     "public_regression_commit": "ce9f61a66a711165cfe0a1e608a7870b1f4ff901",
     "public_regression_tree": "7598f5dee9f2f775ad585a987126841e557d1f18",
     "test_path": "deepwell/tests/page.rs",
-    "test_sha256": "49ec038c8b1827a472efde8f153cbee5f124850ae3a43e85eae86bb088756e53",
+    "test_sha256": "b47242cdfd57e122367c43397527a576cf02df34aa7186ca4c11cb4675dd118b",
     "test_anchor": "listpages_generated_html_preview_saved_section_controls",
     "test_body_sha256": "650187fc93f4b6a653d38b3756eaf6f6e4fb377e37f86345e831fa4267871561"
   },
@@ -67,7 +67,7 @@
   },
   "runner": {
     "path": "install/local/wikidot-verification/scripts/capture-issue1383-live-evidence.py",
-    "sha256": "4f13673571d4f63c3c2073e084db9c369b416026f0f3fb57769f8dcc538facce"
+    "sha256": "d50637bacd46c6a9aaaf5fc6308c6595202b12748573698a2cc2d0523700e715"
   },
   "dependencies": {
     "requirements_path": "install/local/wikidot-verification/requirements.txt",
@@ -95,14 +95,24 @@
   "scanner_checks": [
     {
       "name": "corpus-pinned-literals",
-      "status": "not_available",
-      "result_artifact": null,
+      "status": "captured",
+      "result_artifact": {
+        "path": "/home/roku/wjlab/evidence/issue1383-listpages-generated-html-20260815/current-20260907-r1/corpus-pinned-literals-receipt.json",
+        "sha256": "9e37a928d586f11018ffd0d2f0f6b90382a4e7ce727ae48a52b38a7fcb778590",
+        "input_sha256": "2b72b55bfc9cf48d78913c83125a7e15e259d5b3ead2a32887933dba13a4fca9",
+        "denominator_sha256": "78149bb5a5466b2b812f1feb5ec7b37cba9086a0fc9c4c53d901f5c50c9f37d4"
+      },
       "denominator_sha256": "78149bb5a5466b2b812f1feb5ec7b37cba9086a0fc9c4c53d901f5c50c9f37d4"
     },
     {
       "name": "wikijump-identifier-leaks",
-      "status": "not_available",
-      "result_artifact": null,
+      "status": "captured",
+      "result_artifact": {
+        "path": "/home/roku/wjlab/evidence/issue1383-listpages-generated-html-20260815/current-20260907-r1/wikijump-identifier-leaks-receipt.json",
+        "sha256": "1a88e7ffc046be5336c81c6db7aee81a095eb403b9d17ed032eb74ce33dfdcee",
+        "input_sha256": "15d6607b7c92ba8bd6597b1f053144c68291dfd6a1651df13e3e643710fe6094",
+        "denominator_sha256": "78149bb5a5466b2b812f1feb5ec7b37cba9086a0fc9c4c53d901f5c50c9f37d4"
+      },
       "denominator_sha256": "78149bb5a5466b2b812f1feb5ec7b37cba9086a0fc9c4c53d901f5c50c9f37d4"
     }
   ],
@@ -166,13 +176,13 @@
     "lock_sha256": "70f57bbddfaaaa09085156ef9089c5128577291347b5364019d57f7df9983a5d",
     "executable_path": "/opt/google/chrome/google-chrome",
     "executable_sha256": "aea09d69ce7f24d5901f6bfb15dd44d0c856e793e0a498f8d8393ec7d2c308ec",
-    "version": "151.0.7922.108",
+    "version": "152.0.7977.64",
     "node_executable": "/home/roku/.nvm/versions/node/v24.18.0/bin/node",
     "node_version": "v24.18.0",
     "installed_dependency_tree": {
       "path": "framerail/node_modules/.modules.yaml",
-      "status": "not_available",
-      "sha256": null
+      "status": "captured",
+      "sha256": "e0f76385c89281dfde731b332826ab2295ce81f57995cd500d30ba4995a96a71"
     }
   }
 }
