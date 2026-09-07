@@ -1,79 +1,38 @@
 # Wikijump
 
-## Product and documentation
+## Start here
 
-1. Use `docs/dom-compatibility.md` for DOM expectations, `docs/compatibility-ids.md` for the imported id ranges, `deepwell/README.md` for the trusted internal API boundary, and `docs/ftml-boundary.md` for FTML/Wikijump ownership.
-2. `docs/wikidot-specifications/` is the specification universe for the compatibility campaign: `catalog.json` is the complete feature index, `specifications/` holds one specification per feature, `implementation-ledger.json` holds the feature/property projection, and `live-observations.json` records live corrections that override the snapshot. The live implementation queue comes from the current canonical compatibility ledger and current issue/blocker state, not from the catalog size or a frozen source-gap count. Read the exact specification for a selected current feature before designing against it, and read `IMPLEMENTATION_PROMPT.md` there for the test-first mechanics the campaign follows.
-3. `docs/local-authoring-boundary.md` says which local site is a mirror and which is editable. `scp-wiki` and `scp-jp` are mirrors; local drafts belong in `scpaiueouiuiuiui`. Authoring into a mirror corrupts the comparison baseline.
-4. Browser parity tools live in `install/local/wikidot-verification/`; its README documents each checker. The sandbox oracle design is `install/local/wikidot-verification/docs/sandbox-oracle-design.md`.
-5. Wikijump is a Wikidot-compatible local runtime. For imported content, live Wikidot evidence or provenance-backed corpus observations outrank local Wikijump output.
+1. Recover current truth from the checkout, Git/GitHub, maintained receipts, and the active runtime before acting on a handoff or old plan. A handoff is navigation, not authority.
+2. Compatibility campaign work: read `docs/agents/compatibility/README.md` before selecting or resuming a row. It owns the campaign sequence, completion criteria, and pointers to evidence, runtime, closure, and execution guidance.
+3. Read the exact Wikidot specification for the behavior you are changing before designing against it. `docs/wikidot-specifications/` is the specification universe; live Wikidot evidence and provenance-backed corpus observations override local Wikijump output.
+4. Finish the branch you enter. A source change is complete only after focused validation, coherent commit/push, normal PR delivery, required acceptance, and any required standing proof or cleanup for that branch.
 
-## Compatibility evidence
+## Core invariants
 
-- Use the `wikidot-sandbox-access` and `wikidot-py-operations` skills for live probes. Prefer anonymous `edit/PagePreviewModule`, `list/ListPagesModule`, or an existing public page before creating sandbox state.
-- External-evidence tests are cache-first: reuse identity-bound retained responses from `wikidot.com`, `wdfiles.com`, and other public providers instead of requesting them again. On a genuine cache miss, fetch once, persist the response for reuse, and use a 0 ms fixed inter-request interval; still honor an explicit server `Retry-After` response.
-- CI runs only offline verifier unit/fixture/retained-artifact tests. Live external acquisition, capture, probe, and `live-reference` entrypoints remain local campaign operations and must not be invoked by CI workflows; CI network isolation remains a second fail-closed boundary.
-- Real EN/JP Wikidot sites are read-only unless the user explicitly authorizes a run-owned sandbox mutation. Never expose credentials or session cookies.
-- Browser-visible behavior includes intermediate paints and transitions as well as the settled page. A final screenshot or final DOM match does not prove compatibility when users can see stale themes, layout shifts, loading states, or transient controls.
-- Do not hide meaningful differences through broad normalization, CSS masking, source surgery, or validator shortcuts. Record attempted observation routes when live behavior cannot be captured.
-- Faithful Wikidot DOM, CSS cascade, interaction, legacy quirks, escaping, and sanitization behavior take priority over modernization for imported content. Preserve evidenced Wikidot boundaries rather than silently tightening them.
-- A compatibility rule must implement the behavior a page demonstrates, not recognize the page. Do not decide behavior by comparing against a byte-exact fragment of captured page content, and do not gate on a conjunction that only one captured page satisfies, such as a tail of exactly three lines with nothing following it. Both reproduce a single page and diverge from Wikidot the moment a word or a line moves.
-- Before narrowing a rule to an evidenced shape, observe the boundary live: at least two observations where the behavior holds and two where it stops, varying the part you are about to fix in place. A negative control showing that one changed character no longer matches proves the rule is narrow, not that it is right.
-- When the general rule cannot be established from the evidence available, leave the case actionable and record it as unimplemented. Do not close it with a rule that only the captured page satisfies. A gate driven to zero by page recognition has measured nothing.
+- **Parity first:** preserve evidenced Wikidot DOM, CSS cascade, interaction, temporal states, legacy quirks, escaping, sanitization, HTTP behavior, and security-relevant output. Modernization is not a compatibility justification.
+- **Generalize:** implement the behavior the evidence demonstrates, not the captured page. If the general rule is not established, leave the case actionable rather than recognizing a fixture or weakening a verifier.
+- **Unevidenced shapes:** keep unsupported or unverified modules/queries fail-closed, literal, or behind an evidenced fallback; do not silently widen behavior to make a test pass.
+- **Architecture:** FTML owns syntax parsing and rendering primitives; Wikijump owns behavior requiring site, page, query, import, file, permission, actor, or browser runtime state. Read `docs/ftml-boundary.md` before crossing that boundary.
+- **Mirror safety:** `scp-wiki` and `scp-jp` are mirrors. Local authoring belongs in `scpaiueouiuiuiui` unless the task explicitly owns a mirror import or repair. Read `docs/local-authoring-boundary.md` for authoring or membership work.
+- **Standing data:** preserve `runtime50x-postgres-data` and `runtime50x-files-data`. They are corpus-derived protected standing volumes. Candidate, fixture, and inspection resources are disposable once no live process or rollback reference needs them.
+- **External evidence:** before any external acquisition or browser parity run, read `docs/agents/compatibility/evidence.md`; it owns cache/replay, browser identity, mutation, and CI acquisition rules.
+- **Secrets:** keep credentials, session cookies, bearer tokens, and private actor material out of source, issues, logs, and receipts.
+- **Delivery:** use a normal two-parent PR merge. Do not force/admin merge or push to `scpwiki/*`. Browser-visible fixes are not complete at merge; refresh and prove standing as required by `docs/deployment/runtime-drift-policy.md`.
+- **Compatibility scanners/rendered constructs:** read `install/local/wikidot-verification/README.md` before the PR and run its corpus-pinned-literal and Wikijump-identifier-leak checks when that branch applies.
 
-## Code Review Rules
+## Context pointers
 
-- Treat observable Wikidot behavior as the compatibility specification even when that behavior is insecure, unsafe, obsolete, or contrary to modern web best practices. A review objection based only on modern hardening is not a compatibility justification.
-- For security-sensitive behavior, first establish what Wikidot actually does from live evidence or provenance-backed observations. When Wikidot demonstrably permits the behavior, the default compatibility disposition is to reproduce it and document the concern rather than silently harden the implementation.
-- Put discretionary security controls at the surrounding deployment, network, privilege, or isolation boundary when possible instead of changing guest-visible Wikidot semantics. Wikijump is a local/private compatibility runtime, so review compatibility behavior under that deployment model rather than as a public Internet service by default.
-- Accept a deliberate divergence from evidenced Wikidot behavior only when reproducing it would violate an explicit Wikijump deployment boundary or create a materially greater capability than Wikidot itself exposes. Record the evidence, the reason for divergence, and the containment boundary instead of appealing generically to "security" or "best practice".
-- Treat HTTP resources, URL schemes, link attributes such as `noopener`, escaping, sanitization, and similarly security-relevant output as parity questions first: if Wikidot preserves or omits something observably, match that behavior unless the preceding divergence rule applies.
-- Distinguish faithful reproduction of a Wikidot weakness from a vulnerability introduced by Wikijump. New capability or exposure that Wikidot does not exhibit remains an ordinary defect and should be reviewed as such.
-
-## Architecture
-
-- FTML owns syntax parsing and rendering primitives. Wikijump owns behavior requiring site, page, query, import, file, permission, actor, or browser runtime state.
-- `ListPages` and `CountPages` remain delayed structures in FTML; Wikijump owns selectors, queries, URL arguments, pagination, variables, and runtime rendering.
-- Put syntax-level Wikidot DOM differences in FTML `Layout::Wikidot`. Do not add new Deepwell post-render rewriting when the syntax renderer can own the result.
-- If a syntax-level shim must land in Deepwell anyway, it needs a deviation note in `docs/ftml-boundary-deviations/` in the same pull request, following the template in `docs/ftml-boundary.md`. The note must state why FTML is not yet sufficient and what would let the shim shrink. Without it the debt becomes invisible, and the surfaces already inventoried there may receive correctness fixes but must not grow new capability.
-- Unsupported or unverified module and query shapes must fail closed, remain literal, or use an evidenced fallback. Do not silently widen a query.
-- Imported uploads are runtime data, not repository seed fixtures. The protected volumes are the corpus-derived mirror data of the standing runtime, currently `runtime50x-postgres-data` and `runtime50x-files-data`. They are expensive because they are built from the corpus at `~/src/Rokurolize/scp-wiki-translation/corpus`, and rebuilding them is the cost the protection exists to avoid. Never delete them without explicit user authorization. Candidate, fixture, inspection, and per-revision copies of that data are not protected by this rule, whatever their name or category; they are reclaimable once no live process and no active rollback references them.
-
-## Development
-
-- Search existing helpers and tests before changing high-touch render code. Keep coherent changes together and keep modules understandable; split a module when its responsibilities no longer fit locally.
-- Remove task-owned branches, worktrees, target directories, containers, images, and browser profiles after they cease to be useful. Preserve anything referenced by a standing runtime or needed for rollback. Retention is a count, not a judgment: for per-revision build targets, standing image sets, and campaign evidence directories, keep the active one and one rollback, and delete the rest. A recorded digest in a receipt is the evidence for a build output, because that artifact can be rebuilt from the recorded source revision. It is not the evidence for an acceptance result: a replay verdict, a classification, a reconciliation, and the fixture they ran against cannot be rebuilt from a revision alone, so whenever a receipt records the digest of one, keep the artifact it names for as long as the receipt is cited. When a receipt records the digest of an acceptance artifact, record the absolute path of that artifact in the same receipt field group, because a digest alone does not say which evidence root holds it. Run the reclaim check at the end of every campaign phase, not only when a build fails for space.
-- Cargo targets: the only build output directory inside the checkout is the repository-level `target/`, set by `.cargo/config.toml`. Any other `target/` under the checkout is stale by definition and is reclaimable without further justification once no live process references it. Candidate builds use a revision-specific `CARGO_TARGET_DIR` outside the checkout. Keep exactly two: the active candidate and one rollback. Delete the third and older on sight. Read `docs/development/cargo-target-policy.md` before changing build or cleanup behavior.
-
-## Long-running work
-
-- Poll a running process with an empty `write_stdin` and `yield_time_ms: 300000`. An empty poll is clamped to the background terminal timeout, which is 300000 ms unless `background_terminal_max_timeout` is set, so asking for 300000 is safe whatever the ceiling turns out to be and a single call can cover minutes. Non-empty writes and `exec_command` are capped at 30000 ms instead. Polling at 1000 ms buys nothing: an empty poll never returns sooner than 5000 ms, and every extra call spends a whole model turn to learn the job is still running.
-- Prefer one long poll to many short ones, and do unrelated work while a long job runs. Processes started in a session survive across tool calls and turns.
-- Group causal fixes into batches and run one expensive validation per batch. Do not rebuild, replay a full corpus, or run clippy once per individual fix.
-- Keep `RUSTFLAGS` constant inside a build or test loop, because changing it invalidates all of `target/`. Run the warnings-as-errors clippy pass once per batch, before pushing.
-
-## Validation and delivery
-
-- Run focused tests while developing, then broaden according to the changed surface. Useful commands include `cargo fmt --manifest-path deepwell/Cargo.toml --check`, focused `cargo test`, `RUSTFLAGS='-D warnings' cargo clippy --manifest-path deepwell/Cargo.toml --tests --no-deps`, `pnpm --dir framerail build`, `pnpm --dir framerail lint`, and focused verifier tests.
-- For browser-visible parity, capture fresh browser evidence against the exact source, dependency, fixture, and runtime identities. Test every observable interval when the defect is temporal.
-- Before opening a pull request that changes compatibility scanning, classification, or a rendered construct, run the two compatibility checkers in `install/local/wikidot-verification`: `corpus-pinned-literals` finds rules pinned to captured page content, and `wikijump-identifier-leaks` finds `wj-` identifiers reaching the Wikidot layout. Its README gives the arguments. Both report only what they can see mechanically, so a clean report is not proof that a rule generalizes.
-- Push a branch as soon as it holds work worth keeping, and open its pull request early when GitHub is available. Local validation is the merge-readiness authority; GitHub Actions is advisory and must not block implementation, acceptance, or landing. Record the exact local commands and results in the pull request, and keep the campaign completable even when GitHub or GitHub Actions is unavailable.
-- What makes unpushed work a defect rather than a preference is divergence between the remote review head and the commit you are building from. Once the two differ, every remote check and review is a report about code nobody is running, and the modules most in need of review are exactly the ones still uncommitted in the working tree. Push whenever the head you build, replay, or measure against stops being the head you pushed, and commit the working tree before starting a long build rather than after reading its result.
-- A commit whose correctness depends on a merge elsewhere must not be pushed before that merge lands. A test that asserts a pinned upstream revision, and the manifest and lock entries that pin it, belong in the same push and after the upstream pull request is merged. Split across pushes, the gate reports a failure that describes ordering rather than the change, and a red gate that means nothing trains everyone to stop reading it.
-- When a gate reports counts, pin and record the exact identity of both its reference inputs and its denominator file, then keep them fixed for the life of the campaign. A gate whose inputs move cannot be compared across runs or audited afterwards.
-- Do not force or admin merge and do not push to `scpwiki/*`.
-- A merge is not a deployment. Refresh the standing runtime after browser-visible changes and verify the served URL before reporting the defect fixed. `docs/deployment/runtime-drift-policy.md` defines which revision the standing runtime must serve and how to attribute an observation to it.
-
-## Agent skills
-
-### Issue tracker
-
-Issues for this repo live in GitHub Issues for `Rokurolize/wikijump`, operated with `gh`. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Use the canonical labels `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, and `wontfix`. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Use the single-context layout with root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.
+- **Compatibility campaign:** `docs/agents/compatibility/README.md` — read for campaign bootstrap, WBS flow, candidate/standing proof, final-zero, issue closure, and cleanup.
+- **Live evidence and sandbox mutation:** `docs/agents/compatibility/evidence.md` — read before external capture, browser parity, authenticated probes, run-owned mutations, or paid/external authority decisions.
+- **Candidate and standing:** `docs/agents/compatibility/runtime.md` — read before immutable builds, candidate case execution, promotion, saved-page rerender, standing parity, or runtime repair.
+- **Closure:** `docs/agents/compatibility/closure.md` — read before changing audit/ledger state, closing compatibility issues, generating final-zero, or closing tracking issue #1089.
+- **Execution speed:** `docs/agents/compatibility/execution.md` — read for long-running work, bulk issue/evidence analysis, expensive validation, large rerenders, or when progress is slower than expected.
+- **DOM compatibility:** `docs/dom-compatibility.md` — read for browser DOM and presentation expectations.
+- **Imported IDs:** `docs/compatibility-ids.md` — read when touching imported identifier ranges.
+- **Trusted Deepwell API:** `deepwell/README.md` — read when crossing the internal API boundary.
+- **Verification tools:** `install/local/wikidot-verification/README.md` — read before running/changing compatibility checkers, changing a compatibility scanner or rendered construct, executing candidate cases, replaying retained responses, capturing browsers, or invoking completion controllers.
+- **Runtime identity:** `docs/deployment/runtime-drift-policy.md` — read before candidate retention, promotion, standing measurements, or drift repair.
+- **Cargo build storage:** `docs/development/cargo-target-policy.md` — read before candidate builds or target cleanup.
+- **Issues and PRs:** `docs/agents/issue-tracker.md` — read for GitHub issue/dependency/frontier operations.
+- **Triage:** `docs/agents/triage-labels.md` — read when triaging or changing canonical workflow labels.
+- **Domain docs:** `docs/agents/domain.md` — read before creating or reorganizing domain context or ADRs.

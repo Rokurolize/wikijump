@@ -8,7 +8,7 @@ Port 443 is owned by exactly one standing Compose stack. That stack is built onl
 
 Before a standing runtime is accepted, record the merged Wikijump SHA and tree, FTML SHA, image digests for the gateway and every application upstream, profile and feature set where applicable, and the artifact key for any compiled Deepwell binary. The recorded gateway-to-upstream chain is the identity of the service, not the image tag alone.
 
-Standing image preparation and activation are separate operations. `install/standing/prepare.py` builds immutable SHA-derived application image references from `install/prod` and writes a preparation receipt with the source, FTML, lockfile, Dockerfile, profile, feature, and image-ID identities. `install/standing/refresh.py` accepts that receipt, verifies the local image IDs, and activates with `docker compose up --no-build`; it never compiles Rust or bundles Framerail during activation. Local development remains the `install/local` watch-mode tier.
+Standing image preparation and activation are separate operations. `install/standing/prepare.py` binds the sealed candidate application image IDs from a passing promotion precondition to the exact clean merged `origin/develop` identity and writes a preparation receipt with source, FTML, lockfile, Dockerfile, profile, feature, image-ID, and promotion-precondition identities. `install/standing/refresh.py` accepts that receipt, verifies the local image IDs, and activates with `docker compose up --no-build`; neither step recompiles Rust or rebundles Framerail. Local development remains the `install/local` watch-mode tier.
 
 The standing stack must remain available as a deliverable. Its normal canaries cover HTTP responses for representative pages and assets, WIKIREQUEST metadata, AJAX ListPages, DOM rendering, and an unmodified `wikidot.py` site and page lookup. A failed canary is a runtime incident and is repaired before unrelated candidate work proceeds.
 
@@ -26,7 +26,7 @@ The current production image and one immediate rollback image are explicitly ret
 
 ## Promotion after merge
 
-Promotion begins only after the candidate change has merged normally to `develop`. Rebuild from that exact merged head rather than reusing a branch image. Verify the source tree, FTML pin, image digests, and compiled artifact identity before changing the standing stack.
+Promotion begins only after the candidate change has merged normally to `develop`. The maintained merge-identity validator binds the pre-merge candidate to the actual normal two-parent merge. When the merge tree is the candidate tree, reuse the sealed candidate application images. When the only post-candidate delta is within the explicit verification-only prefixes accepted by `install/standing/merge_identity.py`, those same sealed runtime images may also be reused because the runtime inputs did not change. Any other runtime-input delta invalidates the candidate and requires a new sealed candidate. Verify the source tree/delta, FTML pin, image digests, and compiled artifact identity before changing the standing stack.
 
 The switch is atomic from the browser's perspective: park the old standing application containers, start the exact merged-head containers with the authoritative aliases, wait for health, and then run the standing canaries. If the new stack fails health or any canary, restore the parked known-good stack and record the failed promotion receipt. Do not leave a candidate under the standing container name after a failed or interrupted promotion.
 

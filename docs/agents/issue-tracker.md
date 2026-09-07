@@ -11,6 +11,8 @@ Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all op
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: `gh issue close <number> --comment "..."`
 
+For campaign-wide reads, prefer one batched `gh issue list --json ...` or one GraphQL request with aliases over a loop of `gh issue view` calls. Freeze the returned issue numbers/titles/URLs when they become an acceptance or final-zero input; mutable GitHub state should not be reread midway through the same gate.
+
 Infer the repo from `git remote -v` — `gh` does this automatically when run inside a clone.
 
 ## Pull requests as a triage surface
