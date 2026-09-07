@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import subprocess
 import sys
 import tempfile
@@ -23,9 +24,11 @@ from capture_wikidot_preview_references import preview_body
 
 PLAN_SCHEMA = "wikijump.listpages_section_zero_generated_html_live_run_plan.v1"
 ARTIFACT_SCHEMA = "wikijump.listpages_section_zero_generated_html_live_run.v1"
-SITE = "sandbox-for-codex"
+SITE = "wjc260907a1f7"
 DOMAIN = f"{SITE}.wikidot.com"
 ORIGIN = f"http://{DOMAIN}"
+SAVED_SITE = "scpaiueouiuiuiui"
+SAVED_DOMAIN = f"{SAVED_SITE}.wikidot.com"
 REPO_ROOT = Path(__file__).resolve().parents[4]
 REQUIREMENTS_PATH = REPO_ROOT / "install/local/wikidot-verification/requirements.txt"
 RETAINED_EVIDENCE_ROOT = Path("/home/roku/wjlab/evidence/issue1383-listpages-generated-html-20260815")
@@ -270,7 +273,7 @@ def page_plan(key: str, fullname: str, title: str, source: str) -> dict[str, Any
 def source_for(case: dict[str, Any], target_slug: str) -> str:
     return (
         f'[[div class="issue1383-case issue1383-{case["label"]}"]]\n'
-        f'[[module ListPages name="{target_slug}" separate="no" wrapper="no"]]\n'
+        f'[[module ListPages category="*" fullname="{target_slug}" separate="no" wrapper="no"]]\n'
         "ROW_EVALUATED:%%title%%\n"
         f'[[%%content{{{case["section"]}}}%%{case["opener"]}]]\n'
         f'<b>{case["marker"]}</b>\n'
@@ -278,6 +281,30 @@ def source_for(case: dict[str, Any], target_slug: str) -> str:
         "[[/module]]\n"
         "[[/div]]"
     )
+
+
+def saved_self_selection_source(cases: list[dict[str, Any]]) -> str:
+    """Build the saved-view control on the same ListPages page.
+
+    The live scp-jp authority uses ``range=\".\"`` and selects the current
+    page.  A separate target selected by fullname preserves the generated
+    ``[[html]]`` text literally on save and therefore does not exercise the
+    live saved-page reparse boundary owned by #1383.
+    """
+    parts = ["+ Section One", "SECTION_ONE_BODY", "+ Evidence"]
+    for case in cases:
+        parts.extend(
+            [
+                f'CASE_LABEL_{case["label"]}',
+                '[[module ListPages limit="1" range="."]] ',
+                f'[[%%content{{{case["section"]}}}%%{case["opener"]}]]',
+                f'<b>{case["marker"]}</b>',
+                "<span>TARGET_TITLE:%%title%%</span>",
+                "[[/html]]",
+                "[[/module]]",
+            ]
+        )
+    return "\n".join(parts).replace('range="."]] \n', 'range="."]]\n')
 
 
 def path_is_under(path: Path, roots: list[Path]) -> bool:
@@ -478,13 +505,13 @@ def validate_plan(plan: dict[str, Any], plan_path: Path, runner_path: Path) -> t
     for diff_arguments in (("diff", "--quiet", "HEAD", "--"), ("diff", "--cached", "--quiet", "--")):
         if subprocess.run([GIT_EXECUTABLE, "-C", str(REPO_ROOT), *diff_arguments, str(PLAN_RELATIVE_PATH)], env=GIT_ENVIRONMENT).returncode != 0:
             raise RuntimeError("issue 1383 plan has uncommitted changes")
-    if plan.get("schema") != PLAN_SCHEMA or plan.get("site") != SITE:
+    if plan.get("schema") != PLAN_SCHEMA or plan.get("site") != SITE or plan.get("saved_site") != SAVED_SITE:
         raise RuntimeError("issue 1383 plan schema or site is unsupported")
     if plan.get("current_result") != {
-        "status": "unavailable",
-        "reason": "scanner results are not retained and the installed browser dependency tree is unavailable",
+        "status": "complete",
+        "reason": "source-bound preview, saved self-selection browser, iframe payload, scanner, and cleanup evidence is retained",
     }:
-        raise RuntimeError("issue 1383 current result must remain unavailable")
+        raise RuntimeError("issue 1383 current result must describe the retained terminal capture")
     source = plan.get("source")
     cases = plan.get("cases")
     if not isinstance(source, dict) or not isinstance(cases, list) or len(cases) != 4:
@@ -603,6 +630,49 @@ def validate_plan(plan: dict[str, Any], plan_path: Path, runner_path: Path) -> t
     artifact = repo_path(plan["historical_artifact"].get("path"), "historical artifact path")
     if sha256_bytes(artifact.read_bytes()) != plan["historical_artifact"]["sha256"]:
         raise RuntimeError("immutable historical artifact changed")
+    terminal = plan.get("terminal_evidence")
+    terminal_path = Path(terminal.get("path", "")) if isinstance(terminal, dict) else Path()
+    if (
+        not isinstance(terminal, dict)
+        or set(terminal) != {"path", "sha256", "status", "wikijump_head"}
+        or terminal.get("status") != "pass"
+        or terminal.get("wikijump_head") != "5052bc1dbab5b5c0a7579ecc29caab1f3598285d"
+        or not terminal_path.is_absolute()
+        or ".." in terminal_path.parts
+        or not terminal_path.is_file()
+        or sha256_bytes(terminal_path.read_bytes()) != terminal.get("sha256")
+    ):
+        raise RuntimeError("issue 1383 terminal evidence identity is invalid")
+    terminal_receipt = json.loads(terminal_path.read_text(encoding="utf-8"))
+    if (
+        terminal_receipt.get("schema") != "wikijump.issue1383_terminal_evidence.v1"
+        or terminal_receipt.get("status") != "pass"
+        or terminal_receipt.get("issue") != 1383
+        or terminal_receipt.get("wikijump_head") != terminal["wikijump_head"]
+        or terminal_receipt.get("denominator", {}).get("case_ids") != case_ids
+        or terminal_receipt.get("denominator", {}).get("sha256") != plan["denominator"]["sha256"]
+        or terminal_receipt.get("saved", {}).get("settled_iframes") != 2
+        or terminal_receipt.get("preview", {}).get("cleanup", {}).get("all_absent") is not True
+    ):
+        raise RuntimeError("issue 1383 terminal evidence contract is invalid")
+    terminal_head = terminal["wikijump_head"]
+    if subprocess.run(
+        [GIT_EXECUTABLE, "-C", str(REPO_ROOT), "merge-base", "--is-ancestor", terminal_head, "HEAD"],
+        env=GIT_ENVIRONMENT,
+    ).returncode != 0:
+        raise RuntimeError("issue 1383 terminal evidence source is not an ancestor of HEAD")
+    verification_only_paths = {
+        PLAN_RELATIVE_PATH.as_posix(),
+        "install/local/wikidot-verification/scripts/capture-issue1383-live-evidence.py",
+        "install/local/wikidot-verification/tests/capture_issue1383_live_evidence_test.py",
+    }
+    changed_since_terminal = {
+        line
+        for line in git_value("diff", "--name-only", f"{terminal_head}..HEAD", "--").splitlines()
+        if line
+    }
+    if not changed_since_terminal.issubset(verification_only_paths):
+        raise RuntimeError("issue 1383 product source changed after terminal evidence capture")
     browser = plan.get("browser")
     package_path = repo_path(browser.get("package_path") if isinstance(browser, dict) else None, "browser package path")
     browser_lock_path = repo_path(browser.get("lock_path") if isinstance(browser, dict) else None, "browser lock path")
@@ -1705,7 +1775,7 @@ def capture(args: argparse.Namespace) -> dict[str, Any]:
         executable_input = Path(args.browser_executable)
         executable_stat = executable_input.lstat()
         browser_executable = executable_input.resolve()
-        if not executable_stat.is_file() or executable_input.is_symlink() or sha256_bytes(browser_executable.read_bytes()) != browser_plan["executable_sha256"]:
+        if not stat.S_ISREG(executable_stat.st_mode) or executable_input.is_symlink() or sha256_bytes(browser_executable.read_bytes()) != browser_plan["executable_sha256"]:
             raise RuntimeError("issue 1383 browser executable does not match the planned identity")
     budget_check(usage, budgets, started)
     target_slug = f"run-owned:issue-1383-{run_id}-target"
