@@ -224,6 +224,13 @@ async function fixtures(t) {
     standing_refresh: standingRefresh,
     rows: [{surface_id: surfaceId, source_local_id: sourceLocalId, kind: "catalog_feature", status: "pass", artifacts: [standingArtifact]}],
   };
+  const openIssues = {
+    schema: "wikijump.current_open_issues.v1",
+    repository: "Rokurolize/wikijump",
+    captured_at: "2026-09-07T00:00:00.000Z",
+    tracking_issue: 1089,
+    issues: [{number: 1089, title: "tracking", url: "https://github.com/Rokurolize/wikijump/issues/1089"}],
+  };
   const paths = {
     root,
     ledger: (await writeJson(root, "ledger.json", ledger)).path,
@@ -232,13 +239,14 @@ async function fixtures(t) {
     deferredLedger: (await writeJson(root, "deferred-ledger.json", deferredLedger)).path,
     standingMatrix: (await writeJson(root, "standing-matrix.json", matrix)).path,
     finalFrozen: finalFrozen.path,
+    openIssues: (await writeJson(root, "open-issues.json", openIssues)).path,
     repository: repository.path,
   };
-  return {paths, ledger, denominator, deferredDenominator, deferredLedger, matrix, repository};
+  return {paths, ledger, denominator, deferredDenominator, deferredLedger, matrix, openIssues, repository};
 }
 
 function inputMap(fixture) {
-  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix, finalFrozen: fixture.paths.finalFrozen};
+  return {repository: fixture.paths.repository, ledger: fixture.paths.ledger, denominator: fixture.paths.denominator, deferredDenominator: fixture.paths.deferredDenominator, deferredLedger: fixture.paths.deferredLedger, standingMatrix: fixture.paths.standingMatrix, finalFrozen: fixture.paths.finalFrozen, openIssues: fixture.paths.openIssues};
 }
 
 test("final-zero reconciles the exact denominator, row artifacts, deferred union, and canonical promotion", async (t) => {
@@ -246,11 +254,28 @@ test("final-zero reconciles the exact denominator, row artifacts, deferred union
   const receipt = await verifyFinalZero(inputMap(fixture));
   assert.equal(receipt.status, "pass");
   assert.equal(receipt.merge_commit, fixture.repository.mergeCommit);
-  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "final_frozen", "ledger", "repository", "standing_matrix", "standing_refresh"]);
+  assert.deepEqual(Object.keys(receipt.inputs).sort(), ["deferred_denominator", "deferred_ledger", "denominator", "final_frozen", "ledger", "open_issues", "repository", "standing_matrix", "standing_refresh"]);
   const output = path.join(fixture.paths.root, "receipt.json");
-  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--final-frozen", fixture.paths.finalFrozen, "--repository", fixture.paths.repository, "--output", output];
+  const args = ["--ledger", fixture.paths.ledger, "--denominator", fixture.paths.denominator, "--deferred-denominator", fixture.paths.deferredDenominator, "--deferred-ledger", fixture.paths.deferredLedger, "--standing-matrix", fixture.paths.standingMatrix, "--final-frozen", fixture.paths.finalFrozen, "--open-issues", fixture.paths.openIssues, "--repository", fixture.paths.repository, "--output", output];
   assert.equal(await main(args, {stdout: () => {}}), 0);
   assert.equal(await main(args, {stdout: () => {}}), 0);
+});
+
+test("final-zero rejects a currently open product issue even when its ledger row says closed", async (t) => {
+  const fixture = await fixtures(t);
+  fixture.openIssues.issues.push({number: 1365, title: "still open", url: "https://github.com/Rokurolize/wikijump/issues/1365"});
+  await writeJson(fixture.paths.root, "open-issues.json", fixture.openIssues);
+  await assert.rejects(verifyFinalZero(inputMap(fixture)), /complete_product_rows_open_or_unreconciled=1/u);
+});
+
+test("final-zero rejects a currently open product issue missing from the ledger", async (t) => {
+  const fixture = await fixtures(t);
+  fixture.openIssues.issues.push({number: 1999, title: "unowned", url: "https://github.com/Rokurolize/wikijump/issues/1999"});
+  await writeJson(fixture.paths.root, "open-issues.json", fixture.openIssues);
+  await assert.rejects(
+    verifyFinalZero(inputMap(fixture)),
+    /complete_product_rows_open_or_unreconciled=1, unrepresented_charter_requirements=1/u,
+  );
 });
 
 test("final-zero rejects missing or extra current rows", async (t) => {
@@ -378,6 +403,6 @@ test("final-zero rejects symlinked input and artifact paths", async (t) => {
 });
 
 test("final-zero CLI requires every frozen input", () => {
-  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--repository", "/g", "--output", "/h"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", "final-frozen": "/f", repository: "/g", output: "/h"});
-  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--output", "/h"]), /--repository is required/u);
+  assert.deepEqual(parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--open-issues", "/i", "--repository", "/g", "--output", "/h"]), {ledger: "/a", denominator: "/b", "deferred-denominator": "/c", "deferred-ledger": "/d", "standing-matrix": "/e", "final-frozen": "/f", "open-issues": "/i", repository: "/g", output: "/h"});
+  assert.throws(() => parseArgs(["--ledger", "/a", "--denominator", "/b", "--deferred-denominator", "/c", "--deferred-ledger", "/d", "--standing-matrix", "/e", "--final-frozen", "/f", "--repository", "/g", "--output", "/h"]), /--open-issues is required/u);
 });
