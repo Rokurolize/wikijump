@@ -61,12 +61,15 @@ jobs:
             "PATH=$PATH" \
             "HOME=$HOME" \
             "CI=$CI" \
+            "RUNNER_UID=$(id -u)" \
+            "RUNNER_GID=$(id -g)" \
             "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
             "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
             unshare --net --mount-proc bash -c '
               set -euo pipefail
               ip link set lo up
-              exec pnpm --dir framerail test
+              cd framerail
+              exec setpriv --reuid="$RUNNER_UID" --regid="$RUNNER_GID" --init-groups node tests/playwright-runner.js
             '
 
       - name: Test supported browser families
@@ -75,10 +78,13 @@ jobs:
             "PATH=$PATH" \
             "HOME=$HOME" \
             "CI=$CI" \
+            "RUNNER_UID=$(id -u)" \
+            "RUNNER_GID=$(id -g)" \
             "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
             "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
             unshare --net --mount-proc bash -c '
               set -euo pipefail
               ip link set lo up
-              exec pnpm --dir framerail test:browser-support
+              cd framerail
+              exec setpriv --reuid="$RUNNER_UID" --regid="$RUNNER_GID" --init-groups node tests/playwright-runner.js --config playwright.browser-support.config.ts
             '

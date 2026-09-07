@@ -175,6 +175,7 @@ jobs:
     needs: classify
     if: needs.classify.outputs.framerail == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
@@ -202,12 +203,15 @@ jobs:
             "PATH=$PATH" \
             "HOME=$HOME" \
             "CI=$CI" \
+            "RUNNER_UID=$(id -u)" \
+            "RUNNER_GID=$(id -g)" \
             "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
             "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
             unshare --net --mount-proc bash -c '
               set -euo pipefail
               ip link set lo up
-              exec pnpm --dir framerail test:unit
+              cd framerail
+              exec setpriv --reuid="$RUNNER_UID" --regid="$RUNNER_GID" --init-groups node --test tests/*.test.js tests/*.test.ts
             '
           pnpm --dir framerail lint
 

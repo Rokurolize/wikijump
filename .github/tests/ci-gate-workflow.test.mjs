@@ -200,6 +200,7 @@ test("CI browser and verification jobs cannot reach Wikidot origins", () => {
   const framerail = stepBlock(jobBlock(centralWorkflow, "framerail"), "Validate draft")
   assert.match(framerail.join("\n"), /unshare --net --mount-proc bash -c/u)
   assert.match(framerail.join("\n"), /ip link set lo up/u)
+  assert.match(framerail.join("\n"), /setpriv --reuid="\$RUNNER_UID" --regid="\$RUNNER_GID" --init-groups/u)
 
   const playwright = read("framerail/playwright.config.ts")
   assert.match(playwright, /WIKIJUMP_CI_OFFLINE_EGRESS/)
@@ -219,7 +220,7 @@ test("Wikidot verification CI runs only offline unit and retained-evidence tests
   const verificationPackage = JSON.parse(read("install/local/wikidot-verification/package.json"))
 
   assert.equal(verificationPackage.scripts["test:ci"], "node --test tests/*.test.mjs")
-  assert.match(verificationWorkflow, /pnpm --dir install\/local\/wikidot-verification test:ci/u)
+  assert.match(verificationWorkflow, /setpriv .* node --test tests\/\*\.test\.mjs/u)
   assert.doesNotMatch(
     verificationWorkflow,
     /(?:capture-[\w-]+|live-reference|candidate-cases|sandbox-oracle-capture|listpages-live-fixture|WIKIDOT_USERNAME|WIKIDOT_PASSWORD)/u,
@@ -328,10 +329,11 @@ test("draft and candidate CI keep Framerail production builds out of the central
 
   for (const command of [
     "pnpm --dir framerail lint",
-    "pnpm --dir framerail test:unit"
+    "node --test tests/*.test.js tests/*.test.ts"
   ]) assert.ok(framerailDraft.join("\n").includes(command), command)
   assert.doesNotMatch(framerailDraft.join("\n"), /pnpm --dir framerail build/)
   assert.doesNotMatch(framerail.join("\n"), /pnpm --dir framerail build/)
+  assert.equal(yamlScalar(framerail, 4, "timeout-minutes"), "5")
 
   assert.match(localesDraft.join("\n"), /cargo fmt --all -- --check/)
   assert.doesNotMatch(localesDraft.join("\n"), /cargo (?:clippy|run)/)
@@ -368,7 +370,7 @@ test("optional Browser CI contains only browser validation", () => {
     "github.event.action == 'labeled' && github.event.label.name == 'full-ci'"
   ]) assert.equal(source.split(condition).length - 1, 1, condition)
   assert.ok(source.split("github.event.action == 'edited' && github.event.changes.base != null").length - 1 >= 1)
-  assert.match(source, /pnpm --dir framerail test/)
+  assert.match(source, /setpriv .* node tests\/playwright-runner\.js/u)
   assert.match(source, /timeout-minutes: 10/)
 })
 
@@ -418,9 +420,10 @@ test("Framerail unit and browser suites remain separate", () => {
   // It must not chain the unit suite: ci-gate runs that already, and full-ci would repeat it.
   assert.equal(pkg.scripts.test, "node tests/playwright-runner.js")
   assert.doesNotMatch(pkg.scripts.test, /test:unit/)
-  for (const command of ["test:unit", "lint"]) assert.ok(gate.includes(`pnpm --dir framerail ${command}`), command)
+  assert.match(gate, /setpriv .* node --test tests\/\*\.test\.js tests\/\*\.test\.ts/u)
+  assert.ok(gate.includes("pnpm --dir framerail lint"), "lint")
   assert.doesNotMatch(gate, /pnpm --dir framerail build/)
-  assert.match(full, /pnpm --dir framerail test/)
+  assert.match(full, /setpriv .* node tests\/playwright-runner\.js/u)
   assert.doesNotMatch(playwright, /\.test\.(?:js|ts)/)
 })
 

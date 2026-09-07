@@ -96,12 +96,15 @@ jobs:
           sudo -n env \
             "PATH=$PATH" \
             "HOME=$HOME" \
+            "RUNNER_UID=$(id -u)" \
+            "RUNNER_GID=$(id -g)" \
             "WIKIJUMP_CI_OFFLINE_EGRESS=$WIKIJUMP_CI_OFFLINE_EGRESS" \
             "WIKIDOT_LIVE_PROBES=$WIKIDOT_LIVE_PROBES" \
             unshare --net --mount-proc bash -c '
               set -euo pipefail
               ip link set lo up
-              exec pnpm --dir install/local/wikidot-verification test:ci
+              cd install/local/wikidot-verification
+              exec setpriv --reuid="$RUNNER_UID" --regid="$RUNNER_GID" --init-groups node --test tests/*.test.mjs
             '
 
       - name: Test standing promotion precondition
