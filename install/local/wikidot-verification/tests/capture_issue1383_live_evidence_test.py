@@ -25,7 +25,7 @@ class CaptureIssue1383LiveEvidenceTest(unittest.TestCase):
         )
 
         self.assertIn(
-            '[[module ListPages fullname="run-owned:issue-1383-example-target" separate="no" wrapper="no"]]',
+            '[[module ListPages category="*" fullname="run-owned:issue-1383-example-target" separate="no" wrapper="no"]]',
             source,
         )
         self.assertNotIn('ListPages name="run-owned:', source)

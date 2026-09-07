@@ -67,7 +67,7 @@
   },
   "runner": {
     "path": "install/local/wikidot-verification/scripts/capture-issue1383-live-evidence.py",
-    "sha256": "394f0d157d64a2278f586be258506f56e0294c5c96ff81363d49b75d2de027f9"
+    "sha256": "f30a0fa45cdd5d91c7bebe930cdb8b0409462ee339c43bd0264701d7060e3a15"
   },
   "dependencies": {
     "requirements_path": "install/local/wikidot-verification/requirements.txt",
