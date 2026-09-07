@@ -18,8 +18,11 @@ class CaptureIssue1383LiveEvidenceTest(unittest.TestCase):
 
         self.assertEqual(MODULE.SITE, "wjc260907a1f7")
         self.assertEqual(MODULE.DOMAIN, "wjc260907a1f7.wikidot.com")
+        self.assertEqual(MODULE.SAVED_SITE, "scpaiueouiuiuiui")
+        self.assertEqual(MODULE.SAVED_DOMAIN, "scpaiueouiuiuiui.wikidot.com")
         plan = json.loads((Path(__file__).parents[1] / "fixtures" / "issue1383-live-evidence-plan.json").read_text(encoding="utf-8"))
         self.assertEqual(plan["site"], MODULE.SITE)
+        self.assertEqual(plan["saved_site"], MODULE.SAVED_SITE)
 
     def test_run_owned_target_uses_exact_fullname_filter(self):
         source = MODULE.source_for(
@@ -37,6 +40,29 @@ class CaptureIssue1383LiveEvidenceTest(unittest.TestCase):
             source,
         )
         self.assertNotIn('ListPages name="run-owned:', source)
+
+    def test_saved_control_uses_the_observed_self_selection_boundary(self):
+        cases = [
+            {
+                "label": "section-zero",
+                "section": 0,
+                "opener": "html",
+                "marker": "SECTION_ZERO_HTML",
+            },
+            {
+                "label": "section-one",
+                "section": 1,
+                "opener": "html",
+                "marker": "SECTION_ONE_HTML",
+            },
+        ]
+
+        source = MODULE.saved_self_selection_source(cases)
+
+        self.assertEqual(source.count('[[module ListPages limit="1" range="."]]'), 2)
+        self.assertNotIn("fullname=", source)
+        self.assertIn('[[%%content{0}%%html]]\n<b>SECTION_ZERO_HTML</b>', source)
+        self.assertIn('[[%%content{1}%%html]]\n<b>SECTION_ONE_HTML</b>', source)
 
     def test_preview_only_receipt_marks_non_preview_surfaces_unresolved(self):
         rows = MODULE.preview_only_unresolved_rows(False, False)
@@ -119,8 +145,9 @@ class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
         }
         self.assertEqual(actual, expected)
 
-    def test_plan_is_ready_only_with_retained_scanners_and_browser_tree(self):
+    def test_plan_is_complete_only_with_retained_terminal_evidence(self):
         import json
+        import hashlib
 
         repo_root = Path(__file__).parents[4]
         plan = json.loads(
@@ -133,8 +160,8 @@ class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
         self.assertEqual(
             plan["current_result"],
             {
-                "status": "ready",
-                "reason": "scanner results and the installed browser dependency tree are retained; complete live/browser capture is required",
+                "status": "complete",
+                "reason": "source-bound preview, saved self-selection browser, iframe payload, scanner, and cleanup evidence is retained",
             },
         )
         self.assertEqual(
@@ -145,6 +172,13 @@ class CaptureIssue1383PlanFreshnessTest(unittest.TestCase):
             plan["browser"]["installed_dependency_tree"]["status"],
             "captured",
         )
+        terminal = plan["terminal_evidence"]
+        terminal_path = Path(terminal["path"])
+        self.assertTrue(terminal_path.is_file())
+        self.assertEqual(hashlib.sha256(terminal_path.read_bytes()).hexdigest(), terminal["sha256"])
+        receipt = json.loads(terminal_path.read_text(encoding="utf-8"))
+        self.assertEqual(receipt["status"], "pass")
+        self.assertEqual(receipt["wikijump_head"], terminal["wikijump_head"])
 
 
 if __name__ == "__main__":

@@ -2,9 +2,10 @@
   "schema": "wikijump.listpages_section_zero_generated_html_live_run_plan.v1",
   "issue": "Rokurolize/wikijump#1383",
   "site": "wjc260907a1f7",
+  "saved_site": "scpaiueouiuiuiui",
   "current_result": {
-    "status": "ready",
-    "reason": "scanner results and the installed browser dependency tree are retained; complete live/browser capture is required"
+    "status": "complete",
+    "reason": "source-bound preview, saved self-selection browser, iframe payload, scanner, and cleanup evidence is retained"
   },
   "repository": {
     "reviewed_commit": "4cff29b2ecc6cc53c434ada93d5ab6df817344cb",
@@ -67,7 +68,7 @@
   },
   "runner": {
     "path": "install/local/wikidot-verification/scripts/capture-issue1383-live-evidence.py",
-    "sha256": "8c59c2db53874ad9ee2790d0f94964b098d4e099fa2d7251886a4d4dd9b4bb39"
+    "sha256": "fb5a8c08506a14a9598dcf0de4537c61133c55ead9d8b2d67cf239cbaf94ceb8"
   },
   "dependencies": {
     "requirements_path": "install/local/wikidot-verification/requirements.txt",
@@ -122,6 +123,12 @@
   "historical_artifact": {
     "path": "install/local/wikidot-verification/artifacts/listpages-section-zero-generated-html-live-20260815.json",
     "sha256": "c1494f51b8445948a22321b70a671c475387415d1478e308feb0dce7b7e783f0"
+  },
+  "terminal_evidence": {
+    "path": "/home/roku/wjlab/evidence/issue1383-self-canary-20260908-self-r1/terminal-combined-receipt.json",
+    "sha256": "6ebba0db456592e66afa72f08e87a70116b76047122249504bb8c737fdd31387",
+    "status": "pass",
+    "wikijump_head": "5052bc1dbab5b5c0a7579ecc29caab1f3598285d"
   },
   "target": {
     "title": "Issue 1383 generated HTML target",
