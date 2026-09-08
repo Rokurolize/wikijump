@@ -36,14 +36,14 @@
     },
     {
       "path": "docs/development/open43-a-authoring-closure-audit.json",
-      "sha256": "0a768538c0def082c9bad30634ce81a277985e7932d8f5d8d2d1c3e39b36e194",
+      "sha256": "94a2d6631bc49db77275aafac991b002b05d1de005016b4eaff67708c6658eb8",
       "source_revision": "18a2baf0d8c3fc1f3167e286740dc303dbdd5b2d",
       "issue_count": 2,
-      "case_count": 23,
-      "classification_counts": {"source_ready": 11, "needs_source": 0, "candidate_required": 7, "blocked_evidence": 5},
+      "case_count": 22,
+      "classification_counts": {"source_ready": 11, "needs_source": 0, "candidate_required": 6, "blocked_evidence": 5},
       "issue_summaries": [
         {"issue": 1061, "case_count": 11, "classification_counts": {"source_ready": 5, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 3}},
-        {"issue": 1063, "case_count": 12, "classification_counts": {"source_ready": 6, "needs_source": 0, "candidate_required": 4, "blocked_evidence": 2}}
+        {"issue": 1063, "case_count": 11, "classification_counts": {"source_ready": 6, "needs_source": 0, "candidate_required": 3, "blocked_evidence": 2}}
       ]
     },
     {
@@ -134,12 +134,12 @@
     "duplicate_issue_numbers": [],
     "unexpected_or_closed_issue_numbers": [],
     "tracking_issue_numbers_owned": [],
-    "case_count": 285,
-    "unique_case_count": 285,
+    "case_count": 284,
+    "unique_case_count": 284,
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 71}
+    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 83, "blocked_evidence": 71}
   },
   "validation": {
     "jq_structural_assertions": "pass",
@@ -147,7 +147,7 @@
       "status": "pass",
       "command": "node install/local/wikidot-verification/scripts/build-compatibility-surface-inventory.mjs --root . --output docs/development/compatibility-surface-inventory.json",
       "audit_count": 7,
-      "case_count": 285,
+      "case_count": 284,
       "blocked_routing_count": 71,
       "authoritative_manifest_count": 3,
       "open_issue_snapshot_count": 43,

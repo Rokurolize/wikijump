@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -315,7 +316,7 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
   const aggregate = JSON.parse(await fs.readFile(path.join(outputDir, "candidate-case-receipt.json"), "utf8"));
   assert.equal(aggregate.denominator.count, 3);
   assert.deepEqual(aggregate.denominator.case_ids, caseSet.caseIds);
-  for (const excluded of ["A1063_BREADCRUMB_SERVED_CANDIDATE", "A1063_LEGACY_AUTHORING_PRESENTATION", "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY"]) assert.equal(aggregate.denominator.case_ids.includes(excluded), false);
+  for (const excluded of ["A1063_LEGACY_AUTHORING_PRESENTATION", "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY"]) assert.equal(aggregate.denominator.case_ids.includes(excluded), false);
   assert.equal(calls.filter((call) => call.kind === "rpc" && call.method === "page_edit").length, 2);
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "page_revision_diff"), true);
   assert.deepEqual(calls.filter((call) => call.kind === "ajax").map((call) => call.fields.moduleName), [
@@ -331,4 +332,41 @@ test("candidate registry executes the unblocked #1063 source, diff, and settings
   assert.equal(calls.some((call) => call.kind === "rpc" && call.method === "page_delete"), true);
   assert.equal(state.pages.size, 0);
   assert.deepEqual(state.locales, ["en-US"]);
+});
+
+test("#1063 audit retires the stale standard-layout breadcrumb candidate without weakening ancestry authority", async () => {
+  const audit = JSON.parse(await fs.readFile(new URL("../../../../docs/development/open43-a-authoring-closure-audit.json", import.meta.url), "utf8"));
+  const issue = audit.issues.find((row) => row.issue === 1063);
+  assert.ok(issue);
+  assert.deepEqual(issue.candidate_required.map(({case_id}) => case_id), [
+    "A1063_EXACT_PUBLIC_SOURCE_CANDIDATE",
+    "A1063_DIFF_BROWSER_WORKFLOW",
+    "A1063_SETTINGS_BROWSER_WORKFLOW",
+  ]);
+  assert.deepEqual(issue.superseded_acceptance, [{
+    case_id: "A1063_BREADCRUMB_SERVED_CANDIDATE",
+    status: "superseded_by_current_live_evidence",
+    source_merge: "eb1c7876400abcd01d4e2d5ec670fe157186acb9",
+    evidence_id: "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
+    result: issue.superseded_acceptance[0].result,
+    boundary: issue.superseded_acceptance[0].boundary,
+  }]);
+  assert.match(issue.superseded_acceptance[0].result, /do not synthesize #breadcrumbs/u);
+  assert.match(issue.superseded_acceptance[0].boundary, /Deepwell ancestry remains valid/u);
+  const customLayout = issue.blocked_evidence.find(({case_id}) => case_id === "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY");
+  assert.match(customLayout.missing, /Pro custom-layout \[\[breadcrumbs\]\]/u);
+  assert.doesNotMatch(customLayout.missing, /no sealed live matrix covers missing/u);
+
+  const evidence = audit.evidence.find(({evidence_id}) => evidence_id === "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908");
+  assert.deepEqual(evidence, {
+    evidence_id: "AUTHORING_PARENT_STANDARD_LAYOUT_LIVE_20260908",
+    authority: evidence.authority,
+    path: "install/local/wikidot-verification/artifacts/issue1063-parent-breadcrumb-live-20260908.json",
+    sha256: "5c68a8df37651e4fc0753860ca2aac2e6a8abac637665a1ff7fd8253852ae444",
+    source_revision: "e7678a6c1d03171d3f884ad63b8bcd29bcec8bad",
+  });
+  const artifactBytes = await fs.readFile(new URL("../artifacts/issue1063-parent-breadcrumb-live-20260908.json", import.meta.url));
+  assert.equal(createHash("sha256").update(artifactBytes).digest("hex"), evidence.sha256);
+  assert.equal(audit.candidate_harness_gap.superseded_row.case_id, "A1063_BREADCRUMB_SERVED_CANDIDATE");
+  assert.equal(audit.browser_commands.some(({case_ids}) => case_ids.includes("A1063_BREADCRUMB_SERVED_CANDIDATE")), false);
 });

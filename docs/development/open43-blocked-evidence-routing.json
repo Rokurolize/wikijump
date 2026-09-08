@@ -24,9 +24,9 @@
   "counts": {
     "anonymous_read_only": 5,
     "authenticated_read_only": 3,
-    "run_owned_mutation": 20,
+    "run_owned_mutation": 19,
     "local_candidate": 3,
-    "live_browser_only": 11,
+    "live_browser_only": 12,
     "missing_public_producer": 12,
     "missing_architecture_domain_authority": 11,
     "missing_security_policy": 6,
@@ -82,7 +82,7 @@
     {"case_id":"A1061_PAGE_LOCAL_CACHE_IDENTITY","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"The established architecture uses a site-wide fence and no authority requires a narrower identity."},
     {"case_id":"A1061_EXACT_CYCLE_CASCADE_SEMANTICS","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No public cyclic include graph exposes authoritative traversal order or count."},
     {"case_id":"A1063_LEGACY_AUTHORING_PRESENTATION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"Revision diff and settings messages, keyboard behavior, errors, and intermediate frames require browser observation."},
-    {"case_id":"A1063_FULL_BREADCRUMB_LIVE_BOUNDARY","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Missing, deleted, private, cyclic, renamed, and cross-site parent transitions need controlled run-owned state."},
+    {"case_id":"A1063_FULL_BREADCRUMB_LIVE_BOUNDARY","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The standard saved-page shell is now authoritatively negative; the remaining unobserved authority is the separately documented Pro custom-layout [[breadcrumbs]] presentation."},
 
     {"case_id":"M756_WINDOWS_TILE_DECLARATION","route_class":"anonymous_read_only","status":"blocked_no_positive_fixture","reason":"The existing bounded public probe found no configured positive declaration; admin evidence proves only that the upload slot exists."},
     {"case_id":"M756_UPLOAD_MATERIALIZATION","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Upload-to-blob materialization and edge policy require a run-owned file mutation."},

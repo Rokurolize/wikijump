@@ -864,7 +864,7 @@ export function createOpen43AuthoringHistoryCandidateCaseSet({ sessionFactory = 
           case_ids: OPEN43_AUTHORING_HISTORY_CASE_IDS,
           public_behavior: "one run-owned page proves typed source and served diff behavior while the session actor settings round-trip and are restored",
           browser: { viewport: VIEWPORT, intervals: ["domcontentloaded_immediate_observation", "settled"] },
-          excluded_claims: ["A1063_BREADCRUMB_SERVED_CANDIDATE", "A1063_LEGACY_AUTHORING_PRESENTATION", "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY"],
+          excluded_claims: ["A1063_LEGACY_AUTHORING_PRESENTATION", "A1063_FULL_BREADCRUMB_LIVE_BOUNDARY"],
         },
         execute: () => execution.execute(),
         cleanup: () => execution.cleanup(),
