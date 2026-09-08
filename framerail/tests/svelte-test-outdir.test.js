@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { resolve } from "node:path"
 import { test } from "node:test"
@@ -8,6 +9,14 @@ import config from "../svelte.config.js"
 import { loadConfigFromFile } from "vite"
 
 const root = fileURLToPath(new URL("..", import.meta.url))
+
+test("unit test entrypoint generates the shared SvelteKit tsconfig before isolated workers start", () => {
+  const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"))
+  assert.equal(
+    pkg.scripts["test:unit"],
+    "svelte-kit sync && node --test tests/*.test.js tests/*.test.ts"
+  )
+})
 
 test("node test workers isolate SvelteKit and Vite generated state by process", async () => {
   assert.equal(process.env.NODE_TEST_CONTEXT, "child-v8")
