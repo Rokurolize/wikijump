@@ -145,7 +145,7 @@ class Open43Q748TopBarSearchBrowserAdapter {
     const submitOne = async (query) => {
       const expectedUrl = queryPath(this.#pageOrigin, query);
       await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: CAPTURE_TIMEOUT_MS });
-      await page.waitForTimeout(250);
+      await page.waitForLoadState("load", { timeout: CAPTURE_TIMEOUT_MS });
       const beforeNavigationCount = navigationUrls.length;
       const input = page.locator("#search-top-box-input");
       await input.evaluate((element, value) => {
