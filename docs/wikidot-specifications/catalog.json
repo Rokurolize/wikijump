@@ -31,7 +31,7 @@
     "partial_documentation": "invocation-only, high-level-documentation, and partially-documented items require live-oracle evidence before unspecified behavior is invented."
   },
   "live_observations": {
-    "observation_count": 81,
+    "observation_count": 82,
     "source_file": "live-observations.json"
   },
   "feature_count": 210,
@@ -1197,7 +1197,8 @@
       ],
       "related_features": [],
       "live_observation_ids": [
-        "wikidot-document-shell-stored-locale-20260722"
+        "wikidot-document-shell-stored-locale-20260722",
+        "parent-relations-standard-layout-no-automatic-breadcrumbs-20260908"
       ]
     },
     {
@@ -4271,7 +4272,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "parent-relations-standard-layout-no-automatic-breadcrumbs-20260908"
+      ]
     },
     {
       "id": "forum-categories",
@@ -4525,7 +4528,9 @@
         "Public service/API boundary for persistent state and permissions"
       ],
       "related_features": [],
-      "live_observation_ids": []
+      "live_observation_ids": [
+        "parent-relations-standard-layout-no-automatic-breadcrumbs-20260908"
+      ]
     },
     {
       "id": "page-tags",

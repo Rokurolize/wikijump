@@ -1,0 +1,95 @@
+{
+  "schema": "wikijump.issue1063_parent_breadcrumb_live.v1",
+  "captured_at": "2026-09-08",
+  "feature_ids": [
+    "layout-page",
+    "page-parent-relations",
+    "content-pages"
+  ],
+  "source_artifacts": [
+    {
+      "path": "/home/roku/wjlab/evidence/open27-q1063-probe-source-preserved-20260905/r10/artifact.json",
+      "sha256": "d18e73818cf118f7a536afb3082c65e59c53a2750dc3d9226695446e02866837"
+    },
+    {
+      "path": "/home/roku/wjlab/evidence/open27-q1063-doc-site-structure-20260908-r1/artifact.json",
+      "sha256": "e60b7383f6da00e585e9caa3fcfb36099ea06cc7a7f769f081ac2685274cb46f"
+    },
+    {
+      "path": "/home/roku/src/Rokurolize/scp-wiki-translation/corpus/www/pages/doc:site-structure/meta.json",
+      "sha256": "07dd8ff99242f8b6dc2688f9ce1926a830030d808a918dc115fb2433bab3816b"
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "issue1063-parent-chain-standard-layout-no-breadcrumbs",
+      "site": "sandbox-for-codex",
+      "control": "positive-parent-chain",
+      "http_status": 200,
+      "parent_mutations_succeeded": true,
+      "breadcrumbs_present": false,
+      "body_sha256": "c0c4f0587b4a76c271e4c3f3a94090c7bff9e0e5609d4fd04f3e31e26c0ce4b3"
+    },
+    {
+      "case_id": "issue1063-renamed-parent-standard-layout-no-breadcrumbs",
+      "site": "sandbox-for-codex",
+      "control": "positive-renamed-parent",
+      "http_status": 200,
+      "parent_mutations_succeeded": true,
+      "breadcrumbs_present": false,
+      "body_sha256": "b906d706dae9fc889aa65f3fc9404295b70872cabbf931aafb8a9c86e79eb415"
+    },
+    {
+      "case_id": "issue1063-no-parent-standard-layout-control",
+      "site": "sandbox-for-codex",
+      "control": "negative-no-parent",
+      "http_status": 200,
+      "breadcrumbs_present": false,
+      "body_sha256": "03b7e4ce9566a2e258d118ba4c79a4ea0793a71e3824b5f571210de8327b8d99"
+    },
+    {
+      "case_id": "issue1063-deleted-parent-standard-layout-control",
+      "site": "sandbox-for-codex",
+      "control": "negative-deleted-parent",
+      "http_status": 200,
+      "breadcrumbs_present": false,
+      "body_sha256": "03c6b139e4a4344961c5bb07bd36b896843b93b31e8d3f930e5d8cc7ae2196d9"
+    },
+    {
+      "case_id": "issue1063-cycle-standard-layout-control",
+      "site": "sandbox-for-codex",
+      "control": "negative-cycle",
+      "http_status": 200,
+      "cycle_mutation_accepted": true,
+      "breadcrumbs_present": false,
+      "body_sha256": "19727b72ba16a87054603ccd6ad8e697b1e37b4df017cd2b51688f3d6f153cec"
+    },
+    {
+      "case_id": "issue1063-independent-standard-layout-control",
+      "site": "sandbox-for-codex",
+      "control": "negative-independent-page",
+      "http_status": 200,
+      "breadcrumbs_present": false,
+      "body_sha256": "387ecfa757f37ead85708fe232ef8b199258b7e88db1618fca3ccb0476b65f14"
+    },
+    {
+      "case_id": "issue1063-current-parented-documentation-page-no-breadcrumbs",
+      "site": "www",
+      "fullname": "doc:site-structure",
+      "parent_fullname": "doc:start",
+      "http_status": 200,
+      "breadcrumbs_present": false,
+      "body_sha256": "15ac52a3d9b4460b92e1f0e2ac06ba043e94422cdcff442a5ba5f32512ca86a7"
+    }
+  ],
+  "cleanup": {
+    "sandbox_run_owned_pages_remaining": [],
+    "sandbox_cleanup_verified": true,
+    "credentials_persisted": false
+  },
+  "scope": {
+    "standard_saved_page_layout": "observed",
+    "parent_relation_persistence": "preserved",
+    "custom_layout_breadcrumbs": "not_observed_do_not_infer"
+  }
+}

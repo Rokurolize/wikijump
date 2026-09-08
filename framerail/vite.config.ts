@@ -1,19 +1,15 @@
 import pkg from "./package.json"
 
 import { sveltekit } from "@sveltejs/kit/vite"
-import { execSync } from "child_process"
 import { rmSync } from "fs"
 import { tmpdir } from "os"
 import { resolve } from "path"
 
 import type { UserConfig } from "vite"
 
-let pnpmVersion = null
-try {
-  pnpmVersion = execSync("pnpm -v").toString("utf-8").trim()
-} catch {
-  // ignore pnpm version if there are errors
-}
+const pnpmVersion = pkg.packageManager?.startsWith("pnpm@")
+  ? pkg.packageManager.slice("pnpm@".length)
+  : null
 
 const testCacheDir = process.env.NODE_TEST_CONTEXT
   ? resolve(tmpdir(), `wikijump-framerail-vite-test-${process.pid}`)

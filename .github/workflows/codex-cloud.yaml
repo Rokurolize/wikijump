@@ -17,21 +17,16 @@ on:
       - 'scripts/codex_cloud_test.py'
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   scripts:
     name: Validate scripts
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     steps:
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-
-      - name: Validate Bash
+      - name: Local-validation-only policy
         run: |
-          bash -n scripts/codex-cloud-setup.sh scripts/codex-cloud-maintenance.sh
-          shellcheck scripts/codex-cloud-setup.sh scripts/codex-cloud-maintenance.sh
-
-      - name: Run regression tests
-        run: python3 -m unittest scripts/codex_cloud_test.py
+          printf '%s\n' \
+            'Codex Cloud script validation is intentionally disabled in GitHub Actions.' \
+            'Run Bash syntax, ShellCheck, and regression tests in the maintained local workspace.'

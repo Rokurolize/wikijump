@@ -69,7 +69,6 @@
       !showRevision &&
       isWikidotFragmentPage(data.page_revision?.tags)
   )
-  const breadcrumbSeparator = " » "
   let compiledBodyStyles = $derived(
     data.options?.debug || data.options?.no_render
       ? []
@@ -370,17 +369,6 @@
   {:else}
     <div id="page-title" class:hidden={dataFormEditing}>
       {data.page_revision?.title}
-    </div>
-  {/if}
-
-  {#if !data.options?.debug && !showRevision && data.wikidot_breadcrumbs?.length}
-    <div id="breadcrumbs" class:hidden={dataFormEditing}>
-      {#each data.wikidot_breadcrumbs as breadcrumb, index (breadcrumb.slug)}
-        {#if index > 0}
-          <span class="breadcrumb-separator">{breadcrumbSeparator}</span>
-        {/if}
-        <a href={resolve(`/${breadcrumb.slug}`, {})}>{breadcrumb.title}</a>
-      {/each}
     </div>
   {/if}
 

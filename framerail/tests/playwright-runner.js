@@ -1,5 +1,8 @@
 import { spawn } from "node:child_process"
 import { createServer } from "node:net"
+import { fileURLToPath } from "node:url"
+
+const playwrightCli = fileURLToPath(import.meta.resolve("@playwright/test/cli"))
 
 const allocatePort = () =>
   new Promise((resolve, reject) => {
@@ -18,7 +21,7 @@ const allocatePort = () =>
 
 const appPort = await allocatePort()
 const fixturePort = await allocatePort()
-const child = spawn("pnpm", ["exec", "playwright", "test", ...process.argv.slice(2)], {
+const child = spawn(process.execPath, [playwrightCli, "test", ...process.argv.slice(2)], {
   env: {
     ...process.env,
     PLAYWRIGHT_APP_PORT: String(appPort),
