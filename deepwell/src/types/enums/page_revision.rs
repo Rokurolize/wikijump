@@ -72,6 +72,7 @@ pub enum PageRevisionChange {
     AltTitle,
     Slug,
     Tags,
+    Parent,
 }
 
 impl PageRevisionChange {
@@ -82,6 +83,7 @@ impl PageRevisionChange {
             Self::AltTitle => "alt_title",
             Self::Slug => "slug",
             Self::Tags => "tags",
+            Self::Parent => "parent",
         }
     }
 }
@@ -97,6 +99,7 @@ mod tests {
         assert_eq!(PageRevisionChange::AltTitle.database_value(), "alt_title");
         assert_eq!(PageRevisionChange::Slug.database_value(), "slug");
         assert_eq!(PageRevisionChange::Tags.database_value(), "tags");
+        assert_eq!(PageRevisionChange::Parent.database_value(), "parent");
     }
 
     #[test]

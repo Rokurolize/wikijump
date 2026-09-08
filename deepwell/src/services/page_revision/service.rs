@@ -187,6 +187,7 @@ impl PageRevisionDraft {
             alt_title: new_alt_title,
             slug: new_slug,
             tags: new_tags,
+            parent_changed,
         }: CreatePageRevisionBody,
     ) -> Result<Self> {
         let PageRevisionModel {
@@ -206,6 +207,10 @@ impl PageRevisionDraft {
         } = previous;
         let mut old_slug = None;
         let mut changes = Vec::new();
+
+        if parent_changed {
+            changes.push(PageRevisionChange::Parent);
+        }
 
         if let Maybe::Set(value) = new_title
             && title != value

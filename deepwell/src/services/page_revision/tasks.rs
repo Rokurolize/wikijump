@@ -55,6 +55,7 @@ impl PageRevisionTasks {
                     tasks.rerender_outgoing_includes = true;
                     tasks.rerender_templates = true;
                 }
+                PageRevisionChange::Parent => {}
             }
         }
 

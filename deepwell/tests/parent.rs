@@ -32,7 +32,9 @@ use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
-use deepwell::services::{RequestContext, ServiceContext};
+use deepwell::services::{
+    PageRevisionService, PageService, RequestContext, ServiceContext,
+};
 use deepwell::types::{Action, Permission, Reference, Resource};
 use rsmq_async::RsmqConnection;
 use sea_orm::{ActiveModelTrait, EntityTrait, Set};
@@ -197,8 +199,7 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         "[[module ListPages parent=\".\"]]\n%%fullname%%\n[[/module]]",
     )
     .await;
-    let child_revision =
-        create_page(&mut runner, site_id, CHILD_SLUG, "Child body").await;
+    create_page(&mut runner, site_id, CHILD_SLUG, "Child body").await;
 
     runner.set_request_context(RequestContext {
         session: None,
@@ -218,6 +219,24 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(created.is_some());
+    let child_page = PageService::get(
+        runner.context(),
+        site_id,
+        Reference::Slug(Cow::Borrowed(CHILD_SLUG)),
+    )
+    .await
+    .expect("child should remain readable after setting its parent");
+    let parent_revision =
+        PageRevisionService::get_latest(runner.context(), site_id, child_page.page_id)
+            .await
+            .expect("setting a parent should create the Wikidot metadata revision");
+    assert_eq!(parent_revision.revision_number, 1);
+    assert_eq!(parent_revision.changes, vec!["parent".to_owned()]);
+    assert_eq!(
+        parent_revision.comments,
+        format!("Parent page set to: \"{PARENT_SLUG}\"."),
+    );
+    let parent_revision_id = parent_revision.revision_id;
     assert_eq!(
         queued_job_count(&runner).await,
         before_create,
@@ -240,6 +259,11 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(duplicate.is_none());
+    let after_duplicate =
+        PageRevisionService::get_latest(runner.context(), site_id, child_page.page_id)
+            .await
+            .expect("duplicate parent set should leave the latest revision readable");
+    assert_eq!(after_duplicate.revision_id, parent_revision_id);
     runner
         .context()
         .run_post_commit_actions()
@@ -291,6 +315,12 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         }),
     );
     assert!(recreated.is_some());
+    let recreated_revision =
+        PageRevisionService::get_latest(runner.context(), site_id, child_page.page_id)
+            .await
+            .expect("recreated parent relationship should create a metadata revision");
+    assert_eq!(recreated_revision.revision_number, 2);
+    assert_eq!(recreated_revision.changes, vec!["parent".to_owned()]);
     runner
         .context()
         .run_post_commit_actions()
@@ -304,7 +334,7 @@ async fn changed_parent_relationships_queue_parent_rerenders() {
         json!({
             "site_id": site_id,
             "page": CHILD_SLUG,
-            "last_revision_id": child_revision,
+            "last_revision_id": recreated_revision.revision_id,
             "revision_comments": "delete parent outdate fixture child",
             "user_id": ADMIN_USER_ID,
             "ip_address": common::IP_ADDRESS,

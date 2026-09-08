@@ -172,12 +172,32 @@ pub async fn parent_set(
         )
     })?;
 
-    ParentService::create(ctx, input).await.or_raise(|| {
+    let revision_input = input.clone();
+    let relationship = ParentService::create(ctx, input).await.or_raise(|| {
         Error::new(
             "failed to create page parent relationship",
             ErrorType::PageParent,
         )
-    })
+    })?;
+
+    if relationship.is_some() {
+        PageService::record_parent_metadata_revision(
+            ctx,
+            revision_input.site_id,
+            revision_input.child,
+            revision_input.parent,
+            ctx.request().user_id()?,
+        )
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to record page parent metadata revision",
+                ErrorType::PageParent,
+            )
+        })?;
+    }
+
+    Ok(relationship)
 }
 
 pub async fn parent_remove(
