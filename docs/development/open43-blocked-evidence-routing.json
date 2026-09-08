@@ -24,13 +24,13 @@
   "counts": {
     "anonymous_read_only": 5,
     "authenticated_read_only": 3,
-    "run_owned_mutation": 19,
+    "run_owned_mutation": 18,
     "local_candidate": 2,
     "live_browser_only": 12,
     "missing_public_producer": 12,
     "missing_architecture_domain_authority": 12,
     "missing_security_policy": 6,
-    "total": 71
+    "total": 70
   },
   "rows": [
     {"case_id":"Q748_PERMISSION_FILTERED_RESULTS","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"Live Search has no successful result producer or public/private result pair."},
@@ -54,7 +54,6 @@
     {"case_id":"Q811_TIE_ACTOR_AJAX_AND_TIMING_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled adjacent-page tie and private actor pair exists; Ajax timing alone would not answer it."},
     {"case_id":"Q1027_NON_ANONYMOUS_AND_BEYOND_LIMIT_LIVE_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No public private-backlink actor pair or controlled graph beyond 500 rows exists."},
     {"case_id":"Q1028_EXPAND_LIST_ACTION","route_class":"live_browser_only","status":"not_attempted_not_safe","reason":"The expand-list action and its observable intervals require browser interaction."},
-    {"case_id":"Q1035_SITECHANGES_FILE_META_DELETE_RESTORE","route_class":"run_owned_mutation","status":"not_attempted_not_safe","reason":"Delete, restore, file, move, and metadata transition sequencing needs run-owned state."},
     {"case_id":"Q1035_LISTDRAFTS_NONEMPTY_QUERY","route_class":"missing_architecture_domain_authority","status":"not_attempted_not_safe","reason":"Deepwell has no persisted draft producer or visibility/expiration owner."},
     {"case_id":"Q1040_TIE_ACTOR_AJAX_AND_TIMING_RULES","route_class":"missing_public_producer","status":"not_attempted_not_safe","reason":"No controlled tie and private adjacent-page actor set exists."},
 

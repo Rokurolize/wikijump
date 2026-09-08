@@ -77,18 +77,18 @@
     },
     {
       "path": "docs/development/open43-q-page-query-closure-audit.json",
-      "sha256": "e315a265f2a86b33a6620e5015c521e46ed2742a7a882c7fbc8ba3795242ee5d",
+      "sha256": "843468f6600b168011eddc6e14da2c68c208014171f0c30631963541ded923a7",
       "source_revision": "f14c4986abbe47214026d9f00e672db39efa677f",
       "issue_count": 7,
       "case_count": 33,
-      "classification_counts": {"source_ready": 18, "needs_source": 0, "candidate_required": 7, "blocked_evidence": 8},
+      "classification_counts": {"source_ready": 18, "needs_source": 1, "candidate_required": 7, "blocked_evidence": 7},
       "issue_summaries": [
         {"issue": 779, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 809, "case_count": 5, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 2, "blocked_evidence": 1}},
         {"issue": 811, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 1027, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
         {"issue": 1028, "case_count": 4, "classification_counts": {"source_ready": 2, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}},
-        {"issue": 1035, "case_count": 6, "classification_counts": {"source_ready": 4, "needs_source": 0, "candidate_required": 0, "blocked_evidence": 2}},
+        {"issue": 1035, "case_count": 6, "classification_counts": {"source_ready": 4, "needs_source": 1, "candidate_required": 0, "blocked_evidence": 1}},
         {"issue": 1040, "case_count": 5, "classification_counts": {"source_ready": 3, "needs_source": 0, "candidate_required": 1, "blocked_evidence": 1}}
       ]
     },
@@ -139,7 +139,7 @@
     "duplicate_case_ids": [],
     "unknown_classifications": [],
     "closure_claims": 0,
-    "classification_counts": {"source_ready": 130, "needs_source": 0, "candidate_required": 84, "blocked_evidence": 71}
+    "classification_counts": {"source_ready": 130, "needs_source": 1, "candidate_required": 84, "blocked_evidence": 70}
   },
   "validation": {
     "jq_structural_assertions": "pass",

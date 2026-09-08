@@ -1,0 +1,93 @@
+{
+  "schema": "wikijump.sitechanges_mutation_live_observation.v1",
+  "observed_at": "2026-09-08",
+  "site": "sandbox-for-codex",
+  "actor": "authenticated run-owned mutation account A",
+  "wikidot_py_commit": "9f33c0f450de9daf333b068e8d70527e033fc07c",
+  "source_artifact": {
+    "path": "/home/roku/wjlab/evidence/issue1035-sitechanges-mutations-20260908-r1/artifact.json",
+    "sha256": "5e3600e3ceffea16cdc0dc44d936f359b93c7336fa754f4908d9015290beafac"
+  },
+  "supplemental_filter_artifact": {
+    "path": "/home/roku/wjlab/evidence/issue1035-sitechanges-mutations-20260908-r1/filter-json-variants.json",
+    "sha256": "a035b7d6fa6182ea78327f7c249bc64f64e3cbd2f59ee6bbf116752457e1f512",
+    "disposition": "not promoted to filter semantics because the exact JSON source/files variants were read only after the run-owned child had been deleted"
+  },
+  "run_id": "issue1035-20260908t081331z-r1a1",
+  "baseline_matching_rows": 0,
+  "cases": [
+    {
+      "case_id": "q1035-sitechanges-create",
+      "verified": true,
+      "observed_flags": ["N"]
+    },
+    {
+      "case_id": "q1035-sitechanges-source-title",
+      "verified": true,
+      "observed_flags": ["S", "T"]
+    },
+    {
+      "case_id": "q1035-sitechanges-parent",
+      "verified": true,
+      "observed_flags": ["M"]
+    },
+    {
+      "case_id": "q1035-sitechanges-rename",
+      "verified": true,
+      "observed_flags": ["R"]
+    },
+    {
+      "case_id": "q1035-sitechanges-delete-cleanup-observation",
+      "verified": true,
+      "new_delete_specific_row_observed": false,
+      "generalized": false
+    }
+  ],
+  "observed_all_rows": [
+    {
+      "revision": "(rev. 3)",
+      "flags": ["R"],
+      "operation": "rename/move",
+      "comment": "Wikidot generated a successful rename comment"
+    },
+    {
+      "revision": "(rev. 2)",
+      "flags": ["M"],
+      "operation": "set parent page",
+      "comment": "Wikidot generated a parent-page-set comment"
+    },
+    {
+      "revision": "(rev. 1)",
+      "flags": ["S", "T"],
+      "operation": "combined source and title edit",
+      "comment": "run-owned edit comment"
+    },
+    {
+      "revision": "(new)",
+      "flags": ["N"],
+      "operation": "create child",
+      "comment": "run-owned create comment"
+    },
+    {
+      "revision": "(new)",
+      "flags": ["N"],
+      "operation": "create parent",
+      "comment": "run-owned create comment"
+    }
+  ],
+  "delete_observation": {
+    "new_delete_specific_row_observed": false,
+    "pre_delete_run_rows_remained_visible": true,
+    "disposition": "one run is insufficient to generalize delete/restore behavior; keep the broader delete/restore contract unestablished"
+  },
+  "unobserved": [
+    "attached-file mutation and exact file revision/comment behavior",
+    "restore/undelete mutation",
+    "browser loading/failure/focus/history/keyboard timeline"
+  ],
+  "cleanup": {
+    "child_absent": true,
+    "parent_absent": true,
+    "remaining_run_owned_objects": []
+  }
+}

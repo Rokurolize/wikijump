@@ -379,7 +379,12 @@
           "result": "The public Deepwell endpoint and Framerail connector implement the exact observed page 1 through 3, out-of-range, source and files filters, empty options, and missing-category reads at perpage 20. Permission filtering precedes count, ordering, and page selection. Raw-scan saturation yields no partial Ajax or initial snapshot. Unknown, malformed, duplicate, alternative per-page, and unobserved option shapes fail closed.",
           "missing": "Alternative per-page selection and the browser loading, failure, replacement, history, focus, keyboard, and temporal lifecycle remain unobserved and unimplemented."
         },
-        {"case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE", "status": "blocked_evidence"},
+        {
+          "case_id": "Q1035_SITECHANGES_FILE_META_DELETE_RESTORE",
+          "status": "needs_source",
+          "evidence_ids": ["E_Q1035_SITECHANGES_MUTATIONS_20260908"],
+          "result": "Run-owned live authority establishes the create N, combined source/title S/T, parent metadata M, and rename/move R revision sequence. The rename flag source mismatch is corrected. Parent mutation still lacks the observed metadata revision in Wikijump. File mutation/restore and the broader delete contract remain evidence-blocked; the cleanup delete observation is retained but not generalized."
+        },
         {
           "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
           "status": "source_ready",
@@ -454,9 +459,9 @@
     "subrow_count": 33,
     "classification_counts": {
       "source_ready": 18,
-      "needs_source": 0,
+      "needs_source": 1,
       "candidate_required": 7,
-      "blocked_evidence": 8
+      "blocked_evidence": 7
     },
     "duplicate_issue_numbers": 0,
     "duplicate_case_ids": 0,

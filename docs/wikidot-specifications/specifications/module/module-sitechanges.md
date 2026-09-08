@@ -45,6 +45,25 @@ Evidence:
 
 - `install/local/wikidot-verification/artifacts/open43-readonly-live-20260810.json` (SHA-256 `9c98424c2082c7989e2c09e9c9c4e8082be8d3c8e42910383b3e323095b9a410`), cases: `q1035-sitechanges-page-one`, `q1035-sitechanges-page-two`, `q1035-sitechanges-page-three`, `q1035-sitechanges-page-out`, `q1035-sitechanges-source`, `q1035-sitechanges-files`, `q1035-sitechanges-empty-options`, `q1035-sitechanges-missing-category`
 
+### SiteChanges mutation revisions use distinct N, S/T, M, and R flags
+
+- Observation ID: `sitechanges-run-owned-mutation-flags-20260908`
+- Classification: `documentation-omission`
+- Observed at: `2026-09-08`
+- Analysis: One authenticated run-owned lifecycle on sandbox-for-codex established the revision and flag sequence for page creation, a combined source/title edit, setting a parent page, and rename/move. The page was then deleted as cleanup and verified absent. The immediately following all-changes read did not add a delete-specific run row, but one run does not establish the general delete/restore contract. No file mutation or restore was attempted.
+
+Normative behavior:
+
+- A new page row uses the N flag and the visible revision marker (new).
+- A combined source and title edit produces one revision carrying S then T; in the observed sequence it is revision 1.
+- Setting the page parent produces its own revision carrying M; in the observed sequence it advances the page to revision 2.
+- Renaming or moving the page produces its own revision carrying R, not M; in the observed sequence it advances the page to revision 3.
+- Attached-file mutations, restore/undelete behavior, and browser temporal behavior remain unestablished. The cleanup delete did not create a new run-owned row in the immediate follow-up observation, but this single lifecycle is not promoted to a general delete rule.
+
+Evidence:
+
+- `install/local/wikidot-verification/artifacts/sitechanges-mutation-live-20260908.json` (SHA-256 `b9113e57c7fc00cab25af89a146822d0112ad6e9f1acf7430226db7fc0225603`), cases: `q1035-sitechanges-create`, `q1035-sitechanges-source-title`, `q1035-sitechanges-parent`, `q1035-sitechanges-rename`, `q1035-sitechanges-delete-cleanup-observation`
+
 
 
 ## Suggested public TDD seams

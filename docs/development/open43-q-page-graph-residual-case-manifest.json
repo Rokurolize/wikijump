@@ -130,8 +130,11 @@
       "issue": 1035,
       "status": "unimplemented",
       "owner": "deepwell",
-      "test": null,
-      "result": "Stored file revisions now participate in the observed read-only files filter and render the F flag. Exact file revision numbering and generated comments, parent metadata changes, page delete and restore rows, file or metadata mutation, and exact move/comment variants remain actionable. The renderer does not fabricate flags that are absent from local authority."
+      "tests": [
+        "deepwell/src/services/render/site_changes.rs::tests::site_changes_flags_derive_from_revision_authority"
+      ],
+      "evidence_ids": ["E_Q1035_SITECHANGES_MUTATIONS_20260908"],
+      "result": "Fresh run-owned Wikidot authority now establishes N for create, S/T for a combined source/title edit, M for a parent metadata revision, and R for rename/move. Deepwell now emits the observed R for slug changes. The remaining source gap is structural: parent_set currently mutates page_parent without creating the separate page revision observed by Wikidot. Stored file revisions still render F, but exact file mutation revision/comment behavior and restore remain unobserved; one cleanup deletion produced no new run row and is not generalized into a delete rule."
     },
     {
       "case_id": "Q1035_LISTDRAFTS_EMPTY_STATE_MATRIX",
